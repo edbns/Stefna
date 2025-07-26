@@ -1826,13 +1826,22 @@ class SpyDash {
                 <iframe width="100%" height="220" src="https://www.youtube.com/embed/${item.videoId}" frameborder="0" allowfullscreen></iframe>
             </div>
         ` : `<div class="content-thumbnail"><i class="${item.thumbnail}"></i></div>`;
+        // Extract stats
+        const stats = item.statistics || {};
+        const views = stats.viewCount ? this.formatNumber(Number(stats.viewCount)) : 'N/A';
+        const likes = stats.likeCount ? this.formatNumber(Number(stats.likeCount)) : 'N/A';
+        const comments = stats.commentCount ? this.formatNumber(Number(stats.commentCount)) : 'N/A';
         return `
             <div class="content-card" data-platform="${item.platform}">
                 ${videoEmbed}
                 <div class="content-info">
                     <h4>${item.title}</h4>
-                    <p class="creator">by ${item.creator}</p>
-                    <p class="views">${item.views} views</p>
+                    <p class="creator">by <span class="creator-link" data-creator="${item.creator}">${item.creator}</span></p>
+                    <div class="content-stats">
+                        <span class="stat views"><i class="fa fa-eye"></i> ${views}</span>
+                        <span class="stat likes"><i class="fa fa-thumbs-up"></i> ${likes}</span>
+                        <span class="stat comments"><i class="fa fa-comment"></i> ${comments}</span>
+                    </div>
                     <div class="content-actions">
                         <button class="action-btn" onclick="this.parentElement.parentElement.parentElement.classList.toggle('favorited')">
                             <i class="icon-heart"></i>

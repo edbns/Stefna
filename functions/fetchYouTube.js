@@ -1,4 +1,4 @@
-// Netlify function for YouTube API (search-based)
+// Netlify function for YouTube API (search-based, with stats)
 const fetch = require('node-fetch');
 
 exports.handler = async (event) => {
@@ -38,6 +38,38 @@ exports.handler = async (event) => {
   try {
     const response = await fetch(url);
     const data = await response.json();
+
+    // Get video IDs from search results
+    const videoIds = (data.items || [])
+      .map(item => item.id && (item.id.videoId || item.id))
+      .filter(Boolean)
+      .join(',');
+
+    let statsMap = {};
+    if (videoIds) {
+      // Fetch video statistics for all IDs
+      const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${apiKey}`;
+      const statsRes = await fetch(statsUrl);
+      const statsData = await statsRes.json();
+      (statsData.items || []).forEach(item => {
+        statsMap[item.id] = item.statistics;
+      });
+    }
+
+    // Merge stats into each video item
+    data.items = (data.items || []).map(item => {
+      const vid = item.id && (item.id.videoId || item.id);
+      const stats = statsMap[vid] || {};
+      return {
+        ...item,
+        statistics: {
+          viewCount: stats.viewCount || 0,
+          likeCount: stats.likeCount || 0,
+          commentCount: stats.commentCount || 0
+        }
+      };
+    });
+
     return {
       statusCode: 200,
       headers,
