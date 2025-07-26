@@ -1,5 +1,10 @@
-// Netlify function for AI summarization using OpenRouter
+// Netlify function for AI summarization using OpenRouter with multiple models
 const axios = require('axios');
+
+// Cache for rate limiting
+const requestCache = new Map();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS_PER_MINUTE = 1;
 
 exports.handler = async (event, context) => {
   // Enable CORS
@@ -31,7 +36,7 @@ exports.handler = async (event, context) => {
     }
 
     console.log('Summarization request received:', { textLength: text.length, maxLength });
-
+  
     // Use OpenRouter API for summarization (if configured)
     const openRouterKey = process.env.OPENROUTER_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
@@ -69,12 +74,42 @@ exports.handler = async (event, context) => {
 
 async function generateOpenRouterSummary(text, maxLength, apiKey, headers) {
   try {
+    // Check rate limiting
+    const now = Date.now();
+    const cacheKey = 'openrouter_requests';
+    const requests = requestCache.get(cacheKey) || [];
+    
+    // Remove old requests outside the window
+    const recentRequests = requests.filter(time => now - time < RATE_LIMIT_WINDOW);
+    
+    if (recentRequests.length >= MAX_REQUESTS_PER_MINUTE) {
+      console.log('Rate limit reached, using simple summary...');
+      return await generateSimpleSummary(text, maxLength, headers);
+    }
+    
+    // Add current request to cache
+    recentRequests.push(now);
+    requestCache.set(cacheKey, recentRequests);
+    
     console.log('Making OpenRouter API call...');
+    
+    // Array of free models to rotate through
+    const freeModels = [
+      'deepseek/deepseek-r1-0528:free',
+      'meta-llama/llama-3.1-8b-instruct:free',
+      'anthropic/claude-3-haiku:free',
+      'google/gemini-flash-1.5:free',
+      'mistralai/mistral-7b-instruct:free'
+    ];
+    
+    // Select a random model to distribute load
+    const selectedModel = freeModels[Math.floor(Math.random() * freeModels.length)];
+    console.log('Using model:', selectedModel);
     
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: 'deepseek/deepseek-r1-0528:free',
+        model: selectedModel,
         messages: [
           {
             role: 'system',
@@ -82,7 +117,7 @@ async function generateOpenRouterSummary(text, maxLength, apiKey, headers) {
           },
           {
             role: 'user',
-            content: `Please provide a summary of this text (max ${maxLength} characters):\n\n${text}`
+            content: `Please provide a brief summary of this content (max ${maxLength} characters):\n\n${text}`
           }
         ],
         max_tokens: Math.floor(maxLength / 4),
@@ -108,6 +143,7 @@ async function generateOpenRouterSummary(text, maxLength, apiKey, headers) {
       body: JSON.stringify({
         summary,
         method: 'openrouter',
+        model: selectedModel,
         confidence: 'high'
       })
     };
@@ -115,7 +151,13 @@ async function generateOpenRouterSummary(text, maxLength, apiKey, headers) {
   } catch (error) {
     console.error('OpenRouter API Error:', error.response?.data || error.message);
     
-    // Fallback to simple summary
+    // If it's a rate limit error, use simple summary
+    if (error.response?.status === 429) {
+      console.log('Rate limit exceeded, falling back to simple summary');
+      return await generateSimpleSummary(text, maxLength, headers);
+    }
+    
+    // For other errors, also fallback to simple summary
     console.log('Falling back to simple summary due to OpenRouter error');
     return await generateSimpleSummary(text, maxLength, headers);
   }

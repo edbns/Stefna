@@ -617,11 +617,17 @@ class SpyDash {
     async generateContentSummaries() {
         if (!this.trendingContent || this.trendingContent.length === 0) return;
         
-        // Generate summaries for each content item
-        for (const item of this.trendingContent) {
+        // Generate summaries for each content item with delays to prevent rate limiting
+        for (let i = 0; i < this.trendingContent.length; i++) {
+            const item = this.trendingContent[i];
             const summaryElement = document.getElementById(`ai-summary-${item.videoId || item.id}`);
             if (summaryElement && summaryElement.textContent === 'Loading AI summary...') {
                 try {
+                    // Add delay between requests to prevent rate limiting
+                    if (i > 0) {
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+                    }
+                    
                     const summary = await this.generateAISummary(item.title, item.creator);
                     if (summaryElement) {
                         summaryElement.textContent = summary;
