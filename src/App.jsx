@@ -2,12 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from 'react-query';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ContentCard from './components/ContentCard';
-import { FiRefreshCw, FiTrendingUp, FiAlertCircle, FiMapPin, FiBarChart } from 'react-icons/fi';
+import AIChat from './components/AIChat';
+import Auth from './components/Auth';
+import { 
+  FiRefreshCw, 
+  FiTrendingUp, 
+  FiAlertCircle, 
+  FiMapPin, 
+  FiBarChart,
+  FiYoutube, 
+  FiMusic,
+  FiMessageCircle,
+  FiUsers,
+  FiGlobe
+} from 'react-icons/fi';
 import { getCachedLocation } from './utils/locationDetection';
-import { FiYoutube, FiMusic } from 'react-icons/fi';
 
 const queryClient = new QueryClient();
 
@@ -17,49 +31,46 @@ function AppContent() {
   const [activeSection, setActiveSection] = useState('trending');
   const [selectedPlatforms, setSelectedPlatforms] = useState(['youtube']);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState('US');
-  const [isDetectingLocation, setIsDetectingLocation] = useState(true);
+  const [selectedRegion, setSelectedRegion] = useState('worldwide');
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [detectedCountry, setDetectedCountry] = useState(null);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const { ref, inView } = useInView();
 
-  // Auto-detect user location on first load
+  // Check for existing user on load
   useEffect(() => {
-    const detectLocation = async () => {
-      try {
-        setIsDetectingLocation(true);
-        const location = await getCachedLocation();
-        if (location) {
-          setSelectedRegion(location);
-          setDetectedCountry(location);
-          console.log('Detected user location:', location);
-        }
-      } catch (error) {
-        console.error('Location detection failed:', error);
-        // Fallback to US if detection fails
-        setSelectedRegion('US');
-      } finally {
-        setIsDetectingLocation(false);
-      }
-    };
-
-    detectLocation();
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
   }, []);
+
+  // Infinite scroll effect
+  useEffect(() => {
+    if (inView && hasMore && !isLoading) {
+      setPage(prev => prev + 1);
+    }
+  }, [inView, hasMore, isLoading]);
 
   // Close sidebar when clicking outside on desktop
   const handleMainContentClick = () => {
-    if (sidebarOpen && window.innerWidth >= 1024) { // Only on desktop (lg breakpoint)
+    if (sidebarOpen && window.innerWidth >= 1024) {
       setSidebarOpen(false);
     }
   };
 
   // Fetch trending content
   const { data: trendingData, isLoading, error, refetch } = useQuery(
-    ['trending', selectedPlatforms, selectedRegion],
+    ['trending', selectedPlatforms, selectedRegion, page],
     async () => {
       const results = [];
       
       if (selectedPlatforms.includes('youtube')) {
         try {
-          // Use 'US' for API call if worldwide is selected
           const apiRegion = selectedRegion === 'worldwide' ? 'US' : selectedRegion;
           const response = await fetch(`/api/youtube-trending?region=${apiRegion}&maxResults=20`);
           const data = await response.json();
@@ -71,15 +82,34 @@ function AppContent() {
         }
       }
 
-      // Add other platforms here when APIs are available
-      // TikTok, Twitter, Instagram, etc.
+      // Generate mock data for infinite scroll demo
+      if (page > 1) {
+        const mockData = Array.from({ length: 10 }, (_, i) => ({
+          id: `mock-${page}-${i}`,
+          title: `Mock Trending Video ${page}-${i}`,
+          channelTitle: 'Mock Channel',
+          publishedAt: new Date().toISOString(),
+          viewCount: Math.floor(Math.random() * 1000000),
+          likeCount: Math.floor(Math.random() * 100000),
+          commentCount: Math.floor(Math.random() * 10000),
+          thumbnail: 'https://via.placeholder.com/320x180/353437/FFFFFF?text=Mock+Video',
+          platform: 'youtube',
+          tags: ['mock', 'demo', 'trending'],
+          duration: 'PT10M30S'
+        }));
+        results.push(...mockData);
+      }
+
+      if (page >= 3) {
+        setHasMore(false);
+      }
 
       return results;
     },
     {
-      refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-      staleTime: 2 * 60 * 1000, // Consider data stale after 2 minutes
-      enabled: !isDetectingLocation, // Don't fetch until location is detected
+      refetchInterval: 5 * 60 * 1000,
+      staleTime: 2 * 60 * 1000,
+      enabled: !isDetectingLocation,
     }
   );
 
@@ -91,8 +121,18 @@ function AppContent() {
   ) || [];
 
   const handleShare = (shareData) => {
-    // Show toast notification
     console.log('Shared:', shareData);
+  };
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setAuthOpen(false);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
   };
 
   const renderContent = () => {
@@ -100,66 +140,88 @@ function AppContent() {
       case 'dashboard':
         return (
           <div className="space-y-6">
-            {/* Location Detection Status */}
-            {detectedCountry && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center space-x-2">
-                  <FiMapPin className="text-blue-600 dark:text-blue-400" size={16} />
-                  <span className="text-sm text-blue-700 dark:text-blue-300">
-                    Location: <strong>{t(`countries.${detectedCountry}`)}</strong>
-                  </span>
-                </div>
-              </div>
-            )}
+            {/* Welcome Section */}
+            <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
+              <h1 className="text-3xl font-bold text-white mb-2">Welcome to SocialSpy</h1>
+              <p className="text-gray-300 mb-4">Your comprehensive social media intelligence platform</p>
+              {!user && (
+                <button
+                  onClick={() => setAuthOpen(true)}
+                  className="bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
+                >
+                  Get Started
+                </button>
+              )}
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('sidebar.trending')}</p>
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                      {filteredContent.length}
+                    <p className="text-gray-400 text-sm">Total Views</p>
+                    <p className="text-2xl font-bold text-white">
+                      {filteredContent.reduce((sum, item) => sum + (item.viewCount || 0), 0).toLocaleString()}
                     </p>
                   </div>
-                  <FiTrendingUp className="text-blue-600 dark:text-blue-400" size={24} />
+                  <FiTrendingUp className="text-gray-400" size={24} />
                 </div>
               </div>
               
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
+              <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('sidebar.platforms')}</p>
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                      {selectedPlatforms.length}
-                    </p>
+                    <p className="text-gray-400 text-sm">Platforms</p>
+                    <p className="text-2xl font-bold text-white">{selectedPlatforms.length}</p>
                   </div>
-                  <div className="text-blue-600 dark:text-blue-400 text-2xl">⚡</div>
+                  <FiYoutube className="text-gray-400" size={24} />
                 </div>
               </div>
               
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
+              <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('sidebar.region')}</p>
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                      {t(`countries.${selectedRegion}`)}
+                    <p className="text-gray-400 text-sm">Region</p>
+                    <p className="text-2xl font-bold text-white">
+                      {selectedRegion === 'worldwide' ? '🌍' : `🇺🇸`}
                     </p>
                   </div>
-                  <div className="text-blue-600 dark:text-blue-400 text-2xl">🌐</div>
+                  <FiGlobe className="text-gray-400" size={24} />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm">AI Chat</p>
+                    <p className="text-2xl font-bold text-white">Ready</p>
+                  </div>
+                  <FiMessageCircle className="text-gray-400" size={24} />
                 </div>
               </div>
             </div>
             
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('sidebar.dashboard')}</h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                {filteredContent.length} {t('post.views')} {selectedPlatforms.length} {t('sidebar.platforms')}
-                {detectedCountry && (
-                  <span className="block mt-2 text-blue-600 dark:text-blue-400">
-                    Region: {t(`countries.${detectedCountry}`)}
-                  </span>
-                )}
-              </p>
+            {/* Data Collection Overview */}
+            <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
+              <h2 className="text-xl font-bold text-white mb-4">Data Collection Overview</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white mb-1">📊</div>
+                  <p className="text-sm text-gray-400">Analytics</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white mb-1">📈</div>
+                  <p className="text-sm text-gray-400">Trends</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white mb-1">👥</div>
+                  <p className="text-sm text-gray-400">Audience</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white mb-1">🎯</div>
+                  <p className="text-sm text-gray-400">Insights</p>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -171,210 +233,252 @@ function AppContent() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {activeSection === 'trending' ? t('sidebar.trending') : 
-                   activeSection === 'youtube' ? t('sidebar.youtube') :
-                   t('sidebar.tiktok')}
+                <h1 className="text-3xl font-bold text-white">
+                  {activeSection === 'trending' ? 'Trending' : 
+                   activeSection === 'youtube' ? 'YouTube' :
+                   'TikTok'}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-gray-400">
                   {selectedRegion === 'worldwide' ? (
-                    <span>Global <span className="text-blue-600 dark:text-blue-400">{t('countries.worldwide')}</span></span>
+                    <span>Global <span className="text-gray-300">Worldwide</span></span>
                   ) : (
-                    <span>Location: <span className="text-blue-600 dark:text-blue-400">{t(`countries.${selectedRegion}`)}</span></span>
-                  )} • {filteredContent.length} {t('post.views')}
+                    <span>Location: <span className="text-gray-300">United States</span></span>
+                  )} • {filteredContent.length} videos
                 </p>
               </div>
               
-              <button
-                onClick={() => refetch()}
-                disabled={isLoading}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
-              >
-                <FiRefreshCw className={isLoading ? 'animate-spin' : ''} />
-                <span>Refresh</span>
-              </button>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setAiChatOpen(true)}
+                  className="bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2"
+                >
+                  <FiMessageCircle size={16} />
+                  <span>AI Chat</span>
+                </button>
+                
+                <button
+                  onClick={() => refetch()}
+                  disabled={isLoading}
+                  className="bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-50 flex items-center space-x-2"
+                >
+                  <FiRefreshCw className={isLoading ? 'animate-spin' : ''} size={16} />
+                  <span>Refresh</span>
+                </button>
+              </div>
             </div>
 
-            {/* Location Detection Status */}
-            {isDetectingLocation && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin w-4 h-4 border border-blue-600 border-t-transparent rounded-full"></div>
-                  <span className="text-blue-700 dark:text-blue-300">Detecting your location...</span>
-                </div>
-              </div>
-            )}
-
             {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <div className="bg-gradient-to-r from-red-900/20 to-red-800/20 border border-red-700 rounded-2xl p-4">
                 <div className="flex items-center space-x-2">
-                  <FiAlertCircle className="text-red-600 dark:text-red-400" />
-                  <p className="text-red-700 dark:text-red-400">
+                  <FiAlertCircle className="text-red-400" />
+                  <p className="text-red-300">
                     Failed to load trending content. Please check your API configuration.
                   </p>
                 </div>
               </div>
             )}
 
-            {isLoading || isDetectingLocation ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-4 animate-pulse border border-gray-200 dark:border-gray-700">
-                    <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg mb-4"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+            {isLoading && page === 1 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl border border-gray-700 p-4 animate-pulse">
+                    <div className="bg-gray-700 h-32 rounded-lg mb-4"></div>
+                    <div className="bg-gray-700 h-4 rounded mb-2"></div>
+                    <div className="bg-gray-700 h-3 rounded w-2/3"></div>
                   </div>
                 ))}
               </div>
             ) : (
-              <motion.div 
-                layout
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-              >
-                <AnimatePresence>
-                  {filteredContent.map((item) => (
-                    <ContentCard
-                      key={item.id}
-                      content={item}
-                      onShare={handleShare}
-                    />
-                  ))}
-                </AnimatePresence>
-              </motion.div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredContent.map((item, index) => (
+                  <ContentCard
+                    key={item.id}
+                    item={item}
+                    onShare={handleShare}
+                    index={index}
+                  />
+                ))}
+              </div>
             )}
 
-            {!isLoading && !isDetectingLocation && filteredContent.length === 0 && (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  {t('sidebar.search')}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Try adjusting your filters or check back later
-                </p>
+            {/* Infinite Scroll Loader */}
+            {hasMore && (
+              <div ref={ref} className="infinite-scroll-loader">
+                {isLoading && page > 1 ? (
+                  <div className="flex items-center space-x-2 text-gray-400">
+                    <div className="animate-spin w-4 h-4 border border-gray-600 border-t-transparent rounded-full"></div>
+                    <span>Loading more...</span>
+                  </div>
+                ) : (
+                  <div className="text-gray-400">Scroll for more content</div>
+                )}
+              </div>
+            )}
+
+            {!hasMore && filteredContent.length > 0 && (
+              <div className="text-center text-gray-400 py-8">
+                You've reached the end of trending content
               </div>
             )}
           </div>
         );
-        
+
+      case 'analytics':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-white">Analytics</h1>
+                <p className="text-gray-400">Comprehensive data insights and metrics</p>
+              </div>
+              <button
+                onClick={() => setAiChatOpen(true)}
+                className="bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2"
+              >
+                <FiMessageCircle size={16} />
+                <span>AI Insights</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
+                <h3 className="text-xl font-bold text-white mb-4">Engagement Metrics</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Total Views</span>
+                    <span className="text-white font-semibold">2.4M</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Likes</span>
+                    <span className="text-white font-semibold">156K</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Comments</span>
+                    <span className="text-white font-semibold">23K</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Shares</span>
+                    <span className="text-white font-semibold">8.9K</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
+                <h3 className="text-xl font-bold text-white mb-4">Platform Distribution</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">YouTube</span>
+                    <span className="text-white font-semibold">65%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">TikTok</span>
+                    <span className="text-white font-semibold">25%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Twitter</span>
+                    <span className="text-white font-semibold">7%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Instagram</span>
+                    <span className="text-white font-semibold">3%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
       case 'settings':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('sidebar.settings')}</h1>
+            <h1 className="text-3xl font-bold text-white">Settings</h1>
             
-            {/* Location Settings */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Location Detection</h2>
-              <div className="space-y-3">
-                <p className="text-gray-600 dark:text-gray-400">
-                  SpyDash automatically detects your location to show trending content relevant to your region.
-                </p>
-                {detectedCountry && (
-                  <div className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <FiMapPin className="text-blue-600 dark:text-blue-400" size={16} />
-                    <span className="text-blue-700 dark:text-blue-300">
-                      Detected Location: <strong>{t(`countries.${detectedCountry}`)}</strong>
-                    </span>
+            <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
+              <h2 className="text-xl font-bold text-white mb-4">Account Settings</h2>
+              {user ? (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-gray-700 to-gray-600 rounded-full flex items-center justify-center">
+                      <FiUsers className="text-white" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{user.email}</p>
+                      <p className="text-gray-400 text-sm">Logged in</p>
+                    </div>
                   </div>
-                )}
-                <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">How it works:</h4>
-                  <ul className="space-y-1">
-                    <li>Browser location (with your permission)</li>
-                    <li>IP-based detection as backup</li>
-                    <li>Timezone analysis for accuracy</li>
-                    <li>Cached for 24 hours for performance</li>
-                  </ul>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white px-4 py-2 rounded-lg transition-all duration-200"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-gray-400">Sign in to access advanced features</p>
+                  <button
+                    onClick={() => setAuthOpen(true)}
+                    className="bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white px-4 py-2 rounded-lg transition-all duration-200"
+                  >
+                    Sign In
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
+              <h2 className="text-xl font-bold text-white mb-4">Data Sources</h2>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">YouTube Data API</span>
+                  <span className="text-green-400">Connected</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">TikTok API</span>
+                  <span className="text-yellow-400">Coming Soon</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Twitter API</span>
+                  <span className="text-yellow-400">Coming Soon</span>
                 </div>
               </div>
             </div>
 
-            {/* Data Sources */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Data Sources</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                SpyDash aggregates trending content from multiple platforms using official APIs and AI-powered insights.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <div className="flex items-center gap-3 mb-2">
-                    <FiYoutube className="text-red-600 text-2xl" />
-                    <h3 className="font-semibold text-gray-900 dark:text-white">YouTube</h3>
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">Active</span>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Official YouTube Data API v3 for trending videos, views, and metadata.</p>
-                </div>
-                
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">AI</span>
-                    </div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">AI Insights</h3>
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">Active</span>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">OpenRouter AI for intelligent content summaries and trend analysis.</p>
-                </div>
-                
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 opacity-75">
-                  <div className="flex items-center gap-3 mb-2">
-                    <FiMusic className="text-black dark:text-white text-2xl" />
-                    <h3 className="font-semibold text-gray-900 dark:text-white">TikTok</h3>
-                    <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs rounded-full">Coming Soon</span>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">TikTok trending content and viral videos integration.</p>
-                </div>
-                
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 opacity-75">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-6 h-6 bg-blue-400 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">𝕏</span>
-                    </div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Twitter</h3>
-                    <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs rounded-full">Coming Soon</span>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Twitter trending topics and viral tweets analysis.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Privacy & Data */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Privacy & Data</h2>
+            <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
+              <h2 className="text-xl font-bold text-white mb-4">Privacy & Data</h2>
               <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <span className="text-blue-600 dark:text-blue-400 text-lg">🛡</span>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white">No Personal Data Collection</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">We only detect your location for content relevance. No personal information is stored.</p>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Data Collection</span>
+                  <span className="text-green-400">Enabled</span>
                 </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-blue-600 dark:text-blue-400 text-lg">🌐</span>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white">Public Data Only</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">All content shown is publicly available trending data from official platform APIs.</p>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Analytics</span>
+                  <span className="text-green-400">Enabled</span>
                 </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-blue-600 dark:text-blue-400 text-lg">⚡</span>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white">Real-Time Updates</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Content refreshes every 5 minutes to show the latest trending topics and videos.</p>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">AI Processing</span>
+                  <span className="text-green-400">Enabled</span>
                 </div>
               </div>
             </div>
           </div>
         );
-        
+
       default:
-        return null;
+        return (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-white mb-4">Section Not Found</h2>
+            <p className="text-gray-400">The requested section is not available.</p>
+          </div>
+        );
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div 
+      className="min-h-screen bg-gradient-primary"
+      onClick={handleMainContentClick}
+    >
       <Sidebar
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
@@ -388,21 +492,36 @@ function AppContent() {
         setSelectedRegion={setSelectedRegion}
       />
       
-      <div 
-        className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-[280px]' : 'lg:ml-16'} ${sidebarOpen ? 'lg:cursor-pointer' : ''} relative`}
-        onClick={handleMainContentClick}
-      >
-        {/* Subtle overlay when sidebar is open on desktop */}
-        {sidebarOpen && (
-          <div className="hidden lg:block absolute inset-0 bg-black bg-opacity-5 dark:bg-white dark:bg-opacity-5 z-10 pointer-events-none" />
-        )}
+      <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-80' : 'lg:ml-20'}`}>
+        <Header 
+          sidebarOpen={sidebarOpen} 
+          setSidebarOpen={setSidebarOpen}
+          user={user}
+          onAuthClick={() => setAuthOpen(true)}
+        />
         
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        
-        <main className="p-6 relative z-20">
+        <main className="p-6 lg:p-8">
           {renderContent()}
         </main>
       </div>
+
+      {/* AI Chat */}
+      <AIChat isOpen={aiChatOpen} onClose={() => setAiChatOpen(false)} />
+      
+      {/* Auth Modal */}
+      <Auth isOpen={authOpen} onClose={() => setAuthOpen(false)} onLogin={handleLogin} />
+      
+      {/* Toast Notifications */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: '#353437',
+            color: '#FFFFFF',
+            border: '1px solid #4F4E52',
+          },
+        }}
+      />
     </div>
   );
 }

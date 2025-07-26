@@ -1,102 +1,129 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { FiMenu, FiSun, FiMoon } from 'react-icons/fi';
+import { 
+  FiMenu, 
+  FiUser, 
+  FiLogOut, 
+  FiSettings, 
+  FiBell, 
+  FiMessageCircle, 
+  FiTrendingUp, 
+  FiActivity 
+} from 'react-icons/fi';
 
-const Header = ({ onMenuClick }) => {
+const Header = ({ sidebarOpen, setSidebarOpen, user, onAuthClick }) => {
   const { t, i18n } = useTranslation();
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    // Check if dark mode is saved in localStorage
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    if (isDark) {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    } else {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    }
-  };
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const toggleLanguage = () => {
-    const languages = ['en', 'fr'];
-    const currentIndex = languages.indexOf(i18n.language);
-    const nextIndex = (currentIndex + 1) % languages.length;
-    const newLang = languages[nextIndex];
+    const newLang = i18n.language === 'en' ? 'ar' : 'en';
     i18n.changeLanguage(newLang);
   };
 
-  const getLanguageData = () => {
-    const langData = {
-      en: { label: 'EN' },
-      fr: { label: 'FR' }
-    };
-    return langData[i18n.language] || langData.en;
-  };
-
-  const currentLang = getLanguageData();
-
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
-      <div className="px-6 py-4">
-        <div className="flex items-center justify-between">
+    <header className="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 px-6 py-4">
+      <div className="flex items-center justify-between">
+        {/* Left side - Menu button and title */}
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white lg:hidden"
+            title="Toggle Menu"
+          >
+            <FiMenu size={20} />
+          </button>
           
-          {/* Left side - Menu button for mobile */}
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={onMenuClick}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              <FiMenu size={20} />
-            </button>
-            
-            <div className="hidden lg:block">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                {t('title')} - <span className="text-blue-600 dark:text-blue-400">{t('subtitle')}</span>
-              </h1>
-            </div>
+          <div className="hidden lg:block">
+            <h1 className="text-xl font-bold text-white">SocialSpy</h1>
+            <p className="text-xs text-gray-400">Data Intelligence Platform</p>
           </div>
+        </div>
 
-          {/* Right side - Controls */}
-          <div className="flex items-center space-x-4">
-            
-            {/* Language Toggle */}
-            <button
-              onClick={toggleLanguage}
-              className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
-              title="Toggle Language"
-            >
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {currentLang.label}
-              </span>
-            </button>
+        {/* Center - Status indicator */}
+        <div className="flex items-center space-x-2">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <span className="text-sm text-gray-400">Live</span>
+        </div>
 
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700"
-              title="Toggle Theme"
-            >
-              {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
-            </button>
+        {/* Right side - Actions */}
+        <div className="flex items-center space-x-3">
+          {/* Language Toggle */}
+          <button
+            onClick={toggleLanguage}
+            className="px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            {i18n.language === 'en' ? 'العربية' : 'English'}
+          </button>
 
-            {/* Status Indicator */}
-            <div className="flex items-center space-x-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-green-700 dark:text-green-400 font-medium">
-                Live
-              </span>
-            </div>
+          {/* Notifications */}
+          <button className="p-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white relative">
+            <FiBell size={20} />
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+              3
+            </span>
+          </button>
+
+          {/* AI Chat Button */}
+          <button className="p-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white">
+            <FiMessageCircle size={20} />
+          </button>
+
+          {/* User Menu */}
+          <div className="relative">
+            {user ? (
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white"
+              >
+                <div className="w-8 h-8 bg-gradient-to-r from-gray-700 to-gray-600 rounded-full flex items-center justify-center">
+                  <FiUser size={16} />
+                </div>
+                <span className="hidden md:block text-sm font-medium">{user.email}</span>
+              </button>
+            ) : (
+              <button
+                onClick={onAuthClick}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white rounded-lg transition-all duration-200 font-medium text-sm"
+              >
+                <FiUser size={16} />
+                <span>Sign In</span>
+              </button>
+            )}
+
+            {/* User Dropdown */}
+            <AnimatePresence>
+              {showUserMenu && user && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute right-0 mt-2 w-48 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 rounded-lg shadow-2xl z-50"
+                >
+                  <div className="p-4 border-b border-gray-700">
+                    <p className="text-white font-medium">{user.email}</p>
+                    <p className="text-gray-400 text-sm">Premium User</p>
+                  </div>
+                  
+                  <div className="p-2">
+                    <button className="w-full flex items-center space-x-2 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+                      <FiSettings size={16} />
+                      <span>Settings</span>
+                    </button>
+                    
+                    <button className="w-full flex items-center space-x-2 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+                      <FiActivity size={16} />
+                      <span>Activity</span>
+                    </button>
+                    
+                    <button className="w-full flex items-center space-x-2 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors">
+                      <FiLogOut size={16} />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
