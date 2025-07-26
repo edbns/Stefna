@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSend, FiMessageCircle, FiX, FiBot, FiUser } from 'react-icons/fi';
+import { FiSend, FiMessageCircle, FiX, FiMessageSquare, FiUser } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const AIChat = ({ isOpen, onClose }) => {
@@ -129,7 +129,7 @@ const AIChat = ({ isOpen, onClose }) => {
           <div className="flex items-center justify-between p-4 border-b border-gray-700">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <FiBot className="text-white" size={16} />
+                <FiMessageSquare className="text-white" size={16} />
               </div>
               <div>
                 <h3 className="text-white font-semibold">AI Assistant</h3>
@@ -162,7 +162,7 @@ const AIChat = ({ isOpen, onClose }) => {
                     {message.type === 'user' ? (
                       <FiUser className="text-white" size={12} />
                     ) : (
-                      <FiBot className="text-white" size={12} />
+                      <FiMessageSquare className="text-white" size={12} />
                     )}
                   </div>
                   <div className={`rounded-lg px-3 py-2 ${
@@ -185,7 +185,7 @@ const AIChat = ({ isOpen, onClose }) => {
               >
                 <div className="flex items-start space-x-2">
                   <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <FiBot className="text-white" size={12} />
+                    <FiMessageSquare className="text-white" size={12} />
                   </div>
                   <div className="bg-gradient-to-r from-gray-700 to-gray-800 rounded-lg px-3 py-2">
                     <div className="flex space-x-1">
