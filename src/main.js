@@ -95,7 +95,7 @@ class SpyDash {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    query: 'trending technology',
+                    searchQuery: 'trending technology',
                     maxResults: 10
                 })
             });
@@ -113,7 +113,8 @@ class SpyDash {
                     views: this.formatNumber(item.statistics?.viewCount || 0),
                     thumbnail: 'icon-video',
                     trending: true,
-                    videoId: item.id?.videoId || item.id
+                    videoId: item.id?.videoId || item.id,
+                    category: 'technology'
                 })) : [];
             } else {
                 console.error('Failed to fetch YouTube data:', response.status);
@@ -137,7 +138,8 @@ class SpyDash {
                 creator: 'TechGuru',
                 views: '2.1M',
                 thumbnail: 'icon-video',
-                trending: true
+                trending: true,
+                category: 'technology'
             },
             {
                 id: 2,
@@ -146,7 +148,8 @@ class SpyDash {
                 creator: 'CodeMaster',
                 views: '1.8M',
                 thumbnail: 'icon-mobile',
-                trending: true
+                trending: true,
+                category: 'programming'
             },
             {
                 id: 3,
@@ -155,7 +158,8 @@ class SpyDash {
                 creator: 'AIExpert',
                 views: '1.5M',
                 thumbnail: 'icon-ai',
-                trending: true
+                trending: true,
+                category: 'ai'
             },
             {
                 id: 4,
@@ -164,7 +168,8 @@ class SpyDash {
                 creator: 'DesignPro',
                 views: '950K',
                 thumbnail: 'icon-camera',
-                trending: true
+                trending: true,
+                category: 'design'
             }
         ];
     }
@@ -178,9 +183,8 @@ class SpyDash {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    query: 'analytics dashboard',
-                    maxResults: 5,
-                    type: 'analytics'
+                    searchQuery: 'analytics dashboard',
+                    maxResults: 5
                 })
             });
 
@@ -918,7 +922,7 @@ class SpyDash {
                                     stroke-dashoffset="${-this.aiInsights.sentiment.positive * 5.02}" transform="rotate(-90 100 100)"/>
                                 <circle cx="100" cy="100" r="80" fill="none" stroke="#F44336" stroke-width="40" 
                                     stroke-dasharray="${this.aiInsights.sentiment.negative * 5.02} ${(100 - this.aiInsights.sentiment.negative) * 5.02}" 
-                                    stroke-dashoffset="${-((this.aiInsights.sentiment.positive + this.aiInsights.sentiment.neutral) / total) * 502.4}" transform="rotate(-90 100 100)"/>
+                                    stroke-dashoffset="${-((this.aiInsights.sentiment.positive + this.aiInsights.sentiment.neutral) / (this.aiInsights.sentiment.positive + this.aiInsights.sentiment.neutral + this.aiInsights.sentiment.negative)) * 502.4}" transform="rotate(-90 100 100)"/>
                             </svg>
                         </div>
                         <div class="sentiment-breakdown">
@@ -1390,11 +1394,15 @@ class SpyDash {
     async performSearch(query) {
         if (!query.trim()) return;
         
+        if (!this.trendingContent) {
+            this.trendingContent = [];
+        }
+        
         // Filter content based on search query
         const filteredContent = this.trendingContent.filter(item => 
-            item.title.toLowerCase().includes(query.toLowerCase()) ||
-            item.creator.toLowerCase().includes(query.toLowerCase()) ||
-            item.platform.toLowerCase().includes(query.toLowerCase())
+            item.title && item.title.toLowerCase().includes(query.toLowerCase()) ||
+            item.creator && item.creator.toLowerCase().includes(query.toLowerCase()) ||
+            item.platform && item.platform.toLowerCase().includes(query.toLowerCase())
         );
         
         // Try to get AI insights for the search query
@@ -1447,8 +1455,12 @@ class SpyDash {
             return;
         }
         
+        if (!this.trendingContent) {
+            this.trendingContent = [];
+        }
+        
         const filteredContent = this.trendingContent.filter(item => 
-            item.platform.toLowerCase() === platform.toLowerCase()
+            item.platform && item.platform.toLowerCase() === platform.toLowerCase()
         );
         
         this.renderFilteredContent(filteredContent, platform);
@@ -1460,8 +1472,12 @@ class SpyDash {
             return;
         }
         
+        if (!this.trendingContent) {
+            this.trendingContent = [];
+        }
+        
         const filteredContent = this.trendingContent.filter(item => 
-            item.category.toLowerCase() === category.toLowerCase()
+            item.category && item.category.toLowerCase() === category.toLowerCase()
         );
         
         this.renderFilteredContent(filteredContent, category);
