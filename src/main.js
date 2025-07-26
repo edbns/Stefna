@@ -72,7 +72,7 @@ class SpyDash {
         this.render();
         // Attach event listeners
         setTimeout(() => {
-            this.attachDashboardEventListeners();
+            this.attachEventListeners();
         }, 100);
         console.log('SpyDash running');
     }
