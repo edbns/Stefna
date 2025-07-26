@@ -2656,6 +2656,119 @@ class SpyDash {
         // Render the creators content
         this.renderTrendingCreators();
     }
+
+    attachAuthEventListeners() {
+        const signinBtn = document.getElementById('signinBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const sendOtpBtn = document.getElementById('sendOtpBtn');
+        const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+        const closeAuthBtn = document.querySelector('.auth-close');
+
+        if (signinBtn) {
+            signinBtn.addEventListener('click', () => this.sendOTP());
+        }
+        if (signupBtn) {
+            signupBtn.addEventListener('click', () => this.signup());
+        }
+        if (sendOtpBtn) {
+            sendOtpBtn.addEventListener('click', () => this.sendOTP());
+        }
+        if (verifyOtpBtn) {
+            verifyOtpBtn.addEventListener('click', () => this.verifyOTP());
+        }
+        if (closeAuthBtn) {
+            closeAuthBtn.addEventListener('click', () => this.hideAuthModal());
+        }
+
+        // Close modal on outside click
+        const authModal = document.getElementById('authModal');
+        if (authModal) {
+            authModal.addEventListener('click', (e) => {
+                if (e.target === authModal) {
+                    this.hideAuthModal();
+                }
+            });
+        }
+    }
+
+    hideAuthModal() {
+        const modal = document.getElementById('authModal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    renderAnalyticsContent() {
+        const analyticsGrid = document.getElementById('analyticsGrid');
+        if (!analyticsGrid) return;
+
+        if (this.analyticsData) {
+            analyticsGrid.innerHTML = `
+                <div class="analytics-overview">
+                    <div class="stat-card">
+                        <h3>Total Views</h3>
+                        <p>${this.formatNumber(this.analyticsData.totalViews)}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Likes</h3>
+                        <p>${this.formatNumber(this.analyticsData.totalLikes)}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Comments</h3>
+                        <p>${this.formatNumber(this.analyticsData.totalComments)}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Engagement Rate</h3>
+                        <p>${this.analyticsData.engagement}%</p>
+                    </div>
+                </div>
+                <div class="charts-section">
+                    <div class="chart-container">
+                        <h3>Platform Distribution</h3>
+                        <div id="platformChart"></div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Performance Trends</h3>
+                        <div id="performanceChart"></div>
+                    </div>
+                </div>
+            `;
+        } else {
+            analyticsGrid.innerHTML = '<div class="no-data">No analytics data available.</div>';
+        }
+    }
+
+    renderInsightsContent() {
+        const insightsGrid = document.getElementById('insightsGrid');
+        if (!insightsGrid) return;
+
+        if (this.insightsData) {
+            insightsGrid.innerHTML = `
+                <div class="insights-overview">
+                    <div class="insight-card">
+                        <h3>Trend Analysis</h3>
+                        <p>${this.insightsData.trendAnalysis || 'No trend data available'}</p>
+                    </div>
+                    <div class="insight-card">
+                        <h3>Sentiment Analysis</h3>
+                        <p>${this.insightsData.sentimentAnalysis || 'No sentiment data available'}</p>
+                    </div>
+                    <div class="insight-card">
+                        <h3>Predictions</h3>
+                        <p>${this.insightsData.predictions || 'No prediction data available'}</p>
+                    </div>
+                </div>
+                <div class="recommendations-section">
+                    <h3>AI Recommendations</h3>
+                    <div class="recommendations-grid">
+                        ${this.renderRecommendations()}
+                    </div>
+                </div>
+            `;
+        } else {
+            insightsGrid.innerHTML = '<div class="no-data">No insights data available.</div>';
+        }
+    }
 }
 
 // Initialize the application
