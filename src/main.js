@@ -412,6 +412,7 @@ class SpyDash {
             `;
             document.head.appendChild(style);
         }
+        
         // Create modal element if it doesn't exist
         let modal = document.getElementById('aiChatModal');
         if (!modal) {
@@ -421,11 +422,12 @@ class SpyDash {
             modal.style.display = 'none';
             document.body.appendChild(modal);
         }
+        
         modal.innerHTML = `
             <div class="ai-chat-content">
                 <div class="ai-chat-header">
-                    <h3>AI Concierge</h3>
-                    <button class="close-btn" id="closeAiChat">
+                    <h3><i class="icon-concierge"></i> AI Concierge</h3>
+                    <button class="close-btn" id="closeAiChat" title="Close chat">
                         <i class="icon-close"></i>
                     </button>
                 </div>
@@ -442,13 +444,16 @@ class SpyDash {
                     </div>
                     <div class="ai-chat-input">
                         <input type="text" id="aiChatInput" placeholder="Ask me anything...">
-                        <button id="aiChatSend">
+                        <button id="aiChatSend" title="Send message">
                             <i class="icon-send"></i>
                         </button>
                     </div>
                 </div>
             </div>
         `;
+        
+        // Attach event listeners immediately after creating the modal
+        this.attachAiChatEventListeners();
     }
 
     renderAuthModal() {
@@ -1299,39 +1304,7 @@ class SpyDash {
             });
         }
 
-        // AI Chat functionality
-        const aiChatModal = document.getElementById('aiChatModal');
-        const aiChatInput = document.getElementById('aiChatInput');
-        const aiChatSendBtn = document.getElementById('aiChatSend');
-        const aiChatCloseBtn = document.getElementById('closeAiChat');
-        
-        if (aiChatModal && aiChatInput && aiChatSendBtn) {
-            // Send message on button click
-            aiChatSendBtn.addEventListener('click', () => {
-                this.sendAiMessage();
-            });
-            
-            // Send message on Enter key
-            aiChatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.sendAiMessage();
-                }
-            });
-            
-            // Close modal
-            if (aiChatCloseBtn) {
-                aiChatCloseBtn.addEventListener('click', () => {
-                    aiChatModal.style.display = 'none';
-                });
-            }
-            
-            // Close modal when clicking outside
-            aiChatModal.addEventListener('click', (e) => {
-                if (e.target === aiChatModal) {
-                    aiChatModal.style.display = 'none';
-                }
-            });
-        }
+        // AI Chat functionality is now handled in attachAiChatEventListeners()
 
         // Floating AI Chat Button
         const conciergeBtn = document.querySelector('.concierge-btn');
@@ -2098,6 +2071,48 @@ class SpyDash {
             },
             trends: []
         };
+    }
+
+    attachAiChatEventListeners() {
+        const aiChatModal = document.getElementById('aiChatModal');
+        const aiChatInput = document.getElementById('aiChatInput');
+        const aiChatSendBtn = document.getElementById('aiChatSend');
+        const aiChatCloseBtn = document.getElementById('closeAiChat');
+        
+        if (aiChatModal && aiChatInput && aiChatSendBtn) {
+            // Send message on button click
+            aiChatSendBtn.addEventListener('click', () => {
+                this.sendAiMessage();
+            });
+            
+            // Send message on Enter key
+            aiChatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.sendAiMessage();
+                }
+            });
+            
+            // Close modal with close button
+            if (aiChatCloseBtn) {
+                aiChatCloseBtn.addEventListener('click', () => {
+                    aiChatModal.style.display = 'none';
+                });
+            }
+            
+            // Close modal when clicking outside
+            aiChatModal.addEventListener('click', (e) => {
+                if (e.target === aiChatModal) {
+                    aiChatModal.style.display = 'none';
+                }
+            });
+            
+            // Close modal with Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && aiChatModal.style.display === 'flex') {
+                    aiChatModal.style.display = 'none';
+                }
+            });
+        }
     }
 }
 
