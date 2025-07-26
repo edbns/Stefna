@@ -718,7 +718,9 @@ class SpyDash {
     }
 
     formatNumber(num) {
-        if (num >= 1000000) {
+        if (num >= 1000000000) {
+            return (num / 1000000000).toFixed(1) + 'B';
+        } else if (num >= 1000000) {
             return (num / 1000000).toFixed(1) + 'M';
         } else if (num >= 1000) {
             return (num / 1000).toFixed(1) + 'K';
@@ -1395,35 +1397,36 @@ class SpyDash {
     }
 
     attachEventListeners() {
+        // Sidebar toggle
+        const sidebarToggle = document.querySelector('.sidebar-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+            });
+        }
+
         // Navigation
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
             item.addEventListener('click', () => {
+                const section = item.dataset.section;
+                this.showSection(section);
+                
+                // Update active state
                 navItems.forEach(nav => nav.classList.remove('active'));
                 item.classList.add('active');
-                this.showSection(item.dataset.section);
             });
         });
 
-        // Platform filters
-        const platformBtns = document.querySelectorAll('.platform-btn');
-        platformBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                platformBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.filterByPlatform(btn.dataset.platform);
+        // Auth button
+        const authBtn = document.querySelector('.auth-btn');
+        if (authBtn) {
+            authBtn.addEventListener('click', () => {
+                this.showAuthModal();
             });
-        });
-
-        // Category filters
-        const categoryBtns = document.querySelectorAll('.category-btn');
-        categoryBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                categoryBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.filterByCategory(btn.dataset.category);
-            });
-        });
+        }
 
         // Search functionality
         const searchInput = document.getElementById('searchInput');
@@ -1431,136 +1434,120 @@ class SpyDash {
         
         if (searchInput && searchBtn) {
             searchBtn.addEventListener('click', () => {
-                this.performSearch(searchInput.value);
+                const query = searchInput.value.trim();
+                if (query) {
+                    this.performSearch(query);
+                }
             });
             
             searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    this.performSearch(searchInput.value);
-                }
-            });
-        }
-
-        // Authentication
-        const showAuthModal = document.getElementById('showAuthModal');
-        if (showAuthModal) {
-            showAuthModal.addEventListener('click', () => {
-                this.showAuthModal();
-            });
-        }
-
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                this.logout();
-            });
-        }
-
-        // AI Chat functionality is now handled in attachAiChatEventListeners()
-
-        // Floating AI Chat Button
-        const conciergeBtn = document.querySelector('.concierge-btn');
-        if (conciergeBtn) {
-            conciergeBtn.addEventListener('click', () => {
-                const aiChatModal = document.getElementById('aiChatModal');
-                if (aiChatModal) {
-                    aiChatModal.style.display = 'flex';
-                    setTimeout(() => {
-                        const input = document.getElementById('aiChatInput');
-                        if (input) input.focus();
-                    }, 100);
-                }
-            });
-        }
-
-        // Analyze Channel button
-        const analyzeBtn = document.getElementById('analyzeBtn');
-        const channelInput = document.getElementById('channelInput');
-        if (analyzeBtn && channelInput) {
-            analyzeBtn.addEventListener('click', async () => {
-                const channelUrl = channelInput.value.trim();
-                if (!channelUrl) {
-                    this.showError('Please enter a YouTube channel URL or username.');
-                    return;
-                }
-                this.showLoading(true);
-                try {
-                    const response = await fetch('/.netlify/functions/fetchYouTube?query=' + encodeURIComponent(channelUrl));
-                    if (response.ok) {
-                        const data = await response.json();
-                        this.analyticsData = this.transformAnalyticsData(data);
-                        this.showSuccess('Channel analytics loaded!');
-                        this.showSection('analytics');
-                    } else {
-                        this.showError('Failed to fetch channel analytics.');
+                    const query = searchInput.value.trim();
+                    if (query) {
+                        this.performSearch(query);
                     }
-                } catch (err) {
-                    this.showError('Error fetching channel analytics.');
                 }
-                this.showLoading(false);
+            });
+        }
+
+        // Platform filters
+        const platformFilters = document.querySelectorAll('.platform-filter');
+        platformFilters.forEach(filter => {
+            filter.addEventListener('click', () => {
+                const platform = filter.dataset.platform;
+                this.filterByPlatform(platform);
+                
+                // Update active state
+                platformFilters.forEach(f => f.classList.remove('active'));
+                filter.classList.add('active');
+            });
+        });
+
+        // Category filters
+        const categoryFilters = document.querySelectorAll('.category-filter');
+        categoryFilters.forEach(filter => {
+            filter.addEventListener('click', () => {
+                const category = filter.dataset.category;
+                this.filterByCategory(category);
+                
+                // Update active state
+                categoryFilters.forEach(f => f.classList.remove('active'));
+                filter.classList.add('active');
+            });
+        });
+
+        // AI Chat toggle
+        const aiChatBtn = document.querySelector('.ai-chat-btn');
+        if (aiChatBtn) {
+            aiChatBtn.addEventListener('click', () => {
+                this.toggleAiChat();
             });
         }
 
         // Infinite scroll for trending content
-        const grid = document.getElementById('contentGrid');
-        if (grid) {
-            grid.onscroll = () => {
-                if (this.trendingNextPageToken && !this.trendingLoading) {
-                    const nearBottom = grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 200;
-                    if (nearBottom) {
-                        this.loadTrendingContent(this.trendingNextPageToken);
-                    }
+        const contentGrid = document.getElementById('contentGrid');
+        if (contentGrid) {
+            contentGrid.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = contentGrid;
+                if (scrollTop + clientHeight >= scrollHeight - 5 && !this.trendingLoading && this.trendingNextPageToken) {
+                    this.loadTrendingContent(this.trendingNextPageToken);
                 }
-            };
+            });
         }
 
-        // Infinite scroll for analytics content
+        // Infinite scroll for analytics
         const analyticsGrid = document.getElementById('analyticsGrid');
         if (analyticsGrid) {
-            analyticsGrid.onscroll = () => {
-                if (this.analyticsNextPageToken && !this.analyticsLoading) {
-                    const nearBottom = analyticsGrid.scrollTop + analyticsGrid.clientHeight >= analyticsGrid.scrollHeight - 200;
-                    if (nearBottom) {
-                        this.loadAnalyticsData(this.analyticsNextPageToken);
-                    }
+            analyticsGrid.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = analyticsGrid;
+                if (scrollTop + clientHeight >= scrollHeight - 5 && !this.analyticsLoading && this.analyticsNextPageToken) {
+                    this.loadAnalyticsData(this.analyticsNextPageToken);
                 }
-            };
+            });
         }
 
-        // Infinite scroll for AI Insights content
+        // Infinite scroll for AI Insights
         const trendsGrid = document.querySelector('.trends-grid');
-        if (trendsGrid) {
-            trendsGrid.onscroll = () => {
-                if (this.insightsNextPageToken && !this.insightsLoading) {
-                    const nearBottom = trendsGrid.scrollTop + trendsGrid.clientHeight >= trendsGrid.scrollHeight - 200;
-                    if (nearBottom) {
-                        this.loadInsightsData(this.insightsNextPageToken);
-                    }
-                }
-            };
-        }
         const predictionsGrid = document.querySelector('.predictions-grid');
-        if (predictionsGrid) {
-            predictionsGrid.onscroll = () => {
-                if (this.insightsNextPageToken && !this.insightsLoading) {
-                    const nearBottom = predictionsGrid.scrollTop + predictionsGrid.clientHeight >= predictionsGrid.scrollHeight - 200;
-                    if (nearBottom) {
-                        this.loadInsightsData(this.insightsNextPageToken);
-                    }
-                }
-            };
-        }
         const recommendationsGrid = document.querySelector('.recommendations-grid');
-        if (recommendationsGrid) {
-            recommendationsGrid.onscroll = () => {
-                if (this.insightsNextPageToken && !this.insightsLoading) {
-                    const nearBottom = recommendationsGrid.scrollTop + recommendationsGrid.clientHeight >= recommendationsGrid.scrollHeight - 200;
-                    if (nearBottom) {
-                        this.loadInsightsData(this.insightsNextPageToken);
-                    }
+        
+        if (trendsGrid) {
+            trendsGrid.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = trendsGrid;
+                if (scrollTop + clientHeight >= scrollHeight - 5 && !this.insightsLoading && this.insightsNextPageToken) {
+                    this.loadInsightsData(this.insightsNextPageToken);
                 }
-            };
+            });
         }
+        
+        if (predictionsGrid) {
+            predictionsGrid.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = predictionsGrid;
+                if (scrollTop + clientHeight >= scrollHeight - 5 && !this.insightsLoading && this.insightsNextPageToken) {
+                    this.loadInsightsData(this.insightsNextPageToken);
+                }
+            });
+        }
+        
+        if (recommendationsGrid) {
+            recommendationsGrid.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = recommendationsGrid;
+                if (scrollTop + clientHeight >= scrollHeight - 5 && !this.insightsLoading && this.insightsNextPageToken) {
+                    this.loadInsightsData(this.insightsNextPageToken);
+                }
+            });
+        }
+
+        // Creator link clicks
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('creator-link')) {
+                const creatorName = e.target.dataset.creator;
+                this.showCreatorInsights(creatorName);
+            }
+        });
+
+        // Settings event listeners
+        this.attachSettingsEventListeners();
     }
 
     switchTab(tab) {
@@ -2205,94 +2192,15 @@ class SpyDash {
         }, 10);
     }
 
-    attachAuthEventListeners() {
-        // Tab switching
-        const authTabs = document.querySelectorAll('.auth-tab');
-        const loginForm = document.getElementById('loginForm');
-        const signupForm = document.getElementById('signupForm');
-
-        authTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                authTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                
-                if (tab.dataset.tab === 'login') {
-                    loginForm.style.display = 'flex';
-                    signupForm.style.display = 'none';
-                } else {
-                    loginForm.style.display = 'none';
-                    signupForm.style.display = 'flex';
-                }
-            });
-        });
-
-        // Close modal
-        const closeBtn = document.getElementById('closeAuthModal');
-        const authModal = document.getElementById('authModal');
-        
-        if (closeBtn && authModal) {
-            closeBtn.addEventListener('click', () => {
-                authModal.style.display = 'none';
-            });
-            
-            authModal.addEventListener('click', (e) => {
-                if (e.target === authModal) {
-                    authModal.style.display = 'none';
-                }
-            });
+    formatNumber(num) {
+        if (num >= 1000000000) {
+            return (num / 1000000000).toFixed(1) + 'B';
+        } else if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+        } else if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'K';
         }
-
-        // Send OTP
-        const sendOTPBtn = document.getElementById('sendOTP');
-        if (sendOTPBtn) {
-            sendOTPBtn.addEventListener('click', () => {
-                this.sendOTP();
-            });
-        }
-
-        // Verify OTP
-        const verifyOTPBtn = document.getElementById('verifyOTP');
-        if (verifyOTPBtn) {
-            verifyOTPBtn.addEventListener('click', () => {
-                this.verifyOTP();
-            });
-        }
-
-        // Signup
-        const signupBtn = document.getElementById('signupBtn');
-        if (signupBtn) {
-            signupBtn.addEventListener('click', () => {
-                this.signup();
-            });
-        }
-    }
-
-    // Add a transformAnalyticsData method if not present
-    transformAnalyticsData(data) {
-        // Transform the YouTube API response to match this.analyticsData structure
-        // (This is a placeholder, real implementation should map API fields)
-        return {
-            engagement: {
-                likes: data.items?.[0]?.statistics?.likeCount || 0,
-                comments: data.items?.[0]?.statistics?.commentCount || 0,
-                shares: 0,
-                views: data.items?.[0]?.statistics?.viewCount || 0,
-                subscribers: data.items?.[0]?.statistics?.subscriberCount || 0
-            },
-            platformDistribution: {
-                youtube: 100,
-                tiktok: 0,
-                instagram: 0,
-                twitter: 0
-            },
-            performance: {
-                growthRate: 0,
-                engagementRate: 0,
-                reachRate: 0,
-                conversionRate: 0
-            },
-            trends: []
-        };
+        return num.toString();
     }
 
     attachAiChatEventListeners() {
@@ -2337,54 +2245,124 @@ class SpyDash {
         }
     }
 
-    renderAnalyticsContent() {
-        const grid = document.getElementById('analyticsGrid');
-        if (!grid) return;
-        grid.innerHTML = (this.analyticsData.trends && this.analyticsData.trends.length > 0)
-            ? this.analyticsData.trends.map(trend => `<div class="metric-card"><div class="metric-content"><h4>${trend.month}</h4><div class="metric-value">${trend.views}</div><div class="metric-change">${trend.growth}%</div></div></div>`).join('')
-            : '<div class="no-results"><p>No analytics data found.</p></div>';
-        if (this.analyticsLoading) {
-            const spinner = document.createElement('div');
-            spinner.className = 'loading';
-            spinner.innerHTML = '<div class="spinner"></div><span>Loading more...</span>';
-            grid.appendChild(spinner);
+    showCreatorInsights(creatorName) {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('creatorModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'creatorModal';
+            modal.className = 'creator-modal';
+            document.body.appendChild(modal);
         }
+
+        // Generate mock creator data (in real app, this would fetch from API)
+        const creatorData = this.generateCreatorData(creatorName);
+
+        modal.innerHTML = `
+            <div class="creator-modal-content">
+                <div class="creator-modal-header">
+                    <h2 class="creator-modal-title">${creatorName} - Creator Insights</h2>
+                    <button class="creator-modal-close" onclick="this.closest('.creator-modal').style.display='none'">&times;</button>
+                </div>
+                
+                <div class="creator-stats">
+                    <div class="creator-stat">
+                        <div class="creator-stat-value">${this.formatNumber(creatorData.subscribers)}</div>
+                        <div class="creator-stat-label">Subscribers</div>
+                    </div>
+                    <div class="creator-stat">
+                        <div class="creator-stat-value">${this.formatNumber(creatorData.totalViews)}</div>
+                        <div class="creator-stat-label">Total Views</div>
+                    </div>
+                    <div class="creator-stat">
+                        <div class="creator-stat-value">${creatorData.engagementRate}%</div>
+                        <div class="creator-stat-label">Engagement</div>
+                    </div>
+                    <div class="creator-stat">
+                        <div class="creator-stat-value">${creatorData.videoCount}</div>
+                        <div class="creator-stat-label">Videos</div>
+                    </div>
+                </div>
+
+                <div class="creator-content">
+                    <h3>Recent Videos</h3>
+                    <div class="creator-videos">
+                        ${creatorData.recentVideos.map(video => `
+                            <div class="creator-video">
+                                <div class="creator-video-title">${video.title}</div>
+                                <div class="creator-video-stats">
+                                    <span><i class="fa fa-eye"></i> ${this.formatNumber(video.views)}</span>
+                                    <span><i class="fa fa-thumbs-up"></i> ${this.formatNumber(video.likes)}</span>
+                                    <span><i class="fa fa-comment"></i> ${this.formatNumber(video.comments)}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="creator-content">
+                    <h3>Performance Trends</h3>
+                    <div class="creator-video">
+                        <div class="creator-video-title">Growth Rate</div>
+                        <div class="creator-video-stats">
+                            <span style="color: #3a9d4f;">+${creatorData.growthRate}% this month</span>
+                        </div>
+                    </div>
+                    <div class="creator-video">
+                        <div class="creator-video-title">Top Performing Category</div>
+                        <div class="creator-video-stats">
+                            <span>${creatorData.topCategory}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Show modal
+        modal.style.display = 'flex';
+
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.style.display === 'flex') {
+                modal.style.display = 'none';
+            }
+        });
     }
 
-    renderInsightsContent() {
-        // Render trends grid
-        const trendsGrid = document.querySelector('.trends-grid');
-        if (trendsGrid) {
-            trendsGrid.innerHTML = this.renderTrendAnalysis();
-            if (this.insightsLoading) {
-                const spinner = document.createElement('div');
-                spinner.className = 'loading';
-                spinner.innerHTML = '<div class="spinner"></div><span>Loading more trends...</span>';
-                trendsGrid.appendChild(spinner);
-            }
-        }
-        // Render predictions grid
-        const predictionsGrid = document.querySelector('.predictions-grid');
-        if (predictionsGrid) {
-            predictionsGrid.innerHTML = this.renderPredictions();
-            if (this.insightsLoading) {
-                const spinner = document.createElement('div');
-                spinner.className = 'loading';
-                spinner.innerHTML = '<div class="spinner"></div><span>Loading more predictions...</span>';
-                predictionsGrid.appendChild(spinner);
-            }
-        }
-        // Render recommendations grid
-        const recommendationsGrid = document.querySelector('.recommendations-grid');
-        if (recommendationsGrid) {
-            recommendationsGrid.innerHTML = this.renderRecommendations();
-            if (this.insightsLoading) {
-                const spinner = document.createElement('div');
-                spinner.className = 'loading';
-                spinner.innerHTML = '<div class="spinner"></div><span>Loading more recommendations...</span>';
-                recommendationsGrid.appendChild(spinner);
-            }
-        }
+    generateCreatorData(creatorName) {
+        // Generate realistic mock data for creator insights
+        const baseSubscribers = Math.floor(Math.random() * 1000000) + 10000;
+        const baseViews = baseSubscribers * (Math.random() * 10 + 5);
+        const engagementRate = (Math.random() * 5 + 2).toFixed(1);
+        const videoCount = Math.floor(Math.random() * 200) + 20;
+        const growthRate = (Math.random() * 20 + 5).toFixed(1);
+        
+        const categories = ['Technology', 'Gaming', 'Education', 'Entertainment', 'Lifestyle', 'Science'];
+        const topCategory = categories[Math.floor(Math.random() * categories.length)];
+
+        const recentVideos = Array(5).fill(null).map((_, i) => ({
+            title: `Amazing ${topCategory} Content - Episode ${i + 1}`,
+            views: Math.floor(Math.random() * 100000) + 1000,
+            likes: Math.floor(Math.random() * 10000) + 100,
+            comments: Math.floor(Math.random() * 1000) + 10
+        }));
+
+        return {
+            subscribers: baseSubscribers,
+            totalViews: baseViews,
+            engagementRate,
+            videoCount,
+            growthRate,
+            topCategory,
+            recentVideos
+        };
     }
 }
 
