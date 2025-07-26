@@ -1,7 +1,7 @@
 // Netlify function for AI summarization
-import axios from 'axios';
+const axios = require('axios');
 
-export const handler = async (event, context) => {
+exports.handler = async (event, context) => {
   // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -19,54 +19,24 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { videoId, content } = JSON.parse(event.body || '{}');
+    const { text, maxLength = 200 } = JSON.parse(event.body || '{}');
     
-    if (!videoId && !content) {
+    if (!text) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Video ID or content is required' })
+        body: JSON.stringify({ error: 'Text content is required' })
       };
-    }
-
-    let videoContent = content;
-
-    // If videoId is provided, fetch video details from YouTube
-    if (videoId && !content) {
-      const apiKey = process.env.YOUTUBE_API_KEY;
-      
-      if (!apiKey) {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ error: 'YouTube API key not configured' })
-        };
-      }
-
-      const videoResponse = await axios.get(
-        `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}&key=${apiKey}`
-      );
-
-      if (!videoResponse.data.items || videoResponse.data.items.length === 0) {
-        return {
-          statusCode: 404,
-          headers,
-          body: JSON.stringify({ error: 'Video not found' })
-        };
-      }
-
-      const video = videoResponse.data.items[0];
-      videoContent = `${video.snippet.title}\n\n${video.snippet.description}`;
     }
 
     // Use OpenAI API for summarization (if configured)
     const openaiKey = process.env.OPENAI_API_KEY;
     
     if (openaiKey) {
-      return await generateOpenAISummary(videoContent, openaiKey, headers);
+      return await generateOpenAISummary(text, maxLength, openaiKey, headers);
     } else {
-      // Fallback to simple keyword extraction
-      return await generateSimpleSummary(videoContent, headers);
+      // Fallback to simple summary
+      return await generateSimpleSummary(text, maxLength, headers);
     }
 
   } catch (error) {
@@ -83,7 +53,7 @@ export const handler = async (event, context) => {
   }
 };
 
-async function generateOpenAISummary(content, apiKey, headers) {
+async function generateOpenAISummary(text, maxLength, apiKey, headers) {
   try {
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
@@ -92,14 +62,14 @@ async function generateOpenAISummary(content, apiKey, headers) {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that analyzes YouTube video content and provides concise, insightful summaries. Focus on key topics, main points, and actionable insights.'
+            content: 'You are a helpful assistant that provides concise, insightful summaries.'
           },
           {
             role: 'user',
-            content: `Please analyze this YouTube video content and provide a comprehensive summary:\n\n${content}`
+            content: `Please provide a summary of this text (max ${maxLength} characters):\n\n${text}`
           }
         ],
-        max_tokens: 500,
+        max_tokens: Math.floor(maxLength / 4),
         temperature: 0.7
       },
       {
@@ -126,36 +96,25 @@ async function generateOpenAISummary(content, apiKey, headers) {
     console.error('OpenAI API Error:', error);
     
     // Fallback to simple summary
-    return await generateSimpleSummary(content, headers);
+    return await generateSimpleSummary(text, maxLength, headers);
   }
 }
 
-async function generateSimpleSummary(content, headers) {
-  // Simple keyword extraction and summary generation
-  const words = content.toLowerCase()
-    .replace(/[^\w\s]/g, '')
-    .split(/\s+/)
-    .filter(word => word.length > 3);
-
-  const wordFreq = {};
-  words.forEach(word => {
-    wordFreq[word] = (wordFreq[word] || 0) + 1;
-  });
-
-  const keywords = Object.entries(wordFreq)
-    .sort(([,a], [,b]) => b - a)
-    .slice(0, 10)
-    .map(([word]) => word);
-
-  const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
-  const summary = sentences.slice(0, 3).join('. ') + '.';
+async function generateSimpleSummary(text, maxLength, headers) {
+  // Simple summary generation
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  let summary = sentences.slice(0, 2).join('. ') + '.';
+  
+  // Truncate if too long
+  if (summary.length > maxLength) {
+    summary = summary.substring(0, maxLength - 3) + '...';
+  }
 
   return {
     statusCode: 200,
     headers,
     body: JSON.stringify({
       summary,
-      keywords,
       method: 'simple',
       confidence: 'medium'
     })

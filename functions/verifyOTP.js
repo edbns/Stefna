@@ -1,10 +1,10 @@
 // OTP verification function
-import crypto from 'crypto';
+const crypto = require('crypto');
 
 // In-memory storage for OTP codes (use database in production)
 const otpStore = new Map();
 
-export const handler = async (event, context) => {
+exports.handler = async (event, context) => {
   // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',

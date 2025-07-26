@@ -1,14 +1,31 @@
 // Netlify function for YouTube API (search-based)
-import fetch from 'node-fetch';
+const fetch = require('node-fetch');
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
+  // Enable CORS
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+  };
+
+  // Handle preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: ''
+    };
+  }
+
   const query = event.queryStringParameters?.query || 'indonesia';
   const apiKey = process.env.YOUTUBE_API_KEY;
 
   if (!apiKey) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: 'Missing YOUTUBE_API_KEY in environment' }),
+      headers,
+      body: JSON.stringify({ error: 'Missing YOUTUBE_API_KEY in environment' })
     };
   }
 
@@ -19,12 +36,14 @@ export const handler = async (event) => {
     const data = await response.json();
     return {
       statusCode: 200,
-      body: JSON.stringify(data),
+      headers,
+      body: JSON.stringify(data)
     };
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      headers,
+      body: JSON.stringify({ error: err.message })
     };
   }
 };
