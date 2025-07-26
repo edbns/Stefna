@@ -40,6 +40,7 @@ exports.handler = async (event) => {
       body: JSON.stringify(data)
     };
   } catch (err) {
+    console.error('YouTube API fetch error:', err);
     return {
       statusCode: 500,
       headers,
