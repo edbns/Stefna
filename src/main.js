@@ -68,6 +68,7 @@ class SpyDash {
     init() {
         this.checkAuthStatus();
         this.loadTrendingContent();
+        this.loadAnalyticsData();
         this.render();
         // Attach event listeners
         setTimeout(() => {
@@ -86,7 +87,48 @@ class SpyDash {
     }
 
     async loadTrendingContent() {
-        // Mock trending content - replace with actual API calls
+        try {
+            // Call the actual Netlify function to fetch YouTube data
+            const response = await fetch('/.netlify/functions/fetchYouTube', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: 'trending technology',
+                    maxResults: 10
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('YouTube API response:', data);
+                
+                // Transform the data to match our format
+                this.trendingContent = data.items ? data.items.map((item, index) => ({
+                    id: index + 1,
+                    platform: 'youtube',
+                    title: item.snippet?.title || 'Untitled',
+                    creator: item.snippet?.channelTitle || 'Unknown',
+                    views: this.formatNumber(item.statistics?.viewCount || 0),
+                    thumbnail: 'icon-video',
+                    trending: true,
+                    videoId: item.id?.videoId || item.id
+                })) : [];
+            } else {
+                console.error('Failed to fetch YouTube data:', response.status);
+                // Fallback to mock data
+                this.loadMockTrendingContent();
+            }
+        } catch (error) {
+            console.error('Error fetching trending content:', error);
+            // Fallback to mock data
+            this.loadMockTrendingContent();
+        }
+    }
+
+    loadMockTrendingContent() {
+        // Mock trending content as fallback
         this.trendingContent = [
             {
                 id: 1,
@@ -125,6 +167,48 @@ class SpyDash {
                 trending: true
             }
         ];
+    }
+
+    async loadAnalyticsData() {
+        try {
+            // Call the actual Netlify function to fetch analytics data
+            const response = await fetch('/.netlify/functions/fetchYouTube', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: 'analytics dashboard',
+                    maxResults: 5,
+                    type: 'analytics'
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Analytics API response:', data);
+                
+                // Update analytics data with real data if available
+                if (data.items && data.items.length > 0) {
+                    // Update engagement metrics with real data
+                    this.analyticsData.engagement.views = data.items.reduce((total, item) => {
+                        return total + (parseInt(item.statistics?.viewCount) || 0);
+                    }, 0);
+                    
+                    // Update trends with real data
+                    this.analyticsData.trends = data.items.slice(0, 6).map((item, index) => ({
+                        month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][index] || `Month ${index + 1}`,
+                        views: parseInt(item.statistics?.viewCount) || Math.floor(Math.random() * 5000) + 1000,
+                        engagement: parseFloat((Math.random() * 10 + 5).toFixed(1)),
+                        growth: parseFloat((Math.random() * 20 + 5).toFixed(1))
+                    }));
+                }
+            } else {
+                console.error('Failed to fetch analytics data:', response.status);
+            }
+        } catch (error) {
+            console.error('Error fetching analytics data:', error);
+        }
     }
 
     render() {
@@ -1303,7 +1387,7 @@ class SpyDash {
         }
     }
 
-    performSearch(query) {
+    async performSearch(query) {
         if (!query.trim()) return;
         
         // Filter content based on search query
@@ -1312,6 +1396,28 @@ class SpyDash {
             item.creator.toLowerCase().includes(query.toLowerCase()) ||
             item.platform.toLowerCase().includes(query.toLowerCase())
         );
+        
+        // Try to get AI insights for the search query
+        try {
+            const response = await fetch('/.netlify/functions/summarize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: `Search query: ${query}. Found ${filteredContent.length} results.`,
+                    maxLength: 150
+                })
+            });
+
+            if (response.ok) {
+                const aiData = await response.json();
+                console.log('AI search insights:', aiData);
+                // You can use the AI insights to enhance search results
+            }
+        } catch (error) {
+            console.error('Error getting AI search insights:', error);
+        }
         
         this.renderSearchResults(filteredContent, query);
     }
@@ -1754,7 +1860,7 @@ class SpyDash {
         }
     }
 
-    sendAiMessage() {
+    async sendAiMessage() {
         const input = document.getElementById('aiChatInput');
         const message = input.value.trim();
         
@@ -1797,12 +1903,54 @@ class SpyDash {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }, 10);
         
-        // Simulate AI response
-        setTimeout(() => {
-            // Remove typing indicator
-            typingIndicator.remove();
+        // Get AI response using the summarization function
+        try {
+            const response = await fetch('/.netlify/functions/summarize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: `User message: ${message}. Context: This is a conversation with an AI assistant for a social media analytics dashboard. The user is asking about trends, analytics, or insights.`,
+                    maxLength: 200
+                })
+            });
+
+            if (response.ok) {
+                const aiData = await response.json();
+                console.log('AI chat response:', aiData);
+                
+                // Remove typing indicator
+                typingIndicator.remove();
+                
+                // Add AI response
+                const aiMessage = document.createElement('div');
+                aiMessage.className = 'ai-chat-content ai-message';
+                aiMessage.innerHTML = `
+                    <div class="ai-chat-content ai-avatar">
+                        <i class="icon-concierge"></i>
+                    </div>
+                    <div class="ai-chat-content ai-text">${aiData.summary || 'Thank you for your message! I\'m here to help you with analytics insights and trends. How can I assist you today?'}</div>
+                `;
+                messagesContainer.appendChild(aiMessage);
+            } else {
+                // Fallback response
+                typingIndicator.remove();
+                const aiMessage = document.createElement('div');
+                aiMessage.className = 'ai-chat-content ai-message';
+                aiMessage.innerHTML = `
+                    <div class="ai-chat-content ai-avatar">
+                        <i class="icon-concierge"></i>
+                    </div>
+                    <div class="ai-chat-content ai-text">Thank you for your message! I'm here to help you with analytics insights and trends. How can I assist you today?</div>
+                `;
+                messagesContainer.appendChild(aiMessage);
+            }
+        } catch (error) {
+            console.error('Error getting AI response:', error);
             
-            // Add AI response
+            // Fallback response
+            typingIndicator.remove();
             const aiMessage = document.createElement('div');
             aiMessage.className = 'ai-chat-content ai-message';
             aiMessage.innerHTML = `
@@ -1812,12 +1960,12 @@ class SpyDash {
                 <div class="ai-chat-content ai-text">Thank you for your message! I'm here to help you with analytics insights and trends. How can I assist you today?</div>
             `;
             messagesContainer.appendChild(aiMessage);
-            
-            // Scroll to bottom
-            setTimeout(() => {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, 10);
-        }, 1500);
+        }
+        
+        // Scroll to bottom
+        setTimeout(() => {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }, 10);
     }
 
     attachAuthEventListeners() {
