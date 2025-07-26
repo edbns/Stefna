@@ -881,19 +881,58 @@ class SpyDash {
     }
 
     renderRecommendations() {
-        return this.aiInsights.recommendations.map(rec => `
+        const recommendations = [
+            {
+                title: 'Optimize Posting Schedule',
+                description: 'Post during peak engagement hours (2-4 PM) to increase reach by 25%',
+                impact: 'High',
+                category: 'Timing'
+            },
+            {
+                title: 'Focus on Trending Topics',
+                description: 'Create content around current trending hashtags in your niche',
+                impact: 'Medium',
+                category: 'Content'
+            },
+            {
+                title: 'Improve Video Quality',
+                description: 'Upgrade to 4K resolution and add professional editing',
+                impact: 'High',
+                category: 'Quality'
+            },
+            {
+                title: 'Engage with Community',
+                description: 'Respond to comments within 2 hours to boost engagement',
+                impact: 'Medium',
+                category: 'Engagement'
+            },
+            {
+                title: 'Cross-Platform Promotion',
+                description: 'Share content across multiple platforms for wider reach',
+                impact: 'High',
+                category: 'Distribution'
+            },
+            {
+                title: 'Collaborate with Influencers',
+                description: 'Partner with creators in your niche for mutual growth',
+                impact: 'Medium',
+                category: 'Networking'
+            }
+        ];
+
+        return recommendations.map(rec => `
             <div class="recommendation-card">
                 <div class="recommendation-header">
-                    <span class="recommendation-type">${rec.type}</span>
-                    <div class="impact-effort">
-                        <span class="impact ${rec.impact.toLowerCase()}">${rec.impact} Impact</span>
-                        <span class="effort ${rec.effort.toLowerCase()}">${rec.effort} Effort</span>
-                    </div>
+                    <h3>${rec.title}</h3>
+                    <span class="impact-badge ${rec.impact.toLowerCase()}">${rec.impact}</span>
                 </div>
-                <div class="recommendation-content">
-                    <p>${rec.suggestion}</p>
+                <p class="recommendation-description">${rec.description}</p>
+                <div class="recommendation-footer">
+                    <span class="category-tag">${rec.category}</span>
+                    <button class="apply-recommendation-btn" data-suggestion="${rec.title}">
+                        Apply Recommendation
+                    </button>
                 </div>
-                <button class="apply-recommendation-btn">Apply Recommendation</button>
             </div>
         `).join('');
     }
@@ -1975,8 +2014,26 @@ class SpyDash {
     }
 
     applyRecommendation(suggestion) {
-        this.showSuccess(`Recommendation applied: ${suggestion}`);
-        // In a real app, this would trigger specific actions based on the recommendation
+        // Show loading state
+        this.showLoading(true);
+        
+        // Simulate processing time
+        setTimeout(() => {
+            this.showLoading(false);
+            
+            // Show success message with the applied recommendation
+            this.showSuccess(`Recommendation applied: ${suggestion}`);
+            
+            // You can add actual implementation here to apply the recommendation
+            // For now, we'll just show a notification
+            console.log('Applying recommendation:', suggestion);
+            
+            // Example of what could be implemented:
+            // - Update content strategy
+            // - Modify posting schedule
+            // - Adjust content categories
+            // - Update engagement tactics
+        }, 2000);
     }
 
     // Settings Methods
