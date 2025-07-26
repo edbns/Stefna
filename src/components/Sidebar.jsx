@@ -15,7 +15,8 @@ import {
   FiSettings,
   FiEdit,
   FiMenu,
-  FiX
+  FiX,
+  FiBarChart
 } from 'react-icons/fi';
 
 const Sidebar = ({ 

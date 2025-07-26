@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ContentCard from './components/ContentCard';
-import { FiRefreshCw, FiTrendingUp, FiAlertCircle, FiMapPin } from 'react-icons/fi';
+import { FiRefreshCw, FiTrendingUp, FiAlertCircle, FiMapPin, FiBarChart } from 'react-icons/fi';
 import { getCachedLocation } from './utils/locationDetection';
 import { FiYoutube, FiMusic } from 'react-icons/fi';
 
