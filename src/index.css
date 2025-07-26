@@ -9,9 +9,9 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
+  color-scheme: light;
   color: #000000;
-  background-color: #F5EDED;
+  background: linear-gradient(135deg, #69686D 0%, #4F4E52 25%, #353437 50%, #1A1A1B 75%, #000000 100%);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -27,6 +27,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #69686D 0%, #4F4E52 25%, #353437 50%, #1A1A1B 75%, #000000 100%);
 }
 
 #root {
@@ -62,39 +63,22 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #F5EDED;
+  background: #353437;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D72323;
+  background: #69686D;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #D72323;
-}
-
-/* Dark mode scrollbar */
-.dark ::-webkit-scrollbar-track {
-  background: #000000;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #D72323;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #D72323;
+  background: #4F4E52;
 }
 
 /* Focus states */
 *:focus {
-  outline: 2px solid #D72323;
+  outline: 2px solid #69686D;
   outline-offset: 2px;
-}
-
-.dark *:focus {
-  outline-color: #D72323;
 }
 
 /* Video embed responsive styles */
@@ -115,17 +99,70 @@ body {
   border-radius: 8px;
 }
 
-/* Dark mode gradient background */
-.dark {
-  background: linear-gradient(135deg, #000000 0%, #3E3636 50%, #000000 100%);
-}
-
 /* Default text colors */
-.dark {
-  color: #F5EDED;
+body {
+  color: #FFFFFF;
 }
 
-/* Light mode text */
-body:not(.dark) {
-  color: #000000;
+/* Gradient text effects */
+.gradient-text {
+  background: linear-gradient(135deg, #69686D, #FFFFFF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Loading animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Infinite scroll loading */
+.infinite-scroll-loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+/* Custom button styles */
+.btn-primary {
+  background: linear-gradient(135deg, #69686D, #4F4E52);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #4F4E52, #353437);
+  transform: translateY(-1px);
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(105, 104, 109, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 } 
