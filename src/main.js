@@ -96,6 +96,12 @@ class SpyDash {
     async loadTrendingContent(pageToken = null) {
         if (this.trendingLoading) return;
         this.trendingLoading = true;
+        
+        // Show loading cards immediately if this is the first load
+        if (!pageToken) {
+            this.renderTrendingContent();
+        }
+        
         try {
             let url = '/.netlify/functions/fetchYouTube?query=trending technology';
             if (pageToken) url += `&pageToken=${pageToken}`;
@@ -584,16 +590,48 @@ class SpyDash {
     renderTrendingContent() {
         const grid = document.getElementById('contentGrid');
         if (!grid) return;
-        grid.innerHTML = (this.trendingContent && this.trendingContent.length > 0)
-            ? this.trendingContent.map(item => this.renderContentCard(item)).join('')
-            : '<div class="no-results"><p>No trending content found.</p></div>';
-        // Add loading spinner if loading
-        if (this.trendingLoading) {
-            const spinner = document.createElement('div');
-            spinner.className = 'loading';
-            spinner.innerHTML = '<div class="spinner"></div><span>Loading more...</span>';
-            grid.appendChild(spinner);
+        
+        if (this.trendingLoading && (!this.trendingContent || this.trendingContent.length === 0)) {
+            // Show loading cards when first loading
+            grid.innerHTML = this.renderLoadingCards();
+        } else if (this.trendingContent && this.trendingContent.length > 0) {
+            grid.innerHTML = this.trendingContent.map(item => this.renderContentCard(item)).join('');
+            // Add loading spinner if loading more content
+            if (this.trendingLoading) {
+                const spinner = document.createElement('div');
+                spinner.className = 'loading';
+                spinner.innerHTML = '<div class="spinner"></div><span>Loading more...</span>';
+                grid.appendChild(spinner);
+            }
+        } else {
+            grid.innerHTML = '<div class="no-results"><p>No trending content found.</p></div>';
         }
+    }
+
+    renderLoadingCards() {
+        // Generate 6 loading cards
+        return Array(6).fill(null).map((_, index) => `
+            <div class="content-card loading-card" data-platform="loading">
+                <div class="content-video">
+                    <div class="loading-placeholder"></div>
+                </div>
+                <div class="content-info">
+                    <div class="loading-title"></div>
+                    <div class="loading-creator"></div>
+                    <div class="loading-views"></div>
+                    <div class="content-actions">
+                        <div class="loading-action"></div>
+                        <div class="loading-action"></div>
+                        <div class="loading-action"></div>
+                    </div>
+                    <div class="loading-summary"></div>
+                </div>
+                <div class="content-badges">
+                    <div class="trending-text">Trending</div>
+                    <div class="platform-icon loading-platform"></div>
+                </div>
+            </div>
+        `).join('');
     }
 
     getPlatformIcon(platform) {
@@ -1747,7 +1785,7 @@ class SpyDash {
                     <div class="ai-summary" id="ai-summary-${item.videoId || item.id}">Loading AI summary...</div>
                 </div>
                 <div class="content-badges">
-                    ${item.trending ? '<div class="trending-text">Trending</div>' : ''}
+                    ${item.trending ? '<div class="trending-text" style="background: #3a9d4f;">Trending</div>' : ''}
                     <div class="platform-icon ${item.platform}">${this.getPlatformIcon(item.platform)}</div>
                 </div>
             </div>
