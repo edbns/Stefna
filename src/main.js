@@ -596,6 +596,8 @@ class SpyDash {
             grid.innerHTML = this.renderLoadingCards();
         } else if (this.trendingContent && this.trendingContent.length > 0) {
             grid.innerHTML = this.trendingContent.map(item => this.renderContentCard(item)).join('');
+            // Generate AI summaries for new content
+            this.generateContentSummaries();
             // Add loading spinner if loading more content
             if (this.trendingLoading) {
                 const spinner = document.createElement('div');
@@ -605,6 +607,55 @@ class SpyDash {
             }
         } else {
             grid.innerHTML = '<div class="no-results"><p>No trending content found.</p></div>';
+        }
+    }
+
+    async generateContentSummaries() {
+        if (!this.trendingContent || this.trendingContent.length === 0) return;
+        
+        // Generate summaries for each content item
+        for (const item of this.trendingContent) {
+            const summaryElement = document.getElementById(`ai-summary-${item.videoId || item.id}`);
+            if (summaryElement && summaryElement.textContent === 'Loading AI summary...') {
+                try {
+                    const summary = await this.generateAISummary(item.title, item.creator);
+                    if (summaryElement) {
+                        summaryElement.textContent = summary;
+                        summaryElement.style.color = '#3a9d4f';
+                    }
+                } catch (error) {
+                    console.error('Error generating AI summary:', error);
+                    if (summaryElement) {
+                        summaryElement.textContent = 'AI summary unavailable';
+                        summaryElement.style.color = '#999';
+                    }
+                }
+            }
+        }
+    }
+
+    async generateAISummary(title, creator) {
+        try {
+            const response = await fetch('/.netlify/functions/summarize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: `Title: ${title} by ${creator}. This is a trending video on social media.`,
+                    maxLength: 150
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data.summary || 'AI summary unavailable';
+            } else {
+                throw new Error('Failed to generate summary');
+            }
+        } catch (error) {
+            console.error('Error calling summarize API:', error);
+            throw error;
         }
     }
 

@@ -1,4 +1,4 @@
-// Netlify function for AI summarization
+// Netlify function for AI summarization using OpenRouter
 const axios = require('axios');
 
 exports.handler = async (event, context) => {
@@ -29,10 +29,13 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Use OpenAI API for summarization (if configured)
+    // Use OpenRouter API for summarization (if configured)
+    const openRouterKey = process.env.OPENROUTER_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
     
-    if (openaiKey) {
+    if (openRouterKey) {
+      return await generateOpenRouterSummary(text, maxLength, openRouterKey, headers);
+    } else if (openaiKey) {
       return await generateOpenAISummary(text, maxLength, openaiKey, headers);
     } else {
       // Fallback to simple summary
@@ -52,6 +55,55 @@ exports.handler = async (event, context) => {
     };
   }
 };
+
+async function generateOpenRouterSummary(text, maxLength, apiKey, headers) {
+  try {
+    const response = await axios.post(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        model: 'deepseek/deepseek-r1-0528:free',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that provides concise, insightful summaries for a social media analytics dashboard.'
+          },
+          {
+            role: 'user',
+            content: `Please provide a summary of this text (max ${maxLength} characters):\n\n${text}`
+          }
+        ],
+        max_tokens: Math.floor(maxLength / 4),
+        temperature: 0.7
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://your-site.netlify.app',
+          'X-Title': 'SpyDash Analytics'
+        }
+      }
+    );
+
+    const summary = response.data.choices[0].message.content;
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        summary,
+        method: 'openrouter',
+        confidence: 'high'
+      })
+    };
+
+  } catch (error) {
+    console.error('OpenRouter API Error:', error);
+    
+    // Fallback to simple summary
+    return await generateSimpleSummary(text, maxLength, headers);
+  }
+}
 
 async function generateOpenAISummary(text, maxLength, apiKey, headers) {
   try {
