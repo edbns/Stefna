@@ -19,6 +19,7 @@ exports.handler = async (event) => {
   }
 
   const query = event.queryStringParameters?.query || 'indonesia';
+  const pageToken = event.queryStringParameters?.pageToken || '';
   const apiKey = process.env.YOUTUBE_API_KEY;
 
   if (!apiKey) {
@@ -29,7 +30,10 @@ exports.handler = async (event) => {
     };
   }
 
-  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&key=${apiKey}`;
+  let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&key=${apiKey}`;
+  if (pageToken) {
+    url += `&pageToken=${pageToken}`;
+  }
 
   try {
     const response = await fetch(url);
