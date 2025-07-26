@@ -218,10 +218,6 @@ class SpyDash {
                     <div class="sidebar-content">
                         <!-- User Section -->
                         <div class="user-section">
-                            <div class="auth-header">
-                                <h3>Login/Signup</h3>
-                                <p>for enhanced analytics</p>
-                            </div>
                             ${this.isAuthenticated ? `
                                 <div class="user-info">
                                     <div class="user-avatar">
@@ -240,7 +236,7 @@ class SpyDash {
                                 <div class="auth-section">
                                     <button class="auth-btn" id="showAuthModal">
                                         <i class="icon-sign-in"></i>
-                                        <span>Sign In</span>
+                                        <span>Login/Signup</span>
                                     </button>
                                 </div>
                             `}
