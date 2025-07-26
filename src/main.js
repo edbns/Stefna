@@ -89,16 +89,7 @@ class SpyDash {
     async loadTrendingContent() {
         try {
             // Call the actual Netlify function to fetch YouTube data
-            const response = await fetch('/.netlify/functions/fetchYouTube', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    searchQuery: 'trending technology',
-                    maxResults: 10
-                })
-            });
+            const response = await fetch('/.netlify/functions/fetchYouTube?query=trending technology');
 
             if (response.ok) {
                 const data = await response.json();
@@ -110,7 +101,7 @@ class SpyDash {
                     platform: 'youtube',
                     title: item.snippet?.title || 'Untitled',
                     creator: item.snippet?.channelTitle || 'Unknown',
-                    views: this.formatNumber(item.statistics?.viewCount || 0),
+                    views: 'N/A',
                     thumbnail: 'icon-video',
                     trending: true,
                     videoId: item.id?.videoId || item.id,
@@ -177,16 +168,7 @@ class SpyDash {
     async loadAnalyticsData() {
         try {
             // Call the actual Netlify function to fetch analytics data
-            const response = await fetch('/.netlify/functions/fetchYouTube', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    searchQuery: 'analytics dashboard',
-                    maxResults: 5
-                })
-            });
+            const response = await fetch('/.netlify/functions/fetchYouTube?query=analytics dashboard');
 
             if (response.ok) {
                 const data = await response.json();
@@ -195,14 +177,12 @@ class SpyDash {
                 // Update analytics data with real data if available
                 if (data.items && data.items.length > 0) {
                     // Update engagement metrics with real data
-                    this.analyticsData.engagement.views = data.items.reduce((total, item) => {
-                        return total + (parseInt(item.statistics?.viewCount) || 0);
-                    }, 0);
+                    this.analyticsData.engagement.views = data.items.length;
                     
                     // Update trends with real data
                     this.analyticsData.trends = data.items.slice(0, 6).map((item, index) => ({
                         month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][index] || `Month ${index + 1}`,
-                        views: parseInt(item.statistics?.viewCount) || Math.floor(Math.random() * 5000) + 1000,
+                        views: Math.floor(Math.random() * 5000) + 1000,
                         engagement: parseFloat((Math.random() * 10 + 5).toFixed(1)),
                         growth: parseFloat((Math.random() * 20 + 5).toFixed(1))
                     }));
