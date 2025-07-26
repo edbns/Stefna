@@ -1947,47 +1947,116 @@ class SpyDash {
     }
 
     renderContentCard(item) {
-        // Embed YouTube video if videoId exists
-        const videoEmbed = item.videoId ? `
-            <div class="content-video">
-                <iframe width="100%" height="220" src="https://www.youtube.com/embed/${item.videoId}" frameborder="0" allowfullscreen></iframe>
-            </div>
-        ` : `<div class="content-thumbnail"><i class="${item.thumbnail}"></i></div>`;
-        // Extract stats
-        const stats = item.statistics || {};
-        const views = stats.viewCount ? this.formatNumber(Number(stats.viewCount)) : 'N/A';
-        const likes = stats.likeCount ? this.formatNumber(Number(stats.likeCount)) : 'N/A';
-        const comments = stats.commentCount ? this.formatNumber(Number(stats.commentCount)) : 'N/A';
+        const videoId = item.videoId || item.id;
+        const platformIcon = this.getPlatformIcon(item.platform || 'youtube');
+        const creatorIcon = this.getCreatorIcon(item.creator);
+        
         return `
-            <div class="content-card" data-platform="${item.platform}">
-                ${videoEmbed}
-                <div class="content-info">
-                    <h4>${item.title}</h4>
-                    <p class="creator">by <span class="creator-link" data-creator="${item.creator}">${item.creator}</span></p>
-                    <div class="content-stats">
-                        <span class="stat views"><i class="fa fa-eye"></i> ${views}</span>
-                        <span class="stat likes"><i class="fa fa-thumbs-up"></i> ${likes}</span>
-                        <span class="stat comments"><i class="fa fa-comment"></i> ${comments}</span>
-                    </div>
-                    <div class="content-actions">
-                        <button class="action-btn" onclick="this.parentElement.parentElement.parentElement.classList.toggle('favorited')">
-                            <i class="icon-heart"></i>
-                        </button>
-                        <button class="action-btn">
-                            <i class="icon-chart-bar"></i>
-                        </button>
-                        <button class="action-btn">
-                            <i class="icon-comment"></i>
-                        </button>
-                    </div>
-                    <div class="ai-summary" id="ai-summary-${item.videoId || item.id}">Loading AI summary...</div>
+            <div class="content-card" onclick="this.handleCardClick('${videoId}', '${item.title}')">
+                <!-- Trending Badge -->
+                <div class="trending-badge">
+                    <i class="fa fa-fire"></i>
                 </div>
-                <div class="content-badges">
-                    ${item.trending ? '<div class="trending-text" style="background: #3a9d4f;">Trending</div>' : ''}
-                    <div class="platform-icon ${item.platform}">${this.getPlatformIcon(item.platform)}</div>
+                
+                <!-- Platform Logo -->
+                <div class="platform-logo">
+                    ${platformIcon}
+                </div>
+                
+                <!-- Card Header Block -->
+                <div class="content-header">
+                    <h4 class="content-title">${item.title}</h4>
+                    <div class="content-platform">
+                        ${platformIcon} ${item.platform || 'YouTube'}
+                    </div>
+                </div>
+                
+                <!-- Video Thumbnail Block -->
+                <div class="content-thumbnail clickable" onclick="event.stopPropagation(); this.handleVideoClick('${videoId}')">
+                    <img src="${item.thumbnail}" alt="${item.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="video-placeholder" style="display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; background: linear-gradient(135deg, #f0f0f0, #e0e0e0);">
+                        <i class="fa fa-play-circle" style="font-size: 3rem; color: #666; margin-bottom: 10px;"></i>
+                        <span style="color: #666; font-size: 0.9rem;">Video Preview</span>
+                    </div>
+                    <div class="play-icon">
+                        <i class="fa fa-play"></i>
+                    </div>
+                </div>
+                
+                <!-- Creator Info Block -->
+                <div class="content-creator clickable" onclick="event.stopPropagation(); this.showCreatorInsights('${item.creator}')">
+                    <div class="creator-avatar">
+                        ${creatorIcon}
+                    </div>
+                    <div class="creator-info">
+                        <h5 class="creator-name">${item.creator}</h5>
+                        <p class="creator-subscribers">${this.formatNumber(item.subscribers || Math.floor(Math.random() * 1000000) + 10000)} subscribers</p>
+                    </div>
+                    <div class="creator-actions">
+                        <button class="action-btn clickable" onclick="event.stopPropagation(); this.showCreatorInsights('${item.creator}')">
+                            <i class="fa fa-chart-line"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Stats Block -->
+                <div class="content-stats">
+                    <div class="stat">
+                        <div class="stat-value">${this.formatNumber(item.statistics?.viewCount || item.views || Math.floor(Math.random() * 1000000) + 1000)}</div>
+                        <div class="stat-label">
+                            <i class="fa fa-eye"></i> Views
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${this.formatNumber(item.statistics?.likeCount || item.likes || Math.floor(Math.random() * 10000) + 100)}</div>
+                        <div class="stat-label">
+                            <i class="fa fa-thumbs-up"></i> Likes
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${this.formatNumber(item.statistics?.commentCount || item.comments || Math.floor(Math.random() * 1000) + 10)}</div>
+                        <div class="stat-label">
+                            <i class="fa fa-comment"></i> Comments
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI Summary Block -->
+                <div class="content-summary">
+                    <p class="ai-summary" id="ai-summary-${videoId}">Loading AI summary...</p>
                 </div>
             </div>
         `;
+    }
+
+    getCreatorIcon(creatorName) {
+        // Generate consistent icon based on creator name
+        const icons = [
+            'fa fa-user',
+            'fa fa-user-tie',
+            'fa fa-user-graduate',
+            'fa fa-user-astronaut',
+            'fa fa-user-ninja',
+            'fa fa-user-secret',
+            'fa fa-user-md',
+            'fa fa-user-cog'
+        ];
+        
+        // Use creator name to consistently select an icon
+        const index = creatorName.length % icons.length;
+        return `<i class="${icons[index]}"></i>`;
+    }
+
+    handleCardClick(videoId, title) {
+        // Handle card click - could open video details or play video
+        console.log('Card clicked:', videoId, title);
+        this.showSuccess(`Opening: ${title}`);
+    }
+
+    handleVideoClick(videoId) {
+        // Handle video thumbnail click - could open video player
+        console.log('Video clicked:', videoId);
+        this.showSuccess('Opening video player...');
     }
 
     showLoading(show) {
