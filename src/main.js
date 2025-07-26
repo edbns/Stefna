@@ -202,6 +202,21 @@ class SpyDash {
             this.renderAiChatModal();
             this.renderAuthModal();
         }
+        // Ensure the floating AI chat button is always present
+        setTimeout(() => {
+            let chatBtn = document.querySelector('.concierge-chat');
+            if (!chatBtn) {
+                chatBtn = document.createElement('div');
+                chatBtn.className = 'concierge-chat';
+                chatBtn.innerHTML = `<button class="concierge-btn" id="conciergeBtn"><i class="icon-chat"></i></button>`;
+                document.body.appendChild(chatBtn);
+            }
+            // Attach event listener
+            const btn = document.getElementById('conciergeBtn');
+            if (btn) {
+                btn.onclick = () => this.toggleAiChat();
+            }
+        }, 100);
     }
 
     renderDashboard() {
@@ -493,33 +508,35 @@ class SpyDash {
     }
 
     renderTrendingContent() {
-        return this.trendingContent.map(item => `
-            <div class="content-card" data-platform="${item.platform}">
-                <div class="content-thumbnail">
-                    <i class="${item.thumbnail}"></i>
-                </div>
-                <div class="content-info">
-                    <h4>${item.title}</h4>
-                    <p class="creator">by ${item.creator}</p>
-                    <p class="views">${item.views} views</p>
-                    <div class="content-actions">
-                        <button class="action-btn" onclick="this.parentElement.parentElement.parentElement.classList.toggle('favorited')">
-                            <i class="icon-heart"></i>
-                        </button>
-                        <button class="action-btn">
-                            <i class="icon-chart-bar"></i>
-                        </button>
-                        <button class="action-btn">
-                            <i class="icon-comment"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="content-badges">
-                    ${item.trending ? '<div class="trending-text">Trending</div>' : ''}
-                    <div class="platform-icon ${item.platform}">${this.getPlatformIcon(item.platform)}</div>
-                </div>
-            </div>
-        `).join('');
+        if (!this.trendingContent || this.trendingContent.length === 0) {
+            return '<div class="no-results"><p>No trending content found.</p></div>';
+        }
+        // Render all cards
+        const cardsHtml = this.trendingContent.map(item => this.renderContentCard(item)).join('');
+        // After rendering, fetch AI summaries
+        setTimeout(() => {
+            this.trendingContent.forEach(item => {
+                const summaryDiv = document.getElementById(`ai-summary-${item.videoId || item.id}`);
+                if (summaryDiv && !summaryDiv.dataset.loaded) {
+                    summaryDiv.textContent = 'Loading AI summary...';
+                    fetch('/.netlify/functions/summarize', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: item.title + ' ' + (item.description || ''), maxLength: 120 })
+                    })
+                    .then(res => res.ok ? res.json() : { summary: 'No summary available.' })
+                    .then(data => {
+                        summaryDiv.textContent = data.summary || 'No summary available.';
+                        summaryDiv.dataset.loaded = '1';
+                    })
+                    .catch(() => {
+                        summaryDiv.textContent = 'No summary available.';
+                        summaryDiv.dataset.loaded = '1';
+                    });
+                }
+            });
+        }, 200);
+        return cardsHtml;
     }
 
     getPlatformIcon(platform) {
@@ -1330,6 +1347,34 @@ class SpyDash {
                 }
             });
         }
+
+        // Analyze Channel button
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const channelInput = document.getElementById('channelInput');
+        if (analyzeBtn && channelInput) {
+            analyzeBtn.addEventListener('click', async () => {
+                const channelUrl = channelInput.value.trim();
+                if (!channelUrl) {
+                    this.showError('Please enter a YouTube channel URL or username.');
+                    return;
+                }
+                this.showLoading(true);
+                try {
+                    const response = await fetch('/.netlify/functions/fetchYouTube?query=' + encodeURIComponent(channelUrl));
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.analyticsData = this.transformAnalyticsData(data);
+                        this.showSuccess('Channel analytics loaded!');
+                        this.showSection('analytics');
+                    } else {
+                        this.showError('Failed to fetch channel analytics.');
+                    }
+                } catch (err) {
+                    this.showError('Error fetching channel analytics.');
+                }
+                this.showLoading(false);
+            });
+        }
     }
 
     switchTab(tab) {
@@ -1589,11 +1634,15 @@ class SpyDash {
     }
 
     renderContentCard(item) {
+        // Embed YouTube video if videoId exists
+        const videoEmbed = item.videoId ? `
+            <div class="content-video">
+                <iframe width="100%" height="220" src="https://www.youtube.com/embed/${item.videoId}" frameborder="0" allowfullscreen></iframe>
+            </div>
+        ` : `<div class="content-thumbnail"><i class="${item.thumbnail}"></i></div>`;
         return `
             <div class="content-card" data-platform="${item.platform}">
-                <div class="content-thumbnail">
-                    <i class="${item.thumbnail}"></i>
-                </div>
+                ${videoEmbed}
                 <div class="content-info">
                     <h4>${item.title}</h4>
                     <p class="creator">by ${item.creator}</p>
@@ -1609,6 +1658,7 @@ class SpyDash {
                             <i class="icon-comment"></i>
                         </button>
                     </div>
+                    <div class="ai-summary" id="ai-summary-${item.videoId || item.id}">Loading AI summary...</div>
                 </div>
                 <div class="content-badges">
                     ${item.trending ? '<div class="trending-text">Trending</div>' : ''}
@@ -2020,6 +2070,34 @@ class SpyDash {
                 this.signup();
             });
         }
+    }
+
+    // Add a transformAnalyticsData method if not present
+    transformAnalyticsData(data) {
+        // Transform the YouTube API response to match this.analyticsData structure
+        // (This is a placeholder, real implementation should map API fields)
+        return {
+            engagement: {
+                likes: data.items?.[0]?.statistics?.likeCount || 0,
+                comments: data.items?.[0]?.statistics?.commentCount || 0,
+                shares: 0,
+                views: data.items?.[0]?.statistics?.viewCount || 0,
+                subscribers: data.items?.[0]?.statistics?.subscriberCount || 0
+            },
+            platformDistribution: {
+                youtube: 100,
+                tiktok: 0,
+                instagram: 0,
+                twitter: 0
+            },
+            performance: {
+                growthRate: 0,
+                engagementRate: 0,
+                reachRate: 0,
+                conversionRate: 0
+            },
+            trends: []
+        };
     }
 }
 
