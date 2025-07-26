@@ -22,6 +22,7 @@ exports.handler = async (event, context) => {
     const { text, maxLength = 200 } = JSON.parse(event.body || '{}');
     
     if (!text) {
+      console.log('No text provided for summarization');
       return {
         statusCode: 400,
         headers,
@@ -29,15 +30,25 @@ exports.handler = async (event, context) => {
       };
     }
 
+    console.log('Summarization request received:', { textLength: text.length, maxLength });
+
     // Use OpenRouter API for summarization (if configured)
     const openRouterKey = process.env.OPENROUTER_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
     
+    console.log('API Keys available:', { 
+      openRouter: !!openRouterKey, 
+      openai: !!openaiKey 
+    });
+    
     if (openRouterKey) {
+      console.log('Attempting OpenRouter summary...');
       return await generateOpenRouterSummary(text, maxLength, openRouterKey, headers);
     } else if (openaiKey) {
+      console.log('Attempting OpenAI summary...');
       return await generateOpenAISummary(text, maxLength, openaiKey, headers);
     } else {
+      console.log('No API keys available, using simple summary...');
       // Fallback to simple summary
       return await generateSimpleSummary(text, maxLength, headers);
     }
@@ -58,6 +69,8 @@ exports.handler = async (event, context) => {
 
 async function generateOpenRouterSummary(text, maxLength, apiKey, headers) {
   try {
+    console.log('Making OpenRouter API call...');
+    
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
@@ -81,10 +94,12 @@ async function generateOpenRouterSummary(text, maxLength, apiKey, headers) {
           'Content-Type': 'application/json',
           'HTTP-Referer': 'https://your-site.netlify.app',
           'X-Title': 'SpyDash Analytics'
-        }
+        },
+        timeout: 10000 // 10 second timeout
       }
     );
 
+    console.log('OpenRouter API response received');
     const summary = response.data.choices[0].message.content;
 
     return {
@@ -98,15 +113,18 @@ async function generateOpenRouterSummary(text, maxLength, apiKey, headers) {
     };
 
   } catch (error) {
-    console.error('OpenRouter API Error:', error);
+    console.error('OpenRouter API Error:', error.response?.data || error.message);
     
     // Fallback to simple summary
+    console.log('Falling back to simple summary due to OpenRouter error');
     return await generateSimpleSummary(text, maxLength, headers);
   }
 }
 
 async function generateOpenAISummary(text, maxLength, apiKey, headers) {
   try {
+    console.log('Making OpenAI API call...');
+    
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
@@ -128,10 +146,12 @@ async function generateOpenAISummary(text, maxLength, apiKey, headers) {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 10000 // 10 second timeout
       }
     );
 
+    console.log('OpenAI API response received');
     const summary = response.data.choices[0].message.content;
 
     return {
@@ -145,14 +165,17 @@ async function generateOpenAISummary(text, maxLength, apiKey, headers) {
     };
 
   } catch (error) {
-    console.error('OpenAI API Error:', error);
+    console.error('OpenAI API Error:', error.response?.data || error.message);
     
     // Fallback to simple summary
+    console.log('Falling back to simple summary due to OpenAI error');
     return await generateSimpleSummary(text, maxLength, headers);
   }
 }
 
 async function generateSimpleSummary(text, maxLength, headers) {
+  console.log('Generating simple summary...');
+  
   // Simple summary generation
   const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
   let summary = sentences.slice(0, 2).join('. ') + '.';
@@ -161,6 +184,8 @@ async function generateSimpleSummary(text, maxLength, headers) {
   if (summary.length > maxLength) {
     summary = summary.substring(0, maxLength - 3) + '...';
   }
+
+  console.log('Simple summary generated:', summary);
 
   return {
     statusCode: 200,

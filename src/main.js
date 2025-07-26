@@ -649,13 +649,24 @@ class SpyDash {
 
             if (response.ok) {
                 const data = await response.json();
-                return data.summary || 'AI summary unavailable';
+                console.log('AI Summary response:', data);
+                
+                if (data.summary) {
+                    return data.summary;
+                } else if (data.error) {
+                    console.error('AI Summary error:', data.error);
+                    return `Summary: ${data.error}`;
+                } else {
+                    return 'AI summary unavailable';
+                }
             } else {
-                throw new Error('Failed to generate summary');
+                const errorText = await response.text();
+                console.error('AI Summary API error:', response.status, errorText);
+                throw new Error(`API Error: ${response.status} - ${errorText}`);
             }
         } catch (error) {
             console.error('Error calling summarize API:', error);
-            throw error;
+            return 'AI summary unavailable';
         }
     }
 
