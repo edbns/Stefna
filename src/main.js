@@ -7,6 +7,8 @@ class SpyDash {
         this.currentUser = null;
         this.currentPlatform = 'youtube';
         this.trendingContent = [];
+        this.trendingNextPageToken = null;
+        this.trendingLoading = false;
         this.analyticsData = {
             engagement: {
                 likes: 0,
@@ -62,6 +64,10 @@ class SpyDash {
                 { type: 'Collaboration', suggestion: 'Partner with tech influencers for cross-promotion', impact: 'High', effort: 'High' }
             ]
         };
+        this.analyticsNextPageToken = null;
+        this.analyticsLoading = false;
+        this.insightsNextPageToken = null;
+        this.insightsLoading = false;
         this.init();
     }
 
@@ -69,6 +75,7 @@ class SpyDash {
         this.checkAuthStatus();
         this.loadTrendingContent();
         this.loadAnalyticsData();
+        this.loadInsightsData();
         this.render();
         // Attach event listeners
         setTimeout(() => {
@@ -86,18 +93,18 @@ class SpyDash {
         }
     }
 
-    async loadTrendingContent() {
+    async loadTrendingContent(pageToken = null) {
+        if (this.trendingLoading) return;
+        this.trendingLoading = true;
         try {
-            // Call the actual Netlify function to fetch YouTube data
-            const response = await fetch('/.netlify/functions/fetchYouTube?query=trending technology');
-
+            let url = '/.netlify/functions/fetchYouTube?query=trending technology';
+            if (pageToken) url += `&pageToken=${pageToken}`;
+            const response = await fetch(url);
             if (response.ok) {
                 const data = await response.json();
                 console.log('YouTube API response:', data);
-                
-                // Transform the data to match our format
-                this.trendingContent = data.items ? data.items.map((item, index) => ({
-                    id: index + 1,
+                const newItems = data.items ? data.items.map((item, index) => ({
+                    id: (this.trendingContent.length + index + 1),
                     platform: 'youtube',
                     title: item.snippet?.title || 'Untitled',
                     creator: item.snippet?.channelTitle || 'Unknown',
@@ -107,16 +114,22 @@ class SpyDash {
                     videoId: item.id?.videoId || item.id,
                     category: 'technology'
                 })) : [];
+                if (pageToken) {
+                    this.trendingContent = this.trendingContent.concat(newItems);
+                } else {
+                    this.trendingContent = newItems;
+                }
+                this.trendingNextPageToken = data.nextPageToken || null;
             } else {
                 console.error('Failed to fetch YouTube data:', response.status);
-                // Fallback to mock data
-                this.loadMockTrendingContent();
+                if (!pageToken) this.loadMockTrendingContent();
             }
         } catch (error) {
             console.error('Error fetching trending content:', error);
-            // Fallback to mock data
-            this.loadMockTrendingContent();
+            if (!pageToken) this.loadMockTrendingContent();
         }
+        this.trendingLoading = false;
+        this.renderTrendingContent();
     }
 
     loadMockTrendingContent() {
@@ -165,27 +178,30 @@ class SpyDash {
         ];
     }
 
-    async loadAnalyticsData() {
+    async loadAnalyticsData(pageToken = null) {
+        if (this.analyticsLoading) return;
+        this.analyticsLoading = true;
         try {
-            // Call the actual Netlify function to fetch analytics data
-            const response = await fetch('/.netlify/functions/fetchYouTube?query=analytics dashboard');
-
+            let url = '/.netlify/functions/fetchYouTube?query=analytics dashboard';
+            if (pageToken) url += `&pageToken=${pageToken}`;
+            const response = await fetch(url);
             if (response.ok) {
                 const data = await response.json();
                 console.log('Analytics API response:', data);
-                
-                // Update analytics data with real data if available
                 if (data.items && data.items.length > 0) {
-                    // Update engagement metrics with real data
-                    this.analyticsData.engagement.views = data.items.length;
-                    
-                    // Update trends with real data
-                    this.analyticsData.trends = data.items.slice(0, 6).map((item, index) => ({
-                        month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][index] || `Month ${index + 1}`,
+                    // Append or set analytics trends
+                    const newTrends = data.items.map((item, index) => ({
+                        month: `Month ${(this.analyticsData.trends.length + index + 1)}`,
                         views: Math.floor(Math.random() * 5000) + 1000,
                         engagement: parseFloat((Math.random() * 10 + 5).toFixed(1)),
                         growth: parseFloat((Math.random() * 20 + 5).toFixed(1))
                     }));
+                    if (pageToken) {
+                        this.analyticsData.trends = this.analyticsData.trends.concat(newTrends);
+                    } else {
+                        this.analyticsData.trends = newTrends;
+                    }
+                    this.analyticsNextPageToken = data.nextPageToken || null;
                 }
             } else {
                 console.error('Failed to fetch analytics data:', response.status);
@@ -193,6 +209,59 @@ class SpyDash {
         } catch (error) {
             console.error('Error fetching analytics data:', error);
         }
+        this.analyticsLoading = false;
+        this.renderAnalyticsContent();
+    }
+
+    async loadInsightsData(pageToken = null) {
+        if (this.insightsLoading) return;
+        this.insightsLoading = true;
+        try {
+            let url = '/.netlify/functions/fetchYouTube?query=ai insights trends';
+            if (pageToken) url += `&pageToken=${pageToken}`;
+            const response = await fetch(url);
+            if (response.ok) {
+                const data = await response.json();
+                console.log('AI Insights API response:', data);
+                if (data.items && data.items.length > 0) {
+                    // Append or set new insights data
+                    const newTrends = data.items.map((item, index) => ({
+                        topic: item.snippet?.title || `Trend ${this.aiInsights.trends.length + index + 1}`,
+                        growth: `${Math.random() > 0.5 ? '+' : '-'}${Math.floor(Math.random() * 50) + 10}%`,
+                        sentiment: ['positive', 'neutral', 'negative'][Math.floor(Math.random() * 3)],
+                        prediction: `Predicted to ${Math.random() > 0.5 ? 'increase' : 'decrease'} in engagement`
+                    }));
+                    const newPredictions = data.items.map((item, index) => ({
+                        metric: `Metric ${this.aiInsights.predictions.length + index + 1}`,
+                        prediction: `${Math.random() > 0.5 ? '+' : '-'}${Math.floor(Math.random() * 30) + 5}%`,
+                        confidence: Math.floor(Math.random() * 30) + 70,
+                        timeframe: `${Math.floor(Math.random() * 12) + 1} months`
+                    }));
+                    const newRecommendations = data.items.map((item, index) => ({
+                        type: `Strategy ${this.aiInsights.recommendations.length + index + 1}`,
+                        impact: ['High', 'Medium', 'Low'][Math.floor(Math.random() * 3)],
+                        effort: ['High', 'Medium', 'Low'][Math.floor(Math.random() * 3)],
+                        suggestion: `Consider ${item.snippet?.title || 'this strategy'} for better performance`
+                    }));
+                    if (pageToken) {
+                        this.aiInsights.trends = this.aiInsights.trends.concat(newTrends);
+                        this.aiInsights.predictions = this.aiInsights.predictions.concat(newPredictions);
+                        this.aiInsights.recommendations = this.aiInsights.recommendations.concat(newRecommendations);
+                    } else {
+                        this.aiInsights.trends = newTrends;
+                        this.aiInsights.predictions = newPredictions;
+                        this.aiInsights.recommendations = newRecommendations;
+                    }
+                    this.insightsNextPageToken = data.nextPageToken || null;
+                }
+            } else {
+                console.error('Failed to fetch insights data:', response.status);
+            }
+        } catch (error) {
+            console.error('Error fetching insights data:', error);
+        }
+        this.insightsLoading = false;
+        this.renderInsightsContent();
     }
 
     render() {
@@ -513,35 +582,18 @@ class SpyDash {
     }
 
     renderTrendingContent() {
-        if (!this.trendingContent || this.trendingContent.length === 0) {
-            return '<div class="no-results"><p>No trending content found.</p></div>';
+        const grid = document.getElementById('contentGrid');
+        if (!grid) return;
+        grid.innerHTML = (this.trendingContent && this.trendingContent.length > 0)
+            ? this.trendingContent.map(item => this.renderContentCard(item)).join('')
+            : '<div class="no-results"><p>No trending content found.</p></div>';
+        // Add loading spinner if loading
+        if (this.trendingLoading) {
+            const spinner = document.createElement('div');
+            spinner.className = 'loading';
+            spinner.innerHTML = '<div class="spinner"></div><span>Loading more...</span>';
+            grid.appendChild(spinner);
         }
-        // Render all cards
-        const cardsHtml = this.trendingContent.map(item => this.renderContentCard(item)).join('');
-        // After rendering, fetch AI summaries
-        setTimeout(() => {
-            this.trendingContent.forEach(item => {
-                const summaryDiv = document.getElementById(`ai-summary-${item.videoId || item.id}`);
-                if (summaryDiv && !summaryDiv.dataset.loaded) {
-                    summaryDiv.textContent = 'Loading AI summary...';
-                    fetch('/.netlify/functions/summarize', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: item.title + ' ' + (item.description || ''), maxLength: 120 })
-                    })
-                    .then(res => res.ok ? res.json() : { summary: 'No summary available.' })
-                    .then(data => {
-                        summaryDiv.textContent = data.summary || 'No summary available.';
-                        summaryDiv.dataset.loaded = '1';
-                    })
-                    .catch(() => {
-                        summaryDiv.textContent = 'No summary available.';
-                        summaryDiv.dataset.loaded = '1';
-                    });
-                }
-            });
-        }, 200);
-        return cardsHtml;
     }
 
     getPlatformIcon(platform) {
@@ -1348,6 +1400,67 @@ class SpyDash {
                 this.showLoading(false);
             });
         }
+
+        // Infinite scroll for trending content
+        const grid = document.getElementById('contentGrid');
+        if (grid) {
+            grid.onscroll = () => {
+                if (this.trendingNextPageToken && !this.trendingLoading) {
+                    const nearBottom = grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 200;
+                    if (nearBottom) {
+                        this.loadTrendingContent(this.trendingNextPageToken);
+                    }
+                }
+            };
+        }
+
+        // Infinite scroll for analytics content
+        const analyticsGrid = document.getElementById('analyticsGrid');
+        if (analyticsGrid) {
+            analyticsGrid.onscroll = () => {
+                if (this.analyticsNextPageToken && !this.analyticsLoading) {
+                    const nearBottom = analyticsGrid.scrollTop + analyticsGrid.clientHeight >= analyticsGrid.scrollHeight - 200;
+                    if (nearBottom) {
+                        this.loadAnalyticsData(this.analyticsNextPageToken);
+                    }
+                }
+            };
+        }
+
+        // Infinite scroll for AI Insights content
+        const trendsGrid = document.querySelector('.trends-grid');
+        if (trendsGrid) {
+            trendsGrid.onscroll = () => {
+                if (this.insightsNextPageToken && !this.insightsLoading) {
+                    const nearBottom = trendsGrid.scrollTop + trendsGrid.clientHeight >= trendsGrid.scrollHeight - 200;
+                    if (nearBottom) {
+                        this.loadInsightsData(this.insightsNextPageToken);
+                    }
+                }
+            };
+        }
+        const predictionsGrid = document.querySelector('.predictions-grid');
+        if (predictionsGrid) {
+            predictionsGrid.onscroll = () => {
+                if (this.insightsNextPageToken && !this.insightsLoading) {
+                    const nearBottom = predictionsGrid.scrollTop + predictionsGrid.clientHeight >= predictionsGrid.scrollHeight - 200;
+                    if (nearBottom) {
+                        this.loadInsightsData(this.insightsNextPageToken);
+                    }
+                }
+            };
+        }
+        const recommendationsGrid = document.querySelector('.recommendations-grid');
+        if (recommendationsGrid) {
+            recommendationsGrid.onscroll = () => {
+                if (this.insightsNextPageToken && !this.insightsLoading) {
+                    const nearBottom = recommendationsGrid.scrollTop + recommendationsGrid.clientHeight >= recommendationsGrid.scrollHeight - 200;
+                    if (nearBottom) {
+                        this.loadInsightsData(this.insightsNextPageToken);
+                    }
+                }
+            };
+        }
     }
 
     switchTab(tab) {
@@ -2112,6 +2225,56 @@ class SpyDash {
                     aiChatModal.style.display = 'none';
                 }
             });
+        }
+    }
+
+    renderAnalyticsContent() {
+        const grid = document.getElementById('analyticsGrid');
+        if (!grid) return;
+        grid.innerHTML = (this.analyticsData.trends && this.analyticsData.trends.length > 0)
+            ? this.analyticsData.trends.map(trend => `<div class="metric-card"><div class="metric-content"><h4>${trend.month}</h4><div class="metric-value">${trend.views}</div><div class="metric-change">${trend.growth}%</div></div></div>`).join('')
+            : '<div class="no-results"><p>No analytics data found.</p></div>';
+        if (this.analyticsLoading) {
+            const spinner = document.createElement('div');
+            spinner.className = 'loading';
+            spinner.innerHTML = '<div class="spinner"></div><span>Loading more...</span>';
+            grid.appendChild(spinner);
+        }
+    }
+
+    renderInsightsContent() {
+        // Render trends grid
+        const trendsGrid = document.querySelector('.trends-grid');
+        if (trendsGrid) {
+            trendsGrid.innerHTML = this.renderTrendAnalysis();
+            if (this.insightsLoading) {
+                const spinner = document.createElement('div');
+                spinner.className = 'loading';
+                spinner.innerHTML = '<div class="spinner"></div><span>Loading more trends...</span>';
+                trendsGrid.appendChild(spinner);
+            }
+        }
+        // Render predictions grid
+        const predictionsGrid = document.querySelector('.predictions-grid');
+        if (predictionsGrid) {
+            predictionsGrid.innerHTML = this.renderPredictions();
+            if (this.insightsLoading) {
+                const spinner = document.createElement('div');
+                spinner.className = 'loading';
+                spinner.innerHTML = '<div class="spinner"></div><span>Loading more predictions...</span>';
+                predictionsGrid.appendChild(spinner);
+            }
+        }
+        // Render recommendations grid
+        const recommendationsGrid = document.querySelector('.recommendations-grid');
+        if (recommendationsGrid) {
+            recommendationsGrid.innerHTML = this.renderRecommendations();
+            if (this.insightsLoading) {
+                const spinner = document.createElement('div');
+                spinner.className = 'loading';
+                spinner.innerHTML = '<div class="spinner"></div><span>Loading more recommendations...</span>';
+                recommendationsGrid.appendChild(spinner);
+            }
         }
     }
 }
