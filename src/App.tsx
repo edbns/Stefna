@@ -21,6 +21,7 @@ import PageTransition from './components/PageTransition';
 
 // Main App Content
 const AppContent: React.FC = () => {
+  // All hooks must be called in the same order every render
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
@@ -73,120 +74,121 @@ const AppContent: React.FC = () => {
     setShowConsentBanner(false);
   };
 
-  // FIXED: Conditional rendering inside return, not early return
+  // Render launch screen
+  if (showLaunchScreen) {
+    return (
+      <Router>
+        <LaunchScreen onComplete={handleLaunchComplete} />
+        <Toaster position="top-right" />
+      </Router>
+    );
+  }
+
+  // Render main app
   return (
     <Router>
-      {showLaunchScreen ? (
-        // Launch Screen
-        <>
-          <LaunchScreen onComplete={handleLaunchComplete} />
-          <Toaster position="top-right" />
-        </>
-      ) : (
-        // Main App
-        <div className="min-h-screen bg-gray-50">
-          <Routes>
-            {/* Legal Documents Routes */}
-            <Route 
-              path="/privacy-policy" 
-              element={
-                <PageTransition key="privacy-policy">
-                  <PrivacyPolicy />
-                </PageTransition>
-              } 
-            />
-            <Route 
-              path="/terms-and-conditions" 
-              element={
-                <PageTransition key="terms-and-conditions">
-                  <TermsAndConditions />
-                </PageTransition>
-              } 
-            />
-            <Route 
-              path="/cookies-policy" 
-              element={
-                <PageTransition key="cookies-policy">
-                  <CookiesPolicy />
-                </PageTransition>
-              } 
-            />
-            
-            {/* Main App Route */}
-            <Route 
-              path="/*" 
-              element={
-                <>
-                  {/* Sidebar */}
-                  <Sidebar
-                    isOpen={isSidebarOpen}
-                    onClose={() => setIsSidebarOpen(false)}
-                    onToggle={handleSidebarToggle}
-                    selectedPlatform={selectedPlatform}
-                    onPlatformChange={setSelectedPlatform}
-                    selectedCategory={selectedCategory}
-                    onCategoryChange={setSelectedCategory}
-                    onAuthOpen={handleAuthModalOpen}
-                  />
-                  
-                  {/* Main Content */}
-                  <main className={`flex-1 transition-all duration-300 ${
-                    isSidebarOpen ? 'ml-64' : 'ml-16'
-                  }`}>
-                    <Routes>
-                      <Route 
-                        path="/" 
-                        element={
-                          <PageTransition key="dashboard">
-                            <Dashboard
-                              onSidebarToggle={handleSidebarToggle}
-                              onAiChatOpen={handleAiChatOpen}
-                              onAuthOpen={handleAuthModalOpen}
-                              selectedPlatform={selectedPlatform}
-                              selectedCategory={selectedCategory}
-                              onCategoryChange={setSelectedCategory}
-                            />
-                          </PageTransition>
-                        } 
-                      />
-                    </Routes>
-                  </main>
-                  
-                  {/* Floating AI Chat Button */}
-                  <FloatingAIChat onClose={() => {}} />
-                  
-                  {/* Modals */}
-                  <AuthModal 
-                    isOpen={isAuthModalOpen} 
-                    onClose={() => setIsAuthModalOpen(false)} 
-                  />
-                  
-                  <AIChat 
-                    isOpen={isAiChatOpen} 
-                    onClose={() => setIsAiChatOpen(false)} 
-                  />
-                </>
-              }
-            />
-          </Routes>
+      <div className="min-h-screen bg-gray-50">
+        <Routes>
+          {/* Legal Documents Routes */}
+          <Route 
+            path="/privacy-policy" 
+            element={
+              <PageTransition key="privacy-policy">
+                <PrivacyPolicy />
+              </PageTransition>
+            } 
+          />
+          <Route 
+            path="/terms-and-conditions" 
+            element={
+              <PageTransition key="terms-and-conditions">
+                <TermsAndConditions />
+              </PageTransition>
+            } 
+          />
+          <Route 
+            path="/cookies-policy" 
+            element={
+              <PageTransition key="cookies-policy">
+                <CookiesPolicy />
+              </PageTransition>
+            } 
+          />
           
-          {/* Consent Banner */}
-          {showConsentBanner && (
-            <ConsentBanner 
-              onAccept={handleConsentAccept}
-              onDecline={handleConsentDecline}
-            />
-          )}
-          
-          {/* Toast Notifications */}
-          <Toaster position="top-right" />
-        </div>
-      )}
+          {/* Main App Route */}
+          <Route 
+            path="/*" 
+            element={
+              <>
+                {/* Sidebar */}
+                <Sidebar
+                  isOpen={isSidebarOpen}
+                  onClose={() => setIsSidebarOpen(false)}
+                  onToggle={handleSidebarToggle}
+                  selectedPlatform={selectedPlatform}
+                  onPlatformChange={setSelectedPlatform}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={setSelectedCategory}
+                  onAuthOpen={handleAuthModalOpen}
+                />
+                
+                {/* Main Content */}
+                <main className={`flex-1 transition-all duration-300 ${
+                  isSidebarOpen ? 'ml-64' : 'ml-16'
+                }`}>
+                  <Routes>
+                    <Route 
+                      path="/" 
+                      element={
+                        <PageTransition key="dashboard">
+                          <Dashboard
+                            onSidebarToggle={handleSidebarToggle}
+                            onAiChatOpen={handleAiChatOpen}
+                            onAuthOpen={handleAuthModalOpen}
+                            selectedPlatform={selectedPlatform}
+                            selectedCategory={selectedCategory}
+                            onCategoryChange={setSelectedCategory}
+                          />
+                        </PageTransition>
+                      } 
+                    />
+                  </Routes>
+                </main>
+                
+                {/* Floating AI Chat Button */}
+                <FloatingAIChat onClose={() => {}} />
+                
+                {/* Modals */}
+                <AuthModal 
+                  isOpen={isAuthModalOpen} 
+                  onClose={() => setIsAuthModalOpen(false)} 
+                />
+                
+                <AIChat 
+                  isOpen={isAiChatOpen} 
+                  onClose={() => setIsAiChatOpen(false)} 
+                />
+              </>
+            }
+          />
+        </Routes>
+        
+        {/* Consent Banner */}
+        {showConsentBanner && (
+          <ConsentBanner 
+            onAccept={handleConsentAccept}
+            onDecline={handleConsentDecline}
+          />
+        )}
+        
+        {/* Toast Notifications */}
+        <Toaster position="top-right" />
+      </div>
     </Router>
   );
 };
 
-// In your App component
+// Main App component
 const App: React.FC = () => {
   return (
     <ErrorBoundary>

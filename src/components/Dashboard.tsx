@@ -69,7 +69,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const handleFilterChange = (newFilters: any) => {
     setFilters(newFilters);
   };
-  // Add the missing handleProfileClick function
+
   const handleProfileClick = () => {
     onCategoryChange('profile');
   };
@@ -90,35 +90,26 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [selectedPlatform]);
   
-  // Update the useEffect for loading content:
-  // API fetch manages 'loading' state
-  // Update the API fetch useEffect
+  // Single useEffect for loading content - FIXED: Removed duplicate useEffects
   useEffect(() => {
-    setLoading(true);
-    setIsLoading(true);  // ✅ Set both states
-    fetchContent(1).then(data => {
-      setContent(data);
-      setLoading(false);
-      setIsLoading(false);  // ✅ Clear both states
-      setPage(1);
-    });
+    const loadContent = async () => {
+      setLoading(true);
+      setIsLoading(true);
+      
+      try {
+        const data = await fetchContent(1);
+        setContent(data);
+        setPage(1);
+      } catch (error) {
+        console.error('Error loading content:', error);
+      } finally {
+        setLoading(false);
+        setIsLoading(false);
+      }
+    };
+
+    loadContent();
   }, [selectedPlatform, selectedCategory, fetchContent]);
-  
-  // Remove or modify the timer useEffect
-  useEffect(() => {
-    setIsLoading(true);  // ✅ Show skeleton when category changes
-  }, [selectedCategory]);
-  
-  // Skeleton shows based on 'isLoading', not 'loading'
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 p-6 sm:p-8 lg:p-10">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <ContentCardSkeleton key={index} />
-        ))}
-      </div>
-    );
-  }
 
   // Auto-refresh content every 30 seconds
   useEffect(() => {
@@ -131,29 +122,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     const interval = setInterval(autoRefresh, 30000);
     return () => clearInterval(interval);
   }, [fetchContent]);
-
-  // Load initial content
-  useEffect(() => {
-    setLoading(true);
-    setTimeout(async () => {
-      const data = await fetchContent(1);
-      setContent(data);
-      setLoading(false);
-      setPage(1);
-    }, 1000);
-  }, [selectedPlatform, selectedCategory, fetchContent]);
-
-  // Filter content based on platform and search
-  // Remove these lines entirely:
-  // const filteredContent = content.filter(item => {
-  //   const matchesPlatform = selectedPlatform === 'all' || item.platform === selectedPlatform;
-  //   const matchesSearch = searchQuery === '' || 
-  //     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  //     item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  //     item.creator.name.toLowerCase().includes(searchQuery.toLowerCase());
-  //   
-  //   return matchesPlatform && matchesSearch;
-  // });
 
   // Load more content (infinite scroll)
   const loadMore = useCallback(() => {
@@ -173,13 +141,25 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Infinite scroll handler
   useEffect(() => {
     const handleScroll = () => {
-      if (window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight) return;
-      loadMore();
+      if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 1000) {
+        loadMore();
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [loadMore]);
+
+  // Skeleton shows based on 'isLoading', not 'loading'
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 p-6 sm:p-8 lg:p-10">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <ContentCardSkeleton key={index} />
+        ))}
+      </div>
+    );
+  }
 
   // Render content grid with skeleton loading
   const renderContentGrid = () => {
