@@ -7,7 +7,7 @@ import LoadingSpinner from './LoadingSpinner';
 import Schedule from './Schedule';
 import toast from 'react-hot-toast';
 import Settings from './Settings';
-import UserProfile from './UserProfile';
+import UserProfile from './profile/UserProfile';
 import Trending from './Trending';
 import CustomDashboards from './CustomDashboards';
 import ContentCardSkeleton from './ContentCardSkeleton';
