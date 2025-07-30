@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import LastFMService, { LastFMTrack } from '../services/LastFMService';
-import { ExternalLink, Flame, Music2 } from 'lucide-react';
+import { ExternalLink, Flame, Music2, Clock, Tag, Disc, User } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
+import InteractionButtons from './InteractionButtons';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const TRACKS_PER_PAGE = 15;
@@ -12,7 +14,9 @@ const TrendingMusic: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [detailedTracks, setDetailedTracks] = useState<Map<string, LastFMTrack>>(new Map());
   const loaderRef = useRef<HTMLDivElement | null>(null);
+  const { user } = useAuth();
 
   const fetchTracks = useCallback(async (pageNum: number) => {
     try {
@@ -21,6 +25,23 @@ const TrendingMusic: React.FC = () => {
       const newTracks = await LastFMService.getTrendingTracks(TRACKS_PER_PAGE, pageNum);
       setTracks((prev) => (pageNum === 1 ? newTracks : [...prev, ...newTracks]));
       setHasMore(newTracks.length === TRACKS_PER_PAGE);
+      
+      // Fetch detailed info for new tracks
+      if (pageNum === 1) {
+        setDetailedTracks(new Map());
+      }
+      
+      // Fetch detailed info for each track
+      for (const track of newTracks) {
+        try {
+          const detailedInfo = await LastFMService.getTrackInfo(track.artist.name, track.name);
+          if (detailedInfo) {
+            setDetailedTracks(prev => new Map(prev).set(track.url, detailedInfo));
+          }
+        } catch (error) {
+          console.error('Error fetching detailed track info:', error);
+        }
+      }
     } catch (err) {
       setError('Failed to load trending music');
       toast.error('Failed to load trending music');
@@ -49,6 +70,11 @@ const TrendingMusic: React.FC = () => {
       if (loaderRef.current) observer.unobserve(loaderRef.current);
     };
   }, [hasMore, loading]);
+
+  const handleAuthPrompt = () => {
+    toast.error('Please sign in to interact with content');
+    // You can trigger the auth modal here if needed
+  };
 
   if (error) {
     return (
@@ -87,11 +113,20 @@ const TrendingMusic: React.FC = () => {
             const image = track.image?.find((img) => img.size === 'extralarge')?.['#text'] ||
                           track.image?.find((img) => img.size === 'large')?.['#text'] ||
                           track.image?.[0]?.['#text'] || '';
+            
+            const detailedTrack = detailedTracks.get(track.url);
+            const duration = detailedTrack?.duration ? LastFMService.formatDuration(detailedTrack.duration) : null;
+            const playCount = LastFMService.formatPlayCount(track.playcount);
+            const tags = detailedTrack?.tags?.slice(0, 3) || [];
+            const album = detailedTrack?.album?.name;
+            const genre = detailedTrack?.genre;
+
             return (
               <div
                 key={track.url + idx}
-                className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer group animate-fadeIn"
+                className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 group"
               >
+                {/* Header with Image and Basic Info */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
@@ -101,15 +136,16 @@ const TrendingMusic: React.FC = () => {
                         <Music2 className="w-8 h-8 text-gray-400" />
                       )}
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-semibold text-black line-clamp-2">{track.name}</h3>
                       <a
                         href={track.artist.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline"
+                        className="text-sm text-blue-600 hover:underline flex items-center gap-1"
                         onClick={e => e.stopPropagation()}
                       >
+                        <User className="w-3 h-3" />
                         {track.artist.name}
                       </a>
                     </div>
@@ -118,7 +154,73 @@ const TrendingMusic: React.FC = () => {
                     <Flame className="w-3 h-3" /> Trending
                   </div>
                 </div>
-                <div className="flex items-center gap-3 mt-2">
+
+                {/* Detailed Information */}
+                <div className="space-y-3 mb-4">
+                  {/* Album and Duration */}
+                  {(album || duration) && (
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      {album && (
+                        <div className="flex items-center gap-1">
+                          <Disc className="w-3 h-3" />
+                          <span className="line-clamp-1">{album}</span>
+                        </div>
+                      )}
+                      {duration && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{duration}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Genre */}
+                  {genre && (
+                    <div className="flex items-center gap-1 text-sm">
+                      <span className="text-gray-500">Genre:</span>
+                      <span className="text-purple-600 font-medium">{genre}</span>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {tags.length > 0 && (
+                    <div className="flex items-center gap-1 text-sm">
+                      <Tag className="w-3 h-3 text-gray-400" />
+                      <div className="flex flex-wrap gap-1">
+                        {tags.map((tag, tagIdx) => (
+                          <span
+                            key={tagIdx}
+                            className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs"
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Play Count */}
+                  <div className="text-sm text-gray-500">
+                    <span className="font-medium">{playCount}</span> plays
+                  </div>
+                </div>
+
+                {/* Interaction Buttons */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <InteractionButtons
+                    contentType="music"
+                    contentId={track.url}
+                    metadata={{
+                      trackName: track.name,
+                      artistName: track.artist.name,
+                      album: album,
+                      genre: genre
+                    }}
+                    onAuthOpen={handleAuthPrompt}
+                  />
+                  
+                  {/* Listen Button */}
                   <a
                     href={track.url}
                     target="_blank"
@@ -128,8 +230,6 @@ const TrendingMusic: React.FC = () => {
                   >
                     Listen <ExternalLink className="w-4 h-4" />
                   </a>
-                  {/* Placeholder for Spotify preview */}
-                  <span className="text-xs text-gray-400 ml-2">Spotify preview coming soon</span>
                 </div>
               </div>
             );

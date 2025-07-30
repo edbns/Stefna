@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TrendingUp, TrendingDown, ExternalLink, Flame } from 'lucide-react';
 import CryptoService, { CryptoCoin } from '../services/CryptoService';
 import LoadingSpinner from './LoadingSpinner';
+import InteractionButtons from './InteractionButtons';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 interface CryptoTrendsProps {
@@ -17,6 +19,7 @@ const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef<HTMLDivElement | null>(null);
+  const { user } = useAuth();
 
   const fetchCryptoData = useCallback(async (pageNum: number) => {
     try {
@@ -236,10 +239,23 @@ const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
                 </div>
               </div>
 
-              {/* Rank */}
-              <div className="flex items-center justify-between">
+              {/* Rank and Interactions */}
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                 <span className="text-sm text-gray-500">Rank #{coin.market_cap_rank}</span>
-                <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                <InteractionButtons
+                  contentType="crypto"
+                  contentId={coin.id}
+                  metadata={{
+                    name: coin.name,
+                    symbol: coin.symbol,
+                    price: coin.current_price,
+                    marketCap: coin.market_cap
+                  }}
+                  onAuthOpen={() => {
+                    toast.error('Please sign in to interact with content');
+                    onAuthOpen?.();
+                  }}
+                />
               </div>
             </div>
           </div>

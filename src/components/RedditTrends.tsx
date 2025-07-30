@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, ArrowUp, MessageCircle, ExternalLink, Clock, Image as ImageIcon } from 'lucide-react';
 import { RedditService, RedditPost } from '../services/RedditService';
 import LoadingSpinner from './LoadingSpinner';
+import InteractionButtons from './InteractionButtons';
+import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 interface RedditTrendsProps {
   onAuthOpen?: () => void;
@@ -17,6 +20,7 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
   const [loadingMore, setLoadingMore] = useState(false);
   const loaderRef = useRef<HTMLDivElement>(null);
   const redditService = RedditService.getInstance();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchPosts();
@@ -78,6 +82,11 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
     setAfter(null);
     setHasMore(true);
     fetchPosts();
+  };
+
+  const handleAuthPrompt = () => {
+    toast.error('Please sign in to interact with content');
+    onAuthOpen?.();
   };
 
   if (loading) {
@@ -242,7 +251,7 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
                     </div>
                   </div>
 
-                  {/* Stats */}
+                  {/* Stats and Interactions */}
                   <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                     <div className="flex items-center space-x-4">
                       {/* Upvotes */}
@@ -256,15 +265,19 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
                         <span className="font-medium">{redditService.formatUpvotes(post.numComments)}</span>
                       </div>
                     </div>
-                    {/* External Link */}
-                    <a
-                      href={post.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors group/link"
-                    >
-                      <ExternalLink className="w-4 h-4 text-gray-400 group-hover/link:text-orange-500 transition-colors" />
-                    </a>
+                    
+                    {/* Interaction Buttons */}
+                    <InteractionButtons
+                      contentType="reddit"
+                      contentId={post.id}
+                      metadata={{
+                        title: post.title,
+                        subreddit: post.subreddit,
+                        author: post.author,
+                        url: post.url
+                      }}
+                      onAuthOpen={handleAuthPrompt}
+                    />
                   </div>
                 </div>
               </motion.div>

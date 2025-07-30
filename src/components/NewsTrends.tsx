@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ExternalLink, Clock, Tag } from 'lucide-react';
 import NewsService, { NewsArticle } from '../services/NewsService';
 import LoadingSpinner from './LoadingSpinner';
+import InteractionButtons from './InteractionButtons';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 interface NewsTrendsProps {
@@ -17,6 +19,7 @@ const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef<HTMLDivElement | null>(null);
+  const { user } = useAuth();
 
   const fetchNewsData = useCallback(async (pageNum: number) => {
     try {
@@ -229,14 +232,25 @@ const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
               </p>
 
               {/* Footer */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                 <div className="flex items-center gap-2">
                   <Tag className="w-4 h-4 text-gray-400" />
                   <span className="text-sm text-gray-500">{article.source_id}</span>
                 </div>
-                <div className="text-xs text-gray-400">
-                  {article.category.length > 0 && article.category[0]}
-                </div>
+                <InteractionButtons
+                  contentType="news"
+                  contentId={article.link}
+                  metadata={{
+                    title: article.title,
+                    source: article.source_id,
+                    category: article.category,
+                    url: article.link
+                  }}
+                  onAuthOpen={() => {
+                    toast.error('Please sign in to interact with content');
+                    onAuthOpen?.();
+                  }}
+                />
               </div>
             </div>
           </div>
