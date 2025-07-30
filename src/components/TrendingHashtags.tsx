@@ -40,23 +40,42 @@ const TrendingHashtags: React.FC<TrendingHashtagsProps> = ({ onAuthOpen }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" />
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-black mb-2">#️⃣ Trending Hashtags</h2>
+            <p className="text-gray-600">Most popular hashtags across platforms</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <LoadingSpinner size="lg" />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-20">
-        <h3 className="text-lg font-semibold text-black mb-2">Failed to load trending hashtags</h3>
-        <p className="text-gray-500 mb-4">{error}</p>
-        <button
-          onClick={fetchHashtags}
-          className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          Try Again
-        </button>
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-black mb-2">#️⃣ Trending Hashtags</h2>
+            <p className="text-gray-600">Most popular hashtags across platforms</p>
+          </div>
+        </div>
+        <div className="text-center py-20">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+            <TrendingUp className="w-8 h-8 text-red-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-black mb-2">Failed to load trending hashtags</h3>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button
+            onClick={fetchHashtags}
+            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -156,9 +175,27 @@ const TrendingHashtags: React.FC<TrendingHashtagsProps> = ({ onAuthOpen }) => {
       {/* Empty State */}
       {hashtags.length === 0 && !loading && (
         <div className="text-center py-20">
-          <Hash className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-500 mb-2">No trending hashtags found</h3>
-          <p className="text-gray-400">Check back later for the latest trending hashtags</p>
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center">
+            <Hash className="w-10 h-10 text-blue-500" />
+          </div>
+          <h3 className="text-xl font-semibold text-black mb-3">No trending hashtags found</h3>
+          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            We're currently gathering trending hashtags from across all platforms. Check back soon for the latest trending content.
+          </p>
+          <div className="flex items-center justify-center space-x-4">
+            <button
+              onClick={fetchHashtags}
+              className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              Refresh
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
         </div>
       )}
     </div>

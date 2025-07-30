@@ -127,7 +127,7 @@ const AppContent: React.FC = () => {
           <Route 
             path="/*" 
             element={
-              <div className="flex h-screen overflow-hidden">
+              <div className="flex h-screen">
                 {/* Sidebar */}
                 <Sidebar
                   isOpen={isSidebarOpen}

@@ -423,7 +423,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-gray-50">
+      <main className="flex-1 bg-gray-50">
         {renderContent()}
       </main>
     </div>
