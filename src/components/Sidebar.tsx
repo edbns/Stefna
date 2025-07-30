@@ -267,11 +267,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                     key={platform.id}
                     onClick={() => onPlatformChange(platform.id)}
                     disabled={platform.comingSoon}
-                    className={`w-full flex items-center px-2 py-2 rounded-md transition-all duration-200 ${
+                    className={`w-full group relative ${
                       isActive
                         ? 'bg-white text-black'
                         : 'text-white hover:bg-white/10'
-                    } ${platform.comingSoon ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } transition-all duration-200 rounded-md p-2 ${platform.comingSoon ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
                       <Icon className="w-5 h-5 flex-shrink-0" />
