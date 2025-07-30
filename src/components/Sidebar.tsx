@@ -105,19 +105,19 @@ const Sidebar: React.FC<SidebarProps> = ({
       )}
       
       {/* Sidebar */}
-      <div className={`fixed left-0 top-0 h-full z-50 transition-all duration-300 flex flex-col ${
-        isOpen ? 'w-64' : 'w-16'
+      <div className={`fixed top-0 h-full z-50 transition-all duration-300 flex flex-col ${
+        isOpen ? 'left-0 w-64' : 'left-4 w-20'
       } ${!isOpen ? 'shadow-2xl' : ''}`}
         style={{
           background: '#000000',
           borderRight: isOpen ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-          borderRadius: isOpen ? '0' : '0 12px 12px 0',
-          margin: isOpen ? '0' : '8px 0 8px 8px'
+          borderRadius: isOpen ? '0' : '12px',
+          margin: isOpen ? '0' : '8px 0 8px 0'
         }}>
         
         {/* Header */}
         <div className={`${
-          isOpen ? 'flex items-center justify-between h-20 p-4' : 'flex flex-col items-center justify-center h-20 p-2'
+          isOpen ? 'flex items-center justify-between h-20 p-4' : 'flex flex-col items-center justify-center h-20 p-3'
         } border-b border-white/10`}>
           {isOpen ? (
             <>
@@ -153,7 +153,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <nav className="flex-1 overflow-y-auto py-4 space-y-3">
           
           {/* Main Navigation */}
-          <div className="px-4">
+          <div className={isOpen ? "px-4" : "px-2"}>
             <div className="space-y-1">
               {mainNavigation.map((item) => {
                 const Icon = item.icon;
@@ -184,7 +184,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Tools Section */}
-          <div className="px-4">
+          <div className={isOpen ? "px-4" : "px-2"}>
             <div className="space-y-1">
               {tools.map((item) => {
                 const Icon = item.icon;
@@ -216,7 +216,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* User Features - Only show if logged in */}
           {user && userFeatures.length > 0 && (
-            <div className="px-4">
+            <div className={isOpen ? "px-4" : "px-2"}>
               <div className="space-y-1">
                 {userFeatures.map((item) => {
                   const Icon = item.icon;
@@ -256,7 +256,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* Platform Filters */}
-          <div className="px-4">
+          <div className={isOpen ? "px-4" : "px-2"}>
             <div className="space-y-1">
               {platforms.map((platform) => {
                 const Icon = platform.icon;
