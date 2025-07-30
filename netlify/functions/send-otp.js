@@ -1,6 +1,12 @@
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resendApiKey = process.env.RESEND_API_KEY;
+
+if (!resendApiKey) {
+  console.error('RESEND_API_KEY environment variable is not set');
+}
+
+const resend = new Resend(resendApiKey);
 
 exports.handler = async (event) => {
   const { email, otp } = JSON.parse(event.body || '{}');
@@ -9,6 +15,16 @@ exports.handler = async (event) => {
     return {
       statusCode: 400,
       body: JSON.stringify({ message: 'Missing email or OTP' }),
+    };
+  }
+
+  if (!resendApiKey) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ 
+        message: 'Email service not configured',
+        error: 'RESEND_API_KEY environment variable is not set. Please configure it in Netlify environment variables.'
+      }),
     };
   }
 

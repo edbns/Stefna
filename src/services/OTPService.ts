@@ -7,22 +7,38 @@ export async function sendOTP(email: string, otp: string) {
       body: JSON.stringify({ email, otp }),
     });
 
+    const data = await res.json();
+
     if (res.ok) {
-      const data = await res.json();
       return data;
     } else {
-      // Fallback for development or if Netlify function fails
+      // Check if it's a configuration error
+      if (data.error && data.error.includes('RESEND_API_KEY')) {
+        console.log('Email service not configured, using development fallback');
+        console.log(`🔐 Development OTP for ${email}: ${otp}`);
+        console.log('📧 Please configure RESEND_API_KEY in Netlify environment variables');
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        return { 
+          message: 'OTP sent! Check console for development code',
+          development: true,
+          otp: otp,
+          configError: true
+        };
+      }
+      
+      // Other error
       console.log('Netlify function failed, using development fallback');
       console.log(`🔐 Development OTP for ${email}: ${otp}`);
       console.log('📧 In production, this would be sent via email');
       
-      // Simulate email sending delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       return { 
         message: 'OTP sent! Check console for development code',
         development: true,
-        otp: otp // Include OTP for development
+        otp: otp
       };
     }
   } catch (error) {
@@ -36,7 +52,7 @@ export async function sendOTP(email: string, otp: string) {
     return { 
       message: 'OTP sent! Check console for development code',
       development: true,
-      otp: otp // Include OTP for development
+      otp: otp
     };
   }
 }
