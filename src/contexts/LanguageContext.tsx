@@ -59,6 +59,10 @@ const translations = {
     'auth.verify': 'Verify',
     'auth.optional': 'Login for advanced features',
     
+    // Profile
+    'profile.notLoggedIn': 'Not Logged In',
+    'profile.loginToView': 'Login to view your profile',
+    
     // Common UI
     'ui.loading': 'Loading...',
     'ui.save': 'Save',
@@ -113,7 +117,8 @@ const translations = {
     'filter.categories': 'Categories',
     'filter.sentiment': 'Sentiment',
     'filter.engagement': 'Engagement Range',
-    'filter.trending': 'Trending Score',
+    'filter.engagement.rate': 'Engagement Rate (%)',
+    'filter.trending.score': 'Trending Score',
     'filter.followers': 'Creator Follower Count',
     'filter.filters': 'Filters',
     
@@ -178,6 +183,10 @@ const translations = {
     'auth.verify': 'Vérifier',
     'auth.optional': 'Connexion pour fonctionnalités avancées',
     
+    // Profile
+    'profile.notLoggedIn': 'Non Connecté',
+    'profile.loginToView': 'Connectez-vous pour voir votre profil',
+    
     // Common UI
     'ui.loading': 'Chargement...',
     'ui.save': 'Enregistrer',
@@ -234,6 +243,8 @@ const translations = {
     'filter.engagement': 'Plage d\'Engagement',
     'filter.engagement.rate': 'Taux d\'Engagement (%)',
     'filter.trending.score': 'Score de Tendance',
+    'filter.followers': 'Nombre d\'Abonnés du Créateur',
+    'filter.filters': 'Filtres',
     'filter.clear': 'Effacer tout',
     'filter.results': 'résultats',
     'filter.tabs.basic': 'Basique',
@@ -268,7 +279,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [language]);
 
   const t = (key: string): string => {
-    return translations[language][key as keyof typeof translations['en']] || key;
+    const translation = translations[language][key as keyof typeof translations['en']];
+    return translation || key;
   };
 
   return (
