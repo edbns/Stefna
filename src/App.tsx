@@ -73,22 +73,21 @@ const AppContent: React.FC = () => {
     setShowConsentBanner(false);
   };
 
-  // Show Launch Screen first
-  if (showLaunchScreen) {
-    return (
-      <Router>
-        <LaunchScreen onComplete={handleLaunchComplete} />
-        <Toaster position="top-right" />
-      </Router>
-    );
-  }
-
+  // FIXED: Conditional rendering inside return, not early return
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Routes>
-          {/* Legal Documents Routes */}
-                      <Route 
+      {showLaunchScreen ? (
+        // Launch Screen
+        <>
+          <LaunchScreen onComplete={handleLaunchComplete} />
+          <Toaster position="top-right" />
+        </>
+      ) : (
+        // Main App
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
+            {/* Legal Documents Routes */}
+            <Route 
               path="/privacy-policy" 
               element={
                 <PageTransition key="privacy-policy">
@@ -112,76 +111,77 @@ const AppContent: React.FC = () => {
                 </PageTransition>
               } 
             />
+            
+            {/* Main App Route */}
+            <Route 
+              path="/*" 
+              element={
+                <>
+                  {/* Sidebar */}
+                  <Sidebar
+                    isOpen={isSidebarOpen}
+                    onClose={() => setIsSidebarOpen(false)}
+                    onToggle={handleSidebarToggle}
+                    selectedPlatform={selectedPlatform}
+                    onPlatformChange={setSelectedPlatform}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
+                    onAuthOpen={handleAuthModalOpen}
+                  />
+                  
+                  {/* Main Content */}
+                  <main className={`flex-1 transition-all duration-300 ${
+                    isSidebarOpen ? 'ml-64' : 'ml-16'
+                  }`}>
+                    <Routes>
+                      <Route 
+                        path="/" 
+                        element={
+                          <PageTransition key="dashboard">
+                            <Dashboard
+                              onSidebarToggle={handleSidebarToggle}
+                              onAiChatOpen={handleAiChatOpen}
+                              onAuthOpen={handleAuthModalOpen}
+                              selectedPlatform={selectedPlatform}
+                              selectedCategory={selectedCategory}
+                              onCategoryChange={setSelectedCategory}
+                            />
+                          </PageTransition>
+                        } 
+                      />
+                    </Routes>
+                  </main>
+                  
+                  {/* Floating AI Chat Button */}
+                  <FloatingAIChat onClose={() => {}} />
+                  
+                  {/* Modals */}
+                  <AuthModal 
+                    isOpen={isAuthModalOpen} 
+                    onClose={() => setIsAuthModalOpen(false)} 
+                  />
+                  
+                  <AIChat 
+                    isOpen={isAiChatOpen} 
+                    onClose={() => setIsAiChatOpen(false)} 
+                  />
+                </>
+              }
+            />
+          </Routes>
           
-          {/* Main App Route */}
-          <Route 
-            path="/*" 
-            element={
-              <>
-                {/* Sidebar */}
-                <Sidebar
-                  isOpen={isSidebarOpen}
-                  onClose={() => setIsSidebarOpen(false)}
-                  onToggle={handleSidebarToggle}
-                  selectedPlatform={selectedPlatform}
-                  onPlatformChange={setSelectedPlatform}
-                  selectedCategory={selectedCategory}
-                  onCategoryChange={setSelectedCategory}
-                  onAuthOpen={handleAuthModalOpen}
-                />
-                
-                {/* Main Content */}
-                <main className={`flex-1 transition-all duration-300 ${
-                  isSidebarOpen ? 'ml-64' : 'ml-16'
-                }`}>
-                  <Routes>
-                    <Route 
-                      path="/" 
-                      element={
-                        <PageTransition key="dashboard">
-                          <Dashboard
-                            onSidebarToggle={handleSidebarToggle}
-                            onAiChatOpen={handleAiChatOpen}
-                            onAuthOpen={handleAuthModalOpen}
-                            selectedPlatform={selectedPlatform}
-                            selectedCategory={selectedCategory}
-                            onCategoryChange={setSelectedCategory}
-                          />
-                        </PageTransition>
-                      } 
-                    />
-                  </Routes>
-                </main>
-                
-                {/* Floating AI Chat Button */}
-                <FloatingAIChat onClose={() => {}} />
-                
-                {/* Modals */}
-                <AuthModal 
-                  isOpen={isAuthModalOpen} 
-                  onClose={() => setIsAuthModalOpen(false)} 
-                />
-                
-                <AIChat 
-                  isOpen={isAiChatOpen} 
-                  onClose={() => setIsAiChatOpen(false)} 
-                />
-              </>
-            }
-          />
-        </Routes>
-        
-        {/* Consent Banner */}
-        {showConsentBanner && (
-          <ConsentBanner 
-            onAccept={handleConsentAccept}
-            onDecline={handleConsentDecline}
-          />
-        )}
-        
-        {/* Toast Notifications */}
-        <Toaster position="top-right" />
-      </div>
+          {/* Consent Banner */}
+          {showConsentBanner && (
+            <ConsentBanner 
+              onAccept={handleConsentAccept}
+              onDecline={handleConsentDecline}
+            />
+          )}
+          
+          {/* Toast Notifications */}
+          <Toaster position="top-right" />
+        </div>
+      )}
     </Router>
   );
 };
