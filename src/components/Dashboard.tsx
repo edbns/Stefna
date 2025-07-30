@@ -1,0 +1,451 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Menu, Search, LogIn, LogOut, User } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import ContentCard from './ContentCard';
+import LoadingSpinner from './LoadingSpinner';
+import Schedule from './Schedule';
+import toast from 'react-hot-toast';
+import Settings from './Settings';
+import UserProfile from './UserProfile';
+import Trending from './Trending';
+import CustomDashboards from './CustomDashboards';
+import ContentCardSkeleton from './ContentCardSkeleton';
+import TrendingCategories from './TrendingCategories';
+import TrendingHashtags from './TrendingHashtags';
+import SentimentAnalysis from './SentimentAnalysis';
+import GlobalReach from './GlobalReach';
+import YoutubeSummarizer from './YoutubeSummarizer';
+import PlatformService from '../services/PlatformService';
+import { Content } from '../types';
+
+// Add this import at the top
+import MegaFilter from './MegaFilter';
+import { useMegaFilter } from '../hooks/useMegaFilter';
+import CreatorCards from './CreatorCards';
+
+interface DashboardProps {
+  onSidebarToggle: () => void;
+  selectedPlatform: string;
+  selectedCategory: string;
+  onAiChatOpen: () => void;
+  onAuthOpen: () => void;
+  onCategoryChange: (category: string) => void;
+}
+
+
+
+// In the Dashboard component, update the auth section:
+const Dashboard: React.FC<DashboardProps> = ({ 
+  onSidebarToggle, 
+  selectedPlatform, 
+  selectedCategory,
+  onAiChatOpen,
+  onAuthOpen,
+  onCategoryChange
+}) => {
+  const { t, language, setLanguage } = useLanguage();
+  const { user, logout } = useAuth();
+  const [content, setContent] = useState<Content[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+
+  // Add the MegaFilter hook here
+  const {
+    filters,
+    setFilters,
+    filteredData,
+    totalResults,
+    originalTotal
+  } = useMegaFilter(content);
+
+  const handleSearch = (query: string) => {
+    // Search is handled by the MegaFilter component
+  };
+
+  const handleFilterChange = (newFilters: any) => {
+    setFilters(newFilters);
+  };
+  // Add the missing handleProfileClick function
+  const handleProfileClick = () => {
+    onCategoryChange('profile');
+  };
+
+  // Real data fetcher
+  const fetchContent = useCallback(async (pageNum: number = 1): Promise<Content[]> => {
+    try {
+      const platforms = selectedPlatform === 'all' ? ['all'] : [selectedPlatform];
+      console.log('Fetching content for platforms:', platforms);
+      const content = await PlatformService.getTrendingContent(platforms, 12);
+      console.log('Content received from PlatformService:', content);
+      console.log('Content length:', content.length);
+      console.log('Content details:', content.map(item => ({ id: item.id, title: item.title, platform: item.platform })));
+      return content;
+    } catch (error) {
+      console.error('Error fetching content:', error);
+      return [];
+    }
+  }, [selectedPlatform]);
+  
+  // Update the useEffect for loading content:
+  // API fetch manages 'loading' state
+  // Update the API fetch useEffect
+  useEffect(() => {
+    setLoading(true);
+    setIsLoading(true);  // ✅ Set both states
+    fetchContent(1).then(data => {
+      setContent(data);
+      setLoading(false);
+      setIsLoading(false);  // ✅ Clear both states
+      setPage(1);
+    });
+  }, [selectedPlatform, selectedCategory, fetchContent]);
+  
+  // Remove or modify the timer useEffect
+  useEffect(() => {
+    setIsLoading(true);  // ✅ Show skeleton when category changes
+  }, [selectedCategory]);
+  
+  // Skeleton shows based on 'isLoading', not 'loading'
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 p-6 sm:p-8 lg:p-10">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <ContentCardSkeleton key={index} />
+        ))}
+      </div>
+    );
+  }
+
+  // Auto-refresh content every 30 seconds
+  useEffect(() => {
+    const autoRefresh = async () => {
+      const newContent = await fetchContent(1);
+      setContent(newContent);
+      setPage(1);
+    };
+
+    const interval = setInterval(autoRefresh, 30000);
+    return () => clearInterval(interval);
+  }, [fetchContent]);
+
+  // Load initial content
+  useEffect(() => {
+    setLoading(true);
+    setTimeout(async () => {
+      const data = await fetchContent(1);
+      setContent(data);
+      setLoading(false);
+      setPage(1);
+    }, 1000);
+  }, [selectedPlatform, selectedCategory, fetchContent]);
+
+  // Filter content based on platform and search
+  // Remove these lines entirely:
+  // const filteredContent = content.filter(item => {
+  //   const matchesPlatform = selectedPlatform === 'all' || item.platform === selectedPlatform;
+  //   const matchesSearch = searchQuery === '' || 
+  //     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     item.creator.name.toLowerCase().includes(searchQuery.toLowerCase());
+  //   
+  //   return matchesPlatform && matchesSearch;
+  // });
+
+  // Load more content (infinite scroll)
+  const loadMore = useCallback(() => {
+    if (loading || !hasMore) return;
+    
+    setLoading(true);
+    setTimeout(async () => {
+      const newContent = await fetchContent(page + 1);
+      setContent(prev => [...prev, ...newContent]);
+      setPage(prev => prev + 1);
+      setLoading(false);
+      
+      if (page >= 5) setHasMore(false);
+    }, 1000);
+  }, [loading, hasMore, page, fetchContent]);
+
+  // Infinite scroll handler
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight) return;
+      loadMore();
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadMore]);
+
+  // Render content grid with skeleton loading
+  const renderContentGrid = () => {
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 p-6 sm:p-8 lg:p-10">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <ContentCardSkeleton key={index} />
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 p-6 sm:p-8 lg:p-10">
+        {filteredData.map((item, index) => (
+          <div
+            key={item.id}
+            className="transform transition-all duration-200 hover:scale-[1.02]"
+          >
+            <ContentCard content={item} viewMode="grid" />
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Render different components based on selected category
+  // Update renderContent function:
+  const renderContent = () => {
+    console.log('renderContent called - loading:', loading, 'content length:', content.length, 'filteredData length:', filteredData.length);
+    if (loading && content.length === 0) {
+      console.log('Showing loading spinner');
+      return (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <LoadingSpinner size="lg" />
+        </div>
+      );
+    }
+
+    switch (selectedCategory) {
+      case 'trending':
+        return (
+          <>
+            {/* Add MegaFilter component here */}
+            <div className="px-4 py-3 bg-white border-b border-gray-200">
+              <MegaFilter
+                onSearch={handleSearch}
+                onFilterChange={handleFilterChange}
+                data={content}
+              />
+            </div>
+
+            {/* Mobile Search */}
+            <div className="sm:hidden px-4 py-3 bg-white border-b border-gray-200">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder={t('dashboard.search')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-button focus:border-transparent bg-white text-gray-900 font-['Figtree']"
+                />
+              </div>
+            </div>
+
+            {/* Content Grid with Skeleton Loading */}
+            {renderContentGrid()}
+
+            {/* Load More */}
+            {loading && content.length > 0 && (
+              <div className="flex items-center justify-center py-8">
+                <LoadingSpinner size="md" />
+              </div>
+            )}
+
+            {/* No More Content */}
+            {!hasMore && content.length > 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500 font-['Figtree']">
+                  YouYou've reached the end of trending contentapos;ve reached the end of trending content
+                </p>
+              </div>
+            )}
+
+            {/* No Results */}
+            {filteredData.length === 0 && !loading && !isLoading && (
+              <div className="text-center py-20">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2 font-['Figtree']">
+                  No content found
+                </h3>
+                <p className="text-gray-500 font-['Figtree']">
+                  Try adjusting your search or filters
+                </p>
+              </div>
+            )}
+          </>
+        );
+      case 'trending-categories':
+        return <TrendingCategories onAuthOpen={onAuthOpen} />;
+      case 'trending-hashtags':
+        return <TrendingHashtags onAuthOpen={onAuthOpen} />;
+      case 'trending-creators':
+        return <CreatorCards onAuthOpen={onAuthOpen} selectedPlatform={selectedPlatform} />;
+      case 'youtube-summarizer':
+        return <YoutubeSummarizer />;
+      case 'sentiment-analysis':
+        return <SentimentAnalysis />;
+      case 'global-reach':
+        return <GlobalReach />;
+      case 'schedule':
+        return <Schedule />;
+      // Remove these cases:
+      // case 'analytics':
+      //   return <Analytics onAuthOpen={onAuthOpen} />;
+      // case 'audience':
+      //   return <Audience />;
+      case 'settings':
+        return <Settings />;
+      case 'profile':
+        return <UserProfile onAuthOpen={onAuthOpen} />;
+      default:
+        // Default to trending cards instead of overview
+        return (
+          <>
+            {/* Add MegaFilter component here */}
+            <div className="px-4 py-3 bg-white border-b border-gray-200">
+              <MegaFilter
+                onSearch={handleSearch}
+                onFilterChange={handleFilterChange}
+                data={content}
+              />
+            </div>
+
+            {/* Mobile Search */}
+            <div className="sm:hidden px-4 py-3 bg-white border-b border-gray-200">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder={t('dashboard.search')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-button focus:border-transparent bg-white text-gray-900 font-['Figtree']"
+                />
+              </div>
+            </div>
+
+            {/* Content Grid with Skeleton Loading */}
+            {renderContentGrid()}
+
+            {/* Load More */}
+            {loading && content.length > 0 && (
+              <div className="flex items-center justify-center py-8">
+                <LoadingSpinner size="md" />
+              </div>
+            )}
+
+            {/* No More Content */}
+            {!hasMore && content.length > 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500 font-['Figtree']">
+                  YouYou've reached the end of trending contentapos;ve reached the end of trending content
+                </p>
+              </div>
+            )}
+
+            {/* No Results */}
+            {filteredData.length === 0 && !loading && !isLoading && (
+              <div className="text-center py-20">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2 font-['Figtree']">
+                  No content found
+                </h3>
+                <p className="text-gray-500 font-['Figtree']">
+                  Try adjusting your search or filters
+                </p>
+              </div>
+            )}
+          </>
+        );
+    }
+  };
+
+  // Update header visibility condition:
+  return (
+    <div className="flex-1 flex flex-col min-h-screen bg-gray-50">
+      {/* Header - Show for all sections */}
+      <header className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {/* Mobile menu button */}
+            <button
+              onClick={onSidebarToggle}
+              className="sm:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <Menu className="w-5 h-5 text-gray-600" />
+            </button>
+
+            {/* DELETE THIS ENTIRE SECTION */}
+            {/* Search - Desktop only */}
+            {/* <div className="hidden sm:block relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder={t('dashboard.search')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-button focus:border-transparent bg-white text-gray-900 font-['Figtree']"
+              />
+            </div> */}
+          </div>
+
+          {/* Right side - Auth elements */}
+          <div className="flex items-center gap-4">
+            {/* Language Toggle - Hidden for now */}
+            {/* <button
+              onClick={() => setLanguage(language === 'en' ? 'fr' : 'en')}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-['Figtree']"
+            >
+              {language === 'en' ? 'FR' : 'EN'}
+            </button> */}
+
+            {/* Auth Section */}
+            {user ? (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleProfileClick}
+                  className="flex items-center gap-2 hover:bg-gray-100 rounded-lg p-1 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center ring-2 ring-gray-200">
+                    <User className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <span className="hidden sm:block text-sm font-medium text-gray-700 font-['Figtree']">
+                    {user.name || user.email.split('@')[0]}
+                  </span>
+                </button>
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors font-['Figtree']"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:block">{t('auth.logout')}</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onAuthOpen}
+                className="flex items-center gap-2 px-4 py-2 bg-button text-white rounded-lg hover:bg-button-hover transition-colors font-['Figtree'] font-medium"
+              >
+                <LogIn className="w-4 h-4" />
+                <span className="hidden sm:block">{t('auth.login')}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1">
+        {renderContent()}
+      </main>
+    </div>
+  );
+};
+
+
+export default Dashboard;
+

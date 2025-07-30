@@ -1,0 +1,314 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Figtree', sans-serif;
+  background-color: transparent;
+  color: #2a4152;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Figtree', sans-serif;
+  color: #2a4152;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a4152;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1e2f3c;
+}
+
+/* Loading animations */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+  background: linear-gradient(to right, #f3f4f6 0%, #e5e7eb 20%, #f3f4f6 40%, #f3f4f6 100%);
+  background-size: 800px 104px;
+}
+
+/* Platform colors */
+.youtube { color: #FF0000; }
+.tiktok { color: #000000; }
+.twitter { color: #1DA1F2; }
+.instagram { color: #E4405F; }
+
+/* Sentiment colors */
+.sentiment-positive { color: #10B981; }
+.sentiment-neutral { color: #6B7280; }
+.sentiment-negative { color: #EF4444; }
+
+/* Custom components */
+@layer components {
+  .btn-primary {
+    @apply bg-black text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:bg-gray-800 focus:ring-2 focus:ring-gray-600 focus:ring-offset-2 active:transform active:scale-95;
+    font-family: 'Figtree', sans-serif;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-black px-6 py-3 rounded-lg font-medium border border-black transition-all duration-200 hover:bg-gray-100 hover:border-gray-800 focus:ring-2 focus:ring-gray-600 focus:ring-offset-2;
+    font-family: 'Figtree', sans-serif;
+  }
+  
+  .card {
+    @apply bg-card rounded-xl shadow-sm border border-card-light transition-all duration-200 hover:shadow-md hover:bg-card-hover;
+  }
+  
+  .input {
+    @apply border border-card rounded-lg px-4 py-2 focus:ring-2 focus:ring-button focus:border-transparent bg-white text-button transition-all duration-200;
+    font-family: 'Figtree', sans-serif;
+  }
+}
+
+/* Dashboard specific styles */
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #2a4152;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  font-family: 'Figtree', sans-serif;
+  color: #2a4152;
+}
+
+.dashboard-header p {
+  font-size: 1.1rem;
+  opacity: 0.8;
+  font-family: 'Figtree', sans-serif;
+}
+
+.dashboard-nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.nav-tab {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 25px;
+  background: #aeb6a6;
+  color: #2a4152;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Figtree', sans-serif;
+}
+
+.nav-tab:hover {
+  background: #9ca394;
+  transform: translateY(-2px);
+}
+
+.nav-tab.active {
+  background: #2a4152;
+  color: white;
+  box-shadow: 0 4px 15px rgba(42, 65, 82, 0.3);
+}
+
+.dashboard-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: #aeb6a6;
+  border-radius: 15px;
+  padding: 25px;
+  box-shadow: 0 8px 32px rgba(42, 65, 82, 0.1);
+  border: 1px solid #bcc4b8;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  background: #9ca394;
+}
+
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.stat-title {
+  font-size: 0.9rem;
+  color: #2a4152;
+  font-family: 'Figtree', sans-serif;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2a4152;
+  font-family: 'Figtree', sans-serif;
+}
+
+.stat-change {
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: 'Figtree', sans-serif;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-button text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:bg-button-hover focus:ring-2 focus:ring-button-light focus:ring-offset-2 active:transform active:scale-95;
+    font-family: 'Figtree', sans-serif;
+  }
+  
+  .btn-secondary {
+    @apply bg-card text-button px-6 py-3 rounded-lg font-medium border border-button transition-all duration-200 hover:bg-card-hover hover:border-button-hover focus:ring-2 focus:ring-button-light focus:ring-offset-2;
+    font-family: 'Figtree', sans-serif;
+  }
+  
+  .input {
+    @apply border border-card rounded-lg px-4 py-2 focus:ring-2 focus:ring-button focus:border-transparent bg-white text-button transition-all duration-200;
+    font-family: 'Figtree', sans-serif;
+  }
+}
+
+/* Add these animations to your existing App.css */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out both;
+}
+
+/* Glass morphism utilities */
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+}
+
+.bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.border-white\/20 {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes float-delayed {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 1s ease-out 0.3s both;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 3s ease-in-out infinite 1.5s;
+}
+
+
+/* Hide scrollbar for platform pills */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Improve mobile touch targets */
+@media (max-width: 1024px) {
+  button {
+    min-height: 44px;
+  }
+  
+  /* Ensure proper spacing on mobile */
+  .pt-16 {
+    padding-top: 5rem; /* Increased for platform pills */
+  }
+}
