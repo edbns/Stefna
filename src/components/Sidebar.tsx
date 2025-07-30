@@ -28,7 +28,9 @@ import {
   Bell,
   Grid,
   Sparkles,
-  LogOut
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -105,10 +107,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar */}
       <div className={`fixed left-0 top-0 h-full z-50 transition-all duration-300 flex flex-col ${
         isOpen ? 'w-64' : 'w-16'
-      }`}
+      } ${!isOpen ? 'shadow-2xl' : ''}`}
         style={{
           background: '#000000',
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)'
+          borderRight: isOpen ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+          borderRadius: isOpen ? '0' : '0 12px 12px 0',
+          margin: isOpen ? '0' : '8px 0 8px 8px'
         }}>
         
         {/* Header */}
@@ -127,16 +131,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                 onClick={onToggle}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-white" />
+                <PanelLeftClose className="w-5 h-5 text-white" />
               </button>
             </>
           ) : (
-            <button
-              onClick={onToggle}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <Menu className="w-5 h-5 text-white" />
-            </button>
+            <>
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center mb-2">
+                <Sparkles className="w-5 h-5 text-black" />
+              </div>
+              <button
+                onClick={onToggle}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <PanelLeftOpen className="w-5 h-5 text-white" />
+              </button>
+            </>
           )}
         </div>
 
