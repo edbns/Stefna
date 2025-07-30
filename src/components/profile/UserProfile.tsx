@@ -182,7 +182,7 @@ const UserProfile: React.FC<{ onAuthOpen: () => void; selectedCategory?: string 
           </div>
           <div>
             <h1 className="text-3xl font-bold text-black">{user.name || user.email}</h1>
-            <p className="text-gray-600">Social Media Intelligence Dashboard</p>
+                            <p className="text-gray-600">Stefna Dashboard</p>
           </div>
         </div>
 

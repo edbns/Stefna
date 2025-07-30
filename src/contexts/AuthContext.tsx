@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import toast from 'react-hot-toast';
+import { sendOTP as sendOTPService, generateOTP } from '../services/OTPService';
 
 interface User {
   id: string;
@@ -12,7 +13,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, otp: string) => Promise<boolean>;
-  signup: (email: string, name: string) => Promise<boolean>;
+  signup: (email: string, name: string, otp: string) => Promise<boolean>;
   logout: () => void;
   sendOTP: (email: string) => Promise<boolean>;
 }
@@ -46,38 +47,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const sendOTP = async (email: string): Promise<boolean> => {
     try {
-      // Simulate API call to send OTP
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Generate OTP and send via Resend
+      const otp = generateOTP();
       
-      // In a real implementation, you would call your backend API here
-      // await fetch('/api/auth/send-otp', { method: 'POST', body: JSON.stringify({ email }) });
+      // Store OTP temporarily for verification (in production, this should be server-side)
+      localStorage.setItem('temp-otp', otp);
+      localStorage.setItem('temp-email', email);
       
-      toast.success('OTP sent to your email!');
+      // Send OTP via our Netlify function
+      const result = await sendOTPService(email, otp);
+      
+      if (result.message.includes('development mode')) {
+        toast.success('OTP sent! (Check console for development code)');
+      } else {
+        toast.success('OTP sent to your email!');
+      }
       return true;
     } catch (error) {
-      toast.error('Failed to send OTP');
+      console.error('OTP send error:', error);
+      toast.error('Failed to send OTP. Please try again.');
       return false;
     }
   };
 
   const login = async (email: string, otp: string): Promise<boolean> => {
     try {
-      // Simulate API call to verify OTP and login
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verify OTP against stored value
+      const storedOTP = localStorage.getItem('temp-otp');
+      const storedEmail = localStorage.getItem('temp-email');
       
-      // For demo purposes, accept any 6-digit OTP
-      if (otp.length === 6 && /^\d{6}$/.test(otp)) {
-        // In a real implementation, you would verify the OTP with your backend
-        // const response = await fetch('/api/auth/verify-login', { 
-        //   method: 'POST', 
-        //   body: JSON.stringify({ email, otp }) 
-        // });
+      if (!storedOTP || !storedEmail || storedEmail !== email) {
+        toast.error('Invalid OTP or email. Please request a new OTP.');
+        return false;
+      }
+      
+      if (otp === storedOTP) {
+        // Clear temporary OTP data
+        localStorage.removeItem('temp-otp');
+        localStorage.removeItem('temp-email');
         
         const newUser: User = {
           id: Date.now().toString(),
           email,
           name: email.split('@')[0], // Default name from email
-          // Removed default avatar generation
         };
         
         setUser(newUser);
@@ -85,31 +97,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         toast.success('Welcome back!');
         return true;
       } else {
-        toast.error('Invalid OTP. Please enter a 6-digit code.');
+        toast.error('Invalid OTP. Please check your email and try again.');
         return false;
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast.error('Login failed. Please try again.');
       return false;
     }
   };
 
-  const signup = async (email: string, name: string): Promise<boolean> => {
+  const signup = async (email: string, name: string, otp: string): Promise<boolean> => {
     try {
-      // Simulate API call to create account
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verify OTP for signup
+      const storedOTP = localStorage.getItem('temp-otp');
+      const storedEmail = localStorage.getItem('temp-email');
       
-      // In a real implementation, you would create the account with your backend
-      // const response = await fetch('/api/auth/signup', { 
-      //   method: 'POST', 
-      //   body: JSON.stringify({ email, name }) 
-      // });
+      if (!storedOTP || !storedEmail || storedEmail !== email) {
+        toast.error('Please request an OTP first.');
+        return false;
+      }
+      
+      if (otp !== storedOTP) {
+        toast.error('Invalid OTP. Please check your email and try again.');
+        return false;
+      }
+      
+      // Clear temporary OTP data
+      localStorage.removeItem('temp-otp');
+      localStorage.removeItem('temp-email');
       
       const newUser: User = {
         id: Date.now().toString(),
         email,
         name,
-        // Removed default avatar generation
       };
       
       setUser(newUser);
@@ -117,6 +138,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast.success('Account created successfully!');
       return true;
     } catch (error) {
+      console.error('Signup error:', error);
       toast.error('Signup failed. Please try again.');
       return false;
     }

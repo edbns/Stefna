@@ -44,7 +44,7 @@ const FloatingFilter: React.FC<FloatingFilterProps> = ({ onSearch, onFilterChang
     sortOrder: 'desc'
   });
 
-  const platforms = ['youtube', 'tiktok', 'twitter', 'instagram', 'reddit'];
+         const platforms = ['youtube'];
   const categories = ['Entertainment', 'Music', 'Gaming', 'Sports', 'News', 'Technology', 'Fashion', 'Food'];
   const sentiments = ['positive', 'neutral', 'negative'];
   const sortOptions = [

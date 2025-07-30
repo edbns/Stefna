@@ -21,8 +21,11 @@ import { Content } from '../types';
 
 // Add this import at the top
 import FloatingFilter from './FloatingFilter';
-import { useMegaFilter } from '../hooks/useMegaFilter';
+
 import CreatorCards from './CreatorCards';
+import CryptoTrends from './CryptoTrends';
+import NewsTrends from './NewsTrends';
+import TrendingMusic from './TrendingMusic';
 
 interface DashboardProps {
   onSidebarToggle: () => void;
@@ -53,25 +56,14 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
 
-  // Add the MegaFilter hook here
-  const {
-    filters,
-    setFilters,
-    filteredData,
-    totalResults,
-    originalTotal
-  } = useMegaFilter(content);
 
-  const handleSearch = (query: string) => {
-    // Search is handled by the MegaFilter component
-  };
-
-  const handleFilterChange = (newFilters: any) => {
-    setFilters(newFilters);
-  };
 
   const handleProfileClick = () => {
-    onCategoryChange('profile');
+    if (user) {
+      onCategoryChange('profile');
+    } else {
+      onAuthOpen();
+    }
   };
 
   // Real data fetcher
@@ -163,7 +155,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Render content grid with skeleton loading
   const renderContentGrid = () => {
-    if (filteredData.length === 0 && !loading && !isLoading) {
+    if (content.length === 0 && !loading && !isLoading) {
       return (
         <div className="text-center py-20">
           <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -179,7 +171,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 p-6 sm:p-8 lg:p-10">
-        {filteredData.map((item, index) => (
+        {content.map((item, index) => (
           <div
             key={item.id}
             className="transform transition-all duration-200 hover:scale-[1.02]"
@@ -194,7 +186,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Render different components based on selected category
   // Update renderContent function:
   const renderContent = () => {
-    console.log('renderContent called - loading:', loading, 'content length:', content.length, 'filteredData length:', filteredData.length);
+    console.log('renderContent called - loading:', loading, 'content length:', content.length);
     if (loading && content.length === 0) {
       console.log('Showing loading spinner');
       return (
@@ -210,8 +202,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           <>
             {/* Add FloatingFilter component here */}
             <FloatingFilter
-              onSearch={handleSearch}
-              onFilterChange={handleFilterChange}
+              onSearch={(query: string) => setSearchQuery(query)}
+              onFilterChange={() => {}}
               data={content}
             />
 
@@ -249,7 +241,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             )}
 
             {/* No Results */}
-            {filteredData.length === 0 && !loading && !isLoading && (
+            {content.length === 0 && !loading && !isLoading && (
               <div className="text-center py-20">
                 <h3 className="text-lg font-semibold text-black mb-2 font-['Figtree']">
                   No content found
@@ -271,6 +263,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         return <YoutubeSummarizer />;
       case 'sentiment-analysis':
         return <SentimentAnalysis />;
+      case 'crypto-trends':
+        return <CryptoTrends onAuthOpen={onAuthOpen} />;
+      case 'news-trends':
+        return <NewsTrends onAuthOpen={onAuthOpen} />;
       case 'global-reach':
         return <GlobalReach />;
       case 'schedule':
@@ -285,14 +281,16 @@ const Dashboard: React.FC<DashboardProps> = ({
         return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
       case 'alerts':
         return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
+      case 'music-trends':
+        return <TrendingMusic />;
       default:
         // Default to trending cards instead of overview
         return (
           <>
             {/* Add FloatingFilter component here */}
             <FloatingFilter
-              onSearch={handleSearch}
-              onFilterChange={handleFilterChange}
+              onSearch={(query: string) => setSearchQuery(query)}
+              onFilterChange={() => {}}
               data={content}
             />
 
@@ -330,7 +328,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             )}
 
             {/* No Results */}
-            {filteredData.length === 0 && !loading && !isLoading && (
+            {content.length === 0 && !loading && !isLoading && (
               <div className="text-center py-20">
                 <h3 className="text-lg font-semibold text-black mb-2 font-['Figtree']">
                   No content found
@@ -360,10 +358,12 @@ const Dashboard: React.FC<DashboardProps> = ({
             </svg>
           </button>
           <h1 className="text-xl font-semibold text-black font-['Figtree']">
-            {selectedCategory === 'trending' ? 'Trending Feed' : 
-             selectedCategory === 'trending-categories' ? 'Categories' :
-             selectedCategory === 'trending-hashtags' ? 'Hashtags' :
-             selectedCategory === 'trending-creators' ? 'Creators' :
+            {selectedCategory === 'trending' ? 'YouTube Trends' : 
+             selectedCategory === 'crypto-trends' ? 'Crypto Trends' :
+             selectedCategory === 'news-trends' ? 'News Trends' :
+             selectedCategory === 'music-trends' ? 'Music Trends' :
+             selectedCategory === 'trending-hashtags' ? 'Trending Hashtags' :
+             selectedCategory === 'trending-categories' ? 'Trending Categories' :
              selectedCategory === 'youtube-summarizer' ? 'YouTube Summarizer' :
              selectedCategory === 'sentiment-analysis' ? 'Sentiment Analysis' :
              selectedCategory === 'global-reach' ? 'Global Reach' :

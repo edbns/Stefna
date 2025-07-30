@@ -14,15 +14,15 @@ interface FollowingData {
 }
 
 const FollowingManager: React.FC<FollowingManagerProps> = ({ isOpen, onClose }) => {
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [following, setFollowing] = useState<FollowingData>({ hashtags: [], categories: [] });
   const [activeTab, setActiveTab] = useState<'hashtags' | 'categories'>('hashtags');
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (user) {
       loadFollowing();
     }
-  }, [isAuthenticated, isOpen]);
+  }, [user, isOpen]);
 
   useEffect(() => {
     const handleFollowingUpdate = () => {
@@ -55,10 +55,10 @@ const FollowingManager: React.FC<FollowingManagerProps> = ({ isOpen, onClose }) 
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
         className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden"
-        style={{ backgroundColor: '#eee9dd', fontFamily: 'Figtree, sans-serif' }}
+        style={{ fontFamily: 'Figtree, sans-serif' }}
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold" style={{ color: '#2a4152' }}>
+          <h2 className="text-2xl font-bold text-black">
             Following
           </h2>
           <button
@@ -79,12 +79,9 @@ const FollowingManager: React.FC<FollowingManagerProps> = ({ isOpen, onClose }) 
               onClick={() => setActiveTab(tab)}
               className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
                 activeTab === tab
-                  ? 'text-white shadow-sm'
+                  ? 'bg-black text-white shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
-              style={{
-                backgroundColor: activeTab === tab ? '#2a4152' : 'transparent'
-              }}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)} ({following[tab].length})
             </button>
@@ -131,7 +128,7 @@ const FollowingManager: React.FC<FollowingManagerProps> = ({ isOpen, onClose }) 
                         </span>
                       </div>
                       <div>
-                        <h4 className="font-medium" style={{ color: '#2a4152' }}>
+                        <h4 className="font-medium text-black">
                           {activeTab === 'hashtags' ? `#${item}` : item}
                         </h4>
                         <p className="text-sm text-gray-500">

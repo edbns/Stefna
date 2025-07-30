@@ -3,7 +3,7 @@ export interface Content {
   title: string;
   description: string;
   thumbnail: string;
-  platform: 'youtube' | 'tiktok' | 'twitter' | 'instagram' | 'facebook' | 'linkedin' | 'reddit' | 'twitch';
+  platform: 'youtube';
   creator: {
     name: string;
     username: string;

@@ -46,8 +46,8 @@ Focus on why this content is trending and what makes it engaging.`;
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://socialspy.netlify.app',
-        'X-Title': 'SocialSpy AI Summarizer'
+              'HTTP-Referer': 'https://stefna.xyz',
+      'X-Title': 'Stefna AI Summarizer'
       },
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',

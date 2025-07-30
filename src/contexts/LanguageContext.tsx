@@ -112,7 +112,7 @@ const translations = {
     'settings.password': 'Current Password',
     'settings.avatar': 'Change Avatar',
     
-    // MegaFilter
+    // FloatingFilter
     'filter.platforms': 'Platforms',
     'filter.categories': 'Categories',
     'filter.sentiment': 'Sentiment',

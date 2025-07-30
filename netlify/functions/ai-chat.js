@@ -31,7 +31,7 @@ async function generateAIChatResponse(userMessage, conversationHistory = []) {
     }
 
     // Build conversation context
-    const systemPrompt = `You are an AI assistant for SocialSpy, a social media analytics dashboard. You help users analyze trending content, understand social media metrics, and provide insights about content performance.
+    const systemPrompt = `You are an AI assistant for Stefna, a social media analytics dashboard. You help users analyze trending content, understand social media metrics, and provide insights about content performance.
 
 Your expertise includes:
 - Social media trends and analytics
@@ -54,8 +54,8 @@ Keep responses helpful, concise (under 150 words), and focused on social media a
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://socialspy.netlify.app',
-        'X-Title': 'SocialSpy AI Chat'
+        'HTTP-Referer': 'https://stefna.xyz',
+        'X-Title': 'Stefna AI Chat'
       },
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',

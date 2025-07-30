@@ -68,7 +68,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
         }
       } else if (mode === 'otp-signup') {
         // Verify OTP and create account
-        const success = await signup(formData.email, formData.name);
+        const success = await signup(formData.email, formData.name, formData.otp);
         if (success) {
           onClose();
           setFormData({ email: '', name: '', otp: '' });

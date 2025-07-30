@@ -29,7 +29,7 @@ async function fetchRedditTrending() {
       'https://www.reddit.com/r/popular.json?limit=20',
       {
         headers: {
-          'User-Agent': 'SocialSpy/1.0'
+          'User-Agent': 'Stefna/1.0'
         }
       }
     );

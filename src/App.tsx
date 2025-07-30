@@ -12,12 +12,13 @@ import LaunchScreen from './components/LaunchScreen';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsAndConditions from './components/TermsAndConditions';
 import CookiesPolicy from './components/CookiesPolicy';
-import ConsentBanner from './components/ConsentBanner';
+import CookiesConsent, { CookiePreferences } from './components/CookiesConsent';
 import './App.css';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ShortcutsProvider } from './contexts/ShortcutsContext';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import PageTransition from './components/PageTransition';
+import Error404 from './components/Error404';
 
 // Main App Content
 const AppContent: React.FC = () => {
@@ -60,15 +61,21 @@ const AppContent: React.FC = () => {
     setShowLaunchScreen(false);
   };
 
-  const handleConsentAccept = () => {
-    localStorage.setItem('cookieConsent', 'accepted');
+  const handleConsentAccept = (preferences: CookiePreferences) => {
+    localStorage.setItem('cookies-consent', JSON.stringify(preferences));
     localStorage.setItem('cookieConsentDate', new Date().toISOString());
     setHasConsented(true);
     setShowConsentBanner(false);
   };
 
   const handleConsentDecline = () => {
-    localStorage.setItem('cookieConsent', 'declined');
+    const minimalPreferences = {
+      necessary: true,
+      analytics: false,
+      marketing: false,
+      functional: false,
+    };
+    localStorage.setItem('cookies-consent', JSON.stringify(minimalPreferences));
     localStorage.setItem('cookieConsentDate', new Date().toISOString());
     setHasConsented(true);
     setShowConsentBanner(false);
@@ -153,6 +160,10 @@ const AppContent: React.FC = () => {
                         </PageTransition>
                       } 
                     />
+                    <Route 
+                      path="*" 
+                      element={<Error404 />} 
+                    />
                   </Routes>
                 </main>
                 
@@ -174,9 +185,9 @@ const AppContent: React.FC = () => {
           />
         </Routes>
         
-        {/* Consent Banner */}
+        {/* Cookies Consent Banner */}
         {showConsentBanner && (
-          <ConsentBanner 
+          <CookiesConsent 
             onAccept={handleConsentAccept}
             onDecline={handleConsentDecline}
           />

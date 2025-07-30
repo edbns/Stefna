@@ -44,7 +44,7 @@ class AIService {
           'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': window.location.origin,
-          'X-Title': 'SocialSpy Dashboard'
+          'X-Title': 'Stefna Dashboard'
         },
         transformRequest: (prompt: string) => ({
           model: 'anthropic/claude-3.5-sonnet',

@@ -30,7 +30,13 @@ import {
   Sparkles,
   LogOut,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Music2,
+  TrendingDown,
+  Newspaper,
+  Coins,
+  Hash as HashIcon,
+  Tag
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -64,10 +70,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isFollowingOpen, setIsFollowingOpen] = useState(false);
 
   const mainNavigation = [
-    { id: 'trending', label: 'Trending Posts', icon: TrendingUp },
-    { id: 'trending-categories', label: 'Categories', icon: BarChart3 },
-    { id: 'trending-hashtags', label: 'Hashtags', icon: Hash },
-    { id: 'trending-creators', label: 'Creators', icon: Users },
+    { id: 'trending', label: 'YouTube', icon: Youtube },
+    { id: 'crypto-trends', label: 'Crypto', icon: Coins },
+    { id: 'news-trends', label: 'News', icon: Newspaper },
+    { id: 'music-trends', label: 'Music', icon: Music2 },
+    { id: 'trending-hashtags', label: 'Hashtags', icon: HashIcon },
+    { id: 'trending-categories', label: 'Categories', icon: Tag },
     { id: 'global-reach', label: 'Global Reach', icon: Globe }
   ];
 
@@ -76,14 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'sentiment-analysis', label: 'Sentiment Analysis', icon: Heart }
   ];
 
-  const platforms = [
-    { id: 'all', label: 'All Platforms', icon: Grid },
-    { id: 'youtube', label: 'YouTube', icon: Youtube },
-    { id: 'tiktok', label: 'TikTok', icon: TikTokIcon },
-    { id: 'reddit', label: 'Reddit', icon: RedditIcon },
-    { id: 'instagram', label: 'Instagram', icon: Instagram },
-    { id: 'twitter', label: 'Twitter/X', icon: Twitter, comingSoon: true },
-  ];
+  // Removed platforms section since we now have dedicated content sections
 
   const userFeatures = user ? [
     { id: 'saved', label: 'Saved Content', icon: Bookmark },
@@ -125,8 +126,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <div className="w-8 h-8 bg-white rounded-md flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-black" />
                 </div>
-                <h1 className="text-xl font-bold text-white">SocialSpy</h1>
-              </div>
+                <h1 className="text-xl font-bold text-white">Stefna</h1>
+            </div>
               <button
                 onClick={onToggle}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -171,7 +172,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   >
                     <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
                       <Icon className="w-5 h-5 flex-shrink-0" />
-                      {isOpen && (
+                    {isOpen && (
                         <div className="flex-1 text-left">
                           <div className="font-medium text-sm">{item.label}</div>
                         </div>
@@ -205,7 +206,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       {isOpen && (
                         <div className="flex-1 text-left">
                           <div className="font-medium text-sm">{item.label}</div>
-                        </div>
+                      </div>
                       )}
                     </div>
                   </button>
@@ -242,7 +243,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     >
                       <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
                         <Icon className="w-5 h-5 flex-shrink-0" />
-                        {isOpen && (
+            {isOpen && (
                           <div className="flex-1 text-left">
                             <div className="font-medium text-sm">{item.label}</div>
                           </div>
@@ -255,49 +256,14 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {/* Platform Filters */}
-          <div className={isOpen ? "px-4" : "px-2"}>
-            <div className="space-y-1">
-              {platforms.map((platform) => {
-                const Icon = platform.icon;
-                const isActive = selectedPlatform === platform.id;
-                
-                return (
-                  <button
-                    key={platform.id}
-                    onClick={() => onPlatformChange(platform.id)}
-                    disabled={platform.comingSoon}
-                    className={`w-full group relative ${
-                      isActive
-                        ? 'bg-white text-black'
-                        : 'text-white hover:bg-white/10'
-                    } transition-all duration-200 rounded-md p-2 ${platform.comingSoon ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
-                      <Icon className="w-5 h-5 flex-shrink-0" />
-                      {isOpen && (
-                        <div className="flex items-center justify-between flex-1">
-                          <span className="text-sm font-medium">{platform.label}</span>
-                          {platform.comingSoon && (
-                            <span className="text-xs bg-white/20 text-white px-2 py-1 rounded">
-                              Soon
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          {/* Platform Filters - Removed since we have dedicated content sections */}
         </nav>
 
         {/* Footer */}
         <div className={isOpen ? "px-4 py-4" : "px-2 py-4"} style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-          <div className="space-y-1">
-            <Link
-              to="/privacy-policy"
+            <div className="space-y-1">
+              <Link
+                to="/privacy-policy"
               className={`flex items-center px-3 py-2 rounded-md text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 ${
                 isOpen ? 'gap-3' : 'justify-center'
               }`}
@@ -306,8 +272,8 @@ const Sidebar: React.FC<SidebarProps> = ({
               {isOpen && (
                 <span className="text-xs">Privacy</span>
               )}
-            </Link>
-            <Link
+              </Link>
+              <Link
               to="/terms-and-conditions"
               className={`flex items-center px-3 py-2 rounded-md text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 ${
                 isOpen ? 'gap-3' : 'justify-center'
@@ -317,8 +283,8 @@ const Sidebar: React.FC<SidebarProps> = ({
               {isOpen && (
                 <span className="text-xs">Terms</span>
               )}
-            </Link>
-            <Link
+              </Link>
+              <Link
               to="/cookies-policy"
               className={`flex items-center px-3 py-2 rounded-md text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 ${
                 isOpen ? 'gap-3' : 'justify-center'
@@ -328,7 +294,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               {isOpen && (
                 <span className="text-xs">Cookies</span>
               )}
-            </Link>
+              </Link>
           </div>
         </div>
       </div>

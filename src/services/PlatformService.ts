@@ -6,26 +6,8 @@ class PlatformService {
   async getTrendingContent(platforms: string[] = ['all'], limit = 25): Promise<Content[]> {
     try {
       const allContent: Content[] = [];
-      const itemsPerPlatform = Math.max(1, Math.floor(limit / 4)); // Back to original calculation
+      const itemsPerPlatform = limit; // Use full limit for YouTube since it's the only platform
       console.log('Fetching content for platforms:', platforms, 'Items per platform:', itemsPerPlatform);
-      
-      if (platforms.includes('all') || platforms.includes('reddit')) {
-        try {
-          const redditContent = await this.getRedditContent(itemsPerPlatform);
-          console.log('Reddit content fetched:', redditContent.length, 'items');
-          if (redditContent.length === 0) {
-            console.log('Reddit returned empty, no mock data fallback');
-          } else {
-            allContent.push(...redditContent);
-          }
-        } catch (error) {
-          console.log('Reddit failed, no mock data fallback', error);
-        }
-      }
-      
-      if (platforms.includes('all') || platforms.includes('tiktok')) {
-        console.log('TikTok API not implemented yet, skipping...');
-      }
       
       if (platforms.includes('all') || platforms.includes('youtube')) {
         try {
@@ -40,10 +22,6 @@ class PlatformService {
         } catch (error) {
           console.log('YouTube failed, no mock data fallback', error);
         }
-      }
-
-      if (platforms.includes('all') || platforms.includes('instagram')) {
-        console.log('Instagram API not implemented yet, skipping...');
       }
 
       console.log('Total content before sorting:', allContent.length, 'items');
@@ -68,20 +46,7 @@ class PlatformService {
     }
   }
 
-  private async getRedditContent(limit: number): Promise<Content[]> {
-    try {
-      console.log('Calling Reddit API...');
-      const response = await fetch(`${this.baseURL}/trending-reddit?limit=${limit}`);
-      console.log('Reddit response status:', response.status);
-      if (!response.ok) throw new Error(`Reddit API failed: ${response.status}`);
-      const data = await response.json();
-      console.log('Reddit data received:', data);
-      return data.data || [];
-    } catch (error) {
-      console.error('Reddit API error:', error);
-      throw error; // Let the caller handle the fallback
-    }
-  }
+
 
 
 
@@ -100,41 +65,7 @@ class PlatformService {
     }
   }
 
-  private async generateAISummaries(content: Content[]): Promise<Content[]> {
-    try {
-      const response = await fetch(`${this.baseURL}/openrouter-summary`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content })
-      });
 
-      if (!response.ok) {
-        console.error('OpenRouter API failed:', response.status);
-        return content; // Return content without summaries
-      }
-
-      const data = await response.json();
-      if (!data.success || !data.data) {
-        console.error('OpenRouter API returned invalid data');
-        return content;
-      }
-
-      // Update content with AI summaries
-      const summaries = data.data;
-      return content.map(item => {
-        const summary = summaries.find((s: any) => s.id === item.id);
-        return {
-          ...item,
-          aiSummary: summary?.aiSummary || item.aiSummary || 'AI summary unavailable'
-        };
-      });
-    } catch (error) {
-      console.error('Error generating AI summaries:', error);
-      return content; // Return content without summaries
-    }
-  }
 
 
 }

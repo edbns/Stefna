@@ -38,16 +38,16 @@ class ErrorBoundary extends Component<Props, State> {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="min-h-[400px] flex items-center justify-center p-8"
-          style={{ backgroundColor: '#eee9dd', fontFamily: 'Figtree, sans-serif' }}
+          style={{ backgroundColor: '#EEEEEE', fontFamily: 'Figtree, sans-serif' }}
         >
           <div className="text-center max-w-md">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center"
+              className="w-16 h-16 mx-auto mb-4 rounded-full bg-black flex items-center justify-center"
             >
-              <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
             </motion.div>
@@ -56,8 +56,7 @@ class ErrorBoundary extends Component<Props, State> {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-xl font-semibold mb-2"
-              style={{ color: '#2a4152' }}
+              className="text-xl font-semibold mb-2 text-black"
             >
               Something went wrong
             </motion.h2>
@@ -78,11 +77,7 @@ class ErrorBoundary extends Component<Props, State> {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => window.location.reload()}
-              className="px-6 py-2 rounded-lg font-medium transition-colors"
-              style={{ 
-                backgroundColor: '#2a4152', 
-                color: '#eee9dd'
-              }}
+              className="px-6 py-2 rounded-lg font-medium transition-colors bg-black text-white hover:bg-gray-800"
             >
               Refresh Page
             </motion.button>

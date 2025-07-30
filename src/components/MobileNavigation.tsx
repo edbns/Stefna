@@ -47,30 +47,30 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
   return (
     <>
       {/* Enhanced Mobile Header with Platform Selector */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#eee9dd] border-b border-[#2a4152]/10">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 rounded-lg bg-[#2a4152]/5 hover:bg-[#2a4152]/10 transition-colors"
+                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
               >
                 {isMenuOpen ? (
-                  <XMarkIcon className="w-6 h-6 text-[#2a4152]" />
+                  <XMarkIcon className="w-6 h-6 text-black" />
                 ) : (
-                  <Bars3Icon className="w-6 h-6 text-[#2a4152]" />
+                  <Bars3Icon className="w-6 h-6 text-black" />
                 )}
               </button>
-              <h1 className="text-xl font-bold text-[#2a4152] font-['Figtree']">
+              <h1 className="text-xl font-bold text-black font-['Figtree']">
                 Stefna
               </h1>
             </div>
             
             <button
               onClick={onSearchOpen}
-              className="p-2 rounded-lg bg-[#2a4152]/5 hover:bg-[#2a4152]/10 transition-colors"
+              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
             >
-              <MagnifyingGlassIcon className="w-6 h-6 text-[#2a4152]" />
+              <MagnifyingGlassIcon className="w-6 h-6 text-black" />
             </button>
           </div>
           
@@ -83,8 +83,8 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
                   onClick={() => onPlatformChange(platform.id)}
                   className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                     selectedPlatform === platform.id
-                      ? 'bg-[#2a4152] text-[#eee9dd]'
-                      : 'bg-[#2a4152]/10 text-[#2a4152] hover:bg-[#2a4152]/20'
+                      ? 'bg-black text-white'
+                      : 'bg-gray-100 text-black hover:bg-gray-200'
                   }`}
                 >
                   {platform.label}
@@ -116,7 +116,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="lg:hidden fixed top-0 left-0 bottom-0 z-50 w-80 bg-[#eee9dd] border-r border-[#2a4152]/10 pt-20"
+            className="lg:hidden fixed top-0 left-0 bottom-0 z-50 w-80 bg-white border-r border-gray-200 pt-20"
           >
             <div className="px-4 py-6">
               <nav className="space-y-2">
@@ -133,8 +133,8 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
                       }}
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all font-['Figtree'] ${
                         isActive
-                          ? 'bg-[#2a4152] text-[#eee9dd] shadow-lg'
-                          : 'text-[#2a4152] hover:bg-[#2a4152]/5'
+                          ? 'bg-black text-white shadow-lg'
+                          : 'text-black hover:bg-gray-100'
                       }`}
                     >
                       <Icon className="w-5 h-5" />
@@ -149,7 +149,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
       </AnimatePresence>
 
       {/* Bottom Navigation for Mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#eee9dd] border-t border-[#2a4152]/10 px-4 py-2">
+              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-4 py-2">
         <div className="flex justify-around">
           {navItems.slice(0, 4).map((item) => {
             const Icon = item.icon;
