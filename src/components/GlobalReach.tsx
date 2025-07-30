@@ -119,48 +119,19 @@ const GlobalReach: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-sm">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Globe className="w-8 h-8 text-black" />
-          <div>
-            <h2 className="text-2xl font-bold text-black">Global Reach</h2>
-            <p className="text-gray-600">Interactive social media activity heat map</p>
-          </div>
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-black mb-2">Global Reach</h1>
+          <p className="text-gray-600">Interactive heat map of global social media activity</p>
         </div>
         
-        {/* Data Layer Controls */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setDataLayer('engagement')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              dataLayer === 'engagement'
-                ? 'bg-black text-white'
-                : 'bg-gray-100 text-black hover:bg-gray-200'
-            }`}
-          >
-            Engagement
-          </button>
-          <button
-            onClick={() => setDataLayer('posts')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              dataLayer === 'posts'
-                ? 'bg-black text-white'
-                : 'bg-gray-100 text-black hover:bg-gray-200'
-            }`}
-          >
-            Posts
-          </button>
-          <button
-            onClick={() => setDataLayer('trending')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              dataLayer === 'trending'
-                ? 'bg-black text-white'
-                : 'bg-gray-100 text-black hover:bg-gray-200'
-            }`}
-          >
-            Trending
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Globe className="w-4 h-4" />
+            <span>Real-time Data</span>
+          </div>
         </div>
       </div>
 

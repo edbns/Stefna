@@ -331,25 +331,19 @@ const CreatorCards: React.FC<CreatorCardsProps> = ({ onAuthOpen, selectedPlatfor
   }
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-sm">
+    <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-black mb-2">Trending Creators</h1>
-          <p className="text-gray-600">Discover the most popular content creators across all platforms</p>
+          <h1 className="text-3xl font-bold text-black mb-2">Top Creators</h1>
+          <p className="text-gray-600">Discover trending content creators across platforms</p>
         </div>
         
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Clock className="w-4 h-4" />
-            <span>Last updated: {lastUpdated?.toLocaleTimeString()}</span>
+            <Users className="w-4 h-4" />
+            <span>Live Data</span>
           </div>
-          <button
-            onClick={fetchCreators}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <RefreshCw className="w-5 h-5 text-black" />
-          </button>
         </div>
       </div>
 

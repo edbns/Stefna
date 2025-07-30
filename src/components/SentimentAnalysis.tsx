@@ -164,12 +164,12 @@ const SentimentAnalysis: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-sm">
+    <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-black mb-2">Sentiment Analysis</h1>
-          <p className="text-gray-600">Analyze sentiment trends across all social platforms</p>
+          <p className="text-gray-600">Analyze sentiment across social media platforms</p>
         </div>
         
         <div className="flex items-center gap-3">

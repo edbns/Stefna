@@ -18,7 +18,8 @@ import {
   Plus,
   Edit,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -170,29 +171,24 @@ const UserProfile: React.FC<{ onAuthOpen: () => void; selectedCategory?: string 
   }
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-sm">
-      {/* Header with Profile Icon */}
+    <div className="p-6">
+      {/* Profile Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <div className="relative">
-            <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center">
-              <User className="w-8 h-8 text-white" />
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white"></div>
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <User className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-black">{user.name || user.email}</h1>
-                            <p className="text-gray-600">Stefna Dashboard</p>
+            <h1 className="text-3xl font-bold text-black">{user?.name || 'User Profile'}</h1>
+            <p className="text-gray-600">{user?.email || 'user@example.com'}</p>
           </div>
         </div>
-
+        
         <div className="flex items-center gap-3">
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <Bell className="w-5 h-5 text-black" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <Settings className="w-5 h-5 text-black" />
-          </button>
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Shield className="w-4 h-4" />
+            <span>Verified</span>
+          </div>
         </div>
       </div>
 
