@@ -377,15 +377,12 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
         
         <div className="flex items-center gap-3">
-          {/* AI Chat Button */}
+          {/* Language Toggle */}
           <button
-            onClick={onAiChatOpen}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title="AI Assistant"
+            onClick={() => setLanguage(language === 'en' ? 'fr' : 'en')}
+            className="px-3 py-1.5 text-sm font-medium text-black bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
+            {language === 'en' ? 'FR' : 'EN'}
           </button>
 
           {/* Profile Button */}
