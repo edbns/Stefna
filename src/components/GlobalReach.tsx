@@ -238,7 +238,7 @@ const GlobalReach: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-purple-400"></div>
-              <span className="text-sm text-gray-600">Low (<60%)</span>
+                              <span className="text-sm text-gray-600">Low (&lt;60%)</span>
             </div>
           </div>
         </div>
