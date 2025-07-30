@@ -294,11 +294,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t border-white/10">
+        <div className={isOpen ? "px-4 py-4" : "px-2 py-4"} style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
           <div className="space-y-1">
             <Link
               to="/privacy-policy"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200"
+              className={`flex items-center px-3 py-2 rounded-md text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 ${
+                isOpen ? 'gap-3' : 'justify-center'
+              }`}
             >
               <Shield className="w-4 h-4 flex-shrink-0" />
               {isOpen && (
@@ -307,7 +309,9 @@ const Sidebar: React.FC<SidebarProps> = ({
             </Link>
             <Link
               to="/terms-and-conditions"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200"
+              className={`flex items-center px-3 py-2 rounded-md text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 ${
+                isOpen ? 'gap-3' : 'justify-center'
+              }`}
             >
               <FileText className="w-4 h-4 flex-shrink-0" />
               {isOpen && (
@@ -316,7 +320,9 @@ const Sidebar: React.FC<SidebarProps> = ({
             </Link>
             <Link
               to="/cookies-policy"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200"
+              className={`flex items-center px-3 py-2 rounded-md text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 ${
+                isOpen ? 'gap-3' : 'justify-center'
+              }`}
             >
               <Cookie className="w-4 h-4 flex-shrink-0" />
               {isOpen && (
