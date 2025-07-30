@@ -208,160 +208,67 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   // Render different components based on selected category
-  // Update renderContent function:
   const renderContent = () => {
     console.log('renderContent called - loading:', loading, 'content length:', content.length, 'filteredData length:', filteredData.length);
-    if (loading && content.length === 0) {
-      console.log('Showing loading spinner');
-      return (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <LoadingSpinner size="lg" />
+    
+    // Always render the main content structure
+    return (
+      <>
+        {/* Add MegaFilter component here */}
+        <div className="px-4 py-3 bg-white border-b border-gray-200">
+          <MegaFilter
+            onSearch={handleSearch}
+            onFilterChange={handleFilterChange}
+            data={content}
+          />
         </div>
-      );
-    }
 
-    switch (selectedCategory) {
-      case 'trending':
-        return (
-          <>
-            {/* Add MegaFilter component here */}
-            <div className="px-4 py-3 bg-white border-b border-gray-200">
-              <MegaFilter
-                onSearch={handleSearch}
-                onFilterChange={handleFilterChange}
-                data={content}
-              />
-            </div>
+        {/* Mobile Search */}
+        <div className="sm:hidden px-4 py-3 bg-white border-b border-gray-200">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder={t('dashboard.search')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-button focus:border-transparent bg-white text-gray-900 font-['Figtree']"
+            />
+          </div>
+        </div>
 
-            {/* Mobile Search */}
-            <div className="sm:hidden px-4 py-3 bg-white border-b border-gray-200">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder={t('dashboard.search')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-button focus:border-transparent bg-white text-gray-900 font-['Figtree']"
-                />
-              </div>
-            </div>
+        {/* Content Grid with Skeleton Loading */}
+        {renderContentGrid()}
 
-            {/* Content Grid with Skeleton Loading */}
-            {renderContentGrid()}
+        {/* Load More */}
+        {loading && content.length > 0 && (
+          <div className="flex items-center justify-center py-8">
+            <LoadingSpinner size="md" />
+          </div>
+        )}
 
-            {/* Load More */}
-            {loading && content.length > 0 && (
-              <div className="flex items-center justify-center py-8">
-                <LoadingSpinner size="md" />
-              </div>
-            )}
+        {/* No More Content */}
+        {!hasMore && content.length > 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500 font-['Figtree']">
+              You've reached the end of trending content
+            </p>
+          </div>
+        )}
 
-            {/* No More Content */}
-            {!hasMore && content.length > 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-500 font-['Figtree']">
-                  You've reached the end of trending content
-                </p>
-              </div>
-            )}
-
-            {/* No Results */}
-            {filteredData.length === 0 && !loading && !isLoading && (
-              <div className="text-center py-20">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2 font-['Figtree']">
-                  No content found
-                </h3>
-                <p className="text-gray-500 font-['Figtree']">
-                  Try adjusting your search or filters
-                </p>
-              </div>
-            )}
-          </>
-        );
-      case 'trending-categories':
-        return <TrendingCategories onAuthOpen={onAuthOpen} />;
-      case 'trending-hashtags':
-        return <TrendingHashtags onAuthOpen={onAuthOpen} />;
-      case 'trending-creators':
-        return <CreatorCards onAuthOpen={onAuthOpen} selectedPlatform={selectedPlatform} />;
-      case 'youtube-summarizer':
-        return <YoutubeSummarizer />;
-      case 'sentiment-analysis':
-        return <SentimentAnalysis />;
-      case 'global-reach':
-        return <GlobalReach />;
-      case 'schedule':
-        return <Schedule />;
-      // Remove these cases:
-      // case 'analytics':
-      //   return <Analytics onAuthOpen={onAuthOpen} />;
-      // case 'audience':
-      //   return <Audience />;
-      case 'settings':
-        return <Settings />;
-      case 'profile':
-        return <UserProfile onAuthOpen={onAuthOpen} />;
-      default:
-        // Default to trending cards instead of overview
-        return (
-          <>
-            {/* Add MegaFilter component here */}
-            <div className="px-4 py-3 bg-white border-b border-gray-200">
-              <MegaFilter
-                onSearch={handleSearch}
-                onFilterChange={handleFilterChange}
-                data={content}
-              />
-            </div>
-
-            {/* Mobile Search */}
-            <div className="sm:hidden px-4 py-3 bg-white border-b border-gray-200">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder={t('dashboard.search')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-button focus:border-transparent bg-white text-gray-900 font-['Figtree']"
-                />
-              </div>
-            </div>
-
-            {/* Content Grid with Skeleton Loading */}
-            {renderContentGrid()}
-
-            {/* Load More */}
-            {loading && content.length > 0 && (
-              <div className="flex items-center justify-center py-8">
-                <LoadingSpinner size="md" />
-              </div>
-            )}
-
-            {/* No More Content */}
-            {!hasMore && content.length > 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-500 font-['Figtree']">
-                  You've reached the end of trending content
-                </p>
-              </div>
-            )}
-
-            {/* No Results */}
-            {filteredData.length === 0 && !loading && !isLoading && (
-              <div className="text-center py-20">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2 font-['Figtree']">
-                  No content found
-                </h3>
-                <p className="text-gray-500 font-['Figtree']">
-                  Try adjusting your search or filters
-                </p>
-              </div>
-            )}
-          </>
-        );
-    }
+        {/* No Results */}
+        {filteredData.length === 0 && !loading && !isLoading && (
+          <div className="text-center py-20">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 font-['Figtree']">
+              No content found
+            </h3>
+            <p className="text-gray-500 font-['Figtree']">
+              Try adjusting your search or filters
+            </p>
+          </div>
+        )}
+      </>
+    );
   };
 
   // Update header visibility condition:
