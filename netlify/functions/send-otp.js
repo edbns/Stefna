@@ -11,7 +11,8 @@ if (!resendApiKey) {
   console.error('RESEND_API_KEY environment variable is not set');
 }
 
-const resend = new Resend(resendApiKey);
+// Initialize Resend with the API key - using the correct pattern
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 exports.handler = async (event) => {
   const { email, otp } = JSON.parse(event.body || '{}');
