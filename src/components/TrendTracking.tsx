@@ -37,6 +37,7 @@ const TrendTracking: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [loading, setLoading] = useState(false); // Add this missing state
   const [newTrendData, setNewTrendData] = useState({
     name: '',
     hashtag: '',
@@ -44,13 +45,6 @@ const TrendTracking: React.FC = () => {
     platforms: ['youtube'] as string[]
   });
 
-  // Remove this entire useEffect block (lines 48-109):
-  // useEffect(() => {
-  //   const mockTrends: TrackedTrend[] = [...]
-  //   setTrackedTrends(mockTrends);
-  // }, []);
-  
-  // Replace with:
   useEffect(() => {
     const fetchTrends = async () => {
       try {
