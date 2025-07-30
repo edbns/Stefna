@@ -195,9 +195,8 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({
         <select
           value={settings.language}
           onChange={(e) => {
-            const newLanguage = e.target.value;
-            handleSettingChange('language', 'language', newLanguage);
-            setLanguage(newLanguage);
+            handleSettingChange('language', 'language', e.target.value);
+            setLanguage(e.target.value);
           }}
           className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >

@@ -1,34 +1,39 @@
 import React, { useState } from 'react';
 import { PlayCircle, Loader2, ExternalLink, Copy, Check } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const YoutubeSummarizer: React.FC = () => {
   const { t } = useLanguage();
-  const [url, setUrl] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
   const [summary, setSummary] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  // Remove mock summary response
-  const mockSummaryResponse = '';
+  // Extract video ID from YouTube URL
+  const extractVideoId = (url: string): string | null => {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  };
 
   const handleSummarize = async () => {
-    if (!url.trim()) {
+    if (!youtubeUrl.trim()) {
       setError('Please enter a valid YouTube URL');
       return;
     }
 
-    setLoading(true);
+    setIsLoading(true);
     setError(null);
     setSummary(null);
 
     try {
-      // Only attempt real API call, no fallback to mock data
       const response = await fetch('/.netlify/functions/youtube-summary', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: youtubeUrl }),
       });
 
       if (!response.ok) {
@@ -40,13 +45,15 @@ const YoutubeSummarizer: React.FC = () => {
     } catch (err) {
       console.error('Error generating summary:', err);
       setError('Failed to generate summary. Please try again.');
-      setSummary(null); // Don't show mock data on error
+      setSummary(null);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleCopy = async () => {
+    if (!summary) return;
+    
     try {
       await navigator.clipboard.writeText(summary);
       setCopied(true);
