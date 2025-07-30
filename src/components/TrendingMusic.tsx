@@ -8,7 +8,11 @@ import toast from 'react-hot-toast';
 
 const TRACKS_PER_PAGE = 15;
 
-const TrendingMusic: React.FC = () => {
+interface TrendingMusicProps {
+  onAuthOpen?: () => void;
+}
+
+const TrendingMusic: React.FC<TrendingMusicProps> = ({ onAuthOpen }) => {
   const [tracks, setTracks] = useState<LastFMTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,8 +76,7 @@ const TrendingMusic: React.FC = () => {
   }, [hasMore, loading]);
 
   const handleAuthPrompt = () => {
-    toast.error('Please sign in to interact with content');
-    // You can trigger the auth modal here if needed
+    onAuthOpen?.();
   };
 
   if (error) {

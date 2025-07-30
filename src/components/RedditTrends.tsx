@@ -85,7 +85,6 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
   };
 
   const handleAuthPrompt = () => {
-    toast.error('Please sign in to interact with content');
     onAuthOpen?.();
   };
 

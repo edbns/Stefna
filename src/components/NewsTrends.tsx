@@ -247,7 +247,6 @@ const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
                     url: article.link
                   }}
                   onAuthOpen={() => {
-                    toast.error('Please sign in to interact with content');
                     onAuthOpen?.();
                   }}
                 />

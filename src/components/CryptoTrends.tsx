@@ -126,7 +126,6 @@ const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
   };
 
   const handleAuthPrompt = () => {
-    toast.error('Please sign in to interact with content');
     onAuthOpen?.();
   };
 
