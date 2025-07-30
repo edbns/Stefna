@@ -1,5 +1,11 @@
 const { Resend } = require('resend');
 
+console.log('=== ENVIRONMENT VARIABLES DEBUG ===');
+console.log('All environment variables:', Object.keys(process.env));
+console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY);
+console.log('RESEND_API_KEY type:', typeof process.env.RESEND_API_KEY);
+console.log('RESEND_API_KEY length:', process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.length : 'undefined');
+
 const resendApiKey = process.env.RESEND_API_KEY;
 
 console.log('Environment variables check:');
