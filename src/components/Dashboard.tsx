@@ -130,7 +130,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     const interval = setInterval(autoRefresh, 30000);
     return () => clearInterval(interval);
-  }, [fetchContent]);
+  }, [selectedPlatform]);
 
   // Load initial content
   useEffect(() => {
@@ -141,7 +141,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       setLoading(false);
       setPage(1);
     }, 1000);
-  }, [selectedPlatform, selectedCategory, fetchContent]);
+  }, [selectedPlatform, selectedCategory]);
 
   // Filter content based on platform and search
   // Remove these lines entirely:
@@ -168,7 +168,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       
       if (page >= 5) setHasMore(false);
     }, 1000);
-  }, [loading, hasMore, page, fetchContent]);
+  }, [loading, hasMore, page, selectedPlatform]);
 
   // Infinite scroll handler
   useEffect(() => {
