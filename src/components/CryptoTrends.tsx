@@ -64,23 +64,45 @@ const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" />
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-black mb-2">🔥 Crypto Trends</h2>
+            <p className="text-gray-600">Top cryptocurrencies by market cap</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, index) => (
+            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded mb-3"></div>
+              <div className="h-3 bg-gray-200 rounded mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-20">
-        <h3 className="text-lg font-semibold text-black mb-2">Failed to load crypto trends</h3>
-        <p className="text-gray-500 mb-4">{error}</p>
-        <button
-          onClick={fetchCryptoData}
-          className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          Try Again
-        </button>
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-black mb-2">🔥 Crypto Trends</h2>
+            <p className="text-gray-600">Top cryptocurrencies by market cap</p>
+          </div>
+        </div>
+        <div className="text-center py-20">
+          <h3 className="text-lg font-semibold text-black mb-2">Failed to load crypto trends</h3>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button
+            onClick={fetchCryptoData}
+            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }

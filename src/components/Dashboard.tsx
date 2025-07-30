@@ -132,17 +132,30 @@ const Dashboard: React.FC<DashboardProps> = ({
     }, 1000);
   }, [loading, hasMore, page, fetchContent]);
 
-  // Infinite scroll handler
+  // Infinite scroll handler with throttling
   useEffect(() => {
+    let ticking = false;
+    
     const handleScroll = () => {
-      if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 1000) {
-        loadMore();
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          const windowHeight = window.innerHeight;
+          const documentHeight = document.documentElement.scrollHeight;
+          
+          // Check if we're near the bottom (within 500px)
+          if (scrollTop + windowHeight >= documentHeight - 500 && !loading && hasMore) {
+            loadMore();
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [loadMore]);
+  }, [loading, hasMore, loadMore]);
 
   // Skeleton shows based on 'isLoading', not 'loading'
   if (isLoading) {
@@ -351,9 +364,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Update header visibility condition:
   return (
-    <div className="flex-1 overflow-hidden">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-4">
           <button
             onClick={onSidebarToggle}
@@ -378,7 +391,9 @@ const Dashboard: React.FC<DashboardProps> = ({
              selectedCategory === 'saved' ? 'Saved Content' :
              selectedCategory === 'monitoring' ? 'Monitoring' :
              selectedCategory === 'analytics' ? 'Analytics' :
-             selectedCategory === 'alerts' ? 'Alerts' : 'Dashboard'}
+             selectedCategory === 'alerts' ? 'Alerts' :
+             selectedCategory === 'reddit-trends' ? 'Reddit Trends' :
+             selectedCategory === 'following' ? 'Following' : 'Dashboard'}
           </h1>
         </div>
         
@@ -407,7 +422,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-white">
+      <main className="flex-1 overflow-y-auto bg-gray-50">
         {renderContent()}
       </main>
     </div>
