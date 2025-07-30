@@ -1,17 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { Hash, ChevronDown, Bookmark, Heart, Monitor, RefreshCw, AlertCircle } from 'lucide-react';
+import { 
+  Hash, 
+  TrendingUp, 
+  RefreshCw, 
+  AlertCircle, 
+  Users,
+  Activity,
+  Target,
+  Sparkles,
+  ArrowUpRight,
+  Clock,
+  Filter,
+  MessageSquare,
+  Share2,
+  Eye
+} from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import FollowButton from './FollowButton';
 
 interface TrendingHashtag {
   id: string;
-  hashtag: string;
+  name: string;
   postCount: number;
   engagement: number;
   growth: string;
   sentiment: 'positive' | 'neutral' | 'negative';
-  platform?: string;
+  color: string;
+  platforms: string[];
+  relatedHashtags: string[];
+  topPosts: number;
+  reach: number;
 }
 
 interface TrendingHashtagsProps {
@@ -23,23 +42,144 @@ const TrendingHashtags: React.FC<TrendingHashtagsProps> = ({ onAuthOpen, onHasht
   const { t } = useLanguage();
   const { user } = useAuth();
   const [selectedTimeframe, setSelectedTimeframe] = useState('24h');
+  const [selectedFilter, setSelectedFilter] = useState('all');
   const [hashtags, setHashtags] = useState<TrendingHashtag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Fallback mock data
+  // Enhanced fallback hashtags with colors and additional data
   const fallbackHashtags: TrendingHashtag[] = [
-    { id: '1', hashtag: '#AI', postCount: 125000, engagement: 9.2, growth: '+45%', sentiment: 'positive', platform: 'twitter' },
-    { id: '2', hashtag: '#TechNews', postCount: 89000, engagement: 7.8, growth: '+23%', sentiment: 'positive', platform: 'youtube' },
-    { id: '3', hashtag: '#Viral', postCount: 156000, engagement: 12.5, growth: '+67%', sentiment: 'positive', platform: 'tiktok' },
-    { id: '4', hashtag: '#Breaking', postCount: 78000, engagement: 15.2, growth: '+34%', sentiment: 'neutral', platform: 'twitter' },
-    { id: '5', hashtag: '#Trending', postCount: 203000, engagement: 8.9, growth: '+28%', sentiment: 'positive', platform: 'instagram' },
-    { id: '6', hashtag: '#Social', postCount: 67000, engagement: 6.7, growth: '+19%', sentiment: 'positive', platform: 'youtube' },
-    { id: '7', hashtag: '#Innovation', postCount: 45000, engagement: 8.3, growth: '+15%', sentiment: 'positive', platform: 'linkedin' },
-    { id: '8', hashtag: '#Digital', postCount: 52000, engagement: 7.1, growth: '+22%', sentiment: 'positive', platform: 'twitter' },
-    { id: '9', hashtag: '#Future', postCount: 38000, engagement: 9.8, growth: '+31%', sentiment: 'positive', platform: 'tiktok' },
-    { id: '10', hashtag: '#Tech', postCount: 94000, engagement: 6.9, growth: '+18%', sentiment: 'positive', platform: 'youtube' }
+    { 
+      id: '1', 
+      name: '#AI', 
+      postCount: 125000, 
+      engagement: 12.5, 
+      growth: '+45%', 
+      sentiment: 'positive', 
+      color: '#3B82F6',
+      platforms: ['Twitter', 'LinkedIn', 'Reddit'],
+      relatedHashtags: ['#MachineLearning', '#Tech', '#Innovation'],
+      topPosts: 8500,
+      reach: 2500000
+    },
+    { 
+      id: '2', 
+      name: '#ClimateAction', 
+      postCount: 89000, 
+      engagement: 18.2, 
+      growth: '+32%', 
+      sentiment: 'positive', 
+      color: '#10B981',
+      platforms: ['Instagram', 'Twitter', 'TikTok'],
+      relatedHashtags: ['#Sustainability', '#Environment', '#Green'],
+      topPosts: 6200,
+      reach: 1800000
+    },
+    { 
+      id: '3', 
+      name: '#Gaming', 
+      postCount: 156000, 
+      engagement: 22.8, 
+      growth: '+67%', 
+      sentiment: 'positive', 
+      color: '#EF4444',
+      platforms: ['Twitch', 'YouTube', 'Reddit'],
+      relatedHashtags: ['#Esports', '#Streaming', '#Gamers'],
+      topPosts: 12000,
+      reach: 3200000
+    },
+    { 
+      id: '4', 
+      name: '#Fashion', 
+      postCount: 98000, 
+      engagement: 15.4, 
+      growth: '+28%', 
+      sentiment: 'positive', 
+      color: '#EC4899',
+      platforms: ['Instagram', 'TikTok', 'Pinterest'],
+      relatedHashtags: ['#Style', '#Trends', '#FashionWeek'],
+      topPosts: 7500,
+      reach: 2100000
+    },
+    { 
+      id: '5', 
+      name: '#Food', 
+      postCount: 134000, 
+      engagement: 19.6, 
+      growth: '+41%', 
+      sentiment: 'positive', 
+      color: '#F97316',
+      platforms: ['Instagram', 'TikTok', 'YouTube'],
+      relatedHashtags: ['#Cooking', '#Recipes', '#Foodie'],
+      topPosts: 9800,
+      reach: 2800000
+    },
+    { 
+      id: '6', 
+      name: '#Travel', 
+      postCount: 67000, 
+      engagement: 14.8, 
+      growth: '+23%', 
+      sentiment: 'positive', 
+      color: '#84CC16',
+      platforms: ['Instagram', 'YouTube', 'TikTok'],
+      relatedHashtags: ['#Adventure', '#Wanderlust', '#Explore'],
+      topPosts: 4200,
+      reach: 1500000
+    },
+    { 
+      id: '7', 
+      name: '#Music', 
+      postCount: 112000, 
+      engagement: 16.7, 
+      growth: '+38%', 
+      sentiment: 'positive', 
+      color: '#F59E0B',
+      platforms: ['TikTok', 'YouTube', 'Instagram'],
+      relatedHashtags: ['#NewMusic', '#Concerts', '#Artists'],
+      topPosts: 8900,
+      reach: 2400000
+    },
+    { 
+      id: '8', 
+      name: '#Sports', 
+      postCount: 89000, 
+      engagement: 13.2, 
+      growth: '+19%', 
+      sentiment: 'positive', 
+      color: '#06B6D4',
+      platforms: ['Twitter', 'Instagram', 'YouTube'],
+      relatedHashtags: ['#Football', '#Basketball', '#Olympics'],
+      topPosts: 5600,
+      reach: 1700000
+    },
+    { 
+      id: '9', 
+      name: '#Science', 
+      postCount: 45000, 
+      engagement: 9.8, 
+      growth: '+15%', 
+      sentiment: 'positive', 
+      color: '#8B5CF6',
+      platforms: ['YouTube', 'Reddit', 'Twitter'],
+      relatedHashtags: ['#Research', '#Space', '#Discovery'],
+      topPosts: 2800,
+      reach: 900000
+    },
+    { 
+      id: '10', 
+      name: '#Politics', 
+      postCount: 78000, 
+      engagement: 11.4, 
+      growth: '+52%', 
+      sentiment: 'negative', 
+      color: '#6B7280',
+      platforms: ['Twitter', 'Reddit', 'YouTube'],
+      relatedHashtags: ['#Elections', '#Policy', '#Debates'],
+      topPosts: 4200,
+      reach: 1200000
+    }
   ];
 
   const fetchTrendingHashtags = async () => {
@@ -47,74 +187,58 @@ const TrendingHashtags: React.FC<TrendingHashtagsProps> = ({ onAuthOpen, onHasht
     setError(null);
     
     try {
-      // Try multiple data sources
-      const sources = [
-        // Your local trending service
-        '/.netlify/functions/trending-youtube',
-        // Backup APIs (add more free endpoints here)
-        'https://api.github.com/search/repositories?q=trending&sort=stars&order=desc&per_page=10'
-      ];
-      
-      let data = null;
-      
-      for (const source of sources) {
-        try {
-          const response = await fetch(source, {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-            },
-            timeout: 5000
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            
-            if (source.includes('netlify/functions')) {
-              // Transform your backend data
-              data = result.data?.filter((item: any) => item.type === 'hashtag')?.map((item: any, index: number) => ({
-                id: `api-${index}`,
-                hashtag: item.hashtag || item.title,
-                postCount: Math.floor(Math.random() * 200000) + 10000,
-                engagement: Math.floor(Math.random() * 15) + 5,
-                growth: `+${Math.floor(Math.random() * 50) + 10}%`,
-                sentiment: ['positive', 'neutral', 'negative'][Math.floor(Math.random() * 3)] as 'positive' | 'neutral' | 'negative',
-                platform: item.platform
-              }));
-            } else if (source.includes('github.com')) {
-              // Transform GitHub trending data as hashtags
-              data = result.items?.slice(0, 10)?.map((repo: any, index: number) => ({
-                id: `gh-${index}`,
-                hashtag: `#${repo.name.replace(/[^a-zA-Z0-9]/g, '')}`,
-                postCount: repo.stargazers_count,
-                engagement: Math.floor(Math.random() * 15) + 5,
-                growth: `+${Math.floor(Math.random() * 50) + 10}%`,
-                sentiment: 'positive' as const,
-                platform: 'github'
-              }));
-            }
-            
-            if (data && data.length > 0) {
-              break;
-            }
-          }
-        } catch (sourceError) {
-          console.warn(`Failed to fetch from ${source}:`, sourceError);
-          continue;
+      // Try your local trending service first
+      const response = await fetch('/.netlify/functions/trending-reddit', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
         }
-      }
+      });
       
-      if (data && data.length > 0) {
-        setHashtags(data.slice(0, 15)); // Limit to 15 hashtags
-        setLastUpdated(new Date());
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Transform API data to hashtags
+        const apiHashtags = result.data?.reduce((acc: any[], item: any) => {
+          const hashtag = item.hashtag || '#' + item.title?.split(' ')[0] || 'General';
+          const existing = acc.find(h => h.name === hashtag);
+          
+          if (existing) {
+            existing.postCount += 1;
+            existing.engagement = (existing.engagement + Math.random() * 5 + 5) / 2;
+          } else {
+            acc.push({
+              id: `api-${acc.length}`,
+              name: hashtag,
+              postCount: Math.floor(Math.random() * 200000) + 10000,
+              engagement: Math.floor(Math.random() * 20) + 5,
+              growth: `+${Math.floor(Math.random() * 80) + 10}%`,
+              sentiment: ['positive', 'neutral', 'negative'][Math.floor(Math.random() * 3)] as 'positive' | 'neutral' | 'negative',
+              color: ['#3B82F6', '#10B981', '#EF4444', '#EC4899', '#F97316', '#84CC16', '#F59E0B', '#06B6D4', '#8B5CF6', '#6B7280'][Math.floor(Math.random() * 10)],
+              platforms: ['Twitter', 'Instagram', 'TikTok', 'YouTube', 'Reddit'].slice(0, Math.floor(Math.random() * 3) + 1),
+              relatedHashtags: ['Related1', 'Related2', 'Related3'].slice(0, Math.floor(Math.random() * 2) + 1),
+              topPosts: Math.floor(Math.random() * 15000) + 1000,
+              reach: Math.floor(Math.random() * 5000000) + 500000
+            });
+          }
+          
+          return acc;
+        }, []);
+        
+        if (apiHashtags && apiHashtags.length > 0) {
+          setHashtags(apiHashtags.slice(0, 10));
+          setLastUpdated(new Date());
+        } else {
+          throw new Error('No hashtags in API response');
+        }
       } else {
-        throw new Error('No data available from any source');
+        throw new Error('API request failed');
       }
       
     } catch (err) {
       console.error('Error fetching trending hashtags:', err);
       setError('Using fallback data');
-      setHashtags(fallbackHashtags.slice(0, 15));
+      setHashtags(fallbackHashtags);
       setLastUpdated(new Date());
     } finally {
       setLoading(false);
@@ -123,178 +247,261 @@ const TrendingHashtags: React.FC<TrendingHashtagsProps> = ({ onAuthOpen, onHasht
 
   useEffect(() => {
     fetchTrendingHashtags();
-    
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchTrendingHashtags, 5 * 60 * 1000);
-    
-    return () => clearInterval(interval);
   }, [selectedTimeframe]);
-
-  const timeframes = [
-    { id: '1h', label: 'Last Hour' },
-    { id: '24h', label: 'Last 24 Hours' },
-    { id: '7d', label: 'Last 7 Days' },
-    { id: '30d', label: 'Last 30 Days' }
-  ];
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
-      case 'positive': return 'text-green-600 bg-green-50 border-green-200';
-      case 'negative': return 'text-red-600 bg-red-50 border-red-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
-
-  const getPlatformIcon = (platform?: string) => {
-    switch (platform) {
-      case 'twitter': return '🐦';
-      case 'youtube': return '📺';
-      case 'tiktok': return '🎵';
-      case 'instagram': return '📷';
-      case 'github': return '💻';
-      default: return '🔥';
+      case 'positive': return 'text-green-600 bg-green-50';
+      case 'negative': return 'text-red-600 bg-red-50';
+      default: return 'text-gray-600 bg-gray-50';
     }
   };
 
   const formatNumber = (num: number): string => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toString();
   };
 
-  const handleHashtagClick = (hashtag: string) => {
+  const handleHashtagClick = (hashtagName: string) => {
     if (onHashtagClick) {
-      onHashtagClick(hashtag);
+      onHashtagClick(hashtagName);
     }
-    // Show toast notification
-    const toast = document.createElement('div');
-    toast.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-    toast.textContent = `Filtering by ${hashtag}`;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      document.body.removeChild(toast);
-    }, 3000);
   };
+
+  const timeframes = [
+    { value: '1h', label: '1 Hour' },
+    { value: '24h', label: '24 Hours' },
+    { value: '7d', label: '7 Days' },
+    { value: '30d', label: '30 Days' }
+  ];
+
+  const filters = [
+    { value: 'all', label: 'All Hashtags' },
+    { value: 'positive', label: 'Positive Sentiment' },
+    { value: 'negative', label: 'Negative Sentiment' },
+    { value: 'high-engagement', label: 'High Engagement' }
+  ];
+
+  const filteredHashtags = hashtags.filter(hashtag => {
+    if (selectedFilter === 'positive') return hashtag.sentiment === 'positive';
+    if (selectedFilter === 'negative') return hashtag.sentiment === 'negative';
+    if (selectedFilter === 'high-engagement') return hashtag.engagement > 15;
+    return true;
+  });
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Hash className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-bold text-gray-900">🔥 Trending Hashtags</h2>
-          </div>
-          <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
-        </div>
-        
-        <div className="space-y-3">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-100 rounded w-1/2"></div>
-            </div>
-          ))}
+      <div className="p-6 bg-white rounded-lg shadow-sm">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="p-6 bg-white rounded-lg shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Hash className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-900">🔥 Trending Hashtags</h2>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-black mb-2">Trending Hashtags</h1>
+          <p className="text-gray-600">Discover the most popular hashtags across all social platforms</p>
         </div>
         
-        <div className="flex items-center gap-2">
-          {error && (
-            <div className="flex items-center gap-1 text-amber-600 text-sm">
-              <AlertCircle className="w-4 h-4" />
-              <span>Fallback</span>
-            </div>
-          )}
-          
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Clock className="w-4 h-4" />
+            <span>Last updated: {lastUpdated?.toLocaleTimeString()}</span>
+          </div>
           <button
             onClick={fetchTrendingHashtags}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title="Refresh"
           >
-            <RefreshCw className={`w-4 h-4 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className="w-5 h-5 text-black" />
           </button>
-          
-          <div className="relative">
-            <select
-              value={selectedTimeframe}
-              onChange={(e) => setSelectedTimeframe(e.target.value)}
-              className="appearance-none bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {timeframes.map(timeframe => (
-                <option key={timeframe.id} value={timeframe.id}>
-                  {timeframe.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-gray-600" />
+          <span className="text-sm font-medium text-gray-700">Timeframe:</span>
+          <select
+            value={selectedTimeframe}
+            onChange={(e) => setSelectedTimeframe(e.target.value)}
+            className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-black focus:border-transparent"
+          >
+            {timeframes.map(timeframe => (
+              <option key={timeframe.value} value={timeframe.value}>
+                {timeframe.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700">Filter:</span>
+          <select
+            value={selectedFilter}
+            onChange={(e) => setSelectedFilter(e.target.value)}
+            className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-black focus:border-transparent"
+          >
+            {filters.map(filter => (
+              <option key={filter.value} value={filter.value}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
+          <div className="flex items-center gap-3">
+            <Hash className="w-6 h-6" />
+            <div>
+              <p className="text-sm opacity-90">Total Posts</p>
+              <p className="text-2xl font-bold">{formatNumber(hashtags.reduce((sum, hashtag) => sum + hashtag.postCount, 0))}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
+          <div className="flex items-center gap-3">
+            <Users className="w-6 h-6" />
+            <div>
+              <p className="text-sm opacity-90">Avg Engagement</p>
+              <p className="text-2xl font-bold">{((hashtags.reduce((sum, hashtag) => sum + hashtag.engagement, 0) / hashtags.length) || 0).toFixed(1)}%</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
+          <div className="flex items-center gap-3">
+            <Activity className="w-6 h-6" />
+            <div>
+              <p className="text-sm opacity-90">Total Reach</p>
+              <p className="text-2xl font-bold">{formatNumber(hashtags.reduce((sum, hashtag) => sum + hashtag.reach, 0))}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 text-white">
+          <div className="flex items-center gap-3">
+            <Target className="w-6 h-6" />
+            <div>
+              <p className="text-sm opacity-90">Top Growth</p>
+              <p className="text-2xl font-bold">+67%</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Last Updated */}
-      {lastUpdated && (
-        <div className="text-xs text-gray-500 mb-4">
-          Last updated: {lastUpdated.toLocaleTimeString()}
-        </div>
-      )}
-
       {/* Hashtags Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {hashtags.map((hashtag) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredHashtags.map((hashtag) => (
           <div
             key={hashtag.id}
-            className="group p-4 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition-all duration-200"
+            className="group relative bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
+            onClick={() => handleHashtagClick(hashtag.name)}
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getPlatformIcon(hashtag.platform)}</span>
-                <button
-                  onClick={() => handleHashtagClick(hashtag.hashtag)}
-                  className="font-semibold text-gray-900 group-hover:text-blue-600 hover:underline"
+            {/* Hashtag Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl font-bold"
+                  style={{ backgroundColor: `${hashtag.color}20`, color: hashtag.color }}
                 >
-                  {hashtag.hashtag}
-                </button>
+                  #
+                </div>
+                <div>
+                  <h3 className="font-semibold text-black">{hashtag.name}</h3>
+                  <p className="text-sm text-gray-500">{hashtag.platforms.join(', ')}</p>
+                </div>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-gray-400 group-hover:text-black transition-colors" />
+            </div>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-sm text-gray-600">Posts</p>
+                <p className="text-lg font-semibold text-black">{formatNumber(hashtag.postCount)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Engagement</p>
+                <p className="text-lg font-semibold text-black">{hashtag.engagement}%</p>
+              </div>
+            </div>
+
+            {/* Additional Metrics */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-gray-500" />
+                <div>
+                  <p className="text-xs text-gray-500">Reach</p>
+                  <p className="text-sm font-medium text-black">{formatNumber(hashtag.reach)}</p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getSentimentColor(hashtag.sentiment)}`}>
-                  {hashtag.growth}
-                </span>
+                <MessageSquare className="w-4 h-4 text-gray-500" />
+                <div>
+                  <p className="text-xs text-gray-500">Top Posts</p>
+                  <p className="text-sm font-medium text-black">{formatNumber(hashtag.topPosts)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Growth and Sentiment */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-medium text-green-600">{hashtag.growth}</span>
+              </div>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSentimentColor(hashtag.sentiment)}`}>
+                {hashtag.sentiment}
+              </span>
+            </div>
+
+            {/* Related Hashtags */}
+            <div>
+              <p className="text-xs text-gray-500 mb-2">Related Hashtags:</p>
+              <div className="flex flex-wrap gap-1">
+                {hashtag.relatedHashtags.map((related, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                  >
+                    {related}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Follow Button */}
+            {user && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
                 <FollowButton
                   type="hashtag"
-                  item={hashtag.hashtag}
-                  onAuthRequired={() => onAuthOpen?.()}
+                  item={hashtag.name}
+                  onAuthRequired={onAuthOpen}
                 />
               </div>
-            </div>
-            
-            <div className="flex items-center justify-between text-sm text-gray-600">
-              <span>{formatNumber(hashtag.postCount)} posts</span>
-              <span>{hashtag.engagement}% engagement</span>
-            </div>
+            )}
           </div>
         ))}
       </div>
 
-      {hashtags.length === 0 && !loading && (
-        <div className="text-center py-8 text-gray-500">
-          <Hash className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p>No trending hashtags available</p>
-          <button
-            onClick={fetchTrendingHashtags}
-            className="mt-2 text-blue-600 hover:text-blue-700 text-sm"
-          >
-            Try again
-          </button>
+      {/* Error Message */}
+      {error && (
+        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-yellow-600" />
+            <span className="text-sm text-yellow-800">{error}</span>
+          </div>
         </div>
       )}
     </div>
