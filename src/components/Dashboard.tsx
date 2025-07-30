@@ -261,7 +261,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             {!hasMore && content.length > 0 && (
               <div className="text-center py-8">
                 <p className="text-gray-500 font-['Figtree']">
-                  YouYou've reached the end of trending contentapos;ve reached the end of trending content
+                  You've reached the end of trending content
                 </p>
               </div>
             )}
@@ -343,7 +343,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             {!hasMore && content.length > 0 && (
               <div className="text-center py-8">
                 <p className="text-gray-500 font-['Figtree']">
-                  YouYou've reached the end of trending contentapos;ve reached the end of trending content
+                  You've reached the end of trending content
                 </p>
               </div>
             )}
