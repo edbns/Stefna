@@ -69,13 +69,13 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const mainNavigation = [
     { id: 'trending', label: 'YouTube', icon: Youtube },
+    { id: 'reddit-trends', label: 'Reddit', icon: RedditIcon },
     { id: 'crypto-trends', label: 'Crypto', icon: Coins },
     { id: 'news-trends', label: 'News', icon: Newspaper },
     { id: 'music-trends', label: 'Music', icon: Music2 },
     { id: 'trending-hashtags', label: 'Hashtags', icon: HashIcon },
     { id: 'trending-categories', label: 'Categories', icon: Tag },
-    { id: 'global-reach', label: 'Global Reach', icon: Globe },
-    { id: 'reddit-trends', label: 'Reddit', icon: Reddit }
+    { id: 'global-reach', label: 'Global Reach', icon: Globe }
   ];
 
   const tools = [
