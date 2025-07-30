@@ -135,7 +135,7 @@ const AppContent: React.FC = () => {
                 
                 {/* Main Content */}
                 <main className={`flex-1 transition-all duration-300 ${
-                  isSidebarOpen ? 'ml-64' : 'ml-16'
+                  isSidebarOpen ? 'ml-64' : 'ml-28'
                 }`}>
                   <Routes>
                     <Route 
