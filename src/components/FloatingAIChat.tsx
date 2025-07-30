@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Sparkles, Zap, Brain, ChevronLeft } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { getAIResponse, getProviderStatus } from '../services/AIService';
 import { useLanguage } from '../contexts/LanguageContext';
+import toast from 'react-hot-toast';
 
 interface FloatingAIChatProps {
   onClose?: () => void;
@@ -9,10 +12,11 @@ interface FloatingAIChatProps {
 const FloatingAIChat: React.FC<FloatingAIChatProps> = ({ onClose }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; provider?: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [shouldBounce, setShouldBounce] = useState(false);
   const [arrowAnimation, setArrowAnimation] = useState(false);
+  const [providerStatus, setProviderStatus] = useState<Record<string, { available: boolean; lastSuccess?: number }>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
 
@@ -49,6 +53,18 @@ const FloatingAIChat: React.FC<FloatingAIChatProps> = ({ onClose }) => {
     return () => clearInterval(interval);
   }, [isOpen]);
 
+  // Check provider status periodically
+  useEffect(() => {
+    const updateProviderStatus = () => {
+      setProviderStatus(getProviderStatus());
+    };
+
+    updateProviderStatus();
+    const interval = setInterval(updateProviderStatus, 30000); // Update every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleSendMessage = async () => {
     if (!message.trim()) return;
 
@@ -57,10 +73,33 @@ const FloatingAIChat: React.FC<FloatingAIChatProps> = ({ onClose }) => {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
-    // Temporarily disabled due to OpenRouter billing issues
-    const aiResponse = 'AI chat is temporarily disabled due to billing issues. Please add credits to your OpenRouter account to enable this feature.';
-    setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
-    setIsLoading(false);
+    try {
+      const aiResponse = await getAIResponse(userMessage);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: aiResponse.content,
+        provider: aiResponse.provider
+      }]);
+      
+      toast.success(`Response from ${aiResponse.provider}`, {
+        duration: 2000,
+        position: 'bottom-right'
+      });
+    } catch (error) {
+      console.error('AI response error:', error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Sorry, I\'m having trouble connecting to my AI services right now. Please try again in a moment.',
+        provider: 'error'
+      }]);
+      
+      toast.error('AI service temporarily unavailable', {
+        duration: 4000,
+        position: 'bottom-right'
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -70,200 +109,156 @@ const FloatingAIChat: React.FC<FloatingAIChatProps> = ({ onClose }) => {
     }
   };
 
+  const getProviderIndicator = (provider?: string) => {
+    if (!provider || provider === 'error') return null;
+    
+    const status = providerStatus[provider];
+    const isAvailable = status?.available ?? true;
+    
+    return (
+      <div className={`flex items-center gap-1 text-xs ${
+        isAvailable ? 'text-green-600' : 'text-red-600'
+      }`}>
+        <div className={`w-2 h-2 rounded-full ${
+          isAvailable ? 'bg-green-500' : 'bg-red-500'
+        }`} />
+        {provider}
+      </div>
+    );
+  };
+
   return (
     <>
-      {/* Square Button at Bottom Right with Gradient Black */}
-      {!isOpen && (
-        <div className="fixed bottom-6 right-0 z-40">
-          <button
-            onClick={() => setIsOpen(true)}
-            className={`relative w-16 h-20 bg-gradient-to-l from-black to-transparent text-white transition-all duration-500 flex items-center justify-start pl-2 group hover:w-20 ${
-              shouldBounce ? 'animate-pulse' : ''
-            }`}
-            style={{
-              background: 'linear-gradient(270deg, #000000 0%, #000000 70%, transparent 100%)',
-              borderTopLeftRadius: '12px',
-              borderBottomLeftRadius: '12px',
-              boxShadow: '-5px 0 20px rgba(0, 0, 0, 0.3)'
-            }}
-            title="Open AI Assistant"
+      {/* Floating Button */}
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`fixed bottom-4 right-4 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 flex items-center justify-center ${
+          shouldBounce ? 'animate-bounce' : ''
+        }`}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+      >
+        <MessageCircle className="w-6 h-6" />
+        {arrowAnimation && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="absolute -top-8 right-0 bg-white text-gray-800 px-2 py-1 rounded text-xs shadow-lg"
           >
-            {/* Animated Arrow */}
-            <div className="relative flex items-center">
-              <ChevronLeft 
-                className={`w-6 h-6 transition-all duration-500 group-hover:scale-125 ${
-                  arrowAnimation ? 'animate-bounce translate-x-1' : ''
-                }`}
-              />
-              <Sparkles className="w-3 h-3 absolute -top-1 -right-1 text-gray-300 animate-pulse opacity-80" />
-            </div>
-            
-            {/* Hover Effect Overlay */}
-            <div className="absolute inset-0 bg-gray-800 opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-l-xl"></div>
-            
-            {/* Pulsing Indicator */}
-            <div className="absolute top-2 left-2 w-2 h-2 bg-gray-400 rounded-full animate-ping"></div>
-          </button>
-        </div>
-      )}
+            Ask AI
+          </motion.div>
+        )}
+      </motion.button>
 
-      {/* Enhanced Chat Modal with Right-to-Left Slide Animation */}
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-20 z-40 transition-opacity duration-500"
-            onClick={() => setIsOpen(false)}
-          />
-          
-          {/* Chat Container with Right-to-Left Slide Animation */}
-          <div className={`fixed bottom-6 right-0 w-96 h-[32rem] bg-white rounded-l-2xl shadow-2xl border-l border-t border-b border-gray-800 z-50 flex flex-col overflow-hidden transition-all duration-700 ease-out ${
-            isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-          }`}
-          style={{
-            background: 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)',
-            boxShadow: '-25px 0 50px -12px rgba(0, 0, 0, 0.5)'
-          }}>
-            {/* Enhanced Header with Black Gradient */}
-            <div className="bg-gradient-to-r from-black to-gray-900 text-white p-5 flex items-center justify-between relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-gray-900/20 to-black/20 animate-pulse"></div>
-              <div className="flex items-center gap-3 relative z-10">
-                <div className="relative">
-                  <Brain className="w-6 h-6 animate-pulse text-white" />
-                  <div className="absolute inset-0 bg-gray-600 rounded-full opacity-20 animate-ping"></div>
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg font-['Figtree'] flex items-center gap-2 text-white">
-                    AI Assistant
-                    <Zap className="w-4 h-4 text-white animate-bounce" />
-                  </h3>
-                </div>
+      {/* Chat Window */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-20 right-4 w-80 h-96 bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col z-50"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <Bot className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-gray-900">AI Assistant</h3>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-white hover:text-gray-300 transition-all duration-300 hover:rotate-90 hover:scale-110 relative z-10"
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
               >
-                <X className="w-6 h-6" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Enhanced Messages Area */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-gray-900 to-black">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {messages.length === 0 && (
-                <div className="text-center text-white text-sm font-['Figtree'] bg-gradient-to-r from-gray-800 to-gray-900 p-4 rounded-xl border border-gray-700">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Sparkles className="w-5 h-5 text-white animate-spin" />
-                    <span className="font-semibold text-white">Welcome to AI Assistant!</span>
-                  </div>
-                  <p className="text-white">Ask me anything about social media trends, content analysis, or platform insights!</p>
+                <div className="text-center text-gray-500 text-sm py-8">
+                  <Bot className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <p>Ask me anything about social media trends!</p>
                 </div>
               )}
               
               {messages.map((msg, index) => (
-                <div
+                <motion.div
                   key={index}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
-                  style={{
-                    animation: `slideInFromRight 0.5s ease-out ${index * 0.1}s both`
-                  }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex gap-2 ${
+                    msg.role === 'user' ? 'justify-end' : 'justify-start'
+                  }`}
                 >
-                  <div
-                    className={`max-w-[85%] p-4 rounded-2xl text-sm font-['Figtree'] shadow-lg transition-all duration-300 hover:shadow-xl ${
-                      msg.role === 'user'
-                        ? 'bg-gradient-to-r from-gray-700 to-black text-white'
-                        : 'bg-gradient-to-r from-gray-800 to-gray-900 text-gray-200 border border-gray-700'
-                    }`}
-                  >
-                    {msg.content}
+                  {msg.role === 'assistant' && (
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Bot className="w-3 h-3 text-blue-600" />
+                    </div>
+                  )}
+                  <div className={`max-w-[80%] rounded-lg p-2 text-sm ${
+                    msg.role === 'user'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}>
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    {msg.role === 'assistant' && getProviderIndicator(msg.provider)}
                   </div>
-                </div>
+                  {msg.role === 'user' && (
+                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-3 h-3 text-gray-600" />
+                    </div>
+                  )}
+                </motion.div>
               ))}
               
               {isLoading && (
-                <div className="flex justify-start animate-fadeIn">
-                  <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-gray-200 p-4 rounded-2xl text-sm font-['Figtree'] border border-gray-700 shadow-lg">
-                    <div className="flex items-center gap-2">
-                      <Brain className="w-4 h-4 text-gray-400 animate-pulse" />
-                      <span>AI is thinking...</span>
-                      <div className="flex items-center gap-1 ml-2">
-                        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex gap-2 justify-start"
+                >
+                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-3 h-3 text-blue-600" />
+                  </div>
+                  <div className="bg-gray-100 rounded-lg p-2">
+                    <div className="flex space-x-1">
+                      <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
-              
-              {/* Invisible element to scroll to */}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Enhanced Input Area */}
-            <div className="p-5 border-t border-gray-700 bg-gradient-to-r from-gray-900 to-black">
-              <div className="flex gap-3">
+            {/* Input */}
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Ask me anything..."
-                  className="flex-1 px-4 py-3 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400 text-sm font-['Figtree'] transition-all duration-300 hover:border-gray-500 bg-gray-800 text-gray-200 placeholder-gray-400"
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={isLoading}
                 />
                 <button
                   onClick={handleSendMessage}
                   disabled={!message.trim() || isLoading}
-                  className="px-4 py-3 bg-gradient-to-r from-gray-700 to-black text-white rounded-xl hover:from-gray-600 hover:to-gray-900 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 shadow-lg"
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4" />
                 </button>
               </div>
             </div>
-          </div>
-        </>
-      )}
-      
-      {/* Custom Animations */}
-      <style>{`
-        @keyframes slideInFromRight {
-          from {
-            opacity: 0;
-            transform: translateX(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        
-        /* Custom tooltip styling */
-        [title]:hover::after {
-          content: attr(title);
-          position: absolute;
-          bottom: 100%;
-          left: 50%;
-          transform: translateX(-50%);
-          background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
-          color: #e5e5e5;
-          padding: 8px 12px;
-          border-radius: 8px;
-          font-size: 12px;
-          white-space: nowrap;
-          z-index: 1000;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-          border: 1px solid #333;
-        }
-      `}</style>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };
