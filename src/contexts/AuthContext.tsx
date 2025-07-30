@@ -57,8 +57,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Send OTP via our Netlify function
       const result = await sendOTPService(email, otp);
       
-      if (result.message.includes('development mode')) {
-        toast.success('OTP sent! (Check console for development code)');
+      if (result.development) {
+        toast.success('OTP sent! Check console for development code');
+        console.log(`🔐 Your OTP code: ${result.otp}`);
       } else {
         toast.success('OTP sent to your email!');
       }
