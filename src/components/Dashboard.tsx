@@ -26,6 +26,7 @@ import CreatorCards from './CreatorCards';
 import CryptoTrends from './CryptoTrends';
 import NewsTrends from './NewsTrends';
 import TrendingMusic from './TrendingMusic';
+import FollowingManager from './FollowingManager';
 
 interface DashboardProps {
   onSidebarToggle: () => void;
@@ -283,6 +284,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
       case 'music-trends':
         return <TrendingMusic />;
+      case 'following':
+        return <FollowingManager />;
       default:
         // Default to trending cards instead of overview
         return (

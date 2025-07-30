@@ -40,7 +40,6 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import FollowingManager from './FollowingManager';
 import RedditIcon from './icons/RedditIcon';
 import TikTokIcon from './icons/TikTokIcon';
 
@@ -67,7 +66,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useLanguage();
   const { user, logout } = useAuth();
-  const [isFollowingOpen, setIsFollowingOpen] = useState(false);
 
   const mainNavigation = [
     { id: 'trending', label: 'YouTube', icon: Youtube },
@@ -228,7 +226,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       key={item.id}
                       onClick={() => {
                         if (item.id === 'following') {
-                          setIsFollowingOpen(true);
+                          onCategoryChange('following');
                         } else if (item.id === 'logout') {
                           logout();
                         } else {
@@ -300,10 +298,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
       
       {/* FollowingManager */}
-      <FollowingManager
-        isOpen={isFollowingOpen}
-        onClose={() => setIsFollowingOpen(false)}
-      />
+      {/* FollowingManager component is removed as per the edit hint */}
     </>
   );
 };
