@@ -277,15 +277,16 @@ const Dashboard: React.FC<DashboardProps> = ({
         return <GlobalReach />;
       case 'schedule':
         return <Schedule />;
-      // Remove these cases:
-      // case 'analytics':
-      //   return <Analytics onAuthOpen={onAuthOpen} />;
-      // case 'audience':
-      //   return <Audience />;
       case 'settings':
         return <Settings />;
-      case 'profile':
-        return <UserProfile onAuthOpen={onAuthOpen} />;
+      case 'saved':
+        return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
+      case 'monitoring':
+        return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
+      case 'analytics':
+        return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
+      case 'alerts':
+        return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
       default:
         // Default to trending cards instead of overview
         return (
@@ -363,16 +364,19 @@ const Dashboard: React.FC<DashboardProps> = ({
             </svg>
           </button>
           <h1 className="text-xl font-semibold text-black font-['Figtree']">
-            {selectedCategory === 'trending' ? 'Trending Content' : 
-             selectedCategory === 'trending-categories' ? 'Trending Categories' :
-             selectedCategory === 'trending-hashtags' ? 'Trending Hashtags' :
-             selectedCategory === 'trending-creators' ? 'Trending Creators' :
+            {selectedCategory === 'trending' ? 'Trending Feed' : 
+             selectedCategory === 'trending-categories' ? 'Categories' :
+             selectedCategory === 'trending-hashtags' ? 'Hashtags' :
+             selectedCategory === 'trending-creators' ? 'Creators' :
              selectedCategory === 'youtube-summarizer' ? 'YouTube Summarizer' :
              selectedCategory === 'sentiment-analysis' ? 'Sentiment Analysis' :
              selectedCategory === 'global-reach' ? 'Global Reach' :
              selectedCategory === 'schedule' ? 'Schedule' :
              selectedCategory === 'settings' ? 'Settings' :
-             selectedCategory === 'profile' ? 'Profile' : 'Dashboard'}
+             selectedCategory === 'saved' ? 'Saved Content' :
+             selectedCategory === 'monitoring' ? 'Monitoring' :
+             selectedCategory === 'analytics' ? 'Analytics' :
+             selectedCategory === 'alerts' ? 'Alerts' : 'Dashboard'}
           </h1>
         </div>
         

@@ -53,11 +53,24 @@ interface UserStats {
   favoriteCategory: string;
 }
 
-const UserProfile: React.FC<{ onAuthOpen: () => void }> = ({ onAuthOpen }) => {
+const UserProfile: React.FC<{ onAuthOpen: () => void; selectedCategory?: string }> = ({ onAuthOpen, selectedCategory = 'overview' }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'overview' | 'saved' | 'monitoring' | 'analytics'>('overview');
   const [savedContent, setSavedContent] = useState<SavedContent[]>([]);
+  
+  // Set active tab based on selected category
+  useEffect(() => {
+    if (selectedCategory === 'saved') {
+      setActiveTab('saved');
+    } else if (selectedCategory === 'monitoring') {
+      setActiveTab('monitoring');
+    } else if (selectedCategory === 'analytics') {
+      setActiveTab('analytics');
+    } else {
+      setActiveTab('overview');
+    }
+  }, [selectedCategory]);
   const [monitoringItems, setMonitoringItems] = useState<MonitoringItem[]>([]);
   const [userStats, setUserStats] = useState<UserStats>({
     savedContent: 24,
