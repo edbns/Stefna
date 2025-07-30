@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 interface FollowButtonProps {
-  type: 'hashtag' | 'category';
+  type: 'hashtag' | 'category' | 'creator';
   item: string;
   onAuthRequired?: () => void;
   size?: 'sm' | 'md' | 'lg';
