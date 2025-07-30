@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, ArrowUp, MessageCircle, ExternalLink, Clock, Image as ImageIcon } from 'lucide-react';
 import { RedditService, RedditPost } from '../services/RedditService';
@@ -12,18 +12,42 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
   const [posts, setPosts] = useState<RedditPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [after, setAfter] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loaderRef = useRef<HTMLDivElement>(null);
   const redditService = RedditService.getInstance();
 
   useEffect(() => {
     fetchPosts();
   }, []);
 
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMorePosts();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, after]);
+
   const fetchPosts = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await redditService.getTrendingPosts();
+      const response = await redditService.getTrendingPosts(25);
       setPosts(response.posts);
+      setAfter(response.after || null);
+      setHasMore(response.hasMore || false);
     } catch (err) {
       setError('Failed to load Reddit posts');
       console.error('Reddit fetch error:', err);
@@ -32,8 +56,27 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
     }
   };
 
+  const loadMorePosts = useCallback(async () => {
+    if (!hasMore || loadingMore || !after) return;
+
+    try {
+      setLoadingMore(true);
+      const response = await redditService.getTrendingPosts(25, after);
+      setPosts(prev => [...prev, ...response.posts]);
+      setAfter(response.after || null);
+      setHasMore(response.hasMore || false);
+    } catch (err) {
+      console.error('Error loading more Reddit posts:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, loadingMore, after]);
+
   const handleRefresh = () => {
     redditService.clearCache();
+    setPosts([]);
+    setAfter(null);
+    setHasMore(true);
     fetchPosts();
   };
 
@@ -111,7 +154,7 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-black">Reddit Trends</h1>
-              <p className="text-gray-500">Top posts from r/popular</p>
+              <p className="text-gray-500">Top posts from r/popular ({posts.length} posts)</p>
             </div>
           </div>
           <button
@@ -228,6 +271,35 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
             ))}
           </AnimatePresence>
         </div>
+
+        {/* Load More Indicator */}
+        {hasMore && (
+          <div ref={loaderRef} className="flex justify-center py-8">
+            {loadingMore ? (
+              <div className="flex items-center space-x-2">
+                <LoadingSpinner size="sm" />
+                <span className="text-gray-500">Loading more posts...</span>
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-orange-100 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-orange-500" />
+                </div>
+                <p className="text-sm text-gray-500">Scroll to load more</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* No More Posts */}
+        {!hasMore && posts.length > 0 && (
+          <div className="text-center py-8">
+            <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-500">No more posts to load</p>
+          </div>
+        )}
 
         {/* Empty State */}
         {posts.length === 0 && !loading && (

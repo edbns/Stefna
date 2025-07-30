@@ -16,6 +16,9 @@ exports.handler = async (event) => {
       };
     }
 
+    // Parse query parameters
+    const { limit = 25, after = null } = event.queryStringParameters || {};
+
     // Step 1: Get access token using client credentials
     const tokenResponse = await fetch('https://www.reddit.com/api/v1/access_token', {
       method: 'POST',
@@ -34,8 +37,14 @@ exports.handler = async (event) => {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Step 2: Fetch trending posts from r/popular
-    const postsResponse = await fetch('https://oauth.reddit.com/r/popular/top?limit=10&t=day', {
+    // Step 2: Build the URL with parameters
+    let url = `https://oauth.reddit.com/r/popular/top?limit=${limit}&t=day`;
+    if (after) {
+      url += `&after=${after}`;
+    }
+
+    // Step 3: Fetch trending posts from r/popular
+    const postsResponse = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'User-Agent': 'Stefna/1.0 (by /u/stefna_xyz)'
@@ -48,7 +57,7 @@ exports.handler = async (event) => {
 
     const postsData = await postsResponse.json();
     
-    // Step 3: Transform the data to match our frontend expectations
+    // Step 4: Transform the data to match our frontend expectations
     const simplifiedPosts = postsData.data.children.map(post => {
       const postData = post.data;
       return {
@@ -78,7 +87,10 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         posts: simplifiedPosts,
-        count: simplifiedPosts.length
+        count: simplifiedPosts.length,
+        after: postsData.data.after, // For pagination
+        before: postsData.data.before, // For pagination
+        hasMore: !!postsData.data.after // Indicates if there are more posts
       })
     };
 

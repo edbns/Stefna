@@ -16,6 +16,9 @@ export interface RedditPost {
 export interface RedditResponse {
   posts: RedditPost[];
   count: number;
+  after?: string;
+  before?: string;
+  hasMore?: boolean;
 }
 
 export class RedditService {
@@ -31,15 +34,22 @@ export class RedditService {
     return RedditService.instance;
   }
 
-  async getTrendingPosts(): Promise<RedditResponse> {
-    // Check cache first
+  async getTrendingPosts(limit: number = 25, after?: string): Promise<RedditResponse> {
+    // Check cache first (only for initial load without pagination)
     const now = Date.now();
-    if (this.cache && (now - this.cacheTime) < this.CACHE_DURATION) {
+    if (!after && this.cache && (now - this.cacheTime) < this.CACHE_DURATION) {
       return this.cache;
     }
 
     try {
-      const response = await fetch('/.netlify/functions/fetchReddit', {
+      // Build URL with parameters
+      const params = new URLSearchParams();
+      params.append('limit', limit.toString());
+      if (after) {
+        params.append('after', after);
+      }
+
+      const response = await fetch(`/.netlify/functions/fetchReddit?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -52,9 +62,11 @@ export class RedditService {
 
       const data: RedditResponse = await response.json();
       
-      // Cache the response
-      this.cache = data;
-      this.cacheTime = now;
+      // Cache the response (only for initial load)
+      if (!after) {
+        this.cache = data;
+        this.cacheTime = now;
+      }
       
       return data;
     } catch (error) {
