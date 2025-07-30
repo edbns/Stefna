@@ -20,6 +20,61 @@ import PerformanceMonitor from './components/PerformanceMonitor';
 import PageTransition from './components/PageTransition';
 import Error404 from './components/Error404';
 
+// Environment variable checking for debugging
+const checkEnvironmentVariables = () => {
+  if (import.meta.env.DEV) {
+    console.log('🔍 Environment Variables Status:');
+    console.log('================================');
+    
+    const requiredVars = [
+      'VITE_OPENROUTER_API_KEY',
+      'VITE_HUGGINGFACE_API_KEY',
+      'VITE_DEEPINFRA_API_KEY',
+      'VITE_TOGETHER_API_KEY',
+      'VITE_REPLICATE_API_KEY',
+      'VITE_GROQ_API_KEY',
+      'VITE_YOUTUBE_API_KEY',
+      'VITE_NEWSDATA_API_KEY',
+      'VITE_LASTFM_API_KEY',
+      'VITE_REDDIT_CLIENT_ID',
+      'VITE_REDDIT_CLIENT_SECRET',
+      'VITE_RESEND_API_KEY'
+    ];
+    
+    const results = requiredVars.map(variable => {
+      const value = import.meta.env[variable];
+      const exists = !!value;
+      return { variable, exists, value: exists ? `${value.substring(0, 8)}...` : undefined };
+    });
+    
+    const missing = results.filter(r => !r.exists);
+    const present = results.filter(r => r.exists);
+    
+    console.log(`✅ Present: ${present.length}/${results.length}`);
+    present.forEach(result => {
+      console.log(`  ${result.variable}: ${result.value}`);
+    });
+    
+    if (missing.length > 0) {
+      console.log(`❌ Missing: ${missing.length}/${results.length}`);
+      missing.forEach(result => {
+        console.log(`  Missing ${result.variable}`);
+      });
+      
+      console.log('\n📝 To fix missing variables:');
+      console.log('1. Create a .env file in the root directory');
+      console.log('2. Add the missing variables with your API keys');
+      console.log('3. For Netlify deployment, add them in the dashboard');
+      console.log('4. Restart your development server');
+    }
+    
+    console.log('================================');
+  }
+};
+
+// Check environment variables on app start
+checkEnvironmentVariables();
+
 // Main App Content
 const AppContent: React.FC = () => {
   // All hooks must be called in the same order every render
