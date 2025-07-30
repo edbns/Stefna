@@ -2,6 +2,11 @@ const { Resend } = require('resend');
 
 const resendApiKey = process.env.RESEND_API_KEY;
 
+console.log('Environment variables check:');
+console.log('RESEND_API_KEY exists:', !!resendApiKey);
+console.log('RESEND_API_KEY length:', resendApiKey ? resendApiKey.length : 0);
+console.log('RESEND_API_KEY starts with re_:', resendApiKey ? resendApiKey.startsWith('re_') : false);
+
 if (!resendApiKey) {
   console.error('RESEND_API_KEY environment variable is not set');
 }
