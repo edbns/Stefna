@@ -75,20 +75,7 @@ exports.handler = async (event) => {
     const statistics = video.statistics;
     const contentDetails = video.contentDetails;
 
-    // Generate AI summary using OpenRouter
-    const openRouterKey = process.env.OPENROUTER_API_KEY;
-    
-    if (!openRouterKey) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ 
-          error: 'OpenRouter API key not configured',
-          message: 'Please set OPENROUTER_API_KEY in Netlify environment variables'
-        })
-      };
-    }
-
+    // Generate AI summary using multiple providers
     const summaryPrompt = `Please provide a concise summary of this YouTube video:
 
 Title: ${snippet.title}
@@ -106,37 +93,153 @@ Please provide:
 
 Format as JSON with fields: summary, keyPoints, sentiment, topics, confidence`;
 
-    const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openRouterKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://stefna.xyz',
-        'X-Title': 'Stefna YouTube Summarizer'
+    // AI Provider configurations for summary
+    const AI_PROVIDERS = [
+      {
+        name: 'openrouter',
+        apiKey: process.env.OPENROUTER_API_KEY,
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://stefna.xyz',
+          'X-Title': 'Stefna YouTube Summarizer'
+        },
+        transformRequest: (prompt) => ({
+          model: 'anthropic/claude-3.5-sonnet',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful assistant that summarizes YouTube videos. Always respond with valid JSON.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.7
+        }),
+        transformResponse: (data) => data.choices?.[0]?.message?.content || null
       },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant that summarizes YouTube videos. Always respond with valid JSON.'
-          },
-          {
-            role: 'user',
-            content: summaryPrompt
-          }
-        ],
-        max_tokens: 500,
-        temperature: 0.7
-      })
-    });
+      {
+        name: 'deepinfra',
+        apiKey: process.env.DEEPINFRA_API_KEY,
+        endpoint: 'https://api.deepinfra.com/v1/openai/chat/completions',
+        headers: {
+          'Authorization': `Bearer ${process.env.DEEPINFRA_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        transformRequest: (prompt) => ({
+          model: 'meta-llama/Llama-2-70b-chat-hf',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful assistant that summarizes YouTube videos. Always respond with valid JSON.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.7
+        }),
+        transformResponse: (data) => data.choices?.[0]?.message?.content || null
+      },
+      {
+        name: 'together',
+        apiKey: process.env.TOGETHER_API_KEY,
+        endpoint: 'https://api.together.xyz/v1/chat/completions',
+        headers: {
+          'Authorization': `Bearer ${process.env.TOGETHER_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        transformRequest: (prompt) => ({
+          model: 'togethercomputer/llama-2-70b-chat',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful assistant that summarizes YouTube videos. Always respond with valid JSON.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.7
+        }),
+        transformResponse: (data) => data.choices?.[0]?.message?.content || null
+      },
+      {
+        name: 'groq',
+        apiKey: process.env.GROQ_API_KEY,
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        headers: {
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        transformRequest: (prompt) => ({
+          model: 'llama2-70b-4096',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful assistant that summarizes YouTube videos. Always respond with valid JSON.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.7
+        }),
+        transformResponse: (data) => data.choices?.[0]?.message?.content || null
+      }
+    ].filter(provider => provider.apiKey);
 
-    if (!aiResponse.ok) {
-      throw new Error(`AI API failed: ${aiResponse.status}`);
+    if (AI_PROVIDERS.length === 0) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'No AI API keys configured',
+          message: 'Please set at least one AI API key (OPENROUTER_API_KEY, DEEPINFRA_API_KEY, TOGETHER_API_KEY, or GROQ_API_KEY) in Netlify environment variables'
+        })
+      };
     }
 
-    const aiData = await aiResponse.json();
-    const aiContent = aiData.choices[0].message.content;
+    // Try each AI provider in order
+    let aiContent = null;
+    for (const provider of AI_PROVIDERS) {
+      try {
+        console.log(`Trying ${provider.name} for YouTube summary...`);
+        
+        const requestBody = provider.transformRequest(summaryPrompt);
+        
+        const aiResponse = await fetch(provider.endpoint, {
+          method: 'POST',
+          headers: provider.headers,
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!aiResponse.ok) {
+          throw new Error(`HTTP ${aiResponse.status}: ${aiResponse.statusText}`);
+        }
+
+        const aiData = await aiResponse.json();
+        aiContent = provider.transformResponse(aiData);
+        
+        if (aiContent) {
+          console.log(`Success with ${provider.name}`);
+          break;
+        }
+      } catch (error) {
+        console.error(`${provider.name} failed:`, error);
+        // Continue to next provider
+      }
+    }
 
     // Parse AI response
     let summaryData;
