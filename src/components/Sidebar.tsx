@@ -27,7 +27,8 @@ import {
   Eye,
   Bell,
   Grid,
-  Sparkles
+  Sparkles,
+  LogOut
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -57,7 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onAuthOpen
 }) => {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [isFollowingOpen, setIsFollowingOpen] = useState(false);
 
   const mainNavigation = [
@@ -87,7 +88,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'monitoring', label: 'Monitoring', icon: Eye, description: 'Tracked items' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, description: 'Your insights' },
     { id: 'following', label: 'Following', icon: Heart, description: 'Followed creators' },
-    { id: 'alerts', label: 'Alerts', icon: Bell, description: 'Notifications' }
+    { id: 'alerts', label: 'Alerts', icon: Bell, description: 'Notifications' },
+    { id: 'logout', label: 'Logout', icon: LogOut, description: 'Sign out', isLogout: true }
   ] : [];
 
   return (
@@ -223,6 +225,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                       onClick={() => {
                         if (item.id === 'following') {
                           setIsFollowingOpen(true);
+                        } else if (item.id === 'logout') {
+                          logout();
                         } else {
                           onCategoryChange(item.id);
                         }
