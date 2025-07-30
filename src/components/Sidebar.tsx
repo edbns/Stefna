@@ -104,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       
       {/* Sidebar */}
       <div className={`fixed left-0 top-0 h-full z-50 transition-all duration-300 flex flex-col ${
-        isOpen ? 'w-56' : 'w-16'
+        isOpen ? 'w-64' : 'w-16'
       }`}
         style={{
           background: '#000000',
@@ -145,7 +145,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           
           {/* Main Navigation */}
           <div className="px-4">
-            <div className="space-y-2">
+            <div className="space-y-1">
               {mainNavigation.map((item) => {
                 const Icon = item.icon;
                 const isActive = selectedCategory === item.id;
@@ -176,7 +176,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Tools Section */}
           <div className="px-4">
-            <div className="space-y-2">
+            <div className="space-y-1">
               {tools.map((item) => {
                 const Icon = item.icon;
                 const isActive = selectedCategory === item.id;
@@ -208,7 +208,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           {/* User Features - Only show if logged in */}
           {user && userFeatures.length > 0 && (
             <div className="px-4">
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {userFeatures.map((item) => {
                   const Icon = item.icon;
                   const isActive = selectedCategory === item.id;
@@ -248,7 +248,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Platform Filters */}
           <div className="px-4">
-            <div className="space-y-2">
+            <div className="space-y-1">
               {platforms.map((platform) => {
                 const Icon = platform.icon;
                 const isActive = selectedPlatform === platform.id;
@@ -258,7 +258,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     key={platform.id}
                     onClick={() => onPlatformChange(platform.id)}
                     disabled={platform.comingSoon}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+                    className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-all duration-200 ${
                       isActive
                         ? 'bg-white text-black'
                         : 'text-white hover:bg-white/10'
