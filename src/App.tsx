@@ -127,7 +127,7 @@ const AppContent: React.FC = () => {
           <Route 
             path="/*" 
             element={
-              <>
+              <div className="flex h-screen overflow-hidden">
                 {/* Sidebar */}
                 <Sidebar
                   isOpen={isSidebarOpen}
@@ -141,7 +141,7 @@ const AppContent: React.FC = () => {
                 />
                 
                 {/* Main Content */}
-                <main className={`flex-1 transition-all duration-300 ${
+                <main className={`flex-1 flex flex-col transition-all duration-300 ${
                   isSidebarOpen ? 'ml-64' : 'ml-28'
                 }`}>
                   <Routes>
@@ -180,7 +180,7 @@ const AppContent: React.FC = () => {
                   isOpen={isAiChatOpen} 
                   onClose={() => setIsAiChatOpen(false)} 
                 />
-              </>
+              </div>
             }
           />
         </Routes>

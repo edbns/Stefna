@@ -55,8 +55,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
+  // Remove hasMore and page state since we're not using infinite scroll
+  // const [hasMore, setHasMore] = useState(true);
+  // const [page, setPage] = useState(1);
 
 
 
@@ -93,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       try {
         const data = await fetchContent(1);
         setContent(data);
-        setPage(1);
+        // setPage(1); // Removed as per edit hint
       } catch (error) {
         console.error('Error loading content:', error);
       } finally {
@@ -110,7 +111,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const autoRefresh = async () => {
       const newContent = await fetchContent(1);
       setContent(newContent);
-      setPage(1);
+      // setPage(1); // Removed as per edit hint
     };
 
     const interval = setInterval(autoRefresh, 30000);
@@ -118,44 +119,44 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [fetchContent]);
 
   // Load more content (infinite scroll)
-  const loadMore = useCallback(() => {
-    if (loading || !hasMore) return;
+  // const loadMore = useCallback(() => {
+  //   if (loading || !hasMore) return;
     
-    setLoading(true);
-    setTimeout(async () => {
-      const newContent = await fetchContent(page + 1);
-      setContent(prev => [...prev, ...newContent]);
-      setPage(prev => prev + 1);
-      setLoading(false);
+  //   setLoading(true);
+  //   setTimeout(async () => {
+  //     const newContent = await fetchContent(page + 1);
+  //     setContent(prev => [...prev, ...newContent]);
+  //     setPage(prev => prev + 1);
+  //     setLoading(false);
       
-      if (page >= 5) setHasMore(false);
-    }, 1000);
-  }, [loading, hasMore, page, fetchContent]);
+  //     if (page >= 5) setHasMore(false);
+  //   }, 1000);
+  // }, [loading, hasMore, page, fetchContent]);
 
-  // Infinite scroll handler with throttling
-  useEffect(() => {
-    let ticking = false;
+  // Remove infinite scroll - it's causing the shaking issue
+  // useEffect(() => {
+  //   let ticking = false;
     
-    const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-          const windowHeight = window.innerHeight;
-          const documentHeight = document.documentElement.scrollHeight;
-          
-          // Check if we're near the bottom (within 500px)
-          if (scrollTop + windowHeight >= documentHeight - 500 && !loading && hasMore) {
-            loadMore();
-          }
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
+  //   const handleScroll = () => {
+  //     if (!ticking) {
+  //       requestAnimationFrame(() => {
+  //         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  //         const windowHeight = window.innerHeight;
+  //         const documentHeight = document.documentElement.scrollHeight;
+  //         
+  //         // Check if we're near the bottom (within 500px)
+  //         if (scrollTop + windowHeight >= documentHeight - 500 && !loading && hasMore) {
+  //           loadMore();
+  //         }
+  //         ticking = false;
+  //       });
+  //       ticking = true;
+  //     }
+  //   };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [loading, hasMore, loadMore]);
+  //   window.addEventListener('scroll', handleScroll, { passive: true });
+  //   return () => window.removeEventListener('scroll', handleScroll);
+  // }, [loading, hasMore, loadMore]);
 
   // Skeleton shows based on 'isLoading', not 'loading'
   if (isLoading) {
@@ -239,21 +240,21 @@ const Dashboard: React.FC<DashboardProps> = ({
             {/* Content Grid with Skeleton Loading */}
             {renderContentGrid()}
 
-            {/* Load More */}
-            {loading && content.length > 0 && (
+            {/* Load More - Removed to fix scrolling issues */}
+            {/* {loading && content.length > 0 && (
               <div className="flex items-center justify-center py-8">
                 <LoadingSpinner size="md" />
               </div>
-            )}
+            )} */}
 
             {/* No More Content */}
-            {!hasMore && content.length > 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-500 font-['Figtree']">
-                  You've reached the end of trending content
-                </p>
-              </div>
-            )}
+            {/* {!hasMore && content.length > 0 && ( // Removed as per edit hint */}
+            {/*   <div className="text-center py-8"> // Removed as per edit hint */}
+            {/*     <p className="text-gray-500 font-['Figtree']"> // Removed as per edit hint */}
+            {/*       You've reached the end of trending content // Removed as per edit hint */}
+            {/*     </p> // Removed as per edit hint */}
+            {/*   </div> // Removed as per edit hint */}
+            {/* )} // Removed as per edit hint */}
 
             {/* No Results */}
             {content.length === 0 && !loading && !isLoading && (
@@ -338,13 +339,13 @@ const Dashboard: React.FC<DashboardProps> = ({
             )}
 
             {/* No More Content */}
-            {!hasMore && content.length > 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-500 font-['Figtree']">
-                  You've reached the end of trending content
-                </p>
-              </div>
-            )}
+            {/* {!hasMore && content.length > 0 && ( // Removed as per edit hint */}
+            {/*   <div className="text-center py-8"> // Removed as per edit hint */}
+            {/*     <p className="text-gray-500 font-['Figtree']"> // Removed as per edit hint */}
+            {/*       You've reached the end of trending content // Removed as per edit hint */}
+            {/*     </p> // Removed as per edit hint */}
+            {/*   </div> // Removed as per edit hint */}
+            {/* )} // Removed as per edit hint */}
 
             {/* No Results */}
             {content.length === 0 && !loading && !isLoading && (
