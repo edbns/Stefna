@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ExternalLink, Clock, Tag } from 'lucide-react';
 import NewsService, { NewsArticle } from '../services/NewsService';
 import LoadingSpinner from './LoadingSpinner';
@@ -8,21 +8,23 @@ interface NewsTrendsProps {
   onAuthOpen?: () => void;
 }
 
+const NEWS_PER_PAGE = 12;
+
 const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
   const [newsData, setNewsData] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    fetchNewsData();
-  }, []);
-
-  const fetchNewsData = async () => {
+  const fetchNewsData = useCallback(async (pageNum: number) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await NewsService.getTrendingNews(12);
-      setNewsData(data);
+      const data = await NewsService.getTrendingNews(NEWS_PER_PAGE);
+      setNewsData((prev) => (pageNum === 1 ? data : [...prev, ...data]));
+      setHasMore(data.length === NEWS_PER_PAGE);
     } catch (error) {
       console.error('Failed to fetch news data:', error);
       setError('Failed to load news trends');
@@ -30,7 +32,28 @@ const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchNewsData(page);
+  }, [page, fetchNewsData]);
+
+  // Infinite scroll
+  useEffect(() => {
+    if (!hasMore || loading) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 1 }
+    );
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => {
+      if (loaderRef.current) observer.unobserve(loaderRef.current);
+    };
+  }, [hasMore, loading]);
 
   const getTimeAgo = (dateString: string): string => {
     const date = new Date(dateString);
@@ -74,7 +97,7 @@ const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
     return text.substring(0, maxLength) + '...';
   };
 
-  if (loading) {
+  if (loading && page === 1) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
@@ -109,7 +132,7 @@ const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
           <h3 className="text-lg font-semibold text-black mb-2">Failed to load news trends</h3>
           <p className="text-gray-500 mb-4">{error}</p>
           <button
-            onClick={fetchNewsData}
+            onClick={() => fetchNewsData(1)} // Retry from page 1
             className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
             Try Again
@@ -132,7 +155,7 @@ const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
             {newsData.length} articles
           </div>
           <button
-            onClick={fetchNewsData}
+            onClick={() => fetchNewsData(1)} // Refresh from page 1
             className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
           >
             Refresh
@@ -218,19 +241,12 @@ const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
             </div>
           </div>
         ))}
+        {loading && page > 1 && (
+          <div ref={loaderRef} className="col-span-full text-center py-8">
+            <LoadingSpinner />
+          </div>
+        )}
       </div>
-
-      {/* Load More */}
-      {newsData.length >= 12 && (
-        <div className="text-center mt-8">
-          <button
-            onClick={fetchNewsData}
-            className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            Load More
-          </button>
-        </div>
-      )}
     </div>
   );
 };

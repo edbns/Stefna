@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TrendingUp, TrendingDown, ExternalLink, Flame } from 'lucide-react';
 import CryptoService, { CryptoCoin } from '../services/CryptoService';
 import LoadingSpinner from './LoadingSpinner';
@@ -8,21 +8,23 @@ interface CryptoTrendsProps {
   onAuthOpen?: () => void;
 }
 
+const CRYPTO_PER_PAGE = 12;
+
 const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
   const [cryptoData, setCryptoData] = useState<CryptoCoin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    fetchCryptoData();
-  }, []);
-
-  const fetchCryptoData = async () => {
+  const fetchCryptoData = useCallback(async (pageNum: number) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await CryptoService.getTrendingCrypto(12);
-      setCryptoData(data);
+      const data = await CryptoService.getTrendingCrypto(CRYPTO_PER_PAGE);
+      setCryptoData((prev) => (pageNum === 1 ? data : [...prev, ...data]));
+      setHasMore(data.length === CRYPTO_PER_PAGE);
     } catch (error) {
       console.error('Failed to fetch crypto data:', error);
       setError('Failed to load crypto trends');
@@ -30,7 +32,28 @@ const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchCryptoData(page);
+  }, [page, fetchCryptoData]);
+
+  // Infinite scroll
+  useEffect(() => {
+    if (!hasMore || loading) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 1 }
+    );
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => {
+      if (loaderRef.current) observer.unobserve(loaderRef.current);
+    };
+  }, [hasMore, loading]);
 
   const formatPrice = (price: number): string => {
     if (price >= 1) {
@@ -62,7 +85,7 @@ const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
     window.open(url, '_blank');
   };
 
-  if (loading) {
+  if (loading && page === 1) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
@@ -97,7 +120,7 @@ const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
           <h3 className="text-lg font-semibold text-black mb-2">Failed to load crypto trends</h3>
           <p className="text-gray-500 mb-4">{error}</p>
           <button
-            onClick={fetchCryptoData}
+            onClick={() => fetchCryptoData(1)} // Retry with page 1
             className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
             Try Again
@@ -120,7 +143,7 @@ const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
             Last updated: {getTimeAgo(cryptoData[0]?.last_updated || '')}
           </div>
           <button
-            onClick={fetchCryptoData}
+            onClick={() => fetchCryptoData(1)} // Refresh with page 1
             className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
           >
             Refresh
@@ -221,17 +244,32 @@ const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
             </div>
           </div>
         ))}
+        {loading && page > 1 && (
+          <div className="col-span-full text-center py-8">
+            <LoadingSpinner />
+          </div>
+        )}
+        {!hasMore && cryptoData.length > 0 && (
+          <div className="col-span-full text-center py-8">
+            <p className="text-gray-500">No more crypto trends to load.</p>
+          </div>
+        )}
+        {error && page === 1 && (
+          <div className="col-span-full text-center py-8">
+            <h3 className="text-lg font-semibold text-black mb-2">Failed to load crypto trends</h3>
+            <p className="text-gray-500 mb-4">{error}</p>
+            <button
+              onClick={() => fetchCryptoData(1)} // Retry with page 1
+              className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
       </div>
-
-      {/* Load More */}
-      {cryptoData.length >= 12 && (
-        <div className="text-center mt-8">
-          <button
-            onClick={fetchCryptoData}
-            className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            Load More
-          </button>
+      {loading && page > 1 && (
+        <div ref={loaderRef} className="text-center py-8">
+          <LoadingSpinner />
         </div>
       )}
     </div>
