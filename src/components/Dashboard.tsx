@@ -20,7 +20,7 @@ import PlatformService from '../services/PlatformService';
 import { Content } from '../types';
 
 // Add this import at the top
-import MegaFilter from './MegaFilter';
+import FloatingFilter from './FloatingFilter';
 import { useMegaFilter } from '../hooks/useMegaFilter';
 import CreatorCards from './CreatorCards';
 
@@ -208,14 +208,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       case 'trending':
         return (
           <>
-            {/* Add MegaFilter component here */}
-            <div className="px-4 py-3 bg-white border-b border-gray-200">
-              <MegaFilter
-                onSearch={handleSearch}
-                onFilterChange={handleFilterChange}
-                data={content}
-              />
-            </div>
+            {/* Add FloatingFilter component here */}
+            <FloatingFilter
+              onSearch={handleSearch}
+              onFilterChange={handleFilterChange}
+              data={content}
+            />
 
             {/* Mobile Search */}
             <div className="sm:hidden px-4 py-3 bg-white border-b border-gray-200">
@@ -291,14 +289,12 @@ const Dashboard: React.FC<DashboardProps> = ({
         // Default to trending cards instead of overview
         return (
           <>
-            {/* Add MegaFilter component here */}
-            <div className="px-4 py-3 bg-white border-b border-gray-200">
-              <MegaFilter
-                onSearch={handleSearch}
-                onFilterChange={handleFilterChange}
-                data={content}
-              />
-            </div>
+            {/* Add FloatingFilter component here */}
+            <FloatingFilter
+              onSearch={handleSearch}
+              onFilterChange={handleFilterChange}
+              data={content}
+            />
 
             {/* Mobile Search */}
             <div className="sm:hidden px-4 py-3 bg-white border-b border-gray-200">
