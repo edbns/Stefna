@@ -62,16 +62,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isFollowingOpen, setIsFollowingOpen] = useState(false);
 
   const mainNavigation = [
-    { id: 'trending', label: 'Trending Feed', icon: TrendingUp, description: 'Latest trending content' },
-    { id: 'trending-categories', label: 'Categories', icon: BarChart3, description: 'Browse by category' },
-    { id: 'trending-hashtags', label: 'Hashtags', icon: Hash, description: 'Popular hashtags' },
-    { id: 'trending-creators', label: 'Creators', icon: Users, description: 'Top creators' },
-    { id: 'global-reach', label: 'Global Reach', icon: Globe, description: 'Worldwide insights' }
+    { id: 'trending', label: 'Trending Posts', icon: TrendingUp },
+    { id: 'trending-categories', label: 'Categories', icon: BarChart3 },
+    { id: 'trending-hashtags', label: 'Hashtags', icon: Hash },
+    { id: 'trending-creators', label: 'Creators', icon: Users },
+    { id: 'global-reach', label: 'Global Reach', icon: Globe }
   ];
 
   const tools = [
-    { id: 'youtube-summarizer', label: 'YouTube Summarizer', icon: PlayCircle, description: 'AI-powered summaries' },
-    { id: 'sentiment-analysis', label: 'Sentiment Analysis', icon: Heart, description: 'Content sentiment' }
+    { id: 'youtube-summarizer', label: 'YouTube Summarizer', icon: PlayCircle },
+    { id: 'sentiment-analysis', label: 'Sentiment Analysis', icon: Heart }
   ];
 
   const platforms = [
@@ -84,12 +84,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const userFeatures = user ? [
-    { id: 'saved', label: 'Saved Content', icon: Bookmark, description: 'Your bookmarks' },
-    { id: 'monitoring', label: 'Monitoring', icon: Eye, description: 'Tracked items' },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3, description: 'Your insights' },
-    { id: 'following', label: 'Following', icon: Heart, description: 'Followed creators' },
-    { id: 'alerts', label: 'Alerts', icon: Bell, description: 'Notifications' },
-    { id: 'logout', label: 'Logout', icon: LogOut, description: 'Sign out', isLogout: true }
+    { id: 'saved', label: 'Saved Content', icon: Bookmark },
+    { id: 'monitoring', label: 'Monitoring', icon: Eye },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'following', label: 'Following', icon: Heart },
+    { id: 'alerts', label: 'Alerts', icon: Bell },
+    { id: 'logout', label: 'Logout', icon: LogOut, isLogout: true }
   ] : [];
 
   return (
@@ -104,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       
       {/* Sidebar */}
       <div className={`fixed left-0 top-0 h-full z-50 transition-all duration-300 flex flex-col ${
-        isOpen ? 'w-72' : 'w-20'
+        isOpen ? 'w-56' : 'w-16'
       }`}
         style={{
           background: '#000000',
@@ -165,9 +165,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                       {isOpen && (
                         <div className="flex-1 text-left">
                           <div className="font-medium text-sm">{item.label}</div>
-                          <div className={`text-xs ${isActive ? 'text-gray-600' : 'text-gray-400'}`}>
-                            {item.description}
-                          </div>
                         </div>
                       )}
                     </div>
@@ -199,9 +196,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                       {isOpen && (
                         <div className="flex-1 text-left">
                           <div className="font-medium text-sm">{item.label}</div>
-                          <div className={`text-xs ${isActive ? 'text-gray-600' : 'text-gray-400'}`}>
-                            {item.description}
-                          </div>
                         </div>
                       )}
                     </div>
@@ -242,9 +236,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                         {isOpen && (
                           <div className="flex-1 text-left">
                             <div className="font-medium text-sm">{item.label}</div>
-                            <div className={`text-xs ${isActive ? 'text-gray-600' : 'text-gray-400'}`}>
-                              {item.description}
-                            </div>
                           </div>
                         )}
                       </div>
