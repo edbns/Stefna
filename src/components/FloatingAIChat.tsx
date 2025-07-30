@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Bot, User, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getAIResponse, getProviderStatus } from '../services/AIService';
+import AIService from '../services/AIService';
+import { getProviderStatus } from '../services/aiProviderPool';
 import { useLanguage } from '../contexts/LanguageContext';
 import toast from 'react-hot-toast';
 
@@ -16,7 +17,7 @@ const FloatingAIChat: React.FC<FloatingAIChatProps> = ({ onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [shouldBounce, setShouldBounce] = useState(false);
   const [arrowAnimation, setArrowAnimation] = useState(false);
-  const [providerStatus, setProviderStatus] = useState<Record<string, { available: boolean; lastSuccess?: number }>>({});
+  const [providerStatus, setProviderStatus] = useState<{ available: number; total: number; providers: string[] }>({ available: 0, total: 0, providers: [] });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
 
@@ -74,14 +75,15 @@ const FloatingAIChat: React.FC<FloatingAIChatProps> = ({ onClose }) => {
     setIsLoading(true);
 
     try {
-      const aiResponse = await getAIResponse(userMessage);
+      const aiService = AIService.getInstance();
+      const response = await aiService.chat(userMessage);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: aiResponse.content,
-        provider: aiResponse.provider
+        content: response,
+        provider: 'AI Assistant'
       }]);
       
-      toast.success(`Response from ${aiResponse.provider}`, {
+      toast.success('Response received', {
         duration: 2000,
         position: 'bottom-right'
       });
@@ -112,8 +114,8 @@ const FloatingAIChat: React.FC<FloatingAIChatProps> = ({ onClose }) => {
   const getProviderIndicator = (provider?: string) => {
     if (!provider || provider === 'error') return null;
     
-    const status = providerStatus[provider];
-    const isAvailable = status?.available ?? true;
+    const status = providerStatus.providers.find(p => p === provider);
+    const isAvailable = status !== undefined;
     
     return (
       <div className={`flex items-center gap-1 text-xs mt-1 ${
