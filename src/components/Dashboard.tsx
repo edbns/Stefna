@@ -390,6 +390,17 @@ const Dashboard: React.FC<DashboardProps> = ({
               {user ? (user.name || user.email) : 'Sign In'}
             </span>
           </button>
+          
+          {/* Logout Button - Only show when logged in */}
+          {user && (
+            <button
+              onClick={() => logout()}
+              className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+          )}
         </div>
       </header>
 
