@@ -141,7 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 space-y-6">
+        <nav className="flex-1 overflow-y-auto py-4 space-y-3">
           
           {/* Main Navigation */}
           <div className="px-4">
@@ -158,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       isActive
                         ? 'bg-white text-black'
                         : 'text-white hover:bg-white/10'
-                    } transition-all duration-200 rounded-lg p-3`}
+                    } transition-all duration-200 rounded-lg p-2`}
                   >
                     <div className="flex items-center gap-3">
                       <Icon className="w-5 h-5 flex-shrink-0" />
@@ -189,7 +189,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       isActive
                         ? 'bg-white text-black'
                         : 'text-white hover:bg-white/10'
-                    } transition-all duration-200 rounded-lg p-3`}
+                    } transition-all duration-200 rounded-lg p-2`}
                   >
                     <div className="flex items-center gap-3">
                       <Icon className="w-5 h-5 flex-shrink-0" />
@@ -229,7 +229,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         isActive
                           ? 'bg-white text-black'
                           : 'text-white hover:bg-white/10'
-                      } transition-all duration-200 rounded-lg p-3`}
+                      } transition-all duration-200 rounded-lg p-2`}
                     >
                       <div className="flex items-center gap-3">
                         <Icon className="w-5 h-5 flex-shrink-0" />
