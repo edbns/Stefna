@@ -127,11 +127,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         <nav className="flex-1 overflow-y-auto py-4">
           {/* Categories */}
           <div className="px-4 mb-6">
-            {isOpen && (
-              <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
-                Categories
-              </h3>
-            )}
             <div className="space-y-1">
               {categories.map((category) => {
                 const Icon = category.icon;
@@ -159,11 +154,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Platforms */}
           <div className="px-4 mb-6">
-            {isOpen && (
-              <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
-                Platforms
-              </h3>
-            )}
             <div className="space-y-1">
               {platforms.map((platform) => {
                 const Icon = platform.icon;
@@ -197,48 +187,31 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          {/* User Section */}
-          <div className="px-4">
-            {isOpen && (
-              <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
-                Account
-              </h3>
-            )}
-            <div className="space-y-1">
-              {user ? (
-                <>
-                  <button
-                    onClick={() => onCategoryChange('profile')}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200"
-                  >
-                    <User className="w-5 h-5 flex-shrink-0" />
-                    {isOpen && (
-                      <span className="text-sm font-medium">{user.name || user.email}</span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setIsFollowingOpen(true)}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200"
-                  >
-                    <Heart className="w-5 h-5 flex-shrink-0" />
-                    {isOpen && (
-                      <span className="text-sm font-medium">Following</span>
-                    )}
-                  </button>
-                </>
-              ) : (
+          {/* User Section - Only show if logged in */}
+          {user && (
+            <div className="px-4">
+              <div className="space-y-1">
                 <button
-                  onClick={onAuthOpen}
+                  onClick={() => onCategoryChange('profile')}
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200"
                 >
                   <User className="w-5 h-5 flex-shrink-0" />
                   {isOpen && (
-                    <span className="text-sm font-medium">Sign In</span>
+                    <span className="text-sm font-medium">{user.name || user.email}</span>
                   )}
                 </button>
-              )}
+                <button
+                  onClick={() => setIsFollowingOpen(true)}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200"
+                >
+                  <Heart className="w-5 h-5 flex-shrink-0" />
+                  {isOpen && (
+                    <span className="text-sm font-medium">Following</span>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </nav>
 
         {/* Footer */}
