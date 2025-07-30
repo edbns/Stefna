@@ -74,7 +74,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'music-trends', label: 'Music', icon: Music2 },
     { id: 'trending-hashtags', label: 'Hashtags', icon: HashIcon },
     { id: 'trending-categories', label: 'Categories', icon: Tag },
-    { id: 'global-reach', label: 'Global Reach', icon: Globe }
+    { id: 'global-reach', label: 'Global Reach', icon: Globe },
+    { id: 'reddit-trends', label: 'Reddit', icon: Reddit }
   ];
 
   const tools = [

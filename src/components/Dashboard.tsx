@@ -27,6 +27,7 @@ import CryptoTrends from './CryptoTrends';
 import NewsTrends from './NewsTrends';
 import TrendingMusic from './TrendingMusic';
 import FollowingManager from './FollowingManager';
+import RedditTrends from './RedditTrends';
 
 interface DashboardProps {
   onSidebarToggle: () => void;
@@ -286,6 +287,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         return <TrendingMusic />;
       case 'following':
         return <FollowingManager />;
+      case 'reddit-trends':
+        return <RedditTrends />;
       default:
         // Default to trending cards instead of overview
         return (
