@@ -163,12 +163,16 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Render content grid with skeleton loading
   const renderContentGrid = () => {
-    if (isLoading) {
+    if (filteredData.length === 0 && !loading && !isLoading) {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 p-6 sm:p-8 lg:p-10">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <ContentCardSkeleton key={index} />
-          ))}
+        <div className="text-center py-20">
+          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-black mb-2">No content found</h3>
+          <p className="text-gray-500">Try adjusting your search or filters</p>
         </div>
       );
     }
@@ -222,7 +226,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   placeholder={t('dashboard.search')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-button focus:border-transparent bg-white text-gray-900 font-['Figtree']"
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent bg-white text-black font-['Figtree']"
                 />
               </div>
             </div>
@@ -249,7 +253,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             {/* No Results */}
             {filteredData.length === 0 && !loading && !isLoading && (
               <div className="text-center py-20">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2 font-['Figtree']">
+                <h3 className="text-lg font-semibold text-black mb-2 font-['Figtree']">
                   No content found
                 </h3>
                 <p className="text-gray-500 font-['Figtree']">
@@ -304,7 +308,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   placeholder={t('dashboard.search')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-button focus:border-transparent bg-white text-gray-900 font-['Figtree']"
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent bg-white text-black font-['Figtree']"
                 />
               </div>
             </div>
@@ -331,7 +335,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             {/* No Results */}
             {filteredData.length === 0 && !loading && !isLoading && (
               <div className="text-center py-20">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2 font-['Figtree']">
+                <h3 className="text-lg font-semibold text-black mb-2 font-['Figtree']">
                   No content found
                 </h3>
                 <p className="text-gray-500 font-['Figtree']">
@@ -346,80 +350,63 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Update header visibility condition:
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-gray-50">
-      {/* Header - Show for all sections */}
-      <header className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Mobile menu button */}
-            <button
-              onClick={onSidebarToggle}
-              className="sm:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <Menu className="w-5 h-5 text-gray-600" />
-            </button>
+    <div className="flex-1 overflow-hidden">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onSidebarToggle}
+            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h1 className="text-xl font-semibold text-black font-['Figtree']">
+            {selectedCategory === 'trending' ? 'Trending Content' : 
+             selectedCategory === 'trending-categories' ? 'Trending Categories' :
+             selectedCategory === 'trending-hashtags' ? 'Trending Hashtags' :
+             selectedCategory === 'trending-creators' ? 'Trending Creators' :
+             selectedCategory === 'youtube-summarizer' ? 'YouTube Summarizer' :
+             selectedCategory === 'sentiment-analysis' ? 'Sentiment Analysis' :
+             selectedCategory === 'global-reach' ? 'Global Reach' :
+             selectedCategory === 'schedule' ? 'Schedule' :
+             selectedCategory === 'settings' ? 'Settings' :
+             selectedCategory === 'profile' ? 'Profile' : 'Dashboard'}
+          </h1>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {/* AI Chat Button */}
+          <button
+            onClick={onAiChatOpen}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            title="AI Assistant"
+          >
+            <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </button>
 
-            {/* DELETE THIS ENTIRE SECTION */}
-            {/* Search - Desktop only */}
-            {/* <div className="hidden sm:block relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder={t('dashboard.search')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-button focus:border-transparent bg-white text-gray-900 font-['Figtree']"
-              />
-            </div> */}
-          </div>
-
-          {/* Right side - Auth elements */}
-          <div className="flex items-center gap-4">
-            {/* Language Toggle - Hidden for now */}
-            {/* <button
-              onClick={() => setLanguage(language === 'en' ? 'fr' : 'en')}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-['Figtree']"
-            >
-              {language === 'en' ? 'FR' : 'EN'}
-            </button> */}
-
-            {/* Auth Section */}
-            {user ? (
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleProfileClick}
-                  className="flex items-center gap-2 hover:bg-gray-100 rounded-lg p-1 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center ring-2 ring-gray-200">
-                    <User className="w-4 h-4 text-gray-600" />
-                  </div>
-                  <span className="hidden sm:block text-sm font-medium text-gray-700 font-['Figtree']">
-                    {user.name || user.email.split('@')[0]}
-                  </span>
-                </button>
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors font-['Figtree']"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:block">{t('auth.logout')}</span>
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={onAuthOpen}
-                className="flex items-center gap-2 px-4 py-2 bg-button text-white rounded-lg hover:bg-button-hover transition-colors font-['Figtree'] font-medium"
-              >
-                <LogIn className="w-4 h-4" />
-                <span className="hidden sm:block">{t('auth.login')}</span>
-              </button>
-            )}
-          </div>
+          {/* Profile Button */}
+          <button
+            onClick={handleProfileClick}
+            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <span className="hidden sm:block text-sm font-medium text-black">
+              {user ? (user.name || user.email) : 'Sign In'}
+            </span>
+          </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 overflow-y-auto bg-white">
         {renderContent()}
       </main>
     </div>

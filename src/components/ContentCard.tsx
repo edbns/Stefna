@@ -68,11 +68,11 @@ const PlatformLogos = {
   )
 };
 
-// Sentiment colors with dot indicators
+// Sentiment colors with dot indicators - updated for black and white theme
 const sentimentColors = {
-  positive: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500', border: 'border-green-200' },
-  negative: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500', border: 'border-red-200' },
-  neutral: { bg: 'bg-gray-50', text: 'text-gray-700', dot: 'bg-gray-500', border: 'border-gray-200' }
+  positive: { bg: 'bg-gray-50', text: 'text-black', dot: 'bg-black', border: 'border-gray-200' },
+  negative: { bg: 'bg-gray-50', text: 'text-black', dot: 'bg-gray-400', border: 'border-gray-200' },
+  neutral: { bg: 'bg-gray-50', text: 'text-black', dot: 'bg-gray-500', border: 'border-gray-200' }
 };
 
 interface ContentCardProps {

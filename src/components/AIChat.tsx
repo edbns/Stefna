@@ -159,30 +159,30 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
         className="fixed bottom-4 right-4 w-96 h-[500px] bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col z-50"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-black text-white">
           <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-900">AI Assistant</h3>
+            <Bot className="w-5 h-5 text-white" />
+            <h3 className="font-semibold text-white">AI Assistant</h3>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsMinimized(!isMinimized)}
-              className="p-1 hover:bg-gray-100 rounded transition-colors"
+              className="p-1 hover:bg-gray-800 rounded transition-colors"
             >
-              {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+              {isMinimized ? <Maximize2 className="w-4 h-4 text-white" /> : <Minimize2 className="w-4 h-4 text-white" />}
             </button>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded transition-colors"
+              className="p-1 hover:bg-gray-800 rounded transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 text-white" />
             </button>
           </div>
         </div>
 
         {/* Messages */}
         {!isMinimized && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
             {messages.map((message) => (
               <motion.div
                 key={message.id}
@@ -193,21 +193,21 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                 }`}
               >
                 {message.type === 'ai' && (
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-blue-600" />
+                  <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+                    <Bot className="w-4 h-4 text-white" />
                   </div>
                 )}
                 <div className={`max-w-[80%] rounded-lg p-3 ${
                   message.type === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-900'
+                    ? 'bg-black text-white'
+                    : 'bg-gray-100 text-black border border-gray-200'
                 }`}>
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   {message.type === 'ai' && getProviderIndicator(message.provider)}
                 </div>
                 {message.type === 'user' && (
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-gray-600" />
+                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-black" />
                   </div>
                 )}
               </motion.div>
@@ -218,14 +218,14 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                 animate={{ opacity: 1 }}
                 className="flex gap-3 justify-start"
               >
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-blue-600" />
+                <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-white" />
                 </div>
-                <div className="bg-gray-100 rounded-lg p-3">
+                <div className="bg-gray-100 rounded-lg p-3 border border-gray-200">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-black rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </motion.div>
@@ -236,7 +236,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
 
         {/* Input */}
         {!isMinimized && (
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 bg-white">
             <div className="flex gap-2">
               <input
                 ref={inputRef}
@@ -245,13 +245,13 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask me anything about social media trends..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent bg-white text-black"
                 disabled={isLoading}
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputValue.trim() || isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="w-4 h-4" />
               </button>

@@ -86,235 +86,191 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
       
-      {/* Sidebar with Enhanced Glass Effect */}
       {/* Sidebar with Solid Black Background */}
       <div className={`fixed left-0 top-0 h-full z-50 transition-all duration-300 flex flex-col ${
         isOpen ? 'w-64' : 'w-20'
       }`}
         style={{
           background: '#000000',
-          borderRight: '1px solid rgba(148, 163, 184, 0.3)'
+          borderRight: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
         {/* Header */}
         <div className={`${
           isOpen ? 'flex items-center justify-between h-20 p-4' : 'flex flex-col items-center justify-center h-20 p-2'
-        }`}>
-          {/* Bouncing Text */}
+        } border-b border-white/10`}>
           {isOpen ? (
-            <div className="flex items-center">
-              {/* Full bouncing text when sidebar is open */}
-              <h1 className="text-2xl font-bold text-white tracking-wider font-figtree">
-                <span className="inline-block" style={{ animation: 'bounce 1s ease-in-out 0s 1 normal forwards' }}>S</span>
-                <span className="inline-block" style={{ animation: 'bounce 1s ease-in-out 0.2s 1 normal forwards' }}>t</span>
-                <span className="inline-block" style={{ animation: 'bounce 1s ease-in-out 0.4s 1 normal forwards' }}>e</span>
-                <span className="inline-block" style={{ animation: 'bounce 1s ease-in-out 0.6s 1 normal forwards' }}>f</span>
-                <span className="inline-block" style={{ animation: 'bounce 1s ease-in-out 0.8s 1 normal forwards' }}>n</span>
-                <span className="inline-block" style={{ animation: 'bounce 1s ease-in-out 1.0s 1 normal forwards' }}>a</span>
-              </h1>
-            </div>
-          ) : (
             <>
-              {/* Just 'S' when sidebar is collapsed */}
-              <div className="mb-1">
-                <h1 className="text-xl font-bold text-white tracking-wider font-figtree">
-                  <span className="inline-block" style={{ animation: 'bounce 1s ease-in-out 0s 1 normal forwards' }}>S</span>
-                </h1>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-black" />
+                </div>
+                <h1 className="text-xl font-bold text-white">SocialSpy</h1>
               </div>
-              {/* Hamburger button for collapsed state */}
               <button
                 onClick={onToggle}
-                className="p-1 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-300 group hover:shadow-lg hover:shadow-blue-500/20 focus:outline-none focus:ring-0 focus:border-none"
-                style={{ outline: 'none', boxShadow: 'none' }}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
-                <div className="w-4 h-4 flex flex-col justify-center items-center">
-                  <span className="bg-white block transition-all duration-300 ease-out h-0.5 w-4 rounded-sm -translate-y-0.5"></span>
-                  <span className="bg-white block transition-all duration-300 ease-out h-0.5 w-4 rounded-sm my-0.5 opacity-100"></span>
-                  <span className="bg-white block transition-all duration-300 ease-out h-0.5 w-4 rounded-sm translate-y-0.5"></span>
-                </div>
+                <X className="w-5 h-5 text-white" />
               </button>
             </>
-          )}
-          
-          {/* Animated Hamburger Menu Button - only when open */}
-          {isOpen && (
+          ) : (
             <button
               onClick={onToggle}
-              className="p-2 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-300 group hover:shadow-lg hover:shadow-blue-500/20 focus:outline-none focus:ring-0 focus:border-none"
-              style={{ outline: 'none', boxShadow: 'none' }}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
-              <div className="w-5 h-5 flex flex-col justify-center items-center">
-                <span className={`bg-white block transition-all duration-300 ease-out h-0.5 w-5 rounded-sm ${
-                  isOpen ? 'rotate-45 translate-y-1' : '-translate-y-0.5'
-                }`}></span>
-                <span className={`bg-white block transition-all duration-300 ease-out h-0.5 w-5 rounded-sm my-0.5 ${
-                  isOpen ? 'opacity-0' : 'opacity-100'
-                }`}></span>
-                <span className={`bg-white block transition-all duration-300 ease-out h-0.5 w-5 rounded-sm ${
-                  isOpen ? '-rotate-45 -translate-y-1' : 'translate-y-0.5'
-                }`}></span>
-              </div>
+              <Menu className="w-5 h-5 text-white" />
             </button>
           )}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Main Categories */}
-          <div className="px-3 py-3">
-            <nav className="space-y-1">
-              {/* Remove this line: // In the categories mapping, add this condition: */}
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4">
+          {/* Categories */}
+          <div className="px-4 mb-6">
+            {isOpen && (
+              <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
+                Categories
+              </h3>
+            )}
+            <div className="space-y-1">
               {categories.map((category) => {
                 const Icon = category.icon;
                 const isActive = selectedCategory === category.id;
-                const isDisabled = category.requiresAuth && !user;
-                
-                // Handle Following menu item specially
-                if (category.id === 'following') {
-                  return (
-                    <button
-                      key={category.id}
-                      onClick={() => setIsFollowingOpen(true)}
-                      className={`w-full flex items-center gap-3 ${
-                        isOpen ? 'px-3' : 'justify-center px-0'
-                      } py-2.5 text-left rounded-lg transition-all duration-300 group focus:outline-none focus:ring-0 focus:border-none text-gray-200 hover:bg-white hover:bg-opacity-10 hover:shadow-lg hover:shadow-white/5 hover:text-white`}
-                    >
-                      <Icon className="w-5 h-5 flex-shrink-0 transition-all duration-300 group-hover:scale-110 drop-shadow-sm" />
-                      {isOpen && (
-                        <span className="font-medium font-['Figtree'] drop-shadow-sm">
-                          {category.label}
-                        </span>
-                      )}
-                    </button>
-                  );
-                }
                 
                 return (
                   <button
                     key={category.id}
-                    onClick={() => {
-                      if (isDisabled) {
-                        onAuthOpen();
-                      } else {
-                        onCategoryChange(category.id);
-                      }
-                    }}
-                    className={`w-full flex items-center gap-3 ${
-                      isOpen ? 'px-3' : 'justify-center px-0'
-                    } py-2.5 text-left rounded-lg transition-all duration-300 group focus:outline-none focus:ring-0 focus:border-none ${
-                      isActive && !isDisabled
-                        ? 'bg-gradient-to-r from-blue-500/40 to-purple-500/40 text-white shadow-lg shadow-blue-500/30 border border-white/20 backdrop-blur-sm'
-                        : isDisabled
-                        ? 'text-gray-300 hover:bg-white hover:bg-opacity-5'
-                        : 'text-gray-200 hover:bg-white hover:bg-opacity-10 hover:shadow-lg hover:shadow-white/5 hover:text-white'
-                    } ${
-                      isDisabled ? 'cursor-pointer' : ''
+                    onClick={() => onCategoryChange(category.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-white text-black'
+                        : 'text-white hover:bg-white/10'
                     }`}
-                    style={{ outline: 'none', boxShadow: isActive && !isDisabled ? undefined : 'none' }}
-                    title={!isOpen ? category.label : ''}
                   >
-                    <Icon className={`w-5 h-5 flex-shrink-0 transition-all duration-300 group-hover:scale-110 ${
-                      isDisabled ? 'opacity-50' : 'drop-shadow-sm'
-                    }`} />
+                    <Icon className="w-5 h-5 flex-shrink-0" />
                     {isOpen && (
-                      <span className="font-medium font-['Figtree'] drop-shadow-sm">
-                        {category.label}
-                        {category.requiresAuth && !user && (
-                          <span className="text-xs opacity-60 ml-1">*</span>
-                        )}
-                      </span>
+                      <span className="text-sm font-medium">{category.label}</span>
                     )}
                   </button>
                 );
               })}
-            </nav>
+            </div>
           </div>
 
-          {/* Platform Filters */}
-          <div className="px-3 mb-3">
-            <nav className="space-y-1">
+          {/* Platforms */}
+          <div className="px-4 mb-6">
+            {isOpen && (
+              <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
+                Platforms
+              </h3>
+            )}
+            <div className="space-y-1">
               {platforms.map((platform) => {
                 const Icon = platform.icon;
                 const isActive = selectedPlatform === platform.id;
-                const isComingSoon = platform.comingSoon;
                 
                 return (
                   <button
                     key={platform.id}
-                    onClick={() => !isComingSoon && onPlatformChange(platform.id)}
-                    className={`w-full flex items-center gap-3 ${
-                      isOpen ? 'px-3' : 'justify-center px-0'
-                    } py-2.5 text-left rounded-lg transition-all duration-300 group focus:outline-none focus:ring-0 focus:border-none ${
-                      isActive && !isComingSoon
-                        ? 'bg-gradient-to-r from-green-500/40 to-blue-500/40 text-white shadow-lg shadow-green-500/30 border border-white/20 backdrop-blur-sm'
-                        : isComingSoon
-                        ? 'text-gray-400 cursor-not-allowed'
-                        : 'text-gray-200 hover:bg-white hover:bg-opacity-10 hover:shadow-lg hover:shadow-white/5 hover:text-white'
-                    }`}
-                    style={{ outline: 'none', boxShadow: isActive && !isComingSoon ? undefined : 'none' }}
-                    title={isComingSoon ? 'Coming Soon' : (!isOpen ? platform.label : '')}
-                    disabled={isComingSoon}
+                    onClick={() => onPlatformChange(platform.id)}
+                    disabled={platform.comingSoon}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-white text-black'
+                        : 'text-white hover:bg-white/10'
+                    } ${platform.comingSoon ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {platform.logo ? (
-                      <div className={`w-5 h-5 flex-shrink-0 transition-all duration-300 group-hover:scale-110 ${platform.color} ${
-                        isComingSoon ? 'opacity-50' : 'drop-shadow-sm'
-                      }`}>
-                        {platform.logo}
-                      </div>
-                    ) : (
-                      Icon && <Icon className={`w-5 h-5 flex-shrink-0 transition-all duration-300 group-hover:scale-110 ${platform.color} ${
-                        isComingSoon ? 'opacity-50' : 'drop-shadow-sm'
-                      }`} />
-                    )}
+                    <Icon className="w-5 h-5 flex-shrink-0" />
                     {isOpen && (
-                      <span className={`font-['Figtree'] drop-shadow-sm ${
-                        isComingSoon ? 'opacity-50' : ''
-                      }`}>{platform.label}</span>
+                      <div className="flex items-center justify-between flex-1">
+                        <span className="text-sm font-medium">{platform.label}</span>
+                        {platform.comingSoon && (
+                          <span className="text-xs bg-white/20 text-white px-2 py-1 rounded">
+                            Soon
+                          </span>
+                        )}
+                      </div>
                     )}
                   </button>
                 );
               })}
-            </nav>
+            </div>
           </div>
 
-          {/* Legal Links - moved inside the sidebar container */}
-          <div className="border-t border-gray-200/20 dark:border-gray-700/20 pt-4 mt-4 px-3">
+          {/* User Section */}
+          <div className="px-4">
             {isOpen && (
-              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
-                Legal
-              </p>
+              <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
+                Account
+              </h3>
             )}
             <div className="space-y-1">
-              <Link
-                to="/privacy-policy"
-                className={`flex items-center ${
-                  isOpen ? 'px-3 py-2 text-sm' : 'justify-center px-0 py-2.5'
-                } text-gray-200 hover:text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-300`}
-                title={!isOpen ? 'Privacy Policy' : ''}
-              >
-                <Shield className={`${isOpen ? 'w-4 h-4 mr-3' : 'w-5 h-5'} flex-shrink-0 transition-all duration-300 hover:scale-110 drop-shadow-sm`} />
-                {isOpen && <span className="font-['Figtree'] drop-shadow-sm">Privacy Policy</span>}
-              </Link>
-              <Link
-                to="/cookies-policy"
-                className={`flex items-center ${
-                  isOpen ? 'px-3 py-2 text-sm' : 'justify-center px-0 py-2.5'
-                } text-gray-200 hover:text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-300`}
-                title={!isOpen ? 'Cookies Policy' : ''}
-              >
-                <Cookie className={`${isOpen ? 'w-4 h-4 mr-3' : 'w-5 h-5'} flex-shrink-0 transition-all duration-300 hover:scale-110 drop-shadow-sm`} />
-                {isOpen && <span className="font-['Figtree'] drop-shadow-sm">Cookies Policy</span>}
-              </Link>
-              <Link
-                to="/terms-and-conditions"
-                className={`flex items-center ${
-                  isOpen ? 'px-3 py-2 text-sm' : 'justify-center px-0 py-2.5'
-                } text-gray-200 hover:text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-300`}
-                title={!isOpen ? 'Terms & Conditions' : ''}
-              >
-                <FileText className={`${isOpen ? 'w-4 h-4 mr-3' : 'w-5 h-5'} flex-shrink-0 transition-all duration-300 hover:scale-110 drop-shadow-sm`} />
-                {isOpen && <span className="font-['Figtree'] drop-shadow-sm">Terms & Conditions</span>}
-              </Link>
+              {user ? (
+                <>
+                  <button
+                    onClick={() => onCategoryChange('profile')}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200"
+                  >
+                    <User className="w-5 h-5 flex-shrink-0" />
+                    {isOpen && (
+                      <span className="text-sm font-medium">{user.name || user.email}</span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setIsFollowingOpen(true)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200"
+                  >
+                    <Heart className="w-5 h-5 flex-shrink-0" />
+                    {isOpen && (
+                      <span className="text-sm font-medium">Following</span>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={onAuthOpen}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200"
+                >
+                  <User className="w-5 h-5 flex-shrink-0" />
+                  {isOpen && (
+                    <span className="text-sm font-medium">Sign In</span>
+                  )}
+                </button>
+              )}
             </div>
+          </div>
+        </nav>
+
+        {/* Footer */}
+        <div className="px-4 py-4 border-t border-white/10">
+          <div className="space-y-1">
+            <Link
+              to="/privacy-policy"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200"
+            >
+              <Shield className="w-4 h-4 flex-shrink-0" />
+              {isOpen && (
+                <span className="text-xs">Privacy</span>
+              )}
+            </Link>
+            <Link
+              to="/terms-and-conditions"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200"
+            >
+              <FileText className="w-4 h-4 flex-shrink-0" />
+              {isOpen && (
+                <span className="text-xs">Terms</span>
+              )}
+            </Link>
+            <Link
+              to="/cookies-policy"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200"
+            >
+              <Cookie className="w-4 h-4 flex-shrink-0" />
+              {isOpen && (
+                <span className="text-xs">Cookies</span>
+              )}
+            </Link>
           </div>
         </div>
       </div>

@@ -87,7 +87,8 @@ const AppContent: React.FC = () => {
   // Render main app
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      {/* Main App */}
+      <div className="min-h-screen" style={{ backgroundColor: '#EEEEEE' }}>
         <Routes>
           {/* Legal Documents Routes */}
           <Route 
