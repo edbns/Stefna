@@ -19,79 +19,59 @@ export interface NewsResponse {
 }
 
 class NewsService {
-  private baseURL = 'https://newsdata.io/api/1/news';
-  private apiKey = import.meta.env.VITE_NEWSDATA_API_KEY;
-
   async getTrendingNews(limit: number = 10): Promise<NewsArticle[]> {
     try {
-      console.log('Fetching trending news...');
+      console.log('Fetching trending news via Netlify function...');
       
-      if (!this.apiKey) {
-        throw new Error('NewsData API key not found - please set VITE_NEWSDATA_API_KEY');
-      }
-
-      // Use the correct API format with proper parameters
       const params = new URLSearchParams({
-        apikey: this.apiKey,
-        country: 'us',
-        language: 'en',
-        category: 'top',
-        size: limit.toString()
+        limit: limit.toString(),
+        category: 'top'
       });
 
-      const url = `${this.baseURL}?${params.toString()}`;
-      console.log('News API URL:', url);
-
-      const response = await fetch(url);
+      const response = await fetch(`/.netlify/functions/news-service?${params.toString()}`);
       
       if (!response.ok) {
-        throw new Error(`News API failed: ${response.status} - ${response.statusText}`);
+        throw new Error(`News service failed: ${response.status} - ${response.statusText}`);
       }
       
-      const data: NewsResponse = await response.json();
+      const result = await response.json();
       
-      if (data.status !== 'success') {
-        throw new Error(`News API returned error status: ${data.status}`);
+      if (!result.success) {
+        throw new Error(result.error || 'News service returned error');
       }
       
-      console.log('News data received:', data.results?.length || 0, 'articles');
-      return data.results || [];
+      console.log('News data received:', result.data?.length || 0, 'articles');
+      return result.data || [];
     } catch (error) {
-      console.error('News API error:', error);
+      console.error('News service error:', error);
       throw error;
     }
   }
 
   async getNewsByCategory(category: string, limit: number = 10): Promise<NewsArticle[]> {
     try {
-      if (!this.apiKey) {
-        throw new Error('NewsData API key not found - please set VITE_NEWSDATA_API_KEY');
-      }
-
+      console.log(`Fetching news for category: ${category}`);
+      
       const params = new URLSearchParams({
-        apikey: this.apiKey,
-        country: 'us',
-        language: 'en',
-        category: category,
-        size: limit.toString()
+        limit: limit.toString(),
+        category: category
       });
 
-      const url = `${this.baseURL}?${params.toString()}`;
-      const response = await fetch(url);
+      const response = await fetch(`/.netlify/functions/news-service?${params.toString()}`);
       
       if (!response.ok) {
-        throw new Error(`News API failed: ${response.status} - ${response.statusText}`);
+        throw new Error(`News service failed: ${response.status} - ${response.statusText}`);
       }
       
-      const data: NewsResponse = await response.json();
+      const result = await response.json();
       
-      if (data.status !== 'success') {
-        throw new Error(`News API returned error status: ${data.status}`);
+      if (!result.success) {
+        throw new Error(result.error || 'News service returned error');
       }
       
-      return data.results || [];
+      return result.data || [];
     } catch (error) {
-      console.error('News API error:', error);
+      console.error('News service error:', error);
       throw error;
     }
   }

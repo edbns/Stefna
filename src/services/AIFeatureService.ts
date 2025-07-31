@@ -83,25 +83,41 @@ class AIFeatureService {
     }
 
     try {
-      const prompt = `Generate a viral ${platform} caption for this content: "${content}". 
-      Make it engaging, use relevant hashtags, and include a call-to-action. 
-      Keep it under 220 characters for ${platform}.`;
+      const response = await fetch('/.netlify/functions/ai-service', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'caption',
+          content,
+          platform
+        })
+      });
 
-      const result = await this.aiService.chat(prompt);
-      this.incrementQuota();
-
-      return {
-        success: true,
-        result,
-        provider: 'AIMLAPI',
-        quotaUsed: 1,
-        remainingQuota: quota.dailyLimit - quota.dailyUsed - 1
-      };
+      const data = await response.json();
+      
+      if (data.success) {
+        this.incrementQuota();
+        return {
+          success: true,
+          result: data.result,
+          provider: data.provider || 'AI Service',
+          quotaUsed: 1,
+          remainingQuota: quota.dailyLimit - quota.dailyUsed - 1
+        };
+      } else {
+        return {
+          success: false,
+          error: data.error || 'Failed to generate caption',
+          provider: 'AI Service',
+          quotaUsed: 0,
+          remainingQuota: quota.dailyLimit - quota.dailyUsed
+        };
+      }
     } catch (error) {
       return {
         success: false,
         error: 'Failed to generate caption. Please try again.',
-        provider: 'AIMLAPI',
+        provider: 'AI Service',
         quotaUsed: 0,
         remainingQuota: quota.dailyLimit - quota.dailyUsed
       };
@@ -121,25 +137,41 @@ class AIFeatureService {
     }
 
     try {
-      const prompt = `Generate a ${style} tweet about: "${content}". 
-      Make it engaging, include relevant hashtags, and keep it under 280 characters. 
-      Make it shareable and viral-worthy.`;
+      const response = await fetch('/.netlify/functions/ai-service', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'tweet',
+          content,
+          style
+        })
+      });
 
-      const result = await this.aiService.chat(prompt);
-      this.incrementQuota();
-
-      return {
-        success: true,
-        result,
-        provider: 'AIMLAPI',
-        quotaUsed: 1,
-        remainingQuota: quota.dailyLimit - quota.dailyUsed - 1
-      };
+      const data = await response.json();
+      
+      if (data.success) {
+        this.incrementQuota();
+        return {
+          success: true,
+          result: data.result,
+          provider: data.provider || 'AI Service',
+          quotaUsed: 1,
+          remainingQuota: quota.dailyLimit - quota.dailyUsed - 1
+        };
+      } else {
+        return {
+          success: false,
+          error: data.error || 'Failed to generate tweet',
+          provider: 'AI Service',
+          quotaUsed: 0,
+          remainingQuota: quota.dailyLimit - quota.dailyUsed
+        };
+      }
     } catch (error) {
       return {
         success: false,
         error: 'Failed to generate tweet. Please try again.',
-        provider: 'AIMLAPI',
+        provider: 'AI Service',
         quotaUsed: 0,
         remainingQuota: quota.dailyLimit - quota.dailyUsed
       };
@@ -235,29 +267,40 @@ class AIFeatureService {
     }
 
     try {
-      const prompt = `Analyze the sentiment and virality potential of this content: "${content}". 
-      Provide insights on:
-      1. Sentiment (positive/negative/neutral)
-      2. Viral potential (1-10 scale)
-      3. Why it might go viral
-      4. Target audience
-      5. Suggested platforms for maximum reach`;
+      const response = await fetch('/.netlify/functions/ai-service', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'sentiment',
+          content
+        })
+      });
 
-      const result = await this.aiService.chat(prompt);
-      this.incrementQuota();
-
-      return {
-        success: true,
-        result,
-        provider: 'AIMLAPI',
-        quotaUsed: 1,
-        remainingQuota: quota.dailyLimit - quota.dailyUsed - 1
-      };
+      const data = await response.json();
+      
+      if (data.success) {
+        this.incrementQuota();
+        return {
+          success: true,
+          result: data.result,
+          provider: data.provider || 'AI Service',
+          quotaUsed: 1,
+          remainingQuota: quota.dailyLimit - quota.dailyUsed - 1
+        };
+      } else {
+        return {
+          success: false,
+          error: data.error || 'Failed to analyze sentiment',
+          provider: 'AI Service',
+          quotaUsed: 0,
+          remainingQuota: quota.dailyLimit - quota.dailyUsed
+        };
+      }
     } catch (error) {
       return {
         success: false,
         error: 'Failed to analyze sentiment. Please try again.',
-        provider: 'AIMLAPI',
+        provider: 'AI Service',
         quotaUsed: 0,
         remainingQuota: quota.dailyLimit - quota.dailyUsed
       };
@@ -277,26 +320,41 @@ class AIFeatureService {
     }
 
     try {
-      const prompt = `Generate 10 relevant hashtags for ${platform} about: "${content}". 
-      Mix popular and niche hashtags. 
-      Include trending hashtags if relevant. 
-      Format as: #hashtag1 #hashtag2 #hashtag3...`;
+      const response = await fetch('/.netlify/functions/ai-service', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'hashtags',
+          content,
+          platform
+        })
+      });
 
-      const result = await this.aiService.chat(prompt);
-      this.incrementQuota();
-
-      return {
-        success: true,
-        result,
-        provider: 'AIMLAPI',
-        quotaUsed: 1,
-        remainingQuota: quota.dailyLimit - quota.dailyUsed - 1
-      };
+      const data = await response.json();
+      
+      if (data.success) {
+        this.incrementQuota();
+        return {
+          success: true,
+          result: data.result,
+          provider: data.provider || 'AI Service',
+          quotaUsed: 1,
+          remainingQuota: quota.dailyLimit - quota.dailyUsed - 1
+        };
+      } else {
+        return {
+          success: false,
+          error: data.error || 'Failed to generate hashtags',
+          provider: 'AI Service',
+          quotaUsed: 0,
+          remainingQuota: quota.dailyLimit - quota.dailyUsed
+        };
+      }
     } catch (error) {
       return {
         success: false,
         error: 'Failed to generate hashtags. Please try again.',
-        provider: 'AIMLAPI',
+        provider: 'AI Service',
         quotaUsed: 0,
         remainingQuota: quota.dailyLimit - quota.dailyUsed
       };
