@@ -422,8 +422,6 @@ const Dashboard: React.FC<DashboardProps> = ({
         );
       case 'trending-creators':
         return <CreatorCards onAuthOpen={onAuthOpen} selectedPlatform={selectedPlatform} />;
-      case 'youtube-summarizer':
-        return <YoutubeSummarizer />;
       case 'sentiment-analysis':
         return <SentimentAnalysis />;
       case 'crypto-trends':
