@@ -5,17 +5,16 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
-import FloatingAIChat from './components/FloatingAIChat';
 import AuthModal from './components/AuthModal';
-import AIChat from './components/AIChat';
 import LaunchScreen from './components/LaunchScreen';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsAndConditions from './components/TermsAndConditions';
 import CookiesPolicy from './components/CookiesPolicy';
 import CookiesConsent, { CookiePreferences } from './components/CookiesConsent';
-import './App.css';
+// import './App.css'; // Removed - using Tailwind CSS instead
 import ErrorBoundary from './components/ErrorBoundary';
 import { ShortcutsProvider } from './contexts/ShortcutsContext';
+import { TrendingProvider } from './contexts/TrendingContext';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import PageTransition from './components/PageTransition';
 import Error404 from './components/Error404';
@@ -141,7 +140,34 @@ const AppContent: React.FC = () => {
     return (
       <Router>
         <LaunchScreen onComplete={handleLaunchComplete} />
-        <Toaster position="top-right" />
+        <Toaster 
+          position="top-center"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#000000',
+              color: '#ffffff',
+              border: '1px solid #333333',
+              borderRadius: '12px',
+              padding: '16px',
+              fontSize: '14px',
+              fontWeight: '500',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            },
+            success: {
+              style: {
+                background: '#000000',
+                color: '#ffffff',
+              },
+            },
+            error: {
+              style: {
+                background: '#000000',
+                color: '#ffffff',
+              },
+            },
+          }}
+        />
       </Router>
     );
   }
@@ -150,7 +176,7 @@ const AppContent: React.FC = () => {
   return (
     <Router>
       {/* Main App */}
-      <div className="min-h-screen" style={{ backgroundColor: '#EEEEEE' }}>
+      <div className="min-h-screen bg-white">
         <Routes>
           {/* Legal Documents Routes */}
           <Route 
@@ -182,7 +208,7 @@ const AppContent: React.FC = () => {
           <Route 
             path="/*" 
             element={
-              <div className="flex h-screen">
+              <div className="flex h-screen bg-white">
                 {/* Sidebar */}
                 <Sidebar
                   isOpen={isSidebarOpen}
@@ -196,7 +222,7 @@ const AppContent: React.FC = () => {
                 />
                 
                 {/* Main Content */}
-                <main className={`flex-1 flex flex-col transition-all duration-300 ${
+                <main className={`flex-1 flex flex-col bg-white ${
                   isSidebarOpen ? 'ml-64' : 'ml-28'
                 }`}>
                   <Routes>
@@ -222,8 +248,7 @@ const AppContent: React.FC = () => {
                   </Routes>
                 </main>
                 
-                {/* Floating AI Chat Button */}
-                <FloatingAIChat onClose={() => {}} />
+
                 
                 {/* Modals */}
                 <AuthModal 
@@ -231,10 +256,7 @@ const AppContent: React.FC = () => {
                   onClose={() => setIsAuthModalOpen(false)} 
                 />
                 
-                <AIChat 
-                  isOpen={isAiChatOpen} 
-                  onClose={() => setIsAiChatOpen(false)} 
-                />
+
               </div>
             }
           />
@@ -249,7 +271,34 @@ const AppContent: React.FC = () => {
         )}
         
         {/* Toast Notifications */}
-        <Toaster position="top-right" />
+        <Toaster 
+          position="top-center"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#000000',
+              color: '#ffffff',
+              border: '1px solid #333333',
+              borderRadius: '12px',
+              padding: '16px',
+              fontSize: '14px',
+              fontWeight: '500',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            },
+            success: {
+              style: {
+                background: '#000000',
+                color: '#ffffff',
+              },
+            },
+            error: {
+              style: {
+                background: '#000000',
+                color: '#ffffff',
+              },
+            },
+          }}
+        />
       </div>
     </Router>
   );
@@ -262,9 +311,11 @@ const App: React.FC = () => {
       <LanguageProvider>
         <AuthProvider>
           <ShortcutsProvider>
-            <AppContent />
-            {/* Performance Monitor (Development only) */}
-            <PerformanceMonitor />
+            <TrendingProvider>
+              <AppContent />
+              {/* Performance Monitor (Development only) */}
+              <PerformanceMonitor />
+            </TrendingProvider>
           </ShortcutsProvider>
         </AuthProvider>
       </LanguageProvider>

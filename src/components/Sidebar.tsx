@@ -36,11 +36,16 @@ import {
   Newspaper,
   Coins,
   Hash as HashIcon,
-  Tag
+  Tag,
+  Filter,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import RedditIcon from './icons/RedditIcon';
+import BlueskyIcon from './icons/BlueskyIcon';
+import HackerNewsIcon from './icons/HackerNewsIcon';
 import TikTokIcon from './icons/TikTokIcon';
 
 interface SidebarProps {
@@ -66,24 +71,58 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useLanguage();
   const { user, logout } = useAuth();
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['trending']));
+
+  const toggleSection = (section: string) => {
+    const newExpanded = new Set(expandedSections);
+    if (newExpanded.has(section)) {
+      newExpanded.delete(section);
+    } else {
+      newExpanded.add(section);
+    }
+    setExpandedSections(newExpanded);
+  };
 
   const mainNavigation = [
-    { id: 'trending', label: 'YouTube', icon: Youtube },
-    { id: 'reddit-trends', label: 'Reddit', icon: RedditIcon },
-    { id: 'crypto-trends', label: 'Crypto', icon: Coins },
-    { id: 'news-trends', label: 'News', icon: Newspaper },
-    { id: 'music-trends', label: 'Music', icon: Music2 },
-    { id: 'trending-hashtags', label: 'Hashtags', icon: HashIcon },
-    { id: 'trending-categories', label: 'Categories', icon: Tag },
-    { id: 'global-reach', label: 'Global Reach', icon: Globe }
+    { 
+      id: 'trending', 
+      label: 'Trending', 
+      icon: TrendingUp,
+      items: [
+        { id: 'global-reach', label: 'Global Reach', icon: Globe },
+        { id: 'trending', label: 'YouTube', icon: Youtube },
+        { id: 'reddit-trends', label: 'Reddit', icon: RedditIcon },
+        { id: 'bluesky-trends', label: 'Bluesky', icon: BlueskyIcon },
+        { id: 'hackernews-trends', label: 'Hacker News', icon: HackerNewsIcon },
+        { id: 'crypto-trends', label: 'Crypto', icon: Coins },
+        { id: 'news-trends', label: 'News', icon: Newspaper },
+        { id: 'music-trends', label: 'Music', icon: Music2 }
+      ]
+    },
+    { 
+      id: 'ai-tools', 
+      label: 'AI Tools', 
+      icon: Sparkles,
+      items: [
+        { id: 'youtube-summarizer', label: 'YouTube Summarizer', icon: PlayCircle },
+        { id: 'content-generator', label: 'Content Generator', icon: Sparkles },
+        { id: 'caption-writer', label: 'Caption Writer', icon: MessageSquare },
+        { id: 'tweet-creator', label: 'X Creator', icon: Twitter },
+        { id: 'sentiment-analyzer', label: 'Sentiment Analyzer', icon: BarChart3 },
+        { id: 'hashtag-generator', label: 'Hashtag Generator', icon: Hash }
+      ]
+    },
+    { 
+      id: 'filters', 
+      label: 'Filters', 
+      icon: Filter,
+      items: [
+        { id: 'mega-filter', label: 'Advanced Filters', icon: Filter },
+        { id: 'trending-categories', label: 'Categories', icon: Tag },
+        { id: 'trending-hashtags', label: 'Hashtags', icon: HashIcon }
+      ]
+    }
   ];
-
-  const tools = [
-    { id: 'youtube-summarizer', label: 'YouTube Summarizer', icon: PlayCircle },
-    { id: 'sentiment-analysis', label: 'Sentiment Analysis', icon: Heart }
-  ];
-
-  // Removed platforms section since we now have dedicated content sections
 
   const userFeatures = user ? [
     { id: 'saved', label: 'Saved Content', icon: Bookmark },
@@ -103,7 +142,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar */}
       <div className={`fixed top-0 h-full z-50 transition-all duration-300 flex flex-col ${
         isOpen ? 'left-0 w-64' : 'left-4 w-20'
@@ -126,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   <Sparkles className="w-5 h-5 text-black" />
                 </div>
                 <h1 className="text-xl font-bold text-white">Stefna</h1>
-            </div>
+              </div>
               <button
                 onClick={onToggle}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -152,63 +191,91 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 space-y-3">
           
+          {/* Stefna AI Chat - Standalone at top */}
+          <div className={isOpen ? "px-4" : "px-2"}>
+            <button
+              onClick={() => onCategoryChange('stefna-ai-chat')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left ${
+                selectedCategory === 'stefna-ai-chat'
+                  ? 'bg-white text-black shadow-lg'
+                  : 'text-white hover:bg-white/10'
+              }`}
+            >
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-black" />
+              </div>
+              {isOpen && (
+                <div className="flex-1">
+                  <div className="font-semibold text-sm">Stefna AI Chat</div>
+                  <div className="text-xs opacity-70">Your AI Companion</div>
+                </div>
+              )}
+            </button>
+          </div>
+
           {/* Main Navigation */}
           <div className={isOpen ? "px-4" : "px-2"}>
             <div className="space-y-1">
-              {mainNavigation.map((item) => {
-                const Icon = item.icon;
-                const isActive = selectedCategory === item.id;
+              {mainNavigation.map((section) => {
+                const Icon = section.icon;
+                const isExpanded = expandedSections.has(section.id);
                 
                 return (
-                  <button
-                    key={item.id}
-                    onClick={() => onCategoryChange(item.id)}
-                    className={`w-full group relative ${
-                      isActive
-                        ? 'bg-white text-black'
-                        : 'text-white hover:bg-white/10'
-                    } transition-all duration-200 rounded-md p-2`}
-                  >
-                    <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
-                      <Icon className="w-5 h-5 flex-shrink-0" />
-                    {isOpen && (
-                        <div className="flex-1 text-left">
-                          <div className="font-medium text-sm">{item.label}</div>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Tools Section */}
-          <div className={isOpen ? "px-4" : "px-2"}>
-            <div className="space-y-1">
-              {tools.map((item) => {
-                const Icon = item.icon;
-                const isActive = selectedCategory === item.id;
-                
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onCategoryChange(item.id)}
-                    className={`w-full group relative ${
-                      isActive
-                        ? 'bg-white text-black'
-                        : 'text-white hover:bg-white/10'
-                    } transition-all duration-200 rounded-md p-2`}
-                  >
-                    <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
-                      <Icon className="w-5 h-5 flex-shrink-0" />
-                      {isOpen && (
-                        <div className="flex-1 text-left">
-                          <div className="font-medium text-sm">{item.label}</div>
+                  <div key={section.id}>
+                    <button
+                      onClick={() => toggleSection(section.id)}
+                      className={`w-full group relative ${
+                        selectedCategory === section.id
+                          ? 'bg-white text-black'
+                          : 'text-white hover:bg-white/10'
+                      } transition-all duration-200 rounded-md p-2`}
+                    >
+                      <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
+                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        {isOpen && (
+                          <div className="flex-1 text-left">
+                            <div className="font-medium text-sm">{section.label}</div>
+                          </div>
+                        )}
+                        {isOpen && (
+                          <div className="flex-shrink-0">
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                          </div>
+                        )}
                       </div>
-                      )}
-                    </div>
-                  </button>
+                    </button>
+                    
+                    {/* Dropdown Items */}
+                    {isOpen && isExpanded && (
+                      <div className="ml-6 mt-2 space-y-1">
+                        {section.items.map((item) => {
+                          const ItemIcon = item.icon;
+                          const isActive = selectedCategory === item.id;
+                          
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => onCategoryChange(item.id)}
+                              className={`w-full group relative ${
+                                isActive
+                                  ? 'bg-white text-black'
+                                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+                              } transition-all duration-200 rounded-md p-2 text-sm`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <ItemIcon className="w-4 h-4 flex-shrink-0" />
+                                <div className="font-medium">{item.label}</div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -242,7 +309,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     >
                       <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
                         <Icon className="w-5 h-5 flex-shrink-0" />
-            {isOpen && (
+                        {isOpen && (
                           <div className="flex-1 text-left">
                             <div className="font-medium text-sm">{item.label}</div>
                           </div>
@@ -254,8 +321,6 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
           )}
-
-          {/* Platform Filters - Removed since we have dedicated content sections */}
         </nav>
 
         {/* Footer */}
@@ -294,12 +359,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-xs">Cookies</span>
               )}
               </Link>
+            </div>
           </div>
-        </div>
       </div>
-      
-      {/* FollowingManager */}
-      {/* FollowingManager component is removed as per the edit hint */}
     </>
   );
 };

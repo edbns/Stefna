@@ -4,7 +4,9 @@ import { TrendingUp, ArrowUp, MessageCircle, ExternalLink, Clock, Image as Image
 import { RedditService, RedditPost } from '../services/RedditService';
 import LoadingSpinner from './LoadingSpinner';
 import InteractionButtons from './InteractionButtons';
+import AIFeatureButtons from './AIFeatureButtons';
 import { useAuth } from '../contexts/AuthContext';
+import { useTrending } from '../contexts/TrendingContext';
 import toast from 'react-hot-toast';
 
 interface RedditTrendsProps {
@@ -21,6 +23,7 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
   const loaderRef = useRef<HTMLDivElement>(null);
   const redditService = RedditService.getInstance();
   const { user } = useAuth();
+  const { addTrends } = useTrending();
 
   useEffect(() => {
     fetchPosts();
@@ -52,6 +55,11 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
       setPosts(response.posts);
       setAfter(response.after || null);
       setHasMore(response.hasMore || false);
+      
+      // Extract trending hashtags and categories from Reddit posts
+      if (response.posts.length > 0) {
+        addTrends(response.posts, 'reddit');
+      }
     } catch (err) {
       setError('Failed to load Reddit posts');
       console.error('Reddit fetch error:', err);
@@ -69,6 +77,11 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
       setPosts(prev => [...prev, ...response.posts]);
       setAfter(response.after || null);
       setHasMore(response.hasMore || false);
+      
+      // Extract trending hashtags and categories from new Reddit posts
+      if (response.posts.length > 0) {
+        addTrends(response.posts, 'reddit');
+      }
     } catch (err) {
       console.error('Error loading more Reddit posts:', err);
     } finally {
@@ -92,17 +105,6 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
     return (
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-black">Reddit Trends</h1>
-                <p className="text-gray-500">Top posts from r/popular</p>
-              </div>
-            </div>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, index) => (
               <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
@@ -121,17 +123,6 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
     return (
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-black">Reddit Trends</h1>
-                <p className="text-gray-500">Top posts from r/popular</p>
-              </div>
-            </div>
-          </div>
           <div className="text-center py-20">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
               <TrendingUp className="w-8 h-8 text-red-500" />
@@ -154,26 +145,6 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-black">Reddit Trends</h1>
-              <p className="text-gray-500">Top posts from r/popular ({posts.length} posts)</p>
-            </div>
-          </div>
-          <button
-            onClick={handleRefresh}
-            className="inline-flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <TrendingUp className="w-4 h-4" />
-            <span>Refresh</span>
-          </button>
-        </div>
-
         {/* Posts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AnimatePresence>
@@ -276,6 +247,16 @@ const RedditTrends: React.FC<RedditTrendsProps> = ({ onAuthOpen }) => {
                         url: post.url
                       }}
                       onAuthOpen={handleAuthPrompt}
+                    />
+                  </div>
+
+                  {/* AI Feature Buttons */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <AIFeatureButtons
+                      content={post.title}
+                      platform="reddit"
+                      onAuthOpen={handleAuthPrompt}
+                      className="text-xs"
                     />
                   </div>
                 </div>

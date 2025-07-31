@@ -134,7 +134,6 @@ const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-black mb-2">🔥 Crypto Trends</h2>
             <p className="text-gray-600">Top cryptocurrencies by market cap</p>
           </div>
         </div>
@@ -173,7 +172,6 @@ const CryptoTrends: React.FC<CryptoTrendsProps> = ({ onAuthOpen }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-black mb-2">🔥 Crypto Trends</h2>
           <p className="text-gray-600">Top cryptocurrencies by market cap</p>
         </div>
         <button

@@ -1,10 +1,8 @@
 {
-  "name": "stefna-functions",
+  "name": "socialspy-functions",
   "version": "1.0.0",
-  "description": "Netlify functions for Stefna dashboard",
-  "main": "index.js",
+  "description": "Netlify functions for SocialSpy dashboard",
   "dependencies": {
-    "resend": "^3.2.0",
     "node-fetch": "^2.6.7"
   }
-}
+} 

@@ -3,7 +3,7 @@ export interface Content {
   title: string;
   description: string;
   thumbnail: string;
-  platform: 'youtube';
+  platform: 'youtube' | 'bluesky' | 'hackernews';
   creator: {
     name: string;
     username: string;
@@ -24,6 +24,6 @@ export interface Content {
   hashtags: string[];
   publishedAt: string;
   url: string;
-  // aiSummary: string; // Removed to reduce OpenRouter API usage
+  aiSummary?: string; // Added back for compatibility
   location?: string;
 }

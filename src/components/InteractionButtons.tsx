@@ -5,7 +5,7 @@ import UserInteractionService, { InteractionStats } from '../services/UserIntera
 import toast from 'react-hot-toast';
 
 interface InteractionButtonsProps {
-  contentType: 'music' | 'youtube' | 'reddit' | 'news' | 'crypto' | 'creator';
+  contentType: 'music' | 'youtube' | 'reddit' | 'news' | 'crypto' | 'creator' | 'bluesky' | 'hackernews';
   contentId: string;
   metadata?: any;
   onAuthOpen?: () => void;

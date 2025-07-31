@@ -6,7 +6,7 @@ interface ContentCardSkeletonProps {
 
 const ContentCardSkeleton: React.FC<ContentCardSkeletonProps> = ({ viewMode = 'grid' }) => {
   return (
-    <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100 h-full flex flex-col animate-pulse">
+    <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100 h-full flex flex-col animate-pulse hover:shadow-lg transition-shadow duration-300">
       {/* Video/Thumbnail Section Skeleton */}
       <div className="relative aspect-[16/10] bg-gray-200 overflow-hidden">
         {/* Trending Tag Skeleton - Top Left */}
@@ -20,7 +20,8 @@ const ContentCardSkeleton: React.FC<ContentCardSkeletonProps> = ({ viewMode = 'g
         </div>
 
         {/* Main thumbnail area */}
-        <div className="w-full h-full bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] animate-[shimmer_2s_infinite]">
+        <div className="w-full h-full bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] animate-[shimmer_2s_infinite] relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_1.5s_ease-in-out_infinite] transform -skew-x-12 -translate-x-full"></div>
         </div>
 
         {/* Video Controls Skeleton */}

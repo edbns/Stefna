@@ -105,7 +105,6 @@ const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-black mb-2">📰 News Trends</h2>
             <p className="text-gray-600">Latest trending news articles</p>
           </div>
         </div>
@@ -127,7 +126,6 @@ const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-black mb-2">📰 News Trends</h2>
             <p className="text-gray-600">Latest trending news articles</p>
           </div>
         </div>
@@ -150,7 +148,6 @@ const NewsTrends: React.FC<NewsTrendsProps> = ({ onAuthOpen }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-black mb-2">📰 News Trends</h2>
           <p className="text-gray-600">Latest trending news from around the world</p>
         </div>
         <div className="flex items-center gap-4">

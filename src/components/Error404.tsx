@@ -15,7 +15,7 @@ const Error404: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#EEEEEE' }}>
+    <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="max-w-md mx-auto text-center px-6">
         {/* Alegria-style Illustration */}
         <motion.div
