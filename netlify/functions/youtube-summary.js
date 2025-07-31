@@ -1,6 +1,11 @@
 const fetch = require('node-fetch');
 
 exports.handler = async (event) => {
+  // Debug logging
+  console.log("YouTube summary function called");
+  console.log("HTTP Method:", event.httpMethod);
+  console.log("Request body:", event.body);
+  
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -40,6 +45,11 @@ exports.handler = async (event) => {
 
     // Get video details from YouTube API
     const apiKey = process.env.YOUTUBE_API_KEY;
+    
+    // Debug logging
+    console.log("YouTube API Key found:", !!process.env.YOUTUBE_API_KEY);
+    console.log("YouTube API Key length:", process.env.YOUTUBE_API_KEY ? process.env.YOUTUBE_API_KEY.length : 0);
+    console.log("All environment variables:", Object.keys(process.env).filter(key => key.includes('API')));
     
     if (!apiKey) {
       return {
