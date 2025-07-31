@@ -62,7 +62,7 @@ const YoutubeSummarizer: React.FC = () => {
     setSummary(null);
 
     try {
-      const response = await fetch('/.netlify/functions/youtube-summary', {
+      const response = await fetch('/.netlify/functions/youtube-summarizer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
