@@ -41,8 +41,7 @@
     "dependencies": {
       "resend": "^3.2.0",
       "node-fetch": "^2.6.7",
-      "@atproto/api": "^0.8.0",
-      "aimlapi": "^1.0.0"
+      "@atproto/api": "^0.8.0"
     }
   }
 }

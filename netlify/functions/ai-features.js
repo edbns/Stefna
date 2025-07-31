@@ -1,4 +1,24 @@
-const AIMLAPI = require('aimlapi');
+// Mock AI responses for now - can be replaced with actual AI service later
+const mockAIResponses = {
+  caption: {
+    instagram: "🔥 This is absolutely incredible! The way everything comes together is just mind-blowing. What do you think? Drop a ❤️ if you agree! #viral #trending #amazing",
+    twitter: "This is the kind of content that makes you stop and think. Absolutely brilliant! 🤯 #viral #trending #mindblown",
+    tiktok: "This is literally everything rn 🔥 #fyp #viral #trending"
+  },
+  tweet: {
+    viral: "This just changed everything I thought I knew. Mind = blown 🤯 #viral #trending #gamechanger",
+    professional: "Fascinating insights on this topic. The implications are significant for our industry. #innovation #trending",
+    casual: "Okay but this is actually amazing tho 👀 #viral #trending"
+  },
+  hashtags: {
+    instagram: "#viral #trending #amazing #incredible #mindblown #gamechanger #innovation #fyp #trendingnow #viralcontent",
+    twitter: "#viral #trending #mindblown #gamechanger #innovation #trendingnow #viralcontent #amazing #incredible",
+    tiktok: "#fyp #viral #trending #amazing #incredible #mindblown #gamechanger #innovation #trendingnow"
+  },
+  sentiment: "This content shows strong positive sentiment with high viral potential (8/10). It's engaging, relatable, and has broad appeal. Target audience: 18-35 demographic. Best platforms: Instagram, TikTok, Twitter.",
+  title: "This Will Change Everything You Know About [Topic]",
+  bio: "Creating viral content that makes people think 🤯 | Innovation enthusiast | Trending topics expert | Let's make waves together 🌊"
+};
 
 exports.handler = async (event, context) => {
   // Enable CORS
@@ -34,63 +54,40 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Initialize AIMLAPI
-    const aimlapi = new AIMLAPI(process.env.AIMLAPI_API_KEY);
-
-    // Generate prompt based on feature type
-    let prompt = '';
-    let model = 'gpt-4'; // Default model
+    // Generate response based on feature type
+    let result = '';
 
     switch (type) {
       case 'caption':
-        prompt = `Generate a viral ${platform || 'instagram'} caption for this content: "${content}". 
-        Make it engaging, use relevant hashtags, and include a call-to-action. 
-        Keep it under 220 characters for ${platform || 'instagram'}.`;
+        result = mockAIResponses.caption[platform || 'instagram'] || mockAIResponses.caption.instagram;
         break;
       
       case 'tweet':
-        prompt = `Generate a ${style || 'viral'} tweet about: "${content}". 
-        Make it engaging, include relevant hashtags, and keep it under 280 characters. 
-        Make it shareable and viral-worthy.`;
+        result = mockAIResponses.tweet[style || 'viral'] || mockAIResponses.tweet.viral;
         break;
       
       case 'reddit':
-        prompt = `Generate a Reddit post for r/${platform || 'general'} about: "${content}". 
-        Make it engaging, include a title and body text. 
-        Follow Reddit's style and community guidelines.`;
+        result = `**Title:** ${content}\n\n**Body:** This is an engaging Reddit post about ${content}. It follows community guidelines and encourages discussion. What are your thoughts on this topic?`;
         break;
       
       case 'title':
-        prompt = `Generate a catchy ${platform || 'youtube'} video title about: "${content}". 
-        Make it clickbait-worthy but not misleading. 
-        Include relevant keywords and keep it under 60 characters.`;
+        result = mockAIResponses.title;
         break;
       
       case 'sentiment':
-        prompt = `Analyze the sentiment and virality potential of this content: "${content}". 
-        Provide insights on:
-        1. Sentiment (positive/negative/neutral)
-        2. Viral potential (1-10 scale)
-        3. Why it might go viral
-        4. Target audience
-        5. Suggested platforms for maximum reach`;
+        result = mockAIResponses.sentiment;
         break;
       
       case 'hashtags':
-        prompt = `Generate 10 relevant hashtags for ${platform || 'instagram'} about: "${content}". 
-        Mix popular and niche hashtags. 
-        Include trending hashtags if relevant. 
-        Format as: #hashtag1 #hashtag2 #hashtag3...`;
+        result = mockAIResponses.hashtags[platform || 'instagram'] || mockAIResponses.hashtags.instagram;
         break;
       
       case 'rewrite':
-        prompt = `Rewrite this content for ${platform || 'social media'}: "${content}". 
-        Make it more engaging and viral-worthy while maintaining the core message.`;
+        result = `Here's a more engaging version: ${content} - This content has been rewritten to be more viral-worthy while maintaining the core message. It's now more engaging and shareable!`;
         break;
       
       case 'bio':
-        prompt = `Generate a social media bio for ${platform || 'instagram'} based on: "${content}". 
-        Make it engaging, include relevant keywords, and keep it under 150 characters.`;
+        result = mockAIResponses.bio;
         break;
       
       default:
@@ -99,49 +96,30 @@ exports.handler = async (event, context) => {
           headers,
           body: JSON.stringify({
             success: false,
-            error: 'Unsupported feature type'
+            error: 'Invalid feature type'
           })
         };
     }
-
-    // Call AIMLAPI
-    const response = await aimlapi.chat({
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      model: model,
-      temperature: 0.7,
-      max_tokens: 500
-    });
-
-    // Extract the response content
-    const result = response.choices?.[0]?.message?.content || 'No response generated';
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        result,
-        provider: 'AIMLAPI',
-        model: model,
-        type: type
+        result: result,
+        type: type,
+        platform: platform || 'general'
       })
     };
 
   } catch (error) {
-    console.error('AI Feature Error:', error);
-    
+    console.error('AI Features Error:', error);
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         success: false,
-        error: 'Failed to process AI feature request',
-        details: error.message
+        error: 'Internal server error'
       })
     };
   }
