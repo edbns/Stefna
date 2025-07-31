@@ -8,6 +8,7 @@ console.log('- DEEPINFRA_API_KEY:', !!(process.env.DEEPINFRA_API_KEY || process.
 console.log('- TOGETHER_API_KEY:', !!(process.env.TOGETHER_API_KEY || process.env.VITE_TOGETHER_API_KEY));
 console.log('- REPLICATE_API_KEY:', !!(process.env.REPLICATE_API_KEY || process.env.VITE_REPLICATE_API_KEY));
 console.log('- GROQ_API_KEY:', !!(process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY));
+console.log('- AIMLAPI_API_KEY:', !!(process.env.AIMLAPI_API_KEY || process.env.VITE_AIMLAPI_API_KEY));
 
 // AI Provider configurations
 const AI_PROVIDERS = [
@@ -55,6 +56,15 @@ const AI_PROVIDERS = [
     url: 'https://api.groq.com/openai/v1/chat/completions',
     headers: {
       'Authorization': `Bearer ${process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY}`,
+      'Content-Type': 'application/json'
+    }
+  },
+  {
+    name: 'AIMLAPI',
+    apiKey: process.env.AIMLAPI_API_KEY || process.env.VITE_AIMLAPI_API_KEY,
+    url: 'https://api.aimlapi.com/v1/chat/completions',
+    headers: {
+      'Authorization': `Bearer ${process.env.AIMLAPI_API_KEY || process.env.VITE_AIMLAPI_API_KEY}`,
       'Content-Type': 'application/json'
     }
   }
@@ -114,7 +124,8 @@ async function tryAIProviders(prompt, type) {
         // Standard OpenAI format for other providers
         requestBody = {
           model: provider.name === 'OpenRouter' ? 'openai/gpt-4' : 
-                 provider.name === 'Groq' ? 'llama3-8b-8192' : 'meta-llama/Llama-2-70b-chat-hf',
+                 provider.name === 'Groq' ? 'llama3-8b-8192' : 
+                 provider.name === 'AIMLAPI' ? 'gpt-4' : 'meta-llama/Llama-2-70b-chat-hf',
           messages: [
             {
               role: 'system',

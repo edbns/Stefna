@@ -100,15 +100,32 @@ const AI_PROVIDERS = [
   },
   {
     name: 'groq',
-    apiKey: process.env.GROQ_API_KEY,
+    apiKey: process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY,
     endpoint: 'https://api.groq.com/openai/v1/chat/completions',
     model: 'llama2-70b-4096',
     headers: {
-      'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+      'Authorization': `Bearer ${process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY}`,
       'Content-Type': 'application/json'
     },
     transformRequest: (messages) => ({
       model: 'llama2-70b-4096',
+      messages: messages,
+      max_tokens: 300,
+      temperature: 0.7
+    }),
+    transformResponse: (data) => data.choices?.[0]?.message?.content || 'No response'
+  },
+  {
+    name: 'aimlapi',
+    apiKey: process.env.AIMLAPI_API_KEY || process.env.VITE_AIMLAPI_API_KEY,
+    endpoint: 'https://api.aimlapi.com/v1/chat/completions',
+    model: 'gpt-4',
+    headers: {
+      'Authorization': `Bearer ${process.env.AIMLAPI_API_KEY || process.env.VITE_AIMLAPI_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    transformRequest: (messages) => ({
+      model: 'gpt-4',
       messages: messages,
       max_tokens: 300,
       temperature: 0.7
