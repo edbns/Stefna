@@ -2,21 +2,21 @@ const fetch = require('node-fetch');
 
 console.log('=== AI SERVICE DEBUG ===');
 console.log('AI providers available:');
-console.log('- OPENROUTER_API_KEY:', !!process.env.OPENROUTER_API_KEY);
-console.log('- HUGGINGFACE_API_KEY:', !!process.env.HUGGINGFACE_API_KEY);
-console.log('- DEEPINFRA_API_KEY:', !!process.env.DEEPINFRA_API_KEY);
-console.log('- TOGETHER_API_KEY:', !!process.env.TOGETHER_API_KEY);
-console.log('- REPLICATE_API_KEY:', !!process.env.REPLICATE_API_KEY);
-console.log('- GROQ_API_KEY:', !!process.env.GROQ_API_KEY);
+console.log('- OPENROUTER_API_KEY:', !!(process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY));
+console.log('- HUGGINGFACE_API_KEY:', !!(process.env.HUGGINGFACE_API_KEY || process.env.VITE_HUGGINGFACE_API_KEY));
+console.log('- DEEPINFRA_API_KEY:', !!(process.env.DEEPINFRA_API_KEY || process.env.VITE_DEEPINFRA_API_KEY));
+console.log('- TOGETHER_API_KEY:', !!(process.env.TOGETHER_API_KEY || process.env.VITE_TOGETHER_API_KEY));
+console.log('- REPLICATE_API_KEY:', !!(process.env.REPLICATE_API_KEY || process.env.VITE_REPLICATE_API_KEY));
+console.log('- GROQ_API_KEY:', !!(process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY));
 
 // AI Provider configurations
 const AI_PROVIDERS = [
   {
     name: 'OpenRouter',
-    apiKey: process.env.OPENROUTER_API_KEY,
+    apiKey: process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY,
     url: 'https://openrouter.ai/api/v1/chat/completions',
     headers: {
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://stefna.xyz',
       'X-Title': 'Stefna AI'
@@ -24,37 +24,37 @@ const AI_PROVIDERS = [
   },
   {
     name: 'HuggingFace',
-    apiKey: process.env.HUGGINGFACE_API_KEY,
+    apiKey: process.env.HUGGINGFACE_API_KEY || process.env.VITE_HUGGINGFACE_API_KEY,
     url: 'https://api-inference.huggingface.co/models/meta-llama/Llama-2-70b-chat-hf',
     headers: {
-      'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+      'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY || process.env.VITE_HUGGINGFACE_API_KEY}`,
       'Content-Type': 'application/json'
     }
   },
   {
     name: 'DeepInfra',
-    apiKey: process.env.DEEPINFRA_API_KEY,
+    apiKey: process.env.DEEPINFRA_API_KEY || process.env.VITE_DEEPINFRA_API_KEY,
     url: 'https://api.deepinfra.com/v1/openai/chat/completions',
     headers: {
-      'Authorization': `Bearer ${process.env.DEEPINFRA_API_KEY}`,
+      'Authorization': `Bearer ${process.env.DEEPINFRA_API_KEY || process.env.VITE_DEEPINFRA_API_KEY}`,
       'Content-Type': 'application/json'
     }
   },
   {
     name: 'Together',
-    apiKey: process.env.TOGETHER_API_KEY,
+    apiKey: process.env.TOGETHER_API_KEY || process.env.VITE_TOGETHER_API_KEY,
     url: 'https://api.together.xyz/v1/chat/completions',
     headers: {
-      'Authorization': `Bearer ${process.env.TOGETHER_API_KEY}`,
+      'Authorization': `Bearer ${process.env.TOGETHER_API_KEY || process.env.VITE_TOGETHER_API_KEY}`,
       'Content-Type': 'application/json'
     }
   },
   {
     name: 'Groq',
-    apiKey: process.env.GROQ_API_KEY,
+    apiKey: process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY,
     url: 'https://api.groq.com/openai/v1/chat/completions',
     headers: {
-      'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+      'Authorization': `Bearer ${process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY}`,
       'Content-Type': 'application/json'
     }
   }

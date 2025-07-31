@@ -25,7 +25,7 @@ async function generateAISummary(content) {
   if (cached) return cached;
 
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
     if (!apiKey) {
       throw new Error('OpenRouter API key not configured');
     }

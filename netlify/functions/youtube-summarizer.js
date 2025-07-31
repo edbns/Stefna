@@ -44,11 +44,11 @@ exports.handler = async (event) => {
     }
 
     // Get video details from YouTube API
-    const apiKey = process.env.YOUTUBE_API_KEY;
+    const apiKey = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
     
     // Debug logging
-    console.log("YouTube API Key found:", !!process.env.YOUTUBE_API_KEY);
-    console.log("YouTube API Key length:", process.env.YOUTUBE_API_KEY ? process.env.YOUTUBE_API_KEY.length : 0);
+          console.log("YouTube API Key found:", !!apiKey);
+      console.log("YouTube API Key length:", apiKey ? apiKey.length : 0);
     console.log("All environment variables:", Object.keys(process.env).filter(key => key.includes('API')));
     
     if (!apiKey) {
@@ -107,10 +107,10 @@ Format as JSON with fields: summary, keyPoints, sentiment, topics, confidence`;
     const AI_PROVIDERS = [
       {
         name: 'openrouter',
-        apiKey: process.env.OPENROUTER_API_KEY,
+        apiKey: process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY,
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
         headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': 'https://stefna.xyz',
           'X-Title': 'Stefna YouTube Summarizer'
@@ -134,10 +134,10 @@ Format as JSON with fields: summary, keyPoints, sentiment, topics, confidence`;
       },
       {
         name: 'deepinfra',
-        apiKey: process.env.DEEPINFRA_API_KEY,
+        apiKey: process.env.DEEPINFRA_API_KEY || process.env.VITE_DEEPINFRA_API_KEY,
         endpoint: 'https://api.deepinfra.com/v1/openai/chat/completions',
         headers: {
-          'Authorization': `Bearer ${process.env.DEEPINFRA_API_KEY}`,
+          'Authorization': `Bearer ${process.env.DEEPINFRA_API_KEY || process.env.VITE_DEEPINFRA_API_KEY}`,
           'Content-Type': 'application/json'
         },
         transformRequest: (prompt) => ({
@@ -159,10 +159,10 @@ Format as JSON with fields: summary, keyPoints, sentiment, topics, confidence`;
       },
       {
         name: 'together',
-        apiKey: process.env.TOGETHER_API_KEY,
+        apiKey: process.env.TOGETHER_API_KEY || process.env.VITE_TOGETHER_API_KEY,
         endpoint: 'https://api.together.xyz/v1/chat/completions',
         headers: {
-          'Authorization': `Bearer ${process.env.TOGETHER_API_KEY}`,
+          'Authorization': `Bearer ${process.env.TOGETHER_API_KEY || process.env.VITE_TOGETHER_API_KEY}`,
           'Content-Type': 'application/json'
         },
         transformRequest: (prompt) => ({
@@ -184,10 +184,10 @@ Format as JSON with fields: summary, keyPoints, sentiment, topics, confidence`;
       },
       {
         name: 'groq',
-        apiKey: process.env.GROQ_API_KEY,
+        apiKey: process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY,
         endpoint: 'https://api.groq.com/openai/v1/chat/completions',
         headers: {
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY}`,
           'Content-Type': 'application/json'
         },
         transformRequest: (prompt) => ({

@@ -30,7 +30,7 @@ async function fetchYouTubeTrending() {
   const startTime = Date.now();
 
   try {
-    const apiKey = process.env.YOUTUBE_API_KEY;
+    const apiKey = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
     console.log('YouTube API Key check:', apiKey ? 'Present' : 'Missing');
     if (!apiKey) {
       console.error('YouTube API key not configured - returning empty array');

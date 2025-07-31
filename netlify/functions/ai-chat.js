@@ -23,11 +23,11 @@ function setCachedData(key, data) {
 const AI_PROVIDERS = [
   {
     name: 'openrouter',
-    apiKey: process.env.OPENROUTER_API_KEY,
+    apiKey: process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY,
     endpoint: 'https://openrouter.ai/api/v1/chat/completions',
     model: 'anthropic/claude-3.5-sonnet',
     headers: {
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://stefna.xyz',
       'X-Title': 'Stefna AI Chat'
@@ -42,11 +42,11 @@ const AI_PROVIDERS = [
   },
   {
     name: 'huggingface',
-    apiKey: process.env.HUGGINGFACE_API_KEY,
+    apiKey: process.env.HUGGINGFACE_API_KEY || process.env.VITE_HUGGINGFACE_API_KEY,
     endpoint: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium',
     model: 'microsoft/DialoGPT-medium',
     headers: {
-      'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+      'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY || process.env.VITE_HUGGINGFACE_API_KEY}`,
       'Content-Type': 'application/json'
     },
     transformRequest: (messages) => ({
@@ -66,11 +66,11 @@ const AI_PROVIDERS = [
   },
   {
     name: 'deepinfra',
-    apiKey: process.env.DEEPINFRA_API_KEY,
+    apiKey: process.env.DEEPINFRA_API_KEY || process.env.VITE_DEEPINFRA_API_KEY,
     endpoint: 'https://api.deepinfra.com/v1/openai/chat/completions',
     model: 'meta-llama/Llama-2-70b-chat-hf',
     headers: {
-      'Authorization': `Bearer ${process.env.DEEPINFRA_API_KEY}`,
+      'Authorization': `Bearer ${process.env.DEEPINFRA_API_KEY || process.env.VITE_DEEPINFRA_API_KEY}`,
       'Content-Type': 'application/json'
     },
     transformRequest: (messages) => ({
@@ -83,7 +83,7 @@ const AI_PROVIDERS = [
   },
   {
     name: 'together',
-    apiKey: process.env.TOGETHER_API_KEY,
+    apiKey: process.env.TOGETHER_API_KEY || process.env.VITE_TOGETHER_API_KEY,
     endpoint: 'https://api.together.xyz/v1/chat/completions',
     model: 'togethercomputer/llama-2-70b-chat',
     headers: {

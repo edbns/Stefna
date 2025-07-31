@@ -6,7 +6,7 @@ console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY);
 console.log('RESEND_API_KEY type:', typeof process.env.RESEND_API_KEY);
 console.log('RESEND_API_KEY length:', process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.length : 'undefined');
 
-const resendApiKey = process.env.RESEND_API_KEY;
+const resendApiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
 
 console.log('Environment variables check:');
 console.log('RESEND_API_KEY exists:', !!resendApiKey);

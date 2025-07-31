@@ -20,8 +20,8 @@ exports.handler = async (event) => {
 
   try {
     // Get environment variables
-    const username = process.env.BLUESKY_USERNAME;
-    const password = process.env.BLUESKY_PASSWORD;
+      const username = process.env.BLUESKY_USERNAME || process.env.VITE_BLUESKY_USERNAME;
+  const password = process.env.BLUESKY_PASSWORD || process.env.VITE_BLUESKY_PASSWORD;
 
     if (!username || !password) {
       return {

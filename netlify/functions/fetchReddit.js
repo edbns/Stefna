@@ -3,8 +3,8 @@ const fetch = require('node-fetch');
 exports.handler = async (event) => {
   try {
     // Get Reddit credentials from environment variables
-    const clientId = process.env.VITE_REDDIT_CLIENT_ID;
-    const clientSecret = process.env.VITE_REDDIT_CLIENT_SECRET;
+    const clientId = process.env.REDDIT_CLIENT_ID || process.env.VITE_REDDIT_CLIENT_ID;
+const clientSecret = process.env.REDDIT_CLIENT_SECRET || process.env.VITE_REDDIT_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
       return {

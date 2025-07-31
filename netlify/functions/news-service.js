@@ -1,8 +1,8 @@
 const fetch = require('node-fetch');
 
 console.log('=== NEWS SERVICE DEBUG ===');
-console.log('NEWSDATA_API_KEY exists:', !!process.env.NEWSDATA_API_KEY);
-console.log('NEWSDATA_API_KEY length:', process.env.NEWSDATA_API_KEY ? process.env.NEWSDATA_API_KEY.length : 0);
+console.log('NEWSDATA_API_KEY exists:', !!process.env.NEWSDATA_API_KEY || !!process.env.VITE_NEWSDATA_API_KEY);
+console.log('NEWSDATA_API_KEY length:', (process.env.NEWSDATA_API_KEY || process.env.VITE_NEWSDATA_API_KEY) ? (process.env.NEWSDATA_API_KEY || process.env.VITE_NEWSDATA_API_KEY).length : 0);
 
 exports.handler = async (event, context) => {
   // Enable CORS
@@ -22,7 +22,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const apiKey = process.env.NEWSDATA_API_KEY;
+    const apiKey = process.env.NEWSDATA_API_KEY || process.env.VITE_NEWSDATA_API_KEY;
     
     if (!apiKey) {
       console.error('NEWSDATA_API_KEY not found in environment variables');
