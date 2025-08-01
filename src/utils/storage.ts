@@ -1,63 +1,76 @@
-export const storage = {
-  get: (key: string): any => {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : null;
-    } catch (error) {
-      console.error('Error reading from localStorage:', error);
-      return null;
-    }
-  },
+import { UserQuota, PromptRecipe } from '../types';
 
-  set: (key: string, value: any): void => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-      console.error('Error writing to localStorage:', error);
-    }
-  },
-
-  remove: (key: string): void => {
-    try {
-      localStorage.removeItem(key);
-    } catch (error) {
-      console.error('Error removing from localStorage:', error);
-    }
-  },
-
-  clear: (): void => {
-    try {
-      localStorage.clear();
-    } catch (error) {
-      console.error('Error clearing localStorage:', error);
-    }
-  }
+const STORAGE_KEYS = {
+  USER_QUOTA: 'ai_photo_app_quota',
+  FAVORITE_PROMPTS: 'ai_photo_app_favorites',
+  PROMPT_FEED: 'ai_photo_app_feed',
+  LAST_RESET: 'ai_photo_app_last_reset'
 };
 
-export const sessionStorage = {
-  get: (key: string): any => {
-    try {
-      const item = window.sessionStorage.getItem(key);
-      return item ? JSON.parse(item) : null;
-    } catch (error) {
-      console.error('Error reading from sessionStorage:', error);
-      return null;
+export const storage = {
+  // Quota management
+  getUserQuota(): UserQuota {
+    const stored = localStorage.getItem(STORAGE_KEYS.USER_QUOTA);
+    const lastReset = localStorage.getItem(STORAGE_KEYS.LAST_RESET);
+    
+    const now = new Date();
+    const resetTime = new Date();
+    resetTime.setHours(24, 0, 0, 0); // Reset at midnight
+    
+    // Check if we need to reset daily quota
+    if (!lastReset || new Date(lastReset).getDate() !== now.getDate()) {
+      const newQuota: UserQuota = {
+        dailyLimit: 10,
+        used: 0,
+        resetTime,
+        bonusTokens: 0
+      };
+      localStorage.setItem(STORAGE_KEYS.USER_QUOTA, JSON.stringify(newQuota));
+      localStorage.setItem(STORAGE_KEYS.LAST_RESET, now.toISOString());
+      return newQuota;
+    }
+    
+    return stored ? JSON.parse(stored) : {
+      dailyLimit: 10,
+      used: 0,
+      resetTime,
+      bonusTokens: 0
+    };
+  },
+
+  updateUserQuota(quota: UserQuota) {
+    localStorage.setItem(STORAGE_KEYS.USER_QUOTA, JSON.stringify(quota));
+  },
+
+  // Favorites
+  getFavoritePrompts(): string[] {
+    const stored = localStorage.getItem(STORAGE_KEYS.FAVORITE_PROMPTS);
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  addFavoritePrompt(promptId: string) {
+    const favorites = this.getFavoritePrompts();
+    if (!favorites.includes(promptId)) {
+      favorites.push(promptId);
+      localStorage.setItem(STORAGE_KEYS.FAVORITE_PROMPTS, JSON.stringify(favorites));
     }
   },
 
-  set: (key: string, value: any): void => {
-    try {
-      window.sessionStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-      console.error('Error writing to sessionStorage:', error);
-    }
+  removeFavoritePrompt(promptId: string) {
+    const favorites = this.getFavoritePrompts();
+    const updated = favorites.filter(id => id !== promptId);
+    localStorage.setItem(STORAGE_KEYS.FAVORITE_PROMPTS, JSON.stringify(updated));
   },
 
-  remove: (key: string): void => {
-    try {
-      window.sessionStorage.removeItem(key);
-    } catch (error) {
-      console.error('Error removing from sessionStorage:', error);
-    }
+  // Prompt feed (demo data)
+  getPromptFeed(): PromptRecipe[] {
+    const stored = localStorage.getItem(STORAGE_KEYS.PROMPT_FEED);
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  savePromptToFeed(prompt: PromptRecipe) {
+    const feed = this.getPromptFeed();
+    feed.unshift(prompt); // Add to beginning
+    localStorage.setItem(STORAGE_KEYS.PROMPT_FEED, JSON.stringify(feed));
   }
-}; 
+};

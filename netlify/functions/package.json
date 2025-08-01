@@ -1,8 +1,0 @@
-{
-  "name": "socialspy-functions",
-  "version": "1.0.0",
-  "description": "Netlify functions for SocialSpy dashboard",
-  "dependencies": {
-    "node-fetch": "^2.6.7"
-  }
-} 

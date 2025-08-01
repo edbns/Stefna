@@ -1,28 +1,48 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png?v=4" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Stefna.xyz | Discover What's Trending Worldwide — AI-Powered Insights & Viral Content</title>
-    <meta name="description" content="Explore real-time trending content across YouTube, Reddit, Crypto, Music, and News—all in one place. Stefna.xyz leverages powerful AI tools to analyze viral trends, hashtags, and categories, keeping you effortlessly ahead of what's hot right now.">
-    <meta name="keywords" content="trending, YouTube, Last.fm, crypto, news, Stefna, music, viral content, global trends, social dashboard">
-    <meta name="author" content="Stefna Team">
-    <meta property="og:title" content="Stefna — Discover What's Trending Worldwide">
-    <meta property="og:description" content="Track global trends across YouTube, music, news, and crypto — all in one place.">
-    <meta property="og:image" content="/stefna-logo.png">
-    <meta property="og:url" content="https://stefna.xyz">
-    <meta name="twitter:card" content="summary_large_image">
-
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GQEW792T8K"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-GQEW792T8K');
-    </script>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#8B5CF6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AI Photo Magic" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Transform your photos with AI-powered filters. Mobile-first photo editing with community-shared prompt recipes." />
+    <meta name="keywords" content="AI photo, filters, image editing, mobile, photo effects" />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="AI Photo Magic" />
+    <meta property="og:description" content="Transform your photos with AI-powered filters" />
+    <meta property="og:type" content="website" />
+    
+    <title>AI Photo Magic ✨</title>
+    
+    <style>
+      /* Prevent zoom on iOS */
+      body {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      
+      /* Hide scrollbars on mobile */
+      ::-webkit-scrollbar {
+        width: 0px;
+        background: transparent;
+      }
+      
+      /* Safe area support */
+      .safe-area-pb {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
