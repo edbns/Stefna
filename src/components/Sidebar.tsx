@@ -124,14 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   ];
 
-  const userFeatures = user ? [
-    { id: 'saved', label: 'Saved Content', icon: Bookmark },
-    { id: 'monitoring', label: 'Monitoring', icon: Eye },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'following', label: 'Following', icon: Heart },
-    { id: 'alerts', label: 'Alerts', icon: Bell },
-    { id: 'logout', label: 'Logout', icon: LogOut, isLogout: true }
-  ] : [];
+  // User features removed - dashboard can be accessed from header menu
 
   return (
     <>
@@ -281,46 +274,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          {/* User Features - Only show if logged in */}
-          {user && userFeatures.length > 0 && (
-            <div className={isOpen ? "px-4" : "px-2"}>
-              <div className="space-y-1">
-                {userFeatures.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = selectedCategory === item.id;
-                  
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        if (item.id === 'following') {
-                          onCategoryChange('following');
-                        } else if (item.id === 'logout') {
-                          logout();
-                        } else {
-                          onCategoryChange(item.id);
-                        }
-                      }}
-                      className={`w-full group relative ${
-                        isActive
-                          ? 'bg-white text-black'
-                          : 'text-white hover:bg-white/10'
-                      } transition-all duration-200 rounded-md p-2`}
-                    >
-                      <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
-                        <Icon className="w-5 h-5 flex-shrink-0" />
-                        {isOpen && (
-                          <div className="flex-1 text-left">
-                            <div className="font-medium text-sm">{item.label}</div>
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {/* User Features removed - dashboard accessible from header menu */}
         </nav>
 
         {/* Footer */}

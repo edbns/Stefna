@@ -87,7 +87,7 @@ const AI_PROVIDERS = [
     endpoint: 'https://api.together.xyz/v1/chat/completions',
     model: 'togethercomputer/llama-2-70b-chat',
     headers: {
-      'Authorization': `Bearer ${process.env.TOGETHER_API_KEY}`,
+      'Authorization': `Bearer ${process.env.TOGETHER_API_KEY || process.env.VITE_TOGETHER_API_KEY}`,
       'Content-Type': 'application/json'
     },
     transformRequest: (messages) => ({

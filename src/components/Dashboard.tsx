@@ -9,6 +9,7 @@ import Schedule from './Schedule';
 import toast from 'react-hot-toast';
 import Settings from './Settings';
 import UserProfile from './profile/UserProfile';
+
 import Trending from './Trending';
 import CustomDashboards from './CustomDashboards';
 import ContentCardSkeleton from './ContentCardSkeleton';
@@ -448,14 +449,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         return <Schedule />;
       case 'settings':
         return <Settings />;
-      case 'saved':
-        return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
-      case 'monitoring':
-        return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
-      case 'analytics':
-        return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
-      case 'alerts':
-        return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
+      // User profile cases removed - dashboard accessible from header menu
       case 'music-trends':
         return (
           <div className="p-6 sm:p-8 lg:p-10 bg-white">
@@ -533,6 +527,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         return <AIToolsDashboard />;
       case 'stefna-ai-chat':
         return <StefnaAIChat onAuthOpen={onAuthOpen} />;
+      case 'profile':
+        return <UserProfile onAuthOpen={onAuthOpen} selectedCategory={selectedCategory} />;
 
       default:
         // Default to trending cards instead of overview
