@@ -287,8 +287,8 @@ class AIGenerationService {
         type: request.type,
         quality: request.quality,
         style: request.style || 'default',
-        modelId: modelId,
         num_outputs: request.samples || 1 // Number of variations to generate (1-2)
+        // Note: modelId removed - let server choose model based on presence of image_url
       }
 
       // Add file URLs if provided

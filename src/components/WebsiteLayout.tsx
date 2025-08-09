@@ -435,8 +435,9 @@ const WebsiteLayout: React.FC = () => {
       
       // Smart detection: If it's an image, detect context and suggest appropriate prompts
       if (file.type.startsWith('image/')) {
+        let context: string = 'default'
         try {
-          const context = await detectContentContext(result)
+          context = await detectContentContext(result)
           const suggestedPrompt = getContextAwareExample('oil-painting', context) // Default to oil painting for suggestion
           setCustomPrompt(suggestedPrompt)
           
@@ -454,7 +455,7 @@ const WebsiteLayout: React.FC = () => {
             'info'
           )
         } catch (error) {
-          console.error('Failed to detect context:', error)
+          console.warn('Context detection failed, using fallback:', error)
           setCustomPrompt('Transform this image into something amazing...')
         }
       } else if (file.type.startsWith('video/')) {
@@ -488,15 +489,16 @@ const WebsiteLayout: React.FC = () => {
       
       // Detect content context if we have uploaded media
       if (uploadedMedia && uploadedFile) {
+        let context: string = 'default'
         try {
-          const context = await detectContentContext(uploadedMedia)
+          context = await detectContentContext(uploadedMedia)
           const contextAwareExample = getContextAwareExample(styleId, context)
           promptToUse = contextAwareExample // Use context-aware prompt
           setCustomPrompt(contextAwareExample)
           
           console.log(`🎨 Style: ${style.name}, Context: ${context}, Prompt: ${contextAwareExample}, File: ${uploadedFile.name}`)
         } catch (error) {
-          console.error('Failed to detect context:', error)
+          console.warn('Context detection failed, using fallback:', error)
           setCustomPrompt(style.example)
         }
       } else {
@@ -591,6 +593,11 @@ const WebsiteLayout: React.FC = () => {
             
             // IMPORTANT: Preset completed - DO NOT auto-trigger any other generation
             console.log('✅ Preset completed successfully. No further generation should occur.')
+            
+            // Clear uploaded media state to prevent triggering variation pipeline later
+            setUploadedMedia(null)
+            setUploadedFile(null)
+            setSidebarMode('closed')
             
             // CRITICAL: Return immediately to prevent any follow-up calls
             return
@@ -1144,7 +1151,7 @@ const WebsiteLayout: React.FC = () => {
   const handleGenerate = async () => {
     const prompt = customPrompt || typewriterText || 'AI generated content'
     // Delegate to handleGenerateWithPrompt to avoid code duplication
-    await handleGenerateWithPrompt(prompt)
+    await handleGenerateWithPrompt(prompt, undefined, { source: 'custom' })
   }
 
 
@@ -1490,6 +1497,7 @@ const WebsiteLayout: React.FC = () => {
   const [creatorFilter, setCreatorFilter] = useState<string | null>(null) // Filter by specific creator
   const [notificationCount, setNotificationCount] = useState(0)
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
+  const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false)
 
   // Click outside handler for dropdowns
   useEffect(() => {
@@ -1500,11 +1508,14 @@ const WebsiteLayout: React.FC = () => {
       if (userDropdownOpen && !(event.target as Element).closest('.user-dropdown')) {
         setUserDropdownOpen(false)
       }
+      if (notificationDropdownOpen && !(event.target as Element).closest('.notification-dropdown')) {
+        setNotificationDropdownOpen(false)
+      }
     }
     
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [filterOpen, userDropdownOpen])
+  }, [filterOpen, userDropdownOpen, notificationDropdownOpen])
 
   // Scroll handler
   const handleScroll = () => {
@@ -1539,13 +1550,7 @@ const WebsiteLayout: React.FC = () => {
         {/* Gallery Button - Moved before filter */}
         <button
           onClick={() => navigate('/gallery')}
-          className="flex items-center justify-center w-10 h-10 text-white rounded-lg backdrop-blur-sm transition-all duration-300"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#333333'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = ''
-          }}
+          className="flex items-center justify-center w-10 h-10 text-white rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-white/20"
           title="Gallery"
         >
           <Image size={22} />
@@ -1556,13 +1561,7 @@ const WebsiteLayout: React.FC = () => {
           <div className="relative filter-dropdown">
             <button
               onClick={() => setFilterOpen(!filterOpen)}
-              className="flex items-center justify-center w-10 h-10 text-white rounded-lg backdrop-blur-sm transition-all duration-300"
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#333333'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = ''
-              }}
+              className="flex items-center justify-center w-10 h-10 text-white rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-white/20"
               title="Filter content"
             >
               <Filter size={18} />
@@ -1574,19 +1573,21 @@ const WebsiteLayout: React.FC = () => {
               >
                 <button
                   onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }}
-                  className={`w-full p-3 text-sm transition-colors flex items-center justify-center hover:bg-white/10 rounded-xl m-1 ${
-                    currentFilter === 'images' ? 'bg-white/20 text-white' : 'text-white/80'
+                  className={`w-full p-3 text-sm transition-colors flex items-center justify-center gap-2 hover:bg-white/10 hover:rounded-full m-1 ${
+                    currentFilter === 'images' ? 'bg-white/20 text-white rounded-full' : 'text-white/80'
                   }`}
                 >
                   <Image size={16} />
+                  <span>Images</span>
                 </button>
                 <button
                   onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }}
-                  className={`w-full p-3 text-sm transition-colors flex items-center justify-center hover:bg-white/10 rounded-xl m-1 ${
-                    currentFilter === 'videos' ? 'bg-white/20 text-white' : 'text-white/80'
+                  className={`w-full p-3 text-sm transition-colors flex items-center justify-center gap-2 hover:bg-white/10 hover:rounded-full m-1 ${
+                    currentFilter === 'videos' ? 'bg-white/20 text-white rounded-full' : 'text-white/80'
                   }`}
                 >
                   <Video size={16} />
+                  <span>Videos</span>
                 </button>
               </div>
             )}
@@ -1595,24 +1596,42 @@ const WebsiteLayout: React.FC = () => {
         
         {/* Notification Bell - Only for logged-in users */}
         {isAuthenticated && (
-          <button
-            onClick={() => navigate('/profile', { state: { activeTab: 'notification' } })}
-            className="relative flex items-center justify-center w-10 h-10 text-white rounded-lg backdrop-blur-sm transition-all duration-300"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#333333'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = ''
-            }}
-            title="Notifications"
-          >
-            <Bell size={18} />
-            {notifications.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {notifications.length}
-              </span>
+          <div className="relative notification-dropdown">
+            <button
+              onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
+              className="relative flex items-center justify-center w-10 h-10 text-white rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-white/20"
+              title="Notifications"
+            >
+              <Bell size={18} />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {notificationCount}
+                </span>
+              )}
+            </button>
+            {notificationDropdownOpen && (
+              <div 
+                className="absolute top-12 right-0 rounded-2xl shadow-2xl overflow-hidden w-80 backdrop-blur-sm"
+                style={{ backgroundColor: '#333333' }}
+              >
+                <div className="p-4">
+                  {notificationCount === 0 ? (
+                    <div className="text-center py-8">
+                      <Bell size={48} className="mx-auto text-white/20 mb-4" />
+                      <p className="text-white/60 text-sm">No notifications yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                        <p className="text-white text-sm">Sample notification</p>
+                        <p className="text-white/60 text-xs mt-1">Just now</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
-          </button>
+          </div>
         )}
         
         {/* User Avatar Dropdown - Only for authenticated users */}
@@ -1620,16 +1639,12 @@ const WebsiteLayout: React.FC = () => {
           <div className="relative user-dropdown">
             <button
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-              className="flex items-center justify-center w-10 h-10 text-white rounded-lg backdrop-blur-sm transition-all duration-300"
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#333333'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = ''
-              }}
+              className="flex items-center justify-center w-10 h-10 text-white rounded-full bg-white/10 backdrop-blur-sm transition-all duration-300 hover:bg-white/20"
               title="User menu"
             >
-              <User size={18} />
+              <span className="text-white text-sm font-medium">
+                U
+              </span>
             </button>
             {userDropdownOpen && (
               <div 
@@ -1661,7 +1676,7 @@ const WebsiteLayout: React.FC = () => {
         ) : (
           <button
             onClick={() => navigate('/auth')}
-            className="px-4 py-2 text-black bg-white hover:bg-gray-200 transition-colors rounded-lg"
+            className="px-4 py-2 text-black bg-white hover:bg-gray-200 transition-colors rounded-full"
           >
             Login
           </button>
