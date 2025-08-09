@@ -558,6 +558,7 @@ const WebsiteLayout: React.FC = () => {
             }
             
             console.log('🎨 Triggering preset:', style.name, 'for asset:', currentAsset.url.substring(0, 50) + '...')
+            console.log('🔧 Asset details:', JSON.stringify(currentAsset, null, 2))
             
             const data = await runPresetWithJobId(currentAsset, style.name)
             console.log("🔍 AIML echo:", data.echo)
@@ -637,7 +638,8 @@ const WebsiteLayout: React.FC = () => {
             return
             
           } catch (error) {
-            console.error('Preset generation failed:', error)
+            console.error('🚨 Preset generation failed:', error)
+            console.error('🚨 Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)))
             const errorMessage = error instanceof Error ? error.message : 'Unknown error'
             
             // Show specific error message for data URL issues
@@ -648,6 +650,7 @@ const WebsiteLayout: React.FC = () => {
             } else if (errorMessage.includes('Provider error 5')) {
               addNotification('Provider Busy', 'AI service temporarily unavailable. Please try again.', 'warning')
             } else {
+              console.error('🚨 Unhandled preset error:', errorMessage)
               addNotification('Generation Failed', errorMessage, 'error')
             }
             
