@@ -594,6 +594,10 @@ const WebsiteLayout: React.FC = () => {
             // IMPORTANT: Preset completed - DO NOT auto-trigger any other generation
             console.log('✅ Preset completed successfully. No further generation should occur.')
             
+            // Reset filters to show the new item immediately
+            setCreatorFilter(null)
+            setCurrentFilter('all')
+            
             // Clear uploaded media state to prevent triggering variation pipeline later
             setUploadedMedia(null)
             setUploadedFile(null)
@@ -1009,6 +1013,10 @@ const WebsiteLayout: React.FC = () => {
         
         addNotification('Your Media is Ready', 'Content generated successfully', 'complete', mediaUrl, 'image')
         
+        // Reset filters to show the new item immediately
+        setCreatorFilter(null)
+        setCurrentFilter('all')
+        
         // Deduct tokens after successful generation
         await tokenService.generateContent(userId, userTier, type, 'high', prompt, '127.0.0.1', 'browser-device')
         console.log('Generated result and saved to profile:', result.result)
@@ -1278,35 +1286,18 @@ const WebsiteLayout: React.FC = () => {
     addNotification('Processing Your Media', 'Creating remix...', 'processing')
 
     try {
-      // Smart detection: Determine if this should be I2I/V2V based on remixed media and prompt
-      let modelId = undefined
+      // Determine content type based on remixed media
       let type: 'photo' | 'video' = 'photo'
       
       if (remixedMedia) {
-        // Check if user uploaded a file (I2I/V2V scenario)
-        const isImage = remixedMedia.startsWith('data:image/')
+        // Check if user uploaded a video
         const isVideo = remixedMedia.startsWith('data:video/')
-        
-        // Check prompt for transformation keywords
-        const transformationKeywords = [
-          'transform', 'convert', 'change', 'turn into', 'make it', 'style', 
-          'apply', 'filter', 'effect', 'enhance', 'modify', 'alter'
-        ]
-        
-        const hasTransformationKeywords = transformationKeywords.some(keyword => 
-          remixPrompt.toLowerCase().includes(keyword)
-        )
-        
-        if (isImage && hasTransformationKeywords) {
-          // Image-to-Image transformation
-          modelId = 'i2i-dev'
-          type = 'photo'
-        } else if (isVideo && hasTransformationKeywords) {
-          // Video-to-Video transformation
-          modelId = 'v2v-dev'
+        if (isVideo) {
           type = 'video'
         }
       }
+      
+      // Note: No manual model selection - let server choose based on imageUrl presence
 
       // Check token availability for remix
       const tokenCheck = await tokenService.canGenerate(userId, userTier, type, 'high')
@@ -1332,8 +1323,8 @@ const WebsiteLayout: React.FC = () => {
         style: selectedStyle,
         userId: userId,
         userTier: userTier,
-        modelId,
-        imageUrl: remixedMedia?.startsWith('data:image/') ? remixedMedia : undefined,
+        // Note: modelId removed - let server choose model based on imageUrl presence
+        imageUrl: remixedMedia ? remixedMedia : undefined, // Pass any remixed media URL for I2I
         videoUrl: remixedMedia?.startsWith('data:video/') ? remixedMedia : undefined,
         samples: selectedVariation // Number of variations to generate
       }
@@ -1361,6 +1352,10 @@ const WebsiteLayout: React.FC = () => {
         )
         
         addNotification('Your Media is Ready', 'Remix generated successfully', 'complete', mediaUrl, 'image')
+        
+        // Reset filters to show the new item immediately
+        setCreatorFilter(null)
+        setCurrentFilter('all')
         
         // Deduct tokens after successful remix
         await tokenService.generateContent(userId, userTier, type, 'high', remixPrompt, '127.0.0.1', 'browser-device')
