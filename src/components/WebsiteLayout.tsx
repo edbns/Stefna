@@ -101,36 +101,41 @@ const WebsiteLayout: React.FC = () => {
 
   // Load authentication state on mount and listen for changes
   useEffect(() => {
-    const updateAuthState = () => {
-    const authState = authService.getAuthState()
-      const wasAuthenticated = isAuthenticated
-    setIsAuthenticated(authState.isAuthenticated)
+    let wasAuthenticated = false
     
-    if (authState.user) {
-      // Map user tier to UserTier enum
-      const tierMap: { [key: string]: UserTier } = {
-        'registered': UserTier.REGISTERED, 
-        'pro': UserTier.VERIFIED,
-        'verified': UserTier.VERIFIED,
-        'contributor': UserTier.CONTRIBUTOR
+    const updateAuthState = () => {
+      const authState = authService.getAuthState()
+      const newAuthState = authState.isAuthenticated
+      
+      setIsAuthenticated(newAuthState)
+      
+      if (authState.user) {
+        // Map user tier to UserTier enum
+        const tierMap: { [key: string]: UserTier } = {
+          'registered': UserTier.REGISTERED, 
+          'pro': UserTier.VERIFIED,
+          'verified': UserTier.VERIFIED,
+          'contributor': UserTier.CONTRIBUTOR
+        }
+        setUserTier(tierMap[authState.user.tier] || UserTier.REGISTERED)
       }
-      setUserTier(tierMap[authState.user.tier] || UserTier.REGISTERED)
-    }
 
       // Check for pending generation state after successful authentication
-      if (!wasAuthenticated && authState.isAuthenticated) {
+      if (!wasAuthenticated && newAuthState) {
         restorePendingGeneration()
       }
+      
+      wasAuthenticated = newAuthState
     }
 
     // Initial load
     updateAuthState()
     
     // Check auth state changes periodically (simple polling approach)
-    const authCheckInterval = setInterval(updateAuthState, 1000)
+    const authCheckInterval = setInterval(updateAuthState, 5000) // Reduced from 1000ms to 5000ms
     
     return () => clearInterval(authCheckInterval)
-  }, [isAuthenticated])
+  }, []) // Remove isAuthenticated dependency to prevent interval recreation
 
   // Cleanup debounce on unmount
   useEffect(() => {
