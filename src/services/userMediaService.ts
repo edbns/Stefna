@@ -560,10 +560,7 @@ class UserMediaService {
     }
   }
 
-  // Remove demo sample media generation - this is no longer needed
-  // async generateSampleMedia(userId: string): Promise<void> {
-  //   // Removed demo content
-  // }
+
 
   // Generate sample media for new users (placeholder implementation)
   async generateSampleMedia(userId: string): Promise<void> {

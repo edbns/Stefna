@@ -63,7 +63,7 @@ class EnvironmentService {
     
     console.log('✅ AIML API key found:', aimlApiKey ? 'Configured' : 'Missing')
     
-    // In development mode, always allow generation (for testing)
+    // In development mode, always allow generation
     if (this.config.appEnv === 'development') {
       return true
     }

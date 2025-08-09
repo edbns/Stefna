@@ -136,20 +136,7 @@ class AuthService {
     this.loadAuthState()
   }
 
-  // Test signin for development - bypasses OTP
-  testSignin(userType: 'guest' | 'registered' | 'pro' = 'registered'): void {
-    const testUser: User = {
-      id: 'test-user-' + Date.now(),
-      email: 'test@stefna.com',
-      name: 'Test User',
-      tier: userType
-    }
-    
-    const testToken = 'test-token-' + Date.now()
-    
-    this.setAuthState(testToken, testUser)
-    console.log('✅ Test signin successful:', testUser)
-  }
+
 }
 
 export default AuthService.getInstance() 

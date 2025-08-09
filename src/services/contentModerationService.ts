@@ -162,10 +162,7 @@ class ContentModerationService {
     }
   }
 
-  // Remove demo simulation - replaced with real content analysis
-  // private async simulateAIContentAnalysis(contentUrl: string, contentType: 'image' | 'video'): Promise<ModerationResult> {
-  //   // Removed demo content
-  // }
+
 
   // Get suggested action based on confidence and categories
   private getSuggestedAction(confidence: number, categories: string[]): 'allow' | 'block' | 'review' {

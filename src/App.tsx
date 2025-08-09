@@ -19,16 +19,12 @@ const AppContent: React.FC = () => {
   // Check if we're on the live domain
   const isLiveDomain = window.location.hostname === 'stefna.xyz' || window.location.hostname === 'stefna.netlify.app'
   
-  // Testing mode - add ?test=true to URL to bypass coming-soon page
-  const isTestMode = new URLSearchParams(window.location.search).get('test') === 'true'
-  
-  // If on live domain and not in test mode, redirect to coming soon page
-  if (isLiveDomain && !isTestMode) {
-    window.location.href = '/coming-soon.html'
-    return null
-  }
-  
-  // In development or test mode, allow full access to the app
+  // If on live domain, redirect to coming soon page if needed
+  // For production, you may want to remove this or implement proper domain routing
+  // if (isLiveDomain) {
+  //   window.location.href = '/coming-soon.html'
+  //   return null
+  // }
   // Check if we're on profile page to hide footer
   const isProfilePage = location.pathname.startsWith('/profile')
 

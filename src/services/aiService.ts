@@ -67,14 +67,14 @@ class AIService {
     return deviceId
   }
 
-  // Get IP address (simulated for demo)
+  // Get IP address
   private async getIPAddress(): Promise<string> {
     try {
       const response = await fetch('https://api.ipify.org?format=json')
       const data = await response.json()
       return data.ip
     } catch (error) {
-      return '127.0.0.1' // Fallback for demo
+      return '127.0.0.1' // Fallback
     }
   }
 
@@ -227,20 +227,15 @@ class AIService {
       // Continue with generation if moderation fails
     }
 
-    // For demo purposes, simulate AI processing
-    
+    // Simulate AI processing
     await new Promise(resolve => setTimeout(resolve, 2000 + (intensity * 20)))
     
-    // Only increment usage if not in demo mode
-    const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true'
-    if (!isDemoMode) {
-      // Get user info for token tracking
-      const userId = localStorage.getItem('userId') || 'guest'
-      const userTier = UserTier.REGISTERED // Default tier
-      await this.incrementUsage(userId, userTier, 'photo', 'standard', customPrompt || brush.style)
-    }
+    // Get user info for token tracking
+    const userId = localStorage.getItem('userId') || 'guest'
+    const userTier = UserTier.REGISTERED // Default tier
+    await this.incrementUsage(userId, userTier, 'photo', 'standard', customPrompt || brush.style)
     
-    // In demo mode, create a processed version by adding a filter effect
+    // Create a processed version by adding a filter effect
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     const img = new Image()

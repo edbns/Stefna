@@ -1488,7 +1488,7 @@ const WebsiteLayout: React.FC = () => {
   const [filterOpen, setFilterOpen] = useState(false)
   const [currentFilter, setCurrentFilter] = useState<'all' | 'images' | 'videos'>('all')
   const [creatorFilter, setCreatorFilter] = useState<string | null>(null) // Filter by specific creator
-  const [notificationCount, setNotificationCount] = useState(3) // Demo count
+  const [notificationCount, setNotificationCount] = useState(0)
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
 
   // Click outside handler for dropdowns
@@ -1660,10 +1660,10 @@ const WebsiteLayout: React.FC = () => {
           </div>
         ) : (
           <button
-            onClick={() => setIsAuthenticated(true)}
+            onClick={() => navigate('/auth')}
             className="px-4 py-2 text-black bg-white hover:bg-gray-200 transition-colors rounded-lg"
           >
-            Login (Demo)
+            Login
           </button>
         )}
       </div>
