@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JWT Auth Test</title>
+</head>
+<body>
+    <h1>JWT Authentication Test</h1>
+    <div id="results"></div>
+    
+    <script>
+    async function testAuth() {
+        const results = document.getElementById('results');
+        
+        // Get token from localStorage
+        const token = localStorage.getItem('auth_token');
+        
+        if (!token) {
+            results.innerHTML = '<p style="color:red">❌ No auth_token found in localStorage</p>';
+            return;
+        }
+        
+        results.innerHTML = '<p>🔍 Testing with token: ' + token.substring(0, 20) + '...</p>';
+        
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+        
+        // Test 1: whoami function
+        try {
+            const whoamiRes = await fetch('/.netlify/functions/whoami', { headers });
+            const whoamiData = await whoamiRes.json();
+            
+            if (whoamiRes.ok) {
+                results.innerHTML += '<p style="color:green">✅ whoami: ' + JSON.stringify(whoamiData, null, 2) + '</p>';
+            } else {
+                results.innerHTML += '<p style="color:red">❌ whoami failed: ' + JSON.stringify(whoamiData, null, 2) + '</p>';
+                return;
+            }
+        } catch (e) {
+            results.innerHTML += '<p style="color:red">❌ whoami error: ' + e.message + '</p>';
+            return;
+        }
+        
+        // Test 2: cloudinary-sign function
+        try {
+            const signRes = await fetch('/.netlify/functions/cloudinary-sign', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ resource_type: 'image' })
+            });
+            const signData = await signRes.json();
+            
+            if (signRes.ok) {
+                results.innerHTML += '<p style="color:green">✅ cloudinary-sign: Success</p>';
+            } else {
+                results.innerHTML += '<p style="color:red">❌ cloudinary-sign failed: ' + JSON.stringify(signData, null, 2) + '</p>';
+            }
+        } catch (e) {
+            results.innerHTML += '<p style="color:red">❌ cloudinary-sign error: ' + e.message + '</p>';
+        }
+        
+        // Test 3: Show token payload
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            results.innerHTML += '<p>🔍 Token payload: ' + JSON.stringify(payload, null, 2) + '</p>';
+        } catch (e) {
+            results.innerHTML += '<p style="color:red">❌ Invalid JWT format</p>';
+        }
+    }
+    
+    // Auto-run test when page loads
+    testAuth();
+    </script>
+</body>
+</html>

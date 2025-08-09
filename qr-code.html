@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stefna App QR Code</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #000;
+            color: #fff;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+        }
+        .qr-code {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .url {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .instructions {
+            max-width: 400px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Stefna App QR Code</h1>
+        
+        <div class="qr-code">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://192.168.110.143:3002" alt="QR Code">
+        </div>
+        
+        <div class="url">
+            http://192.168.110.143:3002
+        </div>
+        
+        <div class="instructions">
+            <h3>How to use:</h3>
+            <ol>
+                <li>Make sure your phone and computer are on the same WiFi</li>
+                <li>Open your phone's camera app</li>
+                <li>Point it at the QR code above</li>
+                <li>Tap the notification that appears</li>
+                <li>Your Stefna app will open in your browser!</li>
+            </ol>
+            
+            <p><strong>Alternative:</strong> Just type the URL above directly in your phone's browser.</p>
+        </div>
+    </div>
+</body>
+</html> 
