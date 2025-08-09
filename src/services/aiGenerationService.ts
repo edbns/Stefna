@@ -311,7 +311,9 @@ class AIGenerationService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        console.error('AIML API error:', errorData)
+        console.error('🚨 AIML API error response:', response.status, response.statusText)
+        console.error('🚨 AIML API error data:', errorData)
+        console.error('🚨 Original request body was:', JSON.stringify(requestBody, null, 2))
         
         // Handle specific error cases
         if (errorData.error?.includes('API key not configured') || errorData.error?.includes('API key not configured')) {
