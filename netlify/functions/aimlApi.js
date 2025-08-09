@@ -100,8 +100,19 @@ exports.handler = async (event) => {
 
     const duration = Date.now() - startTime;
     
-    // Telemetry: Log generation metrics
-    console.log(`GENERATION: userId=${userId}, source=${source || "custom"}, mode=${mode}, strength=${payload.strength}, size=${payload.size || `${body.width}x${body.height}`}, status=success, ms=${duration}`);
+    // Telemetry: Log generation metrics (structured)
+    console.log("GEN", JSON.stringify({
+      userId, 
+      source: source || "custom", 
+      mode: mode,
+      strength: payload.strength, 
+      size: size || `${body.width}x${body.height}`,
+      ok: true, 
+      ms: duration
+    }));
+    
+    // Legacy telemetry: Log generation metrics (human readable)
+    console.log(`GENERATION: userId=${userId}, source=${source || "custom"}, mode=${mode}, strength=${payload.strength}, size=${size || `${body.width}x${body.height}`}, status=success, ms=${duration}`);
 
     return {
       statusCode: 200,
@@ -125,7 +136,17 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || "{}");
     const { source } = body;
     
-    // Telemetry: Log error metrics
+    // Telemetry: Log error metrics (structured)
+    console.log("GEN", JSON.stringify({
+      userId: e.userId || "unknown", 
+      source: source || "custom", 
+      mode: "unknown",
+      ok: false, 
+      ms: duration,
+      error: e.message
+    }));
+    
+    // Legacy telemetry: Log error metrics (human readable)
     console.log(`GENERATION: userId=${e.userId || "unknown"}, source=${source || "custom"}, mode=unknown, status=error, ms=${duration}, error=${e.message}`);
     console.error("aimlApi error:", e);
     return { statusCode: 500, body: JSON.stringify({ message: "Internal error" }) };
