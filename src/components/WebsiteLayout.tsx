@@ -506,7 +506,7 @@ const WebsiteLayout: React.FC = () => {
       }
       
       // Auto-generate when style is selected in #AiAsABrush mode
-      if (activeTab === 'aiasabrush' && uploadedMedia && uploadedFile) {
+      if (activeTab === 'aiasabrush' && ((uploadedMedia && uploadedFile) || (sidebarMode === 'remix' && remixedMedia))) {
         if (promptToUse.trim()) {
           // In-flight guard: prevent double-clicks and races
           if (presetInFlight) {
@@ -520,11 +520,11 @@ const WebsiteLayout: React.FC = () => {
             setIsGenerating(true)
             
             const currentAsset = {
-              url: uploadedMedia,
+              url: sidebarMode === 'remix' ? remixedMedia : uploadedMedia,
               width: 1024, // Default size, will be adjusted by backend
               height: 1024,
-              id: `upload_${Date.now()}`,
-              file: uploadedFile // Pass the original file for upload if needed
+              id: `${sidebarMode}_${Date.now()}`,
+              file: sidebarMode === 'remix' ? null : uploadedFile // Remix doesn't have original file
             }
             
             console.log('🎨 Triggering preset:', style.name, 'for asset:', currentAsset.url.substring(0, 50) + '...')
