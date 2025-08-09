@@ -46,14 +46,5 @@ export const runController = {
 
 /**
  * Safe context detection wrapper that never crashes
+ * Note: Removed dynamic import to avoid circular dependency
  */
-export async function safeDetectContext(imageData: string, fallback: string = 'default'): Promise<string> {
-  try {
-    // Import the actual detection function
-    const { detectContentContext } = await import('../components/WebsiteLayout')
-    return await detectContentContext(imageData)
-  } catch (error) {
-    console.warn('Context detection failed, using fallback:', error)
-    return fallback
-  }
-}

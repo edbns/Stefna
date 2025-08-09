@@ -314,27 +314,30 @@ const WebsiteLayout: React.FC = () => {
     }
   ]
 
-  // Context detection function
+  // Context detection function with enhanced error handling
   const detectContentContext = (imageData: string): Promise<string> => {
     return new Promise((resolve) => {
-      const img = new Image()
-      img.onload = () => {
-        // Create a canvas to analyze the image
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-        if (!ctx) {
-          resolve('default')
-          return
-        }
+      try {
+        const img = new Image()
+        img.onload = () => {
+          try {
+            // Create a canvas to analyze the image
+            const canvas = document.createElement('canvas')
+            const ctx = canvas.getContext('2d')
+            if (!ctx) {
+              console.warn('Canvas context not available, using default')
+              resolve('default')
+              return
+            }
 
-        canvas.width = img.width
-        canvas.height = img.height
-        ctx.drawImage(img, 0, 0)
+            canvas.width = img.width
+            canvas.height = img.height
+            ctx.drawImage(img, 0, 0)
 
-        // Simple content detection based on image analysis
-        // This is a basic implementation - in production, you'd use a more sophisticated AI model
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        const data = imageData.data
+            // Simple content detection based on image analysis
+            // This is a basic implementation - in production, you'd use a more sophisticated AI model
+            const canvasImageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+            const data = canvasImageData.data
 
         // Analyze colors and patterns to make educated guesses
         let redSum = 0, greenSum = 0, blueSum = 0
@@ -367,9 +370,20 @@ const WebsiteLayout: React.FC = () => {
         else {
           resolve('object')
         }
+          } catch (error) {
+            console.warn('Canvas analysis failed, using default context:', error)
+            resolve('default')
+          }
+        }
+        img.onerror = () => {
+          console.warn('Image load failed, using default context')
+          resolve('default')
+        }
+        img.src = imageData
+      } catch (error) {
+        console.warn('Context detection initialization failed, using default:', error)
+        resolve('default')
       }
-      img.onerror = () => resolve('default')
-      img.src = imageData
     })
   }
 
