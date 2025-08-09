@@ -21,9 +21,10 @@ export function shouldBlockAutoFollowUp(ctx?: GenerationContext): boolean {
  * This is the primary gate to prevent hidden auto-follow-ups
  */
 export function requireUserIntent(opts?: { userInitiated?: boolean; source?: string }): boolean {
-  // Block anything that isn't explicitly a user click
-  if (!opts?.userInitiated) {
-    console.warn("🚫 Blocked non-user-initiated generation", opts);
+  // EXTREMELY STRICT: Block anything that doesn't explicitly have userInitiated: true
+  if (!opts || opts.userInitiated !== true) {
+    console.warn("🛑 Blocked non-user-initiated generation", JSON.stringify(opts));
+    console.trace("Call stack trace:");
     return true;
   }
   return false;

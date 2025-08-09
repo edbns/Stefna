@@ -104,21 +104,21 @@ const WebsiteLayout: React.FC = () => {
     let wasAuthenticated = false
     
     const updateAuthState = () => {
-      const authState = authService.getAuthState()
+    const authState = authService.getAuthState()
       const newAuthState = authState.isAuthenticated
       
       setIsAuthenticated(newAuthState)
-      
-      if (authState.user) {
-        // Map user tier to UserTier enum
-        const tierMap: { [key: string]: UserTier } = {
-          'registered': UserTier.REGISTERED, 
-          'pro': UserTier.VERIFIED,
-          'verified': UserTier.VERIFIED,
-          'contributor': UserTier.CONTRIBUTOR
-        }
-        setUserTier(tierMap[authState.user.tier] || UserTier.REGISTERED)
+    
+    if (authState.user) {
+      // Map user tier to UserTier enum
+      const tierMap: { [key: string]: UserTier } = {
+        'registered': UserTier.REGISTERED, 
+        'pro': UserTier.VERIFIED,
+        'verified': UserTier.VERIFIED,
+        'contributor': UserTier.CONTRIBUTOR
       }
+      setUserTier(tierMap[authState.user.tier] || UserTier.REGISTERED)
+    }
 
       // Check for pending generation state after successful authentication
       if (!wasAuthenticated && newAuthState) {
@@ -327,23 +327,23 @@ const WebsiteLayout: React.FC = () => {
         const img = new NativeImage()
         img.crossOrigin = "anonymous"              // needed for canvas getImageData with Cloudinary
         img.referrerPolicy = "no-referrer"         // avoid tainting canvas on some CDNs
-        img.onload = () => {
+      img.onload = () => {
           try {
-            // Create a canvas to analyze the image
-            const canvas = document.createElement('canvas')
-            const ctx = canvas.getContext('2d')
-            if (!ctx) {
+        // Create a canvas to analyze the image
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
               console.warn('Canvas context not available, using default')
-              resolve('default')
-              return
-            }
+          resolve('default')
+          return
+        }
 
-            canvas.width = img.width
-            canvas.height = img.height
-            ctx.drawImage(img, 0, 0)
+        canvas.width = img.width
+        canvas.height = img.height
+        ctx.drawImage(img, 0, 0)
 
-            // Simple content detection based on image analysis
-            // This is a basic implementation - in production, you'd use a more sophisticated AI model
+        // Simple content detection based on image analysis
+        // This is a basic implementation - in production, you'd use a more sophisticated AI model
             const canvasImageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
             const data = canvasImageData.data
 
@@ -387,7 +387,7 @@ const WebsiteLayout: React.FC = () => {
           console.warn('Image load failed, using default context')
           resolve('default')
         }
-        img.src = imageData
+      img.src = imageData
       } catch (error) {
         console.warn('Context detection initialization failed, using default:', error)
         resolve('default')
@@ -548,7 +548,7 @@ const WebsiteLayout: React.FC = () => {
               addNotification('No Media', 'Please upload or select media first', 'error')
               return
             }
-
+            
             const currentAsset = {
               url: mediaUrl,
               width: 1024, // Default size, will be adjusted by backend
@@ -830,8 +830,8 @@ const WebsiteLayout: React.FC = () => {
       return
     }
 
-    // PRIMARY GUARD: Block all non-user-initiated generation
-    console.log('🔍 handleGenerateWithPrompt called with context:', context)
+    // UNIVERSAL BLOCK: Only allow explicitly user-initiated calls
+    console.log('🔍 handleGenerateWithPrompt called with context:', JSON.stringify(context))
     if (requireUserIntent({ userInitiated: context?.userInitiated, source: context?.source })) {
       return
     }
@@ -1195,7 +1195,8 @@ const WebsiteLayout: React.FC = () => {
   const handleGenerate = async (context?: GenerationContext) => {
     const prompt = customPrompt || typewriterText || 'AI generated content'
     // Delegate to handleGenerateWithPrompt to avoid code duplication
-    await handleGenerateWithPrompt(prompt, undefined, context || { source: 'custom' })
+    // Ensure userInitiated is preserved from context
+    await handleGenerateWithPrompt(prompt, undefined, context || { source: 'custom', userInitiated: false })
   }
 
 
@@ -1285,8 +1286,8 @@ const WebsiteLayout: React.FC = () => {
       return
     }
 
-    // PRIMARY GUARD: Block all non-user-initiated generation
-    console.log('🔍 handleRemixGenerate called with context:', context)
+    // UNIVERSAL BLOCK: Only allow explicitly user-initiated calls
+    console.log('🔍 handleRemixGenerate called with context:', JSON.stringify(context))
     if (requireUserIntent({ userInitiated: context?.userInitiated, source: context?.source })) {
       return
     }
