@@ -831,6 +831,7 @@ const WebsiteLayout: React.FC = () => {
     }
 
     // PRIMARY GUARD: Block all non-user-initiated generation
+    console.log('🔍 handleGenerateWithPrompt called with context:', context)
     if (requireUserIntent({ userInitiated: context?.userInitiated, source: context?.source })) {
       return
     }
@@ -1285,6 +1286,7 @@ const WebsiteLayout: React.FC = () => {
     }
 
     // PRIMARY GUARD: Block all non-user-initiated generation
+    console.log('🔍 handleRemixGenerate called with context:', context)
     if (requireUserIntent({ userInitiated: context?.userInitiated, source: context?.source })) {
       return
     }
