@@ -156,8 +156,8 @@ class AIGenerationService {
         modelId: selectedModelId
       })
 
-      // Use real AIML API
-      console.log(`🚀 AIML: Using model ${selectedModelId} for generation`)
+      // Use real AIML API - model selection happens on server
+      console.log(`🚀 AIML: Starting generation (server will choose model)`)
       const result = await this.callAimlApi(request, generationId, selectedModelId, imageUrl, videoUrl)
 
       // Get token cost using tokenService
@@ -271,7 +271,6 @@ class AIGenerationService {
         type: request.type,
         quality: request.quality,
         style: request.style,
-        modelId: modelId,
         imageUrl,
         videoUrl
       })
@@ -327,6 +326,11 @@ class AIGenerationService {
       const result = await response.json()
       console.log('AIML API response:', result)
       console.log('Available keys in response:', Object.keys(result))
+      
+      // Log the server-selected model
+      if (result.echo?.model) {
+        console.log(`✅ AIML: Server selected model "${result.echo.model}" for generation`)
+      }
 
       // Update progress during generation
       this.updateGenerationStatus(generationId, { progress: 80, status: 'processing', modelId })

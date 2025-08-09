@@ -8,6 +8,10 @@ exports.handler = async (event) => {
     const { userId } = verifyAuth(event);
     const body = JSON.parse(event.body || "{}");
     
+    // Sanitize: never trust client model selection
+    delete body.model;
+    delete body.modelId;
+    
     // Extract tracking fields
     const { jobId, presetName, source = "preset" } = body;
     console.log("Server received jobId:", jobId);

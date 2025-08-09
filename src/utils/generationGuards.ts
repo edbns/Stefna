@@ -4,6 +4,7 @@
 export interface GenerationContext {
   source?: 'preset' | 'custom' | 'remix' | 'restored'
   auto?: boolean
+  userInitiated?: boolean
 }
 
 /**
@@ -13,6 +14,19 @@ export interface GenerationContext {
 export function shouldBlockAutoFollowUp(ctx?: GenerationContext): boolean {
   // Block *automatic* follow-ups that originate from a preset
   return !!(ctx?.auto === true && ctx?.source === "preset")
+}
+
+/**
+ * Block all non-user-initiated generation calls
+ * This is the primary gate to prevent hidden auto-follow-ups
+ */
+export function requireUserIntent(opts?: { userInitiated?: boolean; source?: string }): boolean {
+  // Block anything that isn't explicitly a user click
+  if (!opts?.userInitiated) {
+    console.warn("🚫 Blocked non-user-initiated generation", opts);
+    return true;
+  }
+  return false;
 }
 
 /**

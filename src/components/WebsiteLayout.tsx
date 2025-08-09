@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { shouldBlockAutoFollowUp, runController, type GenerationContext } from '../utils/generationGuards'
+import { shouldBlockAutoFollowUp, requireUserIntent, runController, type GenerationContext } from '../utils/generationGuards'
 import { Plus, X, ArrowUp, Check, FileText, Image as LucideImage, Bell, Filter, Video, User, LogOut } from 'lucide-react'
 import MediaCard from './MediaCard'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
@@ -810,10 +810,10 @@ const WebsiteLayout: React.FC = () => {
         setTimeout(() => {
           if (generationState.sidebarMode === 'remix' && generationState.remixPrompt) {
             // Restore remix generation
-            handleRemixGenerate({ source: 'restored' })
+            handleRemixGenerate({ source: 'restored', userInitiated: true })
           } else {
             // Restore regular generation
-            handleGenerateWithPrompt(generationState.prompt, generationState.styleName, { source: 'restored' })
+            handleGenerateWithPrompt(generationState.prompt, generationState.styleName, { source: 'restored', userInitiated: true })
           }
         }, 1000) // Small delay to let UI update
       }
@@ -827,6 +827,11 @@ const WebsiteLayout: React.FC = () => {
   const handleGenerateWithPrompt = async (prompt: string, styleName?: string, context?: GenerationContext) => {
     if (!prompt.trim()) {
       addNotification('Prompt required', 'Please enter a prompt', 'warning')
+      return
+    }
+
+    // PRIMARY GUARD: Block all non-user-initiated generation
+    if (requireUserIntent({ userInitiated: context?.userInitiated, source: context?.source })) {
       return
     }
 
@@ -1276,6 +1281,11 @@ const WebsiteLayout: React.FC = () => {
   const handleRemixGenerate = async (context?: GenerationContext) => {
     if (!remixPrompt.trim()) {
       addNotification('Remix prompt required', 'Please enter a remix prompt', 'warning')
+      return
+    }
+
+    // PRIMARY GUARD: Block all non-user-initiated generation
+    if (requireUserIntent({ userInitiated: context?.userInitiated, source: context?.source })) {
       return
     }
 
@@ -1938,9 +1948,9 @@ const WebsiteLayout: React.FC = () => {
                     <button 
                       onClick={() => runController.run(async () => {
                         if (sidebarMode === 'remix') {
-                          await handleRemixGenerate({ source: 'remix', auto: false })
+                          await handleRemixGenerate({ source: 'remix', auto: false, userInitiated: true })
                         } else {
-                          await handleGenerate({ source: 'custom', auto: false })
+                          await handleGenerate({ source: 'custom', auto: false, userInitiated: true })
                         }
                       })}
                       disabled={isGenerating || (!customPrompt.trim() && !remixPrompt.trim())}
