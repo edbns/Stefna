@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { shouldBlockAutoFollowUp, runController, type GenerationContext } from '../utils/generationGuards'
-import { Plus, X, ArrowUp, Check, FileText, Image, Bell, Filter, Video, User, LogOut } from 'lucide-react'
+import { Plus, X, ArrowUp, Check, FileText, Image as LucideImage, Bell, Filter, Video, User, LogOut } from 'lucide-react'
 import MediaCard from './MediaCard'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
 import SlideSignupGate from './SlideSignupGate'
@@ -14,7 +14,7 @@ import aiGenerationService, { GenerationRequest } from '../services/aiGeneration
 import contentModerationService from '../services/contentModerationService'
 import authService from '../services/authService'
 import userMediaService from '../services/userMediaService'
-import { runPresetI2I, runI2I, runV2V, listUserAssets, deleteAsset, purgeUserAssets } from '../lib/cloudinary'
+import { deleteAsset } from '../lib/cloudinary'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import { signedFetch } from '../lib/auth'
 import { addToGallery } from '../lib/gallery'
@@ -318,7 +318,10 @@ const WebsiteLayout: React.FC = () => {
   const detectContentContext = (imageData: string): Promise<string> => {
     return new Promise((resolve) => {
       try {
-        const img = new Image()
+        const NativeImage = window.Image           // avoid shadowing imported `Image`
+        const img = new NativeImage()
+        img.crossOrigin = "anonymous"              // needed for canvas getImageData with Cloudinary
+        img.referrerPolicy = "no-referrer"         // avoid tainting canvas on some CDNs
         img.onload = () => {
           try {
             // Create a canvas to analyze the image
@@ -546,7 +549,7 @@ const WebsiteLayout: React.FC = () => {
               width: 1024, // Default size, will be adjusted by backend
               height: 1024,
               id: `${sidebarMode}_${Date.now()}`,
-              file: sidebarMode === 'remix' ? null : uploadedFile // Remix doesn't have original file
+              file: sidebarMode === 'remix' ? undefined : (uploadedFile || undefined) // Remix doesn't have original file
             }
             
             console.log('🎨 Triggering preset:', style.name, 'for asset:', currentAsset.url.substring(0, 50) + '...')
@@ -802,7 +805,7 @@ const WebsiteLayout: React.FC = () => {
         setTimeout(() => {
           if (generationState.sidebarMode === 'remix' && generationState.remixPrompt) {
             // Restore remix generation
-            handleRemixGenerate()
+            handleRemixGenerate({ source: 'restored' })
           } else {
             // Restore regular generation
             handleGenerateWithPrompt(generationState.prompt, generationState.styleName, { source: 'restored' })
@@ -1503,7 +1506,7 @@ const WebsiteLayout: React.FC = () => {
     return filteredMedia.slice(0, count).map(media => ({
       id: parseInt(media.id.replace(/\D/g, '')) || Date.now(), // Extract number from ID
       label: media.prompt.substring(0, 50) + (media.prompt.length > 50 ? '...' : ''),
-      icon: Image, // Default icon
+      icon: LucideImage, // Default icon
       gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Default gradient
       aspectRatio: media.aspectRatio || 1,
       media: media // Store full media object for actions
@@ -1578,7 +1581,7 @@ const WebsiteLayout: React.FC = () => {
           className="flex items-center justify-center w-10 h-10 text-white rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-white/20"
                 title="Gallery"
               >
-          <Image size={22} />
+          <LucideImage size={22} />
               </button>
 
         {/* Filter Dropdown - Only for logged-in users */}
@@ -1602,7 +1605,7 @@ const WebsiteLayout: React.FC = () => {
                     currentFilter === 'images' ? 'bg-white/20 text-white rounded-full' : 'text-white/80'
                   }`}
                 >
-                  <Image size={16} />
+                  <LucideImage size={16} />
                   <span>Images</span>
                 </button>
                 <button

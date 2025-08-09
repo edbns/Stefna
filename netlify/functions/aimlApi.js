@@ -19,6 +19,11 @@ exports.handler = async (event) => {
 
     const mode  = isI2I ? "i2i" : "t2i";
     const model = isI2I ? "flux/dev/image-to-image" : "stable-diffusion-v35-large";
+    
+    const size =
+      Number.isFinite(body?.width) && Number.isFinite(body?.height)
+        ? `${body.width}x${body.height}`
+        : undefined;
 
     const payload = {
       model,
@@ -26,7 +31,13 @@ exports.handler = async (event) => {
       negative_prompt: body.negative_prompt,
       steps: body.steps ?? 40,
       guidance_scale: body.guidance_scale ?? 7.5,
-      ...(isI2I ? { image_url: body.image_url, size: `${body.width}x${body.height}`, strength: body.strength ?? 0.85 } : {})
+      ...(isI2I
+        ? {
+            image_url: body.image_url,
+            ...(size ? { size } : {}),        // <-- only if present
+            strength: body.strength ?? 0.85,
+          }
+        : {}),
     };
 
     const url = `${process.env.AIML_API_URL}/v1/images/generations`;
