@@ -247,19 +247,14 @@ class AIGenerationService {
     this.generationQueue.delete(generationId)
   }
 
-  // Select the best model based on prompt and file type
-  private selectBestModel(request: GenerationRequest, imageUrl?: string, videoUrl?: string): string {
-    if (videoUrl) {
-      return 'v2v-dev' // Default V2V model
-    } else if (imageUrl) {
-      return 'i2i-dev' // Default I2I model
-    } else {
-      const recommendedModels = aimlModelService.getRecommendedModels(request.prompt)
-      if (recommendedModels.length > 0) {
-        return recommendedModels[0].id
-      }
-      return 'sdxl' // Fallback to default if no model found
-    }
+  // Note: Model selection moved to server-side based on request content
+  // Client no longer forces model selection - let server choose
+  private selectBestModel(request: GenerationRequest, imageUrl?: string, videoUrl?: string): string | undefined {
+    // Server automatically chooses:
+    // - I2I model when image_url is present
+    // - V2V model when video_url is present  
+    // - T2I model when neither is present
+    return undefined
   }
 
   // Call real AIML API

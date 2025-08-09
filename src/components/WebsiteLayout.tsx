@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { shouldBlockAutoFollowUp, runController, type GenerationContext } from '../utils/generationGuards'
 import { Plus, X, ArrowUp, Check, FileText, Image, Bell, Filter, Video, User, LogOut } from 'lucide-react'
 import MediaCard from './MediaCard'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
@@ -519,8 +520,15 @@ const WebsiteLayout: React.FC = () => {
             setPresetInFlight(true)
             setIsGenerating(true)
             
+            const mediaUrl = sidebarMode === 'remix' ? remixedMedia : uploadedMedia
+            if (!mediaUrl) {
+              console.error('❌ No media URL available for preset')
+              addNotification('No Media', 'Please upload or select media first', 'error')
+              return
+            }
+
             const currentAsset = {
-              url: sidebarMode === 'remix' ? remixedMedia : uploadedMedia,
+              url: mediaUrl,
               width: 1024, // Default size, will be adjusted by backend
               height: 1024,
               id: `${sidebarMode}_${Date.now()}`,
@@ -794,15 +802,15 @@ const WebsiteLayout: React.FC = () => {
   }
 
   // Helper function to handle generation with a specific prompt
-  const handleGenerateWithPrompt = async (prompt: string, styleName?: string, context?: { source?: 'preset' | 'custom' | 'restored' }) => {
+  const handleGenerateWithPrompt = async (prompt: string, styleName?: string, context?: GenerationContext) => {
     if (!prompt.trim()) {
       addNotification('Prompt required', 'Please enter a prompt', 'warning')
       return
     }
 
     // Guard: DO NOT auto-generate after presets (but allow restored generations)
-    if (context?.source === 'preset') {
-      console.log('🚫 Blocked auto-generation after preset completion')
+    if (shouldBlockAutoFollowUp(context)) {
+      console.warn('🚫 Blocked auto T2I after preset completion')
       return
     }
 
@@ -1156,10 +1164,10 @@ const WebsiteLayout: React.FC = () => {
     }
   }
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (context?: GenerationContext) => {
     const prompt = customPrompt || typewriterText || 'AI generated content'
     // Delegate to handleGenerateWithPrompt to avoid code duplication
-    await handleGenerateWithPrompt(prompt, undefined, { source: 'custom' })
+    await handleGenerateWithPrompt(prompt, undefined, context || { source: 'custom' })
   }
 
 
@@ -1241,9 +1249,17 @@ const WebsiteLayout: React.FC = () => {
     setActiveTab('prompt') // Default to prompt tab for remix
   }
 
-  const handleRemixGenerate = async () => {
+
+
+  const handleRemixGenerate = async (context?: GenerationContext) => {
     if (!remixPrompt.trim()) {
       addNotification('Remix prompt required', 'Please enter a remix prompt', 'warning')
+      return
+    }
+
+    // Guard: DO NOT auto-remix after presets
+    if (shouldBlockAutoFollowUp(context)) {
+      console.warn('🚫 Blocked auto Remix after preset completion')
       return
     }
 
@@ -1898,7 +1914,13 @@ const WebsiteLayout: React.FC = () => {
                     )}
                     
                     <button 
-                      onClick={sidebarMode === 'remix' ? handleRemixGenerate : handleGenerate}
+                      onClick={() => runController.run(async () => {
+                        if (sidebarMode === 'remix') {
+                          await handleRemixGenerate({ source: 'remix', auto: false })
+                        } else {
+                          await handleGenerate({ source: 'custom', auto: false })
+                        }
+                      })}
                       disabled={isGenerating || (!customPrompt.trim() && !remixPrompt.trim())}
                       className="w-12 h-12 bg-white text-black rounded-full hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 group"
                       aria-label={`Create ${sidebarMode === 'remix' ? 'remix' : 'edit'}`}

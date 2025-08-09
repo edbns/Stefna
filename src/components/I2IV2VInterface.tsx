@@ -73,7 +73,7 @@ const I2IV2VInterface: React.FC<I2IV2VInterfaceProps> = ({
         quality,
         userId,
         userTier,
-        modelId: selectedModel || (mode === 'i2i' ? 'i2i-dev' : 'v2v-dev'),
+        // Note: modelId removed - let server choose model based on image_url/video_url presence
         imageFile: mode === 'i2i' ? selectedFile : undefined,
         videoFile: mode === 'v2v' ? selectedFile : undefined,
         imageUrl: mode === 'i2i' ? fileUrl : undefined,
