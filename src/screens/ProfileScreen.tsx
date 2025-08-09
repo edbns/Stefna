@@ -435,7 +435,10 @@ const ProfileScreen: React.FC = () => {
 
         {/* Logout Icon - Top Right */}
         <button 
-          onClick={() => navigate('/auth')}
+          onClick={() => {
+            authService.logout()
+            navigate('/')
+          }}
           className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors duration-300"
           title="Logout"
         >
@@ -704,7 +707,60 @@ const ProfileScreen: React.FC = () => {
       </div>
 
       {/* Main Area - 80% */}
-      <div className="w-[80%] bg-black h-screen overflow-y-auto flex flex-col">
+      <div className="w-[80%] bg-black h-screen overflow-y-auto flex flex-col relative">
+        {/* Notification System */}
+        {notifications.length > 0 && (
+          <div className="fixed top-4 right-4 z-50 space-y-2" style={{ right: '20%' }}>
+            {notifications.slice(0, 3).map((notification) => (
+              <div
+                key={notification.id}
+                className={`max-w-sm bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 overflow-hidden ${
+                  notification.type === 'complete' ? 'cursor-pointer hover:bg-gray-800' : ''
+                }`}
+                onClick={() => {
+                  if (notification.type === 'complete' && notification.mediaUrl) {
+                    console.log('Opening completed media:', notification.mediaUrl)
+                  }
+                }}
+              >
+                <div className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white">{notification.title}</p>
+                      {notification.message && (
+                        <p className="text-xs text-gray-400 mt-1">{notification.message}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeNotification(notification.id)
+                      }}
+                      className="text-gray-400 hover:text-white transition-colors ml-2"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  {notification.mediaUrl && (
+                    <div className="mt-3 flex items-center space-x-3">
+                      <img 
+                        src={notification.mediaUrl} 
+                        alt="Generated content" 
+                        className="w-12 h-12 rounded-lg object-cover"
+                      />
+                      {notification.type === 'complete' && (
+                        <div className="flex items-center space-x-2">
+                          <Check size={16} className="text-green-400" />
+                          <span className="text-xs text-gray-300">Ready to view</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         {/* Content based on active tab */}
         {activeTab === 'all-media' && (
           <div className="flex-1 overflow-y-auto p-6">
@@ -714,6 +770,14 @@ const ProfileScreen: React.FC = () => {
                   <Image size={48} className="text-white/40" />
                 </div>
                 <p className="text-white/60 text-lg text-center">Loading your media...</p>
+              </div>
+            ) : userMedia.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full">
+                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                  <Image size={48} className="text-white/40" />
+                </div>
+                <p className="text-white/60 text-lg text-center">No media yet</p>
+                <p className="text-white/40 text-sm text-center mt-2">Your created media will appear here</p>
               </div>
             ) : (
               <MasonryMediaGrid
@@ -774,6 +838,14 @@ const ProfileScreen: React.FC = () => {
                 </div>
                 <p className="text-white/60 text-lg text-center">Loading your remixes...</p>
               </div>
+            ) : remixedMedia.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full">
+                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                  <RemixIcon size={48} className="text-white/40" />
+                </div>
+                <p className="text-white/60 text-lg text-center">No remixes yet</p>
+                <p className="text-white/40 text-sm text-center mt-2">Your remixed media will appear here</p>
+              </div>
             ) : (
               <MasonryMediaGrid
                 media={remixedMedia}
@@ -799,6 +871,14 @@ const ProfileScreen: React.FC = () => {
                 </div>
                 <p className="text-white/60 text-lg text-center">Loading your drafts...</p>
               </div>
+            ) : draftMedia.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full">
+                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                  <FileText size={48} className="text-white/40" />
+                </div>
+                <p className="text-white/60 text-lg text-center">No drafts yet</p>
+                <p className="text-white/40 text-sm text-center mt-2">Your draft media will appear here</p>
+              </div>
             ) : (
               <DraftMediaGrid
                 media={draftMedia}
@@ -815,13 +895,77 @@ const ProfileScreen: React.FC = () => {
 
         {activeTab === 'notification' && (
           <div className="flex-1 overflow-y-auto p-6">
-            <div className="flex flex-col items-center justify-center h-full">
-              <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
-                <Bell size={48} className="text-white/40" />
+            {notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full">
+                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                  <Bell size={48} className="text-white/40" />
+                </div>
+                <p className="text-white/60 text-lg text-center">No notifications yet</p>
+                <p className="text-white/40 text-sm text-center mt-2">Notifications will appear here</p>
               </div>
-              <p className="text-white/60 text-lg text-center">No notifications yet</p>
-              <p className="text-white/40 text-sm text-center mt-2">Notifications will appear here</p>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <h2 className="text-white text-xl font-semibold mb-6">Notifications</h2>
+                {notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`bg-white/10 backdrop-blur-sm rounded-2xl p-4 border transition-all duration-300 hover:bg-white/15 ${
+                      notification.type === 'complete' ? 'cursor-pointer hover:bg-white/20' : ''
+                    } ${
+                      notification.type === 'error' ? 'border-red-500/30' :
+                      notification.type === 'warning' ? 'border-yellow-500/30' :
+                      notification.type === 'success' ? 'border-green-500/30' :
+                      'border-white/20'
+                    }`}
+                    onClick={() => {
+                      if (notification.type === 'complete' && notification.mediaUrl) {
+                        // Handle media completion notification click
+                        console.log('Opening completed media:', notification.mediaUrl)
+                      }
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            notification.type === 'error' ? 'bg-red-500' :
+                            notification.type === 'warning' ? 'bg-yellow-500' :
+                            notification.type === 'success' ? 'bg-green-500' :
+                            notification.type === 'complete' ? 'bg-blue-500' :
+                            'bg-white/60'
+                          }`} />
+                          <span className="text-white font-medium text-sm">{notification.title}</span>
+                          <span className="text-white/40 text-xs">
+                            {new Date(notification.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        {notification.message && (
+                          <p className="text-white/70 text-sm">{notification.message}</p>
+                        )}
+                        {notification.mediaUrl && (
+                          <div className="mt-3">
+                            <img 
+                              src={notification.mediaUrl} 
+                              alt="Generated content" 
+                              className="w-16 h-16 rounded-lg object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeNotification(notification.id)
+                        }}
+                        className="text-white/40 hover:text-white transition-colors ml-2"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -985,7 +1129,7 @@ const ProfileScreen: React.FC = () => {
       {showInviteFriendsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowInviteFriendsModal(false)} />
-          <div className="relative bg-[#222222] border border-white/20 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="relative bg-[#222222] border border-white/20 rounded-2xl max-w-lg w-full p-8 shadow-2xl">
             {/* Close Button */}
             <button
               onClick={() => setShowInviteFriendsModal(false)}
@@ -995,35 +1139,35 @@ const ProfileScreen: React.FC = () => {
             </button>
 
             {/* Header */}
-            <div className="text-center mb-6">
-              <h2 className="text-white text-xl font-bold mb-2">Invite Friends</h2>
+            <div className="text-center mb-8">
+              <h2 className="text-white text-xl font-bold mb-3">Invite Friends</h2>
               <p className="text-white/60 text-sm">Share Stefna with your friends via email</p>
             </div>
 
             {isAuthenticated && referralStats ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {/* What you get */}
-                <div className="bg-white/5 rounded-lg p-3">
+                <div className="bg-white/5 rounded-lg p-4">
                   <h3 className="text-white font-semibold mb-2 text-sm">You get</h3>
                   <p className="text-white/60 text-sm">+50 bonus tokens for each friend who signs up</p>
                 </div>
 
                 {/* What your friends get */}
-                <div className="bg-white/5 rounded-lg p-3">
+                <div className="bg-white/5 rounded-lg p-4">
                   <h3 className="text-white font-semibold mb-2 text-sm">Your friends get</h3>
                   <p className="text-white/60 text-sm">+25 bonus tokens when they sign up with your invite</p>
                 </div>
 
                 {/* Email Invite Form */}
-                <form onSubmit={handleSendInvite} className="space-y-3">
-                  <div className="bg-white/5 rounded-lg p-3">
-                    <label className="text-white/60 text-sm mb-2 block">Friend's Email</label>
-                    <div className="flex items-center space-x-2">
+                <form onSubmit={handleSendInvite} className="space-y-4">
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <label className="text-white/60 text-sm mb-3 block">Friend's Email</label>
+                    <div className="flex items-center space-x-3">
                       <input
                         type="email"
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
-                        className="flex-1 bg-transparent text-white placeholder-white/40 focus:outline-none border-b border-white/20 focus:border-white/40 pb-1"
+                        className="flex-1 bg-transparent text-white placeholder-white/40 focus:outline-none border-b border-white/20 focus:border-white/40 pb-2"
                         placeholder="Enter friend's email address"
                         disabled={isSendingInvite}
                         required
@@ -1031,7 +1175,7 @@ const ProfileScreen: React.FC = () => {
                       <button
                         type="submit"
                         disabled={isSendingInvite || !inviteEmail.trim()}
-                        className="bg-white text-black font-semibold py-2 px-4 rounded-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-white text-black font-semibold py-2 px-5 rounded-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSendingInvite ? 'Sending...' : 'Send'}
                       </button>
@@ -1052,14 +1196,14 @@ const ProfileScreen: React.FC = () => {
                 </form>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="bg-white/5 rounded-lg p-3 text-center">
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                  <div className="bg-white/5 rounded-lg p-4 text-center">
                     <div className="text-xl font-bold text-white">{referralStats.invites}</div>
-                    <div className="text-white/60 text-xs">Friends Invited</div>
+                    <div className="text-white/60 text-xs mt-1">Friends Invited</div>
                   </div>
-                  <div className="bg-white/5 rounded-lg p-3 text-center">
+                  <div className="bg-white/5 rounded-lg p-4 text-center">
                     <div className="text-xl font-bold text-white">{referralStats.tokensEarned}</div>
-                    <div className="text-white/60 text-xs">Tokens Earned</div>
+                    <div className="text-white/60 text-xs mt-1">Tokens Earned</div>
                   </div>
                 </div>
               </div>

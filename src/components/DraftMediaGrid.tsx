@@ -24,27 +24,7 @@ const DraftMediaGrid: React.FC<DraftMediaGridProps> = ({
   const [hoveredMedia, setHoveredMedia] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
-  // Generate masonry layout
-  const generateMasonryLayout = (items: UserMedia[]): UserMedia[][] => {
-    const columnHeights = new Array(columns).fill(0)
-    const columnArrays: UserMedia[][] = Array.from({ length: columns }, () => [])
-    
-    items.forEach(item => {
-      // Find the shortest column
-      const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights))
-      
-      // Add item to shortest column
-      columnArrays[shortestColumnIndex].push(item)
-      
-      // Update column height (aspect ratio affects visual height)
-      // Lower aspect ratio (taller images) contribute more to column height
-      columnHeights[shortestColumnIndex] += 1 / item.aspectRatio
-    })
-    
-    return columnArrays
-  }
-
-  const masonryColumns = generateMasonryLayout(media)
+  // CSS columns will handle the masonry layout automatically
 
   const handleAction = (action: () => void, event: React.MouseEvent) => {
     event.stopPropagation()
@@ -53,33 +33,35 @@ const DraftMediaGrid: React.FC<DraftMediaGridProps> = ({
 
   if (media.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-4">
-          <Pencil className="w-8 h-8 text-white/40" />
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+          <Pencil size={48} className="text-white/40" />
         </div>
-        <p className="text-white/60 text-center">No drafts found</p>
+        <p className="text-white/60 text-lg text-center">No drafts found</p>
+        <p className="text-white/40 text-sm text-center mt-2">Your draft media will appear here</p>
       </div>
     )
   }
 
   return (
-    <div className={`p-6 ${className}`} ref={gridRef}>
-      <div className="flex gap-4 items-start justify-center">
-        {masonryColumns.map((column, columnIndex) => (
-          <div key={columnIndex} className="flex flex-col gap-4" style={{ flex: 1 }}>
-            {column.map((item) => (
-              <div
-                key={item.id}
-                className="relative group cursor-pointer bg-white/5 overflow-hidden transition-all duration-300 hover:bg-white/10 hover:scale-[1.02]"
-                onMouseEnter={() => setHoveredMedia(item.id)}
-                onMouseLeave={() => setHoveredMedia(null)}
-                onClick={() => onMediaClick?.(item)}
-              >
-                {/* Media Container */}
-                <div 
-                  className="relative overflow-hidden"
-                  style={{ aspectRatio: item.aspectRatio }}
-                >
+    <div className={`${className}`} ref={gridRef}>
+      <div 
+        className="columns-3 gap-1 mx-auto" 
+        style={{ maxWidth: '1200px' }}
+      >
+        {media.map((item) => (
+          <div
+            key={item.id}
+            className="break-inside-avoid mb-1 relative group cursor-pointer bg-white/5 rounded-lg overflow-hidden transition-all duration-300 hover:bg-white/10 hover:scale-[1.02]"
+            onMouseEnter={() => setHoveredMedia(item.id)}
+            onMouseLeave={() => setHoveredMedia(null)}
+            onClick={() => onMediaClick?.(item)}
+          >
+            {/* Media Container */}
+            <div 
+              className="relative w-full overflow-hidden rounded-lg"
+              style={{ aspectRatio: item.aspectRatio || 1 }}
+            >
                   {/* Media */}
                   {item.type === 'video' ? (
                     <video
@@ -135,8 +117,6 @@ const DraftMediaGrid: React.FC<DraftMediaGridProps> = ({
                   )}
                 </div>
               </div>
-            ))}
-          </div>
         ))}
       </div>
     </div>

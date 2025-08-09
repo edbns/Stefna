@@ -18,6 +18,7 @@ export interface GenerationRequest {
   videoFile?: File // New: for V2V
   imageUrl?: string // New: for I2I (if already uploaded)
   videoUrl?: string // New: for V2V (if already uploaded)
+  samples?: number // New: number of variations to generate (1-2)
 }
 
 export interface GenerationResult {
@@ -286,7 +287,8 @@ class AIGenerationService {
         type: request.type,
         quality: request.quality,
         style: request.style || 'default',
-        modelId: modelId
+        modelId: modelId,
+        num_outputs: request.samples || 1 // Number of variations to generate (1-2)
       }
 
       // Add file URLs if provided

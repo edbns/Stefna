@@ -147,13 +147,16 @@ class UserMediaService {
     const nextUsers = hasLiked ? users.filter(u => u !== userId) : [...users, userId]
     this.likesIndex.set(mediaId, nextUsers)
 
-    // Sync count into media object
-    const media = await this.getMediaById(mediaId)
-    if (media) {
-      await this.updateMedia(mediaId, { likes: nextUsers.length })
+    // Sync count into media object across ALL instances
+    for (const [userId, userMedia] of this.mediaStorage.entries()) {
+      const mediaIndex = userMedia.findIndex(m => m.id === mediaId)
+      if (mediaIndex !== -1) {
+        userMedia[mediaIndex].likes = nextUsers.length
+      }
     }
 
     await this.saveLikesIndex()
+    await this.saveToStorage()
     return { liked: !hasLiked, likes: nextUsers.length }
   }
 
@@ -162,9 +165,37 @@ class UserMediaService {
     return users.length
   }
 
+  // Check if user has liked a media
   async hasUserLiked(mediaId: string, userId: string): Promise<boolean> {
     const users = this.likesIndex.get(mediaId) || []
     return users.includes(userId)
+  }
+
+  // Increment remix count for a media
+  async incrementRemixCount(mediaId: string): Promise<number> {
+    // Update count across ALL instances
+    let newCount = 0
+    for (const [userId, userMedia] of this.mediaStorage.entries()) {
+      const mediaIndex = userMedia.findIndex(m => m.id === mediaId)
+      if (mediaIndex !== -1) {
+        userMedia[mediaIndex].remixCount = (userMedia[mediaIndex].remixCount || 0) + 1
+        newCount = userMedia[mediaIndex].remixCount
+      }
+    }
+
+    await this.saveToStorage()
+    return newCount
+  }
+
+  // Get current remix count for a media
+  async getRemixCount(mediaId: string): Promise<number> {
+    for (const userMedia of this.mediaStorage.values()) {
+      const media = userMedia.find(m => m.id === mediaId)
+      if (media) {
+        return media.remixCount || 0
+      }
+    }
+    return 0
   }
 
   // Get guest media that are not expired
@@ -195,6 +226,11 @@ class UserMediaService {
     }
     
     return userMedia
+  }
+
+  // Get all user IDs that have media
+  async getAllUsers(): Promise<string[]> {
+    return Array.from(this.mediaStorage.keys())
   }
 
   // Recovery methods for lost media
@@ -417,14 +453,7 @@ class UserMediaService {
     return this.updateMedia(mediaId, { likes: (await this.getMediaById(mediaId))?.likes || 0 + 1 })
   }
 
-  // Increment remix count
-  async incrementRemixCount(mediaId: string): Promise<boolean> {
-    const media = await this.getMediaById(mediaId)
-    if (media) {
-      return this.updateMedia(mediaId, { remixCount: media.remixCount + 1 })
-    }
-    return false
-  }
+
 
   // Get trending media (most liked/remixed recently)
   async getTrendingMedia(limit: number = 20): Promise<UserMedia[]> {

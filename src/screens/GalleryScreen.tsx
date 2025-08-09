@@ -13,8 +13,8 @@ interface GalleryScreenProps {
 }
 
 const GalleryScreen: React.FC<GalleryScreenProps> = ({ 
-  media = [], // Remove mock data - start with empty array
-  title = "Gallery" 
+  media: propMedia = [], // Media passed as props
+  title = "Gallery"
 }) => {
   const navigate = useNavigate()
   const [hoveredMedia, setHoveredMedia] = useState<string | null>(null)
@@ -26,29 +26,47 @@ const GalleryScreen: React.FC<GalleryScreenProps> = ({
   const [viewerIndex, setViewerIndex] = useState(0)
   const [gateOpen, setGateOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [media, setMedia] = useState<UserMedia[]>(propMedia)
+  const [creatorFilter, setCreatorFilter] = useState<string | null>(null)
 
-  const mediaList: UserMedia[] = useMemo(() => media, [media])
+  const mediaList: UserMedia[] = useMemo(() => {
+    if (creatorFilter) {
+      return media.filter(item => item.userId === creatorFilter)
+    }
+    return media
+  }, [media, creatorFilter])
 
-  // Load real media data if none provided
+  // Load public media feed (always refresh)
   useEffect(() => {
-    const loadMedia = async () => {
-      if (media.length === 0) {
-        setIsLoading(true)
-        try {
-          // Load public media from the service
-          const publicMedia = await userMediaService.getTrendingMedia(20)
-          // Update the media list (this would need to be handled by the parent component)
-          // For now, we'll just use the empty array
-        } catch (error) {
-          console.error('Failed to load media:', error)
-        } finally {
-          setIsLoading(false)
+    const loadPublicMedia = async () => {
+      setIsLoading(true)
+      try {
+        // Get all public media from all users
+        const allUsers = await userMediaService.getAllUsers()
+        const publicMediaItems = []
+        
+        for (const userId of allUsers) {
+          const userMedia = await userMediaService.getUserMedia(userId)
+          // Filter only public media
+          const publicUserMedia = userMedia.filter(media => media.isPublic)
+          publicMediaItems.push(...publicUserMedia)
         }
+        
+        // Sort by timestamp (newest first)
+        const sortedMedia = publicMediaItems
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        
+        setMedia(sortedMedia)
+      } catch (error) {
+        console.error('Failed to load public media:', error)
+        setMedia([])
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    loadMedia()
-  }, [media.length])
+    loadPublicMedia()
+  }, [])
 
   // Initialize counts from incoming media
   useEffect(() => {

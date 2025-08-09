@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Sparkles, Palette, Brush, Layers, MessageSquare, X, ArrowUp, Check, FileText, Image, User } from 'lucide-react'
+import { Plus, X, ArrowUp, Check, FileText, Image, Bell, Filter, Video, User, LogOut } from 'lucide-react'
 import MediaCard from './MediaCard'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
 import SlideSignupGate from './SlideSignupGate'
@@ -80,7 +80,7 @@ const WebsiteLayout: React.FC = () => {
   const [remixedMedia, setRemixedMedia] = useState<string | null>(null)
   const [remixPrompt, setRemixPrompt] = useState<string>('')
   const [isRemixing, setIsRemixing] = useState(false)
-  const [selectedVariation, setSelectedVariation] = useState<number>(2) // Default to 2
+  const [selectedVariation, setSelectedVariation] = useState<number>(1) // Default to 1 variation
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const contentRef = useRef<HTMLDivElement>(null)
@@ -98,22 +98,38 @@ const WebsiteLayout: React.FC = () => {
     'Pop art style with bold colors'
   ]
 
-  // Load authentication state on mount
+  // Load authentication state on mount and listen for changes
   useEffect(() => {
-    const authState = authService.getAuthState()
-    setIsAuthenticated(authState.isAuthenticated)
-    
-    if (authState.user) {
-      // Map user tier to UserTier enum
-      const tierMap: { [key: string]: UserTier } = {
-        'registered': UserTier.REGISTERED, 
-        'pro': UserTier.VERIFIED,
-        'verified': UserTier.VERIFIED,
-        'contributor': UserTier.CONTRIBUTOR
+    const updateAuthState = () => {
+      const authState = authService.getAuthState()
+      const wasAuthenticated = isAuthenticated
+      setIsAuthenticated(authState.isAuthenticated)
+      
+      if (authState.user) {
+        // Map user tier to UserTier enum
+        const tierMap: { [key: string]: UserTier } = {
+          'registered': UserTier.REGISTERED, 
+          'pro': UserTier.VERIFIED,
+          'verified': UserTier.VERIFIED,
+          'contributor': UserTier.CONTRIBUTOR
+        }
+        setUserTier(tierMap[authState.user.tier] || UserTier.REGISTERED)
       }
-      setUserTier(tierMap[authState.user.tier] || UserTier.REGISTERED)
+
+      // Check for pending generation state after successful authentication
+      if (!wasAuthenticated && authState.isAuthenticated) {
+        restorePendingGeneration()
+      }
     }
-  }, [])
+
+    // Initial load
+    updateAuthState()
+    
+    // Check auth state changes periodically (simple polling approach)
+    const authCheckInterval = setInterval(updateAuthState, 1000)
+    
+    return () => clearInterval(authCheckInterval)
+  }, [isAuthenticated])
 
   // Cleanup debounce on unmount
   useEffect(() => {
@@ -707,14 +723,73 @@ const WebsiteLayout: React.FC = () => {
     return data
   }
 
+  // Helper function to restore pending generation state after authentication
+  const restorePendingGeneration = async () => {
+    try {
+      const pendingGenerationData = localStorage.getItem('pendingGeneration')
+      if (!pendingGenerationData) return
+
+      const generationState = JSON.parse(pendingGenerationData)
+      
+      // Check if the saved state is recent (within 30 minutes)
+      const timeDiff = Date.now() - generationState.timestamp
+      if (timeDiff > 30 * 60 * 1000) {
+        localStorage.removeItem('pendingGeneration')
+        return
+      }
+
+      // Restore the generation state
+      if (generationState.uploadedMedia) {
+        setUploadedMedia(generationState.uploadedMedia)
+      }
+      if (generationState.sidebarMode) {
+        setSidebarMode(generationState.sidebarMode)
+      }
+      if (generationState.remixedMedia) {
+        setRemixedMedia(generationState.remixedMedia)
+      }
+      if (generationState.remixPrompt) {
+        setRemixPrompt(generationState.remixPrompt)
+      }
+      if (generationState.selectedVariation) {
+        setSelectedVariation(generationState.selectedVariation)
+      }
+      if (generationState.styleName) {
+        setSelectedStyle(generationState.styleName)
+      }
+
+      // Clean up the saved state
+      localStorage.removeItem('pendingGeneration')
+
+      // Show notification that state was restored
+      addNotification('Welcome back!', 'Your upload has been restored. You can now continue generating.', 'success')
+
+      // Auto-trigger generation if we had a prompt
+      if (generationState.prompt) {
+        setTimeout(() => {
+          if (generationState.sidebarMode === 'remix' && generationState.remixPrompt) {
+            // Restore remix generation
+            handleRemixGenerate()
+          } else {
+            // Restore regular generation
+            handleGenerateWithPrompt(generationState.prompt, generationState.styleName, { source: 'restored' })
+          }
+        }, 1000) // Small delay to let UI update
+      }
+    } catch (error) {
+      console.error('Failed to restore pending generation:', error)
+      localStorage.removeItem('pendingGeneration')
+    }
+  }
+
   // Helper function to handle generation with a specific prompt
-  const handleGenerateWithPrompt = async (prompt: string, styleName?: string, context?: { source?: 'preset' | 'custom' }) => {
+  const handleGenerateWithPrompt = async (prompt: string, styleName?: string, context?: { source?: 'preset' | 'custom' | 'restored' }) => {
     if (!prompt.trim()) {
       addNotification('Prompt required', 'Please enter a prompt', 'warning')
       return
     }
 
-    // Guard: DO NOT auto-generate after presets
+    // Guard: DO NOT auto-generate after presets (but allow restored generations)
     if (context?.source === 'preset') {
       console.log('🚫 Blocked auto-generation after preset completion')
       return
@@ -722,6 +797,24 @@ const WebsiteLayout: React.FC = () => {
 
     // Check if user is authenticated
     if (!isAuthenticated) {
+      // Save current generation state before redirecting to auth
+      const generationState = {
+        prompt,
+        styleName: styleName || selectedStyle,
+        uploadedMedia,
+        uploadedFile: uploadedFile ? {
+          name: uploadedFile.name,
+          type: uploadedFile.type,
+          size: uploadedFile.size
+        } : null,
+        sidebarMode,
+        remixedMedia,
+        remixPrompt,
+        selectedVariation,
+        timestamp: Date.now()
+      }
+      localStorage.setItem('pendingGeneration', JSON.stringify(generationState))
+      
       addNotification('Login Required', 'Please sign in to generate content', 'warning')
       navigate('/auth')
       return
@@ -838,7 +931,8 @@ const WebsiteLayout: React.FC = () => {
               style: styleName || selectedStyle,
               userId: userId,
               userTier: userTier,
-              imageUrl: uploadedMedia  // 🔥 Pass the image for I2I - server will pick model
+              imageUrl: uploadedMedia,  // 🔥 Pass the image for I2I - server will pick model
+              samples: selectedVariation // Number of variations to generate
             }
             result = await aiGenerationService.generateContent(request)
           } else {
@@ -850,7 +944,8 @@ const WebsiteLayout: React.FC = () => {
               quality: 'high',
               style: styleName || selectedStyle,
               userId: userId,
-              userTier: userTier
+              userTier: userTier,
+              samples: selectedVariation // Number of variations to generate
             }
             result = await aiGenerationService.generateContent(request)
           }
@@ -864,7 +959,8 @@ const WebsiteLayout: React.FC = () => {
           quality: 'high',
         style: styleName || selectedStyle,
         userId: userId,
-          userTier: userTier
+          userTier: userTier,
+          samples: selectedVariation // Number of variations to generate
         }
         result = await aiGenerationService.generateContent(request)
       }
@@ -898,6 +994,11 @@ const WebsiteLayout: React.FC = () => {
             modelVersion: 'v2.0'
           }
         }, userSettings)
+        
+        // Refresh public feed if media was shared to feed
+        if (userSettings.shareToFeed) {
+          await refreshPublicFeed()
+        }
         
         addNotification('Your Media is Ready', 'Content generated successfully', 'complete', mediaUrl, 'image')
         
@@ -1133,6 +1234,20 @@ const WebsiteLayout: React.FC = () => {
 
     // Check if user is authenticated
     if (!isAuthenticated) {
+      // Save current remix state before redirecting to auth
+      const generationState = {
+        prompt: remixPrompt,
+        styleName: selectedStyle,
+        uploadedMedia: null, // No regular upload in remix mode
+        uploadedFile: null,
+        sidebarMode,
+        remixedMedia,
+        remixPrompt,
+        selectedVariation,
+        timestamp: Date.now()
+      }
+      localStorage.setItem('pendingGeneration', JSON.stringify(generationState))
+      
       addNotification('Login Required', 'Please sign in to remix content', 'warning')
       navigate('/auth')
       return
@@ -1212,7 +1327,8 @@ const WebsiteLayout: React.FC = () => {
         userTier: userTier,
         modelId,
         imageUrl: remixedMedia?.startsWith('data:image/') ? remixedMedia : undefined,
-        videoUrl: remixedMedia?.startsWith('data:video/') ? remixedMedia : undefined
+        videoUrl: remixedMedia?.startsWith('data:video/') ? remixedMedia : undefined,
+        samples: selectedVariation // Number of variations to generate
       }
 
       const result = await aiGenerationService.generateContent(request)
@@ -1273,15 +1389,93 @@ const WebsiteLayout: React.FC = () => {
   interface ContentItem {
     id: number
     label: string
-    icon: React.ComponentType<{ size?: number; className?: string }>
+    icon: any // Simplified for Lucide icons
     gradient: string
     aspectRatio: number
+    media?: any // Store full media object for actions
   }
 
-  // Remove demo item generation - replaced with real content loading
+  // State for public media feed
+  const [publicMedia, setPublicMedia] = useState<any[]>([])
+  
+  // Load public media feed
+  useEffect(() => {
+    const loadPublicMedia = async () => {
+      try {
+        // Get all public media from all users
+        const allUsers = await userMediaService.getAllUsers()
+        const publicMediaItems = []
+        
+        for (const userId of allUsers) {
+          const userMedia = await userMediaService.getUserMedia(userId)
+          // Filter only public media
+          const publicUserMedia = userMedia.filter(media => media.isPublic)
+          publicMediaItems.push(...publicUserMedia)
+        }
+        
+        // Sort by timestamp (newest first) and limit
+        const sortedMedia = publicMediaItems
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 50)
+        
+        setPublicMedia(sortedMedia)
+      } catch (error) {
+        console.error('Failed to load public media:', error)
+        setPublicMedia([])
+      }
+    }
+    
+    loadPublicMedia()
+  }, [])
+
+  // Function to refresh public media feed (after new generation)
+  const refreshPublicFeed = async () => {
+    try {
+      const allUsers = await userMediaService.getAllUsers()
+      const publicMediaItems = []
+      
+      for (const userId of allUsers) {
+        const userMedia = await userMediaService.getUserMedia(userId)
+        const publicUserMedia = userMedia.filter(media => media.isPublic)
+        publicMediaItems.push(...publicUserMedia)
+      }
+      
+      const sortedMedia = publicMediaItems
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 50)
+      
+      setPublicMedia(sortedMedia)
+    } catch (error) {
+      console.error('Failed to refresh public media:', error)
+    }
+  }
+  
+  // Convert UserMedia to ContentItem format for display
   const generateItems = (count: number): ContentItem[] => {
-    // Return empty array for now - will be populated with real user content
-    return []
+    let filteredMedia = publicMedia
+
+    // Apply creator filter
+    if (creatorFilter) {
+      filteredMedia = publicMedia.filter(media => media.userId === creatorFilter)
+    }
+
+    // Apply content type filter
+    if (currentFilter !== 'all') {
+      filteredMedia = filteredMedia.filter(media => {
+        if (currentFilter === 'images') return media.type === 'photo'
+        if (currentFilter === 'videos') return media.type === 'video'
+        return true
+      })
+    }
+
+    return filteredMedia.slice(0, count).map(media => ({
+      id: parseInt(media.id.replace(/\D/g, '')) || Date.now(), // Extract number from ID
+      label: media.prompt.substring(0, 50) + (media.prompt.length > 50 ? '...' : ''),
+      icon: Image, // Default icon
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Default gradient
+      aspectRatio: media.aspectRatio || 1,
+      media: media // Store full media object for actions
+    }))
   }
 
   // Calculate max items for real content
@@ -1289,6 +1483,28 @@ const WebsiteLayout: React.FC = () => {
 
   const [hasReachedLimit, setHasReachedLimit] = useState(false)
   const isContentLimited = !isAuthenticated && hasReachedLimit
+  
+  // Filter and notification states
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [currentFilter, setCurrentFilter] = useState<'all' | 'images' | 'videos'>('all')
+  const [creatorFilter, setCreatorFilter] = useState<string | null>(null) // Filter by specific creator
+  const [notificationCount, setNotificationCount] = useState(3) // Demo count
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false)
+
+  // Click outside handler for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterOpen && !(event.target as Element).closest('.filter-dropdown')) {
+        setFilterOpen(false)
+      }
+      if (userDropdownOpen && !(event.target as Element).closest('.user-dropdown')) {
+        setUserDropdownOpen(false)
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [filterOpen, userDropdownOpen])
 
   // Scroll handler
   const handleScroll = () => {
@@ -1318,49 +1534,147 @@ const WebsiteLayout: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-black relative">
-      {/* Web Header - Proper navigation for web app */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-sm border-b border-gray-800">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-4">
-            <h1 className="text-white font-semibold">Stefna</h1>
-            <nav className="flex items-center gap-2">
-              <button
-                onClick={() => navigate('/gallery')}
-                className="flex items-center gap-2 px-3 py-2 text-white hover:text-blue-400 transition-colors rounded-lg hover:bg-white/10"
-                title="Gallery"
-              >
-                <Image size={18} />
-                <span className="hidden sm:inline">Gallery</span>
-              </button>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            {isAuthenticated && (
-              <button
-                onClick={() => navigate('/profile')}
-                className="flex items-center gap-2 px-3 py-2 text-white hover:text-blue-400 transition-colors rounded-lg hover:bg-white/10"
-              >
-                <User size={18} />
-                <span className="hidden sm:inline">Profile</span>
-              </button>
-            )}
+      {/* Top Right Navigation Buttons */}
+      <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
+        {/* Gallery Button - Moved before filter */}
+        <button
+          onClick={() => navigate('/gallery')}
+          className="flex items-center justify-center w-10 h-10 text-white rounded-lg backdrop-blur-sm transition-all duration-300"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#333333'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = ''
+          }}
+          title="Gallery"
+        >
+          <Image size={22} />
+        </button>
+
+        {/* Filter Dropdown - Only for logged-in users */}
+        {isAuthenticated && (
+          <div className="relative filter-dropdown">
             <button
-              onClick={isAuthenticated ? handleLogout : () => navigate('/auth')}
-              className="px-4 py-2 text-white hover:text-blue-400 transition-colors rounded-lg hover:bg-white/10"
+              onClick={() => setFilterOpen(!filterOpen)}
+              className="flex items-center justify-center w-10 h-10 text-white rounded-lg backdrop-blur-sm transition-all duration-300"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#333333'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = ''
+              }}
+              title="Filter content"
             >
-              {isAuthenticated ? 'Logout' : 'Login'}
+              <Filter size={18} />
             </button>
+            {filterOpen && (
+              <div 
+                className="absolute top-12 right-0 rounded-2xl shadow-2xl overflow-hidden min-w-[120px] backdrop-blur-sm"
+                style={{ backgroundColor: '#333333' }}
+              >
+                <button
+                  onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }}
+                  className={`w-full p-3 text-sm transition-colors flex items-center justify-center hover:bg-white/10 rounded-xl m-1 ${
+                    currentFilter === 'images' ? 'bg-white/20 text-white' : 'text-white/80'
+                  }`}
+                >
+                  <Image size={16} />
+                </button>
+                <button
+                  onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }}
+                  className={`w-full p-3 text-sm transition-colors flex items-center justify-center hover:bg-white/10 rounded-xl m-1 ${
+                    currentFilter === 'videos' ? 'bg-white/20 text-white' : 'text-white/80'
+                  }`}
+                >
+                  <Video size={16} />
+                </button>
+              </div>
+            )}
           </div>
-        </div>
+        )}
+        
+        {/* Notification Bell - Only for logged-in users */}
+        {isAuthenticated && (
+          <button
+            onClick={() => navigate('/profile', { state: { activeTab: 'notification' } })}
+            className="relative flex items-center justify-center w-10 h-10 text-white rounded-lg backdrop-blur-sm transition-all duration-300"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#333333'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = ''
+            }}
+            title="Notifications"
+          >
+            <Bell size={18} />
+            {notifications.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {notifications.length}
+              </span>
+            )}
+          </button>
+        )}
+        
+        {/* User Avatar Dropdown - Only for authenticated users */}
+        {isAuthenticated ? (
+          <div className="relative user-dropdown">
+            <button
+              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+              className="flex items-center justify-center w-10 h-10 text-white rounded-lg backdrop-blur-sm transition-all duration-300"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#333333'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = ''
+              }}
+              title="User menu"
+            >
+              <User size={18} />
+            </button>
+            {userDropdownOpen && (
+              <div 
+                className="absolute top-12 right-0 rounded-2xl shadow-2xl overflow-hidden min-w-[140px] backdrop-blur-sm"
+                style={{ backgroundColor: '#333333' }}
+              >
+                <button
+                  onClick={() => { navigate('/profile'); setUserDropdownOpen(false) }}
+                  className="w-full px-4 py-3 text-sm text-left transition-colors flex items-center gap-2 text-white/80 hover:bg-white/10 hover:text-white"
+                >
+                  <User size={16} />
+                  Profile
+                </button>
+                <button
+                  onClick={() => { 
+                    authService.logout()
+                    setIsAuthenticated(false)
+                    setUserDropdownOpen(false)
+                    navigate('/')
+                  }}
+                  className="w-full px-4 py-3 text-sm text-left transition-colors flex items-center gap-2 text-white/80 hover:bg-white/10 hover:text-white"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsAuthenticated(true)}
+            className="px-4 py-2 text-black bg-white hover:bg-gray-200 transition-colors rounded-lg"
+          >
+            Login (Demo)
+          </button>
+        )}
       </div>
       
       {/* Notification System */}
       {notifications.length > 0 && (
-        <div className="fixed top-20 right-4 z-50 space-y-2">
+        <div className="fixed top-16 right-4 z-50 space-y-2">
           {notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`max-w-sm bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 overflow-hidden ${
+              className={`w-80 bg-gray-900 rounded-xl shadow-2xl transition-all duration-300 overflow-hidden ${
                 notification.type === 'complete' ? 'cursor-pointer hover:bg-gray-800' : ''
               }`}
               onClick={() => {
@@ -1371,10 +1685,10 @@ const WebsiteLayout: React.FC = () => {
                 }
               }}
             >
-              <div className="flex items-start space-x-3 p-4">
-                {/* Media Preview */}
+              <div className="flex items-center space-x-3 p-3">
+                {/* Media Preview - Smaller */}
                 {notification.mediaUrl && (
-                  <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
                     {notification.mediaType === 'video' ? (
                       <video
                         src={notification.mediaUrl}
@@ -1391,18 +1705,12 @@ const WebsiteLayout: React.FC = () => {
                 </div>
                 )}
                 
-                {/* Content */}
+                {/* Content - Simplified */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white">{notification.title}</p>
-                  {notification.message && (
-                    <p className="text-xs text-gray-400 mt-1">{notification.message}</p>
+                  <p className="text-sm font-medium text-white truncate">{notification.title}</p>
+                  {notification.type === 'complete' && (
+                    <p className="text-xs text-green-400">Click to view</p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(notification.timestamp).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </p>
                 </div>
                 
                 {/* Close Button */}
@@ -1411,9 +1719,9 @@ const WebsiteLayout: React.FC = () => {
                     e.stopPropagation()
                     removeNotification(notification.id)
                   }}
-                  className="flex-shrink-0 text-white/60 hover:text-white transition-colors"
+                  className="flex-shrink-0 text-white/60 hover:text-white transition-colors p-1"
                 >
-                  <X size={16} />
+                  <X size={14} />
                 </button>
               </div>
             </div>
@@ -1452,7 +1760,7 @@ const WebsiteLayout: React.FC = () => {
         {(sidebarMode === 'upload' || sidebarMode === 'remix') && (
           <div className="flex flex-col h-full">
             {/* Media Preview Header */}
-            <div className="px-8 py-6 pb-10 border-b border-white/10">
+            <div className="px-8 py-6 pb-10 pt-12 border-b border-white/10">
               {/* Media Preview */}
               <div className="relative">
                 <div className="aspect-video rounded-lg overflow-hidden bg-white/5">
@@ -1545,8 +1853,8 @@ const WebsiteLayout: React.FC = () => {
                           Variations
                         </label>
                 </div>
-                      <div className="flex space-x-1">
-                        {[1, 2, 3, 4].map((num) => (
+                                            <div className="flex space-x-1">
+                        {[1, 2].map((num) => (
                           <button 
                             key={num}
                             onClick={() => setSelectedVariation(num)}
@@ -1560,7 +1868,7 @@ const WebsiteLayout: React.FC = () => {
                           >
                             {num}
                           </button>
-                  ))}
+                        ))}
                 </div>
                     </div>
                   </div>
@@ -1677,8 +1985,26 @@ const WebsiteLayout: React.FC = () => {
         <div 
           ref={contentRef}
           onScroll={handleScroll}
-          className={`p-6 pt-24 ${isAuthenticated ? 'h-screen overflow-y-auto' : isContentLimited ? 'h-screen overflow-hidden' : 'h-screen overflow-y-auto'}`}
+          className={`p-6 ${isAuthenticated ? 'h-screen overflow-y-auto' : isContentLimited ? 'h-screen overflow-hidden' : 'h-screen overflow-y-auto'}`}
         >
+          {/* Creator Filter Banner */}
+          {creatorFilter && (
+            <div className="mb-4 flex items-center justify-between bg-white/5 backdrop-blur-sm rounded-lg p-3">
+              <span className="text-white/80 text-sm">
+                Showing content by User {creatorFilter.substring(0, 8)}
+              </span>
+              <button
+                onClick={() => {
+                  setCreatorFilter(null)
+                  addNotification('Filter cleared', 'All content is now visible', 'info')
+                }}
+                className="text-white/60 hover:text-white text-sm px-2 py-1 rounded hover:bg-white/10 transition-colors"
+              >
+                Clear filter ✕
+              </button>
+            </div>
+          )}
+
           {/* Masonry-style Grid - Minimal gaps for human eye */}
           <div className="columns-2 gap-1 mx-auto" style={{ maxWidth: '1200px' }}>
             {generateItems(Math.min(items, maxItems)).map((item) => {
@@ -1686,30 +2012,35 @@ const WebsiteLayout: React.FC = () => {
               return (
                 <div key={item.id} className="break-inside-avoid mb-1">
                   <MediaCard
-                    id={item.id.toString()}
-                    type="photo"
+                    id={item.media ? item.media.id : item.id.toString()}
+                    type={item.media ? item.media.type : "photo"}
                     title={item.label}
-                    prompt="AI generated content"
+                    prompt={item.media ? item.media.prompt : "AI generated content"}
                     gradient={item.gradient}
                     icon={IconComponent}
-                    creatorName={`Creator ${item.id}`}
+                    creatorName={item.media ? `User ${item.media.userId.substring(0, 8)}` : `Creator ${item.id}`}
                     isLoggedIn={isAuthenticated}
                     onLike={handleLike}
-                    onRemix={handleRemix}
+                    onRemix={item.media?.allowRemix ? handleRemix : () => {}} // Only show remix if allowed
                     onDownload={handleDownload}
-                    onDelete={handleDelete}
+                    onDelete={undefined} // Don't allow deletion of other users' content
                     onShowAuth={() => navigate('/auth')}
                     onFilterAiAsBrush={() => {
                       addNotification('Filtered to show #AiAsABrush content', 'info')
                     }}
                     onFilterCreator={(creatorName) => {
-                      addNotification(`Filtered to show content by ${creatorName}`, 'info')
+                      // Extract userId from creatorName (format: "User 12345678")
+                      const userId = item.media?.userId
+                      if (userId) {
+                        setCreatorFilter(userId)
+                        addNotification(`Showing content by ${creatorName}`, 'success')
+                      }
                     }}
                     onShowMedia={(id, _title, prompt) => {
                       const list = generateItems(Math.min(items, maxItems)).map((g) => ({
-                        id: g.id.toString(),
-                        url: `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjEyMDAiIHZpZXdCb3g9IjAgMCA4MDAgMTIwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSIxMjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjQwMCIgeT0iNjAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QbGFjZWhvbGRlciBJbWFnZTwvdGV4dD4KPC9zdmc+`,
-                        prompt: prompt || 'AI generated content',
+                        id: g.media ? g.media.id : g.id.toString(),
+                        url: g.media ? g.media.url : `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjEyMDAiIHZpZXdCb3g9IjAgMCA4MDAgMTIwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSIxMjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjQwMCIgeT0iNjAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QbGFjZWhvbGRlciBJbWFnZTwvdGV4dD4KPC9zdmc+`,
+                        prompt: g.media ? g.media.prompt : (prompt || 'AI generated content'),
                         aspectRatio: g.aspectRatio
                       }))
                       const index = list.findIndex(m => m.id === id)
@@ -1717,11 +2048,11 @@ const WebsiteLayout: React.FC = () => {
                       setViewerIndex(Math.max(0, index))
                       setViewerOpen(true)
                     }}
-                    isLiked={likedItems.has(item.id.toString())}
-                    likesCount={item.id * 3 + 5}
-                    remixesCount={item.id * 2 + 1}
-                    isAiAsBrush={item.id % 2 === 0} // Show even IDs as #AiAsABrush
-                                        aspectRatio={item.aspectRatio}
+                    isLiked={likedItems.has(item.media ? item.media.id : item.id.toString())}
+                    likesCount={item.media ? item.media.likes : (item.id * 3 + 5)}
+                    remixesCount={item.media ? item.media.remixCount : (item.id * 2 + 1)}
+                    isAiAsBrush={item.media ? item.media.style?.includes('Brush') : (item.id % 2 === 0)}
+                    aspectRatio={item.aspectRatio}
                   />
                 </div>
               )

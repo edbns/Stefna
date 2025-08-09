@@ -69,15 +69,16 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
 
   if (media.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-4">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white/40">
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white/40">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
             <circle cx="8.5" cy="8.5" r="1.5"/>
             <polyline points="21,15 16,10 5,21"/>
           </svg>
         </div>
-        <p className="text-white/60 text-center">No media found</p>
+        <p className="text-white/60 text-lg text-center">No media found</p>
+        <p className="text-white/40 text-sm text-center mt-2">Media will appear here</p>
       </div>
     )
   }
@@ -85,32 +86,22 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   return (
     <div className={`${className}`} ref={gridRef}>
       <div 
-        className="grid gap-4 auto-rows-[10px]" 
-        style={{ 
-          gridTemplateColumns: `repeat(${columns}, 1fr)`,
-        }}
+        className="columns-3 gap-1 mx-auto" 
+        style={{ maxWidth: '1200px' }}
       >
         {media.map((item, index) => {
-          // Calculate grid row span based on aspect ratio
-          // Taller images (lower aspect ratio) need more rows
-          const baseHeight = 200; // Base height in pixels
-          const itemHeight = Math.ceil(baseHeight / (item.aspectRatio || 1));
-          const rowSpan = Math.ceil(itemHeight / 10); // 10px per row
-          
           return (
             <div
               key={item.id}
-              className="relative group cursor-pointer bg-white/5 rounded-lg overflow-hidden transition-all duration-300 hover:bg-white/10 hover:scale-[1.02]"
-              style={{ 
-                gridRowEnd: `span ${rowSpan}`,
-              }}
+              className="break-inside-avoid mb-1 relative group cursor-pointer bg-white/5 rounded-lg overflow-hidden transition-all duration-300 hover:bg-white/10 hover:scale-[1.02]"
               onMouseEnter={() => setHoveredMedia(item.id)}
               onMouseLeave={() => setHoveredMedia(null)}
               onClick={() => onMediaClick?.(item)}
             >
               {/* Media Container */}
               <div 
-                className="relative w-full h-full overflow-hidden rounded-lg"
+                className="relative w-full overflow-hidden rounded-lg"
+                style={{ aspectRatio: item.aspectRatio || 1 }}
               >
                   {/* Media */}
                   {item.type === 'video' ? (

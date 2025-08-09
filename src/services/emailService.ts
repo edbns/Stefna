@@ -107,32 +107,33 @@ class EmailService {
       : 'https://stefna.xyz/auth'
 
     return `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #000000; color: #ffffff; min-height: 100vh;">
-        <div style="text-align: center; padding: 60px 20px;">
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #000000; color: #ffffff;">
+        <div style="text-align: center; padding: 40px 20px;">
           <!-- Logo -->
-          <img src="https://stefna.xyz/logo.png" alt="Stefna" style="width: 120px; height: 120px; margin-bottom: 40px;">
+          <img src="https://stefna.xyz/logo.png" alt="Stefna" style="width: 80px; height: 80px; margin-bottom: 30px;">
           
           <!-- Main content -->
-          <div style="background-color: #1a1a1a; padding: 40px; border-radius: 15px; margin-bottom: 30px;">
-            <h1 style="color: #ffffff; font-size: 28px; margin-bottom: 30px; font-weight: 300;">You've been invited! 🎨</h1>
+          <div style="background-color: #1a1a1a; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
+            <h1 style="color: #ffffff; font-size: 24px; margin-bottom: 10px;">You've been invited!</h1>
+            <p style="color: #cccccc; font-size: 16px; margin-bottom: 30px;">Join Stefna and start creating with AI</p>
             
-            <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            <p style="color: #cccccc; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
               <strong>${referrerName}</strong> thinks you'd love Stefna - the AI-powered creative platform where you can transform photos and videos with just a prompt.
             </p>
             
-            <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-              Create stunning AI art, remix existing content, and explore endless creative possibilities. It's like having a professional artist at your fingertips.
+            <p style="color: #cccccc; font-size: 14px; line-height: 1.5; margin-bottom: 30px;">
+              Create stunning AI art, remix existing content, and explore endless creative possibilities.
             </p>
             
-            <div style="background-color: #2a2a2a; padding: 20px; border-radius: 10px; margin: 30px 0;">
-              <h2 style="color: #ffffff; font-size: 18px; margin-bottom: 10px;">🎁 Special Bonus</h2>
-              <p style="color: #cccccc; font-size: 14px; margin: 0;">
+            <div style="background-color: #1a1a1a; padding: 20px; border-radius: 10px; margin: 30px 0; border: 1px solid #333333;">
+              <p style="color: #888888; font-size: 12px; text-transform: uppercase; margin-bottom: 10px;">Special Bonus</p>
+              <p style="color: #ffffff; font-size: 14px; margin: 0;">
                 Sign up with this invite and get <strong>25 bonus tokens</strong> to start creating immediately!
               </p>
             </div>
             
             <a href="${signupUrl}" 
-               style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; font-size: 16px; margin: 20px 0;">
+               style="display: inline-block; background-color: #ffffff; color: #000000; text-decoration: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; font-size: 16px; margin: 20px 0;">
               Join Stefna Now
             </a>
             
@@ -146,19 +147,19 @@ class EmailService {
             <h2 style="color: #ffffff; font-size: 20px; margin-bottom: 20px;">What you can do with Stefna:</h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left;">
               <div>
-                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">🎨 AI Art Generation</h3>
+                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">AI Art Generation</h3>
                 <p style="color: #cccccc; font-size: 14px;">Create stunning images from text prompts</p>
               </div>
               <div>
-                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">🎬 Video Transformation</h3>
+                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">Video Transformation</h3>
                 <p style="color: #cccccc; font-size: 14px;">Transform videos with AI-powered effects</p>
               </div>
               <div>
-                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">🔄 Content Remixing</h3>
+                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">Content Remixing</h3>
                 <p style="color: #cccccc; font-size: 14px;">Remix and enhance existing media</p>
               </div>
               <div>
-                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">🚀 Instant Results</h3>
+                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">Instant Results</h3>
                 <p style="color: #cccccc; font-size: 14px;">Get results in seconds, not hours</p>
               </div>
             </div>
@@ -169,7 +170,7 @@ class EmailService {
         <div style="border-top: 1px solid #333333; padding: 30px 20px; text-align: center;">
           <p style="color: #ffffff; font-size: 14px; margin-bottom: 5px;">Stefna - Turn Moments into Masterpieces—No Limits</p>
           <p style="color: #888888; font-size: 12px; margin-bottom: 5px;">This email was sent to ${data.friendEmail}</p>
-          <p style="color: #888888; font-size: 12px;">If you have any questions, contact us at <span style="background-color: #ffff00; color: #000000; padding: 2px 4px;">hello@stefna.xyz</span></p>
+          <p style="color: #888888; font-size: 12px;">If you have any questions, contact us at hello@stefna.xyz</p>
         </div>
       </div>
     `

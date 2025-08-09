@@ -162,9 +162,17 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
           {/* Prompt - Centered under media */}
           <div className="mt-6 text-center max-w-2xl">
-            <div className="text-white text-sm leading-relaxed">
+            <div className="text-white text-sm leading-relaxed group relative">
               <span className="text-white/60">Prompt: </span>
-              {current.prompt}
+              <span className="cursor-pointer truncate block" title={current.prompt}>
+                {current.prompt}
+              </span>
+              {/* Full prompt on hover */}
+              {current.prompt.length > 60 && (
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-3 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-normal max-w-md z-50">
+                  {current.prompt}
+                </div>
+              )}
             </div>
           </div>
 
