@@ -160,11 +160,12 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
             </button>
           )}
 
-          {/* Prompt - Centered under media */}
-          <div className="mt-6 text-center max-w-2xl">
-            <div className="text-white text-sm leading-relaxed group relative">
+          {/* Prompt and Actions - Same line layout */}
+          <div className="mt-6 text-center max-w-4xl">
+            {/* Prompt line with action buttons underneath */}
+            <div className="text-white text-sm leading-relaxed group relative mb-4">
               <span className="text-white/60">Prompt: </span>
-              <span className="cursor-pointer truncate block" title={current.prompt}>
+              <span className="cursor-pointer truncate inline" title={current.prompt}>
                 {current.prompt}
               </span>
               {/* Full prompt on hover */}
@@ -174,28 +175,28 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Actions - Centered in one row */}
-          <div className="mt-4 flex items-center space-x-6">
-            <button 
-              onClick={handleLike}
-              className="flex flex-col items-center space-y-1 text-white hover:text-white/80 transition-colors"
-            >
-              <Heart 
-                size={16} 
-                className={`${isLiked ? 'text-red-500 fill-red-500' : 'text-white'}`} 
-              />
-              <span className="text-xs">{localLikes > 0 ? localLikes : 'Like'}</span>
-            </button>
-            
-            <button
-              onClick={handleRemix}
-              className="flex flex-col items-center space-y-1 text-white hover:text-white/80 transition-colors"
-            >
-              <RemixIcon size={16} className="text-white" />
-              <span className="text-xs">{localRemixes > 0 ? localRemixes : 'Remix'}</span>
-            </button>
+            {/* Actions - Centered under prompt */}
+            <div className="flex items-center justify-center space-x-6">
+              <button 
+                onClick={handleLike}
+                className="flex flex-col items-center space-y-1 text-white hover:text-white/80 transition-colors"
+              >
+                <Heart 
+                  size={16} 
+                  className={`${isLiked ? 'text-red-500 fill-red-500' : 'text-white'}`} 
+                />
+                <span className="text-xs">{localLikes > 0 ? localLikes : 'Like'}</span>
+              </button>
+              
+              <button
+                onClick={handleRemix}
+                className="flex flex-col items-center space-y-1 text-white hover:text-white/80 transition-colors"
+              >
+                <RemixIcon size={16} className="text-white" />
+                <span className="text-xs">{localRemixes > 0 ? localRemixes : 'Remix'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

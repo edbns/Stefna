@@ -101,20 +101,20 @@ const WebsiteLayout: React.FC = () => {
   // Load authentication state on mount and listen for changes
   useEffect(() => {
     const updateAuthState = () => {
-      const authState = authService.getAuthState()
+    const authState = authService.getAuthState()
       const wasAuthenticated = isAuthenticated
-      setIsAuthenticated(authState.isAuthenticated)
-      
-      if (authState.user) {
-        // Map user tier to UserTier enum
-        const tierMap: { [key: string]: UserTier } = {
-          'registered': UserTier.REGISTERED, 
-          'pro': UserTier.VERIFIED,
-          'verified': UserTier.VERIFIED,
-          'contributor': UserTier.CONTRIBUTOR
-        }
-        setUserTier(tierMap[authState.user.tier] || UserTier.REGISTERED)
+    setIsAuthenticated(authState.isAuthenticated)
+    
+    if (authState.user) {
+      // Map user tier to UserTier enum
+      const tierMap: { [key: string]: UserTier } = {
+        'registered': UserTier.REGISTERED, 
+        'pro': UserTier.VERIFIED,
+        'verified': UserTier.VERIFIED,
+        'contributor': UserTier.CONTRIBUTOR
       }
+      setUserTier(tierMap[authState.user.tier] || UserTier.REGISTERED)
+    }
 
       // Check for pending generation state after successful authentication
       if (!wasAuthenticated && authState.isAuthenticated) {
@@ -597,7 +597,7 @@ const WebsiteLayout: React.FC = () => {
             // Clear uploaded media state to prevent triggering variation pipeline later
             setUploadedMedia(null)
             setUploadedFile(null)
-            setSidebarMode('closed')
+            // Note: Keep sidebar open so user can see the result and continue working
             
             // CRITICAL: Return immediately to prevent any follow-up calls
             return
@@ -1548,13 +1548,13 @@ const WebsiteLayout: React.FC = () => {
       {/* Top Right Navigation Buttons */}
       <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
         {/* Gallery Button - Moved before filter */}
-        <button
-          onClick={() => navigate('/gallery')}
+              <button
+                onClick={() => navigate('/gallery')}
           className="flex items-center justify-center w-10 h-10 text-white rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-white/20"
-          title="Gallery"
-        >
+                title="Gallery"
+              >
           <Image size={22} />
-        </button>
+              </button>
 
         {/* Filter Dropdown - Only for logged-in users */}
         {isAuthenticated && (
@@ -1589,15 +1589,15 @@ const WebsiteLayout: React.FC = () => {
                   <Video size={16} />
                   <span>Videos</span>
                 </button>
-              </div>
+          </div>
             )}
           </div>
         )}
         
         {/* Notification Bell - Only for logged-in users */}
-        {isAuthenticated && (
+            {isAuthenticated && (
           <div className="relative notification-dropdown">
-            <button
+              <button
               onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
               className="relative flex items-center justify-center w-10 h-10 text-white rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-white/20"
               title="Notifications"
@@ -1608,7 +1608,7 @@ const WebsiteLayout: React.FC = () => {
                   {notificationCount}
                 </span>
               )}
-            </button>
+              </button>
             {notificationDropdownOpen && (
               <div 
                 className="absolute top-12 right-0 rounded-2xl shadow-2xl overflow-hidden w-80 backdrop-blur-sm"
@@ -1669,10 +1669,10 @@ const WebsiteLayout: React.FC = () => {
                 >
                   <LogOut size={16} />
                   Logout
-                </button>
-              </div>
-            )}
+            </button>
           </div>
+            )}
+        </div>
         ) : (
           <button
             onClick={() => navigate('/auth')}
@@ -1868,7 +1868,7 @@ const WebsiteLayout: React.FC = () => {
                           Variations
                         </label>
                 </div>
-                                            <div className="flex space-x-1">
+                      <div className="flex space-x-1">
                         {[1, 2].map((num) => (
                           <button 
                             key={num}
@@ -1883,7 +1883,7 @@ const WebsiteLayout: React.FC = () => {
                           >
                             {num}
                           </button>
-                        ))}
+                  ))}
                 </div>
                     </div>
                   </div>
@@ -2000,7 +2000,7 @@ const WebsiteLayout: React.FC = () => {
         <div 
           ref={contentRef}
           onScroll={handleScroll}
-          className={`p-6 ${isAuthenticated ? 'h-screen overflow-y-auto' : isContentLimited ? 'h-screen overflow-hidden' : 'h-screen overflow-y-auto'}`}
+          className={`p-6 pt-20 ${isAuthenticated ? 'h-screen overflow-y-auto' : isContentLimited ? 'h-screen overflow-hidden' : 'h-screen overflow-y-auto'}`}
         >
           {/* Creator Filter Banner */}
           {creatorFilter && (
@@ -2067,7 +2067,7 @@ const WebsiteLayout: React.FC = () => {
                     likesCount={item.media ? item.media.likes : (item.id * 3 + 5)}
                     remixesCount={item.media ? item.media.remixCount : (item.id * 2 + 1)}
                     isAiAsBrush={item.media ? item.media.style?.includes('Brush') : (item.id % 2 === 0)}
-                    aspectRatio={item.aspectRatio}
+                                        aspectRatio={item.aspectRatio}
                   />
                 </div>
               )
