@@ -58,19 +58,19 @@ class AIGenerationService {
 
   constructor() {
     // Initialize AIML client with API key (try both possible names)
-    const apiKey = import.meta.env.VITE_AIMLAPI_API_KEY || import.meta.env.VITE_AIML_API_KEY
+    const apiKey = import.meta.env.VITE_AIML_API_KEY
+    
+    // Environment check for debugging
     console.log('🔍 Environment check:', {
-      VITE_AIMLAPI_API_KEY: import.meta.env.VITE_AIMLAPI_API_KEY ? '✅ Found' : '❌ Missing',
       VITE_AIML_API_KEY: import.meta.env.VITE_AIML_API_KEY ? '✅ Found' : '❌ Missing',
       allEnvVars: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
-    })
-    
-    if (apiKey) {
-      console.log('AIML client initialized successfully (Netlify Function)')
-    } else {
+    });
+
+    if (!apiKey) {
       console.error('Missing AIML API key!')
-      console.error('Expected one of: VITE_AIMLAPI_API_KEY or VITE_AIML_API_KEY')
+      console.error('Expected: VITE_AIML_API_KEY')
       console.error('Available VITE_ vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')))
+      return null
     }
   }
 

@@ -68,12 +68,12 @@ class EnvironmentService {
 
   // Validation methods
   isConfigured(): boolean {
-    // Check if AIML API key is configured (try both possible names)
-    const aimlApiKey = import.meta.env.VITE_AIMLAPI_API_KEY || import.meta.env.VITE_AIML_API_KEY
+    // Check if AIML API key is configured (standardized to single name)
+    const aimlApiKey = import.meta.env.VITE_AIML_API_KEY
     
     if (!aimlApiKey) {
       console.error('Missing AIML API key!')
-      console.error('Expected one of: VITE_AIMLAPI_API_KEY or VITE_AIML_API_KEY')
+      console.error('Expected: VITE_AIML_API_KEY')
       console.error('Available VITE_ vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')))
       return false
     }
@@ -106,7 +106,7 @@ class EnvironmentService {
     return {
       fullyConfigured: this.isConfigured(),
       supabaseConfigured: !!(this.config.supabaseUrl && this.config.supabaseAnonKey),
-      aimlConfigured: !!(import.meta.env.VITE_AIMLAPI_API_KEY || import.meta.env.VITE_AIML_API_KEY)
+      aimlConfigured: !!import.meta.env.VITE_AIML_API_KEY
     }
   }
 }

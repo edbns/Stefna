@@ -1,200 +1,229 @@
-## Scheduled Cleanup
+# Stefna - AI-Powered Photo & Video Editing Platform
 
-Netlify Scheduled Functions can call `/.netlify/functions/cleanup-otps` daily to remove expired or used OTPs. Configure in Netlify UI or add a background scheduler.
-# Stefna - AI Photo App 🎨
+## 🎯 **Core Purpose**
+Stefna is a creative AI-powered platform that transforms existing photos and videos through advanced AI editing. Unlike traditional text-to-image generators, Stefna focuses on **image-to-image (I2I)** and **video-to-video (V2V)** transformations, allowing users to remix and enhance their existing media with custom prompts and preset styles.
 
-A beautiful, immersive AI-powered photo and video generation platform with a neon dark UI.
+## ✨ **Main Features**
 
-## 🚀 Features
+### 🖼️ **Media Upload & Remix**
+- **Core Requirement**: Users upload photos/videos for AI editing
+- **Remix Functionality**: Users can remix existing media from the public feed
+- **Nothing works without media** - this is the fundamental requirement
 
-- **AI Generation**: Create stunning images and videos with AIML API
-- **Smart Token System**: Intelligent distribution of 250M tokens
-- **Magic Link Authentication**: Passwordless login with Supabase
-- **Email Integration**: Beautiful emails with Resend
-- **User Dashboard**: Track creations, downloads, likes, and remixes
-- **Infinite Scroll**: Seamless content browsing
-- **Responsive Design**: Works on all devices
+### 🎨 **AI-Powered Transformations**
+- **Custom Prompts**: Users enter their own creative instructions
+- **Preset Styles**: Pre-built transformations including:
+  - Anime
+  - Cyberpunk
+  - Oil Painting
+  - Studio Ghibli
+  - Photorealistic
+  - Watercolor
+- **Always I2I/V2V**: Never text-to-image - always transforms existing media
 
-## 🛠️ Setup
+### 👥 **User Management & Privacy**
+- **User Profiles**: Complete settings and preferences
+- **Share to Feed**: Control if media appears publicly
+- **Allow Remix**: Control if others can remix your media (only works when sharing is ON)
+- **Private "All Media" Tab**: Personal content storage
+- **Public Feed**: Gallery of shared media
 
-### 1. Clone the Repository
+### 🔄 **Content Flow**
+1. User uploads photo/video OR selects media to remix
+2. User enters custom prompt OR selects preset style
+3. AI processes the media with the prompt/style
+4. Result automatically saves to user's private media tab
+5. User can choose to share to public feed and allow remixing
+6. Media appears in public feed/gallery if shared
+
+## 🏗️ **Technical Architecture**
+
+### **Frontend**
+- **React** with **Vite** for fast development
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **Responsive design** for all devices
+
+### **Backend**
+- **Netlify Functions** for serverless backend operations
+- **AIML API** integration for AI generation
+- **Cloudinary** for secure media hosting
+- **JWT authentication** for user sessions
+
+### **Database**
+- **Supabase** with PostgreSQL
+- **Row Level Security (RLS)** for data privacy
+- **Service role access** for backend operations
+- **Real-time subscriptions** for live updates
+
+### **Media Processing**
+- **Secure uploads** via signed Cloudinary URLs
+- **Automatic media optimization**
+- **Support for high-resolution content**
+- **Efficient storage and retrieval**
+
+## 🚀 **Getting Started**
+
+### **Prerequisites**
+- Node.js 18+ 
+- npm or yarn
+- Supabase account
+- Cloudinary account
+- AIML API account
+- Netlify account
+
+### **Environment Variables**
+Create a `.env` file based on `env.example`:
 
 ```bash
-git clone <repository-url>
-cd Stefna
-npm install
-```
-
-### 2. Environment Configuration
-
-Copy the example environment file and configure your API keys:
-
-```bash
-cp env.example .env
-```
-
-Edit `.env` and add your API keys:
-
-```env
-# AIML API Configuration
-VITE_AIMLAPI_API_KEY=your_aiml_api_key_here
-
-# Email Service (Resend)
-VITE_RESEND_API_KEY=your_resend_api_key_here
-
-# Backend Configuration (Netlify Functions)
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-RESEND_API_KEY=your_resend_api_key
-JWT_SECRET=your_jwt_secret
-
-# Optional: Development Settings
+# Frontend (Vite)
+VITE_AIML_API_KEY=your_aiml_api_key_here
+VITE_SUPABASE_URL=your_supabase_url_here
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 VITE_APP_ENV=development
-VITE_DEBUG_MODE=false
+VITE_DEBUG_MODE=true
+
+# Backend (Netlify Functions)
+AIML_API_KEY=your_aiml_api_key_here
+AIML_API_URL=https://api.aimlapi.com
+CLOUDINARY_API_KEY=your_cloudinary_api_key_here
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret_here
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name_here
+JWT_SECRET=your_jwt_secret_key_here
+RESEND_API_KEY=your_resend_api_key_here
+SUPABASE_URL=your_supabase_url_here
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
 ```
 
-### 3. API Keys Setup
-
-#### AIML API
-1. Sign up at [AIML API](https://aimlapi.com)
-2. Get your API key from the dashboard
-3. Add to `.env`: `VITE_AIMLAPI_API_KEY=your_key`
-
-#### Resend (Email Service)
-1. Sign up at [Resend](https://resend.com)
-2. Create an API key
-3. Add to `.env`: `VITE_RESEND_API_KEY=your_key`
-
-#### Custom OTP Authentication
-The app uses a custom OTP (One-Time Password) authentication system with:
-
-1. **Resend** for sending branded emails
-2. **Supabase** for storing user data and OTPs (backend only)
-3. **Netlify Functions** for secure backend operations
-
-#### Setup Instructions
-
-1. **Resend (Email Service)**
-   - Sign up at [Resend](https://resend.com)
-   - Create an API key
-   - Add to Netlify environment variables: `RESEND_API_KEY=your_key`
-
-2. **Supabase (Database - Backend Only)**
-   - Create a project at [Supabase](https://supabase.com)
-   - Run the SQL schema in `database-schema.sql`
-   - Get your project URL and service role key
-   - Add to Netlify environment variables (not frontend):
-     - `SUPABASE_URL=your_project_url`
-     - `SUPABASE_SERVICE_ROLE_KEY=your_service_role_key`
-     - `JWT_SECRET=your_jwt_secret_key`
-
-### 4. Development
-
+### **Installation**
 ```bash
+# Clone the repository
+git clone https://github.com/edbns/Stefna.git
+cd Stefna
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp env.example .env
+# Edit .env with your actual values
+
+# Start development server
 npm run dev
 ```
 
-The app will run in demo mode if API keys are not configured.
-
-### 5. Production Build
-
-```bash
-npm run build
+### **Database Setup**
+Run the database migration script in your Supabase SQL Editor:
+```sql
+-- Use the simple-database-migration.sql file
+-- This sets up all required tables, policies, and functions
 ```
 
-## 🏗️ Architecture
+## 🔧 **Development**
 
-### Services
+### **Available Scripts**
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+```
 
-- **`EnvironmentService`**: Centralized API key management
-- **`AIGenerationService`**: AI content generation with token tracking
-- **`TokenService`**: Smart token distribution system
-- **`AuthService`**: Custom OTP authentication management
-- **`EmailService`**: Magic links and notifications
+### **Project Structure**
+```
+src/
+├── components/      # React components
+├── screens/         # Page components
+├── services/        # API and business logic
+├── stores/          # State management
+├── utils/           # Utility functions
+└── config/          # Configuration files
 
-### Components
+netlify/
+└── functions/       # Serverless backend functions
+```
 
-- **`WebsiteLayout`**: Main application layout
-- **`AuthScreen`**: Custom OTP authentication interface
-- **`UserDashboard`**: User profile and statistics
-- **`GenerationProgress`**: Real-time generation status
-- **`TokenCounter`**: Live token usage display
+### **Key Components**
+- **WebsiteLayout.tsx**: Main application layout and AI generation logic
+- **MediaCard.tsx**: Individual media item display and controls
+- **GalleryScreen.tsx**: Media gallery and feed management
+- **aiGenerationService.ts**: AI generation service integration
+- **interactionService.ts**: Social features (likes, remixes, shares)
 
-## 🔧 Configuration
+## 🎨 **AI Generation Features**
 
-### Demo Mode
-When API keys are not configured, the app runs in demo mode:
-- Mock AI generation with realistic progress
-- Local storage for user data
-- Simulated email sending
-- No external API calls
+### **Supported Models**
+- **Image-to-Image (I2I)**: Transform photos with custom prompts
+- **Video-to-Video (V2V)**: Transform videos with custom prompts
+- **Preset Styles**: Quick transformation with predefined artistic styles
 
-### Token System
-- **Guest**: 5 tokens/day
-- **Registered**: 15 tokens/day
-- **Verified**: 30 tokens/day
-- **Contributor**: 50 tokens/day
+### **Generation Process**
+1. **Media Upload**: Secure upload to Cloudinary
+2. **Prompt Input**: Custom text or preset selection
+3. **AI Processing**: Server-side generation via AIML API
+4. **Result Storage**: Automatic save to user's media library
+5. **Sharing Options**: Optional public feed publication
 
-### Generation Costs
-- **Photo (Standard)**: 1 token
-- **Photo (High Quality)**: 2 tokens
-- **Video (Standard)**: 3 tokens
-- **Video (High Quality)**: 5 tokens
+## 🔒 **Security Features**
 
-## 🎨 UI/UX Features
+### **Data Privacy**
+- **Row Level Security**: Database-level access control
+- **User Isolation**: Users can only access their own media
+- **Guest Support**: Anonymous users with temporary IDs
+- **Secure Uploads**: Signed URLs prevent unauthorized access
 
-- **Neon Dark Theme**: Immersive dark UI with neon accents
-- **Floating Controls**: Minimal, non-intrusive interface
-- **Smooth Animations**: Micro-interactions throughout
-- **Responsive Design**: Works on all screen sizes
-- **Accessibility**: WCAG compliant
+### **Authentication**
+- **JWT Tokens**: Secure session management
+- **OTP Verification**: Two-factor authentication support
+- **Service Role Access**: Backend operations bypass user restrictions
 
-## 🔒 Security
+## 📱 **User Experience**
 
-- **Environment Variables**: All API keys stored securely
-- **Magic Link Authentication**: Passwordless, secure login
-- **Token Validation**: Prevents abuse and tracks usage
-- **Rate Limiting**: Built-in protection against spam
+### **Interface Design**
+- **Minimal & Clean**: Black and white color scheme
+- **Full-Screen Layout**: Immersive editing experience
+- **Responsive Design**: Works on all device sizes
+- **Intuitive Navigation**: Easy-to-use controls and menus
 
-## 🚀 Deployment
+### **Notifications**
+- **Real-time Updates**: Live generation progress
+- **Success Feedback**: Clear confirmation of completed operations
+- **Error Handling**: Helpful error messages and recovery options
 
-### Netlify
-1. Connect your repository to Netlify
-2. Set environment variables in Netlify dashboard
-3. Deploy automatically on push
+## 🚧 **Current Status**
 
-### Vercel
-1. Import project to Vercel
-2. Add environment variables
-3. Deploy with automatic builds
+### **✅ Completed Features**
+- Complete database schema and migrations
+- AI generation pipeline (I2I/V2V)
+- Media upload and management
+- User privacy controls
+- Social features (likes, remixes, shares)
+- Preset style system
+- Guest user support
+- Usage tracking and limits
 
-## 📝 Environment Variables Reference
+### **🔄 In Development**
+- Production deployment optimization
+- Performance testing and optimization
+- User feedback integration
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `VITE_AIMLAPI_API_KEY` | AIML API key for AI generation | Yes |
-| `VITE_RESEND_API_KEY` | Resend API key for emails | Yes |
-| `SUPABASE_URL` | Supabase project URL (backend only) | Yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (backend only) | Yes |
-| `VITE_APP_ENV` | Environment (dev/prod/staging) | No |
-| `VITE_DEBUG_MODE` | Enable debug logging | No |
+### **📋 Next Steps**
+- Local testing and bug fixes
+- Production deployment
+- User acceptance testing
+- Performance monitoring
 
-## 🤝 Contributing
+## 🤝 **Contributing**
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+This is a production application. Please ensure all changes are thoroughly tested before submitting pull requests.
 
-## 📄 License
+## 📄 **License**
 
-MIT License - see LICENSE file for details.
+This project is proprietary software. All rights reserved.
 
-## 🆘 Support
+## 📞 **Support**
 
-For support, please open an issue on GitHub or contact the development team.
+For technical support or questions about the platform, please refer to the project documentation or contact the development team.
 
 ---
 
-**Built with ❤️ using React, TypeScript, Tailwind CSS, and modern web technologies.** 
+**Stefna** - Transforming creativity through AI-powered media editing 🎨✨ 
