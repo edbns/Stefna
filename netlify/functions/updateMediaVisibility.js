@@ -55,6 +55,27 @@ exports.handler = async (event) => {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
+    // Moderation gate: if attempting to make public, block unsafe content based on prompt heuristics
+    if (updateData.visibility === 'public') {
+      const { data: assetRow, error: fetchErr } = await supabase
+        .from('media_assets')
+        .select('id, user_id, prompt')
+        .eq('id', assetId)
+        .eq('user_id', userId)
+        .single();
+      if (fetchErr || !assetRow) {
+        return { statusCode: 404, body: JSON.stringify({ error: 'Media asset not found or access denied' }) };
+      }
+      const prompt = String(assetRow.prompt || '').toLowerCase();
+      const BLOCK_LIST = [
+        'porn','explicit','sexual','nude','nudity','erotic','adult',
+        'racist','hate','bigot','slur','kill','murder','blood','gore','suicide','self-harm'
+      ];
+      if (BLOCK_LIST.some(k => prompt.includes(k))) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Content blocked by moderation. Please revise your prompt before sharing publicly.' }) };
+      }
+    }
+
     // Update the media asset
     const { data: updated, error } = await supabase
       .from('media_assets')

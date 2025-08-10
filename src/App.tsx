@@ -1,13 +1,14 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import StickyFooter from './components/StickyFooter'
+// StickyFooter removed per new minimal UI
 import SignupGateModal from './components/SignupGateModal'
 import WebsiteLayout from './components/WebsiteLayout'
+import HomeNew from './components/HomeNew'
 import PrivacyPolicy from './screens/PrivacyPolicy'
 import TermsOfService from './screens/TermsOfService'
 import CookiesPolicy from './screens/CookiesPolicy'
 import ProfileScreen from './screens/ProfileScreen'
-import GalleryScreen from './screens/GalleryScreen'
+import { Navigate } from 'react-router-dom'
 import AuthScreen from './screens/AuthScreen'
 
 const AppContent: React.FC = () => {
@@ -32,18 +33,17 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen bg-black pb-16">
       <div>
         <Routes>
-          <Route path="/" element={<WebsiteLayout />} />
+          <Route path="/" element={<HomeNew />} />
           <Route path="/auth" element={<AuthScreen />} />
           <Route path="/profile" element={<ProfileScreen />} />
-          <Route path="/gallery" element={<GalleryScreen />} />
+          <Route path="/gallery" element={<Navigate to="/" replace />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/cookies" element={<CookiesPolicy />} />
         </Routes>
       </div>
 
-      {/* Sticky Footer - Hidden on profile pages */}
-      {!isProfilePage && <StickyFooter />}
+      {/* Footer removed per new UI */}
 
       {/* Signup Gate Modal */}
       <SignupGateModal

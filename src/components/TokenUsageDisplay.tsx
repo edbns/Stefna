@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { User, Zap, Clock, AlertCircle } from 'lucide-react'
 import tokenService, { UserTier, TokenUsage } from '../services/tokenService'
+import { authenticatedFetch } from '../utils/apiClient'
 
 interface TokenUsageDisplayProps {
   userId: string
@@ -14,10 +15,12 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
   className = '' 
 }) => {
   const [usage, setUsage] = useState<TokenUsage | null>(null)
+  const [serverQuota, setServerQuota] = useState<{ daily_used: number; daily_limit: number; weekly_used: number; weekly_limit: number } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     loadUserUsage()
+    loadServerQuota()
   }, [userId])
 
   const loadUserUsage = async () => {
@@ -28,6 +31,20 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
       console.error('Failed to load token usage:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadServerQuota = async () => {
+    try {
+      const res = await authenticatedFetch('/.netlify/functions/getQuota', { method: 'GET' })
+      if (res.ok) {
+        setServerQuota(await res.json())
+      } else {
+        setServerQuota(null)
+      }
+    } catch (e) {
+      console.error('Failed to load server quota:', e)
+      setServerQuota(null)
     }
   }
 
@@ -59,7 +76,9 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
 
   const getUsagePercentage = () => {
     if (!usage) return 0
-    return (usage.dailyUsage / usage.dailyLimit) * 100
+    const du = serverQuota ? serverQuota.daily_used : usage.dailyUsage
+    const dl = serverQuota ? serverQuota.daily_limit : usage.dailyLimit
+    return (du / dl) * 100
   }
 
   const getUsageColor = () => {
@@ -108,7 +127,7 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
         <div className="flex justify-between text-xs mb-1">
           <span className="text-white/60">Daily Usage</span>
           <span className={`font-medium ${getUsageColor()}`}>
-            {usage.dailyUsage} / {usage.dailyLimit}
+            {serverQuota ? serverQuota.daily_used : usage.dailyUsage} / {serverQuota ? serverQuota.daily_limit : usage.dailyLimit}
           </span>
         </div>
         
@@ -128,7 +147,7 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
       <div className="flex items-center justify-between text-xs">
         <div className="flex items-center space-x-1 text-white/60">
           <Zap size={12} />
-          <span>Remaining: {usage.dailyLimit - usage.dailyUsage}</span>
+          <span>Remaining: {(serverQuota ? serverQuota.daily_limit - serverQuota.daily_used : usage.dailyLimit - usage.dailyUsage)}</span>
         </div>
         
         <div className="flex items-center space-x-1 text-white/40">

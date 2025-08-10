@@ -22,27 +22,13 @@ export function getAuthHeaders(opts = {}) {
     token = token.access_token || token.token || token.jwt || '';
   }
 
-  // Validate token
-  if (!token || typeof token !== 'string') {
-    console.error('❌ Auth token missing or invalid:', { 
-      type: typeof token, 
-      value: token 
-    });
-    throw new Error('Authentication required - please sign in again');
+  // If no token, fall back to guest mode (omit Authorization)
+  if (!token || typeof token !== 'string' || !token.includes('.') || token.split('.').length !== 3) {
+    return { 'Content-Type': 'application/json' };
   }
 
-  // Basic JWT format check
-  if (!token.includes('.') || token.split('.').length !== 3) {
-    console.error('❌ Invalid JWT format:', token.substring(0, 20) + '...');
-    throw new Error('Invalid token format - please sign in again');
-  }
-
-  console.log('✅ Auth token ready:', token.substring(0, 12) + '...');
-  
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
-  };
+  // Valid token
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 }
 
 /**
@@ -53,7 +39,8 @@ export function getAuthHeaders(opts = {}) {
  */
 export function getAuthToken(opts = {}) {
   const headers = getAuthHeaders(opts);
-  return headers.Authorization.replace('Bearer ', '');
+  const auth = headers.Authorization || '';
+  return auth.startsWith('Bearer ') ? auth.replace('Bearer ', '') : '';
 }
 
 /**
@@ -62,8 +49,8 @@ export function getAuthToken(opts = {}) {
  */
 export function isAuthenticated() {
   try {
-    getAuthToken();
-    return true;
+    const token = getAuthToken();
+    return Boolean(token);
   } catch {
     return false;
   }
@@ -77,13 +64,6 @@ export function isAuthenticated() {
  * @throws {Error} If authentication fails
  */
 export async function signedFetch(url, opts = {}) {
-  const headers = getAuthHeaders(opts);
-  
-  return fetch(url, {
-    ...opts,
-    headers: {
-      ...headers,
-      ...(opts.headers || {})
-    }
-  });
+  const baseHeaders = getAuthHeaders(opts);
+  return fetch(url, { ...opts, headers: { ...baseHeaders, ...(opts.headers || {}) } });
 }

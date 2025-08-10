@@ -128,7 +128,7 @@ class EmailService {
             <div style="background-color: #1a1a1a; padding: 20px; border-radius: 10px; margin: 30px 0; border: 1px solid #333333;">
               <p style="color: #888888; font-size: 12px; text-transform: uppercase; margin-bottom: 10px;">Special Bonus</p>
               <p style="color: #ffffff; font-size: 14px; margin: 0;">
-                Sign up with this invite and get <strong>25 bonus tokens</strong> to start creating immediately!
+                Sign up with this invite and get <strong>10 bonus tokens</strong> to start creating immediately!
               </p>
             </div>
             

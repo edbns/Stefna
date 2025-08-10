@@ -31,15 +31,41 @@ exports.handler = async (event) => {
     }
 
     // Get generated content from media_assets table
-    const { data: generated, error: generatedError } = await supabase
-      .from('media_assets')
-      .select('id, result_url as url, resource_type, created_at, prompt, parent_asset_id, result_url, source_url, visibility, allow_remix')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (generatedError) {
-      console.error('Error fetching generated:', generatedError);
-      return bad(500, `Generated error: ${generatedError.message}`);
+    let generated = null;
+    let generatedError = null;
+    try {
+      const r1 = await supabase
+        .from('media_assets')
+        .select('id, result_url as url, resource_type, created_at, prompt, parent_asset_id, result_url, source_url, visibility, allow_remix')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      generated = r1.data;
+      generatedError = r1.error;
+      if (generatedError) throw generatedError;
+    } catch (err) {
+      // Fallback for older schema without result_url/source_url/visibility
+      console.warn('Falling back to legacy media_assets select due to:', err?.message || err);
+      const r2 = await supabase
+        .from('media_assets')
+        .select('id, url, resource_type, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (r2.error) {
+        console.error('Error fetching generated (both attempts failed):', r2.error);
+        return bad(500, `Generated error: ${r2.error.message}`);
+      }
+      generated = (r2.data || []).map(item => ({
+        id: item.id,
+        url: item.url,
+        resource_type: item.resource_type,
+        created_at: item.created_at,
+        prompt: null,
+        parent_asset_id: null,
+        result_url: item.url,
+        source_url: null,
+        visibility: 'private',
+        allow_remix: false,
+      }));
     }
 
     // Combine and format results

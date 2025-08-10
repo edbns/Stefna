@@ -54,11 +54,11 @@ class TokenService {
   private rateLimitWindow: number = 30 // seconds
   private dailyResetHour: number = 0 // midnight UTC
 
-  // Token limits per tier - Optimized for user acquisition (HD quality)
+  // Token limits per tier (client-side display only). Server enforces authoritative limits.
   private tokenLimits: TokenLimits = {
-    [UserTier.REGISTERED]: 115, // Increased from 100 - redistributed guest tokens
-    [UserTier.VERIFIED]: 215, // Increased from 200 - redistributed guest tokens  
-    [UserTier.CONTRIBUTOR]: 410 // Increased from 400 - redistributed guest tokens
+    [UserTier.REGISTERED]: 30,
+    [UserTier.VERIFIED]: 60,
+    [UserTier.CONTRIBUTOR]: 120
   }
 
   // Token costs per generation type - Always HD quality

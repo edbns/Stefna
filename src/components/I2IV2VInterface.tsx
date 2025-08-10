@@ -173,7 +173,7 @@ const I2IV2VInterface: React.FC<I2IV2VInterfaceProps> = ({
               onFileSelect={handleFileSelect}
               onFileRemove={handleFileRemove}
               acceptedTypes={mode === 'i2i' ? 'image' : 'video'}
-              maxSize={mode === 'i2i' ? 20 : 100} // 20MB for images, 100MB for videos
+              maxSize={mode === 'i2i' ? 8 : 50} // 8MB images, 50MB videos
             />
           </div>
 

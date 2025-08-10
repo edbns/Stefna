@@ -81,3 +81,4 @@ CREATE POLICY "Users can delete own media assets" ON media_assets
 -- Step 4: Verify the view works
 -- This should now work without RLS conflicts
 SELECT 'View created successfully' as status;
+

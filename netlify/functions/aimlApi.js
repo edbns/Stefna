@@ -57,7 +57,7 @@ exports.handler = async (event) => {
     const body = normalizeI2IRequest(rawBody);
     
     // Extract required fields
-    const { prompt, source_url, steps, strength, resource_type, jobId, presetName, source = "custom" } = body;
+    const { prompt, source_url, steps, strength, resource_type, jobId, presetName, source = "custom", visibility, allow_remix } = body;
     
     // Validate source_url is required
     if (!source_url) {
@@ -99,6 +99,26 @@ exports.handler = async (event) => {
     }
 
     const url = `${process.env.AIML_API_URL}${endpoint}`;
+
+    // Quota enforcement: determine token cost and check server-side quota before calling provider
+    const cost = resourceType === 'video' ? 5 : 2;
+    try {
+      const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+      // Pre-check
+      const { data: precheck, error: preErr } = await supa.rpc('can_consume_tokens', { p_user_id: userId, p_cost: cost });
+      if (preErr) {
+        console.error('Quota precheck error:', preErr);
+        return { statusCode: 500, body: JSON.stringify({ message: 'Quota check failed' }) };
+      }
+      const okRow = Array.isArray(precheck) ? precheck[0] : precheck;
+      if (!okRow?.ok) {
+        const reason = okRow?.reason || 'Quota exceeded';
+        return { statusCode: 429, body: JSON.stringify({ message: reason, quota: okRow }) };
+      }
+    } catch (qe) {
+      console.error('Quota check exception:', qe);
+      return { statusCode: 500, body: JSON.stringify({ message: 'Quota check failed' }) };
+    }
     
     // Retry logic for 4xx/5xx errors
     let r, out;
@@ -172,11 +192,18 @@ exports.handler = async (event) => {
       };
     }
 
-    // Auto-save the generated media to database
+    // Auto-save the generated media to database and consume tokens
     try {
       const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+      // Consume tokens after successful generation
+      const { data: consumed, error: consumeErr } = await supa.rpc('consume_tokens', { p_user_id: userId, p_cost: cost, p_kind: resourceType });
+      if (consumeErr || !consumed?.[0]?.ok) {
+        console.error('Token consumption failed:', consumeErr || consumed);
+        // If consumption fails, do not save media (prevent free generation)
+        return { statusCode: 429, body: JSON.stringify({ message: 'Quota exceeded during finalize' }) };
+      }
       
-      const row = {
+       const row = {
         user_id: userId,
         url: result_url,            // Required NOT NULL field - use result_url as the main URL
         result_url: result_url,
@@ -189,9 +216,9 @@ exports.handler = async (event) => {
         width: null,                // I2I doesn't support width/height
         height: null,               // I2I doesn't support width/height
         strength: payload.strength || null,
-        visibility: 'private',      // default private → user's profile only
+         visibility: visibility === 'public' ? 'public' : 'private',
         env: process.env.NODE_ENV === 'production' ? 'prod' : 'dev',
-        allow_remix: false,         // user can flip this later
+         allow_remix: visibility === 'public' ? Boolean(allow_remix) : false,
         parent_asset_id: null,      // set when this was a remix; else null
         resource_type: resourceType, // Required NOT NULL field
         folder: 'users/' + userId,  // Required NOT NULL field

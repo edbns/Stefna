@@ -42,8 +42,8 @@ const WebsiteLayout: React.FC = () => {
       if (savedProfile) {
         const profile = JSON.parse(savedProfile)
         return {
-          shareToFeed: profile.shareToFeed ?? true,
-          allowRemix: profile.allowRemix ?? true
+          shareToFeed: profile.shareToFeed ?? false,
+          allowRemix: profile.allowRemix ?? false
         }
       }
     } catch (error) {
@@ -51,8 +51,8 @@ const WebsiteLayout: React.FC = () => {
     }
     // Default settings if no profile found
     return {
-      shareToFeed: true,
-      allowRemix: true
+      shareToFeed: false,
+      allowRemix: false
     }
   })
   
@@ -66,6 +66,10 @@ const WebsiteLayout: React.FC = () => {
   const [styleClickDebounce, setStyleClickDebounce] = useState<NodeJS.Timeout | null>(null)
   // In-flight guard to prevent double-clicks and races
   const [presetInFlight, setPresetInFlight] = useState(false)
+  // User-controlled style strength (for presets)
+  const [presetStrength, setPresetStrength] = useState<number>(0.8)
+  // Full-screen composer close animation
+  const [composerClosing, setComposerClosing] = useState(false)
   const [typewriterText, setTypewriterText] = useState('')
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0)
   const [items, setItems] = useState(50)
@@ -235,8 +239,8 @@ const WebsiteLayout: React.FC = () => {
   const [draftMedia, setDraftMedia] = useState<string | null>(null)
   
   // New UI controls for Supabase integration
-  const [shareToFeed, setShareToFeed] = useState(false)     // -> visibility
-  const [allowRemix, setAllowRemix] = useState(false)       // only valid when shareToFeed === true
+  const [shareToFeed, setShareToFeed] = useState(false)     // -> visibility (default OFF)
+  const [allowRemix, setAllowRemix] = useState(false)       // only valid when shareToFeed === true (default OFF)
 
 
   // Enforce rule: if Share is off, force Allow Remix off and disable the switch
@@ -782,7 +786,7 @@ const WebsiteLayout: React.FC = () => {
         height: cloudinaryAsset.width,
         prompt: preset.prompt,
         negative_prompt: preset.negative,
-        strength: preset.strength ?? 0.85,
+        strength: typeof presetStrength === 'number' ? presetStrength : (preset.strength ?? 0.85),
         steps: 40,
         guidance_scale: 7.5,
         presetName: presetName,
@@ -2077,34 +2081,25 @@ const WebsiteLayout: React.FC = () => {
 
       
 
-      {/* Redesigned Sidebar - 40% for better content ratio */}
-      <div className="w-[40%] bg-black sticky top-0 h-screen flex flex-col">
+      {/* Floating Composer Rail (10%) - desktop only; FAB on mobile) */}
+      <div className="hidden md:flex w-[10%] bg-black sticky top-0 h-screen items-center justify-center">
+        <button
+          onClick={handleUploadClick}
+          className="w-16 h-16 rounded-full bg-white text-black hover:bg-white/90 transition-all duration-200 flex items-center justify-center shadow-lg"
+          aria-label="Open Composer"
+          title="Upload"
+        >
+          <Plus size={24} />
+        </button>
+      </div>
         {/* Idle State - Upload Button */}
-        {sidebarMode === 'idle' && (
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="text-center">
-              <button 
-                onClick={handleUploadClick}
-                className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300 mx-auto relative group animate-pulse-shadow"
-                aria-label="Upload media"
-              >
-                <Plus size={28} className="text-white group-hover:scale-110 transition-transform duration-200" />
-              </button>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*"
-              onChange={handleFileSelect}
-              className="hidden"
-              aria-label="File input"
-            />
-          </div>
-        )}
+        {/* Replace idle sidebar UI with a mobile FAB trigger (desktop uses rail button) */}
+        <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleFileSelect} className="hidden" aria-label="File input" />
 
         {/* Active States - Upload & Remix */}
         {(sidebarMode === 'upload' || sidebarMode === 'remix') && (
-          <div className="flex flex-col h-full">
+          <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md">
+            <div className="absolute inset-0 grid grid-cols-1 md:grid-cols-2">
             {/* Media Preview Header */}
             <div className="px-8 py-6 pb-10 pt-12 border-b border-white/10">
               {/* Media Preview */}
@@ -2117,14 +2112,10 @@ const WebsiteLayout: React.FC = () => {
                   />
                 </div>
                 
-                {/* Close Button - Top Right Corner */}
-                  <button 
-                  onClick={resetSidebar}
-                  className="absolute top-2 right-2 w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/80 transition-colors"
-                  aria-label="Close and return to upload"
-                >
+                {/* Close Button */}
+                <button onClick={resetSidebar} className="absolute top-2 right-2 w-9 h-9 bg-black/60 rounded-full flex items-center justify-center hover:bg-black/80 transition-colors" aria-label="Close composer">
                   <X size={16} className="text-white" />
-                  </button>
+                </button>
                 
                 {sidebarMode === 'remix' && (
                   <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
@@ -2255,6 +2246,7 @@ const WebsiteLayout: React.FC = () => {
                       )}
                     </button>
                 </div>
+            </div>
           </div>
         )}
 
@@ -2268,7 +2260,7 @@ const WebsiteLayout: React.FC = () => {
                       </p>
               </div>
               
-                                        <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       {aiAsBrushStyles.map((style) => (
                   <button 
                           key={style.id}
@@ -2317,6 +2309,22 @@ const WebsiteLayout: React.FC = () => {
                         </button>
                   ))}
                 </div>
+
+                    {/* Style Strength Slider */}
+                    <div className="pt-2">
+                      <label className="block text-xs text-white/60 mb-1">Style Strength</label>
+                      <input
+                        type="range"
+                        min={0.45}
+                        max={0.95}
+                        step={0.05}
+                        value={presetStrength}
+                        onChange={(e) => setPresetStrength(parseFloat(e.target.value))}
+                        className="w-full accent-white"
+                        aria-label="Style Strength"
+                      />
+                      <div className="text-right text-[10px] text-white/40 mt-1">{Math.round(presetStrength * 100)}%</div>
+                    </div>
                     
                                     {selectedStyle && isGenerating && (
                     <div className="text-center pt-4">
@@ -2334,8 +2342,8 @@ const WebsiteLayout: React.FC = () => {
             )}
           </div>
         
-      {/* Content Area - 60% for better balance */}
-      <div className="w-[60%] bg-black">
+      {/* Content Area - 90% feed */}
+      <div className="w-[90%] bg-black">
         <div 
           ref={contentRef}
           onScroll={handleScroll}
@@ -2444,7 +2452,7 @@ const WebsiteLayout: React.FC = () => {
         onShowAuth={() => navigate('/auth')}
       />
       <SlideSignupGate isOpen={gateOpen} onClose={() => setGateOpen(false)} onSignup={() => navigate('/auth')} />
-                      </div>
+    </div>
   )
 }
 

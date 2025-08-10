@@ -279,3 +279,4 @@ SELECT * FROM user_all_media LIMIT 5;
 ---
 
 **Next Steps**: Run the migration script, test the flows, and update client components to use the unified media structure.
+

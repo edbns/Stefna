@@ -11,6 +11,7 @@ import userMediaService, { UserMedia } from '../services/userMediaService'
 import authService from '../services/authService'
 import ConfirmModal from '../components/ConfirmModal'
 import tokenService, { UserTier } from '../services/tokenService'
+import { authenticatedFetch } from '../utils/apiClient'
 import AdminUpgrade from '../components/AdminUpgrade'
 
 const ProfileScreen: React.FC = () => {
@@ -24,7 +25,7 @@ const ProfileScreen: React.FC = () => {
     name: 'User Name',
     bio: 'AI artist exploring the boundaries of creativity 🎨',
     photo: null as File | string | null,
-    shareToFeed: true,
+    shareToFeed: false,
     allowRemix: false
   })
 
@@ -118,23 +119,26 @@ const ProfileScreen: React.FC = () => {
           setReferralStats(stats)
           
           // Load token count - force refresh if tier changed
-          const tokenUsage = await tokenService.getUserUsage(userId)
-          const expectedLimit = currentTier === UserTier.CONTRIBUTOR ? 410 : 
-                               currentTier === UserTier.VERIFIED ? 215 : 115
-          
-          // If the limit doesn't match the tier, update it
-          if (tokenUsage.dailyLimit !== expectedLimit) {
-            await tokenService.updateUserTier(userId, currentTier)
-            const updatedUsage = await tokenService.getUserUsage(userId)
-            setTokenCount(updatedUsage.dailyLimit - updatedUsage.dailyUsage)
-          } else {
+          // Prefer server-side quota for accuracy
+          try {
+            const qRes = await authenticatedFetch('/.netlify/functions/getQuota', { method: 'GET' })
+            if (qRes.ok) {
+              const q = await qRes.json()
+              setTokenCount((q.daily_limit || 0) - (q.daily_used || 0))
+            } else {
+              // Fallback to client service
+              const tokenUsage = await tokenService.getUserUsage(userId)
+              setTokenCount(tokenUsage.dailyLimit - tokenUsage.dailyUsage)
+            }
+          } catch {
+            const tokenUsage = await tokenService.getUserUsage(userId)
             setTokenCount(tokenUsage.dailyLimit - tokenUsage.dailyUsage)
           }
         } catch (error) {
           console.error('Failed to load referral stats or token count:', error)
           // Set default token count based on tier
-          const defaultLimit = currentTier === UserTier.CONTRIBUTOR ? 410 : 
-                             currentTier === UserTier.VERIFIED ? 215 : 115
+          const defaultLimit = currentTier === UserTier.CONTRIBUTOR ? 120 : 
+                             currentTier === UserTier.VERIFIED ? 60 : 30
           setTokenCount(defaultLimit)
         }
       } else {
@@ -337,8 +341,8 @@ const ProfileScreen: React.FC = () => {
         const response = await fetch('/.netlify/functions/updateMediaVisibility', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${authService.getToken() || localStorage.getItem('auth_token') || ''}`,
-          'Content-Type': 'application/json'
+            ...(authService.getToken() ? { 'Authorization': `Bearer ${authService.getToken()}` } : {}),
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           assetId: media.id,
@@ -751,7 +755,7 @@ const ProfileScreen: React.FC = () => {
             {/* Social Media Pages - Horizontal */}
             <div className="flex items-center space-x-2 px-3">
               <a href="https://www.instagram.com/stefnaxyz/" target="_blank" rel="noopener noreferrer" className="w-6 h-6 rounded-full flex items-center justify-center hover:opacity-90" title="Instagram">
-                <InstagramIcon className="text-white" />
+                <InstagramIcon size={18} className="text-white" />
               </a>
               <a
                 href="https://x.com/StefnaXYZ"
@@ -760,7 +764,7 @@ const ProfileScreen: React.FC = () => {
                 className="w-6 h-6 rounded-full flex items-center justify-center hover:opacity-90"
                 title="X"
               >
-                <XIcon className="text-white" />
+                <XIcon size={18} className="text-white" />
               </a>
               <a
                 href="https://www.facebook.com/Stefnaxyz"
@@ -769,7 +773,7 @@ const ProfileScreen: React.FC = () => {
                 className="w-6 h-6 rounded-full flex items-center justify-center hover:opacity-90"
                 title="Facebook"
               >
-                <FacebookIcon className="text-white" />
+                <FacebookIcon size={18} className="text-white" />
               </a>
               <a
                 href="https://www.tiktok.com/@stefnaxyz"
@@ -778,7 +782,7 @@ const ProfileScreen: React.FC = () => {
                 className="w-6 h-6 rounded-full flex items-center justify-center hover:opacity-90"
                 title="TikTok"
               >
-                <TikTokIcon className="text-white" />
+                <TikTokIcon size={18} className="text-white" />
               </a>
               <a
                 href="https://www.threads.net/@stefnaxyz"
@@ -787,10 +791,10 @@ const ProfileScreen: React.FC = () => {
                 className="w-6 h-6 rounded-full flex items-center justify-center hover:opacity-90"
                 title="Threads"
               >
-                <ThreadsIcon className="text-white" />
+                <ThreadsIcon size={18} className="text-white" />
               </a>
               <a href="https://www.youtube.com/channel/UCNBAWuWc8luYN8F0dIXX0RA" target="_blank" rel="noopener noreferrer" className="w-6 h-6 rounded-full flex items-center justify-center hover:opacity-90" title="YouTube">
-                <YouTubeIcon className="text-white" />
+                <YouTubeIcon size={18} className="text-white" />
               </a>
             </div>
           </div>
@@ -799,59 +803,7 @@ const ProfileScreen: React.FC = () => {
 
       {/* Main Area - 80% */}
       <div className="w-[80%] bg-black h-screen overflow-y-auto flex flex-col relative">
-        {/* Notification System */}
-        {notifications.length > 0 && (
-          <div className="fixed top-4 right-4 z-50 space-y-2" style={{ right: '20%' }}>
-            {notifications.slice(0, 3).map((notification) => (
-              <div
-                key={notification.id}
-                className={`max-w-sm bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 overflow-hidden ${
-                  notification.type === 'complete' ? 'cursor-pointer hover:bg-gray-800' : ''
-                }`}
-                onClick={() => {
-                  if (notification.type === 'complete' && notification.mediaUrl) {
-                    console.log('Opening completed media:', notification.mediaUrl)
-                  }
-                }}
-              >
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white">{notification.title}</p>
-                      {notification.message && (
-                        <p className="text-xs text-gray-400 mt-1">{notification.message}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        removeNotification(notification.id)
-                      }}
-                      className="text-gray-400 hover:text-white transition-colors ml-2"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                  {notification.mediaUrl && (
-                    <div className="mt-3 flex items-center space-x-3">
-                      <img 
-                        src={notification.mediaUrl} 
-                        alt="Generated content" 
-                        className="w-12 h-12 rounded-lg object-cover"
-                      />
-                      {notification.type === 'complete' && (
-                        <div className="flex items-center space-x-2">
-                          <Check size={16} className="text-green-400" />
-                          <span className="text-xs text-gray-300">Ready to view</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Notification System disabled on profile screen (only show in Notification tab) */}
         {/* Content based on active tab */}
         {activeTab === 'all-media' && (
           <div className="flex-1 overflow-y-auto p-6">
@@ -1238,15 +1190,15 @@ const ProfileScreen: React.FC = () => {
             {isAuthenticated && referralStats ? (
               <div className="space-y-6">
                 {/* What you get */}
-                <div className="bg-white/5 rounded-lg p-4">
+                 <div className="bg-white/5 rounded-lg p-4">
                   <h3 className="text-white font-semibold mb-2 text-sm">You get</h3>
-                  <p className="text-white/60 text-sm">+50 bonus tokens for each friend who signs up</p>
+                  <p className="text-white/60 text-sm">+10 bonus tokens after your friend’s first generation</p>
                 </div>
 
                 {/* What your friends get */}
                 <div className="bg-white/5 rounded-lg p-4">
                   <h3 className="text-white font-semibold mb-2 text-sm">Your friends get</h3>
-                  <p className="text-white/60 text-sm">+25 bonus tokens when they sign up with your invite</p>
+                  <p className="text-white/60 text-sm">+10 bonus tokens on signup with your invite</p>
                 </div>
 
                 {/* Email Invite Form */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Zap, Users, Gift, Copy, Check } from 'lucide-react'
 import tokenService, { UserTier, TokenUsage } from '../services/tokenService'
+import { authenticatedFetch } from '../utils/apiClient'
 
 interface ProfileTokenDisplayProps {
   userId: string
@@ -16,12 +17,14 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
   className = '' 
 }) => {
   const [usage, setUsage] = useState<TokenUsage | null>(null)
+  const [serverQuota, setServerQuota] = useState<{ daily_used: number; daily_limit: number; weekly_used: number; weekly_limit: number } | null>(null)
   const [referralStats, setReferralStats] = useState<{ invites: number; tokensEarned: number; referralCode: string } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
   useEffect(() => {
     loadTokenData()
+    loadServerQuota()
   }, [userId])
 
   const loadTokenData = async () => {
@@ -37,6 +40,24 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
       console.error('Failed to load token data:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadServerQuota = async () => {
+    try {
+      if (!isAuthenticated) {
+        setServerQuota(null)
+        return
+      }
+      const res = await authenticatedFetch('/.netlify/functions/getQuota', { method: 'GET' })
+      if (res.ok) {
+        setServerQuota(await res.json())
+      } else {
+        setServerQuota(null)
+      }
+    } catch (e) {
+      console.error('Failed to load server quota:', e)
+      setServerQuota(null)
     }
   }
 
@@ -144,7 +165,9 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
     return null
   }
 
-  const remainingTokens = usage.dailyLimit - usage.dailyUsage
+  const remainingTokens = serverQuota 
+    ? (serverQuota.daily_limit - serverQuota.daily_used) 
+    : (usage.dailyLimit - usage.dailyUsage)
 
   return (
     <div className={`bg-[#222222] border border-white/20 rounded-2xl p-6 shadow-2xl ${className}`}>
@@ -174,10 +197,10 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
       {/* Usage Progress */}
       <div className="mb-6">
         <div className="flex justify-between text-sm mb-2">
-          <span className="text-white/60">Daily Usage</span>
-          <span className={`font-medium ${getUsageColor()}`}>
-            {usage.dailyUsage} / {usage.dailyLimit}
-          </span>
+             <span className="text-white/60">Daily Usage</span>
+           <span className={`font-medium ${getUsageColor()}`}>
+             {serverQuota ? serverQuota.daily_used : usage.dailyUsage} / {serverQuota ? serverQuota.daily_limit : usage.dailyLimit}
+           </span>
         </div>
         
         {/* Progress Bar */}

@@ -6,17 +6,12 @@ function getToken() {
 
 export async function signedFetch(url: string, opts: RequestInit = {}): Promise<Response> {
   const token = getToken()
-  if (!token) {
-    throw new Error('Not logged in')
+  const baseHeaders: Record<string, string> = {}
+  if (token) {
+    baseHeaders['Authorization'] = `Bearer ${token}`
   }
-  
-  return fetch(url, {
-    ...opts,
-    headers: {
-      ...(opts.headers || {}),
-      'Authorization': `Bearer ${token}`
-    }
-  })
+
+  return fetch(url, { ...opts, headers: { ...baseHeaders, ...(opts.headers || {}) } })
 }
 
 export async function authenticatedFetch(url: string, opts: RequestInit = {}): Promise<Response> {

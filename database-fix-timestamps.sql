@@ -50,3 +50,4 @@ SELECT id, user_id, created_at, url
 FROM assets 
 WHERE created_at > NOW() - INTERVAL '24 hours'
 ORDER BY created_at DESC;
+

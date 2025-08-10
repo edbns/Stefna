@@ -1,14 +1,14 @@
 export const HARD_LIMITS = {
-  // Images: Back to high-res! AIML tokens are abundant
-  MAX_IMG_W: 6000,
-  MAX_IMG_H: 6000,
-  MAX_IMG_MP: 32, // Full camera quality - we have the tokens!
+  // Images: MVP-friendly caps (approx 2048px max side, ~4.2 MP)
+  MAX_IMG_W: 2048,
+  MAX_IMG_H: 2048,
+  MAX_IMG_MP: 4.2,
 
-  // Video: 4K support - Cloudinary Pro can handle it
-  MAX_VID_W: 3840, // True 4K
-  MAX_VID_H: 2160,
+  // Video: MVP caps (720p, 30s, 30fps)
+  MAX_VID_W: 1280,
+  MAX_VID_H: 720,
   MAX_VID_FPS: 30,
-  MAX_VID_SECONDS: 30 // Full content length
+  MAX_VID_SECONDS: 30
 };
 
 export const DEFAULTS = {

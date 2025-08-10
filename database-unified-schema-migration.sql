@@ -229,3 +229,4 @@ SELECT 'Tables:' as info;
 SELECT table_name, table_type FROM information_schema.tables WHERE table_name IN ('assets', 'media_assets', 'user_all_media') ORDER BY table_name;
 SELECT 'View columns:' as info;
 SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'user_all_media' ORDER BY ordinal_position;
+

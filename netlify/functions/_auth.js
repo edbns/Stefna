@@ -15,19 +15,19 @@ function verifyAuth(event) {
   const auth = event.headers.authorization || "";
   const token = auth.replace(/^Bearer\s+/i, "");
   
-  // Feature flag: Guest mode (can be disabled via env var)
-  const GUEST_MODE_ENABLED = process.env.GUEST_MODE_ENABLED !== 'false';
+  // Feature flag: Guest mode (explicit opt-in). Default OFF.
+  const GUEST_MODE_ENABLED = process.env.GUEST_MODE_ENABLED === 'true';
   
   if (!token) {
     if (GUEST_MODE_ENABLED) {
-      return { 
-        claims: {}, 
-        userId: `guest-${Date.now()}-${Math.random().toString(36).slice(2)}`, 
-        token: null 
+      return {
+        claims: {},
+        userId: `guest-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        token: null,
       };
-    } else {
-      throw new Error("no_bearer");
     }
+    // Guests disabled: require auth token
+    throw new Error("no_bearer");
   }
   
   const claims = jwt.verify(token, process.env.JWT_SECRET, { clockTolerance: 5 });
