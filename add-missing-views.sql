@@ -1,6 +1,10 @@
 -- Ultra-Simple Database Views Fix for Stefna
 -- Copy and paste this entire script into Supabase SQL Editor
 
+-- Step 0: Drop existing views if they exist (to avoid data type conflicts)
+DROP VIEW IF EXISTS user_media_with_counts;
+DROP VIEW IF EXISTS public_media_with_counts;
+
 -- Step 1: Create the user_media_with_counts view (simplified - no interaction tables needed)
 CREATE OR REPLACE VIEW user_media_with_counts AS
 SELECT 
