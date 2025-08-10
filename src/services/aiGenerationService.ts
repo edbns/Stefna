@@ -278,26 +278,21 @@ class AIGenerationService {
 
       // Prepare the request body
       const requestBody: any = {
+        user_id: request.userId,
         prompt: request.prompt,
-        type: request.type,
-        quality: request.quality,
-        style: request.style || 'default',
-        num_outputs: request.samples || 1 // Number of variations to generate (1-2)
-        // Note: modelId removed - let server choose model based on presence of image_url
+        source_url: imageUrl || videoUrl, // Use source_url for I2I/V2V
+        resource_type: request.type === 'video' ? 'video' : 'image'
+        // Note: modelId removed - let server choose model based on presence of source_url
       }
 
-      // Add file URLs if provided
+      // Add I2I/V2V specific fields if provided
       if (imageUrl) {
-        requestBody.image_url = imageUrl
-        requestBody.width = 1024 // Default for I2I
-        requestBody.height = 1024
         requestBody.strength = 0.85 // Strong stylization
         requestBody.steps = 40
         requestBody.guidance_scale = 7.5
         requestBody.negative_prompt = "photorealistic, realistic skin, film grain, frame, border, watermark, text, caption, vignette"
       }
       if (videoUrl) {
-        requestBody.video_url = videoUrl
         requestBody.strength = 0.6 // Video needs different strength
       }
 

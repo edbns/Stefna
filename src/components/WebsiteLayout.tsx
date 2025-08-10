@@ -72,12 +72,20 @@ const WebsiteLayout: React.FC = () => {
 
   // Core app state
   const [userTier, setUserTier] = useState<UserTier>(UserTier.REGISTERED)
-  // Get user ID from auth service or generate guest ID
+  // Get user ID from auth service or return null for guests
   const getCurrentUserId = () => {
+    const user = authService.getCurrentUser()
+    return user?.id || null
+  }
+  
+  // Get user ID for UI operations (with fallback for guests)
+  const getUserIdForUI = () => {
     const user = authService.getCurrentUser()
     return user?.id || `guest-${Date.now()}`
   }
-  const [userId] = useState<string>(getCurrentUserId())
+  
+  const [userId] = useState<string | null>(getCurrentUserId())
+  const [uiUserId] = useState<string>(getUserIdForUI())
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set())
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [remixedMedia, setRemixedMedia] = useState<string | null>(null)
@@ -768,6 +776,7 @@ const WebsiteLayout: React.FC = () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        user_id: authService.getCurrentUser()?.id || userId,
         source_url: cloudinaryAsset.secure_url,  // Use Cloudinary URL - FIXED: was image_url
         width: cloudinaryAsset.width,
         height: cloudinaryAsset.width,
@@ -933,7 +942,7 @@ const WebsiteLayout: React.FC = () => {
       }
 
       // Check token availability first
-      const tokenCheck = await tokenService.canGenerate(userId, userTier, type, 'high')
+      const tokenCheck = await tokenService.canGenerate(uiUserId, userTier, type, 'high')
       
       if (!tokenCheck.canGenerate) {
         if (tokenCheck.reason?.includes('Daily limit')) {
@@ -996,8 +1005,12 @@ const WebsiteLayout: React.FC = () => {
           // Use new AIML utils for I2I generation
           const res = await fetch('/.netlify/functions/aimlApi', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authService.getToken()}`
+            },
             body: JSON.stringify({
+              user_id: authService.getCurrentUser()?.id || userId,
               prompt,
               source_url: cloudinaryAsset.secure_url, // Use Cloudinary URL instead of data URL
               steps: 36,
@@ -1051,8 +1064,12 @@ const WebsiteLayout: React.FC = () => {
             // Use new AIML utils for I2I variation generation
             const res = await fetch('/.netlify/functions/aimlApi', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authService.getToken()}`
+              },
               body: JSON.stringify({
+                user_id: authService.getCurrentUser()?.id || userId,
                 prompt,
                 source_url: cloudinaryAsset.secure_url, // Use Cloudinary URL instead of data URL
                 steps: 36,
@@ -1107,8 +1124,12 @@ const WebsiteLayout: React.FC = () => {
             // Use new AIML utils for I2I variation generation
             const res = await fetch('/.netlify/functions/aimlApi', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authService.getToken()}`
+              },
               body: JSON.stringify({
+                user_id: authService.getCurrentUser()?.id || userId,
                 prompt,
                 source_url: cloudinaryAsset.secure_url, // Use Cloudinary URL instead of data URL
                 steps: 36,
@@ -1192,7 +1213,7 @@ const WebsiteLayout: React.FC = () => {
         setCurrentFilter('all')
         
         // Deduct tokens after successful generation
-        await tokenService.generateContent(userId, userTier, type, 'high', prompt, '127.0.0.1', 'browser-device')
+        await tokenService.generateContent(uiUserId, userTier, type, 'high', prompt, '127.0.0.1', 'browser-device')
         console.log('Generated result and saved to profile:', result.result)
       } else {
         if (result.error?.includes('timeout')) {
@@ -1533,7 +1554,7 @@ const WebsiteLayout: React.FC = () => {
       // Note: No manual model selection - let server choose based on imageUrl presence
 
       // Check token availability for remix
-      const tokenCheck = await tokenService.canGenerate(userId, userTier, type, 'high')
+      const tokenCheck = await tokenService.canGenerate(uiUserId, userTier, type, 'high')
       
       if (!tokenCheck.canGenerate) {
         if (tokenCheck.reason?.includes('Daily limit')) {
@@ -1554,7 +1575,7 @@ const WebsiteLayout: React.FC = () => {
         type,
         quality: 'high', // Always HD quality
         style: selectedStyle,
-        userId: userId,
+        userId: uiUserId,
         userTier: userTier,
         // Note: modelId removed - let server choose model based on imageUrl presence
         imageUrl: remixedMedia ? remixedMedia : undefined, // Pass any remixed media URL for I2I
@@ -1594,7 +1615,7 @@ const WebsiteLayout: React.FC = () => {
         setCurrentFilter('all')
         
         // Deduct tokens after successful remix
-        await tokenService.generateContent(userId, userTier, type, 'high', remixPrompt, '127.0.0.1', 'browser-device')
+        await tokenService.generateContent(uiUserId, userTier, type, 'high', remixPrompt, '127.0.0.1', 'browser-device')
         console.log('Generated remix result and saved to profile:', result.result)
       } else {
         if (result.error?.includes('timeout')) {
@@ -2399,7 +2420,7 @@ const WebsiteLayout: React.FC = () => {
         isOpen={viewerOpen}
         media={viewerMedia.map((m) => ({
           id: m.id,
-          userId: userId,
+          userId: uiUserId,
           type: 'photo',
           url: m.url,
           prompt: m.prompt,
