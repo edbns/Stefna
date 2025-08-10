@@ -150,6 +150,7 @@ exports.handler = async (event) => {
       
       const row = {
         user_id: userId,
+        url: result_url,            // Required NOT NULL field - use result_url as the main URL
         result_url: result_url,
         source_url: source_url,
         job_id: jobId || null,
@@ -163,12 +164,24 @@ exports.handler = async (event) => {
         visibility: 'private',      // default private → user's profile only
         env: process.env.NODE_ENV === 'production' ? 'prod' : 'dev',
         allow_remix: false,         // user can flip this later
-        parent_asset_id: null       // set when this was a remix; else null
+        parent_asset_id: null,      // set when this was a remix; else null
+        resource_type: resourceType, // Required NOT NULL field
+        folder: 'users/' + userId,  // Required NOT NULL field
+        bytes: null,
+        duration: null,
+        meta: {
+          prompt: prompt || 'beautiful artwork',
+          negative_prompt: body.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
+          strength: payload.strength || null,
+          model: payload.model || null,
+          mode: resourceType === 'video' ? 'v2v' : 'i2i'
+        }
       };
 
       const { data: saved, error } = await supa.from('media_assets').insert(row).select().single();
       if (error) {
         console.error('Auto-save failed:', error);
+        console.error('Failed row data:', JSON.stringify(row, null, 2));
         // Don't fail the generation, just log the error
       }
       
