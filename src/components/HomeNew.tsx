@@ -253,6 +253,15 @@ const HomeNew: React.FC = () => {
     return true
   })
 
+  // Local floating notifications in Home
+  const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message?: string; type: 'processing'|'success'|'warning'|'error'|'complete'; timestamp: string }>>([])
+  const addNotification = (title: string, message = '', type: 'processing'|'success'|'warning'|'error'|'complete' = 'success') => {
+    const n = { id: Date.now(), title, message, type, timestamp: new Date().toISOString() }
+    setNotifications((prev) => [n, ...prev].slice(0, 5))
+    if (type !== 'error' && type !== 'processing') setTimeout(() => setNotifications((prev) => prev.filter((x) => x.id !== n.id)), 6000)
+  }
+  const removeNotification = (id: number) => setNotifications((prev) => prev.filter((x) => x.id !== id))
+
   return (
     <div className="flex min-h-screen bg-black relative">
       {/* Top nav */}
@@ -352,6 +361,25 @@ const HomeNew: React.FC = () => {
                 Sign up to continue
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Floating notifications for Home */}
+        {notifications.length > 0 && (
+          <div className="fixed top-4 right-4 z-50 space-y-2">
+            {notifications.map((n) => (
+              <div key={n.id} className="max-w-sm bg-gray-900/90 border border-white/10 rounded-2xl shadow-2xl">
+                <div className="p-3 flex items-start justify-between">
+                  <div className="pr-2">
+                    <p className="text-sm text-white font-medium">{n.title}</p>
+                    {n.message && <p className="text-xs text-white/60 mt-1">{n.message}</p>}
+                  </div>
+                  <button onClick={() => removeNotification(n.id)} className="text-white/40 hover:text-white">
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
