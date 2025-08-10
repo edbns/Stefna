@@ -4,7 +4,7 @@
 console.log('🚀 Testing Stefna Unified Schema in Production...');
 
 // Configuration - Update this with your actual production URL
-const PRODUCTION_URL = 'https://your-site-name.netlify.app'; // Replace with your actual URL
+const PRODUCTION_URL = 'https://stefna.netlify.app'; // Your Netlify domain
 
 // Test 1: Check if we can access the unified view
 async function testUnifiedView() {
