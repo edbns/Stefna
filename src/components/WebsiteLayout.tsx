@@ -684,24 +684,46 @@ const WebsiteLayout: React.FC = () => {
     const currentUserId = authService.getCurrentUser()?.id || userId
     const folder = `users/${currentUserId || "unknown"}`
     
-    const uploaded = await uploadToCloudinary(
-      asset.file ?? asset.url, // file if you have it, otherwise data URL
-      folder
-    )
+    // Retry logic for Cloudinary upload
+    let lastError: Error | null = null
+    const maxRetries = 3
+    const retryDelay = 2000 // 2 seconds
     
-    if (!uploaded?.secure_url) {
-      console.error('Cloudinary upload failed payload:', uploaded)
-      throw new Error('Cloudinary upload failed: no secure_url')
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`📤 Upload attempt ${attempt}/${maxRetries}...`)
+        
+        const uploaded = await uploadToCloudinary(
+          asset.file ?? asset.url, // file if you have it, otherwise data URL
+          folder
+        )
+        
+        if (!uploaded?.secure_url) {
+          throw new Error('Cloudinary upload failed: no secure_url')
+        }
+        
+        console.log('✅ Uploaded to Cloudinary:', String(uploaded.secure_url).slice(0, 50) + '...')
+        
+        return { 
+          secure_url: uploaded.secure_url, 
+          width: uploaded.width, 
+          height: uploaded.height, 
+          public_id: uploaded.public_id 
+        }
+      } catch (error) {
+        lastError = error as Error
+        console.warn(`⚠️ Upload attempt ${attempt} failed:`, error)
+        
+        if (attempt < maxRetries) {
+          console.log(`🔄 Retrying in ${retryDelay}ms...`)
+          await new Promise(resolve => setTimeout(resolve, retryDelay))
+        }
+      }
     }
     
-    console.log('✅ Uploaded to Cloudinary:', String(uploaded.secure_url).slice(0, 50) + '...')
-    
-    return { 
-      secure_url: uploaded.secure_url, 
-      width: uploaded.width, 
-      height: uploaded.height, 
-      public_id: uploaded.public_id 
-    }
+    // All retries failed
+    console.error('❌ Cloudinary upload failed after all retries:', lastError)
+    throw new Error(`Cloudinary upload failed after ${maxRetries} attempts: ${lastError?.message}`)
   }
 
   // Direct AIML API call with job tracking (bypassing cloudinary.js complications)
