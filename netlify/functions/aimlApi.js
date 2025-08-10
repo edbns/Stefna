@@ -2,6 +2,16 @@ const { verifyAuth } = require("./_auth");
 
 const httpUrl = (u) => typeof u === "string" && /^https?:\/\//i.test(u);
 
+// Log redaction for security (no secrets in request dumps)
+function redact(o) {
+  const s = JSON.stringify(o, (_k,v) =>
+    typeof v === 'string' && v.startsWith('data:image') ? '[data-url]' :
+    typeof v === 'string' && v.length > 100 ? v.slice(0,50) + '...[truncated]' :
+    v
+  );
+  return s.length > 1200 ? s.slice(0,1200) + '…[truncated]' : s;
+}
+
 exports.handler = async (event) => {
   const startTime = Date.now();
   try {
@@ -78,6 +88,16 @@ exports.handler = async (event) => {
         }
         
         // Return detailed error info to client
+        console.error('GEN', JSON.stringify({ 
+          userId, 
+          source: source || "custom", 
+          mode: mode,
+          error: out.message || `Provider error ${r.status}`,
+          details: redact(out),
+          ok: false, 
+          ms: Date.now() - startTime 
+        }));
+        
         return {
           statusCode: r.status,
           body: JSON.stringify({ 

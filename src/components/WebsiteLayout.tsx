@@ -1016,8 +1016,15 @@ const WebsiteLayout: React.FC = () => {
       }
       
       if (result.success && result.result) {
+        // Safety guard: ensure we have a result URL
+        if (!result.result?.url) {
+          console.error('🚨 No result URL in generation response:', result)
+          addNotification('Generation Failed', 'No image returned by service', 'error')
+          return
+        }
+        
         // Generate a media URL for the notification and user profile
-        const mediaUrl = result.result.url || uploadedMedia || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgdmlld0JveD0iMCAwIDgwMCA2MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI4MDAiIGhlaWdodD0iNjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjQwMCIgeT0iMzAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QbGFjZWhvbGRlciBJbWFnZTwvdGV4dD4KPC9zdmc+'
+        const mediaUrl = result.result.url || uploadedMedia || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgdmlld0JveD0iMCAwIDgwMCA2MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHg9IjQwMCIgeT0iMzAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QbGFjZWhvbGRlciBJbWFnZTwvdGV4dD4KPC9zdmc+'
         const aspectRatio = 4/3 // Default aspect ratio
         const width = 800
         const height = Math.round(width / aspectRatio)
@@ -1386,6 +1393,12 @@ const WebsiteLayout: React.FC = () => {
       const result = await aiGenerationService.generateContent(request)
       
       if (result.success && result.result) {
+        // Safety guard: ensure we have a result URL
+        if (!result.result?.url) {
+          console.error('🚨 No result URL in remix response:', result)
+          addNotification('Generation Failed', 'No image returned by service', 'error')
+          return
+        }
         // Generate a media URL for the notification and user profile
         const mediaUrl = result.result.url || remixedMedia || uploadedMedia || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgdmlld0JveD0iMCAwIDgwMCA2MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI4MDAiIGhlaWdodD0iNjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjQwMCIgeT0iMzAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QbGFjZWhvbGRlciBJbWFnZTwvdGV4dD4KPC9zdmc+'
         const aspectRatio = 4/3 // Default aspect ratio
