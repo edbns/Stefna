@@ -32,7 +32,8 @@ SELECT
   COALESCE(ma.env, 'dev') as env,
   COALESCE(ma.like_count, 0) as like_count,
   COALESCE(ma.allow_remix, false) as allow_remix,
-  COALESCE(ma.parent_asset_id, '') as parent_asset_id,
+  -- UUID columns should not use COALESCE with empty string
+  ma.parent_asset_id,
   COALESCE(ma.strength, 0.7) as strength,
   0 as likes_count,
   0 as remixes_count,
@@ -66,7 +67,8 @@ SELECT
   COALESCE(ma.env, 'dev') as env,
   COALESCE(ma.like_count, 0) as like_count,
   COALESCE(ma.allow_remix, false) as allow_remix,
-  COALESCE(ma.parent_asset_id, '') as parent_asset_id,
+  -- UUID columns should not use COALESCE with empty string
+  ma.parent_asset_id,
   COALESCE(ma.strength, 0.7) as strength,
   0 as likes_count,
   0 as remixes_count,
