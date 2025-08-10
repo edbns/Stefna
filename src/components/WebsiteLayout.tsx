@@ -726,9 +726,9 @@ const WebsiteLayout: React.FC = () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        image_url: cloudinaryAsset.secure_url,  // Use Cloudinary URL
+        source_url: cloudinaryAsset.secure_url,  // Use Cloudinary URL - FIXED: was image_url
         width: cloudinaryAsset.width,
-        height: cloudinaryAsset.height,
+        height: cloudinaryAsset.width,
         prompt: preset.prompt,
         negative_prompt: preset.negative,
         strength: preset.strength ?? 0.85,
