@@ -12,6 +12,16 @@ exports.handler = async (event) => {
 
     const { userId } = verifyAuth(event)
 
+    // Validate UUID; if not a UUID (e.g., custom/legacy id), return safe defaults
+    const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
+    if (!isUuid(userId)) {
+      return {
+        statusCode: 200,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ daily_used: 0, daily_limit: 30, weekly_used: 0, weekly_limit: 150 })
+      }
+    }
+
     const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
     const { data, error } = await supa.rpc('get_quota', { p_user_id: userId })
     if (error) {

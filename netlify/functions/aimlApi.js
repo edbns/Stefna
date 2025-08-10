@@ -104,16 +104,21 @@ exports.handler = async (event) => {
     const cost = resourceType === 'video' ? 5 : 2;
     try {
       const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-      // Pre-check
-      const { data: precheck, error: preErr } = await supa.rpc('can_consume_tokens', { p_user_id: userId, p_cost: cost });
+      // Only run quota if userId is a UUID
+      const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
+      if (!isUuid(userId)) {
+        console.warn('Skipping quota precheck for non-UUID userId')
+      } else {
+        const { data: precheck, error: preErr } = await supa.rpc('can_consume_tokens', { p_user_id: userId, p_cost: cost });
       if (preErr) {
         console.error('Quota precheck error:', preErr);
         return { statusCode: 500, body: JSON.stringify({ message: 'Quota check failed' }) };
       }
-      const okRow = Array.isArray(precheck) ? precheck[0] : precheck;
-      if (!okRow?.ok) {
-        const reason = okRow?.reason || 'Quota exceeded';
-        return { statusCode: 429, body: JSON.stringify({ message: reason, quota: okRow }) };
+        const okRow = Array.isArray(precheck) ? precheck[0] : precheck;
+        if (!okRow?.ok) {
+          const reason = okRow?.reason || 'Quota exceeded';
+          return { statusCode: 429, body: JSON.stringify({ message: reason, quota: okRow }) };
+        }
       }
     } catch (qe) {
       console.error('Quota check exception:', qe);
@@ -195,12 +200,14 @@ exports.handler = async (event) => {
     // Auto-save the generated media to database and consume tokens
     try {
       const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-      // Consume tokens after successful generation
-      const { data: consumed, error: consumeErr } = await supa.rpc('consume_tokens', { p_user_id: userId, p_cost: cost, p_kind: resourceType });
-      if (consumeErr || !consumed?.[0]?.ok) {
-        console.error('Token consumption failed:', consumeErr || consumed);
-        // If consumption fails, do not save media (prevent free generation)
-        return { statusCode: 429, body: JSON.stringify({ message: 'Quota exceeded during finalize' }) };
+      // Consume tokens after successful generation (only if UUID)
+      const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
+      if (isUuid(userId)) {
+        const { data: consumed, error: consumeErr } = await supa.rpc('consume_tokens', { p_user_id: userId, p_cost: cost, p_kind: resourceType });
+        if (consumeErr || !consumed?.[0]?.ok) {
+          console.error('Token consumption failed:', consumeErr || consumed);
+          return { statusCode: 429, body: JSON.stringify({ message: 'Quota exceeded during finalize' }) };
+        }
       }
       
        const row = {

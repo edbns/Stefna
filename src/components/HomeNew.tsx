@@ -197,13 +197,13 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  const handlePresetClick = (presetName: string) => {
-    if (!authService.getToken()) {
-      navigate('/auth')
-      return
-    }
-    setActiveTab('prompt')
-    setPrompt((prev) => prev || `${presetName} style`)
+  const handlePresetClick = async (presetName: string) => {
+    const token = authService.getToken()
+    if (!token) { navigate('/auth'); return }
+    // Use preset text seed, then immediately generate
+    const seed = `${presetName} style`
+    setPrompt((prev) => prev || seed)
+    await handleGenerate()
   }
 
   const handleLike = async (media: UserMedia) => {
