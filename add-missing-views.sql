@@ -21,26 +21,26 @@ ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS share_count INTEGER DEFAULT 0;
 -- Step 2: Create interaction tables if they don't exist
 CREATE TABLE IF NOT EXISTS media_likes (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  media_id UUID NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
+  asset_id UUID NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(media_id, user_id)
+  UNIQUE(asset_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS media_remixes (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  media_id UUID NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
+  asset_id UUID NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(media_id, user_id)
+  UNIQUE(asset_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS media_shares (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  media_id UUID NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
+  asset_id UUID NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(media_id, user_id)
+  UNIQUE(asset_id, user_id)
 );
 
 -- Step 3: Enable RLS on interaction tables
@@ -92,11 +92,11 @@ BEGIN
 END $$;
 
 -- Step 5: Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_media_likes_media_id ON media_likes(media_id);
+CREATE INDEX IF NOT EXISTS idx_media_likes_asset_id ON media_likes(asset_id);
 CREATE INDEX IF NOT EXISTS idx_media_likes_user_id ON media_likes(user_id);
-CREATE INDEX IF NOT EXISTS idx_media_remixes_media_id ON media_remixes(media_id);
+CREATE INDEX IF NOT EXISTS idx_media_remixes_asset_id ON media_remixes(asset_id);
 CREATE INDEX IF NOT EXISTS idx_media_remixes_user_id ON media_remixes(user_id);
-CREATE INDEX IF NOT EXISTS idx_media_shares_media_id ON media_shares(media_id);
+CREATE INDEX IF NOT EXISTS idx_media_shares_asset_id ON media_shares(asset_id);
 CREATE INDEX IF NOT EXISTS idx_media_shares_user_id ON media_shares(user_id);
 
 -- Step 6: Create the user_media_with_counts view
@@ -108,20 +108,20 @@ SELECT
   COALESCE(ms.count, 0) as shares_count
 FROM media_assets ma
 LEFT JOIN (
-  SELECT media_id, COUNT(*) as count
+  SELECT asset_id, COUNT(*) as count
   FROM media_likes
-  GROUP BY media_id
-) ml ON ma.id = ml.media_id
+  GROUP BY asset_id
+) ml ON ma.id = ml.asset_id
 LEFT JOIN (
-  SELECT media_id, COUNT(*) as count
+  SELECT asset_id, COUNT(*) as count
   FROM media_remixes
-  GROUP BY media_id
-) mr ON ma.id = mr.media_id
+  GROUP BY asset_id
+) mr ON ma.id = mr.asset_id
 LEFT JOIN (
-  SELECT media_id, COUNT(*) as count
+  SELECT asset_id, COUNT(*) as count
   FROM media_shares
-  GROUP BY media_id
-) ms ON ma.id = ms.media_id;
+  GROUP BY asset_id
+) ms ON ma.id = ms.asset_id;
 
 -- Step 7: Create the public_media_with_counts view
 CREATE OR REPLACE VIEW public_media_with_counts AS
@@ -132,20 +132,20 @@ SELECT
   COALESCE(ms.count, 0) as shares_count
 FROM media_assets ma
 LEFT JOIN (
-  SELECT media_id, COUNT(*) as count
+  SELECT asset_id, COUNT(*) as count
   FROM media_likes
-  GROUP BY media_id
-) ml ON ma.id = ml.media_id
+  GROUP BY asset_id
+) ml ON ma.id = ml.asset_id
 LEFT JOIN (
-  SELECT media_id, COUNT(*) as count
+  SELECT asset_id, COUNT(*) as count
   FROM media_remixes
-  GROUP BY media_id
-) mr ON ma.id = mr.media_id
+  GROUP BY asset_id
+) mr ON ma.id = mr.asset_id
 LEFT JOIN (
-  SELECT media_id, COUNT(*) as count
+  SELECT asset_id, COUNT(*) as count
   FROM media_shares
-  GROUP BY media_id
-) ms ON ma.id = ms.media_id
+  GROUP BY asset_id
+) ms ON ma.id = ms.asset_id
 WHERE ma.visibility = 'public';
 
 -- Step 8: Grant permissions on views
