@@ -74,7 +74,7 @@ class EnvironmentService {
     if (!aimlApiKey) {
       console.error('Missing AIML API key!')
       console.error('Expected: VITE_AIML_API_KEY')
-      console.error('Available VITE_ vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')))
+      console.error('Available VITE_ vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')).join(', '))
       return false
     }
     
@@ -84,7 +84,7 @@ class EnvironmentService {
     if (!this.config.supabaseUrl || !this.config.supabaseAnonKey) {
       console.error('Missing Supabase configuration!')
       console.error('Expected: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
-      console.error('Available VITE_ vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')))
+      console.error('Available VITE_ vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')).join(', '))
       return false
     }
     
