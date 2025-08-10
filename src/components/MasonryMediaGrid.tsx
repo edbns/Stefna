@@ -173,10 +173,12 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                           </button>
                         )}
 
+                        {/* Share/Unshare button - shows different icon based on current state */}
                         {onShare && (
                           <button
                             onClick={(e) => handleAction(() => onShare(item), e)}
                             className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
+                            title="Share"
                           >
                             <Share2 size={16} />
                           </button>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { ArrowLeft, Heart } from 'lucide-react'
+import { ArrowLeft, Heart, Share2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import userMediaService, { UserMedia } from '../services/userMediaService'
 import RemixIcon from '../components/RemixIcon'
@@ -41,22 +41,60 @@ const GalleryScreen: React.FC<GalleryScreenProps> = ({
     const loadPublicMedia = async () => {
       setIsLoading(true)
       try {
-        // Get all public media from all users
-        const allUsers = await userMediaService.getAllUsers()
-        const publicMediaItems = []
-        
-        for (const userId of allUsers) {
-          const userMedia = await userMediaService.getUserMedia(userId)
-          // Filter only public media
-          const publicUserMedia = userMedia.filter(media => media.isPublic)
-          publicMediaItems.push(...publicUserMedia)
+        // Load public media from database using new Netlify Function
+        const response = await fetch('/.netlify/functions/getPublicFeed', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          const dbMedia = result.media || []
+          
+          // Transform database media to UserMedia format for compatibility
+          const transformedMedia = dbMedia.map((item: any) => ({
+            id: item.id,
+            userId: item.user_id,
+            type: 'photo', // Default to photo for now
+            url: item.result_url,
+            prompt: item.prompt || 'AI Generated Content',
+            aspectRatio: 4/3, // Default aspect ratio
+            width: item.width || 800,
+            height: item.height || 600,
+            timestamp: item.created_at,
+            tokensUsed: 2, // Default token usage
+            likes: 0, // Will be updated when we implement likes
+            remixCount: 0, // Will be updated when we implement remix counts
+            isPublic: true, // All media from public feed is public
+            allowRemix: item.allow_remix || false,
+            tags: [],
+            metadata: {
+              quality: 'high',
+              generationTime: 0,
+              modelVersion: '1.0'
+            }
+          }))
+          
+          setMedia(transformedMedia)
+        } else {
+          console.error('Failed to load public media from database:', response.statusText)
+          // Fallback to local service if database fails
+          const allUsers = await userMediaService.getAllUsers()
+          const publicMediaItems = []
+          
+          for (const userId of allUsers) {
+            const userMedia = await userMediaService.getUserMedia(userId)
+            const publicUserMedia = userMedia.filter(media => media.isPublic)
+            publicMediaItems.push(...publicUserMedia)
+          }
+          
+          const sortedMedia = publicMediaItems
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          
+          setMedia(sortedMedia)
         }
-        
-        // Sort by timestamp (newest first)
-        const sortedMedia = publicMediaItems
-          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        
-        setMedia(sortedMedia)
       } catch (error) {
         console.error('Failed to load public media:', error)
         setMedia([])
@@ -73,8 +111,8 @@ const GalleryScreen: React.FC<GalleryScreenProps> = ({
     const initialLikes: Record<string, number> = {}
     const initialRemixes: Record<string, number> = {}
     media.forEach(m => {
-      initialLikes[m.id] = (m as any).likes ?? 0
-      initialRemixes[m.id] = (m as any).remixCount ?? 0
+      initialLikes[m.id] = (m as any).likes_count ?? 0
+      initialRemixes[m.id] = (m as any).remixes_count ?? 0
     })
     setLikeCounts(initialLikes)
     setRemixCounts(initialRemixes)
@@ -159,6 +197,17 @@ const GalleryScreen: React.FC<GalleryScreenProps> = ({
     setRemixCounts(prev => ({ ...prev, [media.id]: (prev[media.id] ?? 0) + 1 }))
     // Redirect to home with remix payload
     navigate('/', { state: { remixUrl: media.url, remixPrompt: media.prompt || '', source: 'gallery' } })
+  }
+
+  const handleShare = async (media: UserMedia) => {
+    if (!authService.isAuthenticated()) {
+      alert('Login Required: Please sign in to share media')
+      navigate('/auth')
+      return
+    }
+    // In a real app, you would use a share API here
+    alert(`Sharing media with ID: ${media.id}`)
+    console.log('Sharing media with ID:', media.id)
   }
 
   const getTypeIcon = (type: 'photo' | 'video' | 'remix') => {
@@ -276,6 +325,15 @@ const GalleryScreen: React.FC<GalleryScreenProps> = ({
 
                     {/* CTA Buttons - Bottom Right */}
                     <div className="absolute bottom-3 right-3 flex items-center space-x-4">
+                      {/* Share Button */}
+                      <button
+                        onClick={(e) => handleAction(() => handleShare(item), e)}
+                        className="w-8 h-8 flex items-center justify-center focus:outline-none active:transform-none"
+                        title="Share"
+                      >
+                        <Share2 size={16} className="text-white" />
+                      </button>
+
                       {/* Like Button */}
                       <div className="flex items-center space-x-0.5">
                         {likeCounts[item.id] > 0 && (

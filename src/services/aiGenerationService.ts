@@ -348,9 +348,16 @@ class AIGenerationService {
         throw new Error(`No image/video URL returned from AI service. Available keys: ${Object.keys(result).join(', ')}`)
       }
 
+      // Check if the media was auto-saved by the server
+      if (result.saved?.id) {
+        console.log('✅ Media auto-saved by server:', result.saved.id)
+      } else {
+        console.log('⚠️ Media not auto-saved by server')
+      }
+
       // Return the generated result
       return {
-        id: this.generateId(),
+        id: result.saved?.id || this.generateId(), // Use server-generated ID if available
         url: generatedUrl,
         prompt: request.prompt,
         type: request.type,

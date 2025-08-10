@@ -5,6 +5,10 @@ export interface EnvironmentConfig {
   // App Configuration
   appEnv: 'development' | 'production' | 'staging'
   debugMode: boolean
+  
+  // Supabase Configuration
+  supabaseUrl: string
+  supabaseAnonKey: string
 }
 
 class EnvironmentService {
@@ -26,7 +30,11 @@ class EnvironmentService {
     return {
       // App Configuration
       appEnv: (import.meta.env.VITE_APP_ENV as 'development' | 'production' | 'staging') || 'development',
-      debugMode: import.meta.env.VITE_DEBUG_MODE === 'true'
+      debugMode: import.meta.env.VITE_DEBUG_MODE === 'true',
+      
+      // Supabase Configuration
+      supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+      supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || ''
     }
   }
 
@@ -49,6 +57,15 @@ class EnvironmentService {
     return this.config.appEnv === 'production'
   }
 
+  // Supabase Configuration
+  getSupabaseUrl(): string {
+    return this.config.supabaseUrl
+  }
+
+  getSupabaseAnonKey(): string {
+    return this.config.supabaseAnonKey
+  }
+
   // Validation methods
   isConfigured(): boolean {
     // Check if AIML API key is configured (try both possible names)
@@ -62,6 +79,16 @@ class EnvironmentService {
     }
     
     console.log('✅ AIML API key found:', aimlApiKey ? 'Configured' : 'Missing')
+    
+    // Check if Supabase is configured
+    if (!this.config.supabaseUrl || !this.config.supabaseAnonKey) {
+      console.error('Missing Supabase configuration!')
+      console.error('Expected: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
+      console.error('Available VITE_ vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')))
+      return false
+    }
+    
+    console.log('✅ Supabase configuration found')
     
     // In development mode, always allow generation
     if (this.config.appEnv === 'development') {
@@ -77,7 +104,9 @@ class EnvironmentService {
   // Get configuration status for debugging
   getConfigStatus(): { [key: string]: boolean } {
     return {
-      fullyConfigured: this.isConfigured()
+      fullyConfigured: this.isConfigured(),
+      supabaseConfigured: !!(this.config.supabaseUrl && this.config.supabaseAnonKey),
+      aimlConfigured: !!(import.meta.env.VITE_AIMLAPI_API_KEY || import.meta.env.VITE_AIML_API_KEY)
     }
   }
 }

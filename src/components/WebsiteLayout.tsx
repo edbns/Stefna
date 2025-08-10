@@ -18,6 +18,7 @@ import { deleteAsset } from '../lib/cloudinary'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import { signedFetch } from '../lib/auth'
 import { addToGallery } from '../lib/gallery'
+import { buildEditPayload, pickResultUrl } from '../utils/aimlUtils'
 import {
   AnimeDreamIcon,
   CyberpunkNeonIcon,
@@ -54,6 +55,7 @@ const WebsiteLayout: React.FC = () => {
       allowRemix: true
     }
   })
+  
   // Unified sidebar state management
   const [sidebarMode, setSidebarMode] = useState<'idle' | 'upload' | 'remix' | 'i2iv2v'>('idle')
   const [uploadedMedia, setUploadedMedia] = useState<string | null>(null)
@@ -223,6 +225,16 @@ const WebsiteLayout: React.FC = () => {
   const [selectedStyle, setSelectedStyle] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [draftMedia, setDraftMedia] = useState<string | null>(null)
+  
+  // New UI controls for Supabase integration
+  const [shareToFeed, setShareToFeed] = useState(false)     // -> visibility
+  const [allowRemix, setAllowRemix] = useState(false)       // only valid when shareToFeed === true
+
+
+  // Enforce rule: if Share is off, force Allow Remix off and disable the switch
+  useEffect(() => {
+    if (!shareToFeed && allowRemix) setAllowRemix(false)
+  }, [shareToFeed, allowRemix])
   
   // AI as a Brush presets with context-aware suggestions
   const aiAsBrushStyles = [
@@ -595,29 +607,14 @@ const WebsiteLayout: React.FC = () => {
             addToGallery(newItem)
             console.log('✅ Added to gallery:', { url: displayUrl.substring(0, 50) + '...', type: "photo" })
             
-            // Optional: persist to DB AFTER success
-            try {
-              const resp = await signedFetch("/.netlify/functions/record-asset", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  url: data.result_url,          // save RAW result_url (no ?t= cachebuster)
-                  resource_type: "image",        // <-- IMPORTANT: use "image" not "photo"
-                  meta: data.echo
-                })
-              })
-
-              const payload = await resp.json().catch(() => null)
-              if (!resp.ok) {
-                console.error("record-asset failed:", payload)
-                addNotification("Save failed", payload?.message || "Couldn't save to your profile.", "error")
-              } else {
-                console.log('✅ Saved to database')
-                addNotification("Saved", "Added to your profile.", "success")
-              }
-            } catch (dbError) {
-              console.error('⚠️ Database save error:', dbError)
-              addNotification("Save failed", "Network error saving to profile.", "error")
+            // Media is now auto-saved by the server (aimlApi function)
+            // Check if we have the saved data from the response
+            if (data.saved?.id) {
+              console.log('✅ Media auto-saved by server:', data.saved.id)
+              addNotification("Saved", "Added to your profile.", "success")
+            } else {
+              console.log('⚠️ Media not auto-saved by server')
+              addNotification("Warning", "Media generated but not saved to profile", "warning")
             }
             
             addNotification('Preset Applied!', `${style.name} style applied successfully`, 'success')
@@ -944,22 +941,38 @@ const WebsiteLayout: React.FC = () => {
         if (isImage && hasTransformationKeywords) {
           console.log(`🖼️ Using AIML I2I for image transformation. Prompt: "${prompt.substring(0, 50)}..."`)
           
-          // Use AIML I2I for image transformation
-          const currentAsset = {
-            url: uploadedMedia || '',
-            width: 1024,
-            height: 1024,
-            file: uploadedFile,
-            id: `transform_${Date.now()}`
+                      // Use new AIML utils for I2I generation
+          const res = await fetch('/.netlify/functions/aimlApi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt,
+              source_url: uploadedMedia,
+              steps: 36,
+              strength: 0.7,
+              resource_type: 'image'
+            })
+          }).then(r => r.json())
+
+          const resultUrl = pickResultUrl(res)
+          if (!resultUrl) {
+            addNotification('Generation failed', 'No image returned by the service.', 'error')
+            setIsGenerating(false)
+            return
           }
           
-          const data = await runPresetWithJobId(currentAsset, 'Custom Transform')
+          // Check if the media was auto-saved by the server
+          if (res.saved?.id) {
+            console.log('✅ Media auto-saved by server:', res.saved.id)
+          } else {
+            console.log('⚠️ Media not auto-saved by server')
+          }
           
           result = {
             success: true,
             result: {
-              id: `i2i_${Date.now()}`,
-              url: data.result_url,
+              id: res.saved?.id || `i2i_${Date.now()}`,
+              url: resultUrl,
               prompt: prompt,
               type: 'photo',
               tokensUsed: 2
@@ -974,45 +987,93 @@ const WebsiteLayout: React.FC = () => {
           // We have uploaded media but no transformation keywords - could be remix/variation
           if (uploadedMedia && isImage) {
             console.log(`🖼️ Using I2I for image variation. Prompt: "${prompt.substring(0, 50)}..."`)
-            const request: GenerationRequest = {
-              prompt,
-              type: 'photo',
-              quality: 'high',
-              style: styleName || selectedStyle,
-              userId: userId,
-              userTier: userTier,
-              imageUrl: uploadedMedia,  // 🔥 Pass the image for I2I - server will pick model
-              samples: selectedVariation // Number of variations to generate
+            
+            // Use new AIML utils for I2I variation generation
+            const res = await fetch('/.netlify/functions/aimlApi', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                prompt,
+                source_url: uploadedMedia,
+                steps: 36,
+                strength: 0.7,
+                resource_type: 'image'
+              })
+            }).then(r => r.json())
+
+            const resultUrl = pickResultUrl(res)
+            if (!resultUrl) {
+              addNotification('Generation failed', 'No image returned by the service.', 'error')
+              setIsGenerating(false)
+              return
             }
-            result = await aiGenerationService.generateContent(request)
+            
+            // Check if the media was auto-saved by the server
+            if (res.saved?.id) {
+              console.log('✅ Media auto-saved by server:', res.saved.id)
+            } else {
+              console.log('⚠️ Media not auto-saved by server')
+            }
+            
+            result = {
+              success: true,
+              result: {
+                id: res.saved?.id || `i2i_variation_${Date.now()}`,
+                url: resultUrl,
+                prompt: prompt,
+                type: 'photo',
+                tokensUsed: 2
+              }
+            }
           } else {
-            console.log(`📝 Using text-to-image generation. Prompt: "${prompt.substring(0, 50)}..."`)
-            // Regular text-to-image
-            const request: GenerationRequest = {
-              prompt,
-              type: 'photo',
-              quality: 'high',
-              style: styleName || selectedStyle,
-              userId: userId,
-              userTier: userTier,
-              samples: selectedVariation // Number of variations to generate
+            // We have uploaded media but no transformation keywords - this is a variation/remix
+            console.log(`🖼️ Using I2I for image variation. Prompt: "${prompt.substring(0, 50)}..."`)
+            
+            // Use new AIML utils for I2I variation generation
+            const res = await fetch('/.netlify/functions/aimlApi', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                prompt,
+                source_url: uploadedMedia,
+                steps: 36,
+                strength: 0.7,
+                resource_type: 'image'
+              })
+            }).then(r => r.json())
+
+            const resultUrl = pickResultUrl(res)
+            if (!resultUrl) {
+              addNotification('Generation failed', 'No image returned by the service.', 'error')
+              setIsGenerating(false)
+              return
             }
-            result = await aiGenerationService.generateContent(request)
+            
+            // Check if the media was auto-saved by the server
+            if (res.saved?.id) {
+              console.log('✅ Media auto-saved by server:', res.saved.id)
+            } else {
+              console.log('⚠️ Media not auto-saved by server')
+            }
+            
+            result = {
+              success: true,
+              result: {
+                id: res.saved?.id || `i2i_variation_${Date.now()}`,
+                url: resultUrl,
+                prompt: prompt,
+                type: 'photo',
+                tokensUsed: 2
+              }
+            }
           }
         }
       } else {
-        // No uploaded media - regular text-to-image generation
-        console.log(`📝 Text-to-image generation. Prompt: "${prompt.substring(0, 50)}..."`)
-      const request: GenerationRequest = {
-        prompt,
-          type: 'photo',
-          quality: 'high',
-        style: styleName || selectedStyle,
-        userId: userId,
-          userTier: userTier,
-          samples: selectedVariation // Number of variations to generate
-        }
-        result = await aiGenerationService.generateContent(request)
+        // No uploaded media - this shouldn't happen in a photo editing app
+        console.log(`❌ No media uploaded for editing`)
+        addNotification('No Media Selected', 'Please upload a photo/video or select media to remix', 'warning')
+        setIsGenerating(false)
+        return
       }
       
       if (result.success && result.result) {
@@ -1029,28 +1090,15 @@ const WebsiteLayout: React.FC = () => {
         const width = 800
         const height = Math.round(width / aspectRatio)
         
-        // Use the component-level userSettings
-
-        // Save to user media profile (assign TTL if guest)
-        await userMediaService.saveMedia({
-          userId: userId,
-          type: result.result.type || type,
-          url: mediaUrl,
-          prompt: prompt,
-          style: activeTab === 'aiasabrush' ? (styleName || selectedStyle) : undefined,
-          aspectRatio: aspectRatio,
-          width: width,
-          height: height,
-          tokensUsed: result.result.tokensUsed || 2,
-          isPublic: userSettings.shareToFeed,
-          allowRemix: userSettings.allowRemix,
-          tags: prompt.split(' ').slice(0, 3), // Extract first 3 words as tags
-          metadata: {
-            quality: 'high',
-            generationTime: 2000,
-            modelVersion: 'v2.0'
-          }
-        }, userSettings)
+        // Media is now auto-saved by the server (aimlApi function)
+        // Check if we have the saved data from the response
+        if (result.result.id && result.result.id !== `i2i_${Date.now()}` && result.result.id !== `i2i_variation_${Date.now()}`) {
+          console.log('✅ Media auto-saved by server:', result.result.id)
+          addNotification("Saved", "Added to your profile.", "success")
+        } else {
+          console.log('⚠️ Media not auto-saved by server')
+          addNotification("Warning", "Media generated but not saved to profile", "warning")
+        }
         
         // Refresh public feed if media was shared to feed
         if (userSettings.shareToFeed) {
@@ -1133,14 +1181,45 @@ const WebsiteLayout: React.FC = () => {
       return
     }
     
-    const user = authService.getCurrentUser()
-    const currentUserId = user?.id || localStorage.getItem('stefna_guest_id') || 'guest-anon'
-    const { liked } = await userMediaService.toggleLike(_id, currentUserId)
-    setLikedItems(prev => {
-      const updated = new Set(prev)
-      if (liked) updated.add(_id); else updated.delete(_id)
-      return updated
-    })
+    try {
+      // Import the interaction service
+      const { interactionService } = await import('../services/interactionService')
+      
+      // Use centralized service for like operation
+      const result = await interactionService.toggleLike(_id)
+      
+      if (result.success) {
+        // Update local state based on the result
+        setLikedItems(prev => {
+          const updated = new Set(prev)
+          if (result.isLiked) {
+            updated.add(_id)
+          } else {
+            updated.delete(_id)
+          }
+          return updated
+        })
+        
+        // Update the media item's like count if available
+        setPublicMedia(prev => prev.map(item => {
+          if (item.id === _id) {
+            return { ...item, likes_count: result.likeCount || 0 }
+          }
+          return item
+        }))
+        
+        addNotification(
+          result.action === 'liked' ? 'Liked!' : 'Unliked!', 
+          result.action === 'liked' ? 'Media added to your likes' : 'Media removed from your likes', 
+          'success'
+        )
+      } else {
+        addNotification('Like Failed', result.error || 'Failed to update like', 'error')
+      }
+    } catch (error) {
+      console.error('Like operation failed:', error)
+      addNotification('Like Failed', 'An error occurred while updating like', 'error')
+    }
   }
 
   const handleRemix = (_id: string) => {
@@ -1161,6 +1240,19 @@ const WebsiteLayout: React.FC = () => {
       handleRemixMedia(mediaUrl)
       addNotification('Remix Started', 'Preparing remix interface...', 'info')
     }
+  }
+
+  const handleShare = async (_id: string) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      addNotification('Login Required', 'Please sign in to share media', 'warning')
+      navigate('/auth')
+      return
+    }
+    
+    // In a real app, you would implement actual sharing logic here
+    addNotification('Share Started', 'Preparing to share media...', 'info')
+    console.log('Sharing media with ID:', _id)
   }
 
   const handleSaveToDraft = () => {
@@ -1405,18 +1497,15 @@ const WebsiteLayout: React.FC = () => {
         const width = 800
         const height = Math.round(width / aspectRatio)
         
-        // Save remix to user media profile
-        await userMediaService.saveRemix(
-          userId,
-          'original-media-id', // In real app, this would be the actual original media ID
-          mediaUrl,
-          remixPrompt,
-          aspectRatio,
-          width,
-          height,
-          2, // tokens used
-          activeTab === 'aiasabrush' ? selectedStyle : undefined
-        )
+        // Media is now auto-saved by the server (aiGenerationService calls aimlApi)
+        // Check if we have the saved data from the response
+        if (result.result.id && !result.result.id.startsWith('remix_')) {
+          console.log('✅ Remix auto-saved by server:', result.result.id)
+          addNotification("Saved", "Remix added to your profile.", "success")
+        } else {
+          console.log('⚠️ Remix not auto-saved by server')
+          addNotification("Warning", "Remix generated but not saved to profile", "warning")
+        }
         
         addNotification('Your Media is Ready', 'Remix generated successfully', 'complete', mediaUrl, 'image')
         
@@ -1471,23 +1560,61 @@ const WebsiteLayout: React.FC = () => {
   useEffect(() => {
     const loadPublicMedia = async () => {
       try {
-        // Get all public media from all users
-        const allUsers = await userMediaService.getAllUsers()
-        const publicMediaItems = []
-        
-        for (const userId of allUsers) {
-          const userMedia = await userMediaService.getUserMedia(userId)
-          // Filter only public media
-          const publicUserMedia = userMedia.filter(media => media.isPublic)
-          publicMediaItems.push(...publicUserMedia)
+        // Load public media from database using new Netlify Function
+        const response = await fetch('/.netlify/functions/getPublicFeed', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          const dbMedia = result.media || []
+          
+          // Transform database media to UserMedia format for compatibility
+          const transformedMedia = dbMedia.map((item: any) => ({
+            id: item.id,
+            userId: item.user_id,
+            type: 'photo', // Default to photo for now
+            url: item.result_url,
+            prompt: item.prompt || 'AI Generated Content',
+            aspectRatio: 4/3, // Default aspect ratio
+            width: item.width || 800,
+            height: item.height || 600,
+            timestamp: item.created_at,
+            tokensUsed: 2, // Default token usage
+            likes: 0, // Will be updated when we implement likes
+            remixCount: 0, // Will be updated when we implement remix counts
+            isPublic: true, // All media from public feed is public
+            allowRemix: item.allow_remix || false,
+            tags: [],
+            metadata: {
+              quality: 'high',
+              generationTime: 0,
+              modelVersion: '1.0'
+            }
+          }))
+          
+          setPublicMedia(transformedMedia)
+        } else {
+          console.error('Failed to load public media from database:', response.statusText)
+          // Fallback to local service if database fails
+          const allUsers = await userMediaService.getAllUsers()
+          const publicMediaItems = []
+          
+          for (const userId of allUsers) {
+            const userMedia = await userMediaService.getUserMedia(userId)
+            const publicUserMedia = userMedia.filter(media => media.isPublic)
+            publicMediaItems.push(...publicUserMedia)
+          }
+          
+          const sortedMedia = publicMediaItems
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+            .slice(0, 50)
+          
+          setPublicMedia(sortedMedia)
         }
-        
-        // Sort by timestamp (newest first) and limit
-        const sortedMedia = publicMediaItems
-          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-          .slice(0, 50)
-        
-        setPublicMedia(sortedMedia)
       } catch (error) {
         console.error('Failed to load public media:', error)
         setPublicMedia([])
@@ -1500,20 +1627,61 @@ const WebsiteLayout: React.FC = () => {
   // Function to refresh public media feed (after new generation)
   const refreshPublicFeed = async () => {
     try {
-      const allUsers = await userMediaService.getAllUsers()
-      const publicMediaItems = []
-      
-      for (const userId of allUsers) {
-        const userMedia = await userMediaService.getUserMedia(userId)
-        const publicUserMedia = userMedia.filter(media => media.isPublic)
-        publicMediaItems.push(...publicUserMedia)
+      // Refresh public media from database using new Netlify Function
+      const response = await fetch('/.netlify/functions/getPublicFeed', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        const dbMedia = result.media || []
+        
+        // Transform database media to UserMedia format for compatibility
+        const transformedMedia = dbMedia.map((item: any) => ({
+          id: item.id,
+          userId: item.user_id,
+          type: 'photo', // Default to photo for now
+          url: item.result_url,
+          prompt: item.prompt || 'AI Generated Content',
+          aspectRatio: 4/3, // Default aspect ratio
+          width: item.width || 800,
+          height: item.height || 600,
+          timestamp: item.created_at,
+          tokensUsed: 2, // Default token usage
+          likes: 0, // Will be updated when we implement likes
+          remixCount: 0, // Will be updated when we implement remix counts
+          isPublic: true, // All media from public feed is public
+          allowRemix: item.allow_remix || false,
+          tags: [],
+          metadata: {
+            quality: 'high',
+            generationTime: 0,
+            modelVersion: '1.0'
+          }
+        }))
+        
+        setPublicMedia(transformedMedia)
+      } else {
+        console.error('Failed to refresh public media from database:', response.statusText)
+        // Fallback to local service if database fails
+        const allUsers = await userMediaService.getAllUsers()
+        const publicMediaItems = []
+        
+        for (const userId of allUsers) {
+          const userMedia = await userMediaService.getUserMedia(userId)
+          const publicUserMedia = userMedia.filter(media => media.isPublic)
+          publicMediaItems.push(...publicUserMedia)
+        }
+        
+        const sortedMedia = publicMediaItems
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 50)
+        
+        setPublicMedia(sortedMedia)
       }
-      
-      const sortedMedia = publicMediaItems
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        .slice(0, 50)
-      
-      setPublicMedia(sortedMedia)
     } catch (error) {
       console.error('Failed to refresh public media:', error)
     }
@@ -1922,6 +2090,8 @@ const WebsiteLayout: React.FC = () => {
                     </div>
                   </div>
 
+
+
                   {/* Variations Section */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -1972,7 +2142,7 @@ const WebsiteLayout: React.FC = () => {
                           await handleGenerate({ source: 'custom', auto: false, userInitiated: true })
                         }
                       })}
-                      disabled={isGenerating || (!customPrompt.trim() && !remixPrompt.trim())}
+                      disabled={isGenerating || (!customPrompt.trim() && !remixPrompt.trim()) || (!uploadedMedia && !remixedMedia)}
                       className="w-12 h-12 bg-white text-black rounded-full hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 group"
                       aria-label={`Create ${sidebarMode === 'remix' ? 'remix' : 'edit'}`}
                       title={`Create ${sidebarMode === 'remix' ? 'Remix' : 'Edit'}`}
@@ -2105,6 +2275,7 @@ const WebsiteLayout: React.FC = () => {
                     isLoggedIn={isAuthenticated}
                     onLike={handleLike}
                     onRemix={item.media?.allowRemix ? handleRemix : () => {}} // Only show remix if allowed
+                    onShare={handleShare}
                     onDownload={handleDownload}
                     onDelete={undefined} // Don't allow deletion of other users' content
                     onShowAuth={() => navigate('/auth')}
@@ -2122,7 +2293,7 @@ const WebsiteLayout: React.FC = () => {
                     onShowMedia={(id, _title, prompt) => {
                       const list = generateItems(Math.min(items, maxItems)).map((g) => ({
                         id: g.media ? g.media.id : g.id.toString(),
-                        url: g.media ? g.media.url : `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjEyMDAiIHZpZXdCb3g9IjAgMCA4MDAgMTIwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSIxMjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjQwMCIgeT0iNjAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QbGFjZWhvbGRlciBJbWFnZTwvdGV4dD4KPC9zdmc+`,
+                        url: g.media ? g.media.url : `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjEyMDAiIHZpZXdCb3g9IjAgMCA4MDAgMTIwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3ZnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSIxMjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjQwMCIgeT0iNjAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QbGFjZWhvbGRlciBJbWFnZTwvdGV4dD4KPC9zdmc+`,
                         prompt: g.media ? g.media.prompt : (prompt || 'AI generated content'),
                         aspectRatio: g.aspectRatio
                       }))
@@ -2132,8 +2303,8 @@ const WebsiteLayout: React.FC = () => {
                       setViewerOpen(true)
                     }}
                     isLiked={likedItems.has(item.media ? item.media.id : item.id.toString())}
-                    likesCount={item.media ? item.media.likes : (item.id * 3 + 5)}
-                    remixesCount={item.media ? item.media.remixCount : (item.id * 2 + 1)}
+                                    likesCount={item.media ? item.media.likes_count : 0}
+                remixesCount={item.media ? item.media.remixes_count : 0}
                     isAiAsBrush={item.media ? item.media.style?.includes('Brush') : (item.id % 2 === 0)}
                                         aspectRatio={item.aspectRatio}
                   />

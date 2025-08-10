@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Heart } from 'lucide-react'
+import { Heart, Share2 } from 'lucide-react'
 import RemixIcon from './RemixIcon'
 
 interface MediaCardProps {
@@ -13,6 +13,7 @@ interface MediaCardProps {
   isLoggedIn: boolean
   onLike: (id: string) => void
   onRemix?: (id: string) => void
+  onShare?: (id: string) => void
   onDownload?: (id: string) => void
   onDelete?: (id: string) => void
   onShowAuth: () => void
@@ -36,24 +37,30 @@ const MediaCard: React.FC<MediaCardProps> = ({
   isLoggedIn,
   onLike,
   onRemix,
+  onShare,
   onShowAuth,
   onFilterCreator,
   onShowMedia,
   isLiked = false,
   likesCount = 0,
+  remixesCount = 0,
   aspectRatio = 1
 }) => {
   const [isLikedState, setIsLikedState] = useState(isLiked)
   const [localLikesCount, setLocalLikesCount] = useState(likesCount)
 
-  const handleLike = () => {
+  const handleLike = async () => {
     if (!isLoggedIn) {
       onShowAuth()
       return
     }
     
-    setIsLikedState(!isLikedState)
-    setLocalLikesCount(isLikedState ? localLikesCount - 1 : localLikesCount + 1)
+    // Optimistically update UI
+    const newLikedState = !isLikedState
+    setIsLikedState(newLikedState)
+    setLocalLikesCount(newLikedState ? localLikesCount + 1 : localLikesCount - 1)
+    
+    // Call the parent handler
     onLike(id)
   }
 
@@ -65,6 +72,17 @@ const MediaCard: React.FC<MediaCardProps> = ({
     
     if (onRemix) {
       onRemix(id)
+    }
+  }
+
+  const handleShare = () => {
+    if (!isLoggedIn) {
+      onShowAuth()
+      return
+    }
+    
+    if (onShare) {
+      onShare(id)
     }
   }
 
@@ -112,6 +130,17 @@ const MediaCard: React.FC<MediaCardProps> = ({
 
         {/* Action Buttons - Bottom Right */}
         <div className="absolute bottom-3 right-3 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          {/* Share Button */}
+          {onShare && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleShare() }}
+              className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300"
+              title="Share"
+            >
+              <Share2 size={14} className="text-white" />
+            </button>
+          )}
+
           {/* Like Button */}
           <button
             onClick={(e) => { e.stopPropagation(); handleLike() }}
@@ -138,14 +167,19 @@ const MediaCard: React.FC<MediaCardProps> = ({
           )}
         </div>
 
-        {/* Like count - Bottom Left */}
-        {localLikesCount > 0 && (
-          <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        {/* Interaction counts - Bottom Left */}
+        <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col space-y-1">
+          {localLikesCount > 0 && (
             <span className="text-white/80 text-xs bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
               {localLikesCount} {localLikesCount === 1 ? 'like' : 'likes'}
             </span>
-          </div>
-        )}
+          )}
+          {remixesCount > 0 && (
+            <span className="text-white/80 text-xs bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
+              {remixesCount} {remixesCount === 1 ? 'remix' : 'remixes'}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )

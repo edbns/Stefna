@@ -1,4 +1,5 @@
 const { verifyAuth } = require("./_auth");
+const { createClient } = require('@supabase/supabase-js');
 
 const httpUrl = (u) => typeof u === "string" && /^https?:\/\//i.test(u);
 
@@ -18,49 +19,58 @@ exports.handler = async (event) => {
     const { userId } = verifyAuth(event);
     const body = JSON.parse(event.body || "{}");
     
-    // Sanitize: never trust client model selection
-    delete body.model;
-    delete body.modelId;
+    // Extract required fields
+    const { prompt, source_url, steps, strength, resource_type, jobId, presetName, source = "custom" } = body;
     
-    // Extract tracking fields
-    const { jobId, presetName, source = "preset" } = body;
-    console.log("Server received jobId:", jobId);
-
-    const isI2I = !!body.image_url;
-    if (isI2I && !httpUrl(body.image_url)) {
-      return { statusCode: 400, body: JSON.stringify({ message: "image_url must be a public https URL (Cloudinary). Got non-fetchable value." }) };
+    // Validate source_url is required
+    if (!source_url) {
+      return { 
+        statusCode: 400, 
+        body: JSON.stringify({ message: "source_url is required" }) 
+      };
     }
 
-    const mode  = isI2I ? "i2i" : "t2i";
-    const model = isI2I ? "flux/dev/image-to-image" : "stable-diffusion-v35-large";
-    
-    const size =
-      Number.isFinite(body?.width) && Number.isFinite(body?.height)
-        ? `${body.width}x${body.height}`
-        : undefined;
+    // Validate source_url is a public HTTPS URL
+    if (!httpUrl(source_url)) {
+      return { 
+        statusCode: 400, 
+        body: JSON.stringify({ message: "source_url must be a public https URL (Cloudinary). Got non-fetchable value." }) 
+      };
+    }
 
-    const payload = {
-      model,
-      prompt: (body.prompt && String(body.prompt).trim()) || 'beautiful artwork',
+    // Determine resource type and build payload
+    const resourceType = resource_type === 'video' ? 'video' : 'image';
+    
+    // Build payload based on resource type
+    const common = {
+      prompt: (prompt && String(prompt).trim()) || 'beautiful artwork',
       negative_prompt: body.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
       guidance_scale: body.guidance_scale ?? 7.5,
-      num_inference_steps: body.steps ?? 40,
-      ...(isI2I
-        ? {
-            image_url: body.image_url,
-            // Do NOT send image_size for I2I; server uses reference image size.
-            strength: body.strength ?? 0.85,
-          }
-        : {
-            // For T2I you may pass either a preset string or an object.
-            // If width/height are valid, send an object; else let server default.
-            ...(Number.isFinite(body.width) && Number.isFinite(body.height)
-              ? { image_size: { width: body.width, height: body.height } }
-              : {}), // or { image_size: 'landscape_16_9' }
-          }),
+      num_inference_steps: steps ?? 36,
     };
 
-    const url = `${process.env.AIML_API_URL}/v1/images/generations`;
+    let endpoint, payload;
+    
+    if (resourceType === 'image') {
+      endpoint = '/v1/images/generations';
+      payload = {
+        ...common,
+        model: 'flux/dev/image-to-image',
+        image_url: source_url,
+        strength: Math.min(Math.max(strength ?? 0.7, 0.4), 0.9),
+      };
+    } else {
+      // VIDEO-TO-VIDEO
+      endpoint = '/v1/videos/edits';
+      payload = {
+        ...common,
+        model: 'video/dev/video-to-video', // placeholder model name; use your actual one
+        video_url: source_url,              // some providers still use "input_url"
+        strength: Math.min(Math.max(strength ?? 0.7, 0.4), 0.9),
+      };
+    }
+
+    const url = `${process.env.AIML_API_URL}${endpoint}`;
     
     // Retry logic for 4xx/5xx errors
     let r, out;
@@ -91,7 +101,7 @@ exports.handler = async (event) => {
         console.error('GEN', JSON.stringify({ 
           userId, 
           source: source || "custom", 
-          mode: mode,
+          mode: resourceType === 'video' ? 'v2v' : 'i2i',
           error: out.message || `Provider error ${r.status}`,
           details: redact(out),
           ok: false, 
@@ -124,45 +134,117 @@ exports.handler = async (event) => {
       }
     }
 
-    // Robust to both new ("images") and older ("data") shapes
-    const result_url =
-      out?.images?.[0]?.url ||
-      out?.data?.[0]?.url ||
-      null;
+    // Get result URL using the updated pickResultUrl logic
+    const result_url = out?.images?.[0]?.url ?? out?.videos?.[0]?.url ?? out?.data?.[0]?.url ?? out?.result_url ?? null;
 
-    const duration = Date.now() - startTime;
-    
-    // Telemetry: Log generation metrics (structured)
-    console.log("GEN", JSON.stringify({
-      userId, 
-      source: source || "custom", 
-      mode: mode,
-      strength: payload.strength, 
-      size: size || `${body.width}x${body.height}`,
-      ok: true, 
-      ms: duration
-    }));
-    
-    // Legacy telemetry: Log generation metrics (human readable)
-    console.log(`GENERATION: userId=${userId}, source=${source || "custom"}, mode=${mode}, strength=${payload.strength}, size=${size || `${body.width}x${body.height}`}, status=success, ms=${duration}`);
+    if (!result_url) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ message: "No result URL in response" })
+      };
+    }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        result_url,
-        source_url: isI2I ? body.image_url : null,
-        echo: { 
-          jobId,                 // <-- echo back EXACTLY what client sent
-          source,
-          presetName,
-          mode, 
-          model, 
-          userId,
-          strength: payload.strength, 
-          size: payload.size || `${body.width}x${body.height}`
-        }
-      })
-    };
+    // Auto-save the generated media to database
+    try {
+      const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+      
+      const row = {
+        user_id: userId,
+        result_url: result_url,
+        source_url: source_url,
+        job_id: jobId || null,
+        model: payload.model || null,
+        mode: resourceType === 'video' ? 'v2v' : 'i2i',
+        prompt: prompt || 'beautiful artwork',
+        negative_prompt: body.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
+        width: body.width || null,
+        height: body.height || null,
+        strength: payload.strength || null,
+        visibility: 'private',      // default private → user's profile only
+        env: process.env.NODE_ENV === 'production' ? 'prod' : 'dev',
+        allow_remix: false,         // user can flip this later
+        parent_asset_id: null       // set when this was a remix; else null
+      };
+
+      const { data: saved, error } = await supa.from('media_assets').insert(row).select().single();
+      if (error) {
+        console.error('Auto-save failed:', error);
+        // Don't fail the generation, just log the error
+      }
+      
+      const duration = Date.now() - startTime;
+      
+      // Telemetry: Log generation metrics (structured)
+      console.log("GEN", JSON.stringify({
+        userId, 
+        source: source || "custom", 
+        mode: resourceType === 'video' ? 'v2v' : 'i2i',
+        strength: payload.strength, 
+        resourceType,
+        ok: true, 
+        ms: duration
+      }));
+      
+      // Legacy telemetry: Log generation metrics (human readable)
+      console.log(`GENERATION: userId=${userId}, source=${source || "custom"}, mode=${resourceType === 'video' ? 'v2v' : 'i2i'}, strength=${payload.strength}, resourceType=${resourceType}, status=success, ms=${duration}`);
+
+      // Return the saved row to the client so UI can show it immediately
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          saved,
+          result_url,
+          source_url,
+          echo: { 
+            jobId,                 // <-- echo back EXACTLY what client sent
+            source,
+            presetName,
+            mode: resourceType === 'video' ? 'v2v' : 'i2i', 
+            model: payload.model, 
+            userId,
+            strength: payload.strength, 
+            resourceType
+          }
+        })
+      };
+    } catch (saveError) {
+      console.error('Auto-save error:', saveError);
+      // Don't fail the generation, just return the result without saving
+      const duration = Date.now() - startTime;
+      
+      // Telemetry: Log generation metrics (structured)
+      console.log("GEN", JSON.stringify({
+        userId, 
+        source: source || "custom", 
+        mode: resourceType === 'video' ? 'v2v' : 'i2i',
+        strength: payload.strength, 
+        resourceType,
+        ok: true, 
+        ms: duration
+      }));
+      
+      // Legacy telemetry: Log generation metrics (human readable)
+      console.log(`GENERATION: userId=${userId}, source=${source || "custom"}, mode=${resourceType === 'video' ? 'v2v' : 'i2i'}, strength=${payload.strength}, resourceType=${resourceType}, status=success, ms=${duration}`);
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          saved: null,
+          result_url,
+          source_url,
+          echo: { 
+            jobId,                 // <-- echo back EXACTLY what client sent
+            source,
+            presetName,
+            mode: resourceType === 'video' ? 'v2v' : 'i2i', 
+            model: payload.model, 
+            userId,
+            strength: payload.strength, 
+            resourceType
+          }
+        })
+      };
+    }
   } catch (e) {
     const duration = Date.now() - startTime;
     const body = JSON.parse(event.body || "{}");

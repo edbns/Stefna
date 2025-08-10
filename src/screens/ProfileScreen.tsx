@@ -91,89 +91,128 @@ const ProfileScreen: React.FC = () => {
     persistent?: boolean
   }>>([])
 
-  // Load user media on component mount
-  useEffect(() => {
-    const loadUserMedia = async () => {
-      try {
-        // Get current user ID from auth service
-        const user = authService.getCurrentUser()
-        const userId = user?.id || 'guest-user'
-        setCurrentUserId(userId)
-        
-        // Set authentication status and user tier
-        if (user) {
-          setIsAuthenticated(true)
-          // Map user tier from auth service
-          const tierMap: { [key: string]: UserTier } = {
-            'registered': UserTier.REGISTERED,
-            'pro': UserTier.VERIFIED,
-            'verified': UserTier.VERIFIED,
-            'contributor': UserTier.CONTRIBUTOR
-          }
-          const currentTier = tierMap[user.tier] || UserTier.REGISTERED
-          setUserTier(currentTier)
-          
-          // Load referral stats for authenticated users
-          try {
-            const stats = await tokenService.getReferralStats(userId)
-            setReferralStats(stats)
-            
-            // Load token count - force refresh if tier changed
-            const tokenUsage = await tokenService.getUserUsage(userId)
-            const expectedLimit = currentTier === UserTier.CONTRIBUTOR ? 410 : 
-                                 currentTier === UserTier.VERIFIED ? 215 : 115
-            
-            // If the limit doesn't match the tier, update it
-            if (tokenUsage.dailyLimit !== expectedLimit) {
-              await tokenService.updateUserTier(userId, currentTier)
-              const updatedUsage = await tokenService.getUserUsage(userId)
-              setTokenCount(updatedUsage.dailyLimit - updatedUsage.dailyUsage)
-            } else {
-              setTokenCount(tokenUsage.dailyLimit - tokenUsage.dailyUsage)
-            }
-          } catch (error) {
-            console.error('Failed to load referral stats or token count:', error)
-            // Set default token count based on tier
-            const defaultLimit = currentTier === UserTier.CONTRIBUTOR ? 410 : 
-                               currentTier === UserTier.VERIFIED ? 215 : 115
-            setTokenCount(defaultLimit)
-          }
-        } else {
-          setIsAuthenticated(false)
-          setUserTier(UserTier.REGISTERED) // Default to registered tier for unauthenticated users
+  // Load user media from database using new Netlify Function
+  const loadUserMedia = async () => {
+    try {
+      // Get current user ID from auth service
+      const user = authService.getCurrentUser()
+      const userId = user?.id || 'guest-user'
+      setCurrentUserId(userId)
+      
+      // Set authentication status and user tier
+      if (user) {
+        setIsAuthenticated(true)
+        // Map user tier from auth service
+        const tierMap: { [key: string]: UserTier } = {
+          'registered': UserTier.REGISTERED,
+          'pro': UserTier.VERIFIED,
+          'verified': UserTier.VERIFIED,
+          'contributor': UserTier.CONTRIBUTOR
         }
+        const currentTier = tierMap[user.tier] || UserTier.REGISTERED
+        setUserTier(currentTier)
+        
+        // Load referral stats for authenticated users
+        try {
+          const stats = await tokenService.getReferralStats(userId)
+          setReferralStats(stats)
+          
+          // Load token count - force refresh if tier changed
+          const tokenUsage = await tokenService.getUserUsage(userId)
+          const expectedLimit = currentTier === UserTier.CONTRIBUTOR ? 410 : 
+                               currentTier === UserTier.VERIFIED ? 215 : 115
+          
+          // If the limit doesn't match the tier, update it
+          if (tokenUsage.dailyLimit !== expectedLimit) {
+            await tokenService.updateUserTier(userId, currentTier)
+            const updatedUsage = await tokenService.getUserUsage(userId)
+            setTokenCount(updatedUsage.dailyLimit - updatedUsage.dailyUsage)
+          } else {
+            setTokenCount(tokenUsage.dailyLimit - tokenUsage.dailyUsage)
+          }
+        } catch (error) {
+          console.error('Failed to load referral stats or token count:', error)
+          // Set default token count based on tier
+          const defaultLimit = currentTier === UserTier.CONTRIBUTOR ? 410 : 
+                             currentTier === UserTier.VERIFIED ? 215 : 115
+          setTokenCount(defaultLimit)
+        }
+      } else {
+        setIsAuthenticated(false)
+        setUserTier(UserTier.REGISTERED) // Default to registered tier for unauthenticated users
+      }
 
-        // Load all user media (including recovered media)
+      // Load all user media from database using new Netlify Function
+      try {
+        const response = await fetch('/.netlify/functions/getUserMedia', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('stefna_jwt') || ''}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          const dbMedia = result.media || []
+          
+          // Transform database media to UserMedia format
+          const transformedMedia: UserMedia[] = dbMedia.map((item: any) => ({
+            id: item.id,
+            userId: item.user_id,
+            type: item.kind === 'generated' ? 'photo' : 'photo', // Default to photo for now
+            url: item.url,
+            prompt: item.prompt || 'AI Generated Content',
+            aspectRatio: 4/3, // Default aspect ratio
+            width: 800,
+            height: 600,
+            timestamp: item.created_at,
+            tokensUsed: 2, // Default token usage
+            likes: item.likes_count || 0,
+            remixCount: item.remixes_count || 0,
+            isPublic: item.visibility === 'public',
+            allowRemix: item.allow_remix || false,
+            tags: [],
+            metadata: {
+              quality: 'high',
+              generationTime: 0,
+              modelVersion: '1.0'
+            }
+          }))
+          
+          setUserMedia(transformedMedia)
+        } else {
+          console.error('Failed to load user media from database:', response.statusText)
+          // Fallback to local service if database fails
+          const allMedia = await userMediaService.getAllUserMedia(userId)
+          setUserMedia(allMedia)
+        }
+      } catch (error) {
+        console.error('Failed to load user media from database:', error)
+        // Fallback to local service if database fails
         const allMedia = await userMediaService.getAllUserMedia(userId)
         setUserMedia(allMedia)
-
-        // If no media found, try to recover
-        if (allMedia.length === 0) {
-          const recoveredMedia = await userMediaService.recoverMedia(userId)
-          if (recoveredMedia.length > 0) {
-            setUserMedia(recoveredMedia)
-            addNotification('Media Recovered', `Found and recovered ${recoveredMedia.length} media items!`, 'success')
-          }
-        }
-
-        // Load remixed media
-        const remixes = await userMediaService.getUserRemixes(userId)
-        setRemixedMedia(remixes)
-
-        // Load liked media
-        const likedMedia = await userMediaService.getUserLikedMedia(userId)
-        setLikedMedia(likedMedia)
-
-        // Load draft media (empty for now - will be populated when users create drafts)
-        setDraftMedia([])
-
-        setIsLoading(false)
-      } catch (error) {
-        console.error('Failed to load user media:', error)
-        setIsLoading(false)
       }
-    }
 
+      // Load remixed media (for now, filter from user media)
+      const remixes = userMedia.filter(m => m.type === 'remix')
+      setRemixedMedia(remixes)
+
+      // Load liked media (for now, empty - will be implemented with database)
+      setLikedMedia([])
+
+      // Load draft media (empty for now - will be populated when users create drafts)
+      setDraftMedia([])
+
+      setIsLoading(false)
+    } catch (error) {
+      console.error('Failed to load user media:', error)
+      setIsLoading(false)
+    }
+  }
+
+  // Load user media on component mount
+  useEffect(() => {
     loadUserMedia()
   }, [])
 
@@ -264,20 +303,45 @@ const ProfileScreen: React.FC = () => {
     document.body.removeChild(link)
   }
 
-  const handleShare = (media: UserMedia) => {
-    // Share functionality
-    if (navigator.share) {
-      navigator.share({
-        title: 'Check out this AI creation!',
-        text: media.prompt,
-        url: media.url
+  // Updated share function that updates database visibility
+  const handleShare = async (media: UserMedia) => {
+    try {
+      // Update media visibility in database
+      const response = await fetch('/.netlify/functions/updateMediaVisibility', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('stefna_jwt') || ''}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          assetId: media.id,
+          visibility: 'public',
+          allowRemix: media.allowRemix
+        })
       })
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(media.url)
-      alert('Media URL copied to clipboard!')
+
+      if (response.ok) {
+        const updatedMedia = await response.json()
+        
+        // Update local state
+        setUserMedia(prev => prev.map(item => 
+          item.id === media.id 
+            ? { ...item, isPublic: true, allowRemix: updatedMedia.allow_remix }
+            : item
+        ))
+        
+        addNotification('Media Shared', 'Your media is now public!', 'success')
+      } else {
+        const error = await response.json()
+        addNotification('Share Failed', error.error || 'Failed to share media', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to share media:', error)
+      addNotification('Share Failed', 'Failed to share media. Please try again.', 'error')
     }
   }
+
+
 
   // Unified notification functions (same as home page)
   const addNotification = (title: string, message?: string, type: 'success' | 'info' | 'warning' | 'error' | 'processing' | 'complete' | 'system' = 'info', mediaUrl?: string, mediaType?: 'image' | 'video', persistent?: boolean) => {
