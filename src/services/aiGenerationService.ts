@@ -63,7 +63,7 @@ class AIGenerationService {
     // Environment check for debugging
     console.log('🔍 Environment check:', {
       VITE_AIML_API_KEY: import.meta.env.VITE_AIML_API_KEY ? '✅ Found' : '❌ Missing',
-      allEnvVars: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
+      allEnvVars: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')).join(', ')
     });
 
     if (!apiKey) {

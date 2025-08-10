@@ -941,13 +941,23 @@ const WebsiteLayout: React.FC = () => {
         if (isImage && hasTransformationKeywords) {
           console.log(`🖼️ Using AIML I2I for image transformation. Prompt: "${prompt.substring(0, 50)}..."`)
           
-                      // Use new AIML utils for I2I generation
+          // Ensure we have uploaded media
+          if (!uploadedMedia) {
+            addNotification('No Media', 'Please upload an image first', 'warning')
+            setIsGenerating(false)
+            return
+          }
+          
+          // Ensure we have a Cloudinary URL for the AIML API
+          const cloudinaryAsset = await ensureCloudinaryAsset({ url: uploadedMedia, file: uploadedFile })
+          
+          // Use new AIML utils for I2I generation
           const res = await fetch('/.netlify/functions/aimlApi', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               prompt,
-              source_url: uploadedMedia,
+              source_url: cloudinaryAsset.secure_url, // Use Cloudinary URL instead of data URL
               steps: 36,
               strength: 0.7,
               resource_type: 'image'
@@ -988,13 +998,16 @@ const WebsiteLayout: React.FC = () => {
           if (uploadedMedia && isImage) {
             console.log(`🖼️ Using I2I for image variation. Prompt: "${prompt.substring(0, 50)}..."`)
             
+            // Ensure we have a Cloudinary URL for the AIML API
+            const cloudinaryAsset = await ensureCloudinaryAsset({ url: uploadedMedia, file: uploadedFile })
+            
             // Use new AIML utils for I2I variation generation
             const res = await fetch('/.netlify/functions/aimlApi', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 prompt,
-                source_url: uploadedMedia,
+                source_url: cloudinaryAsset.secure_url, // Use Cloudinary URL instead of data URL
                 steps: 36,
                 strength: 0.7,
                 resource_type: 'image'
@@ -1029,13 +1042,23 @@ const WebsiteLayout: React.FC = () => {
             // We have uploaded media but no transformation keywords - this is a variation/remix
             console.log(`🖼️ Using I2I for image variation. Prompt: "${prompt.substring(0, 50)}..."`)
             
+            // Ensure we have uploaded media
+            if (!uploadedMedia) {
+              addNotification('No Media', 'Please upload an image first', 'warning')
+              setIsGenerating(false)
+              return
+            }
+            
+            // Ensure we have a Cloudinary URL for the AIML API
+            const cloudinaryAsset = await ensureCloudinaryAsset({ url: uploadedMedia, file: uploadedFile })
+            
             // Use new AIML utils for I2I variation generation
             const res = await fetch('/.netlify/functions/aimlApi', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 prompt,
-                source_url: uploadedMedia,
+                source_url: cloudinaryAsset.secure_url, // Use Cloudinary URL instead of data URL
                 steps: 36,
                 strength: 0.7,
                 resource_type: 'image'
