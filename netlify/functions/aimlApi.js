@@ -31,17 +31,23 @@ exports.handler = async (event) => {
 
     const payload = {
       model,
-      prompt: body.prompt,
-      negative_prompt: body.negative_prompt,
-      steps: body.steps ?? 40,
+      prompt: (body.prompt && String(body.prompt).trim()) || 'beautiful artwork',
+      negative_prompt: body.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
       guidance_scale: body.guidance_scale ?? 7.5,
+      num_inference_steps: body.steps ?? 40,
       ...(isI2I
         ? {
             image_url: body.image_url,
-            ...(size ? { size } : {}),        // <-- only if present
+            // Do NOT send image_size for I2I; server uses reference image size.
             strength: body.strength ?? 0.85,
           }
-        : {}),
+        : {
+            // For T2I you may pass either a preset string or an object.
+            // If width/height are valid, send an object; else let server default.
+            ...(Number.isFinite(body.width) && Number.isFinite(body.height)
+              ? { image_size: { width: body.width, height: body.height } }
+              : {}), // or { image_size: 'landscape_16_9' }
+          }),
     };
 
     const url = `${process.env.AIML_API_URL}/v1/images/generations`;
@@ -98,9 +104,11 @@ exports.handler = async (event) => {
       }
     }
 
+    // Robust to both new ("images") and older ("data") shapes
     const result_url =
-      out.images?.[0]?.url || out.data?.[0]?.url ||
-      out.data?.image_url || out.image_url || null;
+      out?.images?.[0]?.url ||
+      out?.data?.[0]?.url ||
+      null;
 
     const duration = Date.now() - startTime;
     
