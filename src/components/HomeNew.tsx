@@ -34,6 +34,7 @@ const HomeNew: React.FC = () => {
   const [shareToFeed, setShareToFeed] = useState(false)
   const [allowRemix, setAllowRemix] = useState(false)
   const [generateTwo, setGenerateTwo] = useState(false)
+  const [userMenu, setUserMenu] = useState(false)
 
   const handleUploadClick = () => fileInputRef.current?.click()
 
@@ -256,39 +257,45 @@ const HomeNew: React.FC = () => {
     <div className="flex min-h-screen bg-black relative">
       {/* Top nav */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 md:px-6 py-3 bg-transparent">
-        {/* Left: Filter (auth only) */}
-        <div className="relative">
-          {isAuthenticated && (
-            <button
-              onClick={() => setFilterOpen((v) => !v)}
-              className="p-2 text-white/80 hover:text-white rounded-full"
-              title="Filter"
-            >
-              <Filter size={18} />
-            </button>
-          )}
-          {filterOpen && (
-            <div className="absolute mt-2 bg-black border border-white/20 rounded-xl shadow-2xl p-2 w-40">
-              <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded ${currentFilter==='all'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>All</button>
-              <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded ${currentFilter==='images'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Images</button>
-              <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded ${currentFilter==='videos'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Videos</button>
-            </div>
-          )}
-        </div>
+        {/* Left spacer */}
+        <div />
 
         {/* Right: Auth actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          {/* Filter moved to right with bell and profile */}
+          {isAuthenticated && (
+            <div className="relative">
+              <button onClick={() => setFilterOpen((v) => !v)} className="p-2 text-white/90 hover:text-white rounded-full" title="Filter">
+                <Filter size={20} />
+              </button>
+              {filterOpen && (
+                <div className="absolute right-0 mt-2 bg-black border border-white/20 rounded-xl shadow-2xl p-2 w-40">
+                  <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded ${currentFilter==='all'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>All</button>
+                  <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded ${currentFilter==='images'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Images</button>
+                  <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded ${currentFilter==='videos'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Videos</button>
+                </div>
+              )}
+            </div>
+          )}
           {isAuthenticated ? (
             <>
               {/* Notification bell */}
-              <NotificationBell userId={authService.getCurrentUser()?.id || ''} />
+              <div className="scale-125">
+                <NotificationBell userId={authService.getCurrentUser()?.id || ''} />
+              </div>
               {/* Profile with progress ring */}
-              <button onClick={() => navigate('/profile')} className="relative">
-                {navGenerating && (
-                  <span className="absolute -inset-1 rounded-full border-2 border-white/50 animate-spin" style={{ borderTopColor: 'transparent' }} />
+              <div className="relative">
+                <button onClick={() => setUserMenu((v) => !v)} className="relative" aria-haspopup="menu" aria-expanded={userMenu}>
+                  {navGenerating && (<span className="absolute -inset-1 rounded-full border-2 border-white/50 animate-spin" style={{ borderTopColor: 'transparent' }} />)}
+                  <ProfileIcon size={30} className="text-white" />
+                </button>
+                {userMenu && (
+                  <div className="absolute right-0 mt-2 bg-black border border-white/20 rounded-xl shadow-2xl p-2 w-40">
+                    <button onClick={() => { setUserMenu(false); navigate('/profile') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded">Profile</button>
+                    <button onClick={() => { setUserMenu(false); navigate('/auth') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded">Sign out</button>
+                  </div>
                 )}
-                <ProfileIcon size={24} className="text-white" />
-              </button>
+              </div>
             </>
           ) : (
             <button
