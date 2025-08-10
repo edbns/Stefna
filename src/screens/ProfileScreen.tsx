@@ -144,54 +144,69 @@ const ProfileScreen: React.FC = () => {
 
       // Load all user media from database using new Netlify Function
       try {
-        const response = await fetch('/.netlify/functions/getUserMedia', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('stefna_jwt') || ''}`,
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (response.ok) {
-          const result = await response.json()
-          const dbMedia = result.media || []
-          
-          // Transform database media to UserMedia format
-          const transformedMedia: UserMedia[] = dbMedia.map((item: any) => ({
-            id: item.id,
-            userId: item.user_id,
-            type: item.kind === 'generated' ? 'photo' : 'photo', // Default to photo for now
-            url: item.url,
-            prompt: item.prompt || 'AI Generated Content',
-            aspectRatio: 4/3, // Default aspect ratio
-            width: 800,
-            height: 600,
-            timestamp: item.created_at,
-            tokensUsed: 2, // Default token usage
-            likes: item.likes_count || 0,
-            remixCount: item.remixes_count || 0,
-            isPublic: item.visibility === 'public',
-            allowRemix: item.allow_remix || false,
-            tags: [],
-            metadata: {
-              quality: 'high',
-              generationTime: 0,
-              modelVersion: '1.0'
-            }
-          }))
-          
-          setUserMedia(transformedMedia)
+        const jwt = localStorage.getItem('stefna_jwt');
+        
+        if (!jwt) {
+          // Guest user: skip server fetch, show local results only
+          console.log('Guest user: skipping getUserMedia server call');
+          const allMedia = await userMediaService.getAllUserMedia(userId);
+          setUserMedia(allMedia);
         } else {
-          console.error('Failed to load user media from database:', response.statusText)
-          // Fallback to local service if database fails
-          const allMedia = await userMediaService.getAllUserMedia(userId)
-          setUserMedia(allMedia)
+          // Authenticated user: fetch from server with JWT
+          const response = await fetch('/.netlify/functions/getUserMedia', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${jwt}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.status === 401) {
+            // JWT expired/invalid: fallback to local
+            console.log('JWT invalid: falling back to local media');
+            const allMedia = await userMediaService.getAllUserMedia(userId);
+            setUserMedia(allMedia);
+          } else if (response.ok) {
+            const result = await response.json();
+            const dbMedia = result.items || []; // Updated to use 'items' instead of 'media'
+            
+            // Transform database media to UserMedia format
+            const transformedMedia: UserMedia[] = dbMedia.map((item: any) => ({
+              id: item.id,
+              userId: item.user_id,
+              type: item.resource_type === 'video' ? 'video' : 'photo',
+              url: item.result_url || item.url, // Use result_url if available, fallback to url
+              prompt: item.prompt || 'AI Generated Content',
+              aspectRatio: 4/3, // Default aspect ratio
+              width: 800,
+              height: 600,
+              timestamp: item.created_at,
+              tokensUsed: 2, // Default token usage
+              likes: 0, // Will be updated when we implement likes
+              remixCount: 0, // Will be updated when we implement remix counts
+              isPublic: item.visibility === 'public',
+              allowRemix: item.allow_remix || false,
+              tags: [],
+              metadata: {
+                quality: 'high',
+                generationTime: 0,
+                modelVersion: '1.0'
+              }
+            }));
+            
+            setUserMedia(transformedMedia);
+          } else {
+            console.error('Failed to load user media from database:', response.statusText);
+            // Fallback to local service if database fails
+            const allMedia = await userMediaService.getAllUserMedia(userId);
+            setUserMedia(allMedia);
+          }
         }
       } catch (error) {
-        console.error('Failed to load user media from database:', error)
+        console.error('Failed to load user media from database:', error);
         // Fallback to local service if database fails
-        const allMedia = await userMediaService.getAllUserMedia(userId)
-        setUserMedia(allMedia)
+        const allMedia = await userMediaService.getAllUserMedia(userId);
+        setUserMedia(allMedia);
       }
 
       // Load remixed media (for now, filter from user media)

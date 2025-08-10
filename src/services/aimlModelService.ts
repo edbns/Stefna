@@ -46,19 +46,7 @@ export type AIMLModelCategory =
   | 'medical' 
   | 'educational'
 
-export type AIMLCapability = 
-  | 'text-to-image' 
-  | 'image-to-image' 
-  | 'inpainting' 
-  | 'outpainting' 
-  | 'upscaling' 
-  | 'style-transfer' 
-  | 'face-swap' 
-  | 'background-removal' 
-  | 'object-removal' 
-  | 'colorization' 
-  | 'restoration' 
-  | 'enhancement'
+export type AIMLCapability = 'text-to-image' | 'image-to-image' | 'video-to-video' | 'text-to-video' | 'image-to-video';
 
 export interface ModelConfig {
   modelId: string

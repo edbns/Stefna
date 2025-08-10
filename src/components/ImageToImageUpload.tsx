@@ -78,8 +78,8 @@ const ImageToImageUpload: React.FC<ImageToImageUploadProps> = ({
         setUploadProgress({ progress: 100, status: 'completed' })
       }
     } catch (error) {
-      setError(error.message || 'Upload failed')
-      setUploadProgress({ progress: 0, status: 'error', error: error.message })
+      setError(error instanceof Error ? error.message : 'Upload failed')
+      setUploadProgress({ progress: 0, status: 'error', error: error instanceof Error ? error.message : 'Upload failed' })
     }
   }, [validateFile, onFileSelect])
 

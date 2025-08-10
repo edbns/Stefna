@@ -184,7 +184,7 @@ class AIGenerationService {
       this.updateGenerationStatus(generationId, { 
         isGenerating: false, 
         status: 'error',
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       })
       return { success: false, error: 'Generation failed' }
     }

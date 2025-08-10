@@ -3,6 +3,40 @@ const { createClient } = require('@supabase/supabase-js');
 
 const httpUrl = (u) => typeof u === "string" && /^https?:\/\//i.test(u);
 
+// Clamp number between min and max values
+function clamp(n, lo, hi) { 
+  return Math.min(Math.max(n, lo), hi); 
+}
+
+// Convert client request to proper I2I payload for AIML API
+function toI2IPayload(req) {
+  if (!req.source_url) throw new Error('source_url is required for image-to-image');
+
+  return {
+    model: 'flux/dev/image-to-image',
+    prompt: String(req.prompt ?? '').trim() || 'stylize',
+    image_url: req.source_url,
+    strength: clamp(Number(req.strength ?? 0.75), 0.4, 0.95),
+    num_inference_steps: Math.round(clamp(Number(req.steps ?? 36), 1, 150)),
+    guidance_scale: Number.isFinite(req.guidance_scale) ? req.guidance_scale : 7.5,
+  };
+}
+
+// Remove unsupported keys from client body (preset/remix paths)
+function normalizeI2IRequest(raw) {
+  const cleaned = { ...raw };
+  delete cleaned.type;
+  delete cleaned.quality;
+  delete cleaned.style;
+  delete cleaned.num_outputs;
+  delete cleaned.width;        // I2I ignores size
+  delete cleaned.height;
+  if (cleaned.steps && !cleaned.num_inference_steps) {
+    cleaned.num_inference_steps = cleaned.steps;
+  }
+  return cleaned;
+}
+
 // Log redaction for security (no secrets in request dumps)
 function redact(o) {
   const s = JSON.stringify(o, (_k,v) =>
@@ -17,7 +51,10 @@ exports.handler = async (event) => {
   const startTime = Date.now();
   try {
     const { userId } = verifyAuth(event);
-    const body = JSON.parse(event.body || "{}");
+    const rawBody = JSON.parse(event.body || "{}");
+    
+    // Sanitize the request for I2I
+    const body = normalizeI2IRequest(rawBody);
     
     // Extract required fields
     const { prompt, source_url, steps, strength, resource_type, jobId, presetName, source = "custom" } = body;
@@ -41,30 +78,21 @@ exports.handler = async (event) => {
     // Determine resource type and build payload
     const resourceType = resource_type === 'video' ? 'video' : 'image';
     
-    // Build payload based on resource type
-    const common = {
-      prompt: (prompt && String(prompt).trim()) || 'beautiful artwork',
-      negative_prompt: body.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
-      guidance_scale: body.guidance_scale ?? 7.5,
-      num_inference_steps: steps ?? 36,
-    };
-
     let endpoint, payload;
     
     if (resourceType === 'image') {
       endpoint = '/v1/images/generations';
-      payload = {
-        ...common,
-        model: 'flux/dev/image-to-image',
-        image_url: source_url,
-        strength: Math.min(Math.max(strength ?? 0.7, 0.4), 0.9),
-      };
+      // Use the sanitized I2I payload
+      payload = toI2IPayload(body);
     } else {
       // VIDEO-TO-VIDEO
       endpoint = '/v1/videos/edits';
       payload = {
-        ...common,
         model: 'video/dev/video-to-video', // placeholder model name; use your actual one
+        prompt: (prompt && String(prompt).trim()) || 'beautiful artwork',
+        negative_prompt: body.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
+        guidance_scale: body.guidance_scale ?? 7.5,
+        num_inference_steps: steps ?? 36,
         video_url: source_url,              // some providers still use "input_url"
         strength: Math.min(Math.max(strength ?? 0.7, 0.4), 0.9),
       };
@@ -158,8 +186,8 @@ exports.handler = async (event) => {
         mode: resourceType === 'video' ? 'v2v' : 'i2i',
         prompt: prompt || 'beautiful artwork',
         negative_prompt: body.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
-        width: body.width || null,
-        height: body.height || null,
+        width: null,                // I2I doesn't support width/height
+        height: null,               // I2I doesn't support width/height
         strength: payload.strength || null,
         visibility: 'private',      // default private → user's profile only
         env: process.env.NODE_ENV === 'production' ? 'prod' : 'dev',

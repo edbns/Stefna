@@ -137,11 +137,9 @@ class ContentModerationService {
   // Check if generated content is appropriate (for future AI integration)
   async checkGeneratedContent(contentUrl: string, contentType: 'image' | 'video'): Promise<ModerationResult> {
     // TODO: Integrate with AI content moderation API (e.g., Google Cloud Vision API, AWS Rekognition)
-    // For now, return a basic check
-    
+    // For now, use a simple heuristic-based approach
     try {
-      // Simulate AI content analysis
-      const analysis = await this.simulateAIContentAnalysis(contentUrl, contentType)
+      const analysis = await this.analyzeContent(contentUrl, contentType)
       
       return {
         isAppropriate: analysis.isAppropriate,

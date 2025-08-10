@@ -247,8 +247,8 @@ class UserMediaService {
         // Search for media that might belong to this user
         for (const [storedUserId, mediaList] of mediaStorage.entries()) {
           // Check if this could be the same user (email-based matching)
-          if (this.isLikelySameUser(storedUserId, userId)) {
-            recoveredMedia.push(...mediaList)
+          if (this.isLikelySameUser(storedUserId as string, userId)) {
+            recoveredMedia.push(...(mediaList as UserMedia[]))
           }
         }
       }

@@ -1,44 +1,31 @@
-const { verifyAuth } = require("./_auth");
+import { createClient } from '@supabase/supabase-js';
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = process.env;
 
+const ok = (b) => ({ statusCode: 200, body: JSON.stringify(b) });
+const bad = (s, m) => ({ statusCode: s, body: JSON.stringify({ error: m }) });
+
+export const handler = async (event) => {
   try {
-    const { userId } = verifyAuth(event);
-    
-    // Import Supabase client
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    const auth = event.headers.authorization || event.headers.Authorization;
+    const jwt = auth?.replace(/^Bearer\s+/i, '');
 
-    // Get user's all media with interaction counts
-    const { data: media, error } = await supabase
-      .from('user_media_with_counts')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    if (!jwt) return bad(401, 'Missing user token');
 
-    if (error) {
-      console.error('Get user media error:', error);
-      return { 
-        statusCode: 500, 
-        body: JSON.stringify({ error: error.message }) 
-      };
-    }
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${jwt}` } },
+    });
 
-    return { 
-      statusCode: 200, 
-      body: JSON.stringify({ media: media || [] }) 
-    };
-  } catch (error) {
-    console.error('getUserMedia error:', error);
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ error: 'Internal server error' }) 
-    };
+    // read uploads + generated in one go; RLS limits to the user automatically
+    const { data, error } = await supabase
+      .from('media_assets') // query the base table with RLS
+      .select('id, url, resource_type, visibility, allow_remix, created_at, result_url, source_url, prompt, model, mode, strength, parent_asset_id')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) return bad(500, error.message);
+    return ok({ items: data ?? [] });
+  } catch (e) {
+    return bad(500, e?.message || 'Unknown getUserMedia error');
   }
 };

@@ -194,7 +194,7 @@ const ContentReportModal: React.FC<ContentReportModalProps> = ({
                   onClick={handleSubmit}
                   disabled={isSubmitting || !selectedReason || (selectedReason === 'other' && !customReason.trim())}
                   className={`flex-1 py-2 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center space-x-2 ${
-                    selectedReason && (!selectedReason === 'other' || customReason.trim()) && !isSubmitting
+                    selectedReason && (selectedReason !== 'other' || customReason.trim()) && !isSubmitting
                       ? 'bg-red-500 text-white hover:bg-red-600'
                       : 'bg-white/10 text-white/40 cursor-not-allowed'
                   }`}
