@@ -964,6 +964,9 @@ const WebsiteLayout: React.FC = () => {
             })
           }).then(r => r.json())
 
+          // Debug: Log the full response to understand structure
+          console.log('🔍 AIML API Response (Preset):', JSON.stringify(res, null, 2))
+
           const resultUrl = pickResultUrl(res)
           if (!resultUrl) {
             addNotification('Generation failed', 'No image returned by the service.', 'error')
@@ -976,6 +979,8 @@ const WebsiteLayout: React.FC = () => {
             console.log('✅ Media auto-saved by server:', res.saved.id)
           } else {
             console.log('⚠️ Media not auto-saved by server')
+            console.log('🔍 Response saved field:', res.saved)
+            console.log('🔍 Full response keys:', Object.keys(res))
           }
           
           result = {
@@ -1014,6 +1019,9 @@ const WebsiteLayout: React.FC = () => {
               })
             }).then(r => r.json())
 
+            // Debug: Log the full response to understand structure
+            console.log('🔍 AIML API Response (Variation):', JSON.stringify(res, null, 2))
+
             const resultUrl = pickResultUrl(res)
             if (!resultUrl) {
               addNotification('Generation failed', 'No image returned by the service.', 'error')
@@ -1026,6 +1034,8 @@ const WebsiteLayout: React.FC = () => {
               console.log('✅ Media auto-saved by server:', res.saved.id)
             } else {
               console.log('⚠️ Media not auto-saved by server')
+              console.log('🔍 Response saved field:', res.saved)
+              console.log('🔍 Full response keys:', Object.keys(res))
             }
             
             result = {
@@ -1065,6 +1075,9 @@ const WebsiteLayout: React.FC = () => {
               })
             }).then(r => r.json())
 
+            // Debug: Log the full response to understand structure
+            console.log('🔍 AIML API Response (Variation):', JSON.stringify(res, null, 2))
+
             const resultUrl = pickResultUrl(res)
             if (!resultUrl) {
               addNotification('Generation failed', 'No image returned by the service.', 'error')
@@ -1077,6 +1090,8 @@ const WebsiteLayout: React.FC = () => {
               console.log('✅ Media auto-saved by server:', res.saved.id)
             } else {
               console.log('⚠️ Media not auto-saved by server')
+              console.log('🔍 Response saved field:', res.saved)
+              console.log('🔍 Full response keys:', Object.keys(res))
             }
             
             result = {
