@@ -5,14 +5,13 @@ const { SUPABASE_URL, SUPABASE_ANON_KEY } = process.env;
 const ok = (b) => ({ statusCode: 200, body: JSON.stringify(b) });
 const bad = (s, m) => ({ statusCode: s, body: JSON.stringify({ error: m }) });
 
-// Simple JWT decode function (for user_id extraction)
+// Simple JWT decode function (for user_id extraction) - Node-safe (uses Buffer)
 const decodeJWT = (token) => {
   try {
     const base64Url = token.split('.')[1];
+    if (!base64Url) return null;
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
+    const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
     return JSON.parse(jsonPayload);
   } catch (e) {
     return null;
