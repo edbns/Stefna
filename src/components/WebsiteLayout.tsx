@@ -643,7 +643,7 @@ const WebsiteLayout: React.FC = () => {
               const response = await fetch('/.netlify/functions/getUserMedia', {
                 method: 'GET',
                 headers: {
-                  'Authorization': `Bearer ${localStorage.getItem('stefna_jwt') || ''}`,
+                  'Authorization': `Bearer ${authService.getToken() || localStorage.getItem('auth_token') || ''}`,
                   'Content-Type': 'application/json'
                 }
               })

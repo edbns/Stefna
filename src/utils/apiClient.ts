@@ -1,7 +1,7 @@
 import authService from '../services/authService'
 
 function getToken() {
-  return authService.getAuthState().token || localStorage.getItem('token')
+  return authService.getAuthState().token || localStorage.getItem('auth_token') || localStorage.getItem('token')
 }
 
 export async function signedFetch(url: string, opts: RequestInit = {}): Promise<Response> {

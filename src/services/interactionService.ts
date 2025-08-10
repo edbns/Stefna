@@ -21,7 +21,7 @@ class InteractionService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('stefna_jwt') || ''}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
         },
         body: JSON.stringify({ mediaId })
       })
@@ -55,7 +55,7 @@ class InteractionService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('stefna_jwt') || ''}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
         },
         body: JSON.stringify({ mediaId, shareType })
       })

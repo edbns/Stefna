@@ -144,7 +144,7 @@ const ProfileScreen: React.FC = () => {
 
       // Load all user media from database using new Netlify Function
       try {
-        const jwt = localStorage.getItem('stefna_jwt');
+        const jwt = authService.getToken() || localStorage.getItem('auth_token');
         
         if (!jwt) {
           // Guest user: skip server fetch, show local results only
@@ -334,10 +334,10 @@ const ProfileScreen: React.FC = () => {
   const handleShare = async (media: UserMedia) => {
     try {
       // Update media visibility in database
-      const response = await fetch('/.netlify/functions/updateMediaVisibility', {
+        const response = await fetch('/.netlify/functions/updateMediaVisibility', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('stefna_jwt') || ''}`,
+          'Authorization': `Bearer ${authService.getToken() || localStorage.getItem('auth_token') || ''}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
