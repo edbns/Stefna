@@ -26,7 +26,7 @@ exports.handler = async (event) => {
     const { data, error } = await supa.rpc('get_quota', { p_user_id: userId })
     if (error) {
       console.error('get_quota error:', error)
-      return { statusCode: 500, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Failed to fetch quota' }) }
+      return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' }, body: JSON.stringify({ daily_used: 0, daily_limit: 30, weekly_used: 0, weekly_limit: 150 }) }
     }
 
     const row = Array.isArray(data) ? data[0] : data

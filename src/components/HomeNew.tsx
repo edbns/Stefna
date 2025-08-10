@@ -142,8 +142,8 @@ const HomeNew: React.FC = () => {
     setPreviewUrl(null)
   }
 
-  const handleGenerate = async () => {
-    if (!previewUrl || !prompt.trim()) return
+  const handleGenerate = async (promptOverride?: string) => {
+    if (!previewUrl || !(promptOverride ?? prompt).trim()) return
     const token = authService.getToken()
     if (!token) {
       navigate('/auth')
@@ -162,7 +162,7 @@ const HomeNew: React.FC = () => {
         sourceUrl = up.secure_url
       }
       const body = {
-        prompt: prompt.trim(),
+        prompt: (promptOverride ?? prompt).trim(),
         source_url: sourceUrl,
         resource_type: isVideoPreview ? 'video' : 'image',
         source: 'custom',
@@ -202,8 +202,7 @@ const HomeNew: React.FC = () => {
     if (!token) { navigate('/auth'); return }
     // Use preset text seed, then immediately generate
     const seed = `${presetName} style`
-    setPrompt((prev) => prev || seed)
-    await handleGenerate()
+    await handleGenerate(seed)
   }
 
   const handleLike = async (media: UserMedia) => {
