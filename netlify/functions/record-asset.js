@@ -40,7 +40,7 @@ exports.handler = async (event) => {
 
     // Insert with normalized resource_type, make optional fields truly optional
     const { error, data } = await supabase
-      .from("media_assets")  // Updated table name
+      .from("assets")  // Use assets table for uploads
       .insert({ 
         user_id: userId, 
         url, 

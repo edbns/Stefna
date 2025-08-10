@@ -18,8 +18,8 @@ export const handler = async (event) => {
 
     // read uploads + generated in one go; RLS limits to the user automatically
     const { data, error } = await supabase
-      .from('media_assets') // query the base table with RLS
-      .select('id, url, resource_type, visibility, allow_remix, created_at, result_url, source_url, prompt, model, mode, strength, parent_asset_id')
+      .from('user_all_media') // query the unified view with RLS
+      .select('id, url, kind, resource_type, visibility, allow_remix, created_at, prompt, parent_asset_id, result_url, source_url')
       .order('created_at', { ascending: false })
       .limit(100);
 
