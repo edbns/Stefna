@@ -617,7 +617,7 @@ const WebsiteLayout: React.FC = () => {
               addNotification("Warning", "Media generated but not saved to profile", "warning")
             }
             
-            addNotification('Preset Applied!', `${style.name} style applied successfully`, 'success')
+            addNotification('Preset Applied!', `${style.name} style applied successfully. Media saved to your profile!`, 'success', displayUrl, 'image')
             
             // IMPORTANT: Preset completed - DO NOT auto-trigger any other generation
             console.log('✅ Preset completed successfully. No further generation should occur.')
@@ -629,6 +629,26 @@ const WebsiteLayout: React.FC = () => {
             // Clear uploaded media state to prevent triggering variation pipeline later
             setUploadedMedia(null)
             setUploadedFile(null)
+            
+            // Refresh user media to show the newly generated content in profile
+            try {
+              const response = await fetch('/.netlify/functions/getUserMedia', {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('stefna_jwt') || ''}`,
+                  'Content-Type': 'application/json'
+                }
+              })
+              
+              if (response.ok) {
+                console.log('✅ Refreshed user media after preset generation')
+                // Trigger a custom event to notify ProfileScreen to refresh
+                window.dispatchEvent(new CustomEvent('userMediaUpdated'))
+              }
+            } catch (error) {
+              console.warn('⚠️ Failed to refresh user media:', error)
+            }
+            
             // Note: Keep sidebar open so user can see the result and continue working
             
             // CRITICAL: Return immediately to prevent any follow-up calls

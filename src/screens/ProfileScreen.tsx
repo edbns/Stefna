@@ -211,9 +211,21 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
-  // Load user media on component mount
+  // Load user media on component mount and when updated
   useEffect(() => {
     loadUserMedia()
+    
+    // Listen for user media updates from other components
+    const handleUserMediaUpdated = () => {
+      console.log('🔄 ProfileScreen received userMediaUpdated event, refreshing...')
+      loadUserMedia()
+    }
+    
+    window.addEventListener('userMediaUpdated', handleUserMediaUpdated)
+    
+    return () => {
+      window.removeEventListener('userMediaUpdated', handleUserMediaUpdated)
+    }
   }, [])
 
   // Manual media recovery function
