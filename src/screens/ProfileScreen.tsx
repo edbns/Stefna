@@ -824,7 +824,7 @@ const ProfileScreen: React.FC = () => {
               </div>
             ) : (
               <MasonryMediaGrid
-                media={userMedia}
+                media={userMedia.map(m => ({ ...m, aspectRatio: m.width && m.height ? m.width/Math.max(1,m.height) : m.aspectRatio || 4/3 }))}
                 columns={3}
                 onMediaClick={handleMediaClick}
                 onDownload={handleDownload}

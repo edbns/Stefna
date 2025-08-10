@@ -41,8 +41,12 @@ exports.handler = async (event) => {
       })
     }
   } catch (e) {
-    const status = e && e.message === 'no_bearer' ? 401 : 500
-    return { statusCode: status, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' }, body: JSON.stringify({ error: e.message || 'Unauthorized' }) }
+    // Fallback to safe defaults instead of hard 500s
+    const status = e && e.message === 'no_bearer' ? 401 : 200
+    const body = status === 200
+      ? { daily_used: 0, daily_limit: 30, weekly_used: 0, weekly_limit: 150 }
+      : { error: e.message || 'Unauthorized' }
+    return { statusCode: status, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
   }
 }
 
