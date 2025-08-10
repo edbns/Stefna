@@ -1,39 +1,19 @@
-import { createClient } from '@supabase/supabase-js';
-
-const { SUPABASE_URL, SUPABASE_ANON_KEY } = process.env;
+const { createClient } = require('@supabase/supabase-js');
+const { verifyAuth } = require('./_auth');
 
 const ok = (b) => ({ statusCode: 200, body: JSON.stringify(b) });
 const bad = (s, m) => ({ statusCode: s, body: JSON.stringify({ error: m }) });
 
-// Simple JWT decode function (for user_id extraction) - Node-safe (uses Buffer)
-const decodeJWT = (token) => {
+exports.handler = async (event) => {
   try {
-    const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    return null;
-  }
-};
+    // Use the same auth path as other functions so token formats are consistent
+    const { userId } = verifyAuth(event);
 
-export const handler = async (event) => {
-  try {
-    const auth = event.headers.authorization || event.headers.Authorization;
-    const jwt = auth?.replace(/^Bearer\s+/i, '');
-
-    if (!jwt) return bad(401, 'Missing user token');
-
-    // Decode JWT to get user_id
-    const decoded = decodeJWT(jwt);
-    if (!decoded || !decoded.sub) {
-      return bad(401, 'Invalid token format');
-    }
-
-    const userId = decoded.sub;
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY, // server key to bypass RLS and avoid policy edge cases
+      { auth: { persistSession: false } }
+    );
 
     // Query both tables separately and combine results
     // This avoids RLS issues and gives us full control over filtering
