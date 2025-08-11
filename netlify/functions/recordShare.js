@@ -1,105 +1,44 @@
-const { verifyAuth } = require("./_auth");
+const { getUserJwt, getSubUnsafe, supabaseForUser } = require('../lib/supabaseUser')
+
+const ok  = (b)=>({ statusCode: 200, body: JSON.stringify(b) })
+const err = (s,m)=>({ statusCode: s, body: JSON.stringify({ error: m }) })
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
   try {
-    const { userId } = verifyAuth(event);
-    
-    if (!userId) {
-      return { 
-        statusCode: 401, 
-        body: JSON.stringify({ error: 'Authentication required' }) 
-      };
-    }
+    if (event.httpMethod !== 'POST') return err(405, 'Method Not Allowed')
 
-    const { mediaId, shareType = 'public' } = JSON.parse(event.body);
-    
-    if (!mediaId) {
-      return { 
-        statusCode: 400, 
-        body: JSON.stringify({ error: 'Media ID is required' }) 
-      };
-    }
+    const jwt = getUserJwt(event)
+    if (!jwt) return err(401, 'Sign in to change visibility')
 
-    // Import Supabase client
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    const sub = getSubUnsafe(jwt)
+    if (!sub || !/^[0-9a-f-]{36}$/i.test(sub)) return err(401, 'Invalid user token')
 
-    // Check if user already shared this media with this type
-    const { data: existingShare, error: checkError } = await supabase
-      .from('media_shares')
-      .select('id')
-      .eq('media_id', mediaId)
-      .eq('user_id', userId)
-      .eq('share_type', shareType)
-      .single();
+    const { asset_id, mediaId, shareToFeed, allowRemix } = JSON.parse(event.body || '{}')
+    const id = asset_id || mediaId
+    if (!id) return err(400, 'asset_id or mediaId is required')
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('Error checking existing share:', checkError);
-      return { 
-        statusCode: 500, 
-        body: JSON.stringify({ error: 'Failed to check existing share' }) 
-      };
-    }
+    const visibility  = shareToFeed ? 'public' : 'private'
+    const allow_remix = shareToFeed ? !!allowRemix : false
 
-    let action;
-    
-    if (existingShare) {
-      // User already shared this media with this type
-      action = 'already_shared';
-    } else {
-      // Record the share
-      const { error: insertError } = await supabase
-        .from('media_shares')
-        .insert({
-          media_id: mediaId,
-          user_id: userId,
-          share_type: shareType
-        });
-      
-      if (insertError) {
-        console.error('Error recording share:', insertError);
-        return { 
-          statusCode: 500, 
-          body: JSON.stringify({ error: 'Failed to record share' }) 
-        };
+    const supa = supabaseForUser(jwt)
+
+    const { data, error } = await supa
+      .from('media_assets')
+      .update({ visibility, allow_remix })
+      .eq('id', id)
+      .select('id, visibility, allow_remix')
+      .maybeSingle()
+
+    if (error) {
+      if ((error && error.code === 'PGRST116') || /violates row-level security/i.test(error.message || '')) {
+        return err(403, 'Not allowed: you do not own this media')
       }
-      
-      action = 'shared';
+      return err(400, error.message)
     }
 
-    // Get updated share count
-    const { count: shareCount, error: countError } = await supabase
-      .from('media_shares')
-      .select('*', { count: 'exact', head: true })
-      .eq('media_id', mediaId);
-
-    if (countError) {
-      console.error('Error getting share count:', countError);
-      return { 
-        statusCode: 500, 
-        body: JSON.stringify({ error: 'Failed to get share count' }) 
-      };
-    }
-
-    return { 
-      statusCode: 200, 
-      body: JSON.stringify({ 
-        action,
-        shareCount: shareCount || 0
-      }) 
-    };
-  } catch (error) {
-    console.error('Record share error:', error);
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ error: 'Internal server error' }) 
-    };
+    if (!data) return err(404, 'Media not found')
+    return ok({ asset: data })
+  } catch (e) {
+    return err(500, e?.message || 'recordShare failed')
   }
-};
+}

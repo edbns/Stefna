@@ -1,3 +1,5 @@
+import authService from './authService'
+
 // Centralized service for handling media interactions (likes, shares, remixes)
 // This ensures all interaction data is consistent across the application
 
@@ -17,26 +19,30 @@ class InteractionService {
   // Toggle like on media
   async toggleLike(mediaId: string): Promise<InteractionResponse> {
     try {
+      const token = authService.getToken()
+      if (!token) {
+        return { success: false, action: 'error', error: 'Sign in to like' }
+      }
       const response = await fetch(`${this.baseUrl}/toggleLike`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ mediaId })
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to toggle like')
+        const errorData = await response.json().catch(() => ({} as any))
+        throw new Error((errorData as any).error || 'Failed to toggle like')
       }
 
       const result = await response.json()
       return {
         success: true,
-        action: result.action,
+        action: result.action ?? (result.liked ? 'liked' : 'unliked'),
         likeCount: result.likeCount,
-        isLiked: result.isLiked
+        isLiked: result.liked
       }
     } catch (error) {
       console.error('Toggle like error:', error)
@@ -51,24 +57,28 @@ class InteractionService {
   // Record a share of media
   async recordShare(mediaId: string, shareType: 'public' | 'social' | 'link' = 'public'): Promise<InteractionResponse> {
     try {
+      const token = authService.getToken()
+      if (!token) {
+        return { success: false, action: 'error', error: 'Sign in to change visibility' }
+      }
       const response = await fetch(`${this.baseUrl}/recordShare`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ mediaId, shareType })
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to record share')
+        const errorData = await response.json().catch(() => ({} as any))
+        throw new Error((errorData as any).error || 'Failed to record share')
       }
 
       const result = await response.json()
       return {
         success: true,
-        action: result.action,
+        action: result.action ?? 'shared',
         shareCount: result.shareCount
       }
     } catch (error) {
@@ -88,8 +98,6 @@ class InteractionService {
     shares: number
   }> {
     try {
-      // This would typically call a dedicated endpoint, but for now we'll return defaults
-      // In a full implementation, you'd have a getMediaStats endpoint
       return {
         likes: 0,
         remixes: 0,
@@ -112,8 +120,6 @@ class InteractionService {
     hasShared: boolean
   }> {
     try {
-      // This would typically call a dedicated endpoint to check user's interactions
-      // For now, we'll return defaults based on local storage or other state
       return {
         hasLiked: false,
         hasRemixed: false,

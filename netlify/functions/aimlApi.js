@@ -198,9 +198,14 @@ exports.handler = async (event) => {
           headers: { "Content-Type":"application/json", Authorization:`Bearer ${process.env.AIML_API_KEY}` },
           body: JSON.stringify(payload)
         });
-        out = await r.json();
-        
-        if (r.ok) break; // Success, exit retry loop
+        const raw = await r.text();
+        try { out = JSON.parse(raw) } catch { out = null }
+
+        if (r.ok) {
+          // ensure out is object for success path
+          if (!out) { try { out = JSON.parse(raw) } catch { out = {} } }
+          break; // Success, exit retry loop
+        }
         
         // Check if error is retryable (4xx/5xx from provider)
         if (retryCount < maxRetries && (r.status >= 400)) {
@@ -216,18 +221,15 @@ exports.handler = async (event) => {
           userId, 
            source: source || "custom", 
           mode: resourceType === 'video' ? 'v2v' : 'i2i',
-          error: out.message || `Provider error ${r.status}`,
-          details: redact(out),
+          error: (out && out.message) || `Provider error ${r.status}`,
+          details: redact(out || raw),
           ok: false, 
           ms: Date.now() - startTime 
         }));
         
         return {
           statusCode: r.status,
-          body: JSON.stringify({ 
-            message: out.message || `Provider error ${r.status}`, 
-            details: out 
-          })
+          body: raw || JSON.stringify({ message: (out && out.message) || `Provider error ${r.status}` })
         };
       } catch (fetchError) {
         if (retryCount < maxRetries) {
