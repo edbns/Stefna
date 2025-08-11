@@ -293,7 +293,7 @@ const HomeNew: React.FC = () => {
       // Build payload
       const payload: Record<string, any> = {
         prompt: prompt.trim(),
-        source_url: sourceUrl,
+        image_url: sourceUrl,
         resource_type: isVideoPreview ? 'video' : 'image',
         source: kind,
         visibility: shareToFeed ? 'public' : 'private',
@@ -374,7 +374,7 @@ const HomeNew: React.FC = () => {
       }
       const body: Record<string, any> = {
         prompt: (promptOverride ?? prompt).trim(),
-        source_url: sourceUrl,
+        image_url: sourceUrl,
         resource_type: isVideoPreview ? 'video' : 'image',
         source: 'custom',
         visibility: shareToFeed ? 'public' : 'private',

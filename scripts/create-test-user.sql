@@ -38,3 +38,4 @@ SELECT
 FROM users u
 LEFT JOIN user_otps o ON u.email = o.email
 WHERE u.email = 'test@stefna.com';
+
