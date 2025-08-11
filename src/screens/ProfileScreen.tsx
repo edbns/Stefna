@@ -16,6 +16,15 @@ import AdminUpgrade from '../components/AdminUpgrade'
 import userService from '../services/userService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 
+const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
+  if (!maybeUrl) return maybeUrl
+  // Keep absolute http(s) and data/blob URLs as-is
+  if (/^https?:\/\//i.test(maybeUrl) || /^(data:|blob:)/i.test(maybeUrl)) return maybeUrl
+  const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+  if (!cloud) return maybeUrl
+  return `https://res.cloudinary.com/${cloud}/image/upload/${maybeUrl.replace(/^\/+/, '')}`
+}
+
 const ProfileScreen: React.FC = () => {
   const navigate = useNavigate()
   // const location = useLocation()
@@ -189,7 +198,7 @@ const ProfileScreen: React.FC = () => {
               id: item.id,
               userId: item.user_id,
               type: item.resource_type === 'video' ? 'video' : 'photo',
-              url: item.result_url || item.url, // Use result_url if available, fallback to url
+              url: toAbsoluteCloudinaryUrl(item.result_url) || toAbsoluteCloudinaryUrl(item.url) || item.result_url || item.url,
               prompt: item.prompt || 'AI Generated Content',
               aspectRatio: 4/3, // Default aspect ratio
               width: 800,
