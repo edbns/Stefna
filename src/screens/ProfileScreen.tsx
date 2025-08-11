@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, Zap, Users, Check, Copy, Gift, RefreshCw } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, Zap, Users, RefreshCw } from 'lucide-react'
 import { InstagramIcon, XIcon, FacebookIcon, TikTokIcon, ThreadsIcon, YouTubeIcon } from '../components/SocialIcons'
 import RemixIcon from '../components/RemixIcon'
 import MasonryMediaGrid from '../components/MasonryMediaGrid'
@@ -13,10 +13,12 @@ import ConfirmModal from '../components/ConfirmModal'
 import tokenService, { UserTier } from '../services/tokenService'
 import { authenticatedFetch } from '../utils/apiClient'
 import AdminUpgrade from '../components/AdminUpgrade'
+import userService from '../services/userService'
+import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 
 const ProfileScreen: React.FC = () => {
   const navigate = useNavigate()
-  const location = useLocation()
+  // const location = useLocation()
   const [activeTab, setActiveTab] = useState<string>('all-media')
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
   const [showEditProfileModal, setShowEditProfileModal] = useState(false)
@@ -72,11 +74,11 @@ const ProfileScreen: React.FC = () => {
   const [viewerMedia, setViewerMedia] = useState<UserMedia[]>([])
   const [viewerStartIndex, setViewerStartIndex] = useState(0)
   const [confirm, setConfirm] = useState<{ open: boolean; media?: UserMedia }>({ open: false })
-  const [userTier, setUserTier] = useState<UserTier>(UserTier.REGISTERED)
+  const [_userTier, setUserTier] = useState<UserTier>(UserTier.REGISTERED)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false)
   const [referralStats, setReferralStats] = useState<{ invites: number; tokensEarned: number; referralCode: string } | null>(null)
-  const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  // const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [tokenCount, setTokenCount] = useState(0)
   const [showAdminUpgrade, setShowAdminUpgrade] = useState(false)
 
@@ -91,6 +93,14 @@ const ProfileScreen: React.FC = () => {
     mediaType?: 'image' | 'video'
     persistent?: boolean
   }>>([])
+
+  // Caption generation state
+  const [isCaptionOpen, setIsCaptionOpen] = useState(false)
+  const [captionPlatform, setCaptionPlatform] = useState<'instagram' | 'x' | 'tiktok'>('instagram')
+  const [captionStyle, setCaptionStyle] = useState<'casual' | 'professional' | 'trendy' | 'artistic'>('trendy')
+  const [captionOutput, setCaptionOutput] = useState('')
+  const [isCaptionLoading, setIsCaptionLoading] = useState(false)
+  const [selectedMediaForCaption, setSelectedMediaForCaption] = useState<UserMedia | null>(null)
 
   // Load user media from database using new Netlify Function
   const loadUserMedia = async () => {
@@ -278,17 +288,35 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
-  const handleSaveProfile = () => {
-    // Convert photo file to base64 if it exists
-    const profileDataToSave = { ...profileData }
-    if (profileData.photo instanceof File && previewPhoto) {
-      profileDataToSave.photo = previewPhoto // Save as base64 string
+  const handleSaveProfile = async () => {
+    try {
+      const profileDataToSave = { ...profileData }
+      let avatarUrl: string | undefined = undefined
+      if (profileData.photo instanceof File) {
+        const up = await uploadToCloudinary(profileData.photo, `users/${authService.getCurrentUser()?.id || 'me'}`)
+        avatarUrl = up.secure_url
+        profileDataToSave.photo = avatarUrl
+      } else if (typeof profileData.photo === 'string') {
+        avatarUrl = profileData.photo
+      }
+
+      // Persist to server
+      const token = authService.getToken()
+      if (token) {
+        await userService.updateProfile(token, {
+          name: profileDataToSave.name,
+          avatar: avatarUrl,
+        })
+      }
+
+      // Save locally for UI
+      localStorage.setItem('userProfile', JSON.stringify(profileDataToSave))
+      addNotification('Profile Updated', 'Your profile has been saved successfully', 'success')
+      setShowEditProfileModal(false)
+    } catch (e) {
+      console.error('Save profile failed:', e)
+      addNotification('Update failed', 'Could not update profile', 'error')
     }
-    
-    // Save profile data to local storage (in real app, would save to backend)
-    localStorage.setItem('userProfile', JSON.stringify(profileDataToSave))
-    addNotification('Profile Updated', 'Your profile has been saved successfully', 'success')
-    setShowEditProfileModal(false)
   }
 
   const handleDeleteAccount = () => {
@@ -324,14 +352,22 @@ const ProfileScreen: React.FC = () => {
     setViewerOpen(true)
   }
 
-  const handleDownload = (media: UserMedia) => {
-    // Create a temporary link and trigger download
-    const link = document.createElement('a')
-    link.href = media.url
-    link.download = `stefna-${media.id}.jpg`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  const handleDownload = async (media: UserMedia) => {
+    try {
+      const resp = await fetch(media.url, { mode: 'cors' })
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      const ext = media.type === 'video' ? 'mp4' : 'jpg'
+      link.download = `stefna-${media.id}.${ext}`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      addNotification('Download failed', 'Unable to download file', 'error')
+    }
   }
 
   // Updated share function that updates database visibility
@@ -445,6 +481,40 @@ const ProfileScreen: React.FC = () => {
 
   const handleDeleteDraft = (media: UserMedia) => {
     setConfirm({ open: true, media })
+  }
+
+  // Caption generation handlers
+  const handleGenerateCaption = (media: UserMedia) => {
+    setSelectedMediaForCaption(media)
+    setIsCaptionOpen(true)
+    setCaptionOutput('')
+  }
+
+  const handleGenerateCaptionContent = async () => {
+    if (!selectedMediaForCaption) return
+    
+    setIsCaptionLoading(true)
+    try {
+      // For now, we'll generate a simple caption based on the media
+      // In the future, this could call an AI service
+      const caption = `Amazing AI-generated ${selectedMediaForCaption.type} created with Stefna! ✨ #AIArt #Stefna #${captionStyle}`
+      setCaptionOutput(caption)
+    } catch (error) {
+      console.error('Error generating caption:', error)
+      setCaptionOutput('Failed to generate caption')
+    } finally {
+      setIsCaptionLoading(false)
+    }
+  }
+
+  const handleCopyCaption = async () => {
+    if (!captionOutput) return
+    try {
+      await navigator.clipboard.writeText(captionOutput)
+      addNotification('Copied', 'Caption copied to clipboard', 'success')
+    } catch (e) {
+      addNotification('Copy failed', 'Unable to copy caption', 'error')
+    }
   }
 
   // Invite Friends functionality
@@ -836,6 +906,7 @@ const ProfileScreen: React.FC = () => {
                 onShare={handleShare}
                 onRemix={handleRemix}
                 onDelete={handleDeleteMedia}
+                onGenerateCaption={handleGenerateCaption}
                 showActions={true}
                 className="pb-20"
               />
@@ -1039,18 +1110,29 @@ const ProfileScreen: React.FC = () => {
         onClose={() => setConfirm({ open: false })}
         onConfirm={async () => {
           if (confirm.media) {
-            // Check if this is a draft
+            // Delete from server if possible; fallback to local removal
+            try {
+              const jwt = authService.getToken()
+              if (jwt) {
+                const r = await fetch('/.netlify/functions/delete-media', {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id: confirm.media.id })
+                })
+                if (!r.ok) throw new Error('server delete failed')
+              }
+            } catch {}
+
+            // Remove locally
             const isDraft = draftMedia.some(draft => draft.id === confirm.media?.id)
-            
             if (isDraft) {
-              // Delete from drafts
               setDraftMedia(prev => prev.filter(item => item.id !== confirm.media?.id))
               addNotification('Draft Deleted', 'Draft removed from collection', 'info')
             } else {
-              // Delete from regular media
               await userMediaService.deleteMedia(currentUserId, confirm.media.id)
               const allMedia = await userMediaService.getAllUserMedia(currentUserId)
               setUserMedia(allMedia)
+              addNotification('Deleted', 'Media deleted', 'info')
             }
           }
           setConfirm({ open: false })
@@ -1276,6 +1358,48 @@ const ProfileScreen: React.FC = () => {
       {/* Admin Upgrade Modal */}
       {showAdminUpgrade && (
         <AdminUpgrade onClose={() => setShowAdminUpgrade(false)} />
+      )}
+
+      {/* Caption Modal */}
+      {isCaptionOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-black border border-white/15 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-white font-medium">Generate Caption</div>
+              <button onClick={() => setIsCaptionOpen(false)} className="text-white/70 hover:text-white"><X size={16} /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <div className="text-white/70 text-xs mb-1">Platform</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['instagram','x','tiktok'] as const).map(p => (
+                    <button key={p} onClick={() => setCaptionPlatform(p)} className={`px-3 py-2 rounded-lg text-sm border ${captionPlatform===p? 'border-white/50 text-white bg-white/10':'border-white/10 text-white/80 hover:bg-white/5'}`}>{p}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="text-white/70 text-xs mb-1">Style</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {(['trendy','casual','professional','artistic'] as const).map(s => (
+                    <button key={s} onClick={() => setCaptionStyle(s)} className={`px-2 py-2 rounded-lg text-xs border ${captionStyle===s? 'border-white/50 text-white bg-white/10':'border-white/10 text-white/80 hover:bg-white/5'}`}>{s}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <button onClick={handleGenerateCaptionContent} className="px-3 py-2 rounded-lg bg-white text-black text-sm disabled:opacity-50" disabled={isCaptionLoading}>
+                  {isCaptionLoading? 'Generating…' : 'Generate'}
+                </button>
+                <button onClick={handleCopyCaption} className="px-3 py-2 rounded-lg border border-white/10 text-white text-sm disabled:opacity-50" disabled={!captionOutput}>
+                  Copy
+                </button>
+              </div>
+              <div>
+                <textarea value={captionOutput} onChange={(e)=>setCaptionOutput(e.target.value)} placeholder="Your caption will appear here" className="w-full h-28 p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/40 resize-none text-sm focus:outline-none" />
+                <div className="text-white/50 text-xs mt-2">Includes #AiAsABrush automatically</div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
