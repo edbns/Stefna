@@ -714,6 +714,14 @@ const HomeNew: React.FC = () => {
                                 navigate('/auth')
                                 return
                               }
+                              if (!previewUrl) {
+                                addNotification('Upload media first', 'Please upload an image or video', 'warning')
+                                return
+                              }
+                              if (!prompt.trim()) {
+                                addNotification('Enter a prompt first', 'Describe how to transform your media', 'warning')
+                                return
+                              }
                               handleGenerate()
                             }} 
                             disabled={!previewUrl || !prompt.trim() || isGenerating} 
