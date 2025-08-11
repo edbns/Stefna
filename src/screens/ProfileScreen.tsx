@@ -373,12 +373,19 @@ const ProfileScreen: React.FC = () => {
   // Updated share function that updates database visibility
   const handleShare = async (media: UserMedia) => {
     try {
+      // Auth guard: require JWT before attempting to change visibility
+      if (!authService.getToken()) {
+        addNotification('Login Required', 'Please sign in to change visibility', 'warning')
+        navigate('/auth')
+        return
+      }
+
       // Update media visibility in database
-        const response = await fetch('/.netlify/functions/updateMediaVisibility', {
+      const response = await fetch('/.netlify/functions/updateMediaVisibility', {
         method: 'PUT',
         headers: {
-            ...(authService.getToken() ? { 'Authorization': `Bearer ${authService.getToken()}` } : {}),
-            'Content-Type': 'application/json'
+          'Authorization': `Bearer ${authService.getToken()}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           assetId: media.id,
