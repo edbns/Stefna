@@ -4,6 +4,7 @@ import ImageToImageUpload from './ImageToImageUpload'
 import aiGenerationService, { GenerationRequest, GenerationStatus } from '../services/aiGenerationService'
 import fileUploadService from '../services/fileUploadService'
 import aimlModelService from '../services/aimlModelService'
+import { requireUserIntent } from '../utils/generationGuards'
 
 interface I2IV2VInterfaceProps {
   userId: string
@@ -57,6 +58,12 @@ const I2IV2VInterface: React.FC<I2IV2VInterfaceProps> = ({
     if (!prompt.trim()) {
       onError('Please enter a prompt')
       return
+    }
+    
+    // Apply user intent guard
+    if (requireUserIntent({ userInitiated: true, source: 'custom' })) {
+      onError('Generation blocked by guard');
+      return;
     }
 
     setIsGenerating(true)

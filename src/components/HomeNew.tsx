@@ -12,6 +12,7 @@ import ProfileIcon from './ProfileIcon'
 import { PRESETS } from '../config/freeMode'
 import captionService from '../services/captionService'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
+import { requireUserIntent } from '../utils/generationGuards'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
@@ -231,6 +232,118 @@ const HomeNew: React.FC = () => {
     setPreviewUrl(null)
   }
 
+  // Centralized generation dispatcher with comprehensive logging
+  async function dispatchGenerate(kind: 'preset' | 'custom' | 'remix') {
+    const t0 = performance.now();
+    console.info('▶ dispatchGenerate', { kind });
+
+    // Sanity check - log current state
+    console.table({
+      hasActiveAssetUrl: !!previewUrl,
+      promptLen: prompt?.length ?? 0,
+      isGenerating,
+      isAuthenticated,
+    });
+
+    if (!previewUrl) {
+      console.warn('No source media URL; aborting.');
+      return;
+    }
+
+    if (!prompt.trim()) {
+      console.warn('No prompt; aborting.');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      console.warn('User not authenticated; redirecting to auth.');
+      navigate('/auth');
+      return;
+    }
+
+    // Apply user intent guard
+    if (requireUserIntent({ userInitiated: true, source: kind })) {
+      console.warn('⛔ Generation blocked by guard');
+      return;
+    }
+
+        try {
+      // Close composer and show progress
+      setIsGenerating(true);
+      setIsComposerOpen(false);
+      setNavGenerating(true);
+
+      // Upload to Cloudinary if needed
+      let sourceUrl = previewUrl;
+      if (selectedFile) {
+        const up = await uploadToCloudinary(selectedFile, `users/${authService.getCurrentUser()?.id || 'me'}`);
+        sourceUrl = up.secure_url;
+      }
+      
+      // Final sanity check before API call
+      console.table({
+        hasActiveAssetUrl: !!previewUrl,
+        promptLen: prompt?.length ?? 0,
+        isGenerating,
+        isAuthenticated,
+        sourceUrl,
+        selectedPreset,
+      });
+
+      // Build payload
+      const payload: Record<string, any> = {
+        prompt: prompt.trim(),
+        source_url: sourceUrl,
+        resource_type: isVideoPreview ? 'video' : 'image',
+        source: kind,
+        visibility: shareToFeed ? 'public' : 'private',
+        allow_remix: shareToFeed ? allowRemix : false,
+        num_variations: generateTwo ? 2 : 1,
+      };
+
+      // Include preset data if applicable
+      if (selectedPreset && PRESETS[selectedPreset]) {
+        const preset = PRESETS[selectedPreset];
+        if (preset.negative) payload.negative_prompt = preset.negative;
+        if (typeof preset.strength === 'number') payload.strength = preset.strength;
+        payload.presetName = selectedPreset;
+      }
+
+      console.info('aimlApi payload', payload);
+
+      const res = await authenticatedFetch('/.netlify/functions/aimlApi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      console.info('aimlApi status', res.status);
+      const body = await res.json().catch(() => ({}));
+      console.info('aimlApi body', body);
+
+      if (!res.ok) {
+        throw new Error(body?.error || `aimlApi ${res.status}`);
+      }
+
+      // Success: stop progress
+      setIsGenerating(false);
+      setNavGenerating(false);
+
+      // Refresh quota
+      try {
+        const qRes = await authenticatedFetch('/.netlify/functions/getQuota');
+        if (qRes.ok) setQuota(await qRes.json());
+      } catch {}
+
+    } catch (e) {
+      console.error('dispatchGenerate error', e);
+      setIsGenerating(false);
+      setNavGenerating(false);
+    } finally {
+      console.info('⏹ dispatchGenerate done', (performance.now() - t0).toFixed(1), 'ms');
+    }
+  }
+
   const handleGenerate = async (promptOverride?: string) => {
     if (!previewUrl || !(promptOverride ?? prompt).trim()) {
       return
@@ -240,6 +353,12 @@ const HomeNew: React.FC = () => {
     if (!token) {
       navigate('/auth')
       return
+    }
+    
+    // Apply user intent guard
+    if (requireUserIntent({ userInitiated: true, source: 'custom' })) {
+      console.warn('⛔ Generation blocked by guard');
+      return;
     }
     // Close composer immediately and show progress on avatar
     setIsGenerating(true)
@@ -302,6 +421,11 @@ const HomeNew: React.FC = () => {
     if (!preset) return
     setSelectedPreset(presetName)
     setPrompt(preset.prompt)
+    
+    // Auto-generate if we have media
+    if (previewUrl) {
+      dispatchGenerate('preset')
+    }
   }
 
   const handleGenerateCaption = () => {
@@ -374,6 +498,12 @@ const HomeNew: React.FC = () => {
     setSelectedFile(null)
     setIsComposerOpen(true)
     setPrompt(media.prompt || '')
+    
+    // Auto-generate remix if we have the prompt
+    if (media.prompt) {
+      // Small delay to ensure state is set
+      setTimeout(() => dispatchGenerate('remix'), 100)
+    }
   }
 
   const handleMediaClick = (media: UserMedia) => {
@@ -708,22 +838,7 @@ const HomeNew: React.FC = () => {
                             <FileText size={16} />
                           </button>
                           <button 
-                            onClick={() => {
-                              if (!isAuthenticated) {
-                                addNotification('Sign up required', 'Please sign up to generate AI content', 'warning')
-                                navigate('/auth')
-                                return
-                              }
-                              if (!previewUrl) {
-                                addNotification('Upload media first', 'Please upload an image or video', 'warning')
-                                return
-                              }
-                              if (!prompt.trim()) {
-                                addNotification('Enter a prompt first', 'Describe how to transform your media', 'warning')
-                                return
-                              }
-                              handleGenerate()
-                            }} 
+                            onClick={() => dispatchGenerate('custom')} 
                             disabled={!previewUrl || !prompt.trim() || isGenerating} 
                             className={`w-12 h-12 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl ${
                               !previewUrl || !prompt.trim() || isGenerating 
