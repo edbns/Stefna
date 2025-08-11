@@ -171,19 +171,18 @@ exports.handler = async (event) => {
     try {
       const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
       // Quota precheck (userId is guaranteed UUID above)
-        const { data: precheck, error: preErr } = await supa.rpc('can_consume_tokens', { p_user_id: userId, p_cost: cost });
+      const { data: precheck, error: preErr } = await supa.rpc('can_consume_tokens', { p_user_id: userId, p_cost: cost });
       if (preErr) {
-        console.error('Quota precheck error:', preErr);
-        return { statusCode: 500, body: JSON.stringify({ message: 'Quota check failed' }) };
-      }
+        console.warn('Quota precheck error (continuing without block):', preErr);
+      } else {
         const okRow = Array.isArray(precheck) ? precheck[0] : precheck;
-        if (!okRow?.ok) {
+        if (okRow && okRow.ok === false) {
           const reason = okRow?.reason || 'Quota exceeded';
           return { statusCode: 429, body: JSON.stringify({ message: reason, quota: okRow }) };
         }
+      }
     } catch (qe) {
-      console.error('Quota check exception:', qe);
-      return { statusCode: 500, body: JSON.stringify({ message: 'Quota check failed' }) };
+      console.warn('Quota check exception (continuing without block):', qe);
     }
     
     // Retry logic for 4xx/5xx errors
@@ -265,12 +264,12 @@ exports.handler = async (event) => {
       const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
       // Consume tokens after successful generation
       const { data: consumed, error: consumeErr } = await supa.rpc('consume_tokens', { p_user_id: userId, p_cost: cost, p_kind: resourceType });
-      if (consumeErr || !consumed?.[0]?.ok) {
-        console.error('Token consumption failed:', consumeErr || consumed);
-        return { statusCode: 429, body: JSON.stringify({ message: 'Quota exceeded during finalize' }) };
+      if (consumeErr || !(Array.isArray(consumed) ? consumed[0]?.ok : consumed?.ok)) {
+        console.warn('Token consumption failed (continuing):', consumeErr || consumed);
+        // Do not fail the generation; continue to save and return success
       }
       
-        const row = {
+      const row = {
         user_id: userId,
         url: result_url,            // Required NOT NULL field - use result_url as the main URL
         result_url: result_url,
