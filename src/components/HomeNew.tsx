@@ -183,7 +183,10 @@ const HomeNew: React.FC = () => {
   }
 
   const handleGenerate = async (promptOverride?: string) => {
-    if (!previewUrl || !(promptOverride ?? prompt).trim()) return
+    if (!previewUrl || !(promptOverride ?? prompt).trim()) {
+      return
+    }
+    
     const token = authService.getToken()
     if (!token) {
       navigate('/auth')
@@ -284,6 +287,7 @@ const HomeNew: React.FC = () => {
 
   const handleLike = async (media: UserMedia) => {
     if (!authService.getToken()) {
+      addNotification('Sign up required', 'Please sign up to like content', 'warning')
       navigate('/auth')
       return
     }
@@ -295,6 +299,7 @@ const HomeNew: React.FC = () => {
 
   const handleShare = async (media: UserMedia) => {
     if (!authService.getToken()) {
+      addNotification('Sign up required', 'Please sign up to share content', 'warning')
       navigate('/auth')
       return
     }
@@ -311,6 +316,7 @@ const HomeNew: React.FC = () => {
   const handleRemix = (media: UserMedia) => {
     if (!media.allowRemix) return
     if (!authService.getToken()) {
+      addNotification('Sign up required', 'Please sign up to remix content', 'warning')
       navigate('/auth')
       return
     }
@@ -612,6 +618,8 @@ const HomeNew: React.FC = () => {
                     </div>
 
                     {quota && (<div className="flex items-center justify-between text-xs text-white/60"><div>Daily: {quota.daily_used} / {quota.daily_limit}</div><div>Weekly: {quota.weekly_used} / {quota.weekly_limit}</div></div>)}
+                    
+
                     {/* Variations toggle */}
                     <div className="flex items-center justify-between text-xs text-white/70">
                       <span>Generate {generateTwo ? '2' : '1'} variation{generateTwo ? 's' : ''}</span>
@@ -634,7 +642,30 @@ const HomeNew: React.FC = () => {
                           >
                             <FileText size={16} />
                           </button>
-                          <button onClick={handleGenerate} disabled={!previewUrl || !prompt.trim() || isGenerating} className="w-12 h-12 bg-white text-black rounded-full hover:bg-white/90 disabled:opacity-50 transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl" aria-label="Generate">{isGenerating ? (<div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />) : (<ArrowUp size={20} />)}</button>
+                          <button 
+                            onClick={() => {
+                              if (!isAuthenticated) {
+                                addNotification('Sign up required', 'Please sign up to generate AI content', 'warning')
+                                navigate('/auth')
+                                return
+                              }
+                              handleGenerate()
+                            }} 
+                            disabled={!previewUrl || !prompt.trim() || isGenerating} 
+                            className={`w-12 h-12 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl ${
+                              !previewUrl || !prompt.trim() || isGenerating 
+                                ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                                : 'bg-white text-black hover:bg-white/90'
+                            }`}
+                            aria-label="Generate"
+                            title={`${!isAuthenticated ? 'Sign up to generate AI content' : !previewUrl ? 'Upload media first' : !prompt.trim() ? 'Enter a prompt first' : isGenerating ? 'Generation in progress...' : 'Generate AI content'}`}
+                          >
+                            {isGenerating ? (
+                              <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                            ) : (
+                              <ArrowUp size={20} />
+                            )}
+                          </button>
                         </div>
                   </div>
                 </div>
