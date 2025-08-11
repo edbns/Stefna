@@ -25,11 +25,11 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   media,
   // columns = 3,
   onMediaClick,
-  // onDownload,
+  onDownload,
   onShare,
   onLike,
   onRemix,
-  // onDelete,
+  onDelete,
   // onEdit,
   onFilterCreator,
   onGenerateCaption,
@@ -92,7 +92,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   return (
     <div className={`${className}`} ref={gridRef}>
       <div 
-        className="columns-3 gap-1 mx-auto" 
+        className="columns-3 gap-2 mx-auto" 
         style={{ maxWidth: '1200px' }}
       >
         {media.map((item) => {
@@ -160,6 +160,19 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
 
                       {/* Right: actions */}
                       <div className="absolute bottom-2 right-2 flex items-center space-x-2">
+                        {onDownload && (
+                          <button
+                            onClick={(e) => handleAction(() => onDownload(item), e)}
+                            className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
+                            title="Download"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <polyline points="7,10 12,15 17,10"/>
+                              <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                          </button>
+                        )}
                         {onShare && (
                           <button
                             onClick={(e) => handleAction(() => onShare(item), e)}
@@ -185,6 +198,18 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             title="Like"
                           >
                             <Heart size={14} className={isLikedMedia ? 'text-red-500 fill-red-500' : 'text-white'} />
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            onClick={(e) => handleAction(() => onDelete(item), e)}
+                            className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
+                            title="Delete"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
+                              <polyline points="3,6 5,6 21,6"/>
+                              <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                            </svg>
                           </button>
                         )}
                         {onGenerateCaption && (

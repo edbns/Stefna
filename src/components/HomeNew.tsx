@@ -11,6 +11,7 @@ import NotificationBell from './NotificationBell'
 import ProfileIcon from './ProfileIcon'
 import { PRESETS } from '../config/freeMode'
 import captionService from '../services/captionService'
+import FullScreenMediaViewer from './FullScreenMediaViewer'
 
 const HomeNew: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -60,6 +61,11 @@ const HomeNew: React.FC = () => {
   const [allowRemix, setAllowRemix] = useState(false)
   const [generateTwo, setGenerateTwo] = useState(false)
   const [userMenu, setUserMenu] = useState(false)
+  
+  // Media viewer state
+  const [viewerOpen, setViewerOpen] = useState(false)
+  const [viewerMedia, setViewerMedia] = useState<UserMedia[]>([])
+  const [viewerStartIndex, setViewerStartIndex] = useState(0)
 
   const handleUploadClick = () => fileInputRef.current?.click()
 
@@ -327,6 +333,12 @@ const HomeNew: React.FC = () => {
     setPrompt(media.prompt || '')
   }
 
+  const handleMediaClick = (media: UserMedia) => {
+    setViewerMedia([media])
+    setViewerStartIndex(0)
+    setViewerOpen(true)
+  }
+
   // Apply filter to feed
   const filteredFeed = feed.filter((item) => {
     if (creatorFilter && item.userId !== creatorFilter) return false
@@ -487,7 +499,7 @@ const HomeNew: React.FC = () => {
             <MasonryMediaGrid
               media={!isAuthenticated ? filteredFeed.slice(0, 18) : filteredFeed}
               columns={3}
-              onMediaClick={() => {}}
+              onMediaClick={handleMediaClick}
               onLike={handleLike}
               onShare={handleShare}
               onRemix={handleRemix}
@@ -523,13 +535,12 @@ const HomeNew: React.FC = () => {
 
         {/* Floating notifications for Home */}
         {notifications.length > 0 && (
-          <div className="fixed top-4 right-4 z-50 space-y-2">
+          <div className="fixed top-20 right-4 z-50 space-y-2">
             {notifications.map((n) => (
               <div key={n.id} className="max-w-sm bg-gray-900/90 border border-white/10 rounded-2xl shadow-2xl">
-                <div className="p-3 flex items-start justify-between">
+                <div className="p-3 flex items-center justify-between">
                   <div className="pr-2">
                     <p className="text-sm text-white font-medium">{n.title}</p>
-                    {n.message && <p className="text-xs text-white/60 mt-1">{n.message}</p>}
                   </div>
                   <button onClick={() => removeNotification(n.id)} className="text-white/40 hover:text-white">
                     <X size={14} />
@@ -566,6 +577,17 @@ const HomeNew: React.FC = () => {
 
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleFileChange} className="hidden" />
+
+      {/* Full Screen Media Viewer */}
+      <FullScreenMediaViewer
+        isOpen={viewerOpen}
+        media={viewerMedia}
+        startIndex={viewerStartIndex}
+        onClose={() => setViewerOpen(false)}
+        onLike={handleLike}
+        onRemix={handleRemix}
+        onShowAuth={() => navigate('/auth')}
+      />
 
       {/* Full-screen composer */}
       {isComposerOpen && (
