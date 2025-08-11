@@ -96,7 +96,7 @@ const ContentReportModal: React.FC<ContentReportModalProps> = ({
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={handleClose} />
       
       {/* Modal */}
-      <div className="relative bg-black border border-white/20 rounded-2xl max-w-4xl w-full p-6 shadow-2xl">
+      <div className="relative bg-[#222222] border border-white/20 rounded-2xl max-w-4xl w-full p-6 shadow-2xl">
         {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-white text-lg font-semibold">Report Content</h2>

@@ -88,7 +88,7 @@ export async function listUserAssets(opts = {}) {
 
 // Delete a single asset (from both Cloudinary and DB)
 export async function deleteAsset(assetId, opts = {}) {
-  const res = await signedFetch("/.netlify/functions/delete-asset", {
+  const res = await signedFetch("/.netlify/functions/delete-upload", {
     method: "POST",
     body: JSON.stringify({ id: assetId })
   });

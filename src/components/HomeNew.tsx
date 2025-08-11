@@ -67,6 +67,37 @@ const HomeNew: React.FC = () => {
   const [viewerMedia, setViewerMedia] = useState<UserMedia[]>([])
   const [viewerStartIndex, setViewerStartIndex] = useState(0)
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      
+      // Close filter dropdown
+      if (filterOpen && !target.closest('[data-filter-dropdown]')) {
+        setFilterOpen(false)
+      }
+      
+      // Close user menu dropdown
+      if (userMenu && !target.closest('[data-user-menu]')) {
+        setUserMenu(false)
+      }
+    }
+
+    // Close dropdowns when global nav close event is dispatched
+    const handleGlobalNavClose = () => {
+      setFilterOpen(false)
+      setUserMenu(false)
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    window.addEventListener('global-nav-close', handleGlobalNavClose)
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+      window.removeEventListener('global-nav-close', handleGlobalNavClose)
+    }
+  }, [filterOpen, userMenu])
+
   const handleUploadClick = () => fileInputRef.current?.click()
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -405,7 +436,7 @@ const HomeNew: React.FC = () => {
         <div className="flex items-center gap-4">
           {/* Filter moved to right with bell and profile */}
           {isAuthenticated && (
-            <div className="relative">
+            <div className="relative" data-filter-dropdown>
               <button
                 onClick={() => {
                   window.dispatchEvent(new Event('global-nav-close'))
@@ -419,10 +450,10 @@ const HomeNew: React.FC = () => {
                 <Filter size={24} />
               </button>
               {filterOpen && (
-                <div className="absolute right-0 mt-2 bg-black border border-white/20 rounded-xl shadow-2xl p-2 w-40">
-                  <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded ${currentFilter==='all'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>All</button>
-                  <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded ${currentFilter==='images'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Images</button>
-                  <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded ${currentFilter==='videos'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Videos</button>
+                <div className="absolute right-0 mt-2 bg-[#222222] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
+                  <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='all'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>All</button>
+                  <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='images'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Images</button>
+                  <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='videos'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Videos</button>
                 </div>
               )}
             </div>
@@ -434,15 +465,15 @@ const HomeNew: React.FC = () => {
                 <NotificationBell userId={authService.getCurrentUser()?.id || ''} />
               </div>
               {/* Profile with progress ring */}
-              <div className="relative">
+              <div className="relative" data-user-menu>
                 <button onClick={() => { window.dispatchEvent(new Event('global-nav-close')); setUserMenu((v) => !v) }} className="relative rounded-full" aria-haspopup="menu" aria-expanded={userMenu}>
                   {navGenerating && (<span className="absolute -inset-1 rounded-full border-2 border-white/50 animate-spin" style={{ borderTopColor: 'transparent' }} />)}
                   <ProfileIcon size={28} className="text-white" />
                 </button>
                 {userMenu && (
-                  <div className="absolute right-0 mt-2 bg-black border border-white/20 rounded-xl shadow-2xl p-2 w-40">
-                    <button onClick={() => { setUserMenu(false); navigate('/profile') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded">Profile</button>
-                    <button onClick={() => { setUserMenu(false); navigate('/auth') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded">Sign out</button>
+                  <div className="absolute right-0 mt-2 bg-[#222222] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
+                    <button onClick={() => { setUserMenu(false); navigate('/profile') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Profile</button>
+                    <button onClick={() => { setUserMenu(false); navigate('/auth') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Sign out</button>
                   </div>
                 )}
               </div>
@@ -537,12 +568,12 @@ const HomeNew: React.FC = () => {
         {notifications.length > 0 && (
           <div className="fixed top-20 right-4 z-50 space-y-2">
             {notifications.map((n) => (
-              <div key={n.id} className="max-w-sm bg-gray-900/90 border border-white/10 rounded-2xl shadow-2xl">
+              <div key={n.id} className="max-w-sm bg-[#222222] border border-white/20 rounded-2xl shadow-2xl">
                 <div className="p-3 flex items-center justify-between">
                   <div className="pr-2">
                     <p className="text-sm text-white font-medium">{n.title}</p>
                   </div>
-                  <button onClick={() => removeNotification(n.id)} className="text-white/40 hover:text-white">
+                  <button onClick={() => removeNotification(n.id)} className="text-white/60 hover:text-white transition-colors">
                     <X size={14} />
                   </button>
                 </div>
@@ -698,39 +729,41 @@ const HomeNew: React.FC = () => {
         )}
         {/* Caption Modal */}
         {isCaptionOpen && (
-          <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-black border border-white/15 rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-white font-medium">Generate caption</div>
-                <button onClick={() => setIsCaptionOpen(false)} className="text-white/70 hover:text-white"><X size={16} /></button>
+          <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-[#222222] border border-white/20 rounded-2xl p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-white font-medium text-lg">Generate Caption</div>
+                <button onClick={() => setIsCaptionOpen(false)} className="text-white/60 hover:text-white transition-colors">
+                  <X size={20} />
+                </button>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <div className="text-white/70 text-xs mb-1">Platform</div>
+                  <div className="text-white/70 text-sm mb-2">Platform</div>
                   <div className="grid grid-cols-3 gap-2">
                     {(['instagram','x','tiktok'] as const).map(p => (
-                      <button key={p} onClick={() => setCaptionPlatform(p)} className={`px-3 py-2 rounded-lg text-sm border ${captionPlatform===p? 'border-white/50 text-white bg-white/10':'border-white/10 text-white/80 hover:bg-white/5'}`}>{p}</button>
+                      <button key={p} onClick={() => setCaptionPlatform(p)} className={`px-3 py-2 rounded-lg text-sm border transition-colors ${captionPlatform===p? 'border-white/40 text-white bg-white/10':'border-white/20 text-white/80 hover:text-white hover:bg-white/5'}`}>{p}</button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <div className="text-white/70 text-xs mb-1">Style</div>
+                  <div className="text-white/70 text-sm mb-2">Style</div>
                   <div className="grid grid-cols-4 gap-2">
                     {(['trendy','casual','professional','artistic'] as const).map(s => (
-                      <button key={s} onClick={() => setCaptionStyle(s)} className={`px-2 py-2 rounded-lg text-xs border ${captionStyle===s? 'border-white/50 text-white bg-white/10':'border-white/10 text-white/80 hover:bg-white/5'}`}>{s}</button>
+                      <button key={s} onClick={() => setCaptionStyle(s)} className={`px-2 py-2 rounded-lg text-xs border transition-colors ${captionStyle===s? 'border-white/40 text-white bg-white/10':'border-white/20 text-white/80 hover:text-white hover:bg-white/5'}`}>{s}</button>
                     ))}
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <button onClick={handleGenerateCaption} className="px-3 py-2 rounded-lg bg-white text-black text-sm disabled:opacity-50" disabled={!prompt.trim() || isCaptionLoading}>
+                  <button onClick={handleGenerateCaption} className="px-4 py-2 rounded-lg bg-white text-black text-sm font-medium disabled:opacity-50 transition-colors" disabled={!prompt.trim() || isCaptionLoading}>
                     {isCaptionLoading? 'Generating…' : 'Generate'}
                   </button>
-                  <button onClick={handleCopyCaption} className="px-3 py-2 rounded-lg border border-white/10 text-white text-sm disabled:opacity-50" disabled={!captionOutput}>
+                  <button onClick={handleCopyCaption} className="px-4 py-2 rounded-lg border border-white/20 text-white text-sm disabled:opacity-50 hover:bg-white/5 transition-colors" disabled={!captionOutput}>
                     Copy
                   </button>
                 </div>
                 <div>
-                  <textarea value={captionOutput} onChange={(e)=>setCaptionOutput(e.target.value)} placeholder="Your caption will appear here" className="w-full h-28 p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/40 resize-none text-sm focus:outline-none" />
+                  <textarea value={captionOutput} onChange={(e)=>setCaptionOutput(e.target.value)} placeholder="Your caption will appear here" className="w-full h-28 p-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/40 resize-none text-sm focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors" />
                   <div className="text-white/50 text-xs mt-2">Includes #AiAsABrush automatically</div>
                 </div>
               </div>

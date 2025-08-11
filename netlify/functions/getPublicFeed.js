@@ -23,7 +23,7 @@ exports.handler = async (event) => {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // Get public media feed with interaction counts
+    // Get public media feed with interaction counts and user profile (from view)
     const { data: publicMedia, error } = await supabase
       .from('public_media_with_counts')
       .select('*')
@@ -39,23 +39,25 @@ exports.handler = async (event) => {
 
     // Transform data to include user info and interaction counts
     const transformedMedia = (publicMedia || []).map(item => ({
-      id: item.id,
-      user_id: item.user_id,
-      user_name: item.user_name || 'Anonymous',
-      result_url: item.result_url,
-      source_url: item.source_url,
-      mode: item.mode,
-      prompt: item.prompt,
-      negative_prompt: item.negative_prompt,
-      width: item.width,
-      height: item.height,
-      strength: item.strength,
-      allow_remix: item.allow_remix,
-      parent_asset_id: item.parent_asset_id,
-      created_at: item.created_at,
-      likes_count: item.likes_count || 0,
-      remixes_count: item.remixes_count || 0,
-      shares_count: item.shares_count || 0
+        id: item.id,
+        user_id: item.user_id,
+        user_name: item.user_name || 'Anonymous',
+        user_avatar: item.user_avatar || null,
+        user_tier: item.user_tier || null,
+        result_url: item.result_url,
+        source_url: item.source_url,
+        mode: item.mode,
+        prompt: item.prompt,
+        negative_prompt: item.negative_prompt,
+        width: item.width,
+        height: item.height,
+        strength: item.strength,
+        allow_remix: item.allow_remix,
+        parent_asset_id: item.parent_asset_id,
+        created_at: item.created_at,
+        likes_count: item.likes_count || 0,
+        remixes_count: item.remixes_count || 0,
+        shares_count: item.shares_count || 0
     }));
 
     return { 

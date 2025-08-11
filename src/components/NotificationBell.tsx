@@ -17,6 +17,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, className =
     loadNotifications()
   }, [userId])
 
+  // Listen for global nav close events (when other menus open)
+  useEffect(() => {
+    const onGlobalClose = () => setIsOpen(false)
+    window.addEventListener('global-nav-close', onGlobalClose as any)
+    return () => window.removeEventListener('global-nav-close', onGlobalClose as any)
+  }, [])
+
   const loadNotifications = async () => {
     setIsLoading(true)
     try {
@@ -108,10 +115,12 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, className =
       {/* Notification Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-white hover:text-white/80 transition-colors duration-300"
+        className="relative p-2 text-white hover:text-white/80 transition-colors duration-300 rounded-full"
         title="Notifications"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
       >
-        <Bell size={20} className="text-white" />
+        <Bell size={24} className="text-white" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -121,7 +130,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, className =
 
       {/* Notification Panel */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-black border border-white/20 rounded-xl shadow-2xl z-50">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-[#222222] border border-white/20 rounded-2xl shadow-2xl z-50">
           {/* Notifications List */}
           <div className="max-h-96 overflow-y-auto">
             {isLoading ? (

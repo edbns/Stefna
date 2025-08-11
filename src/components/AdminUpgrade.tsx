@@ -49,7 +49,7 @@ const AdminUpgrade: React.FC<AdminUpgradeProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-[#1a1a1a] border border-white/20 rounded-2xl p-6 w-full max-w-md mx-4">
+      <div className="bg-[#222222] border border-white/20 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white">Admin Upgrade</h2>
           <button

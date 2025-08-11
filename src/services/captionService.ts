@@ -3,6 +3,7 @@
 
 export interface CaptionData {
   caption: string
+  captionText: string
   hashtags: string[]
   platform: 'instagram' | 'x' | 'whatsapp' | 'telegram' | 'tiktok'
   style: 'casual' | 'professional' | 'trendy' | 'artistic'
@@ -18,22 +19,22 @@ export interface CaptionRequest {
 class CaptionService {
   private readonly hashtagTemplates = {
     instagram: [
-      '#AIArt', '#DigitalArt', '#CreativeAI', '#StefnaApp', '#AIPhotography',
+      '#AIArt', '#DigitalArt', '#CreativeAI', '#StefnaApp', '#AIPhotography', '#AiAsABrush',
       '#ArtisticAI', '#CreativeProcess', '#DigitalCreation', '#AIGenerated',
       '#ModernArt', '#TechArt', '#Innovation', '#Creativity', '#ArtCommunity'
     ],
     x: [
-      '#AIArt', '#DigitalArt', '#CreativeAI', '#StefnaApp', '#AIPhotography',
+      '#AIArt', '#DigitalArt', '#CreativeAI', '#StefnaApp', '#AIPhotography', '#AiAsABrush',
       '#ArtisticAI', '#CreativeProcess', '#DigitalCreation', '#AIGenerated'
     ],
     whatsapp: [
-      '#AIArt', '#DigitalArt', '#CreativeAI', '#StefnaApp', '#AIPhotography'
+      '#AIArt', '#DigitalArt', '#CreativeAI', '#StefnaApp', '#AIPhotography', '#AiAsABrush'
     ],
     telegram: [
-      '#AIArt', '#DigitalArt', '#CreativeAI', '#StefnaApp', '#AIPhotography'
+      '#AIArt', '#DigitalArt', '#CreativeAI', '#StefnaApp', '#AIPhotography', '#AiAsABrush'
     ],
     tiktok: [
-      '#AIArt', '#DigitalArt', '#CreativeAI', '#StefnaApp', '#AIPhotography',
+      '#AIArt', '#DigitalArt', '#CreativeAI', '#StefnaApp', '#AIPhotography', '#AiAsABrush',
       '#ArtisticAI', '#CreativeProcess', '#DigitalCreation', '#AIGenerated',
       '#FYP', '#Trending', '#Viral', '#Creative', '#Art'
     ]
@@ -84,6 +85,7 @@ class CaptionService {
     
     return {
       caption: fullCaption,
+      captionText: baseCaption,
       hashtags,
       platform,
       style
@@ -125,8 +127,10 @@ class CaptionService {
     const styleHashtags = this.getStyleHashtags(prompt)
     
     // Combine and limit hashtags based on platform
-    const allHashtags = [...baseHashtags, ...styleHashtags]
-    const maxHashtags = platform === 'instagram' ? 15 : platform === 'twitter' ? 8 : 10
+    const combined = [...baseHashtags, ...styleHashtags]
+    // Ensure #AiAsABrush is present
+    const allHashtags = combined.includes('#AiAsABrush') ? combined : ['#AiAsABrush', ...combined]
+    const maxHashtags = platform === 'instagram' ? 15 : platform === 'x' ? 8 : 10
     
     return allHashtags.slice(0, maxHashtags)
   }
@@ -153,8 +157,8 @@ class CaptionService {
     switch (platform) {
       case 'instagram':
         return `${caption}\n\n${hashtagString}`
-      case 'twitter':
-        // Twitter has character limit, be more concise
+      case 'x':
+        // X has character limits — trim hashtags further
         return `${caption}\n\n${hashtags.slice(0, 5).join(' ')}`
       case 'tiktok':
         return `${caption}\n\n${hashtagString}`

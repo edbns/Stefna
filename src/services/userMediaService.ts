@@ -4,6 +4,8 @@
 export interface UserMedia {
   id: string
   userId: string
+  userAvatar?: string
+  userTier?: string
   type: 'photo' | 'video' | 'remix'
   url: string
   thumbnailUrl?: string

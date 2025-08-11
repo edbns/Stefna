@@ -2,7 +2,6 @@ import React from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 // StickyFooter removed per new minimal UI
 import SignupGateModal from './components/SignupGateModal'
-import WebsiteLayout from './components/WebsiteLayout'
 import HomeNew from './components/HomeNew'
 import PrivacyPolicy from './screens/PrivacyPolicy'
 import TermsOfService from './screens/TermsOfService'

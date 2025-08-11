@@ -65,7 +65,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOpen, onC
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
       
       {/* Modal */}
-      <div className="relative bg-black border border-white/20 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div className="relative bg-[#222222] border border-white/20 rounded-2xl max-w-md w-full p-6 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">

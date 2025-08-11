@@ -8,6 +8,48 @@ function clamp(n, lo, hi) {
   return Math.min(Math.max(n, lo), hi); 
 }
 
+// Backend-side presets to ensure full prompt context when a preset is used
+// Mirrors src/config/freeMode.ts but simplified for server use
+const PRESETS = {
+  "Oil Painting": {
+    prompt: "oil painting style, thick brush strokes, canvas texture, preserve subject and composition, keep same person and pose, do not change age or gender",
+    negative: "frame, border, gallery wall, flowers, vase, watermark, text, logo, polaroid, photo frame, vignette, black and white, different person, child, baby, boy, girl, face swap, age change"
+  },
+  "Cyberpunk": {
+    prompt: "neon lighting, high-contrast cyberpunk color grading, chrome highlights, retain original subject, keep same person and pose, do not change age or gender",
+    negative: "monochrome, grayscale, frame, border, vignette, polaroid, text, caption, watermark, different person, child, baby, boy, girl, face swap, age change",
+    strength: 0.75
+  },
+  "Studio Ghibli": {
+    prompt: "ghibli-inspired soft shading, gentle color palette, clean lines, keep same subject and pose, do not change age or gender",
+    negative: "photorealistic, realistic skin, film grain, camera, lens, watermark, frame, border, text, caption, vignette, different person, child, baby, boy, girl, face swap, age change",
+    strength: clamp(0.9, 0.85, 0.95)
+  },
+  "Photorealistic": {
+    prompt: "highly detailed photographic style, natural texture, realistic lighting, keep original composition",
+    negative: "painting, illustration, frame, border, oversharpened, watermark, cartoon, anime, polaroid, film frame, vignette",
+    strength: clamp(0.55, 0.45, 0.65)
+  },
+  "Watercolor": {
+    prompt: "watercolor painting style, soft washes, paper texture, preserve subject and composition",
+    negative: "frame, border, gallery wall, extra objects, text, watermark, digital artifacts, polaroid, photo frame, vignette"
+  },
+  "Anime Dream": {
+    prompt: "anime style, clean outlines, vibrant shading, maintain original subject and pose, do not change age or gender",
+    negative: "photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette, subtitles, logo, realistic photography, polaroid, photo frame, black and white, different person, child, baby, boy, girl, face swap, age change",
+    strength: clamp(0.9, 0.85, 0.95)
+  },
+  "Test Transform": {
+    prompt: "convert to black and white, strong contrast, dramatic lighting",
+    negative: "frame, border, vignette, watermark, text, color, colorful"
+  },
+  "Custom Transform": {
+    prompt: "transform image style while keeping same subject and pose, do not change age or gender",
+    negative: "photorealistic, realistic skin, film grain, frame, border, watermark, text, caption, different person, child, baby, boy, girl, face swap, age change",
+    strength: 0.85
+  }
+}
+
 // Convert client request to proper I2I payload for AIML API
 function toI2IPayload(req) {
   if (!req.source_url) throw new Error('source_url is required for image-to-image');
@@ -15,6 +57,7 @@ function toI2IPayload(req) {
   return {
     model: 'flux/dev/image-to-image',
     prompt: String(req.prompt ?? '').trim() || 'stylize',
+    negative_prompt: req.negative_prompt,
     image_url: req.source_url,
     strength: clamp(Number(req.strength ?? 0.75), 0.4, 0.95),
     num_inference_steps: Math.round(clamp(Number(req.steps ?? 36), 1, 150)),
@@ -51,6 +94,10 @@ exports.handler = async (event) => {
   const startTime = Date.now();
   try {
     const { userId } = verifyAuth(event);
+    const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
+    if (!isUuid(userId)) {
+      return { statusCode: 401, body: JSON.stringify({ message: 'Authentication required' }) }
+    }
     const rawBody = JSON.parse(event.body || "{}");
     
     // Sanitize the request for I2I
@@ -75,26 +122,45 @@ exports.handler = async (event) => {
       };
     }
 
+    // If a preset is provided, expand to full prompt context on server
+    let expanded = { ...body };
+    if (presetName && PRESETS[presetName]) {
+      const p = PRESETS[presetName];
+      // Only set defaults; preserve user's edited prompt if provided
+      if (!expanded.prompt || !String(expanded.prompt).trim()) {
+        expanded.prompt = p.prompt;
+      }
+      if (!expanded.negative_prompt && p.negative) expanded.negative_prompt = p.negative;
+      if (
+        typeof p.strength === 'number' &&
+        expanded.resource_type !== 'video' &&
+        (expanded.strength === undefined || expanded.strength === null)
+      ) {
+        // Only apply preset strength for image i2i and when not supplied by client
+        expanded.strength = p.strength;
+      }
+    }
+
     // Determine resource type and build payload
-    const resourceType = resource_type === 'video' ? 'video' : 'image';
+    const resourceType = expanded.resource_type === 'video' ? 'video' : 'image';
     
     let endpoint, payload;
     
     if (resourceType === 'image') {
       endpoint = '/v1/images/generations';
       // Use the sanitized I2I payload
-      payload = toI2IPayload(body);
+      payload = toI2IPayload(expanded);
     } else {
       // VIDEO-TO-VIDEO
       endpoint = '/v1/videos/edits';
       payload = {
         model: 'video/dev/video-to-video', // placeholder model name; use your actual one
-        prompt: (prompt && String(prompt).trim()) || 'beautiful artwork',
-        negative_prompt: body.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
-        guidance_scale: body.guidance_scale ?? 7.5,
-        num_inference_steps: steps ?? 36,
-        video_url: source_url,              // some providers still use "input_url"
-        strength: Math.min(Math.max(strength ?? 0.7, 0.4), 0.9),
+        prompt: (expanded.prompt && String(expanded.prompt).trim()) || 'beautiful artwork',
+        negative_prompt: expanded.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
+        guidance_scale: expanded.guidance_scale ?? 7.5,
+        num_inference_steps: expanded.steps ?? 36,
+        video_url: expanded.source_url,              // some providers still use "input_url"
+        strength: Math.min(Math.max(expanded.strength ?? 0.7, 0.4), 0.9),
       };
     }
 
@@ -104,11 +170,7 @@ exports.handler = async (event) => {
     const cost = resourceType === 'video' ? 5 : 2;
     try {
       const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-      // Only run quota if userId is a UUID
-      const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
-      if (!isUuid(userId)) {
-        console.warn('Skipping quota precheck for non-UUID userId')
-      } else {
+      // Quota precheck (userId is guaranteed UUID above)
         const { data: precheck, error: preErr } = await supa.rpc('can_consume_tokens', { p_user_id: userId, p_cost: cost });
       if (preErr) {
         console.error('Quota precheck error:', preErr);
@@ -119,7 +181,6 @@ exports.handler = async (event) => {
           const reason = okRow?.reason || 'Quota exceeded';
           return { statusCode: 429, body: JSON.stringify({ message: reason, quota: okRow }) };
         }
-      }
     } catch (qe) {
       console.error('Quota check exception:', qe);
       return { statusCode: 500, body: JSON.stringify({ message: 'Quota check failed' }) };
@@ -153,7 +214,7 @@ exports.handler = async (event) => {
         // Return detailed error info to client
         console.error('GEN', JSON.stringify({ 
           userId, 
-          source: source || "custom", 
+           source: source || "custom", 
           mode: resourceType === 'video' ? 'v2v' : 'i2i',
           error: out.message || `Provider error ${r.status}`,
           details: redact(out),
@@ -200,26 +261,23 @@ exports.handler = async (event) => {
     // Auto-save the generated media to database and consume tokens
     try {
       const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-      // Consume tokens after successful generation (only if UUID)
-      const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
-      if (isUuid(userId)) {
-        const { data: consumed, error: consumeErr } = await supa.rpc('consume_tokens', { p_user_id: userId, p_cost: cost, p_kind: resourceType });
-        if (consumeErr || !consumed?.[0]?.ok) {
-          console.error('Token consumption failed:', consumeErr || consumed);
-          return { statusCode: 429, body: JSON.stringify({ message: 'Quota exceeded during finalize' }) };
-        }
+      // Consume tokens after successful generation
+      const { data: consumed, error: consumeErr } = await supa.rpc('consume_tokens', { p_user_id: userId, p_cost: cost, p_kind: resourceType });
+      if (consumeErr || !consumed?.[0]?.ok) {
+        console.error('Token consumption failed:', consumeErr || consumed);
+        return { statusCode: 429, body: JSON.stringify({ message: 'Quota exceeded during finalize' }) };
       }
       
-       const row = {
+        const row = {
         user_id: userId,
         url: result_url,            // Required NOT NULL field - use result_url as the main URL
         result_url: result_url,
-        source_url: source_url,
+          source_url: expanded.source_url,
         job_id: jobId || null,
         model: payload.model || null,
         mode: resourceType === 'video' ? 'v2v' : 'i2i',
-        prompt: prompt || 'beautiful artwork',
-        negative_prompt: body.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
+          prompt: (expanded.prompt && String(expanded.prompt).trim()) || 'beautiful artwork',
+          negative_prompt: expanded.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
         width: null,                // I2I doesn't support width/height
         height: null,               // I2I doesn't support width/height
         strength: payload.strength || null,
@@ -232,8 +290,8 @@ exports.handler = async (event) => {
         bytes: null,
         duration: null,
         meta: {
-          prompt: prompt || 'beautiful artwork',
-          negative_prompt: body.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
+          prompt: (expanded.prompt && String(expanded.prompt).trim()) || 'beautiful artwork',
+          negative_prompt: expanded.negative_prompt || 'photorealistic, realistic, film grain, camera, lens, watermark, frame, border, text, caption, vignette',
           strength: payload.strength || null,
           model: payload.model || null,
           mode: resourceType === 'video' ? 'v2v' : 'i2i'

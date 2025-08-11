@@ -1362,39 +1362,41 @@ const ProfileScreen: React.FC = () => {
 
       {/* Caption Modal */}
       {isCaptionOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-black border border-white/15 rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-white font-medium">Generate Caption</div>
-              <button onClick={() => setIsCaptionOpen(false)} className="text-white/70 hover:text-white"><X size={16} /></button>
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-[#222222] border border-white/20 rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-white font-medium text-lg">Generate Caption</div>
+              <button onClick={() => setIsCaptionOpen(false)} className="text-white/60 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <div className="text-white/70 text-xs mb-1">Platform</div>
+                <div className="text-white/70 text-sm mb-2">Platform</div>
                 <div className="grid grid-cols-3 gap-2">
                   {(['instagram','x','tiktok'] as const).map(p => (
-                    <button key={p} onClick={() => setCaptionPlatform(p)} className={`px-3 py-2 rounded-lg text-sm border ${captionPlatform===p? 'border-white/50 text-white bg-white/10':'border-white/10 text-white/80 hover:bg-white/5'}`}>{p}</button>
+                    <button key={p} onClick={() => setCaptionPlatform(p)} className={`px-3 py-2 rounded-lg text-sm border transition-colors ${captionPlatform===p? 'border-white/40 text-white bg-white/10':'border-white/20 text-white/80 hover:text-white hover:bg-white/5'}`}>{p}</button>
                   ))}
                 </div>
               </div>
               <div>
-                <div className="text-white/70 text-xs mb-1">Style</div>
+                <div className="text-white/70 text-sm mb-2">Style</div>
                 <div className="grid grid-cols-4 gap-2">
                   {(['trendy','casual','professional','artistic'] as const).map(s => (
-                    <button key={s} onClick={() => setCaptionStyle(s)} className={`px-2 py-2 rounded-lg text-xs border ${captionStyle===s? 'border-white/50 text-white bg-white/10':'border-white/10 text-white/80 hover:bg-white/5'}`}>{s}</button>
+                    <button key={s} onClick={() => setCaptionStyle(s)} className={`px-2 py-2 rounded-lg text-xs border transition-colors ${captionStyle===s? 'border-white/40 text-white bg-white/10':'border-white/20 text-white/80 hover:text-white hover:bg-white/5'}`}>{s}</button>
                   ))}
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <button onClick={handleGenerateCaptionContent} className="px-3 py-2 rounded-lg bg-white text-black text-sm disabled:opacity-50" disabled={isCaptionLoading}>
+                <button onClick={handleGenerateCaptionContent} className="px-4 py-2 rounded-lg bg-white text-black text-sm font-medium disabled:opacity-50 transition-colors" disabled={isCaptionLoading}>
                   {isCaptionLoading? 'Generating…' : 'Generate'}
                 </button>
-                <button onClick={handleCopyCaption} className="px-3 py-2 rounded-lg border border-white/10 text-white text-sm disabled:opacity-50" disabled={!captionOutput}>
+                <button onClick={handleCopyCaption} className="px-4 py-2 rounded-lg border border-white/20 text-white text-sm disabled:opacity-50 hover:bg-white/5 transition-colors" disabled={!captionOutput}>
                   Copy
                 </button>
               </div>
               <div>
-                <textarea value={captionOutput} onChange={(e)=>setCaptionOutput(e.target.value)} placeholder="Your caption will appear here" className="w-full h-28 p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/40 resize-none text-sm focus:outline-none" />
+                <textarea value={captionOutput} onChange={(e)=>setCaptionOutput(e.target.value)} placeholder="Your caption will appear here" className="w-full h-28 p-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/40 resize-none text-sm focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors" />
                 <div className="text-white/50 text-xs mt-2">Includes #AiAsABrush automatically</div>
               </div>
             </div>

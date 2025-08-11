@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const { verifyAuth } = require('./_auth');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -11,20 +12,25 @@ exports.handler = async (event) => {
   }
 
   try {
+    const { userId } = verifyAuth(event);
+    const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
+    if (!isUuid(userId)) {
+      return { statusCode: 401, body: JSON.stringify({ error: 'Authentication required' }) };
+    }
     const body = JSON.parse(event.body);
 
     // required
-    const { user_id, result_url } = body;
-    if (!user_id || !result_url) {
+    const { result_url } = body;
+    if (!result_url) {
       return { 
         statusCode: 400, 
-        body: JSON.stringify({ error: 'user_id and result_url are required' }) 
+        body: JSON.stringify({ error: 'result_url is required' }) 
       };
     }
 
     // optional metadata
     const row = {
-      user_id,
+      user_id: userId,
       result_url,
       source_url: body.source_url ?? null,
       job_id: body.job_id ?? null,
