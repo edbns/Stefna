@@ -13,6 +13,15 @@ import { PRESETS } from '../config/freeMode'
 import captionService from '../services/captionService'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
 
+const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
+  if (!maybeUrl) return maybeUrl
+  if (/^https?:\/\//i.test(maybeUrl)) return maybeUrl
+  const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+  if (!cloud) return maybeUrl
+  // Default to image upload path
+  return `https://res.cloudinary.com/${cloud}/image/upload/${maybeUrl.replace(/^\/+/, '')}`
+}
+
 const HomeNew: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
@@ -154,29 +163,32 @@ const HomeNew: React.FC = () => {
         const res = await fetch('/.netlify/functions/getPublicFeed')
         if (res.ok) {
           const { media } = await res.json()
-            const mapped: UserMedia[] = (media || []).map((item: any): UserMedia => ({
-            id: item.id,
-              userId: item.user_id,
-              userAvatar: item.user_avatar || undefined,
-              userTier: item.user_tier || undefined,
-            type: item.mode === 'v2v' ? 'video' : 'photo',
-            url: item.result_url || item.url,
-            thumbnailUrl: undefined,
-            prompt: item.prompt || '',
-            style: undefined,
-            aspectRatio: item.width && item.height ? item.width / Math.max(1, item.height) : 4 / 3,
-            width: item.width || 800,
-            height: item.height || 600,
-            timestamp: item.created_at,
-            originalMediaId: item.parent_asset_id || undefined,
-            tokensUsed: item.mode === 'v2v' ? 5 : 2,
-            likes: item.likes_count || 0,
-            remixCount: item.remixes_count || 0,
-            isPublic: true,
-              allowRemix: Boolean(item.allow_remix),
-            tags: [],
-              metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
-          }))
+            const mapped: UserMedia[] = (media || []).map((item: any): UserMedia => {
+              const resultUrl = toAbsoluteCloudinaryUrl(item.result_url) || toAbsoluteCloudinaryUrl(item.url) || item.result_url || item.url
+              return ({
+                id: item.id,
+                userId: item.user_id,
+                userAvatar: item.user_avatar || undefined,
+                userTier: item.user_tier || undefined,
+                type: item.mode === 'v2v' ? 'video' : 'photo',
+                url: resultUrl,
+                thumbnailUrl: undefined,
+                prompt: item.prompt || '',
+                style: undefined,
+                aspectRatio: item.width && item.height ? item.width / Math.max(1, item.height) : 4 / 3,
+                width: item.width || 800,
+                height: item.height || 600,
+                timestamp: item.created_at,
+                originalMediaId: item.parent_asset_id || undefined,
+                tokensUsed: item.mode === 'v2v' ? 5 : 2,
+                likes: item.likes_count || 0,
+                remixCount: item.remixes_count || 0,
+                isPublic: true,
+                allowRemix: Boolean(item.allow_remix),
+                tags: [],
+                metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
+              })
+            })
           setFeed(mapped)
         }
       } catch (e) {
