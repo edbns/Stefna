@@ -923,7 +923,7 @@ const HomeNew: React.FC = () => {
         } else if (body.status === 'completed') {
                       addNotification('V2V Complete!', 'Your video has been generated successfully!', 'ready', undefined, 'video', () => {
               // Refresh user media to show the new video
-              loadUserMedia();
+              // TODO: Implement user media refresh
             });
         }
       }
@@ -1413,7 +1413,7 @@ const HomeNew: React.FC = () => {
       onClick: mappedType === 'ready' ? onClick : undefined // Only ready notifications are clickable
     }
     
-    setNotifications((prev) => [n, ...prev].slice(0, 1)) // Only show 1 notification at a time
+    setNotifications((prev) => [n, ...prev].slice(0, 3)) // Show exactly 3 notifications
     
     // Auto-remove notifications after appropriate time
     if (mappedType === 'error') {
@@ -1452,7 +1452,7 @@ const HomeNew: React.FC = () => {
             setCurrentVideoJob(null)
             addNotification('Your media is ready', 'Video processing completed successfully!', 'ready', undefined, 'video', () => {
               // Refresh user media to show the new video
-              loadUserMedia();
+              // TODO: Implement user media refresh
             });
             // Refresh user media to show the new video
             // You can implement refreshUserMedia() if needed
@@ -1630,11 +1630,11 @@ const HomeNew: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-black relative overflow-hidden">
+    <div className="flex min-h-screen bg-black relative overflow-hidden layout-container">
 
       
       {/* Top nav */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 md:px-6 py-3 bg-transparent">
+      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 md:px-6 py-3 bg-transparent navbar-stable">
         {/* Left spacer */}
         <div />
 
@@ -1646,6 +1646,7 @@ const HomeNew: React.FC = () => {
               <button
                 onClick={() => {
                   window.dispatchEvent(new Event('global-nav-close'))
+                  // Toggle filter - clicking same icon closes it
                   setFilterOpen((v) => !v)
                 }}
                 className="nav-icon-container text-white/90 hover:text-white rounded-full transition-colors"
@@ -1676,7 +1677,11 @@ const HomeNew: React.FC = () => {
               </div>
               {/* Profile with progress ring */}
               <div className="relative" data-user-menu>
-                <button onClick={() => { window.dispatchEvent(new Event('global-nav-close')); setUserMenu((v) => !v) }} className="relative nav-icon-container rounded-full transition-colors" aria-haspopup="menu" aria-expanded={userMenu} data-nav-button data-nav-type="user">
+                <button onClick={() => { 
+                  window.dispatchEvent(new Event('global-nav-close')); 
+                  // Toggle user menu - clicking same icon closes it
+                  setUserMenu((v) => !v) 
+                }} className="relative nav-icon-container rounded-full transition-colors" aria-haspopup="menu" aria-expanded={userMenu} data-nav-button data-nav-type="user">
                   {navGenerating && (<span className="absolute -inset-1 rounded-full border-2 border-white/50 animate-spin" style={{ borderTopColor: 'transparent' }} />)}
                   <div className="nav-icon">
                     {(() => {
@@ -1730,20 +1735,19 @@ const HomeNew: React.FC = () => {
           
           <button
             onClick={handleUploadClick}
-            className="w-16 h-16 rounded-full bg-black border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 transition-all duration-300 flex items-center justify-center shadow-2xl hover:shadow-white/20 relative z-10"
+            className="w-20 h-20 rounded-full bg-black border-2 border-white/30 text-white shadow-2xl hover:bg-white/10 hover:border-white/50 transition-all duration-300 relative z-10"
             aria-label="Upload"
-            title="Upload"
           >
-            <Plus size={24} />
+            <Plus size={28} />
           </button>
         </div>
       </div>
 
-      {/* Feed area (90%) */}
-      <div className="w-[90%] relative">
+      {/* Main content area - stable layout */}
+      <div className="w-[90%] relative feed-stable">
         <div className="p-6 pt-20 h-screen overflow-y-auto">
           {isLoadingFeed ? (
-            <div className="grid grid-cols-3 gap-1">
+            <div className="grid grid-cols-3 gap-1 content-placeholder">
               {Array.from({ length: 9 }).map((_, i) => (
                 <div key={i} className="bg-white/5 rounded-xl overflow-hidden">
                   <div className="w-full aspect-[4/3] bg-white/10 animate-pulse" />
@@ -1788,67 +1792,34 @@ const HomeNew: React.FC = () => {
           </div>
         )}
 
-        {/* Beautiful floating notifications - matching screenshot design */}
+        {/* Compact floating notifications - positioned exactly under navbar */}
         {notifications.length > 0 && (
-          <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-2 navbar-stable">
             {notifications.map((n) => (
               <div 
                 key={n.id} 
-                className={`w-80 bg-[#333333] border border-white/20 rounded-xl shadow-2xl transition-all duration-300 cursor-pointer ${
-                  n.onClick ? 'hover:bg-[#3a3a3a]' : ''
+                className={`w-64 bg-[#333333] border border-white/20 rounded-lg shadow-2xl transition-all duration-300 ${
+                  n.onClick ? 'cursor-pointer hover:bg-[#3a3a3a]' : ''
                 }`}
                 onClick={n.onClick}
               >
-                <div className="p-4 relative">
-                  {/* Close button - top left, overlapping edge */}
+                <div className="px-3 py-2 relative">
+                  {/* Close button - top right */}
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
                       removeNotification(n.id);
                     }} 
-                    className="absolute -top-2 -left-2 w-6 h-6 bg-white rounded-full flex items-center justify-center hover:bg-white/90 transition-colors z-10"
+                    className="absolute top-1 right-1 w-4 h-4 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
                   >
-                    <X size={12} className="text-black" />
+                    <X size={10} className="text-white" />
                   </button>
                   
-                  {/* Content layout */}
-                  <div className="flex items-center space-x-3">
-                    {/* Thumbnail image - only for ready notifications */}
-                    {n.type === 'ready' && n.mediaUrl && (
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-white/10 flex-shrink-0">
-                        {n.mediaType === 'video' ? (
-                          <video 
-                            src={n.mediaUrl} 
-                            className="w-full h-full object-cover"
-                            muted
-                            loop
-                            onMouseEnter={(e) => e.currentTarget.play()}
-                            onMouseLeave={(e) => e.currentTarget.pause()}
-                          />
-                        ) : (
-                          <img 
-                            src={n.mediaUrl} 
-                            alt="Generated media" 
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Text content */}
-                    <div className="flex-1 min-w-0">
-                      {/* Main title */}
-                      <h3 className="text-white font-semibold text-base mb-1">
-                        {n.title}
-                      </h3>
-                      
-                      {/* Subtitle based on type */}
-                      <p className="text-white/60 text-sm">
-                        {n.type === 'queue' ? 'Processing your request...' :
-                         n.type === 'ready' ? 'Ready · Click to view' :
-                         'Please try again'}
-                      </p>
-                    </div>
+                  {/* Title only - compact */}
+                  <div className="pr-6">
+                    <h3 className="text-white text-sm font-medium truncate">
+                      {n.title}
+                    </h3>
                   </div>
                 </div>
               </div>
@@ -1858,7 +1829,7 @@ const HomeNew: React.FC = () => {
       </div>
 
       {/* Mobile FAB */}
-      <div className="md:hidden fixed bottom-4 right-4 relative">
+      <div className="md:hidden fixed bottom-4 right-4 relative navbar-stable">
         {/* Animated white dot orbiting around the button border */}
         <div className="absolute inset-0 w-18 h-18">
           <div className="absolute w-1 h-1 bg-white rounded-full animate-spin" style={{ 
@@ -1896,7 +1867,7 @@ const HomeNew: React.FC = () => {
 
       {/* Bottom-centered composer */}
       {isComposerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm navbar-stable">
           {/* Close button */}
           <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-50 pointer-events-auto text-white/80 hover:text-white transition-colors" aria-label="Close">
             <X size={20} />

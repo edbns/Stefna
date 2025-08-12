@@ -44,3 +44,58 @@ GRANT SELECT, UPDATE ON public.users TO authenticated;
 -- Step 10: Optional: Add comment to document the column
 COMMENT ON COLUMN public.users.avatar_url IS 'URL to user profile photo/avatar image';
 COMMENT ON COLUMN public.users.updated_at IS 'Timestamp when user profile was last updated';
+
+-- Fix for feed 500 error: Create media_feed view with computed likes_count
+-- This view provides a computed likes_count without adding a real column
+
+-- Step 11: Recreate the feed view without depending on a non-existent column
+DROP VIEW IF EXISTS public.media_feed;
+
+CREATE OR REPLACE VIEW public.media_feed
+WITH (security_invoker = on) AS
+SELECT
+  m.id,
+  m.user_id,
+  m.result_url as url,
+  /* Derived thumbnail: Cloudinary gets a small, optimized variant; everything else falls back to url */
+  CASE
+    WHEN m.result_url LIKE 'https://res.cloudinary.com/%/image/%'
+      THEN regexp_replace(
+             m.result_url,
+             '/upload/',
+             '/upload/c_fill,w_640,h_640,q_auto,f_auto,fl_force_strip/'
+           )
+    WHEN m.result_url LIKE 'https://res.cloudinary.com/%/video/%'
+      THEN regexp_replace(
+             m.result_url,
+             '/upload/',
+             '/upload/c_fill,w_640,h_640,q_auto,f_auto,fl_force_strip/'
+           )
+    ELSE m.result_url
+  END AS thumbnail_url,
+  m.env,
+  m.visibility,
+  m.allow_remix,
+  m.created_at,
+  m.resource_type,
+  m.prompt,
+  m.mode,
+  m.width,
+  m.height,
+  m.parent_asset_id,
+  COALESCE((
+    SELECT COUNT(*) FROM public.likes l WHERE l.asset_id = m.id
+  ), 0)::int AS likes_count,
+  COALESCE((
+    SELECT COUNT(*) FROM public.media_assets r WHERE r.parent_asset_id = m.id
+  ), 0)::int AS remixes_count,
+  u.avatar_url as user_avatar,
+  u.tier as user_tier
+FROM public.media_assets m
+LEFT JOIN public.users u ON u.id::text = m.user_id
+WHERE m.visibility = 'public'
+ORDER BY m.created_at DESC;
+
+-- Step 12: Grant permissions on the view
+GRANT SELECT ON public.media_feed TO authenticated;
+GRANT SELECT ON public.media_feed TO anon;

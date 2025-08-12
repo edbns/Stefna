@@ -52,7 +52,7 @@ export const handler = async (event: any) => {
     }
     
     if (resource_type === 'video') {
-      // Video processing - create async job
+      // Video processing - check if video_jobs table exists first
       try {
         const { createClient } = require('@supabase/supabase-js');
         const supabaseAdmin = createClient(
@@ -60,6 +60,18 @@ export const handler = async (event: any) => {
           process.env.SUPABASE_SERVICE_ROLE_KEY,
           { auth: { persistSession: false } }
         );
+
+        // Check if video_jobs table exists
+        const { error: tableCheckError } = await supabaseAdmin
+          .from('video_jobs')
+          .select('id')
+          .limit(1);
+
+        if (tableCheckError && tableCheckError.code === '42P01') {
+          // Table doesn't exist - return proper error
+          console.log('[aimlApi] video_jobs table not found, returning 501');
+          return bad(501, 'Video editing not enabled yet - video_jobs table missing');
+        }
 
         // Insert video job
         const { data, error } = await supabaseAdmin

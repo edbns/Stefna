@@ -15,6 +15,72 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-size: 16px;
   line-height: 1.6;
+  /* Prevent layout shifts during redirects */
+  overflow-x: hidden;
+}
+
+/* Prevent layout shifts and add smooth transitions */
+* {
+  box-sizing: border-box;
+}
+
+/* Smooth page transitions */
+.page-transition {
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Prevent content jumping during loading */
+.content-placeholder {
+  min-height: 200px;
+  background: linear-gradient(90deg, #111111 25%, #1a1a1a 50%, #111111 75%);
+  background-size: 200px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Stable layout containers */
+.layout-container {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Prevent navbar jumping */
+.navbar-stable {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  transform: translateZ(0); /* Force hardware acceleration */
+  will-change: transform; /* Optimize for animations */
+}
+
+/* Prevent feed jumping */
+.feed-stable {
+  min-height: 100vh;
+  padding-top: 80px; /* Account for fixed navbar */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Larger text sizes for better readability */

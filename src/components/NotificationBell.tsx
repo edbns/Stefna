@@ -66,55 +66,62 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, className =
     }
   }
 
-  const getNotificationIcon = (type: Notification['type']) => {
+  // Toggle notification panel - clicking same icon closes it
+  const toggleNotifications = () => {
+    setIsOpen(!isOpen)
+  }
+
+  const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'like':
-        return '❤️'
-      case 'remix':
-        return '🔄'
-      case 'announcement':
-        return '📢'
-      case 'system':
-        return '⚙️'
+      case 'success':
+        return '✅'
+      case 'warning':
+        return '⚠️'
+      case 'error':
+        return '❌'
+      case 'info':
+        return 'ℹ️'
       default:
-        return '📌'
+        return '🔔'
     }
   }
 
-  const getNotificationColor = (type: Notification['type']) => {
+  const getNotificationColor = (type: string) => {
     switch (type) {
-      case 'like':
-        return 'text-pink-400'
-      case 'remix':
-        return 'text-blue-400'
-      case 'announcement':
+      case 'success':
+        return 'text-green-400'
+      case 'warning':
         return 'text-yellow-400'
-      case 'system':
-        return 'text-gray-400'
+      case 'error':
+        return 'text-red-400'
+      case 'info':
+        return 'text-blue-400'
       default:
         return 'text-white'
     }
   }
 
-  const formatTimestamp = (timestamp: Date) => {
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp)
     const now = new Date()
-    const diff = now.getTime() - timestamp.getTime()
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
 
-    if (minutes < 1) return 'Just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
-    return timestamp.toLocaleDateString()
+    if (diffInHours < 1) {
+      return 'Just now'
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`
+    } else if (diffInHours < 48) {
+      return 'Yesterday'
+    } else {
+      return timestamp.toLocaleDateString()
+    }
   }
 
   return (
     <div className={`relative ${className}`}>
       {/* Notification Bell Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleNotifications}
         className="nav-icon text-white hover:text-white/80 transition-colors duration-300"
         title="Notifications"
         aria-expanded={isOpen}

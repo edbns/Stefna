@@ -20,10 +20,11 @@ exports.handler = async (event) => {
       finalEnv: ENV
     })
 
+    // Use the media_feed view instead of media_assets table directly
+    // This view provides computed likes_count and remixes_count
     const { data, error, count } = await supabase
-      .from('media_assets')
-      .select('id,url,user_id,allow_remix,created_at,env,visibility,resource_type,prompt,mode,width,height,result_url,parent_asset_id,likes_count,remixes_count,user_avatar,user_tier', { count: 'exact' })
-      .eq('visibility', 'public')
+      .from('media_feed')  // <- use the view, not media_assets
+      .select('*')
       .eq('env', ENV)                       // if debugging, temporarily comment this out
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -37,7 +38,9 @@ exports.handler = async (event) => {
         id: item.id,
         visibility: item.visibility,
         env: item.env,
-        created_at: item.created_at
+        created_at: item.created_at,
+        likes_count: item.likes_count,
+        remixes_count: item.remixes_count
       }))
     })
 

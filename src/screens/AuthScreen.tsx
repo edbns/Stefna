@@ -66,9 +66,8 @@ const AuthScreen: React.FC = () => {
         authService.setAuthState(token, user)
         
         setSuccess('Login successful!')
-        setTimeout(() => {
-          navigate('/')
-        }, 600)
+        // Navigate immediately to prevent visual glitches
+        navigate('/')
       } else {
         setError(data.error || 'Invalid code')
       }
