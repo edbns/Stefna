@@ -1706,7 +1706,7 @@ const HomeNew: React.FC = () => {
 
       {/* Compact floating notifications - positioned under the profile section */}
       {notifications.length > 0 && (
-        <div className="fixed top-20 right-4 z-50 space-y-2 navbar-stable">
+        <div className="fixed top-20 right-4 z-50 space-y-2" style={{ position: 'fixed', top: '5rem', right: '1rem', zIndex: 9999 }}>
           {notifications.map((n) => (
             <div 
               key={n.id} 
