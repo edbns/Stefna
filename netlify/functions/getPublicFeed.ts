@@ -39,10 +39,19 @@ export const handler: Handler = async (event) => {
       })))
     }
     
-    // Now query for public items
+    // Query for public items directly (simpler approach)
     const { data, error } = await sb
       .from('media_assets')
-      .select('id,result_url as url,created_at,visibility,env,user_id,metadata,prompt')
+      .select(`
+        id,
+        result_url as url,
+        created_at,
+        visibility,
+        env,
+        user_id,
+        metadata,
+        prompt
+      `)
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .limit(limit)
