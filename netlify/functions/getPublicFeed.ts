@@ -19,6 +19,27 @@ export const handler: Handler = async (event) => {
     })
 
     // Use service role to bypass RLS and query media_assets directly
+    console.log('🔍 Querying media_assets table...')
+    
+    // First, let's see what's in the table
+    const { data: allData, error: allError } = await sb
+      .from('media_assets')
+      .select('id,result_url,created_at,visibility,env,user_id,metadata,prompt')
+      .limit(10)
+    
+    if (allError) {
+      console.error('❌ Error querying all media:', allError)
+    } else {
+      console.log('📊 All media items found:', allData?.length || 0)
+      console.log('🔍 Sample items:', allData?.slice(0, 3).map(item => ({
+        id: item.id,
+        visibility: item.visibility,
+        hasResultUrl: !!item.result_url,
+        env: item.env
+      })))
+    }
+    
+    // Now query for public items
     const { data, error } = await sb
       .from('media_assets')
       .select('id,result_url as url,created_at,visibility,env,user_id,metadata,prompt')
@@ -27,8 +48,18 @@ export const handler: Handler = async (event) => {
       .limit(limit)
 
     if (error) {
-      console.error('getPublicFeed supabase error:', error)
+      console.error('❌ getPublicFeed supabase error:', error)
       return { statusCode: 200, body: JSON.stringify({ items: [] }) }
+    }
+    
+    console.log('✅ Public media items found:', data?.length || 0)
+    if (data && data.length > 0) {
+      console.log('🔍 First public item:', {
+        id: data[0].id,
+        visibility: data[0].visibility,
+        hasUrl: !!data[0].url,
+        env: data[0].env
+      })
     }
 
     const items = (data ?? []).map((row: any) => ({
