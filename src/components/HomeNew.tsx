@@ -912,7 +912,14 @@ const HomeNew: React.FC = () => {
                   window.dispatchEvent(new CustomEvent('refreshFeed'));
                 }, 1000); // Small delay to ensure database is updated
               } else {
-                const shareError = await shareRes.json()
+                // Handle non-JSON errors gracefully
+                let shareError;
+                try {
+                  shareError = await shareRes.json();
+                } catch (parseError) {
+                  const errorText = await shareRes.text();
+                  shareError = { error: errorText };
+                }
                 console.warn('❌ Failed to publish to feed:', shareRes.status, shareError)
                 // Saved to All Media - no notification needed
               }
@@ -969,7 +976,10 @@ const HomeNew: React.FC = () => {
       endGeneration(genId);
       setNavGenerating(false);
       
-      // Preset clearing moved to finally block to prevent premature clearing
+      // Clear preset only on success
+      if (chosen && PRESETS[chosen]) {
+        clearPresetAfterGeneration();
+      }
       
       // Handle V2V processing status
       if (isVideoPreview) {
@@ -996,10 +1006,8 @@ const HomeNew: React.FC = () => {
       endGeneration(genId);
       setNavGenerating(false);
     } finally {
-      // Clear preset only after generation completes (success or failure)
-      if (chosen && PRESETS[chosen]) {
-        clearPresetAfterGeneration();
-      }
+      // Only clear preset on success, not on failure
+      // We'll handle preset clearing in the success path instead
       console.info('⏹ dispatchGenerate done', (performance.now() - t0).toFixed(1), 'ms');
     }
   }
@@ -1221,9 +1229,16 @@ const HomeNew: React.FC = () => {
         window.dispatchEvent(new CustomEvent('refreshFeed'));
       }, 1000);
     } else {
-      const error = await r.json().catch(() => ({}))
+      // Handle non-JSON errors gracefully
+      let error;
+      try {
+        error = await r.json();
+      } catch (parseError) {
+        const errorText = await r.text();
+        error = { error: errorText };
+      }
       console.error('❌ Unshare failed:', error)
-              addNotification('Error please try again', error.error || 'Failed to remove media from feed', 'error')
+      addNotification('Error please try again', error.error || 'Failed to remove media from feed', 'error')
     }
   }
 

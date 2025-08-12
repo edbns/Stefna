@@ -21,17 +21,17 @@ function getUserIdFromToken(auth?: string): string | null {
 export const handler: Handler = async (event) => {
   try {
     if (event.httpMethod !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405 });
+      return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
     const userId = getUserIdFromToken(event.headers.authorization);
     if (!userId) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+      return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
     }
 
     const { asset_id, shareToFeed, allowRemix } = JSON.parse(event.body || '{}');
     if (!asset_id) {
-      return new Response(JSON.stringify({ error: 'asset_id required' }), { status: 400 });
+      return { statusCode: 400, body: JSON.stringify({ error: 'asset_id required' }) };
     }
 
     const visibility = !!shareToFeed ? 'public' : 'private';
@@ -47,12 +47,13 @@ export const handler: Handler = async (event) => {
       .single();
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 400 });
+      return { statusCode: 400, body: JSON.stringify({ error: error.message }) };
     }
 
-    return new Response(JSON.stringify({ ok: true, asset: data }), { status: 200 });
+    return { statusCode: 200, body: JSON.stringify({ ok: true, asset: data }) };
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e?.message || 'recordShare error' }), { status: 500 });
+    console.error('recordShare error:', e);
+    return { statusCode: 500, body: JSON.stringify({ error: e?.message || 'recordShare error' }) };
   }
 };
 

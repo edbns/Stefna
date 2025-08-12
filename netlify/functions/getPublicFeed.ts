@@ -18,10 +18,10 @@ export const handler: Handler = async (event) => {
       auth: { persistSession: false }
     })
 
-    // Use the media_feed view which includes user avatar and tier information
+    // Use service role to bypass RLS and query media_assets directly
     const { data, error } = await sb
-      .from('media_feed')
-      .select('id,url,created_at,visibility,env,user_id,metadata,prompt,user_avatar,user_tier') // <-- includes user data
+      .from('media_assets')
+      .select('id,result_url as url,created_at,visibility,env,user_id,metadata,prompt')
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -38,16 +38,11 @@ export const handler: Handler = async (event) => {
       visibility: row.visibility,
       env: row.env,
       user_id: row.user_id,
-      prompt: row.prompt || null, // Include the actual prompt
-      user_avatar: row.user_avatar || null, // Include user avatar
-      user_tier: row.user_tier || null, // Include user tier
-      // Derive a thumbnail if you have it in JSON; otherwise null.
-      thumbnail_url:
-        row.thumbnail_url ??
-        row.metadata?.thumbnail_url ??
-        row.metadata?.thumb ??
-        null,
-      // Don't rely on a DB column that may not exist; compute later if needed.
+      prompt: row.prompt || null,
+      // Simple fallback for now - we can add user data back later
+      user_avatar: null,
+      user_tier: null,
+      thumbnail_url: row.url, // Use main URL as thumbnail for now
       likes_count: 0,
     }))
 
