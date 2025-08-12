@@ -221,8 +221,18 @@ export const handler = async (event: any) => {
         // Don't fail the generation response; just log the charging error
       }
 
-      // Return result as usual (also echo request_id for debugging)
-      return ok({ result_url, request_id });
+      // Return result with both new+legacy keys for compatibility
+      return ok({ 
+        success: true,
+        result_url, 
+        image_url: result_url, // Legacy compatibility
+        result_urls: [result_url], // Array format for some clients
+        request_id,
+        user_id: userId,
+        env: APP_ENV,
+        model: payload.model,
+        mode: body.mode || 'i2i'
+      });
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
       if (fetchError.name === 'AbortError') {

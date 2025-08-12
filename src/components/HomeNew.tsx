@@ -16,6 +16,7 @@ import FullScreenMediaViewer from './FullScreenMediaViewer'
 import ShareModal from './ShareModal'
 import { requireUserIntent } from '../utils/generationGuards'
 import userMediaService from '../services/userMediaService'
+import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
@@ -368,7 +369,7 @@ const HomeNew: React.FC = () => {
             type: item.mode === 'v2v' ? 'video' : 'photo',
             url: resultUrl,
             thumbnailUrl: undefined,
-            prompt: item.prompt || '',
+            prompt: item.prompt || 'AI Generated Content',
             style: undefined,
             aspectRatio: item.width && item.height ? item.width / Math.max(1, item.height) : 4 / 3,
             width: item.width || 800,
@@ -664,14 +665,14 @@ const HomeNew: React.FC = () => {
       setIsComposerOpen(false);
       setNavGenerating(true);
       
-      // Clear preset when composer closes
-      clearPresetOnExit();
+      // Don't clear preset when composer closes during generation
+      // clearPresetOnExit();
 
-      // Upload to Cloudinary if needed
+      // Ensure we have a remote URL (not blob:)
       let sourceUrl = previewUrl;
-      if (selectedFile) {
-        const up = await uploadToCloudinary(selectedFile, `users/${authService.getCurrentUser()?.id || 'me'}`);
-        sourceUrl = up.secure_url;
+      if (previewUrl?.startsWith('blob:') || selectedFile) {
+        sourceUrl = await ensureRemoteUrl(previewUrl, selectedFile || undefined);
+        console.log('🌐 Using remote source URL:', sourceUrl);
       }
       
       // Final sanity check before API call
@@ -770,10 +771,10 @@ const HomeNew: React.FC = () => {
         }
       }
 
-      // Process the generated result
-      const resultUrl = body.result_url;
+      // Process the generated result using robust parsing
+      const resultUrl = pickResultUrl(body);
       if (!resultUrl) {
-        console.error('No result_url in response:', body);
+        console.error('No result URL in response:', body);
         throw new Error('No result URL in API response');
       }
 
@@ -941,10 +942,7 @@ const HomeNew: React.FC = () => {
       setIsGenerating(false);
       setNavGenerating(false);
       
-      // Clear preset after successful generation
-      if (chosen && PRESETS[chosen]) {
-        clearPresetAfterGeneration();
-      }
+      // Preset clearing moved to finally block to prevent premature clearing
       
       // Handle V2V processing status
       if (isVideoPreview) {
@@ -971,6 +969,10 @@ const HomeNew: React.FC = () => {
       setIsGenerating(false);
       setNavGenerating(false);
     } finally {
+      // Clear preset only after generation completes (success or failure)
+      if (chosen && PRESETS[chosen]) {
+        clearPresetAfterGeneration();
+      }
       console.info('⏹ dispatchGenerate done', (performance.now() - t0).toFixed(1), 'ms');
     }
   }
@@ -1094,13 +1096,12 @@ const HomeNew: React.FC = () => {
     handlePresetAutoGeneration(presetName);
   }
 
-  // Auto-generate with preset and redirect
+  // Auto-generate with preset - simplified to use existing dispatchGenerate
   const handlePresetAutoGeneration = async (presetName: PresetKey) => {
     console.log('🚀 handlePresetAutoGeneration called with:', presetName)
     
     if (!previewUrl) {
       console.log('❌ No previewUrl available, cannot generate')
-              // Upload required - no notification needed
       return;
     }
     
@@ -1111,194 +1112,10 @@ const HomeNew: React.FC = () => {
     }
 
     console.log('🚀 Auto-generating with preset:', presetName);
-    console.log('🔍 Current state:', { previewUrl, isGenerating, isAuthenticated })
     
-    // Validate preset exists
-    if (!PRESETS[presetName]) {
-      console.error('❌ Preset not found in PRESETS:', presetName);
-      console.log('🔍 Available presets:', Object.keys(PRESETS))
-              // Preset not available - no notification needed
-      return;
-    }
-    
-    // FREEZE STATE BEFORE ANY MUTATIONS - This prevents race conditions
-    const frozenPreset = presetName;
-    const frozenAssetUrl = previewUrl;
-    const frozenPresetData = PRESETS[presetName];
-    
-    if (!frozenPresetData) {
-      console.error('❌ Preset data not found:', presetName);
-              // Preset not found - no notification needed
-      return;
-    }
-    
-    // Validate preset has required fields
-    if (!frozenPresetData.prompt || !frozenPresetData.label) {
-      console.error('❌ Invalid preset data:', frozenPresetData);
-              // Invalid preset configuration - no notification needed
-      return;
-    }
-    
-    // Validate asset URL
-    if (!frozenAssetUrl || !/^https?:\/\//i.test(frozenAssetUrl)) {
-      console.error('❌ Invalid asset URL:', frozenAssetUrl);
-              // Invalid media URL - no notification needed
-      return;
-    }
-    
-    // Check authentication
-    const token = authService.getToken();
-    if (!token) {
-      console.error('❌ No authentication token');
-              // Please log in to generate media - no notification needed
-      return;
-    }
-    
-    try {
-      // Start generation
-      setIsGenerating(true);
-      setNavGenerating(true);
-      
-      // Close composer
-      setIsComposerOpen(false);
-      
-      // Track preset usage BEFORE clearing
-      presetRotationService.trackPresetUsage(frozenPreset);
-      
-      // Get the preset prompt from frozen data
-      const effectivePrompt = frozenPresetData.prompt;
-      
-      console.log('🎯 Auto-generation prompt:', effectivePrompt);
-      console.log('🔒 Frozen state:', { 
-        preset: frozenPreset, 
-        assetUrl: frozenAssetUrl, 
-        hasPresetData: !!frozenPresetData 
-      });
-      
-      // Build API payload
-      const apiPayload = {
-        resource_type: 'image', // Explicitly specify resource type
-        prompt: effectivePrompt,
-        image_url: frozenAssetUrl, // Use frozen URL
-        source_url: frozenAssetUrl, // Add source_url for compatibility
-        strength: frozenPresetData.strength || 0.75,
-        model: 'flux/dev/image-to-image'
-      };
-      
-      console.log('📤 API Payload:', apiPayload);
-      
-      // Call the AI generation API with frozen data
-      const response = await fetch('/.netlify/functions/aimlApi', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authService.getToken()}`
-        },
-        body: JSON.stringify(apiPayload)
-      });
-
-      if (!response.ok) {
-        // Get detailed error information
-        const errorText = await response.text();
-        console.error('❌ aimlApi error:', response.status, errorText);
-        
-        // Try to parse as JSON for structured errors
-        let errorDetails = 'Unknown error';
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorDetails = errorJson.error || errorText;
-        } catch {
-          errorDetails = errorText;
-        }
-        
-        throw new Error(`Generation failed: ${response.status} - ${errorDetails}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.result_url) {
-        // Show success notification
-                    addNotification('Your media is ready', `Your ${frozenPresetData.label} style is ready!`, 'ready', previewUrl, 'image', () => {
-              // Open the media viewer to show the generated image
-              setViewerMedia([{
-                id: 'generated-' + Date.now(),
-                userId: 'current-user',
-                type: 'photo',
-                url: previewUrl,
-                prompt: prompt,
-                aspectRatio: 4/3,
-                width: 800,
-                height: 600,
-                timestamp: new Date().toISOString(),
-                tokensUsed: 2,
-                likes: 0,
-                remixCount: 0,
-                isPublic: false,
-                allowRemix: false,
-                tags: [],
-                metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
-              }]);
-              setViewerStartIndex(0);
-              setViewerOpen(true);
-            });
-        
-        // Save to database if user is authenticated
-        if (isAuthenticated) {
-          try {
-            const jwt = authService.getToken();
-            const userId = authService.getCurrentUser()?.id;
-            
-            if (jwt && userId) {
-              await fetch('/.netlify/functions/save-media', {
-                method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${jwt}`
-                },
-                body: JSON.stringify({
-                  user_id: userId,
-                  result_url: result.result_url,
-                  source_url: frozenAssetUrl, // Use frozen URL
-                  prompt: effectivePrompt,
-                  mode: 'preset',
-                  visibility: 'public',
-                  env: import.meta.env.PROD ? 'prod' : 'dev',
-                  allow_remix: true,
-                })
-              });
-            }
-          } catch (error) {
-            console.error('Failed to save media:', error);
-          }
-        }
-        
-        // Clear preset AFTER successful generation (not before)
-        clearPresetAfterGeneration();
-        
-        // Redirect to home page
-        navigate('/');
-        
-      } else {
-        throw new Error('No result URL in response');
-      }
-      
-    } catch (error) {
-      console.error('❌ Auto-generation failed:', error);
-              addNotification('Error please try again', 'Please try again', 'error');
-      
-      // Reset states
-      setIsGenerating(false);
-      setNavGenerating(false);
-      
-      // Reopen composer for retry
-      setIsComposerOpen(true);
-      
-      // Don't clear preset on error - let user retry
-    } finally {
-      // Always reset generation states
-      setIsGenerating(false);
-      setNavGenerating(false);
-    }
+    // Use the existing dispatchGenerate function with 'preset' kind
+    // This ensures all the proper validation, error handling, and database saving happens
+    await dispatchGenerate('preset');
   }
 
   const handleGenerateCaption = () => {
@@ -1706,98 +1523,84 @@ const HomeNew: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-black relative overflow-hidden layout-container">
+    <div className="flex min-h-screen bg-black relative overflow-hidden">
 
       
-      {/* Top nav */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-transparent backdrop-blur-sm">
-        <div className="flex items-center justify-between px-4 py-3">
-          {/* Left: Logo and navigation */}
-          <div className="flex items-center space-x-4">
-            
-          </div>
-
-          {/* Right: Auth actions */}
-          <div className="flex items-center gap-4">
-            {/* Filter moved to right with bell and profile */}
-            {isAuthenticated && (
-              <div className="relative" data-filter-dropdown>
-                <button
-                  onClick={() => {
-                    // Toggle filter - clicking same icon closes it
-                    setFilterOpen((v) => !v)
-                  }}
-                  className="nav-icon-container text-white/90 hover:text-white rounded-full transition-colors"
-                  title="Filter"
-                  aria-expanded={filterOpen}
-                  aria-haspopup="menu"
-                  data-nav-button
-                  data-nav-type="filter"
-                >
-                  <div className="nav-icon">
-                    <Filter size={20} />
-                  </div>
-                </button>
-                {filterOpen && (
-                  <div className="absolute right-0 mt-2 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
-                    <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='all'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>All</button>
-                    <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='images'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Images</button>
-                    <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='videos'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Videos</button>
-                  </div>
-                )}
+      {/* Floating top nav - only for logged in users */}
+      {isAuthenticated && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-3">
+          {/* Filter */}
+          <div className="relative" data-filter-dropdown>
+            <button
+              onClick={() => {
+                setFilterOpen((v) => !v)
+              }}
+              className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white/90 hover:text-white transition-colors border border-white/20"
+              title="Filter"
+              aria-expanded={filterOpen}
+              aria-haspopup="menu"
+              data-nav-button
+              data-nav-type="filter"
+            >
+              <Filter size={18} />
+            </button>
+            {filterOpen && (
+              <div className="absolute right-0 mt-2 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
+                <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='all'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>All</button>
+                <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='images'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Images</button>
+                <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='videos'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Videos</button>
               </div>
             )}
-            {isAuthenticated ? (
-              <>
-                {/* Notification bell */}
-                <div className="nav-icon-container text-white/90 hover:text-white rounded-full transition-colors">
-                  <NotificationBell userId={authService.getCurrentUser()?.id || ''} />
-                </div>
-                {/* Profile with progress ring */}
-                <div className="relative" data-user-menu>
-                  <button onClick={() => { 
-                    // Toggle user menu - clicking same icon closes it
-                    setUserMenu((v) => !v) 
-                  }} className="relative nav-icon-container rounded-full transition-colors" aria-haspopup="menu" aria-expanded={userMenu} data-nav-button data-nav-type="user">
-                    {navGenerating && (<span className="absolute -inset-1 rounded-full border-2 border-white/50 animate-spin" style={{ borderTopColor: 'transparent' }} />)}
-                    <div className="nav-icon">
-                      {(() => {
-                        const user = authService.getCurrentUser()
-                        // Check if user has avatar in localStorage userProfile
-                        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
-                        if (userProfile.avatar) {
-                          return <img src={userProfile.avatar} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
-                        } else if (user?.name || user?.email) {
-                          const initial = (user.name || user.email || 'U').charAt(0).toUpperCase()
-                          return <div className="w-8 h-8 rounded-full bg-white/20 text-white text-sm font-medium flex items-center justify-center">{initial}</div>
-                        } else {
-                          return <ProfileIcon size={20} className="text-white" />
-                        }
-                      })()}
-                    </div>
-                  </button>
-                  {userMenu && (
-                    <div className="absolute right-0 mt-2 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
-                      <button onClick={() => { setUserMenu(false); navigate('/profile') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Profile</button>
-                      <button onClick={() => { setUserMenu(false); navigate('/auth') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Sign out</button>
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <button
-                onClick={() => navigate('/auth')}
-                className="px-4 py-2 rounded-full bg-white text-black text-sm hover:bg-white/90 transition-colors"
-              >
-                Login
-              </button>
+          </div>
+
+          {/* Notification bell */}
+          <div className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white/90 hover:text-white transition-colors border border-white/20">
+            <NotificationBell userId={authService.getCurrentUser()?.id || ''} />
+          </div>
+
+          {/* Profile with progress ring */}
+          <div className="relative" data-user-menu>
+            <button onClick={() => { 
+              setUserMenu((v) => !v) 
+            }} className="relative w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors border border-white/20" aria-haspopup="menu" aria-expanded={userMenu} data-nav-button data-nav-type="user">
+              {navGenerating && (<span className="absolute -inset-1 rounded-full border-2 border-white/50 animate-spin" style={{ borderTopColor: 'transparent' }} />)}
+              {(() => {
+                const user = authService.getCurrentUser()
+                const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
+                if (userProfile.avatar) {
+                  return <img src={userProfile.avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+                } else if (user?.name || user?.email) {
+                  const initial = (user.name || user.email || 'U').charAt(0).toUpperCase()
+                  return <div className="w-6 h-6 rounded-full bg-white/20 text-white text-xs font-medium flex items-center justify-center">{initial}</div>
+                } else {
+                  return <ProfileIcon size={16} className="text-white" />
+                }
+              })()}
+            </button>
+            {userMenu && (
+              <div className="absolute right-0 mt-2 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
+                <button onClick={() => { setUserMenu(false); navigate('/profile') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Profile</button>
+                <button onClick={() => { setUserMenu(false); navigate('/auth') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Sign out</button>
+              </div>
             )}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Right floating rail (desktop) */}
-      <div className="hidden md:flex w-[10%] sticky top-0 h-screen items-center justify-center">
+      {/* Login button for non-authenticated users */}
+      {!isAuthenticated && (
+        <div className="fixed top-4 right-4 z-50">
+          <button
+            onClick={() => navigate('/auth')}
+            className="px-6 py-2.5 rounded-full bg-white text-black text-sm font-medium hover:bg-white/90 transition-colors shadow-lg"
+          >
+            Login
+          </button>
+        </div>
+      )}
+
+      {/* Left sidebar with upload button - 15% width */}
+      <div className="hidden md:flex w-[15%] sticky top-0 h-screen items-center justify-center">
         <div className="relative">
           {/* Animated white dot orbiting around the button border */}
           <div className="absolute inset-0 w-16 h-16">
@@ -1821,19 +1624,22 @@ const HomeNew: React.FC = () => {
         </div>
       </div>
 
-      {/* Main content area - starts exactly after navbar */}
-      <div className="min-h-screen pt-16">
+      {/* Main content area - 85% width, full screen height */}
+      <div className="w-[85%] min-h-screen">
         {/* Feed content */}
-        <div className="px-4 py-6">
+        <div className="px-6 py-8">
           {isLoadingFeed ? (
-            <div className="content-placeholder">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
-                {[...Array(9)].map((_, index) => (
-                  <div key={index} className="bg-white/5 rounded-lg overflow-hidden">
-                    <div className="aspect-square bg-white/10"></div>
-                    <div className="p-3 space-y-2">
-                      <div className="h-3 bg-white/10 rounded w-3/4"></div>
-                      <div className="h-3 bg-white/10 rounded w-1/2"></div>
+            <div className="space-y-6">
+              {/* Subtle loading skeleton */}
+              <div className="grid grid-cols-3 gap-6">
+                {[...Array(12)].map((_, index) => (
+                  <div key={index} className="space-y-3">
+                    {/* Image placeholder */}
+                    <div className="aspect-[4/3] bg-gradient-to-br from-white/5 to-white/10 rounded-xl animate-pulse"></div>
+                    {/* Text placeholders */}
+                    <div className="space-y-2">
+                      <div className="h-3 bg-white/5 rounded-full w-3/4 animate-pulse"></div>
+                      <div className="h-3 bg-white/5 rounded-full w-1/2 animate-pulse"></div>
                     </div>
                   </div>
                 ))}
@@ -1851,6 +1657,7 @@ const HomeNew: React.FC = () => {
               showActions={true}
               className="pb-24"
               hideUserAvatars={false}
+              hideShareButton={true}
             />
           ) : (
             <div className="text-center py-12">
@@ -1862,16 +1669,16 @@ const HomeNew: React.FC = () => {
 
       {/* Creator filter banner */}
       {creatorFilter && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-white/10 text-white text-xs px-3 py-1 rounded-full border border-white/20">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-white/10 text-white text-xs px-3 py-1 rounded-full border border-white/20 backdrop-blur-sm">
           Filtering by creator • <button className="underline" onClick={() => setCreatorFilter(null)}>clear</button>
         </div>
       )}
 
       {/* Guest gate overlay removed - existing system in place */}
 
-      {/* Compact floating notifications - positioned exactly under navbar */}
+      {/* Compact floating notifications - positioned at top center */}
       {notifications.length > 0 && (
-        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-2 navbar-stable">
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 space-y-2 navbar-stable">
           {notifications.map((n) => (
             <div 
               key={n.id} 
@@ -1905,7 +1712,7 @@ const HomeNew: React.FC = () => {
       )}
 
       {/* Mobile FAB */}
-      <div className="md:hidden fixed bottom-4 right-4 relative navbar-stable">
+      <div className="md:hidden fixed bottom-6 right-6 relative navbar-stable">
         {/* Animated white dot orbiting around the button border */}
         <div className="absolute inset-0 w-16 h-16">
           <div className="absolute w-1 h-1 bg-white rounded-full animate-spin" style={{ 

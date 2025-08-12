@@ -44,6 +44,43 @@ export function buildEditPayload({
   };
 }
 
-export function pickResultUrl(res: any) {
-  return res?.images?.[0]?.url ?? res?.videos?.[0]?.url ?? res?.data?.[0]?.url ?? res?.result_url ?? null;
+/**
+ * Pick result URL from any response shape
+ * Handles both new and legacy response formats
+ */
+export function pickResultUrl(body: any): string | null {
+  if (!body || typeof body !== 'object') return null;
+  return (
+    body.result_url ||
+    body.image_url ||
+    body.url ||
+    (Array.isArray(body.result_urls) && body.result_urls[0]) ||
+    null
+  );
+}
+
+/**
+ * Ensure we have a remote URL before calling aimlApi
+ * Uploads blob URLs to Cloudinary if needed
+ */
+export async function ensureRemoteUrl(previewUrl?: string, file?: File | Blob): Promise<string> {
+  if (previewUrl && !previewUrl.startsWith('blob:')) return previewUrl;
+
+  if (!file) throw new Error('Invalid asset URL and no file to upload');
+
+  // sign
+  const sigRes = await fetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
+  const sig = await sigRes.json();
+
+  const form = new FormData();
+  form.append('file', file);
+  form.append('timestamp', String(sig.timestamp));
+  form.append('api_key', sig.apiKey);
+  if (sig.folder) form.append('folder', sig.folder);
+  form.append('signature', sig.signature);
+
+  const up = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/auto/upload`, { method: 'POST', body: form });
+  const j = await up.json();
+  if (!j?.secure_url) throw new Error('Cloudinary upload failed');
+  return j.secure_url as string;
 }

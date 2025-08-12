@@ -27,6 +27,8 @@ interface MasonryMediaGridProps {
   hideRemixCount?: boolean
   // Profile mode - hide user avatars
   hideUserAvatars?: boolean
+  // Home page mode - hide share button
+  hideShareButton?: boolean
 }
 
 const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
@@ -50,7 +52,9 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   onToggleSelection,
   hideRemixCount = false,
   // Profile mode - hide user avatars
-  hideUserAvatars = false
+  hideUserAvatars = false,
+  // Home page mode - hide share button
+  hideShareButton = false
 }) => {
   const gridRef = useRef<HTMLDivElement>(null)
 
@@ -250,7 +254,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             )}
                           </div>
                         )}
-                        {onShare && (
+                        {onShare && !hideShareButton && (
                           <div className="flex flex-col items-center">
                             <button
                               onClick={(e) => handleAction(() => onShare(item), e)}

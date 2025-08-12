@@ -1,58 +1,60 @@
+import type { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 
-function json(status:number, body:any) {
-  return { statusCode: status, headers: { 'content-type':'application/json' }, body: JSON.stringify(body) };
-}
-function fail(status:number, msg:string, extra:any={}) { return json(status, { error: msg, ...extra }); }
-function getBearer(event:any) {
-  const h = event.headers?.authorization || event.headers?.Authorization || '';
-  const m = /^Bearer\s+(.+)$/i.exec(h); return m?.[1] || null;
-}
-function getJwtUserId(jwt:any): string | null {
+const url = process.env.SUPABASE_URL!;
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(url, key, { auth: { persistSession: false } });
+
+function getUserIdFromToken(auth?: string): string | null {
   try {
-    const payload = JSON.parse(Buffer.from(jwt.split('.')[1],'base64').toString());
-    const candidates = [payload.sub, payload.uid, payload.user_id, payload.userId, payload.id].filter(Boolean);
-    const uu = candidates.find((s:string)=>/^[0-9a-f-]{36}$/i.test(s));
-    return uu || null;
-  } catch { return null; }
+    if (!auth?.startsWith('Bearer ')) return null;
+    const jwt = auth.slice(7);
+    const payload = JSON.parse(Buffer.from(jwt.split('.')[1], 'base64').toString());
+    const id = payload.sub || payload.uid || payload.user_id || payload.userId || payload.id;
+    return /^[0-9a-f-]{36}$/i.test(id) ? id : null;
+  } catch {
+    return null;
+  }
 }
 
-export const handler = async (event:any) => {
-  if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
-
+export const handler: Handler = async (event) => {
   try {
-    const token = getBearer(event);
-    if (!token) return fail(401, 'Missing Authorization');
-    const userId = getJwtUserId(token);
-    if (!userId) return fail(401, 'Invalid user token');
+    if (event.httpMethod !== 'POST') {
+      return new Response('Method Not Allowed', { status: 405 });
+    }
+
+    const userId = getUserIdFromToken(event.headers.authorization);
+    if (!userId) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
 
     const { asset_id } = JSON.parse(event.body || '{}');
-    if (!asset_id || !/^[0-9a-f-]{36}$/i.test(asset_id)) return fail(400, 'asset_id must be a UUID');
+    if (!asset_id) return new Response(JSON.stringify({ error: 'asset_id required' }), { status: 400 });
 
-    const db = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession:false } });
-
-    // Is it already liked?
-    const { data: existing, error: selErr } = await db
+    // Check if like exists
+    const { data: existing } = await supabase
       .from('likes')
       .select('id')
       .eq('asset_id', asset_id)
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (selErr) return fail(400, 'Select failed', { details: selErr.message });
-
     if (existing) {
-      const { error: delErr } = await db.from('likes').delete().eq('id', existing.id);
-      if (delErr) return fail(400, 'Delete failed', { details: delErr.message });
+      await supabase.from('likes').delete().eq('id', existing.id);
+      // fetch new count
     } else {
-      const { error: insErr } = await db.insert({ asset_id, user_id: userId });
-      if (insErr) return fail(400, 'Insert failed', { details: insErr.message });
+      await supabase.from('likes').insert({ asset_id, user_id: userId });
     }
 
-    const { count } = await db.from('likes').select('id', { count: 'exact', head: true }).eq('asset_id', asset_id);
-    return json(200, { ok: true, liked: !existing, like_count: count ?? 0 });
-  } catch (e:any) {
-    return fail(500, 'toggleLike crashed', { details: e?.message });
+    const { data: all } = await supabase
+      .from('likes')
+      .select('asset_id')
+      .eq('asset_id', asset_id);
+
+    const count = all?.length || 0;
+    const liked = !existing;
+
+    return new Response(JSON.stringify({ ok: true, liked, likes_count: count }), { status: 200 });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message || 'toggleLike error' }), { status: 500 });
   }
 };
 

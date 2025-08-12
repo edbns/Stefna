@@ -1,40 +1,49 @@
-// getPublicFeed.ts - TypeScript version using media_feed view
+import type { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 
-export const handler = async (event: any) => {
+const url = process.env.SUPABASE_URL!;
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(url, key, { auth: { persistSession: false } });
+
+export const handler: Handler = async (event) => {
   try {
     if (event.httpMethod !== 'GET') {
-      return { statusCode: 405, body: 'Method Not Allowed' };
+      return new Response('Method Not Allowed', { status: 405 });
     }
 
-    const limit = Math.max(1, Math.min(50, Number(new URL(event.rawUrl).searchParams.get('limit') || 20)));
-    const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+    const qs = new URL(event.rawUrl).searchParams;
+    const limit = Math.min(parseInt(qs.get('limit') || '50', 10), 100);
 
-    const ENV = process.env.PUBLIC_APP_ENV || 'prod';
-    console.log(`🌍 Feed query: env=${ENV}, limit=${limit}`);
-
-    // Use the media_feed view instead of media_assets table directly
-    // This view provides computed likes_count and remixes_count
-    const { data, error } = await supabase
-      .from('media_feed')            // <- use the view, not media_assets
-      .select('*')
-      .eq('env', ENV)
+    // public only
+    const { data: media, error } = await supabase
+      .from('media_assets')
+      .select('id,user_id,url,resource_type,visibility,allow_remix,created_at,prompt,mode,model,metadata')
+      .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (error) {
-      console.error('[getPublicFeed] supabase error:', error);
-      return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
-    }
+    if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
 
-    console.log(`✅ Feed returned: ${data?.length || 0} items`);
-    
-    return { 
-      statusCode: 200, 
-      body: JSON.stringify(data) 
-    };
+    const ids = media?.map(m => m.id) || [];
+
+    // likes (group in code)
+    const { data: likesRows } = await supabase
+      .from('likes')
+      .select('asset_id')
+      .in('asset_id', ids);
+
+    const likeCounts = new Map<string, number>();
+    (likesRows || []).forEach(r => likeCounts.set(r.asset_id, (likeCounts.get(r.asset_id) || 0) + 1));
+
+    const items = (media || []).map(m => ({
+      ...m,
+      // fallback thumbnail -> url for now
+      thumbnail_url: (m as any).thumbnail_url || m.url,
+      likes_count: likeCounts.get(m.id) || 0
+    }));
+
+    return new Response(JSON.stringify({ items }), { status: 200 });
   } catch (e: any) {
-    console.error('[getPublicFeed] fatal:', e);
-    return { statusCode: 500, body: JSON.stringify({ error: e.message || 'internal error' }) };
+    return new Response(JSON.stringify({ error: e?.message || 'getPublicFeed error' }), { status: 500 });
   }
 };
