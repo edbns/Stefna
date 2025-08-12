@@ -46,26 +46,36 @@ const HomeNew: React.FC = () => {
   
   // Stable ref for selectedPreset to prevent re-render issues during generation
   const selectedPresetRef = useRef<PresetKey | null>(null)
+  const genIdRef = useRef(0) // increments per job to prevent race conditions
+  
   useEffect(() => { 
     selectedPresetRef.current = selectedPreset 
   }, [selectedPreset])
   
+  // Generation lifecycle functions
+  function startGeneration() {
+    genIdRef.current += 1
+    setIsGenerating(true)
+    return genIdRef.current
+  }
+
+  function endGeneration(id: number) {
+    // only end if this is the latest job
+    if (id === genIdRef.current) {
+      setIsGenerating(false)
+    }
+  }
+  
   // Centralized setter with guards
-  function clearSelectedPreset(reason: string) {
-    // Only clear if user explicitly closes preset panel or navigates away
-    if (isGenerating) return // don't clear mid-run
-    if (reason !== 'user-closed' && reason !== 'user clicked clear') {
-      console.log('🔒 Preventing preset clear for reason:', reason)
+  function requestClearPreset(reason: string) {
+    // never clear while generating
+    if (isGenerating) {
+      console.debug('🛑 Blocked preset clear while generating:', reason)
       return
     }
-    
-    console.info('🔧 clearSelectedPreset:', reason)
     setSelectedPreset(null)
-    
-    // Show feedback when preset is cleared
-    if (reason !== 'user clicked clear') {
-              // Preset cleared - no notification needed
-    }
+    selectedPresetRef.current = null
+    localStorage.removeItem('selectedPreset')
   }
 
   // Clear preset after successful generation
@@ -74,15 +84,12 @@ const HomeNew: React.FC = () => {
     setSelectedPreset(null)
     selectedPresetRef.current = null
     localStorage.removeItem('selectedPreset')
-            // Preset used - no notification needed
   }
 
-  // Clear preset when user exits composer
+  // Clear preset when user exits composer (debounced to avoid race)
   const clearPresetOnExit = () => {
-    console.log('🚪 Clearing preset on composer exit')
-    setSelectedPreset(null)
-    selectedPresetRef.current = null
-    localStorage.removeItem('selectedPreset')
+    // Give time for success path to win first
+    setTimeout(() => requestClearPreset('composer exit'), 300)
   }
   
   // Restore preset from localStorage on mount
@@ -124,9 +131,9 @@ const HomeNew: React.FC = () => {
     })
   }, [PRESETS])
   
-  // Debug when preset gets cleared
+  // Debug when preset gets cleared (only in development)
   useEffect(() => {
-    if (selectedPreset === null) {
+    if (selectedPreset === null && import.meta.env.DEV) {
       console.log('⚠️ selectedPreset was cleared to null')
       console.trace('Preset clear stack trace')
     }
@@ -143,11 +150,15 @@ const HomeNew: React.FC = () => {
     try {
       // Use direct preset keys instead of complex rotation service
       const presetKeys = Object.keys(PRESETS) as PresetKey[]
-      console.log('🎨 Active presets for UI:', presetKeys)
+      if (import.meta.env.DEV) {
+        console.log('🎨 Active presets for UI:', presetKeys)
+      }
       
       // If no presets available, return empty array
       if (presetKeys.length === 0) {
-        console.warn('⚠️ No presets available in PRESETS object')
+        if (import.meta.env.DEV) {
+          console.debug('⚠️ No active presets from API, using rotation fallback')
+        }
         // Fallback to hardcoded presets if the rotation service fails
         const fallbackPresets: PresetKey[] = [
           'cinematic_glow',
@@ -157,7 +168,9 @@ const HomeNew: React.FC = () => {
           'tropical_boost',
           'urban_grit'
         ]
-        console.log('🔄 Using fallback presets:', fallbackPresets)
+        if (import.meta.env.DEV) {
+          console.debug('🔄 Using fallback presets:', fallbackPresets)
+        }
         return fallbackPresets
       }
       
@@ -174,7 +187,9 @@ const HomeNew: React.FC = () => {
         'tropical_boost',
         'urban_grit'
       ]
-      console.log('🔄 Using fallback presets due to error:', fallbackPresets)
+      if (import.meta.env.DEV) {
+        console.debug('🔄 Using fallback presets due to error:', fallbackPresets)
+      }
       return fallbackPresets
     }
   }, [PRESETS]) // Add PRESETS as dependency so it updates when presets change
@@ -294,7 +309,7 @@ const HomeNew: React.FC = () => {
     setSelectedFile(file)
     setIsComposerOpen(true)
     // Clear selectedPreset when new media is uploaded
-    clearSelectedPreset('new media uploaded')
+            requestClearPreset('new media uploaded')
   }
 
   const measure = () => {
@@ -437,7 +452,7 @@ const HomeNew: React.FC = () => {
       console.warn('⚠️ Invalid preset in localStorage, clearing:', savedPreset)
       localStorage.removeItem('selectedPreset')
     }
-  }, [])
+  }, [PRESETS]) // Add PRESETS as dependency so it runs when presets are loaded
 
   useEffect(() => {
     loadFeed()
@@ -548,6 +563,9 @@ const HomeNew: React.FC = () => {
   async function dispatchGenerate(kind: 'preset' | 'custom' | 'remix') {
     const t0 = performance.now();
     console.info('▶ dispatchGenerate', { kind });
+    
+    // Start generation with ID guard
+    const genId = startGeneration();
 
     // Get current profile settings
     const { shareToFeed, allowRemix } = await getUserProfileSettings()
@@ -660,8 +678,8 @@ const HomeNew: React.FC = () => {
         isVideo: isVideoPreview
       });
       
-      // Close composer and show progress
-      setIsGenerating(true);
+      // Start generation with ID guard
+      const genId = startGeneration();
       setIsComposerOpen(false);
       setNavGenerating(true);
       
@@ -678,7 +696,7 @@ const HomeNew: React.FC = () => {
           console.error('❌ Upload failed:', uploadError);
           addNotification('Upload failed', uploadError.message || 'Failed to upload file to Cloudinary', 'error');
           // Don't clear preset on upload failure - let user retry
-          setIsGenerating(false);
+          endGeneration(genId);
           setNavGenerating(false);
           return;
         }
@@ -760,7 +778,7 @@ const HomeNew: React.FC = () => {
         addNotification('Add to queue', 'Video job created successfully. Processing will begin shortly.', 'queue')
         setCurrentVideoJob({ id: body.job_id, status: 'queued' })
         startVideoJobPolling(body.job_id)
-        setIsGenerating(false)
+        endGeneration(genId)
         setNavGenerating(false)
         return
       }
@@ -772,7 +790,7 @@ const HomeNew: React.FC = () => {
           // Don't return - let the processing continue
         } else if (res.status === 429) {
           addNotification('Error please try again', 'Rate limited', 'error');
-          setIsGenerating(false);
+          endGeneration(genId);
           setNavGenerating(false);
           return;
         } else {
@@ -948,7 +966,7 @@ const HomeNew: React.FC = () => {
       }
 
       // Success: stop progress
-      setIsGenerating(false);
+      endGeneration(genId);
       setNavGenerating(false);
       
       // Preset clearing moved to finally block to prevent premature clearing
@@ -975,7 +993,7 @@ const HomeNew: React.FC = () => {
 
     } catch (e) {
       console.error('dispatchGenerate error', e);
-      setIsGenerating(false);
+      endGeneration(genId);
       setNavGenerating(false);
     } finally {
       // Clear preset only after generation completes (success or failure)
@@ -1003,7 +1021,7 @@ const HomeNew: React.FC = () => {
       return;
     }
     // Close composer immediately and show progress on avatar
-    setIsGenerating(true)
+    const genId = startGeneration()
     setIsComposerOpen(false)
     setNavGenerating(true)
     try {
@@ -1041,12 +1059,12 @@ const HomeNew: React.FC = () => {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         console.error('Generation failed', err)
-        setIsGenerating(false)
+        endGeneration(genId)
         setNavGenerating(false)
         return
       }
       // Success: stop progress
-      setIsGenerating(false)
+      endGeneration(genId)
       setNavGenerating(false)
       
       // Clear preset after successful generation
@@ -1061,7 +1079,7 @@ const HomeNew: React.FC = () => {
       } catch {}
     } catch (e) {
       console.error('Generate error', e)
-      setIsGenerating(false)
+      endGeneration(genId)
       setNavGenerating(false)
     }
   }
@@ -1223,7 +1241,7 @@ const HomeNew: React.FC = () => {
     setPrompt(media.prompt || '')
     
     // Clear selectedPreset when remixing
-    clearSelectedPreset('remix started')
+            requestClearPreset('remix started')
     
     // Auto-generate remix if we have the prompt
     if (media.prompt) {
@@ -1667,6 +1685,7 @@ const HomeNew: React.FC = () => {
               className="pb-24"
               hideUserAvatars={false}
               hideShareButton={true}
+              hideLikeButton={true}
             />
           ) : (
             <div className="text-center py-12">
@@ -1685,9 +1704,9 @@ const HomeNew: React.FC = () => {
 
       {/* Guest gate overlay removed - existing system in place */}
 
-      {/* Compact floating notifications - positioned at top center */}
+      {/* Compact floating notifications - positioned under the profile section */}
       {notifications.length > 0 && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 space-y-2 navbar-stable">
+        <div className="fixed top-20 right-4 z-50 space-y-2 navbar-stable">
           {notifications.map((n) => (
             <div 
               key={n.id} 
@@ -1859,7 +1878,7 @@ const HomeNew: React.FC = () => {
                           {/* None option */}
                           <button
                             onClick={() => {
-                              clearSelectedPreset('user clicked clear')
+                              requestClearPreset('user clicked clear')
                               setPresetsOpen(false)
                             }}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${

@@ -29,6 +29,8 @@ interface MasonryMediaGridProps {
   hideUserAvatars?: boolean
   // Home page mode - hide share button
   hideShareButton?: boolean
+  // Home page mode - hide like button
+  hideLikeButton?: boolean
 }
 
 const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
@@ -54,7 +56,9 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   // Profile mode - hide user avatars
   hideUserAvatars = false,
   // Home page mode - hide share button
-  hideShareButton = false
+  hideShareButton = false,
+  // Home page mode - hide like button
+  hideLikeButton = false
 }) => {
   const gridRef = useRef<HTMLDivElement>(null)
 
@@ -266,7 +270,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             <div className="text-white/80 text-[10px] mt-1">Share</div>
                           </div>
                         )}
-                        {onLike && (
+                        {onLike && !hideLikeButton && (
                           <div className="flex flex-col items-center">
                             <button
                               onClick={(e) => handleAction(() => onLike(item), e)}

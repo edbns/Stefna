@@ -18,10 +18,10 @@ export const handler: Handler = async (event) => {
       auth: { persistSession: false }
     })
 
-    // Keep it simple & resilient: only select columns that are guaranteed to exist.
+    // Use the media_feed view which includes user avatar and tier information
     const { data, error } = await sb
-      .from('media_assets')
-      .select('id,url,created_at,visibility,env,user_id,metadata') // <-- use "metadata" if that's your JSON column name
+      .from('media_feed')
+      .select('id,url,created_at,visibility,env,user_id,metadata,prompt,user_avatar,user_tier') // <-- includes user data
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -38,6 +38,9 @@ export const handler: Handler = async (event) => {
       visibility: row.visibility,
       env: row.env,
       user_id: row.user_id,
+      prompt: row.prompt || null, // Include the actual prompt
+      user_avatar: row.user_avatar || null, // Include user avatar
+      user_tier: row.user_tier || null, // Include user tier
       // Derive a thumbnail if you have it in JSON; otherwise null.
       thumbnail_url:
         row.thumbnail_url ??
