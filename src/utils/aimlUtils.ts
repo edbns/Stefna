@@ -68,18 +68,29 @@ export async function ensureRemoteUrl(previewUrl?: string, file?: File | Blob): 
 
   if (!file) throw new Error('Invalid asset URL and no file to upload');
 
-  // sign
+  // sign with proper error handling
   const sigRes = await fetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
+  if (!sigRes.ok) {
+    const err = await sigRes.json().catch(() => ({}));
+    throw new Error(`Cloudinary sign failed ${sigRes.status}: ${err?.error || 'unknown'}`);
+  }
+  
   const sig = await sigRes.json();
+  if (!sig.cloudName || !sig.signature || !sig.timestamp || !sig.apiKey) {
+    throw new Error('Signer returned missing fields');
+  }
 
+  // now upload
   const form = new FormData();
   form.append('file', file);
   form.append('timestamp', String(sig.timestamp));
+  form.append('signature', sig.signature);
   form.append('api_key', sig.apiKey);
   if (sig.folder) form.append('folder', sig.folder);
-  form.append('signature', sig.signature);
-
+  
   const up = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/auto/upload`, { method: 'POST', body: form });
+  if (!up.ok) throw new Error('Cloudinary upload failed');
+  
   const j = await up.json();
   if (!j?.secure_url) throw new Error('Cloudinary upload failed');
   return j.secure_url as string;

@@ -12,6 +12,23 @@ exports.handler = async (event) => {
   try {
     if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
+    // Check Cloudinary environment variables first
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    
+    if (!cloudName || !apiKey || !apiSecret) {
+      console.error('Cloudinary env missing', { 
+        hasCloudName: !!cloudName, 
+        hasKey: !!apiKey, 
+        hasSecret: !!apiSecret 
+      });
+      return { 
+        statusCode: 500, 
+        body: JSON.stringify({ error: 'Cloudinary env not configured' }) 
+      };
+    }
+
     const { userId } = verifyAuth(event);
     console.log(`✅ cloudinary-sign: Auth OK for user: ${userId}`);
 
@@ -25,15 +42,15 @@ exports.handler = async (event) => {
 
     const signature = cloudinary.utils.api_sign_request(
       paramsToSign,
-      process.env.CLOUDINARY_API_SECRET
+      apiSecret
     );
 
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key:    process.env.CLOUDINARY_API_KEY,
+        cloudName,
+        apiKey,
         signature,
         timestamp,
         folder,
@@ -42,6 +59,6 @@ exports.handler = async (event) => {
     };
   } catch (err) {
     console.error("cloudinary-sign error:", err.message);
-    return { statusCode: 401, body: JSON.stringify({ message: "Unauthorized" }) };
+    return { statusCode: 500, body: JSON.stringify({ error: 'sign_failed' }) };
   }
 };

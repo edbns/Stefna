@@ -671,8 +671,17 @@ const HomeNew: React.FC = () => {
       // Ensure we have a remote URL (not blob:)
       let sourceUrl = previewUrl;
       if (previewUrl?.startsWith('blob:') || selectedFile) {
-        sourceUrl = await ensureRemoteUrl(previewUrl, selectedFile || undefined);
-        console.log('🌐 Using remote source URL:', sourceUrl);
+        try {
+          sourceUrl = await ensureRemoteUrl(previewUrl, selectedFile || undefined);
+          console.log('🌐 Using remote source URL:', sourceUrl);
+        } catch (uploadError: any) {
+          console.error('❌ Upload failed:', uploadError);
+          addNotification('Upload failed', uploadError.message || 'Failed to upload file to Cloudinary', 'error');
+          // Don't clear preset on upload failure - let user retry
+          setIsGenerating(false);
+          setNavGenerating(false);
+          return;
+        }
       }
       
       // Final sanity check before API call
@@ -1626,8 +1635,8 @@ const HomeNew: React.FC = () => {
 
       {/* Main content area - 85% width, full screen height */}
       <div className="w-[85%] min-h-screen">
-        {/* Feed content */}
-        <div className="px-6 py-8">
+        {/* Feed content - positioned under floating nav with proper padding */}
+        <div className="px-6 pt-24 pb-8">
           {isLoadingFeed ? (
             <div className="space-y-6">
               {/* Subtle loading skeleton */}

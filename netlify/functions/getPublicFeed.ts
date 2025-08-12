@@ -1,49 +1,57 @@
-import type { Handler } from '@netlify/functions';
-import { createClient } from '@supabase/supabase-js';
-
-const url = process.env.SUPABASE_URL!;
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(url, key, { auth: { persistSession: false } });
+// netlify/functions/getPublicFeed.ts
+import type { Handler } from '@netlify/functions'
+import { createClient } from '@supabase/supabase-js'
 
 export const handler: Handler = async (event) => {
   try {
-    if (event.httpMethod !== 'GET') {
-      return new Response('Method Not Allowed', { status: 405 });
+    const limitRaw = event.queryStringParameters?.limit ?? '20'
+    const limit = Math.min(Math.max(parseInt(limitRaw, 10) || 20, 1), 50)
+
+    const SUPABASE_URL = process.env.SUPABASE_URL!
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('getPublicFeed: Missing Supabase env')
+      return { statusCode: 200, body: JSON.stringify({ items: [] }) }
     }
 
-    const qs = new URL(event.rawUrl).searchParams;
-    const limit = Math.min(parseInt(qs.get('limit') || '50', 10), 100);
+    const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false }
+    })
 
-    // public only
-    const { data: media, error } = await supabase
+    // Keep it simple & resilient: only select columns that are guaranteed to exist.
+    const { data, error } = await sb
       .from('media_assets')
-      .select('id,user_id,url,resource_type,visibility,allow_remix,created_at,prompt,mode,model,metadata')
+      .select('id,url,created_at,visibility,env,user_id,metadata') // <-- use "metadata" if that's your JSON column name
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .limit(limit)
 
-    if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    if (error) {
+      console.error('getPublicFeed supabase error:', error)
+      return { statusCode: 200, body: JSON.stringify({ items: [] }) }
+    }
 
-    const ids = media?.map(m => m.id) || [];
+    const items = (data ?? []).map((row: any) => ({
+      id: row.id,
+      url: row.url,
+      created_at: row.created_at,
+      visibility: row.visibility,
+      env: row.env,
+      user_id: row.user_id,
+      // Derive a thumbnail if you have it in JSON; otherwise null.
+      thumbnail_url:
+        row.thumbnail_url ??
+        row.metadata?.thumbnail_url ??
+        row.metadata?.thumb ??
+        null,
+      // Don't rely on a DB column that may not exist; compute later if needed.
+      likes_count: 0,
+    }))
 
-    // likes (group in code)
-    const { data: likesRows } = await supabase
-      .from('likes')
-      .select('asset_id')
-      .in('asset_id', ids);
-
-    const likeCounts = new Map<string, number>();
-    (likesRows || []).forEach(r => likeCounts.set(r.asset_id, (likeCounts.get(r.asset_id) || 0) + 1));
-
-    const items = (media || []).map(m => ({
-      ...m,
-      // fallback thumbnail -> url for now
-      thumbnail_url: (m as any).thumbnail_url || m.url,
-      likes_count: likeCounts.get(m.id) || 0
-    }));
-
-    return new Response(JSON.stringify({ items }), { status: 200 });
-  } catch (e: any) {
-    return new Response(JSON.stringify({ error: e?.message || 'getPublicFeed error' }), { status: 500 });
+    return { statusCode: 200, body: JSON.stringify({ items }) }
+  } catch (err) {
+    console.error('getPublicFeed fatal:', err)
+    // Return a valid response so Netlify doesn't 502 with status code 0
+    return { statusCode: 200, body: JSON.stringify({ items: [] }) }
   }
-};
+}

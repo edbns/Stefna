@@ -102,12 +102,56 @@ async function testLike(assetId) {
   }
 }
 
+// Test 4: Cloudinary sign (new test)
+async function testCloudinarySign() {
+  console.log('☁️ Testing Cloudinary sign...');
+  
+  if (typeof authService === 'undefined') {
+    console.log('⚠️ authService not available - skipping Cloudinary test');
+    return false;
+  }
+  
+  const jwt = authService.getToken();
+  if (!jwt) {
+    console.log('⚠️ No JWT - skipping Cloudinary test');
+    return false;
+  }
+  
+  try {
+    const response = await fetch('/.netlify/functions/cloudinary-sign', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}`}
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      console.error('❌ Cloudinary sign failed:', response.status, error);
+      return false;
+    }
+    
+    const result = await response.json();
+    console.log('✅ Cloudinary sign response:', result);
+    
+    // Check for required fields
+    if (!result.cloudName || !result.signature || !result.timestamp || !result.apiKey) {
+      console.error('❌ Missing required fields:', result);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Cloudinary sign test failed:', error);
+    return false;
+  }
+}
+
 // Run all tests
 async function runAllTests() {
   console.log('🚀 Running all tests...');
   
   const feedTest = await testFeed();
   const generationTest = await testGeneration();
+  const cloudinaryTest = await testCloudinarySign();
   
   // Get first asset ID from feed for like test
   let assetId = null;
@@ -126,9 +170,10 @@ async function runAllTests() {
   console.log('📊 Test Results:');
   console.log('  Feed:', feedTest ? '✅' : '❌');
   console.log('  Generation:', generationTest ? '✅' : '❌');
+  console.log('  Cloudinary Sign:', cloudinaryTest ? '✅' : '❌');
   console.log('  Like:', likeTest ? '✅' : '❌');
   
-  const allPassed = feedTest && generationTest && likeTest;
+  const allPassed = feedTest && generationTest && cloudinaryTest && likeTest;
   console.log(allPassed ? '🎉 All tests passed!' : '⚠️ Some tests failed');
   
   return allPassed;
@@ -139,6 +184,7 @@ window.testFixes = {
   testFeed,
   testGeneration,
   testLike,
+  testCloudinarySign,
   runAllTests
 };
 
