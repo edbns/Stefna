@@ -15,6 +15,7 @@ import captionService from '../services/captionService'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
 import ShareModal from './ShareModal'
 import { requireUserIntent } from '../utils/generationGuards'
+import userMediaService from '../services/userMediaService'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
@@ -139,14 +140,41 @@ const HomeNew: React.FC = () => {
   // Get active presets from the rotation service
   const weeklyPresetNames = useMemo(() => {
     try {
-      // Get the current active presets from our rotation service
-      const activePresets = Object.keys(PRESETS) as PresetKey[]
-      console.log('🎨 Active presets for UI:', activePresets)
-      return activePresets
+      // Use direct preset keys instead of complex rotation service
+      const presetKeys = Object.keys(PRESETS) as PresetKey[]
+      console.log('🎨 Active presets for UI:', presetKeys)
+      
+      // If no presets available, return empty array
+      if (presetKeys.length === 0) {
+        console.warn('⚠️ No presets available in PRESETS object')
+        // Fallback to hardcoded presets if the rotation service fails
+        const fallbackPresets: PresetKey[] = [
+          'cinematic_glow',
+          'bright_airy', 
+          'vivid_pop',
+          'vintage_film_35mm',
+          'tropical_boost',
+          'urban_grit'
+        ]
+        console.log('🔄 Using fallback presets:', fallbackPresets)
+        return fallbackPresets
+      }
+      
+      // Return first 6 presets for UI display
+      return presetKeys.slice(0, 6)
     } catch (error) {
       console.error('❌ Error getting active presets:', error)
-      // Fallback to empty array
-      return []
+      // Fallback to hardcoded presets
+      const fallbackPresets: PresetKey[] = [
+        'cinematic_glow',
+        'bright_airy', 
+        'vivid_pop',
+        'vintage_film_35mm',
+        'tropical_boost',
+        'urban_grit'
+      ]
+      console.log('🔄 Using fallback presets due to error:', fallbackPresets)
+      return fallbackPresets
     }
   }, [PRESETS]) // Add PRESETS as dependency so it updates when presets change
   const [quota, setQuota] = useState<{ daily_used: number; daily_limit: number; weekly_used: number; weekly_limit: number } | null>(null)
@@ -221,9 +249,13 @@ const HomeNew: React.FC = () => {
         const buttonType = clickedButton?.getAttribute('data-nav-type')
         
         // Close all other dropdowns except the one being clicked
+        // This allows the clicked button to toggle its own dropdown
         if (buttonType !== 'filter') setFilterOpen(false)
         if (buttonType !== 'user') setUserMenu(false)
         if (buttonType !== 'presets') setPresetsOpen(false)
+        
+        // Don't prevent the toggle - let the onClick handler work
+        // The toggle logic is already in the onClick handlers
       }
     }
 
@@ -1024,33 +1056,50 @@ const HomeNew: React.FC = () => {
   }
 
   const handlePresetClick = (presetName: PresetKey) => {
+    console.log('🎯 handlePresetClick called with:', presetName)
+    
     // Check authentication first
     if (!isAuthenticated) {
+      console.log('❌ User not authenticated, redirecting to auth')
               // Sign up required - no notification needed
       navigate('/auth')
       return
     }
     
+    // Check if preset exists
+    if (!PRESETS[presetName]) {
+      console.error('❌ Preset not found in PRESETS:', presetName)
+      console.log('🔍 Available presets:', Object.keys(PRESETS))
+      return
+    }
+    
     // Selecting a preset should use the preset prompt, not populate user input
     const preset = PRESETS[presetName]
-    if (!preset) return
-    
     console.log('🎯 Preset clicked:', presetName, preset)
+    
     setSelectedPreset(presetName)
     console.log('✅ selectedPreset set to:', presetName)
     
     // Show success message
             // Preset applied - no notification needed
     
-    // Auto-start generation with preset
-    setTimeout(() => {
-      handlePresetAutoGeneration(presetName);
-    }, 500); // Small delay to show the notification
+    // Check if we have media to work with
+    if (!previewUrl) {
+      console.log('⚠️ No previewUrl available, cannot auto-generate')
+      return
+    }
+    
+    console.log('🚀 Starting auto-generation with preset:', presetName)
+    // Auto-start generation with preset immediately (no delay)
+    handlePresetAutoGeneration(presetName);
   }
 
   // Auto-generate with preset and redirect
   const handlePresetAutoGeneration = async (presetName: PresetKey) => {
+    console.log('🚀 handlePresetAutoGeneration called with:', presetName)
+    
     if (!previewUrl) {
+      console.log('❌ No previewUrl available, cannot generate')
               // Upload required - no notification needed
       return;
     }
@@ -1062,10 +1111,12 @@ const HomeNew: React.FC = () => {
     }
 
     console.log('🚀 Auto-generating with preset:', presetName);
+    console.log('🔍 Current state:', { previewUrl, isGenerating, isAuthenticated })
     
     // Validate preset exists
     if (!PRESETS[presetName]) {
       console.error('❌ Preset not found in PRESETS:', presetName);
+      console.log('🔍 Available presets:', Object.keys(PRESETS))
               // Preset not available - no notification needed
       return;
     }
@@ -1482,18 +1533,26 @@ const HomeNew: React.FC = () => {
   // Save current composer state as a draft (local only)
   const handleSaveDraft = async () => {
     if (!previewUrl || !prompt.trim()) {
-              // Draft not saved - no notification needed
+      addNotification('Draft not saved', 'Upload media and enter a prompt first', 'warning')
       return
     }
+    
     try {
       const user = authService.getCurrentUser()
-      const userId = user?.id || 'guest'
+      if (!user?.id) {
+        addNotification('Sign up required', 'Please sign up to save drafts', 'warning')
+        navigate('/auth')
+        return
+      }
+      
+      const userId = user.id
       const key = `user_drafts_${userId}`
       const existing = JSON.parse(localStorage.getItem(key) || '[]')
+      
       const draft = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2),
         userId,
-        type: isVideoPreview ? 'video' : 'photo',
+        type: isVideoPreview ? 'video' as const : 'photo' as const,
         url: previewUrl,
         prompt: prompt.trim(),
         aspectRatio: 4/3,
@@ -1506,12 +1565,29 @@ const HomeNew: React.FC = () => {
         isPublic: false,
         allowRemix: false,
         tags: [],
-        metadata: { quality: 'high', generationTime: 0, modelVersion: 'draft' }
+        metadata: { quality: 'high' as const, generationTime: 0, modelVersion: 'draft' }
       }
-      localStorage.setItem(key, JSON.stringify([draft, ...existing].slice(0, 200)))
-              // Saved to Drafts - no notification needed
-    } catch (e) {
-              // Save failed - no notification needed
+      
+      // Save draft to localStorage
+      const updatedDrafts = [draft, ...existing].slice(0, 200) // Keep max 200 drafts
+      localStorage.setItem(key, JSON.stringify(updatedDrafts))
+      
+      // Also save to userMediaService for consistency
+      try {
+        await userMediaService.saveMedia(draft)
+      } catch (error) {
+        console.warn('Failed to save draft to userMediaService:', error)
+      }
+      
+      // Show success notification
+      addNotification('Draft saved!', 'Find it under Profile → Draft tab', 'success')
+      
+      // Dispatch event to notify ProfileScreen to refresh drafts
+      window.dispatchEvent(new Event('userMediaUpdated'))
+      
+    } catch (error) {
+      console.error('Failed to save draft:', error)
+      addNotification('Save failed', 'Could not save draft', 'error')
     }
   }
 
@@ -1634,87 +1710,89 @@ const HomeNew: React.FC = () => {
 
       
       {/* Top nav */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 md:px-6 py-3 bg-transparent navbar-stable">
-        {/* Left spacer */}
-        <div />
+      <div className="fixed top-0 left-0 right-0 z-50 bg-transparent backdrop-blur-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left: Logo and navigation */}
+          <div className="flex items-center space-x-4">
+            
+          </div>
 
-        {/* Right: Auth actions */}
-        <div className="flex items-center gap-4">
-          {/* Filter moved to right with bell and profile */}
-          {isAuthenticated && (
-            <div className="relative" data-filter-dropdown>
-              <button
-                onClick={() => {
-                  window.dispatchEvent(new Event('global-nav-close'))
-                  // Toggle filter - clicking same icon closes it
-                  setFilterOpen((v) => !v)
-                }}
-                className="nav-icon-container text-white/90 hover:text-white rounded-full transition-colors"
-                title="Filter"
-                aria-expanded={filterOpen}
-                aria-haspopup="menu"
-                data-nav-button
-                data-nav-type="filter"
-              >
-                <div className="nav-icon">
-                  <Filter size={20} />
-                </div>
-              </button>
-              {filterOpen && (
-                <div className="absolute right-0 mt-2 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
-                  <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='all'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>All</button>
-                  <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='images'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Images</button>
-                  <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='videos'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Videos</button>
-                </div>
-              )}
-            </div>
-          )}
-          {isAuthenticated ? (
-            <>
-              {/* Notification bell */}
-              <div className="nav-icon-container text-white/90 hover:text-white rounded-full transition-colors">
-                <NotificationBell userId={authService.getCurrentUser()?.id || ''} />
-              </div>
-              {/* Profile with progress ring */}
-              <div className="relative" data-user-menu>
-                <button onClick={() => { 
-                  window.dispatchEvent(new Event('global-nav-close')); 
-                  // Toggle user menu - clicking same icon closes it
-                  setUserMenu((v) => !v) 
-                }} className="relative nav-icon-container rounded-full transition-colors" aria-haspopup="menu" aria-expanded={userMenu} data-nav-button data-nav-type="user">
-                  {navGenerating && (<span className="absolute -inset-1 rounded-full border-2 border-white/50 animate-spin" style={{ borderTopColor: 'transparent' }} />)}
+          {/* Right: Auth actions */}
+          <div className="flex items-center gap-4">
+            {/* Filter moved to right with bell and profile */}
+            {isAuthenticated && (
+              <div className="relative" data-filter-dropdown>
+                <button
+                  onClick={() => {
+                    // Toggle filter - clicking same icon closes it
+                    setFilterOpen((v) => !v)
+                  }}
+                  className="nav-icon-container text-white/90 hover:text-white rounded-full transition-colors"
+                  title="Filter"
+                  aria-expanded={filterOpen}
+                  aria-haspopup="menu"
+                  data-nav-button
+                  data-nav-type="filter"
+                >
                   <div className="nav-icon">
-                    {(() => {
-                      const user = authService.getCurrentUser()
-                      // Check if user has avatar in localStorage userProfile
-                      const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
-                      if (userProfile.avatar) {
-                        return <img src={userProfile.avatar} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
-                      } else if (user?.name || user?.email) {
-                        const initial = (user.name || user.email || 'U').charAt(0).toUpperCase()
-                        return <div className="w-8 h-8 rounded-full bg-white/20 text-white text-sm font-medium flex items-center justify-center">{initial}</div>
-                      } else {
-                        return <ProfileIcon size={20} className="text-white" />
-                      }
-                    })()}
+                    <Filter size={20} />
                   </div>
                 </button>
-                {userMenu && (
+                {filterOpen && (
                   <div className="absolute right-0 mt-2 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
-                    <button onClick={() => { setUserMenu(false); navigate('/profile') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Profile</button>
-                    <button onClick={() => { setUserMenu(false); navigate('/auth') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Sign out</button>
+                    <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='all'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>All</button>
+                    <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='images'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Images</button>
+                    <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='videos'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Videos</button>
                   </div>
                 )}
               </div>
-            </>
-          ) : (
-            <button
-              onClick={() => navigate('/auth')}
-              className="px-4 py-2 rounded-full bg-white text-black text-sm hover:bg-white/90 transition-colors"
-            >
-              Login
-            </button>
-          )}
+            )}
+            {isAuthenticated ? (
+              <>
+                {/* Notification bell */}
+                <div className="nav-icon-container text-white/90 hover:text-white rounded-full transition-colors">
+                  <NotificationBell userId={authService.getCurrentUser()?.id || ''} />
+                </div>
+                {/* Profile with progress ring */}
+                <div className="relative" data-user-menu>
+                  <button onClick={() => { 
+                    // Toggle user menu - clicking same icon closes it
+                    setUserMenu((v) => !v) 
+                  }} className="relative nav-icon-container rounded-full transition-colors" aria-haspopup="menu" aria-expanded={userMenu} data-nav-button data-nav-type="user">
+                    {navGenerating && (<span className="absolute -inset-1 rounded-full border-2 border-white/50 animate-spin" style={{ borderTopColor: 'transparent' }} />)}
+                    <div className="nav-icon">
+                      {(() => {
+                        const user = authService.getCurrentUser()
+                        // Check if user has avatar in localStorage userProfile
+                        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
+                        if (userProfile.avatar) {
+                          return <img src={userProfile.avatar} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+                        } else if (user?.name || user?.email) {
+                          const initial = (user.name || user.email || 'U').charAt(0).toUpperCase()
+                          return <div className="w-8 h-8 rounded-full bg-white/20 text-white text-sm font-medium flex items-center justify-center">{initial}</div>
+                        } else {
+                          return <ProfileIcon size={20} className="text-white" />
+                        }
+                      })()}
+                    </div>
+                  </button>
+                  {userMenu && (
+                    <div className="absolute right-0 mt-2 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
+                      <button onClick={() => { setUserMenu(false); navigate('/profile') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Profile</button>
+                      <button onClick={() => { setUserMenu(false); navigate('/auth') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Sign out</button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={() => navigate('/auth')}
+                className="px-4 py-2 rounded-full bg-white text-black text-sm hover:bg-white/90 transition-colors"
+              >
+                Login
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1722,41 +1800,48 @@ const HomeNew: React.FC = () => {
       <div className="hidden md:flex w-[10%] sticky top-0 h-screen items-center justify-center">
         <div className="relative">
           {/* Animated white dot orbiting around the button border */}
-          <div className="absolute inset-0 w-20 h-20">
-            <div className="absolute w-1.5 h-1.5 bg-white rounded-full animate-spin" style={{ 
+          <div className="absolute inset-0 w-16 h-16">
+            <div className="absolute w-1 h-1 bg-white rounded-full animate-spin" style={{ 
               animationDuration: '3s',
-              transformOrigin: '10px 10px',
+              transformOrigin: '8px 8px',
               left: '50%',
               top: '0',
-              marginLeft: '-3px',
-              marginTop: '-3px'
+              marginLeft: '-2px',
+              marginTop: '-2px'
             }}></div>
           </div>
           
           <button
             onClick={handleUploadClick}
-            className="w-20 h-20 rounded-full bg-black border-2 border-white/30 text-white shadow-2xl hover:bg-white/10 hover:border-white/50 transition-all duration-300 relative z-10"
+            className="w-16 h-16 rounded-full bg-black border-2 border-white/30 text-white shadow-2xl hover:bg-white/10 hover:border-white/50 btn-optimized relative z-10 flex items-center justify-center"
             aria-label="Upload"
           >
-            <Plus size={28} />
+            <Plus size={24} />
           </button>
         </div>
       </div>
 
-      {/* Main content area - stable layout */}
-      <div className="w-[90%] relative feed-stable">
-        <div className="p-6 pt-20 h-screen overflow-y-auto">
+      {/* Main content area - starts exactly after navbar */}
+      <div className="min-h-screen pt-16">
+        {/* Feed content */}
+        <div className="px-4 py-6">
           {isLoadingFeed ? (
-            <div className="grid grid-cols-3 gap-1 content-placeholder">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <div key={i} className="bg-white/5 rounded-xl overflow-hidden">
-                  <div className="w-full aspect-[4/3] bg-white/10 animate-pulse" />
-                </div>
-              ))}
+            <div className="content-placeholder">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+                {[...Array(9)].map((_, index) => (
+                  <div key={index} className="bg-white/5 rounded-lg overflow-hidden">
+                    <div className="aspect-square bg-white/10"></div>
+                    <div className="p-3 space-y-2">
+                      <div className="h-3 bg-white/10 rounded w-3/4"></div>
+                      <div className="h-3 bg-white/10 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ) : (
+          ) : feed.length > 0 ? (
             <MasonryMediaGrid
-              media={!isAuthenticated ? filteredFeed.slice(0, 18) : filteredFeed}
+              media={feed}
               columns={3}
               onMediaClick={handleMediaClick}
               onLike={handleLike}
@@ -1765,76 +1850,67 @@ const HomeNew: React.FC = () => {
               onFilterCreator={(userId) => setCreatorFilter(userId)}
               showActions={true}
               className="pb-24"
+              hideUserAvatars={false}
             />
+          ) : (
+            <div className="text-center py-12">
+              
+            </div>
           )}
         </div>
+      </div>
 
-          {/* Creator filter banner */}
-          {creatorFilter && (
-            <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-white/10 text-white text-xs px-3 py-1 rounded-full border border-white/20">
-              Filtering by creator • <button className="underline" onClick={() => setCreatorFilter(null)}>clear</button>
-            </div>
-          )}
+      {/* Creator filter banner */}
+      {creatorFilter && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-white/10 text-white text-xs px-3 py-1 rounded-full border border-white/20">
+          Filtering by creator • <button className="underline" onClick={() => setCreatorFilter(null)}>clear</button>
+        </div>
+      )}
 
-          {/* Guest gate overlay centered within 90% area */}
-        {!isAuthenticated && filteredFeed.length > 18 && (
-          <div className="pointer-events-auto absolute inset-0 flex items-center justify-center">
-            <div className="bg-black/70 border border-white/20 rounded-2xl p-6 text-center max-w-md mx-auto">
-              <div className="text-white text-base font-medium mb-2">Create more with Stefna</div>
-              <div className="text-white/70 text-sm mb-4">Sign up to explore the full feed and start generating.</div>
-              <button
-                onClick={() => navigate('/auth')}
-                className="px-5 py-2 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90"
-              >
-                Sign up to continue
-              </button>
-            </div>
-          </div>
-        )}
+      {/* Guest gate overlay removed - existing system in place */}
 
-        {/* Compact floating notifications - positioned exactly under navbar */}
-        {notifications.length > 0 && (
-          <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-2 navbar-stable">
-            {notifications.map((n) => (
-              <div 
-                key={n.id} 
-                className={`w-64 bg-[#333333] border border-white/20 rounded-lg shadow-2xl transition-all duration-300 ${
-                  n.onClick ? 'cursor-pointer hover:bg-[#3a3a3a]' : ''
-                }`}
-                onClick={n.onClick}
-              >
-                <div className="px-3 py-2 relative">
-                  {/* Close button - top right */}
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeNotification(n.id);
-                    }} 
-                    className="absolute top-1 right-1 w-4 h-4 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
-                  >
-                    <X size={10} className="text-white" />
-                  </button>
-                  
-                  {/* Title only - compact */}
-                  <div className="pr-6">
-                    <h3 className="text-white text-sm font-medium truncate">
-                      {n.title}
-                    </h3>
-                  </div>
+      {/* Compact floating notifications - positioned exactly under navbar */}
+      {notifications.length > 0 && (
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-2 navbar-stable">
+          {notifications.map((n) => (
+            <div 
+              key={n.id} 
+              className={`w-64 bg-[#333333] border border-white/20 rounded-lg shadow-2xl btn-fast ${
+                n.onClick ? 'cursor-pointer hover:bg-[#3a3a3a]' : ''
+              }`}
+              onClick={n.onClick}
+            >
+              <div className="px-3 py-2 relative">
+                {/* Close button - top right */}
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeNotification(n.id);
+                  }} 
+                  className="absolute top-1 right-1 w-4 h-4 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 btn-fast"
+                >
+                  <X size={10} className="text-white" />
+                </button>
+                
+                {/* Title only - compact */}
+                <div className="pr-6">
+                  <h3 className="text-white text-sm font-medium truncate">
+                    {n.title}
+                  </h3>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Mobile FAB */}
       <div className="md:hidden fixed bottom-4 right-4 relative navbar-stable">
         {/* Animated white dot orbiting around the button border */}
-        <div className="absolute inset-0 w-18 h-18">
+        <div className="absolute inset-0 w-16 h-16">
           <div className="absolute w-1 h-1 bg-white rounded-full animate-spin" style={{ 
             animationDuration: '3s',
-            transformOrigin: '9px 9px',
+            transformOrigin: '8px 8px',
             left: '50%',
             top: '0',
             marginLeft: '-2px',
@@ -1844,10 +1920,10 @@ const HomeNew: React.FC = () => {
         
         <button
           onClick={handleUploadClick}
-          className="w-14 h-14 rounded-full bg-black border-2 border-white/30 text-white shadow-2xl hover:bg-white/10 hover:border-white/50 transition-all duration-300 relative z-10"
+          className="w-16 h-16 rounded-full bg-black border-2 border-white/30 text-white shadow-2xl hover:bg-white/10 hover:border-white/50 btn-optimized relative z-10 flex items-center justify-center"
           aria-label="Upload"
         >
-          <Plus size={22} />
+          <Plus size={24} />
         </button>
       </div>
 
@@ -2023,7 +2099,7 @@ const HomeNew: React.FC = () => {
                       handleSaveDraft()
                     }}
                     title={isAuthenticated ? 'Save to draft' : 'Sign up to save drafts'}
-                    className={`w-9 h-9 rounded-full transition-all duration-200 flex items-center justify-center border relative group ${
+                    className={`w-9 h-9 rounded-full btn-optimized flex items-center justify-center border relative group ${
                       isAuthenticated 
                         ? 'bg-white/10 text-white border-white/20 hover:bg-white/15' 
                         : 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
@@ -2037,9 +2113,18 @@ const HomeNew: React.FC = () => {
                     </span>
                   </button>
                   <button 
-                    onClick={() => dispatchGenerate(selectedPreset ? 'preset' : 'custom')} 
+                    onClick={() => {
+                      // Show immediate feedback that button was clicked
+                      if (!isGenerating) {
+                        setNavGenerating(true)
+                        // Small delay to show the loading state before starting generation
+                        setTimeout(() => {
+                          dispatchGenerate(selectedPreset ? 'preset' : 'custom')
+                        }, 100)
+                      }
+                    }} 
                     disabled={!previewUrl || (!prompt.trim() && !selectedPreset) || isGenerating} 
-                    className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl ${
+                    className={`w-10 h-10 rounded-full btn-optimized flex items-center justify-center shadow-lg hover:shadow-xl ${
                       !previewUrl || (!prompt.trim() && !selectedPreset) || isGenerating 
                         ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
                         : 'bg-white text-black hover:bg-white/90'
@@ -2047,7 +2132,7 @@ const HomeNew: React.FC = () => {
                     aria-label="Generate"
                     title={`${!isAuthenticated ? 'Sign up to generate AI content' : !previewUrl ? 'Upload media first' : (!prompt.trim() && !selectedPreset) ? 'Enter a prompt or select a preset first' : isGenerating ? 'Generation in progress...' : selectedPreset ? `Generate with ${PRESETS[selectedPreset].label} preset` : 'Generate AI content'}`}
                   >
-                    {isGenerating ? (
+                    {isGenerating || navGenerating ? (
                       <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
                     ) : (
                       <ArrowUp size={18} />

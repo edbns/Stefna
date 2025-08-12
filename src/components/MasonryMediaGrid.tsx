@@ -25,6 +25,8 @@ interface MasonryMediaGridProps {
   selectedMediaIds?: Set<string>
   onToggleSelection?: (mediaId: string) => void
   hideRemixCount?: boolean
+  // Profile mode - hide user avatars
+  hideUserAvatars?: boolean
 }
 
 const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
@@ -46,7 +48,9 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   isSelectionMode = false,
   selectedMediaIds = new Set(),
   onToggleSelection,
-  hideRemixCount = false
+  hideRemixCount = false,
+  // Profile mode - hide user avatars
+  hideUserAvatars = false
 }) => {
   const gridRef = useRef<HTMLDivElement>(null)
 
@@ -189,21 +193,31 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                     <>
                       {/* Left: user avatar with optional verification */}
                       <div className="absolute bottom-2 left-2 flex items-center space-x-2">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); onFilterCreator?.(item.userId) }}
-                          className="relative w-8 h-8 rounded-full overflow-hidden bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
-                          title="View this creator"
-                        >
-                          {item.userAvatar ? (
-                            <img src={item.userAvatar} alt="avatar" className="w-full h-full object-cover" />
-                          ) : (
-                            <ProfileIcon size={18} className="text-white" />
-                          )}
-                          {String(item.userTier || '').toLowerCase() === 'contributor' || String(item.userTier || '').toLowerCase() === 'creator' ? (
-                            <span className="absolute -right-1 -bottom-1 w-3 h-3 rounded-full bg-white text-black text-[9px] flex items-center justify-center">✓</span>
-                          ) : null}
-                        </button>
+                        {hideUserAvatars ? (
+                          <ProfileIcon size={18} className="text-white" />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onFilterCreator?.(item.userId) }}
+                            className="relative w-8 h-8 rounded-full overflow-hidden bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors group"
+                            title={`View ${item.userId}'s content`}
+                          >
+                            {item.userAvatar ? (
+                              <img src={item.userAvatar} alt="avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <ProfileIcon size={18} className="text-white" />
+                            )}
+                            {String(item.userTier || '').toLowerCase() === 'contributor' || String(item.userTier || '').toLowerCase() === 'creator' ? (
+                              <span className="absolute -right-1 -bottom-1 w-3 h-3 rounded-full bg-white text-black text-[9px] flex items-center justify-center">✓</span>
+                            ) : null}
+                          </button>
+                        )}
+                        {/* Username tooltip on hover - only show when not hiding avatars */}
+                        {!hideUserAvatars && (
+                          <div className="absolute bottom-full left-0 mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                            {item.userId}
+                          </div>
+                        )}
                       </div>
 
                       {/* Right: actions */}
@@ -236,11 +250,23 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             )}
                           </div>
                         )}
+                        {onShare && (
+                          <div className="flex flex-col items-center">
+                            <button
+                              onClick={(e) => handleAction(() => onShare(item), e)}
+                              className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized"
+                              title="Share"
+                            >
+                              <Share2 size={14} className="text-white" />
+                            </button>
+                            <div className="text-white/80 text-[10px] mt-1">Share</div>
+                          </div>
+                        )}
                         {onLike && (
                           <div className="flex flex-col items-center">
                             <button
                               onClick={(e) => handleAction(() => onLike(item), e)}
-                              className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
+                              className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized"
                               title="Like"
                             >
                               <Heart size={14} className={isLikedMedia ? 'text-red-500 fill-red-500' : 'text-white'} />

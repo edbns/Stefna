@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Trash2, Pencil } from 'lucide-react'
+import { Trash2, Pencil, Share2 } from 'lucide-react'
 import { UserMedia } from '../services/userMediaService'
 
 interface DraftMediaGridProps {
@@ -8,6 +8,7 @@ interface DraftMediaGridProps {
   onMediaClick?: (media: UserMedia) => void
   onEdit?: (media: UserMedia) => void
   onDelete?: (media: UserMedia) => void
+  onShare?: (media: UserMedia) => void
   showActions?: boolean
   className?: string
 }
@@ -18,6 +19,7 @@ const DraftMediaGrid: React.FC<DraftMediaGridProps> = ({
   onMediaClick,
   onEdit,
   onDelete,
+  onShare,
   showActions = true,
   className = ''
 }) => {
@@ -97,9 +99,18 @@ const DraftMediaGrid: React.FC<DraftMediaGridProps> = ({
                   {showActions && hoveredMedia === item.id && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="flex space-x-2">
+                        {onShare && (
+                          <button
+                            onClick={(e) => handleAction(() => onShare(item), e)}
+                            className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized"
+                            title="Share"
+                          >
+                            <Share2 size={16} />
+                          </button>
+                        )}
                         <button
                           onClick={(e) => handleAction(() => onEdit?.(item), e)}
-                          className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
+                          className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized"
                           title="Edit"
                         >
                           <Pencil size={16} />
@@ -107,7 +118,7 @@ const DraftMediaGrid: React.FC<DraftMediaGridProps> = ({
 
                         <button
                           onClick={(e) => handleAction(() => onDelete?.(item), e)}
-                          className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
+                          className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized"
                           title="Delete"
                         >
                           <Trash2 size={16} />

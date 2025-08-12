@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, Zap, Users, RefreshCw } from 'lucide-react'
+import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, ChevronRight } from 'lucide-react'
 import { InstagramIcon, XIcon, FacebookIcon, TikTokIcon, ThreadsIcon, YouTubeIcon } from '../components/SocialIcons'
 import RemixIcon from '../components/RemixIcon'
 import MasonryMediaGrid from '../components/MasonryMediaGrid'
@@ -12,7 +12,7 @@ import authService from '../services/authService'
 import ConfirmModal from '../components/ConfirmModal'
 import tokenService, { UserTier } from '../services/tokenService'
 import { authenticatedFetch } from '../utils/apiClient'
-import AdminUpgrade from '../components/AdminUpgrade'
+
 import userService from '../services/userService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 
@@ -132,6 +132,12 @@ const ProfileScreen: React.FC = () => {
   const [_userTier, setUserTier] = useState<UserTier>(UserTier.REGISTERED)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteMessage, setInviteMessage] = useState('')
+  const [isInviting, setIsInviting] = useState(false)
+  const [inviteSuccess, setInviteSuccess] = useState<string>('')
+  const [isSendingInvite, setIsSendingInvite] = useState(false)
+  const [inviteError, setInviteError] = useState('')
 
   // Load profile data when component mounts and user is authenticated
   useEffect(() => {
@@ -492,6 +498,22 @@ const ProfileScreen: React.FC = () => {
       // Load draft media (empty for now - will be populated when users create drafts)
       setDraftMedia([])
       
+      // Load drafts from localStorage
+      try {
+        const user = authService.getCurrentUser()
+        if (user?.id) {
+          const key = `user_drafts_${user.id}`
+          const savedDrafts = localStorage.getItem(key)
+          if (savedDrafts) {
+            const drafts = JSON.parse(savedDrafts)
+            console.log('📝 Loaded drafts from localStorage:', drafts.length)
+            setDraftMedia(drafts)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load drafts from localStorage:', error)
+      }
+      
       // Debug: Log final state
       console.log('🎯 Final media state:', {
         userMedia: userMedia.length,
@@ -514,6 +536,18 @@ const ProfileScreen: React.FC = () => {
     const handleUserMediaUpdated = () => {
       console.log('🔄 ProfileScreen received userMediaUpdated event, refreshing...')
       loadUserMedia()
+      
+      // Also refresh drafts specifically
+      const user = authService.getCurrentUser()
+      if (user?.id) {
+        const key = `user_drafts_${user.id}`
+        const savedDrafts = localStorage.getItem(key)
+        if (savedDrafts) {
+          const drafts = JSON.parse(savedDrafts)
+          console.log('📝 Refreshing drafts from localStorage:', drafts.length)
+          setDraftMedia(drafts)
+        }
+      }
     }
     
     window.addEventListener('userMediaUpdated', handleUserMediaUpdated)
@@ -533,114 +567,11 @@ const ProfileScreen: React.FC = () => {
     })
   }, [activeTab, userMedia.length, remixedMedia.length, isLoading])
 
-  // Manual media recovery function
-  const handleRecoverMedia = async () => {
-    try {
-      setIsLoading(true)
-      const recoveredMedia = await userMediaService.recoverMedia(currentUserId)
-      if (recoveredMedia.length > 0) {
-        setUserMedia(recoveredMedia)
-        addNotification('Media Recovered', `Successfully recovered ${recoveredMedia.length} media items!`, 'success')
-      } else {
-        addNotification('No Media Found', 'No recoverable media was found.', 'info')
-      }
-    } catch (error) {
-      console.error('Failed to recover media:', error)
-      addNotification('Recovery Failed', 'Failed to recover media. Please try again.', 'error')
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
-  // Bulk share all media function
-  const handleBulkShare = async () => {
-    try {
-      setIsLoading(true)
-      console.log('🔄 Bulk sharing all media for user:', currentUserId)
-      
-      const jwt = authService.getToken()
-      if (!jwt) {
-        addNotification('Authentication Required', 'Please log in to bulk share media', 'error')
-        return
-      }
 
-      const response = await fetch('/.netlify/functions/bulk-share', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${jwt}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ action: 'bulk-share', env: 'prod' })
-      })
 
-      if (response.ok) {
-        const result = await response.json()
-        console.log('✅ Bulk share result:', result)
-        
-        if (result.updated > 0) {
-          addNotification('Bulk Share Successful', `Made ${result.updated} items public!`, 'success')
-          // Refresh the media to show updated state
-          loadUserMedia()
-        } else {
-          addNotification('No Changes Needed', 'All your media is already public', 'info')
-        }
-      } else {
-        const errorText = await response.text()
-        console.error('❌ Bulk share failed:', response.status, errorText)
-        addNotification('Bulk Share Failed', 'Failed to update media visibility', 'error')
-      }
-    } catch (error) {
-      console.error('❌ Bulk share error:', error)
-      addNotification('Bulk Share Failed', 'An error occurred while updating media', 'error')
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
-  // Fix null values function
-  const handleFixNullValues = async () => {
-    try {
-      setIsLoading(true)
-      console.log('🔧 Fixing null values for user:', currentUserId)
-      
-      const jwt = authService.getToken()
-      if (!jwt) {
-        addNotification('Authentication Required', 'Please log in to fix null values', 'error')
-        return
-      }
 
-      const response = await fetch('/.netlify/functions/fix-null-values', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${jwt}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ action: 'fix-null-values', env: 'prod' })
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        console.log('✅ Fix null values result:', result)
-        
-        if (result.fixed > 0) {
-          addNotification('Null Values Fixed', `Fixed ${result.fixed} images with null values!`, 'success')
-          // Refresh the media to show updated state
-          loadUserMedia()
-        } else {
-          addNotification('No Null Values Found', 'All your images have proper values', 'info')
-        }
-      } else {
-        const errorText = await response.text()
-        console.error('❌ Fix null values failed:', response.status, errorText)
-        addNotification('Fix Failed', 'Failed to fix null values', 'error')
-      }
-    } catch (error) {
-      console.error('❌ Fix null values error:', error)
-      addNotification('Fix Failed', 'An error occurred while fixing null values', 'error')
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -932,11 +863,6 @@ const ProfileScreen: React.FC = () => {
   }
 
   // Invite Friends functionality
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [isSendingInvite, setIsSendingInvite] = useState(false)
-  const [inviteError, setInviteError] = useState('')
-  const [inviteSuccess, setInviteSuccess] = useState('')
-
   const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inviteEmail.trim()) {
@@ -1093,49 +1019,14 @@ const ProfileScreen: React.FC = () => {
                 </button>
               </div>
 
-              {/* Media Migration Button */}
-              <div className="flex items-center justify-between py-1.5 px-3 rounded-lg text-left transition-all duration-300">
-                <div className="flex items-center space-x-2">
-                  <RefreshCw size={16} className="text-white/60" />
-                  <span className="text-xs font-medium text-white/60">Fix Home Feed</span>
-                </div>
-                <button
-                  onClick={migrateUserMedia}
-                  disabled={isMigrating}
-                  className={`px-3 py-1 text-xs font-medium rounded transition-colors duration-200 ${
-                    isMigrating 
-                      ? 'bg-white/20 text-white/40 cursor-not-allowed' 
-                      : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
-                  }`}
-                >
-                  {isMigrating ? 'Fixing...' : 'Fix Now'}
-                </button>
-              </div>
+
 
 
             </div>
 
-            {/* Token Display */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between py-1.5 px-3 rounded-lg text-left transition-all duration-300">
-                <div className="flex items-center space-x-2">
-                  <Zap size={16} className="text-white/60" />
-                  <span className="text-xs font-medium text-white/60">Tokens</span>
-                </div>
-                <span className="text-white font-semibold">{tokenCount}</span>
-              </div>
-            </div>
 
-            {/* Invite Friends */}
-            <button
-              onClick={() => setShowInviteFriendsModal(true)}
-              className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-between text-white/60 hover:text-white hover:bg-white/10"
-            >
-              <div className="flex items-center space-x-2">
-                <Users size={16} />
-                <span className="text-xs font-medium">Invite Friends</span>
-              </div>
-            </button>
+
+
 
             {/* Navigation Tabs */}
             {sidebarItems.map((item) => {
@@ -1168,56 +1059,16 @@ const ProfileScreen: React.FC = () => {
                     <div className="mt-1 space-y-1">
                       <button 
                         onClick={() => setShowEditProfileModal(true)}
-                        className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-3 text-white/60 hover:text-white hover:bg-white/10"
+                        className="w-full py-1.5 px-3 rounded-lg text-left btn-optimized flex items-center justify-start space-x-3 text-white/60 hover:text-white hover:bg-white/10 active:bg-white/20"
                       >
-                        <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
+                        <div className="flex items-center space-x-3">
                           <User size={16} className="text-current" />
+                          <span className="text-xs font-medium">Edit Profile</span>
                         </div>
-                        <span className="text-xs font-medium">Edit Profile</span>
-                      </button>
-                      <button 
-                        onClick={handleRecoverMedia}
-                        className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-3 text-blue-400/60 hover:text-blue-400 hover:bg-blue-500/20"
-                      >
-                        <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
-                          <RefreshCw size={16} className="text-current" />
-                        </div>
-                        <span className="text-xs font-medium">Recover Media</span>
-                      </button>
-                      <button 
-                        onClick={handleBulkShare}
-                        className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-3 text-green-400/60 hover:text-green-400 hover:bg-green-500/20"
-                      >
-                        <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-current">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                          </svg>
-                        </div>
-                        <span className="text-xs font-medium">Bulk Share All</span>
-                      </button>
-                      <button 
-                        onClick={handleFixNullValues}
-                        className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-3 text-orange-400/60 hover:text-orange-400 hover:bg-orange-500/20"
-                      >
-                        <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-current">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                          </svg>
-                        </div>
-                        <span className="text-xs font-medium">Fix Null Values</span>
-                      </button>
-                      <button 
-                        onClick={() => setShowAdminUpgrade(true)}
-                        className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-3 text-yellow-400/60 hover:text-yellow-400 hover:bg-yellow-500/20"
-                      >
-                        <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
-                          <Zap size={16} className="text-current" />
-                        </div>
-                        <span className="text-xs font-medium">Admin Upgrade</span>
                       </button>
                       <button 
                         onClick={() => setShowDeleteAccountModal(true)}
-                        className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-3 text-red-400/60 hover:text-red-400 hover:bg-red-500/20"
+                        className="w-full py-1.5 px-3 rounded-lg text-left btn-optimized flex items-center justify-start space-x-3 text-red-400/60 hover:text-red-400 hover:bg-red-500/20 active:bg-red-500/30"
                       >
                         <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-current">
@@ -1226,8 +1077,8 @@ const ProfileScreen: React.FC = () => {
                         </div>
                         <span className="text-xs font-medium">Delete Account</span>
                       </button>
-                            </div>
-      )}
+                    </div>
+                  )}
 
       {/* Bulk Delete Confirmation Modal */}
       {showBulkDeleteModal && (
@@ -1254,14 +1105,14 @@ const ProfileScreen: React.FC = () => {
             <div className="space-y-3">
               <button
                 onClick={executeBulkDelete}
-                className="w-full bg-red-500 text-white font-semibold py-3 rounded-xl hover:bg-red-600 transition-colors"
+                className="w-full bg-red-500 text-white font-semibold py-3 rounded-xl hover:bg-red-600 btn-optimized"
               >
                 Delete {selectedMediaIds.size} Item{selectedMediaIds.size !== 1 ? 's' : ''}
               </button>
               
               <button
                 onClick={() => setShowBulkDeleteModal(false)}
-                className="w-full bg-white/5 text-white font-semibold py-3 rounded-xl hover:bg-white/10 transition-colors border border-white/20"
+                className="w-full bg-white/5 text-white font-semibold py-3 rounded-xl hover:bg-white/10 btn-optimized border border-white/20"
               >
                 Cancel
               </button>
@@ -1460,6 +1311,7 @@ const ProfileScreen: React.FC = () => {
                 showActions={true}
                 className="pb-20"
                 hideRemixCount={true}
+                hideUserAvatars={true}
                 // Selection props
                 isSelectionMode={isSelectionMode}
                 selectedMediaIds={selectedMediaIds}
@@ -1491,18 +1343,24 @@ const ProfileScreen: React.FC = () => {
               </div>
             ) : (
               <MasonryMediaGrid
-                media={likedMedia}
+                media={likedMedia.map(m => ({
+                  ...m,
+                  aspectRatio: m.width && m.height ? m.width / Math.max(1, m.height) : (m.aspectRatio || 4/3),
+                  width: m.width || 800,
+                  height: m.height || Math.round((m.width || 800) / ((m.aspectRatio || 4/3)))
+                }))}
                 columns={3}
                 onMediaClick={handleMediaClick}
                 onDownload={handleDownload}
                 onShare={handleShare}
                 onUnshare={handleUnshare}
-                onLike={handleLike}
                 onRemix={handleRemix}
+                onDelete={handleDeleteMedia}
+                onGenerateCaption={handleGenerateCaption}
                 showActions={true}
                 className="pb-20"
-                isLikedMedia={true}
                 hideRemixCount={true}
+                hideUserAvatars={true}
               />
             )}
           </div>
@@ -1530,7 +1388,12 @@ const ProfileScreen: React.FC = () => {
               </div>
             ) : (
               <MasonryMediaGrid
-                media={remixedMedia}
+                media={remixedMedia.map(m => ({
+                  ...m,
+                  aspectRatio: m.width && m.height ? m.width / Math.max(1, m.height) : (m.aspectRatio || 4/3),
+                  width: m.width || 800,
+                  height: m.height || Math.round((m.width || 800) / ((m.aspectRatio || 4/3)))
+                }))}
                 columns={3}
                 onMediaClick={handleMediaClick}
                 onDownload={handleDownload}
@@ -1538,9 +1401,11 @@ const ProfileScreen: React.FC = () => {
                 onUnshare={handleUnshare}
                 onRemix={handleRemix}
                 onDelete={handleDeleteMedia}
+                onGenerateCaption={handleGenerateCaption}
                 showActions={true}
                 className="pb-20"
                 hideRemixCount={true}
+                hideUserAvatars={true}
               />
             )}
           </div>
@@ -1573,6 +1438,7 @@ const ProfileScreen: React.FC = () => {
                 onMediaClick={handleMediaClick}
                 onEdit={handleEditDraft}
                 onDelete={handleDeleteDraft}
+                onShare={handleShare}
                 showActions={true}
                 className="pb-20"
               />
@@ -1894,10 +1760,7 @@ const ProfileScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Admin Upgrade Modal */}
-      {showAdminUpgrade && (
-        <AdminUpgrade onClose={() => setShowAdminUpgrade(false)} />
-      )}
+      
 
       {/* Caption Modal */}
       {isCaptionOpen && (
