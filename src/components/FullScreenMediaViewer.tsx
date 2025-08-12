@@ -1,0 +1,267 @@
+import React, { useEffect, useMemo, useState } from 'react'
+import { X, ChevronLeft, ChevronRight, Heart, Copy } from 'lucide-react'
+import { UserMedia } from '../services/userMediaService'
+import RemixIcon from './RemixIcon'
+import authService from '../services/authService'
+
+interface FullScreenMediaViewerProps {
+  isOpen: boolean
+  media: UserMedia[]
+  startIndex?: number
+  onClose: () => void
+  onLike?: (media: UserMedia) => void
+  onRemix?: (media: UserMedia) => void
+  onShowAuth?: () => void
+}
+
+const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
+  isOpen,
+  media,
+  startIndex = 0,
+  onClose,
+  onLike,
+  onRemix,
+  onShowAuth
+}) => {
+  const [currentIndex, setCurrentIndex] = useState(startIndex)
+  const current = useMemo(() => media[currentIndex], [media, currentIndex])
+  const [localLikes, setLocalLikes] = useState<number>(current?.likes ?? 0)
+  const [isLiked, setIsLiked] = useState<boolean>(false)
+  const [localRemixes, setLocalRemixes] = useState<number>(current?.remixCount ?? 0)
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
+
+  // Debug: Log current media data
+  useEffect(() => {
+    if (current) {
+      console.log('🔍 FullScreenMediaViewer current media:', {
+        id: current.id,
+        prompt: current.prompt,
+        userId: current.userId,
+        type: current.type,
+        hasPrompt: !!current.prompt,
+        promptLength: current.prompt?.length || 0
+      })
+    }
+  }, [current])
+
+  useEffect(() => {
+    setCurrentIndex(startIndex)
+  }, [startIndex])
+
+  useEffect(() => {
+    if (!current) return
+    setLocalLikes(current.likes ?? 0)
+    setLocalRemixes(current.remixCount ?? 0)
+  }, [current])
+
+  const handleLike = () => {
+    // Check if user is authenticated
+    if (!authService.isAuthenticated()) {
+      if (onShowAuth) {
+        onShowAuth()
+      } else {
+        // Fallback: redirect to auth page
+        window.location.href = '/auth'
+      }
+      return
+    }
+    
+    if (!onLike) return
+    
+    setIsLiked(!isLiked)
+    setLocalLikes(isLiked ? localLikes - 1 : localLikes + 1)
+    onLike(current)
+  }
+
+  const handleRemix = () => {
+    // Check if user is authenticated
+    if (!authService.isAuthenticated()) {
+      if (onShowAuth) {
+        onShowAuth()
+      } else {
+        // Fallback: redirect to auth page
+        window.location.href = '/auth'
+      }
+      return
+    }
+    
+    if (!onRemix) return
+    
+    setLocalRemixes(localRemixes + 1)
+    onRemix(current)
+  }
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowRight') setCurrentIndex((i) => (i + 1) % media.length)
+      if (e.key === 'ArrowLeft') setCurrentIndex((i) => (i - 1 + media.length) % media.length)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [isOpen, media.length, onClose])
+
+  if (!isOpen || !current) return null
+
+  const handlePrev = () => setCurrentIndex((i) => (i - 1 + media.length) % media.length)
+  const handleNext = () => setCurrentIndex((i) => (i + 1) % media.length)
+
+  const formattedTime = new Date(current.timestamp).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  })
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm">
+      {/* Close Button */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center text-white hover:text-white/80 bg-black/50 rounded-full backdrop-blur-sm z-50"
+        aria-label="Close viewer"
+        title="Close"
+      >
+        <X size={24} />
+      </button>
+
+      {/* Layout */}
+      <div className="h-full w-full flex flex-col">
+        {/* Top Bar */}
+        <div className="bg-black/80 backdrop-blur-sm p-4">
+          <div className="flex items-center justify-center h-full">
+            <div className="flex items-center space-x-2 pt-2">
+              <span className="text-white text-sm">User {current.userId?.slice(0, 6) || 'Unknown'}</span>
+              <span className="text-white text-sm">•</span>
+              <span className="text-white text-sm">{formattedTime}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Media Area */}
+        <div className="flex-1 relative flex flex-col items-center justify-start pt-4">
+          {/* Prev */}
+          {media.length > 1 && (
+            <button
+              onClick={handlePrev}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-white hover:text-white/80"
+              aria-label="Previous"
+              title="Previous"
+            >
+              <ChevronLeft size={20} />
+            </button>
+          )}
+
+          {/* Media */}
+          <div className="max-w-full max-h-full object-contain">
+            {current.type === 'video' ? (
+              <video src={current.url} className="max-w-full max-h-[calc(100vh-200px)] object-contain" controls autoPlay muted />
+            ) : (
+              <img src={current.url} alt={current.prompt} className="max-w-full max-h-[calc(100vh-200px)] object-contain" />
+            )}
+          </div>
+
+          {/* Next */}
+          {media.length > 1 && (
+            <button
+              onClick={handleNext}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-white hover:text-white/80"
+              aria-label="Next"
+              title="Next"
+            >
+              <ChevronRight size={20} />
+            </button>
+          )}
+
+          {/* Prompt and Actions - Same line layout */}
+          <div className="mt-6 text-center max-w-4xl px-4">
+            {/* Prompt with copy functionality */}
+            <div className="flex items-center justify-center space-x-3 group relative mb-4">
+              <span className="text-white/60 text-sm font-medium">Prompt:</span>
+              <div className="relative">
+                <span className="text-white text-sm max-w-md truncate block" title={current.prompt}>
+                  {current.prompt.length > 60 ? `${current.prompt.substring(0, 60)}...` : current.prompt}
+                </span>
+                {/* Full prompt on hover */}
+                {current.prompt.length > 60 && (
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-3 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-normal max-w-md z-50 border border-white/20">
+                    {current.prompt}
+                  </div>
+                )}
+              </div>
+              {/* Copy button */}
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(current.prompt);
+                    setCopyStatus('success');
+                    setTimeout(() => setCopyStatus('idle'), 1000);
+                  } catch (err) {
+                    console.error('Failed to copy prompt:', err);
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = current.prompt;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                      document.execCommand('copy');
+                      setCopyStatus('success');
+                      setTimeout(() => setCopyStatus('idle'), 1000);
+                    } catch (fallbackErr) {
+                      console.error('Fallback copy failed:', fallbackErr);
+                      setCopyStatus('error');
+                      setTimeout(() => setCopyStatus('idle'), 1000);
+                    }
+                    document.body.removeChild(textArea);
+                  }
+                }}
+                className="text-white/60 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
+                title="Copy prompt to clipboard"
+              >
+                {copyStatus === 'success' ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-green-400">
+                    <polyline points="20,6 9,17 4,12"/>
+                  </svg>
+                ) : copyStatus === 'error' ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-red-400">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                  </svg>
+                ) : (
+                  <Copy size={16} />
+                )}
+              </button>
+            </div>
+
+            {/* Actions - Centered under prompt */}
+            <div className="flex items-center justify-center space-x-6">
+              <button 
+                onClick={handleLike}
+                className="flex flex-col items-center space-y-1 text-white hover:text-white/80 transition-colors"
+              >
+                <Heart 
+                  size={16} 
+                  className={`${isLiked ? 'text-red-500 fill-red-500' : 'text-white'}`} 
+                />
+                <span className="text-xs">{localLikes > 0 ? localLikes : 'Like'}</span>
+              </button>
+              
+              <button
+                onClick={handleRemix}
+                className="flex flex-col items-center space-y-1 text-white hover:text-white/80 transition-colors"
+              >
+                <RemixIcon size={16} className="text-white" />
+                <span className="text-xs">{localRemixes > 0 ? localRemixes : 'Remix'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default FullScreenMediaViewer
+
+
