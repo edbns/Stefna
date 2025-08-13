@@ -768,9 +768,43 @@ const HomeNew: React.FC = () => {
 
       console.info('aimlApi payload', payload);
 
-      // Add resource_type for video processing
+      // Video pathway → use start-v2v + poll-v2v
       if (isVideoPreview) {
-        payload.resource_type = 'video'
+        const jwt = authService.getToken();
+        if (!jwt) {
+          console.error('Missing auth for start-v2v');
+          endGeneration(genId);
+          setNavGenerating(false);
+          navigate('/auth');
+          return;
+        }
+        try {
+          const startRes = await fetch('/.netlify/functions/start-v2v', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
+            body: JSON.stringify({
+              source_url: sourceUrl,
+              prompt: effectivePrompt,
+              strength: payload.strength ?? 0.7,
+              visibility: shareToFeed ? 'public' : 'private',
+              allowRemix: shareToFeed ? allowRemix : false,
+              model: 'eagle-v2v'
+            })
+          });
+          const startJson = await startRes.json().catch(() => ({}));
+          if (!startRes.ok || !startJson?.job_id) {
+            throw new Error(startJson?.error || 'start-v2v failed');
+          }
+          addNotification('Add to queue', 'Video job created successfully. Processing will begin shortly.', 'queue');
+          setCurrentVideoJob({ id: startJson.job_id, status: 'queued' });
+          startVideoJobPolling(startJson.job_id);
+        } catch (err:any) {
+          console.error('start-v2v error', err);
+          addNotification('Error please try again', err?.message || 'Video job failed to start', 'error');
+        }
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
       }
 
       const res = await authenticatedFetch('/.netlify/functions/aimlApi', {
@@ -1367,25 +1401,20 @@ const HomeNew: React.FC = () => {
     const interval = setInterval(async () => {
       try {
         const token = authService.getToken()
-        const response = await fetch(`/.netlify/functions/video-job-status?job_id=${jobId}`, {
+        const response = await fetch(`/.netlify/functions/poll-v2v?id=${jobId}&persist=true`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
-        
         if (response.ok) {
           const jobStatus = await response.json()
           setCurrentVideoJob(jobStatus)
-          
-          if (jobStatus.status === 'succeeded') {
+          if (jobStatus.status === 'done') {
             clearInterval(interval)
             setVideoJobPolling(null)
             setCurrentVideoJob(null)
-            addNotification('Your media is ready', 'Video processing completed successfully!', 'ready', undefined, 'video', () => {
-              // Refresh user media to show the new video
-              // TODO: Implement user media refresh
-            });
-            // Refresh user media to show the new video
-            // You can implement refreshUserMedia() if needed
-          } else if (jobStatus.status === 'failed' || jobStatus.status === 'canceled') {
+            addNotification('Your media is ready', 'Video processing completed successfully!', 'ready', undefined, 'video', () => {})
+            window.dispatchEvent(new CustomEvent('refreshFeed'))
+            window.dispatchEvent(new Event('userMediaUpdated'))
+          } else if (jobStatus.status === 'failed') {
             clearInterval(interval)
             setVideoJobPolling(null)
             setCurrentVideoJob(null)
