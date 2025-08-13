@@ -12,9 +12,11 @@ import authService from '../services/authService'
 import ConfirmModal from '../components/ConfirmModal'
 import tokenService, { UserTier } from '../services/tokenService'
 import { authenticatedFetch } from '../utils/apiClient'
+import { useToasts } from '../components/ui/Toasts'
 
 import userService from '../services/userService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
+import { ensureAndUpdateProfile } from '../services/profile'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
@@ -27,6 +29,7 @@ const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefin
 
 const ProfileScreen: React.FC = () => {
   const navigate = useNavigate()
+  const { notifyReady, notifyError } = useToasts()
   // const location = useLocation()
   const [activeTab, setActiveTab] = useState<string>('all-media')
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
@@ -643,6 +646,8 @@ const ProfileScreen: React.FC = () => {
     try {
       const profileDataToSave = { ...profileData }
       let avatarUrl: string | undefined = undefined
+      
+      // Handle avatar upload if it's a file
       if (profileData.avatar instanceof File) {
         const up = await uploadToCloudinary(profileData.avatar, `users/${authService.getCurrentUser()?.id || 'me'}`)
         avatarUrl = up.secure_url
@@ -651,22 +656,21 @@ const ProfileScreen: React.FC = () => {
         avatarUrl = profileData.avatar
       }
 
-      // Persist to server
-      const token = authService.getToken()
-      if (token) {
-        await userService.updateProfile(token, {
-          name: profileDataToSave.name,
-          avatar: avatarUrl,
-        })
-      }
+      // Use the new profile service to update
+      await ensureAndUpdateProfile({
+        username: profileDataToSave.name, // Map name to username for now
+        avatar_url: avatarUrl,
+        share_to_feed: profileDataToSave.shareToFeed,
+        allow_remix: profileDataToSave.allowRemix
+      })
 
       // Save locally for UI
       localStorage.setItem('userProfile', JSON.stringify(profileDataToSave))
-      addNotification('Profile Updated', 'Your profile has been saved successfully', 'success')
+      notifyReady({ title: 'Profile Updated', message: 'Your profile has been saved successfully' })
       setShowEditProfileModal(false)
     } catch (e) {
       console.error('Save profile failed:', e)
-      addNotification('Update failed', 'Could not update profile', 'error')
+      notifyError({ title: 'Update failed', message: 'Could not update profile' })
     }
   }
 

@@ -1899,12 +1899,7 @@ const HomeNew: React.FC = () => {
             <div className="relative w-full max-w-2xl px-6">
               <div ref={containerRef} className="w-full flex items-center justify-center">
                 {isVideoPreview ? (
-                  <div className="text-center">
-                    <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
-                    <div className="mt-3 text-white/70 text-sm max-w-md mx-auto">
-                      💡 We'll extract a frame from your video and animate it with AI motion. Choose your prompt to guide the animation style.
-                    </div>
-                  </div>
+                  <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
                 ) : (
                   <img ref={(el) => (mediaRef.current = el as HTMLImageElement)} src={previewUrl || ''} alt="Preview" className="max-w-full max-h-[60vh] object-contain" onLoad={measure} />
                 )}

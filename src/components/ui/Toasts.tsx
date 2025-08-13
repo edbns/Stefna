@@ -113,7 +113,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       {/* Floating stack */}
-      <div className="fixed z-[100] right-4 top-4 flex w-[min(92vw,380px)] flex-col gap-2">
+      <div className="fixed z-[100] right-4 top-16 flex w-[min(92vw,380px)] flex-col gap-2">
         <AnimatePresence initial={false}>
           {visible.map((t) => (
             <motion.div
@@ -140,13 +140,13 @@ function ToastCard({ toast, onClose }: { toast: ToastBase; onClose: () => void }
   const tone = toast.kind;
   const toneClasses =
     tone === "queue"
-      ? "border-blue-300/50 bg-blue-50/80 dark:bg-blue-950/50"
+      ? "border-white/20"
       : tone === "ready"
-      ? "border-emerald-300/50 bg-emerald-50/80 dark:bg-emerald-950/50"
-      : "border-amber-300/50 bg-amber-50/80 dark:bg-amber-950/50";
+      ? "border-white/20"
+      : "border-white/20";
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl border shadow-lg backdrop-blur supports-[backdrop-filter]:bg-opacity-70 ${toneClasses} bg-[#333333]` }>
+    <div className={`relative overflow-hidden rounded-2xl border shadow-lg backdrop-blur ${toneClasses}`} style={{ backgroundColor: '#333333' }}>
       <div className="flex items-center gap-3 p-3">
         <div className="shrink-0">
           {toast.kind === "queue" && <Loader2 className="h-5 w-5 animate-spin" />}
