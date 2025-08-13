@@ -710,7 +710,7 @@ const HomeNew: React.FC = () => {
           console.log('🌐 Using remote source URL:', sourceUrl);
         } catch (uploadError: any) {
           console.error('❌ Upload failed:', uploadError);
-          addNotification('Upload failed', uploadError.message || 'Failed to upload file to Cloudinary', 'error');
+          notifyError({ title: 'Something went wrong', message: uploadError.message || 'Failed to upload file to Cloudinary' });
           // Don't clear preset on upload failure - let user retry
           endGeneration(genId);
           setNavGenerating(false);
@@ -836,10 +836,10 @@ const HomeNew: React.FC = () => {
       if (!res.ok) {
         // Handle different error types
         if (res.status === 501 && isVideoPreview) {
-          addNotification('Add to queue', 'ready');
+          notifyQueue({ title: 'Added to queue', message: 'We’ll start processing shortly.' });
           // Don't return - let the processing continue
         } else if (res.status === 429) {
-          addNotification('Error please try again', 'Rate limited', 'error');
+          notifyError({ title: 'Something went wrong', message: 'Rate limited' });
           endGeneration(genId);
           setNavGenerating(false);
           return;
@@ -862,7 +862,7 @@ const HomeNew: React.FC = () => {
       setPreviewUrl(cacheBustedResultUrl);
       
       // Add success notification
-              addNotification('Your media is ready', 'Your image has been generated successfully.', 'ready', resultUrl, 'image', () => {
+              notifyReady({ title: 'Your media is ready', message: 'Tap to open', thumbUrl: resultUrl, onClickThumb: () => {
               // Open the media viewer to show the generated image
               setViewerMedia([{
                 id: 'generated-' + Date.now(),
@@ -881,10 +881,10 @@ const HomeNew: React.FC = () => {
                 allowRemix: false,
                 tags: [],
                 metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
-              }]);
+              } ]);
               setViewerStartIndex(0);
               setViewerOpen(true);
-            });
+            } });
 
       // Save the generated media to the database
           try {
@@ -893,7 +893,7 @@ const HomeNew: React.FC = () => {
             
             if (!jwt || !userId) {
               console.error('No JWT or user ID for saveMedia');
-              addNotification('Your media is ready', 'Image generated but not saved (auth error)', 'warning');
+           notifyError({ title: 'Something went wrong', message: 'Generated, but not saved (auth error)' });
               return;
             }
 
@@ -913,7 +913,7 @@ const HomeNew: React.FC = () => {
             setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
           } catch (e:any) {
             console.error('❌ saveMediaNoDB failed:', e)
-            addNotification('Error please try again', e?.message || 'Failed to save media', 'error')
+            notifyError({ title: 'Something went wrong', message: e?.message || 'Failed to save media' })
           }
           return
         }
@@ -928,7 +928,7 @@ const HomeNew: React.FC = () => {
 
         if (!assetResult.ok) {
           console.error('Failed to create asset:', assetResult.error);
-          addNotification('Error please try again', 'Failed to create asset record', 'error');
+          notifyError({ title: 'Something went wrong', message: 'Failed to create asset record' });
           return;
         }
 
@@ -967,12 +967,12 @@ const HomeNew: React.FC = () => {
             }
           } else {
           console.error('❌ Save-media failed:', saveRes.status, saveBody || saveText);
-          addNotification('Error please try again', saveBody?.error || 'Failed to save media', 'error');
+          notifyError({ title: 'Something went wrong', message: saveBody?.error || 'Failed to save media' });
         }
         return
       } catch (error) {
         console.error('❌ Error in save flow:', error);
-        addNotification('Error please try again', 'Failed to save generated media', 'error');
+        notifyError({ title: 'Something went wrong', message: 'Failed to save generated media' });
       }
 
       // Success: stop progress
@@ -987,11 +987,11 @@ const HomeNew: React.FC = () => {
       // Handle V2V processing status
       if (isVideoPreview) {
         if (body.status === 'processing' || body.status === 'queued') {
-          addNotification('Add to queue', 'Your video is being processed. This may take 2-5 minutes.', 'processing');
+          notifyQueue({ title: 'Added to queue', message: 'We’ll start processing shortly.' });
           // TODO: Implement polling for V2V status updates
           console.log('🎬 V2V job started:', body.job_id || 'unknown');
         } else if (body.status === 'completed') {
-                      addNotification('V2V Complete!', 'Your video has been generated successfully!', 'ready', undefined, 'video', () => {
+          notifyReady({ title: 'Your media is ready', message: 'Tap to open' });
               // Refresh user media to show the new video
               // TODO: Implement user media refresh
             });
@@ -1347,55 +1347,7 @@ const HomeNew: React.FC = () => {
   })
 
   // Local floating notifications in Home - New beautiful design
-  const [notifications, setNotifications] = useState<Array<{ 
-    id: number; 
-    title: string; 
-    type: 'queue'|'ready'|'error';
-    mediaUrl?: string;
-    mediaType?: 'image'|'video';
-    onClick?: () => void;
-  }>>([])
-  
-  const addNotification = (title: string, message?: string, type?: 'queue'|'ready'|'error'|'processing'|'success'|'warning'|'complete', mediaUrl?: string, mediaType?: 'image'|'video', onClick?: () => void) => {
-    // Map notification types to our new simplified system
-    let mappedType: 'queue'|'ready'|'error' = 'ready';
-    let simplifiedTitle = title;
-    
-    if (type === 'queue' || type === 'processing') {
-      mappedType = 'queue';
-      simplifiedTitle = 'Add to queue';
-    } else if (type === 'ready' || type === 'success' || type === 'complete') {
-      mappedType = 'ready';
-      simplifiedTitle = 'Media is ready';
-    } else if (type === 'error' || type === 'warning') {
-      mappedType = 'error';
-      simplifiedTitle = 'Error please try again';
-    }
-    
-    const n = { 
-      id: Date.now(), 
-      title: simplifiedTitle, 
-      type: mappedType, 
-      timestamp: new Date().toISOString(),
-      mediaUrl,
-      mediaType,
-      onClick: mappedType === 'ready' ? onClick : undefined // Only ready notifications are clickable
-    }
-    
-    setNotifications((prev) => [n, ...prev].slice(0, 3)) // Show exactly 3 notifications
-    
-    // Auto-remove notifications after appropriate time
-    if (mappedType === 'error') {
-      setTimeout(() => setNotifications((prev) => prev.filter((x) => x.id !== n.id)), 6000)
-    } else if (mappedType === 'queue') {
-      setTimeout(() => setNotifications((prev) => prev.filter((x) => x.id !== n.id)), 4000)
-    } else {
-      // Ready notifications stay until clicked or manually closed
-      setTimeout(() => setNotifications((prev) => prev.filter((x) => x.id !== n.id)), 8000)
-    }
-  }
-  
-  const removeNotification = (id: number) => setNotifications((prev) => prev.filter((x) => x.id !== id))
+  // Legacy notifications removed in favor of unified toasts
 
   // Video job polling functions
   const startVideoJobPolling = (jobId: string) => {
@@ -1454,14 +1406,14 @@ const HomeNew: React.FC = () => {
   // Save current composer state as a draft (local only)
   const handleSaveDraft = async () => {
     if (!previewUrl || !prompt.trim()) {
-      addNotification('Draft not saved', 'Upload media and enter a prompt first', 'warning')
+       notifyError({ title: 'Something went wrong', message: 'Upload media and enter a prompt first' })
       return
     }
     
     try {
       const user = authService.getCurrentUser()
       if (!user?.id) {
-        addNotification('Sign up required', 'Please sign up to save drafts', 'warning')
+        notifyError({ title: 'Something went wrong', message: 'Please sign up to save drafts' })
         navigate('/auth')
         return
       }
@@ -1501,14 +1453,14 @@ const HomeNew: React.FC = () => {
       }
       
       // Show success notification
-      addNotification('Draft saved!', 'Find it under Profile → Draft tab', 'success')
+      notifyReady({ title: 'Your media is ready', message: 'Draft saved' })
       
       // Dispatch event to notify ProfileScreen to refresh drafts
       window.dispatchEvent(new Event('userMediaUpdated'))
       
     } catch (error) {
       console.error('Failed to save draft:', error)
-      addNotification('Save failed', 'Could not save draft', 'error')
+      notifyError({ title: 'Something went wrong', message: 'Could not save draft' })
     }
   }
 

@@ -146,7 +146,7 @@ function ToastCard({ toast, onClose }: { toast: ToastBase; onClose: () => void }
       : "border-amber-300/50 bg-amber-50/80 dark:bg-amber-950/50";
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl border shadow-lg backdrop-blur supports-[backdrop-filter]:bg-opacity-70 ${toneClasses}`}>
+    <div className={`relative overflow-hidden rounded-2xl border shadow-lg backdrop-blur supports-[backdrop-filter]:bg-opacity-70 ${toneClasses} bg-[#333333]` }>
       <div className="flex items-center gap-3 p-3">
         <div className="shrink-0">
           {toast.kind === "queue" && <Loader2 className="h-5 w-5 animate-spin" />}
