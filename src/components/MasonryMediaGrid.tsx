@@ -265,7 +265,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         )}
 
                         {onRemix && (
-                          <div className="flex flex-col items-center">
+                          <div className="flex items-center space-x-1">
                             <button
                               onClick={(e) => handleAction(() => onRemix(item), e)}
                               className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
@@ -274,24 +274,21 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                               <RemixIcon size={14} />
                             </button>
                             {!hideRemixCount && (
-                              <div className="text-white/80 text-[10px] mt-1">{item.remixCount || 0}</div>
+                              <span className="text-white/80 text-xs font-medium">{item.remixCount || 0}</span>
                             )}
                           </div>
                         )}
                         {onShare && !hideShareButton && (
-                          <div className="flex flex-col items-center">
-                            <button
-                              onClick={(e) => handleAction(() => onShare(item), e)}
-                              className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized"
-                              title="Share"
-                            >
-                              <Share2 size={14} className="text-white" />
-                            </button>
-                            <div className="text-white/80 text-[10px] mt-1">Share</div>
-                          </div>
+                          <button
+                            onClick={(e) => handleAction(() => onShare(item), e)}
+                            className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized"
+                            title="Share"
+                          >
+                            <Share2 size={14} className="text-white" />
+                          </button>
                         )}
                         {onLike && !hideLikeButton && (
-                          <div className="flex flex-col items-center">
+                          <div className="flex items-center space-x-1">
                             <button
                               onClick={(e) => handleAction(() => onLike(item), e)}
                               className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized"
@@ -299,7 +296,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             >
                               <Heart size={14} className={isLikedMedia ? 'text-red-500 fill-red-500' : 'text-white'} />
                             </button>
-                            <div className="text-white/80 text-[10px] mt-1">{item.likes || 0}</div>
+                            <span className="text-white/80 text-xs font-medium">{item.likes || 0}</span>
                           </div>
                         )}
                         {onDelete && (

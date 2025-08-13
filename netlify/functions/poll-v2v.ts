@@ -12,11 +12,15 @@ export const handler: Handler = async (event) => {
 
     // NO_DB_MODE: talk straight to vendor
     if (String(process.env.NO_DB_MODE).toLowerCase() === "true") {
-      // Try multiple common status paths
+      // Try multiple common status paths - prioritize /video-to-video first
       const statusBases = [
-        "/v2v", "/video/v2v",
-        "/video-to-video", "/tasks/video",
-        "/v1/v2v", "/eagle/v2v", "/v1/video-to-video"
+        "/video-to-video", 
+        "/v2v", 
+        "/v1/video-to-video",
+        "/v1/v2v", 
+        "/video/v2v",
+        "/tasks/video",
+        "/eagle/v2v"
       ];
       let vendor: any = null;
       let lastRes: Response | null = null;

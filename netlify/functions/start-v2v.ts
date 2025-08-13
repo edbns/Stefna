@@ -38,14 +38,21 @@ export const handler: Handler = async (event) => {
       Authorization: `Bearer ${process.env.AIML_API_KEY}`,
     } as Record<string, string>;
 
-    // Try common endpoint variants
+    // Try common endpoint variants - prioritize /video-to-video/start first
     const candidates = [
-      "/v2v/start", "/v2v",
-      "/video/v2v/start", "/video/v2v",
-      "/video-to-video/start", "/video-to-video",
-      "/tasks/video/start", "/tasks/video",
-      "/v1/v2v/start", "/v1/v2v",
-      "/eagle/v2v/start", "/eagle/v2v",
+      "/video-to-video/start",
+      "/v2v/start", 
+      "/v1/video-to-video/start",
+      "/v1/v2v/start",
+      "/video/v2v/start", 
+      "/tasks/video/start", 
+      "/eagle/v2v/start", 
+      "/video-to-video",
+      "/v2v",
+      "/video/v2v",
+      "/tasks/video",
+      "/v1/v2v",
+      "/eagle/v2v",
       "/v1/video-to-video", 
     ];
     let out: any = null;

@@ -88,6 +88,11 @@ const ProfileScreen: React.FC = () => {
         
         setProfileData(prev => ({ ...prev, ...profileData }))
         
+        // Sync preview photo with loaded avatar
+        if (userData.avatar) {
+          setPreviewPhoto(userData.avatar)
+        }
+        
         // Also update localStorage for consistency and offline access
         localStorage.setItem('userProfile', JSON.stringify(profileData))
       } else {
@@ -98,6 +103,11 @@ const ProfileScreen: React.FC = () => {
           try {
             const parsedProfile = JSON.parse(savedProfile)
             setProfileData(prev => ({ ...prev, ...parsedProfile }))
+            
+            // Sync preview photo with saved avatar
+            if (parsedProfile.avatar && typeof parsedProfile.avatar === 'string') {
+              setPreviewPhoto(parsedProfile.avatar)
+            }
           } catch (error) {
             console.error('Failed to load profile data from localStorage:', error)
           }
@@ -111,6 +121,11 @@ const ProfileScreen: React.FC = () => {
         try {
           const parsedProfile = JSON.parse(savedProfile)
           setProfileData(prev => ({ ...prev, ...parsedProfile }))
+          
+          // Sync preview photo with saved avatar
+          if (parsedProfile.avatar && typeof parsedProfile.avatar === 'string') {
+            setPreviewPhoto(parsedProfile.avatar)
+          }
         } catch (error) {
           console.error('Failed to load profile data from localStorage:', error)
         }

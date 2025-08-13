@@ -177,61 +177,67 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
           {/* Prompt and Actions - Same line layout */}
           <div className="mt-6 text-center max-w-4xl px-4">
-            {/* Prompt with copy functionality */}
+            {/* Prompt with copy functionality - always show */}
             <div className="flex items-center justify-center space-x-3 group relative mb-4">
               <span className="text-white/60 text-sm font-medium">Prompt:</span>
               <div className="relative">
-                <span className="text-white text-sm max-w-md truncate block" title={current.prompt}>
-                  {current.prompt.length > 60 ? `${current.prompt.substring(0, 60)}...` : current.prompt}
+                <span className="text-white text-sm max-w-md truncate block" title={current.prompt || 'No prompt available'}>
+                  {current.prompt ? (
+                    current.prompt.length > 60 ? `${current.prompt.substring(0, 60)}...` : current.prompt
+                  ) : (
+                    <span className="text-white/40 italic">No prompt available</span>
+                  )}
                 </span>
                 {/* Full prompt on hover */}
-                {current.prompt.length > 60 && (
+                {current.prompt && current.prompt.length > 60 && (
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-3 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-normal max-w-md z-50 border border-white/20">
                     {current.prompt}
                   </div>
                 )}
               </div>
-              {/* Copy button */}
-              <button
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(current.prompt);
-                    setCopyStatus('success');
-                    setTimeout(() => setCopyStatus('idle'), 1000);
-                  } catch (err) {
-                    console.error('Failed to copy prompt:', err);
-                    // Fallback for older browsers
-                    const textArea = document.createElement('textarea');
-                    textArea.value = current.prompt;
-                    document.body.appendChild(textArea);
-                    textArea.select();
+              {/* Copy button - only show if prompt exists */}
+              {current.prompt && (
+                <button
+                  onClick={async () => {
                     try {
-                      document.execCommand('copy');
+                      await navigator.clipboard.writeText(current.prompt);
                       setCopyStatus('success');
                       setTimeout(() => setCopyStatus('idle'), 1000);
-                    } catch (fallbackErr) {
-                      console.error('Fallback copy failed:', fallbackErr);
-                      setCopyStatus('error');
-                      setTimeout(() => setCopyStatus('idle'), 1000);
+                    } catch (err) {
+                      console.error('Failed to copy prompt:', err);
+                      // Fallback for older browsers
+                      const textArea = document.createElement('textarea');
+                      textArea.value = current.prompt;
+                      document.body.appendChild(textArea);
+                      textArea.select();
+                      try {
+                        document.execCommand('copy');
+                        setCopyStatus('success');
+                        setTimeout(() => setCopyStatus('idle'), 1000);
+                      } catch (fallbackErr) {
+                        console.error('Fallback copy failed:', fallbackErr);
+                        setCopyStatus('error');
+                        setTimeout(() => setCopyStatus('idle'), 1000);
+                      }
+                      document.body.removeChild(textArea);
                     }
-                    document.body.removeChild(textArea);
-                  }
-                }}
-                className="text-white/60 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
-                title="Copy prompt to clipboard"
-              >
-                {copyStatus === 'success' ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-green-400">
-                    <polyline points="20,6 9,17 4,12"/>
-                  </svg>
-                ) : copyStatus === 'error' ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-red-400">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                  </svg>
-                ) : (
-                  <Copy size={16} />
-                )}
-              </button>
+                  }}
+                  className="text-white/60 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
+                  title="Copy prompt to clipboard"
+                >
+                  {copyStatus === 'success' ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-green-400">
+                      <polyline points="20,6 9,17 4,12"/>
+                    </svg>
+                  ) : copyStatus === 'error' ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-red-400">
+                      <line x1="18" y1="6" x2="6" y2="18"/>
+                    </svg>
+                  ) : (
+                    <Copy size={16} />
+                  )}
+                </button>
+              )}
             </div>
 
             {/* Actions - Centered under prompt */}
