@@ -9,8 +9,14 @@ export const handler: Handler = async (event) => {
 
     const SUPABASE_URL = process.env.SUPABASE_URL!
     const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('getPublicFeed: Missing Supabase env')
+    const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME!
+    
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !CLOUDINARY_CLOUD_NAME) {
+      console.error('getPublicFeed: Missing required env vars:', {
+        hasSupabaseUrl: !!SUPABASE_URL,
+        hasServiceKey: !!SUPABASE_SERVICE_ROLE_KEY,
+        hasCloudinaryName: !!CLOUDINARY_CLOUD_NAME
+      })
       return { statusCode: 200, body: JSON.stringify({ items: [] }) }
     }
 
@@ -18,42 +24,47 @@ export const handler: Handler = async (event) => {
       auth: { persistSession: false }
     })
 
-    // Use service role to bypass RLS and query media_assets directly
-    console.log('🔍 Querying media_assets table...')
+    // Use the new unified public_feed view
+    console.log('🔍 Querying public_feed view...')
     
-    // First, let's see what's in the table
+    // First, let's see what's in the public_feed view
     const { data: allData, error: allError } = await sb
-      .from('media_assets')
-      .select('id,result_url,created_at,visibility,env,user_id,metadata,prompt')
+      .from('public_feed')
+      .select('id,cloudinary_public_id,media_type,published_at,source_asset_id,preset_key,prompt')
       .limit(10)
     
     if (allError) {
-      console.error('❌ Error querying all media:', allError)
-    } else {
-      console.log('📊 All media items found:', allData?.length || 0)
-      console.log('🔍 Sample items:', allData?.slice(0, 3).map(item => ({
-        id: item.id,
-        visibility: item.visibility,
-        hasResultUrl: !!item.result_url,
-        env: item.env
-      })))
+      console.error('❌ Error querying public_feed view:', allError)
+      console.log('🔄 Falling back to direct assets query...')
+      
+      // Fallback: query assets table directly
+      const { data: fallbackData, error: fallbackError } = await sb
+        .from('assets')
+        .select('id,cloudinary_public_id,media_type,published_at,source_asset_id,preset_key,prompt')
+        .eq('is_public', true)
+        .eq('status', 'ready')
+        .not('published_at', 'is', null)
+        .not('cloudinary_public_id', 'is', null)
+        .not('media_type', 'is', null)
+        .order('published_at', { ascending: false })
+        .limit(limit)
+      
+      if (fallbackError) {
+        console.error('❌ Fallback query also failed:', fallbackError)
+        return { statusCode: 200, body: JSON.stringify({ items: [] }) }
+      }
+      
+      console.log('✅ Fallback query successful, items found:', fallbackData?.length || 0)
+      return { statusCode: 200, body: JSON.stringify({ items: fallbackData || [] }) }
     }
     
-    // Query for public items directly (simpler approach)
+    console.log('📊 Public feed items found:', allData?.length || 0)
+    
+    // Query the public_feed view for the requested limit
     const { data, error } = await sb
-      .from('media_assets')
-      .select(`
-        id,
-        result_url as url,
-        created_at,
-        visibility,
-        env,
-        user_id,
-        metadata,
-        prompt
-      `)
-      .eq('visibility', 'public')
-      .order('created_at', { ascending: false })
+      .from('public_feed')
+      .select('id,cloudinary_public_id,media_type,published_at,source_asset_id,preset_key,prompt')
+      .order('published_at', { ascending: false })
       .limit(limit)
 
     if (error) {
@@ -73,16 +84,22 @@ export const handler: Handler = async (event) => {
 
     const items = (data ?? []).map((row: any) => ({
       id: row.id,
-      url: row.url,
-      created_at: row.created_at,
-      visibility: row.visibility,
-      env: row.env,
-      user_id: row.user_id,
+      cloudinary_public_id: row.cloudinary_public_id,
+      media_type: row.media_type,
+      published_at: row.published_at,
+      source_asset_id: row.source_asset_id,
+      preset_key: row.preset_key,
       prompt: row.prompt || null,
-      // Simple fallback for now - we can add user data back later
+      // Construct Cloudinary URL
+      url: `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/${row.media_type}/upload/${row.cloudinary_public_id}`,
+      // Additional fields for compatibility
+      created_at: row.published_at, // Use published_at as created_at for feed ordering
+      visibility: 'public',
+      env: 'production',
+      user_id: null, // Will be added later if needed
       user_avatar: null,
       user_tier: null,
-      thumbnail_url: row.url, // Use main URL as thumbnail for now
+      thumbnail_url: `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/${row.media_type}/upload/${row.cloudinary_public_id}`,
       likes_count: 0,
     }))
 
