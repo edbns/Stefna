@@ -2028,25 +2028,7 @@ const HomeNew: React.FC = () => {
         title="Share Your Creation"
       />
 
-      {/* Video Job Status Display */}
-      {currentVideoJob && (
-        <div className="fixed bottom-4 right-4 bg-[#333333] border border-white/20 rounded-xl p-4 shadow-2xl z-50">
-          <div className="flex items-center space-x-3">
-            <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
-            <div className="text-white text-sm">
-              <div className="font-medium">Video Processing</div>
-              <div className="text-white/60 text-xs">Job #{String((currentVideoJob as any).id || (currentVideoJob as any).job_id || '').slice(0, 8)}</div>
-            </div>
-            <button 
-              onClick={stopVideoJobPolling}
-              className="text-white/60 hover:text-white transition-colors"
-              title="Stop monitoring"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Video Job Status Display removed in favor of unified toasts */}
 
 
     </div>
