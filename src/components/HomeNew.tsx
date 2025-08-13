@@ -321,7 +321,7 @@ const HomeNew: React.FC = () => {
     if (!file) return
     const url = URL.createObjectURL(file)
     setPreviewUrl(url)
-    setIsVideoPreview(file.type.startsWith('video/'))
+    setIsVideoPreview(false) // Always treat as image for now
     setSelectedFile(file)
     setIsComposerOpen(true)
     // Clear selectedPreset when new media is uploaded
@@ -1397,7 +1397,7 @@ const HomeNew: React.FC = () => {
       
       // Set up the composer with the source media
       setPreviewUrl(media.url);
-      setIsVideoPreview(media.type === 'video');
+      setIsVideoPreview(false); // Always treat as image for now
       setSelectedFile(null);
       setIsComposerOpen(true);
       setPrompt(media.prompt || '');
@@ -1873,7 +1873,7 @@ const HomeNew: React.FC = () => {
       </div>
 
       {/* Hidden file input */}
-      <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleFileChange} className="hidden" />
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
 
       {/* Full Screen Media Viewer */}
       <FullScreenMediaViewer
