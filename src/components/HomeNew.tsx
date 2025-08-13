@@ -926,6 +926,32 @@ const HomeNew: React.FC = () => {
             }
 
         if (NO_DB_MODE) {
+          // Optimistic placeholder for images too
+          try {
+            if (userId) {
+              const placeholder: UserMedia = {
+                id: `img-${Date.now()}`,
+                userId,
+                type: 'photo',
+                url: cacheBustedResultUrl,
+                thumbnailUrl: cacheBustedResultUrl,
+                status: 'processing',
+                prompt: effectivePrompt,
+                aspectRatio: 4/3,
+                width: 800,
+                height: 600,
+                timestamp: new Date().toISOString(),
+                tokensUsed: 0,
+                likes: 0,
+                remixCount: 0,
+                isPublic: shareToFeed,
+                allowRemix: allowRemix,
+                tags: [],
+                metadata: { quality: 'high', generationTime: 0, modelVersion: 'pending' }
+              }
+              window.dispatchEvent(new CustomEvent('userMediaUpdated', { detail: { optimistic: placeholder } }))
+            }
+          } catch {}
           try {
             const saved = await saveMediaNoDB({
               resultUrl,
@@ -942,6 +968,11 @@ const HomeNew: React.FC = () => {
           } catch (e:any) {
             console.error('❌ saveMediaNoDB failed:', e)
             notifyError({ title: 'Something went wrong', message: e?.message || 'Failed to save media' })
+            try {
+              if (userId) {
+                const removeId = undefined // not tracked precisely for images; grid will refresh shortly
+              }
+            } catch {}
           }
           return
         }
@@ -1412,6 +1443,18 @@ const HomeNew: React.FC = () => {
             setVideoJobPolling(null)
             setCurrentVideoJob(null)
             notifyError({ title: 'Something went wrong', message: jobStatus.error || 'Video processing failed' })
+            try {
+              // mark any optimistic placeholder as failed so the tile shows red briefly
+              const user = authService.getCurrentUser()
+              if (user?.id) {
+                const placeholderId = `job-${jobId}`
+                window.dispatchEvent(new CustomEvent('userMediaUpdated', { detail: { markFailedId: placeholderId } }))
+                // remove after 10s
+                setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('userMediaUpdated', { detail: { removeId: placeholderId } }))
+                }, 10000)
+              }
+            } catch {}
           }
         }
       } catch (error) {

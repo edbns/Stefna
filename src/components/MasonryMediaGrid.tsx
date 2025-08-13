@@ -177,6 +177,17 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                       src={item.thumbnailUrl || item.url}
                       onClick={() => onMediaClick?.(item)}
                     />
+                  ) : item.status === 'failed' ? (
+                    <div className="relative">
+                      {item.type === 'video' ? (
+                        <video src={item.url} className="w-full h-auto object-cover opacity-50" muted />
+                      ) : (
+                        <img src={item.url} alt={item.prompt} className="w-full h-auto object-cover opacity-50" />
+                      )}
+                      <div className="absolute inset-0 grid place-items-center">
+                        <div className="px-3 py-1 rounded-full bg-red-600/80 text-white text-xs font-semibold">Failed</div>
+                      </div>
+                    </div>
                   ) : item.type === 'video' ? (
                       <video
                         src={item.url}

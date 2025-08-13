@@ -566,6 +566,14 @@ const ProfileScreen: React.FC = () => {
       if (optimistic) {
         setUserMedia(prev => [optimistic, ...prev])
       }
+      const markFailedId = e?.detail?.markFailedId as string | undefined
+      if (markFailedId) {
+        setUserMedia(prev => prev.map(m => (m.id === markFailedId ? { ...m, status: 'failed' } : m)))
+      }
+      const removeId = e?.detail?.removeId as string | undefined
+      if (removeId) {
+        setUserMedia(prev => prev.filter(m => m.id !== removeId))
+      }
       loadUserMedia()
       
       // Also refresh drafts specifically
