@@ -845,45 +845,53 @@ const HomeNew: React.FC = () => {
             });
 
       // Save the generated media to the database
-          try {
-            const jwt = authService.getToken();
-            const userId = authService.getCurrentUser()?.id;
-            
-            if (!jwt || !userId) {
-              console.error('No JWT or user ID for saveMedia');
-              addNotification('Your media is ready', 'Image generated but not saved (auth error)', 'warning');
-              return;
-            }
+      try {
+        const jwt = authService.getToken();
+        const userId = authService.getCurrentUser()?.id;
+        
+        if (!jwt || !userId) {
+          console.error('No JWT or user ID for saveMedia');
+          addNotification('Your media is ready', 'Image generated but not saved (auth error)', 'warning');
+          return;
+        }
 
-            const saveRes = await fetch('/.netlify/functions/save-media', {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${jwt}`
-              },
-              body: JSON.stringify({
-                user_id: userId,
-                result_url: resultUrl,
-                source_url: sourceUrl,
-                job_id: crypto.randomUUID?.() || null,
-                model: 'flux/dev/image-to-image',
-                mode: kind === 'preset' ? 'preset' : kind === 'remix' ? 'remix' : 'i2i',
-                prompt: effectivePrompt,
-                strength: selectedPreset && PRESETS[selectedPreset]?.strength,
-                visibility: shareToFeed ? 'public' : 'private',
-                env: import.meta.env.PROD ? 'prod' : 'dev',
-                allow_remix: shareToFeed ? allowRemix : false,
-                parent_asset_id: kind === 'remix' ? null : null, // TODO: implement remix tracking
-              })
-            });
+        // First, create an asset record
+        const assetResult = await createAsset({
+          sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
+          mediaType: 'image', // Default to image for now
+          presetKey: selectedPreset,
+          prompt: effectivePrompt,
+        });
 
-            console.log('💾 Save-media payload sent:', {
-              prompt: effectivePrompt,
-              selectedPreset,
-              kind,
-              strength: selectedPreset && PRESETS[selectedPreset]?.strength,
-              env: import.meta.env.PROD ? 'prod' : 'dev'
-            });
+        if (!assetResult.ok) {
+          console.error('Failed to create asset:', assetResult.error);
+          addNotification('Error please try again', 'Failed to create asset record', 'error');
+          return;
+        }
+
+        const assetId = assetResult.data.id;
+        console.log('✅ Asset created:', assetId);
+
+        // Now call save-media with the assetId and resultUrl
+        const saveRes = await fetch('/.netlify/functions/save-media', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwt}`
+          },
+          body: JSON.stringify({
+            assetId: assetId,
+            resultUrl: resultUrl,
+            mediaTypeHint: 'image',
+            folder: 'stefna/outputs'
+          })
+        });
+
+        console.log('💾 Save-media payload sent:', {
+          assetId,
+          resultUrl,
+          mediaTypeHint: 'image'
+        });
 
         if (saveRes.ok) {
           const savedMedia = await saveRes.json();
@@ -892,7 +900,7 @@ const HomeNew: React.FC = () => {
           // If the user had "Share to feed" toggled, publish it now
           if (shareToFeed) {
             console.log('📤 Attempting to share to feed with settings:', { shareToFeed, allowRemix })
-            console.log('📤 Calling record-share for asset:', savedMedia.saved.id)
+            console.log('📤 Calling record-share for asset:', assetId)
             try {
               const shareRes = await fetch('/.netlify/functions/recordShare', {
                 method: 'POST',
@@ -901,7 +909,7 @@ const HomeNew: React.FC = () => {
                   'Authorization': `Bearer ${jwt}` 
                 },
                 body: JSON.stringify({
-                  asset_id: savedMedia.saved.id,
+                  asset_id: assetId,
                   shareToFeed: true,
                   allowRemix: allowRemix // enforce: remix only when shared
                 })
@@ -944,7 +952,7 @@ const HomeNew: React.FC = () => {
                 id: 'generated-' + Date.now(),
                 userId: 'current-user',
                 type: 'photo',
-                url: previewUrl,
+                url: resultUrl,
                 prompt: prompt,
                 aspectRatio: 4/3,
                 width: 800,
@@ -962,22 +970,21 @@ const HomeNew: React.FC = () => {
               setViewerOpen(true);
             });
           }
-          
-          // TODO: Refresh user media to show the new generation
-          // For now, the media will be visible on next page load or profile refresh
-        } else if (saveRes.status === 404) {
-          // Function isn't in this deploy yet — show the image locally so the user isn't stuck
-          // Saved locally - no notification needed
-          // TODO: Add local item to All Media tab if you have that function
-          console.warn('saveMedia function not deployed yet (404) - showing local notification');
         } else {
-          const errorBody = await saveRes.json();
-          console.error('Failed to save media:', errorBody);
-          addNotification('Error please try again', `Image generated but failed to save: ${errorBody.error || 'Unknown error'}`, 'error');
+          // Handle save-media errors
+          let saveError;
+          try {
+            saveError = await saveRes.json();
+          } catch (parseError) {
+            const errorText = await saveRes.text();
+            saveError = { error: errorText };
+          }
+          console.error('❌ Save-media failed:', saveRes.status, saveError);
+          addNotification('Error please try again', saveError?.error || 'Failed to save media', 'error');
         }
-      } catch (saveError) {
-        console.error('Error saving media:', saveError);
-        addNotification('Error please try again', 'Image generated but failed to save.', 'error');
+      } catch (error) {
+        console.error('❌ Error in save flow:', error);
+        addNotification('Error please try again', 'Failed to save generated media', 'error');
       }
 
       // Success: stop progress
