@@ -8,6 +8,7 @@ import MasonryMediaGrid from './MasonryMediaGrid'
 import interactionService from '../services/interactionService'
 import type { UserMedia } from '../services/userMediaService'
 import NotificationBell from './NotificationBell'
+import { useToasts } from './ui/Toasts'
 import ProfileIcon from './ProfileIcon'
 import { PRESETS, type PresetKey, promptForPreset } from '../config/presets'
 import presetRotationService from '../services/presetRotationService'
@@ -32,6 +33,7 @@ const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefin
 }
 
 const HomeNew: React.FC = () => {
+  const { notifyQueue, notifyReady, notifyError } = useToasts()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
   const location = useLocation() as any
@@ -799,7 +801,7 @@ const HomeNew: React.FC = () => {
           if (!startRes.ok || !startJson?.job_id) {
             throw new Error(startJson?.error || 'start-v2v failed');
           }
-          addNotification('Add to queue', 'Video job created successfully. Processing will begin shortly.', 'queue');
+          notifyQueue({ title: 'Added to queue', message: 'We’ll start processing shortly.' })
           setCurrentVideoJob({ id: startJson.job_id, status: 'queued' });
           startVideoJobPolling(startJson.job_id);
         } catch (err:any) {
@@ -1423,14 +1425,14 @@ const HomeNew: React.FC = () => {
             if (!resultUrl && !publicId) {
               console.warn('V2V done but missing resultUrl/publicId')
             }
-            addNotification('Your media is ready', 'Video processing completed successfully!', 'ready', undefined, 'video', () => {})
+            notifyReady({ title: 'Your media is ready', message: 'Tap to open' })
             window.dispatchEvent(new CustomEvent('refreshFeed'))
             window.dispatchEvent(new Event('userMediaUpdated'))
           } else if (jobStatus && jobStatus.status === 'failed') {
             clearInterval(interval)
             setVideoJobPolling(null)
             setCurrentVideoJob(null)
-            addNotification('Failed', jobStatus.error || 'Video processing failed', 'error')
+            notifyError({ title: 'Something went wrong', message: jobStatus.error || 'Video processing failed' })
           }
         }
       } catch (error) {

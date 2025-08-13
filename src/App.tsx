@@ -1,5 +1,6 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { ToastProvider } from './components/ui/Toasts'
 // StickyFooter removed per new minimal UI
 import SignupGateModal from './components/SignupGateModal'
 import HomeNew from './components/HomeNew'
@@ -57,7 +58,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </BrowserRouter>
   )
 }
