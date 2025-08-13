@@ -828,7 +828,7 @@ const HomeNew: React.FC = () => {
           }
           notifyQueue({ title: 'Added to queue', message: 'We\'ll start processing shortly.' })
           setCurrentVideoJob({ id: startJson.job_id, status: 'queued' });
-          startVideoJobPolling(startJson.job_id, startJson.model);
+          startVideoJobPolling(startJson.job_id, startJson.model, effectivePrompt);
           // Optimistic placeholder in Profile: show processing tile
           try {
             const user = authService.getCurrentUser()
@@ -880,7 +880,7 @@ const HomeNew: React.FC = () => {
       if (res.status === 202 && body.job_id && isVideoPreview) {
         notifyQueue({ title: 'Add to queue', message: 'Processing will begin shortly.' })
         setCurrentVideoJob({ id: body.job_id, status: 'queued' })
-        startVideoJobPolling(body.job_id, body.model)
+        startVideoJobPolling(body.job_id, body.model, effectivePrompt)
         endGeneration(genId)
         setNavGenerating(false)
         return
@@ -1434,7 +1434,7 @@ const HomeNew: React.FC = () => {
   // Legacy notifications removed in favor of unified toasts
 
   // Video job polling functions
-  const startVideoJobPolling = (jobId: string, model?: string) => {
+  const startVideoJobPolling = (jobId: string, model?: string, prompt?: string) => {
     // Clear any existing polling
     if (videoJobPolling) {
       clearInterval(videoJobPolling)
@@ -1444,7 +1444,8 @@ const HomeNew: React.FC = () => {
       try {
         const token = authService.getToken()
         const modelParam = model ? `&model=${encodeURIComponent(model)}` : ''
-        const response = await fetch(`/.netlify/functions/poll-v2v?id=${jobId}&persist=true${modelParam}`, {
+        const promptParam = prompt ? `&prompt=${encodeURIComponent(prompt)}` : ''
+        const response = await fetch(`/.netlify/functions/poll-v2v?id=${jobId}&persist=true${modelParam}${promptParam}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
         if (response.ok) {

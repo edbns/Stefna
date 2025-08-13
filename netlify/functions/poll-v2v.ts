@@ -91,16 +91,47 @@ export const handler: Handler = async (evt) => {
     }
 
     // Persist to Cloudinary as VIDEO
+    const uploadPayload = {
+      url: resultUrl,
+      resource_type: 'video',
+      tags: ['aiml', 'kling', model.includes('video-to-video') ? 'v2v' : 'i2v', jobId],
+      visibility: 'public',
+      prompt: qs.prompt || 'AI Generated Video', // Pass prompt if available
+    };
+
+    console.log(`[poll-v2v] Persisting to Cloudinary:`, { 
+      resultUrl: resultUrl.substring(0, 60) + '...', 
+      model, 
+      jobId 
+    });
+
     const uploadRes = await fetch(`${evt.headers.origin}/.netlify/functions/save-media`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        url: resultUrl,
-        resource_type: 'video',
-        tags: ['aiml', 'kling', model.includes('video-to-video') ? 'v2v' : 'i2v', jobId],
-        visibility: 'public',
-      }),
-    }).then((r) => r.json());
+      body: JSON.stringify(uploadPayload),
+    });
+
+    if (!uploadRes.ok) {
+      const errorText = await uploadRes.text();
+      console.error(`[poll-v2v] save-media failed (${uploadRes.status}):`, errorText);
+      // Still return success with vendor URL so UI can show result
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          ok: true,
+          status: 'completed',
+          job_id: jobId,
+          data: { 
+            mediaType: 'video', 
+            resultUrl, 
+            publicId: null,
+            note: 'cloudinary-upload-failed'
+          },
+        }),
+      };
+    }
+
+    const uploadData = await uploadRes.json();
 
     return {
       statusCode: 200,
@@ -108,7 +139,7 @@ export const handler: Handler = async (evt) => {
         ok: true,
         status: 'completed',
         job_id: jobId,
-        data: { mediaType: 'video', resultUrl, publicId: uploadRes.public_id },
+        data: { mediaType: 'video', resultUrl, publicId: uploadData.public_id },
       }),
     };
   } catch (err: any) {

@@ -71,8 +71,9 @@ export async function dispatchGenerate({
       for (let attempts = 0; attempts < 45; attempts++) { // Max 90s (45 * 2s)
         await new Promise(r => setTimeout(r, 2000));
         
+        const promptParam = payload.prompt ? `&prompt=${encodeURIComponent(payload.prompt)}` : '';
         const pollRes = await fetch(
-          `/.netlify/functions/poll-v2v?id=${encodeURIComponent(job_id)}&persist=true&userId=${payload.userId || 'public'}`
+          `/.netlify/functions/poll-v2v?id=${encodeURIComponent(job_id)}&persist=true&userId=${payload.userId || 'public'}${promptParam}`
         );
         
         if (!pollRes.ok) {
