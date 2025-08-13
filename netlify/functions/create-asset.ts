@@ -2,21 +2,34 @@ import { Handler } from '@netlify/functions';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
 import type { CreateAssetInput, ApiResult, Asset } from '../../src/lib/types';
 
+function getUserIdFromToken(auth?: string): string | null {
+  try {
+    if (!auth?.startsWith('Bearer ')) return null;
+    const jwt = auth.slice(7);
+    const payload = JSON.parse(Buffer.from(jwt.split('.')[1], 'base64').toString());
+    const id = payload.sub || payload.uid || payload.user_id || payload.userId || payload.id;
+    return /^[0-9a-f-]{36}$/i.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
 export const handler: Handler = async (event) => {
   try {
-    const input = JSON.parse(event.body || '{}') as CreateAssetInput;
+    const input = JSON.parse(event.body || '{}') as Partial<CreateAssetInput>;
 
-    // Basic validation
-    if (!input.sourcePublicId || !input.mediaType) {
-      return resp({ ok: false, error: 'sourcePublicId and mediaType are required' });
-    }
+    // Resolve authenticated user
+    const userId = getUserIdFromToken(event.headers.authorization);
+    if (!userId) return resp({ ok: false, error: 'Unauthorized' });
+
+    const mediaType = (input.mediaType === 'video' || input.mediaType === 'image') ? input.mediaType : 'image';
 
     const { data, error } = await supabaseAdmin
       .from('assets')
       .insert({
-        user_id: getUserIdFromAuth(event), // if you pass auth; else compute on server from session
-        cloudinary_public_id: input.sourcePublicId,
-        media_type: input.mediaType,
+        user_id: userId,
+        cloudinary_public_id: input.sourcePublicId ?? null,
+        media_type: mediaType,
         preset_key: input.presetKey ?? null,
         prompt: input.prompt ?? null,
         source_asset_id: input.sourceAssetId ?? null,
@@ -37,9 +50,4 @@ export const handler: Handler = async (event) => {
 
 function resp(body: ApiResult<any>) {
   return { statusCode: body.ok ? 200 : 400, body: JSON.stringify(body) };
-}
-
-// Optional: parse user from a JWT if you forward it in headers; otherwise leave null and allow server to set user_id if you have RPC
-function getUserIdFromAuth(_event: any): string | null {
-  return null;
 }

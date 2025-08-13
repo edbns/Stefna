@@ -34,16 +34,16 @@ export const handler: Handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'asset_id required' }) };
     }
 
-    const visibility = !!shareToFeed ? 'public' : 'private';
+    const is_public = !!shareToFeed;
     const allow_remix = !!shareToFeed && !!allowRemix; // cannot be true if not public
 
     // Update only if user owns it
     const { data, error } = await supabase
-      .from('media_assets')
-      .update({ visibility, allow_remix })
+      .from('assets')
+      .update({ is_public, allow_remix })
       .eq('id', asset_id)
       .eq('user_id', userId)
-      .select('id, visibility, allow_remix')
+      .select('id, is_public, allow_remix, published_at')
       .single();
 
     if (error) {

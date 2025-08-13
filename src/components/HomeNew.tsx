@@ -1265,7 +1265,7 @@ const HomeNew: React.FC = () => {
   }
 
   const handleRemix = async (media: UserMedia) => {
-    if (!media.allowRemix) return
+    if (media.allowRemix === false) return // allow when undefined
     if (!authService.getToken()) {
       // Sign up required - no notification needed
       navigate('/auth')

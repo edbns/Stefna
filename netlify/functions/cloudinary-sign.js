@@ -48,6 +48,9 @@ exports.handler = async (event) => {
         timestamp,
         folder,
         signature,
+        // snake_case variants for existing client helpers
+        cloud_name: cloudName,
+        api_key: apiKey,
       }),
     };
   } catch (e) {
