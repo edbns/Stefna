@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS public.video_jobs (
   provider_name     text DEFAULT 'aimlapi',
   status            job_status NOT NULL DEFAULT 'queued',
   result_url        text,                   -- final CDN video
+  provider_persisted boolean DEFAULT false,
   error             text,
   created_at        timestamptz NOT NULL DEFAULT now(),
   updated_at        timestamptz NOT NULL DEFAULT now()
