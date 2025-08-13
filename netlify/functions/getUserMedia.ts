@@ -58,7 +58,7 @@ export const handler = async (event:any) => {
         id: r.public_id,
         user_id: r.context?.custom?.user_id || userId,
         resource_type: r.resource_type,
-        url: r.secure_url,
+        url: r.resource_type === 'video' ? r.secure_url : r.secure_url,
         result_url: r.secure_url,
         created_at: r.created_at,
         visibility: (r.tags || []).includes('public') ? 'public' : 'private',

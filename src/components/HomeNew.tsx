@@ -375,7 +375,7 @@ const HomeNew: React.FC = () => {
         console.log('📊 Feed length:', media?.length || 0)
         
         const mapped: UserMedia[] = (media || []).map((item: any): UserMedia => {
-          // Construct Cloudinary URL using the new utility
+          // Construct Cloudinary URL including videos for feed
           const mediaUrl = cloudinaryUrlFromEnv(item.cloudinary_public_id, item.media_type)
           console.log(`🔗 URL mapping for item ${item.id}:`, {
             cloudinary_public_id: item.cloudinary_public_id,
@@ -402,7 +402,7 @@ const HomeNew: React.FC = () => {
             likes: 0, // Not exposed in public_feed_v2
             remixCount: 0, // Not exposed in public_feed_v2
             isPublic: true,
-            allowRemix: false, // Not exposed in public_feed_v2
+            allowRemix: true,
             tags: [],
             metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
             // Store additional fields needed for remix functionality

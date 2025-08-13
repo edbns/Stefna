@@ -18,7 +18,7 @@ export const handler: Handler = async (event) => {
     const limit = Number(url.searchParams.get('limit') ?? 50);
 
     const res = await cloudinary.search
-      .expression('tags="stefna" AND tags="type:output" AND tags="public"')
+      .expression('(tags="stefna" AND tags="type:output" AND tags="public") AND (resource_type:image OR resource_type:video)')
       .sort_by('created_at','desc')
       .max_results(limit)
       .execute();

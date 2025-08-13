@@ -29,7 +29,7 @@ class InteractionService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ mediaId })
+        body: JSON.stringify({ asset_id: mediaId })
       })
 
       if (!response.ok) {
@@ -39,9 +39,9 @@ class InteractionService {
 
       const result = await response.json()
       return {
-        success: true,
-        action: result.action ?? (result.liked ? 'liked' : 'unliked'),
-        likeCount: result.likeCount,
+        success: !!result.ok,
+        action: result.liked ? 'liked' : 'unliked',
+        likeCount: result.likes_count,
         isLiked: result.liked
       }
     } catch (error) {
@@ -54,7 +54,7 @@ class InteractionService {
     }
   }
 
-  // Record a share of media
+  // Record a share of media (unused in NO_DB_MODE; kept for compatibility)
   async recordShare(mediaId: string, shareType: 'public' | 'social' | 'link' = 'public'): Promise<InteractionResponse> {
     try {
       const token = authService.getToken()
@@ -67,7 +67,7 @@ class InteractionService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ mediaId, shareType })
+        body: JSON.stringify({ asset_id: mediaId, shareToFeed: shareType === 'public' })
       })
 
       if (!response.ok) {
@@ -78,8 +78,8 @@ class InteractionService {
       const result = await response.json()
       return {
         success: true,
-        action: result.action ?? 'shared',
-        shareCount: result.shareCount
+        action: 'shared',
+        shareCount: 1
       }
     } catch (error) {
       console.error('Record share error:', error)

@@ -1,6 +1,7 @@
 // /.netlify/functions/video-job-worker.ts
 import type { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
+import { initCloudinary } from './_cloudinary';
 
 const SUPABASE_URL = process.env.SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -76,25 +77,54 @@ export const handler: Handler = async (event) => {
 
     if (!resultUrl) throw new Error('No result_url from provider');
 
-    // 3) Save media asset (server-side, so client doesn't need to do a second call)
+    // 3) Upload result to Cloudinary for public feed and unified delivery
+    const cloudinary = initCloudinary();
+    const visibilityTag = (job.visibility || 'private') === 'public' ? 'public' : undefined;
+    const tags = ['stefna', 'type:output', `user:${job.user_id}`].concat(visibilityTag ? [visibilityTag] : []);
+
+    const upload = await (cloudinary as any).uploader.upload(resultUrl, {
+      resource_type: 'video',
+      folder: `stefna/outputs/${job.user_id}`,
+      tags,
+      context: {
+        user_id: job.user_id,
+        allow_remix: job.allow_remix ? 'true' : 'false',
+        created_at: new Date().toISOString(),
+        job_id,
+        provider_job_id: providerJobId || ''
+      },
+      overwrite: true,
+      invalidate: true,
+    });
+
+    if (!upload?.public_id || !upload?.secure_url) {
+      throw new Error('Cloudinary upload failed or missing public_id/secure_url');
+    }
+
+    // 4) Save media asset in DB (All media remains DB-based)
     const { data: asset, error: aerr } = await supabase
       .from('media_assets')
       .insert({
         user_id: job.user_id,
-        url: resultUrl,
+        url: upload.secure_url,
+        result_url: upload.secure_url,
         source_url: job.source_url,
+        public_id: upload.public_id,
         resource_type: 'video',
         env: 'prod',
         mode: 'preset',
         prompt: job.prompt,
         model: job.model,
         visibility: job.visibility || 'private',
-        allow_remix: job.visibility === 'public' ? !!job.allow_remix : false,
+        allow_remix: (job.visibility || 'private') === 'public' ? !!job.allow_remix : false,
         meta: {
           job_id,
           provider_job_id: providerJobId,
           seed: job.seed,
-          fps: job.fps, width: job.width, height: job.height, duration_ms: job.duration_ms
+          fps: job.fps,
+          width: job.width,
+          height: job.height,
+          duration_ms: job.duration_ms
         }
       })
       .select('id')
@@ -105,10 +135,10 @@ export const handler: Handler = async (event) => {
     // 4) Mark job succeeded
     await supabase
       .from('video_jobs')
-      .update({ status:'succeeded', result_url: resultUrl, provider_job_id: providerJobId })
+      .update({ status:'succeeded', result_url: upload.secure_url, provider_job_id: providerJobId })
       .eq('id', job_id);
 
-    return { statusCode: 200, body: JSON.stringify({ ok:true, job_id, asset_id: asset.id, result_url: resultUrl }) };
+    return { statusCode: 200, body: JSON.stringify({ ok:true, job_id, asset_id: asset.id, result_url: upload.secure_url, public_id: upload.public_id }) };
   } catch (e:any) {
     await supabase.from('video_jobs').update({ status:'failed', error: e.message?.slice(0, 2000) || 'failed' }).eq('id', job_id);
     return { statusCode: 200, body: JSON.stringify({ ok:false, job_id, error: e.message }) };
