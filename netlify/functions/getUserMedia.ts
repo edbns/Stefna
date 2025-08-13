@@ -41,7 +41,7 @@ export const handler = async (event:any) => {
       if (!userId) return ok({ ok:true, data: [] });
 
       const res = await cloudinary.search
-        .expression(`tags=stefna AND tags="user:${userId}"`)
+        .expression(`(tags=stefna AND tags="user:${userId}") OR folder="stefna/outputs/${userId}" OR public_id="stefna/outputs/${userId}/*"`)
         .sort_by('created_at','desc')
         .max_results(100)
         .execute();
