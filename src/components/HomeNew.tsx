@@ -807,8 +807,10 @@ const HomeNew: React.FC = () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
             body: JSON.stringify({
-              source_url: sourceUrl,
+              video_url: sourceUrl,  // ← Fixed: use video_url instead of source_url
               prompt: effectivePrompt,
+              duration: 5,  // Kling supports 5 or 10 seconds
+              // Optional fields for future use:
               strength: payload.strength ?? 0.7,
               visibility: shareToFeed ? 'public' : 'private',
               allowRemix: shareToFeed ? allowRemix : false,

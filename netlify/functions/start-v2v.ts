@@ -4,6 +4,23 @@ import type { Handler } from '@netlify/functions';
 const AIML_API_URL = process.env.AIML_API_URL!;
 const AIML_API_KEY = process.env.AIML_API_KEY!;
 
+const pick = (obj: any, keys: string[]) =>
+  keys.map(k => obj?.[k]).find(v => typeof v === 'string' && v);
+
+const deepFindCloudinaryVideo = (obj: any): string | null => {
+  const rx = /^https?:\/\/res\.cloudinary\.com\/.+\.(mp4|mov)(\?.*)?$/i;
+  const stack = [obj];
+  while (stack.length) {
+    const cur = stack.pop();
+    if (!cur || typeof cur !== 'object') continue;
+    for (const v of Object.values(cur)) {
+      if (typeof v === 'string' && rx.test(v)) return v;
+      if (v && typeof v === 'object') stack.push(v);
+    }
+  }
+  return null;
+};
+
 const firstFrameFromCloudinary = (videoUrl: string) => {
   // turns .../video/upload/.../foo.mp4 -> .../video/upload/so_0,f_jpg/.../foo.jpg
   if (!/res\.cloudinary\.com\/.+\/video\/upload\//.test(videoUrl)) return videoUrl;
@@ -19,17 +36,33 @@ export const handler: Handler = async (evt) => {
     const body = JSON.parse(evt.body || '{}');
     const prompt =
       body.prompt || body.effectivePrompt || 'Enhance video with cinematic look';
-    const src =
-      body.video_url ||
-      body.input_video ||
-      body.input_url ||
-      body.source ||
-      body.image_url;
+    
+    // Be ultra-forgiving about where the URL lives
+    const aliases = [
+      'video_url','videoUrl',
+      'input_video','inputVideo',
+      'input_url','inputUrl',
+      'source_url','sourceUrl',
+      'asset_url','assetUrl',
+      'media_url','mediaUrl',
+      'url',
+      'source',
+      'image_url','imageUrl' // some clients reuse this for videos
+    ];
+
+    let src =
+      pick(body, aliases) ||
+      deepFindCloudinaryVideo(body) ||
+      pick(evt.queryStringParameters || {}, aliases);
 
     if (!src) {
+      // helpful debug so you see what the function received
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'No video source provided' }),
+        body: JSON.stringify({
+          error: 'No video source provided',
+          received_keys: Object.keys(body || {}),
+        }),
       };
     }
 
