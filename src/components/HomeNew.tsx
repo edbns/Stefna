@@ -821,9 +821,9 @@ const HomeNew: React.FC = () => {
           if (!startRes.ok || !startJson?.job_id) {
             throw new Error(startJson?.error || 'start-v2v failed');
           }
-          notifyQueue({ title: 'Added to queue', message: 'We’ll start processing shortly.' })
+          notifyQueue({ title: 'Added to queue', message: 'We\'ll start processing shortly.' })
           setCurrentVideoJob({ id: startJson.job_id, status: 'queued' });
-          startVideoJobPolling(startJson.job_id);
+          startVideoJobPolling(startJson.job_id, startJson.model);
           // Optimistic placeholder in Profile: show processing tile
           try {
             const user = authService.getCurrentUser()
@@ -875,7 +875,7 @@ const HomeNew: React.FC = () => {
       if (res.status === 202 && body.job_id && isVideoPreview) {
         notifyQueue({ title: 'Add to queue', message: 'Processing will begin shortly.' })
         setCurrentVideoJob({ id: body.job_id, status: 'queued' })
-        startVideoJobPolling(body.job_id)
+        startVideoJobPolling(body.job_id, body.model)
         endGeneration(genId)
         setNavGenerating(false)
         return
@@ -1429,7 +1429,7 @@ const HomeNew: React.FC = () => {
   // Legacy notifications removed in favor of unified toasts
 
   // Video job polling functions
-  const startVideoJobPolling = (jobId: string) => {
+  const startVideoJobPolling = (jobId: string, model?: string) => {
     // Clear any existing polling
     if (videoJobPolling) {
       clearInterval(videoJobPolling)
@@ -1438,7 +1438,8 @@ const HomeNew: React.FC = () => {
     const interval = setInterval(async () => {
       try {
         const token = authService.getToken()
-        const response = await fetch(`/.netlify/functions/poll-v2v?id=${jobId}&persist=true`, {
+        const modelParam = model ? `&model=${encodeURIComponent(model)}` : ''
+        const response = await fetch(`/.netlify/functions/poll-v2v?id=${jobId}&persist=true${modelParam}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
         if (response.ok) {

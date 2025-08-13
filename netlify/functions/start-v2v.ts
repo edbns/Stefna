@@ -4,25 +4,18 @@ import type { Handler } from '@netlify/functions';
 const AIML_API_URL = process.env.AIML_API_URL!;
 const AIML_API_KEY = process.env.AIML_API_KEY!;
 
+// Helper to pick first non-empty string value from object keys
 const pick = (obj: any, keys: string[]) =>
   keys.map(k => obj?.[k]).find(v => typeof v === 'string' && v);
 
-const deepFindCloudinaryVideo = (obj: any): string | null => {
-  const rx = /^https?:\/\/res\.cloudinary\.com\/.+\.(mp4|mov)(\?.*)?$/i;
-  const stack = [obj];
-  while (stack.length) {
-    const cur = stack.pop();
-    if (!cur || typeof cur !== 'object') continue;
-    for (const v of Object.values(cur)) {
-      if (typeof v === 'string' && rx.test(v)) return v;
-      if (v && typeof v === 'object') stack.push(v);
-    }
-  }
-  return null;
-};
+// Detect if URL looks like a video based on path or extension
+const looksLikeVideoUrl = (s?: string) =>
+  typeof s === 'string' && (
+    /\/video\/upload\//.test(s) || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(s)
+  );
 
+// Convert Cloudinary video URL to first frame image for I2V
 const firstFrameFromCloudinary = (videoUrl: string) => {
-  // turns .../video/upload/.../foo.mp4 -> .../video/upload/so_0,f_jpg/.../foo.jpg
   if (!/res\.cloudinary\.com\/.+\/video\/upload\//.test(videoUrl)) return videoUrl;
   return videoUrl
     .replace('/video/upload/', '/video/upload/so_0,f_jpg/')
@@ -34,49 +27,52 @@ const clampDuration = (n?: number) => (n && n >= 10 ? 10 : 5);
 export const handler: Handler = async (evt) => {
   try {
     const body = JSON.parse(evt.body || '{}');
-    const prompt =
-      body.prompt || body.effectivePrompt || 'Enhance video with cinematic look';
+    const prompt = body.prompt || body.effectivePrompt || 'Enhance with cinematic look';
     
-    // Be ultra-forgiving about where the URL lives
+    // Accept many aliases; client should use video_url for V2V
     const aliases = [
-      'video_url','videoUrl',
-      'input_video','inputVideo',
-      'input_url','inputUrl',
-      'source_url','sourceUrl',
-      'asset_url','assetUrl',
-      'media_url','mediaUrl',
-      'url',
-      'source',
-      'image_url','imageUrl' // some clients reuse this for videos
+      'video_url','videoUrl','input_video','inputVideo',
+      'source_url','sourceUrl','asset_url','assetUrl',
+      'input_url','inputUrl','url','source',
+      'image_url','imageUrl' // legacy / accidental
     ];
 
-    let src =
-      pick(body, aliases) ||
-      deepFindCloudinaryVideo(body) ||
-      pick(evt.queryStringParameters || {}, aliases);
+    let src = pick(body, aliases) || pick(evt.queryStringParameters || {}, aliases);
+    const resourceType = body.resource_type; // 'video'|'image' maybe
 
     if (!src) {
-      // helpful debug so you see what the function received
       return {
         statusCode: 400,
         body: JSON.stringify({
-          error: 'No video source provided',
+          error: 'No source provided',
           received_keys: Object.keys(body || {}),
         }),
       };
     }
 
-    // 1) turn source video into an image poster for i2v
-    const image_url = firstFrameFromCloudinary(src);
+    // Determine if this is video-to-video or image-to-video
+    const isVideo = resourceType === 'video' || looksLikeVideoUrl(src);
 
-    // 2) create Kling i2v job
-    const payload = {
-      model: 'kling-video/v1.6/standard/image-to-video', // per AIML docs
-      image_url,
+    // Build provider model + payload
+    const MODEL_BASE = 'kling-video/v1.6/standard';
+    const task = isVideo ? 'video-to-video' : 'image-to-video';
+    const model = `${MODEL_BASE}/${task}`;
+
+    // Normalize payload keys based on detected type
+    const providerPayload: any = {
+      model,
       prompt,
-      duration: clampDuration(Number(body.duration)), // Kling supports 5 or 10s
+      duration: clampDuration(Number(body.duration)),
       ...(body.negative_prompt ? { negative_prompt: body.negative_prompt } : {}),
     };
+
+    if (isVideo) {
+      // True V2V: send video_url directly
+      providerPayload.video_url = src;
+    } else {
+      // I2V: send image_url (or convert video to first frame)
+      providerPayload.image_url = looksLikeVideoUrl(src) ? firstFrameFromCloudinary(src) : src;
+    }
 
     const res = await fetch(`${AIML_API_URL}/v2/generate/video/kling/generation`, {
       method: 'POST',
@@ -84,7 +80,7 @@ export const handler: Handler = async (evt) => {
         Authorization: `Bearer ${AIML_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(providerPayload),
     });
 
     const text = await res.text();
@@ -92,19 +88,24 @@ export const handler: Handler = async (evt) => {
       return {
         statusCode: res.status,
         body: JSON.stringify({
-          message: 'Vendor error creating Kling i2v job',
+          message: `Vendor error creating Kling ${task} job`,
           body: text,
         }),
       };
     }
 
     const json = JSON.parse(text || '{}');
-    const job_id =
-      json.generation_id || json.id || json.request_id || json.task_id;
+    const job_id = json.generation_id || json.id || json.request_id || json.task_id;
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ ok: true, job_id, vendor: 'kling-v1.6-i2v', raw: json }),
+      body: JSON.stringify({
+        ok: true,
+        job_id,
+        model, // ✅ Return the model so client can poll correctly
+        vendor: `kling-v1.6-${isVideo ? 'v2v' : 'i2v'}`,
+        raw: json
+      }),
     };
   } catch (err: any) {
     return {
