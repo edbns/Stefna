@@ -55,19 +55,18 @@ export const handler: Handler = async (event) => {
 
     if (!source_public_id) return bad(400, 'Could not resolve source_public_id')
 
-    // Persist job row in Supabase
+    // Persist job row in Supabase (ai_generations)
     const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
     const { data: job, error: jerr } = await supabase
-      .from('video_jobs')
+      .from('ai_generations')
       .insert({
         user_id: userId,
-        source_url: source_url || `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/video/upload/${source_public_id}.mp4`,
-        prompt: String(prompt || 'stylize').trim(),
-        model: model || 'flux/dev/video-to-video',
-        strength: typeof strength === 'number' ? strength : 0.85,
+        input_url: source_url || `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/video/upload/${source_public_id}.mp4`,
+        preset: String(prompt || 'stylize').trim(),
+        kind: 'video',
         visibility: visibility === 'private' ? 'private' : 'public',
-        allow_remix: allowRemix !== false,
-        status: 'queued'
+        status: 'queued',
+        progress: 0
       })
       .select('id')
       .single()

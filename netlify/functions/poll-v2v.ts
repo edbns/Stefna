@@ -16,7 +16,7 @@ export const handler: Handler = async (event) => {
     if (!jobId) return bad(400, 'job_id required')
 
     const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    const { data: job, error } = await supabase.from('video_jobs').select('*').eq('id', jobId).single()
+    const { data: job, error } = await supabase.from('ai_generations').select('*').eq('id', jobId).single()
     if (error || !job) return bad(404, 'Job not found')
 
     // Auto-fail stale jobs (no heartbeat)
@@ -28,12 +28,12 @@ export const handler: Handler = async (event) => {
     }
 
     // Map statuses to contract
-    if (job.status === 'queued') return ok({ ok:true, job_id: jobId, status: 'processing' })
-    if (job.status === 'running') return ok({ ok:true, job_id: jobId, status: 'processing' })
+    if (job.status === 'queued') return ok({ ok:true, job_id: jobId, status: 'processing', progress: job.progress || 0 })
+    if (job.status === 'processing') return ok({ ok:true, job_id: jobId, status: 'processing', progress: job.progress || 0 })
     if (job.status === 'failed' || job.status === 'canceled') return ok({ ok:false, job_id: jobId, status: 'failed', error: job.error || 'failed' })
 
     // succeeded: ensure we have result_url; optionally persist to Cloudinary and DB
-    let resultUrl: string | null = job.result_url || null
+    let resultUrl: string | null = job.output_url || null
     let cloudinaryPublicId: string | null = null
     let durationMs: number | null = job.duration_ms || null
 
