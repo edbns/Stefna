@@ -1,127 +1,86 @@
-import type { Handler } from '@netlify/functions'
-import { createClient } from '@supabase/supabase-js'
-import { initCloudinary } from './_cloudinary'
+import type { Handler } from "@netlify/functions";
 
-function ok(body: any) { return { statusCode: 202, body: JSON.stringify(body) } }
-function bad(status: number, message: string) { return { statusCode: status, body: JSON.stringify({ ok:false, error: message }) } }
-
-function extractPublicIdFromUrl(url: string): string | null {
-  try {
-    const u = new URL(url)
-    // Expect /video/upload/<public_id> or /auto/upload/<public_id>
-    const parts = u.pathname.split('/')
-    const idx = parts.findIndex(p => p === 'upload')
-    if (idx >= 0 && parts[idx+1]) {
-      return parts.slice(idx+1).join('/').replace(/^\//, '').replace(/\.(mp4|webm|mov)$/i, '')
-    }
-  } catch {}
-  return null
-}
+const A = (p: string) => `${(process.env.AIML_API_URL || "").replace(/\/+$/, "")}${p}`;
 
 export const handler: Handler = async (event) => {
   try {
-    if (event.httpMethod !== 'POST') return bad(405, 'Method Not Allowed')
-
-    // NO_DB_MODE: call vendor directly and return vendor job id
-    if (process.env.NO_DB_MODE === 'true') {
-      const { AIML_API_URL, AIML_API_KEY } = process.env as any
-      if (!AIML_API_URL || !AIML_API_KEY) return bad(500, 'MISSING_AIML_CONFIG')
-
-      const body = JSON.parse(event.body || '{}')
-      const sourceUrl: string | undefined = body.source_url || body.video_url
-      const prompt: string = String(body.prompt || '').trim()
-      const useWebhook: boolean = !!body.webhook
-      if (!sourceUrl) return bad(400, 'MISSING: video_url')
-
-      const siteUrl = process.env.SITE_URL || process.env.URL || process.env.DEPLOY_URL || process.env.DEPLOY_PRIME_URL || ''
-      const webhook_url = useWebhook && siteUrl ? `${siteUrl}/.netlify/functions/v2v-webhook` : undefined
-      const payload: Record<string, any> = {
-        video_url: sourceUrl,
-        prompt,
-      }
-      if (webhook_url) payload.webhook_url = webhook_url
-      if (webhook_url && process.env.V2V_WEBHOOK_SECRET) payload.webhook_secret = process.env.V2V_WEBHOOK_SECRET
-
-      const res = await fetch(`${AIML_API_URL.replace(/\/$/, '')}/v2v/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${AIML_API_KEY}` },
-        body: JSON.stringify(payload)
-      })
-      if (!res.ok) {
-        const text = await res.text().catch(() => '')
-        return bad(res.status, text || 'UPSTREAM_ERROR')
-      }
-      const data = await res.json().catch(() => ({}))
-      const id = data.id || data.request_id || data.job_id
-      if (!id) return bad(502, 'NO_JOB_ID')
-      return ok({ ok: true, job_id: id, status: 'queued' })
+    if (String(process.env.NO_DB_MODE).toLowerCase() !== "true") {
+      return j(500, { ok: false, error: "DB mode not supported here" });
     }
 
-    // Auth (decode JWT minimally)
-    const auth = event.headers.authorization || ''
-    const token = auth.replace(/^Bearer\s+/i, '')
-    if (!token) return bad(401, 'Missing Authorization token')
-    const claims = JSON.parse(Buffer.from((token.split('.')[1] || ''), 'base64').toString() || '{}')
-    const userId = claims.sub || claims.uid || claims.user_id || claims.userId || claims.id
-    if (!userId) return bad(401, 'Invalid user token')
+    const body = event.body ? JSON.parse(event.body) : {};
+    const videoUrl: string = body.video_url || body.input_url || body.source || body.source_url;
+    const prompt: string = body.prompt || "";
 
-    const body = JSON.parse(event.body || '{}')
-    let { source_url, source_public_id, prompt, strength, visibility, allowRemix, model } = body
+    if (!videoUrl) return j(400, { ok: false, error: "Missing video_url" });
 
-    if (!source_url && !source_public_id) return bad(400, 'Provide source_url or source_public_id')
+    // Optional webhook
+    const site = (process.env.SITE_URL || process.env.URL || process.env.DEPLOY_URL || process.env.DEPLOY_PRIME_URL || "").replace(/\/+$/, "");
+    const webhookUrl =
+      body.webhook_url ||
+      body.callback_url ||
+      (site ? `${site}/.netlify/functions/v2v-webhook` : undefined);
 
-    // Normalize source_public_id
-    if (!source_public_id && typeof source_url === 'string') {
-      source_public_id = extractPublicIdFromUrl(source_url) || null
+    const payload: any = {
+      // send several aliases so different vendors accept one
+      video_url: videoUrl,
+      input_url: videoUrl,
+      input_video: videoUrl,
+      source: videoUrl,
+      prompt,
+      webhook_url: webhookUrl,
+      callback_url: webhookUrl,
+      webhook_secret: process.env.V2V_WEBHOOK_SECRET || undefined,
+    };
+
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.AIML_API_KEY}`,
+    } as Record<string, string>;
+
+    // Try both common endpoints
+    const candidates = ["/v2v/start", "/v2v"];
+    let out: any = null;
+    let lastStatus = 0;
+    let lastText = "";
+
+    for (const path of candidates) {
+      const res = await fetch(A(path), { method: "POST", headers, body: JSON.stringify(payload) });
+      lastStatus = res.status;
+      lastText = await res.text();
+      if (res.ok) { out = safeJson(lastText); break; }
+      if (res.status !== 404 && res.status !== 405) { out = safeJson(lastText); break; }
     }
 
-    // If neither is Cloudinary public_id form, try to upload the source into inputs folder
-    if (!source_public_id && source_url) {
-      const cloudinary = initCloudinary()
-      const up = await (cloudinary as any).uploader.upload(source_url, {
-        resource_type: 'video',
-        folder: `stefna/inputs/${userId}`,
-        tags: ['stefna','type:input', `user:${userId}`],
-        overwrite: true,
-      })
-      source_public_id = up.public_id
-      source_url = up.secure_url
+    if (!out || lastStatus >= 400) {
+      return j(404, {
+        ok: false,
+        error: `Vendor rejected start (${lastStatus}). Body: ${truncate(lastText, 400)}`,
+        hint: "Check AIML_API_URL base (no /v2v suffix) and key; provider may use POST /v2v, not /v2v/start.",
+      });
     }
 
-    if (!source_public_id) return bad(400, 'Could not resolve source_public_id')
+    // Normalize job id
+    const jobId =
+      out.job_id || out.id || out.task_id || out.request_id || out.data?.id || out.data?.job_id;
 
-    // Persist job row in Supabase (ai_generations)
-    const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    const { data: job, error: jerr } = await supabase
-      .from('ai_generations')
-      .insert({
-        user_id: userId,
-        input_url: source_url || `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/video/upload/${source_public_id}.mp4`,
-        preset: String(prompt || 'stylize').trim(),
-        kind: 'video',
-        visibility: visibility === 'private' ? 'private' : 'public',
-        status: 'queued',
-        progress: 0
-      })
-      .select('id')
-      .single()
-
-    if (jerr || !job) return bad(400, jerr?.message || 'Failed to create job')
-
-    // Kick existing worker (fire-and-forget) to talk to provider
-    const base = process.env.URL || process.env.DEPLOY_URL || process.env.DEPLOY_PRIME_URL || (event.headers.host ? `https://${event.headers.host}` : '');
-    if (base) {
-      fetch(`${base}/.netlify/functions/video-job-worker`, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-internal': '1' },
-      body: JSON.stringify({ job_id: job.id })
-      }).catch(() => {})
+    if (!jobId) {
+      return j(502, {
+        ok: false,
+        error: "Start succeeded but no job id in response",
+        raw: out,
+      });
     }
 
-    return ok({ ok:true, job_id: job.id, status: 'queued' })
-  } catch (e:any) {
-    return bad(500, e?.message || 'start-v2v error')
+    return j(202, { ok: true, job_id: jobId });
+  } catch (e: any) {
+    console.error("start-v2v error", e);
+    return j(500, { ok: false, error: e?.message || "Server error" });
   }
+};
+
+function j(statusCode: number, body: any) {
+  return { statusCode, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
 }
-
-
+function safeJson(t: string) { try { return JSON.parse(t); } catch { return { raw: t }; } }
+function truncate(s = "", n = 200) { return s.length > n ? s.slice(0, n) + "…" : s; }
