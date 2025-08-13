@@ -19,6 +19,8 @@ import userMediaService from '../services/userMediaService'
 import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
+import { saveMediaNoDB, togglePublish } from '../lib/api'
+const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
@@ -855,6 +857,29 @@ const HomeNew: React.FC = () => {
           return;
         }
 
+        if (NO_DB_MODE) {
+          try {
+            const saved = await saveMediaNoDB({
+              resultUrl,
+              userId,
+              presetKey: selectedPreset ?? null,
+              sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : null,
+              allowRemix: allowRemix,
+              shareNow: !!shareToFeed,
+              mediaTypeHint: 'image',
+            })
+            console.log('✅ saveMediaNoDB ok:', saved)
+            // Refresh feed if shared
+            if (shareToFeed) {
+              setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
+            }
+          } catch (e:any) {
+            console.error('❌ saveMediaNoDB failed:', e)
+            addNotification('Error please try again', e?.message || 'Failed to save media', 'error')
+          }
+          return
+        }
+
         // First, create an asset record
         const assetResult = await createAsset({
           sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
@@ -1227,6 +1252,23 @@ const HomeNew: React.FC = () => {
     if (!authService.getToken()) {
               // Sign up required - no notification needed
       navigate('/auth')
+      return
+    }
+    
+    if (NO_DB_MODE) {
+      try {
+        // derive publicId from known fields or URL
+        const publicId = (media as any).cloudinaryPublicId || media.id || (media.url?.split('/').pop()?.split('.')[0])
+        if (!publicId) {
+          console.error('togglePublish: missing publicId')
+          return
+        }
+        await togglePublish(publicId, false)
+        // Trigger feed refresh
+        setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
+      } catch (e) {
+        console.error('togglePublish failed', e)
+      }
       return
     }
     
