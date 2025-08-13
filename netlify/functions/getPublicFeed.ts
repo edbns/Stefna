@@ -27,7 +27,7 @@ export const handler: Handler = async (event) => {
         source_public_id: r.context?.custom?.source_public_id || null,
       }));
 
-      return { statusCode: 200, body: JSON.stringify({ ok:true, data }) };
+      return { statusCode: 200, body: JSON.stringify({ ok:true, source:'cloudinary', data }) };
     } catch (e: any) {
       console.error('[getPublicFeed] error', e);
       return { statusCode: 400, body: JSON.stringify({ ok:false, error: e?.message || 'unknown error' }) };

@@ -15,6 +15,12 @@ function getUserIdFromToken(auth?: string): string | null {
 }
 
 export const handler: Handler = async (event) => {
+  // NO-DB mode: never touch the database; return a fake id so UI can proceed
+  if (process.env.NO_DB_MODE === 'true') {
+    const fakeId = 'cld-' + ((globalThis as any).crypto?.randomUUID?.() ?? Date.now().toString(36));
+    return { statusCode: 200, body: JSON.stringify({ ok: true, data: { id: fakeId } }) };
+  }
+
   try {
     const input = JSON.parse(event.body || '{}') as Partial<CreateAssetInput>;
 
