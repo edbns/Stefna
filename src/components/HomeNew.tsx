@@ -96,15 +96,19 @@ const HomeNew: React.FC = () => {
     setTimeout(() => requestClearPreset('composer exit'), 300)
   }
   
-  // Restore preset from localStorage on mount
+  // Restore or default preset on mount/when PRESETS update
   useEffect(() => {
-    const savedPreset = localStorage.getItem('selectedPreset')
-    if (savedPreset && PRESETS[savedPreset as PresetKey]) {
-      console.log('🔄 Restoring preset from localStorage:', savedPreset)
-      setSelectedPreset(savedPreset as PresetKey)
-      selectedPresetRef.current = savedPreset as PresetKey
+    const saved = localStorage.getItem('selectedPreset') as PresetKey | null
+    if (saved && PRESETS[saved]) {
+      setSelectedPreset(saved)
+      selectedPresetRef.current = saved
+      return
     }
-  }, [PRESETS]) // Add PRESETS as dependency
+    const firstKey = (Object.keys(PRESETS)[0] as PresetKey | undefined) || null
+    setSelectedPreset(firstKey || null)
+    selectedPresetRef.current = firstKey || null
+    if (firstKey) localStorage.setItem('selectedPreset', firstKey)
+  }, [PRESETS])
 
   // Debug preset changes
   useEffect(() => {
