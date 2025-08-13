@@ -41,11 +41,12 @@ export const handler: Handler = async (event) => {
     // Try common endpoint variants
     const candidates = [
       "/v2v/start", "/v2v",
-      "/eagle/v2v/start", "/eagle/v2v",
-      "/v1/v2v/start", "/v1/v2v",
       "/video/v2v/start", "/video/v2v",
-      // common alternate naming
-      "/v1/video-to-video", "/video-to-video",
+      "/video-to-video/start", "/video-to-video",
+      "/tasks/video/start", "/tasks/video",
+      "/v1/v2v/start", "/v1/v2v",
+      "/eagle/v2v/start", "/eagle/v2v",
+      "/v1/video-to-video", 
     ];
     let out: any = null;
     let lastStatus = 0;

@@ -590,6 +590,7 @@ const HomeNew: React.FC = () => {
     
     // Start generation with ID guard
     const genId = startGeneration();
+    setNavGenerating(true);
 
     // Get current profile settings
     const { shareToFeed, allowRemix } = await getUserProfileSettings()
@@ -605,6 +606,8 @@ const HomeNew: React.FC = () => {
 
     if (!previewUrl) {
       console.warn('No source media URL; aborting.');
+      endGeneration(genId);
+      setNavGenerating(false);
       return;
     }
 
@@ -618,6 +621,8 @@ const HomeNew: React.FC = () => {
     if (!chosen && !prompt.trim()) {
       console.warn('No preset selected and no user prompt; aborting.');
               // Pick a preset or add a prompt - no notification needed
+      endGeneration(genId);
+      setNavGenerating(false);
       return;
     }
     
@@ -678,18 +683,24 @@ const HomeNew: React.FC = () => {
     
     if (!effectivePrompt) {
       console.warn('No prompt available; aborting.');
+      endGeneration(genId);
+      setNavGenerating(false);
       return;
     }
 
     if (!isAuthenticated) {
       console.warn('User not authenticated; redirecting to auth.');
       navigate('/auth');
+      endGeneration(genId);
+      setNavGenerating(false);
       return;
     }
 
     // Apply user intent guard
     if (requireUserIntent({ userInitiated: true, source: kind })) {
       console.warn('⛔ Generation blocked by guard');
+      endGeneration(genId);
+      setNavGenerating(false);
       return;
     }
 
@@ -702,10 +713,9 @@ const HomeNew: React.FC = () => {
         isVideo: isVideoPreview
       });
       
-      // Start generation with ID guard
-      const genId = startGeneration();
+      // Start generation with ID guard (already set at function start)
+      // Just close the composer; keep using outer genId
       setIsComposerOpen(false);
-      setNavGenerating(true);
       
       // Don't clear preset when composer closes during generation
       // clearPresetOnExit();
@@ -982,6 +992,8 @@ const HomeNew: React.FC = () => {
               }
             } catch {}
           }
+          endGeneration(genId);
+          setNavGenerating(false);
           return
         }
 
@@ -996,6 +1008,8 @@ const HomeNew: React.FC = () => {
         if (!assetResult.ok) {
           console.error('Failed to create asset:', assetResult.error);
           notifyError({ title: 'Something went wrong', message: 'Failed to create asset record' });
+          endGeneration(genId);
+          setNavGenerating(false);
           return;
         }
 
@@ -1036,6 +1050,8 @@ const HomeNew: React.FC = () => {
           console.error('❌ Save-media failed:', saveRes.status, saveBody || saveText);
           notifyError({ title: 'Something went wrong', message: saveBody?.error || 'Failed to save media' });
         }
+        endGeneration(genId);
+        setNavGenerating(false);
         return
       } catch (error) {
         console.error('❌ Error in save flow:', error);
