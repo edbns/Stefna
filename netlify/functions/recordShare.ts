@@ -31,7 +31,7 @@ export const handler: Handler = async (event) => {
     if (process.env.NO_DB_MODE === 'true') {
       let publicId: string | undefined = body.publicId as string | undefined;
       const allowRemix: boolean = !!body.allowRemix;
-      const assetId: string | undefined = body.assetId as string | undefined;
+      const assetId: string | undefined = (body.assetId || body.asset_id) as string | undefined;
       if (!publicId && !assetId) {
         return { statusCode: 400, body: JSON.stringify({ ok:false, error:'MISSING: publicId (or assetId)' }) };
       }
@@ -41,7 +41,7 @@ export const handler: Handler = async (event) => {
         // Resolve from assetId using context if needed
         if (!publicId && assetId) {
           const found = await cloudinary.search
-            .expression(`tags=stefna AND context.asset_id=${assetId}`)
+            .expression(`tags="stefna" AND context.asset_id="${assetId}"`)
             .max_results(1)
             .execute();
           publicId = found?.resources?.[0]?.public_id;
@@ -79,7 +79,7 @@ export const handler: Handler = async (event) => {
     const is_public = !!shareToFeed;
     const allow_remix = !!shareToFeed && !!allowRemix;
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('assets')
       .update({ is_public, allow_remix })
       .eq('id', asset_id)
