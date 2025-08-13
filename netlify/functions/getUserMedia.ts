@@ -35,13 +35,22 @@ export const handler = async (event:any) => {
   if (process.env.NO_DB_MODE === 'true') {
     try {
       const cloudinary = initCloudinary();
-      const jwt = getJwt(event);
-      const claims = decodeClaims(jwt) || {};
-      const userId = pickUuidClaim(claims);
+      // allow query param for now
+      const qpUserId = event.queryStringParameters?.userId || '';
+      let userId = qpUserId;
+      if (!userId) {
+        const jwt = getJwt(event);
+        const claims = decodeClaims(jwt) || {};
+        userId = pickUuidClaim(claims) || '';
+      }
       if (!userId) return ok({ ok:true, data: [] });
 
+      const exprUserTag = `tags="stefna" AND tags="type:output" AND tags="user:${userId}"`;
+      const exprContext = `tags="stefna" AND tags="type:output" AND context.user_id="${userId}"`;
+      const expr = `(${exprUserTag}) OR (${exprContext})`;
+
       const res = await cloudinary.search
-        .expression(`(tags=stefna AND tags="user:${userId}") OR folder="stefna/outputs/${userId}" OR public_id="stefna/outputs/${userId}/*"`)
+        .expression(expr)
         .sort_by('created_at','desc')
         .max_results(100)
         .execute();

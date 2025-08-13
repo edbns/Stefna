@@ -42,6 +42,7 @@ export const handler: Handler = async (event) => {
       folder: `stefna/outputs/${uid}`,
       tags,
       context: {
+        user_id: uid || '',
         source_public_id: sourcePublicId || '',
         allow_remix: allowRemix ? 'true' : 'false',
         preset_key: presetKey || '',
