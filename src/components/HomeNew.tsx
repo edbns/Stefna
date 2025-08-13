@@ -881,15 +881,15 @@ const HomeNew: React.FC = () => {
             });
 
       // Save the generated media to the database
-      try {
-        const jwt = authService.getToken();
-        const userId = authService.getCurrentUser()?.id;
-        
-        if (!jwt || !userId) {
-          console.error('No JWT or user ID for saveMedia');
-          addNotification('Your media is ready', 'Image generated but not saved (auth error)', 'warning');
-          return;
-        }
+          try {
+            const jwt = authService.getToken();
+            const userId = authService.getCurrentUser()?.id;
+            
+            if (!jwt || !userId) {
+              console.error('No JWT or user ID for saveMedia');
+              addNotification('Your media is ready', 'Image generated but not saved (auth error)', 'warning');
+              return;
+            }
 
         if (NO_DB_MODE) {
           try {
@@ -917,7 +917,7 @@ const HomeNew: React.FC = () => {
           sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
           mediaType: 'image', // Default to image for now
           presetKey: selectedPreset,
-          prompt: effectivePrompt,
+              prompt: effectivePrompt,
         });
 
         if (!assetResult.ok) {
@@ -931,20 +931,20 @@ const HomeNew: React.FC = () => {
 
         // Now call save-media with the assetId and resultUrl; include userId and publish flag so server adds tags
         const saveRes = await fetch('/.netlify/functions/save-media', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwt}`
-          },
-          body: JSON.stringify({
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json', 
+                  'Authorization': `Bearer ${jwt}` 
+                },
+                body: JSON.stringify({
             assetId: assetId,
             resultUrl: resultUrl,
             mediaTypeHint: 'image',
             userId,
             shareNow: !!shareToFeed,
-          })
-        });
-
+                })
+              });
+              
         const saveText = await saveRes.text();
         let saveBody: any = {};
         try { saveBody = JSON.parse(saveText); } catch {}
@@ -954,12 +954,12 @@ const HomeNew: React.FC = () => {
           console.info('Media saved successfully:', saveBody);
           // Refresh the feed to show the new content if shared
           if (shareToFeed) {
-            setTimeout(() => {
-              console.log('🔄 Dispatching refreshFeed event...')
+                setTimeout(() => {
+                  console.log('🔄 Dispatching refreshFeed event...')
               window.dispatchEvent(new CustomEvent('refreshFeed'))
             }, 800)
-          }
-        } else {
+            }
+          } else {
           console.error('❌ Save-media failed:', saveRes.status, saveBody || saveText);
           addNotification('Error please try again', saveBody?.error || 'Failed to save media', 'error');
         }
@@ -1266,7 +1266,7 @@ const HomeNew: React.FC = () => {
   const handleRemix = async (media: UserMedia) => {
     if (media.allowRemix === false) return // allow when undefined
     if (!authService.getToken()) {
-      // Sign up required - no notification needed
+              // Sign up required - no notification needed
       navigate('/auth')
       return
     }
@@ -1301,13 +1301,13 @@ const HomeNew: React.FC = () => {
       setSelectedFile(null);
       setIsComposerOpen(true);
       setPrompt(media.prompt || '');
-      
-      // Clear selectedPreset when remixing
+    
+    // Clear selectedPreset when remixing
       requestClearPreset('remix started');
-      
-      // Auto-generate remix if we have the prompt
-      if (media.prompt) {
-        // Small delay to ensure state is set
+    
+    // Auto-generate remix if we have the prompt
+    if (media.prompt) {
+      // Small delay to ensure state is set
         setTimeout(() => dispatchGenerate('remix'), 100);
       }
       
@@ -1407,14 +1407,14 @@ const HomeNew: React.FC = () => {
         if (response.ok) {
           const jobStatus = await response.json()
           setCurrentVideoJob(jobStatus)
-          if (jobStatus.status === 'done') {
+          if (jobStatus && jobStatus.status === 'done') {
             clearInterval(interval)
             setVideoJobPolling(null)
             setCurrentVideoJob(null)
             addNotification('Your media is ready', 'Video processing completed successfully!', 'ready', undefined, 'video', () => {})
             window.dispatchEvent(new CustomEvent('refreshFeed'))
             window.dispatchEvent(new Event('userMediaUpdated'))
-          } else if (jobStatus.status === 'failed') {
+          } else if (jobStatus && jobStatus.status === 'failed') {
             clearInterval(interval)
             setVideoJobPolling(null)
             setCurrentVideoJob(null)

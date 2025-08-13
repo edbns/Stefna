@@ -20,9 +20,9 @@ export const handler: Handler = async (event) => {
     if (error || !job) return bad(404, 'Job not found')
 
     // Map statuses to contract
-    if (job.status === 'queued') return ok({ ok:true, status: 'queued', progress: 0 })
-    if (job.status === 'running') return ok({ ok:true, status: 'running', progress: 35 })
-    if (job.status === 'failed' || job.status === 'canceled') return ok({ ok:false, status: 'failed', error: job.error || 'failed' })
+    if (job.status === 'queued') return ok({ ok:true, job_id: jobId, status: 'queued', progress: 0 })
+    if (job.status === 'running') return ok({ ok:true, job_id: jobId, status: 'running', progress: 35 })
+    if (job.status === 'failed' || job.status === 'canceled') return ok({ ok:false, job_id: jobId, status: 'failed', error: job.error || 'failed' })
 
     // succeeded: ensure we have result_url; optionally persist to Cloudinary and DB
     let resultUrl: string | null = job.result_url || null
@@ -67,7 +67,7 @@ export const handler: Handler = async (event) => {
       await supabase.from('video_jobs').update({ provider_persisted: true, result_url: resultUrl }).eq('id', jobId)
     }
 
-    return ok({ ok:true, status:'done', result_url: resultUrl, cloudinary_public_id: cloudinaryPublicId, duration_ms: durationMs })
+    return ok({ ok:true, job_id: jobId, status:'done', result_url: resultUrl, cloudinary_public_id: cloudinaryPublicId, duration_ms: durationMs })
   } catch (e:any) {
     return bad(500, e?.message || 'poll-v2v error')
   }
