@@ -13,7 +13,7 @@ export const handler: Handler = async (event) => {
     // NO_DB_MODE: talk straight to vendor
     if (String(process.env.NO_DB_MODE).toLowerCase() === "true") {
       // Try multiple common status paths
-      const statusBases = [ "/v2v", "/eagle/v2v", "/v1/v2v", "/video/v2v" ];
+      const statusBases = [ "/v2v", "/eagle/v2v", "/v1/v2v", "/video/v2v", "/v1/video-to-video", "/video-to-video" ];
       let vendor: any = null;
       for (const sb of statusBases) {
         const url = aiml(`${sb}/${encodeURIComponent(id)}`);

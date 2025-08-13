@@ -44,6 +44,8 @@ export const handler: Handler = async (event) => {
       "/eagle/v2v/start", "/eagle/v2v",
       "/v1/v2v/start", "/v1/v2v",
       "/video/v2v/start", "/video/v2v",
+      // common alternate naming
+      "/v1/video-to-video", "/video-to-video",
     ];
     let out: any = null;
     let lastStatus = 0;
