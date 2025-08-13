@@ -869,14 +869,6 @@ const HomeNew: React.FC = () => {
               mediaTypeHint: 'image',
             })
             console.log('✅ saveMediaNoDB ok:', saved)
-            // If not auto-published, publish via recordShare with Cloudinary publicId
-            if (!shareToFeed && saved?.public_id) {
-              await fetch('/.netlify/functions/recordShare', {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ publicId: saved.public_id, allowRemix: true })
-              })
-            }
             // Refresh feed
             setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
           } catch (e:any) {
@@ -903,7 +895,7 @@ const HomeNew: React.FC = () => {
         const assetId = assetResult.data.id;
         console.log('✅ Asset created:', assetId);
 
-        // Now call save-media with the assetId and resultUrl
+        // Now call save-media with the assetId and resultUrl; include userId and publish flag so server adds tags
         const saveRes = await fetch('/.netlify/functions/save-media', {
           method: 'POST',
           headers: { 
@@ -914,105 +906,30 @@ const HomeNew: React.FC = () => {
             assetId: assetId,
             resultUrl: resultUrl,
             mediaTypeHint: 'image',
-            folder: 'stefna/outputs'
+            userId,
+            shareNow: !!shareToFeed,
           })
         });
 
-        console.log('💾 Save-media payload sent:', {
-          assetId,
-          resultUrl,
-          mediaTypeHint: 'image'
-        });
+        const saveText = await saveRes.text();
+        let saveBody: any = {};
+        try { saveBody = JSON.parse(saveText); } catch {}
+        console.log('💾 Save-media response:', saveRes.status, saveBody || saveText)
 
-        if (saveRes.ok) {
-          const savedMedia = await saveRes.json();
-          console.info('Media saved successfully:', savedMedia);
-          
-          // If the user had "Share to feed" toggled, publish it now
+        if (saveRes.ok && saveBody?.ok) {
+          console.info('Media saved successfully:', saveBody);
+          // Refresh the feed to show the new content if shared
           if (shareToFeed) {
-            console.log('📤 Attempting to share to feed with settings:', { shareToFeed, allowRemix })
-            console.log('📤 Calling record-share for asset:', assetId)
-            try {
-              const shareRes = await fetch('/.netlify/functions/recordShare', {
-                method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json', 
-                  'Authorization': `Bearer ${jwt}` 
-                },
-                body: JSON.stringify({
-                  asset_id: assetId,
-                  shareToFeed: true,
-                  allowRemix: allowRemix // enforce: remix only when shared
-                })
-              });
-              
-              console.log('📤 Share response status:', shareRes.status)
-              
-              if (shareRes.ok) {
-                const shareBody = await shareRes.json()
-                console.info('✅ Media published to feed successfully:', shareBody)
-                // Published to feed - no notification needed
-                
-                // Refresh the feed to show the new content
-                setTimeout(() => {
-                  console.log('🔄 Dispatching refreshFeed event...')
-                  window.dispatchEvent(new CustomEvent('refreshFeed'));
-                }, 1000); // Small delay to ensure database is updated
-              } else {
-                // Handle non-JSON errors gracefully
-                let shareError;
-                try {
-                  shareError = await shareRes.json();
-                } catch (parseError) {
-                  const errorText = await shareRes.text();
-                  shareError = { error: errorText };
-                }
-                console.warn('❌ Failed to publish to feed:', shareRes.status, shareError)
-                // Saved to All Media - no notification needed
-              }
-            } catch (shareError) {
-              console.error('❌ Error publishing to feed:', shareError)
-              // Saved to All Media - no notification needed
-            }
-          } else {
-            console.log('🔒 Not sharing to feed (shareToFeed is false)')
-            // Add success notification for private saves
-            addNotification('Your media is ready', 'Your image has been generated and saved to All Media.', 'ready', previewUrl, 'image', () => {
-              // Open the media viewer to show the generated image
-              setViewerMedia([{
-                id: 'generated-' + Date.now(),
-                userId: 'current-user',
-                type: 'photo',
-                url: resultUrl,
-                prompt: prompt,
-                aspectRatio: 4/3,
-                width: 800,
-                height: 600,
-                timestamp: new Date().toISOString(),
-                tokensUsed: 2,
-                likes: 0,
-                remixCount: 0,
-                isPublic: false,
-                allowRemix: false,
-                tags: [],
-                metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
-              }]);
-              setViewerStartIndex(0);
-              setViewerOpen(true);
-            });
+            setTimeout(() => {
+              console.log('🔄 Dispatching refreshFeed event...')
+              window.dispatchEvent(new CustomEvent('refreshFeed'))
+            }, 800)
           }
         } else {
-          // Handle save-media errors
-          let saveError;
-          try {
-            saveError = await saveRes.json();
-          } catch (parseError) {
-            const errorText = await saveRes.text();
-            saveError = { error: errorText };
-          }
-          console.error('❌ Save-media failed:', saveRes.status, saveError);
-          addNotification('Error please try again', saveError?.error || 'Failed to save media', 'error');
+          console.error('❌ Save-media failed:', saveRes.status, saveBody || saveText);
+          addNotification('Error please try again', saveBody?.error || 'Failed to save media', 'error');
         }
+        return
       } catch (error) {
         console.error('❌ Error in save flow:', error);
         addNotification('Error please try again', 'Failed to save generated media', 'error');

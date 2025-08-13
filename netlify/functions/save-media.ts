@@ -30,17 +30,11 @@ export const handler: Handler = async (event) => {
 
     const uid = (userId && String(userId)) || 'anonymous';
     const finalType = inferTypeFromUrl(resultUrl, mediaTypeHint);
-    const tags = [
-      'stefna',
-      'type:output',
-      ...(uid !== 'anonymous' ? [`user:${uid}`] : []),
-      ...(shareNow ? ['public'] : []),
-    ];
 
     const commonOptions = {
       resource_type: finalType === 'video' ? 'video' : 'image',
       folder: `stefna/outputs/${uid}`,
-      tags,
+      tags: [],
       context: {
         user_id: uid || '',
         source_public_id: sourcePublicId || '',
@@ -79,6 +73,20 @@ export const handler: Handler = async (event) => {
       const msg = 'cloudinary upload missing public_id/resource_type';
       console.error('[save-media] ' + msg, { upload });
       return { statusCode: 400, body: JSON.stringify({ ok:false, error: msg }) };
+    }
+
+    // Ensure base tags and publish tag
+    const tagsToAdd = ['stefna', 'type:output'];
+    if (uid && uid !== 'anonymous') tagsToAdd.push(`user:${uid}`);
+    if (shareNow) tagsToAdd.push('public');
+    await cloudinary.api.add_tag(tagsToAdd, [upload.public_id]);
+
+    // ensure context.user_id for search fallback
+    if (uid && uid !== 'anonymous') {
+      await cloudinary.uploader.explicit(upload.public_id, {
+        type: 'upload',
+        context: { user_id: uid },
+      });
     }
 
     return {
