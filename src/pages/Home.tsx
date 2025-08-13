@@ -99,14 +99,31 @@ export default function Home() {
             <figcaption className="text-sm opacity-70">
               {a.preset_key ?? 'custom'} • {new Date(a.published_at!).toLocaleString()}
             </figcaption>
-            {a.allow_remix && (
-              <RemixButton
-                assetId={a.id}
-                cloudinaryPublicId={a.cloudinary_public_id!}
-                mediaType={a.media_type!}
-                onRemix={handleRemix}
-              />
-            )}
+            
+            {/* Interactive Buttons */}
+            <div className="flex items-center justify-between">
+              {/* Like Button */}
+              <button
+                onClick={() => console.log(`[Home] Like clicked for asset: ${a.id}`)}
+                className="flex items-center space-x-1 px-2 py-1 text-sm text-gray-600 hover:text-red-500 transition-colors"
+                title="Like this creation"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 000-6.364l-1.317-1.318a4.5 4.5 0 00-6.364 0L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span>0</span>
+              </button>
+              
+              {/* Remix Button */}
+              {a.allow_remix && (
+                <RemixButton
+                  assetId={a.id}
+                  cloudinaryPublicId={a.cloudinary_public_id!}
+                  mediaType={a.media_type!}
+                  onRemix={handleRemix}
+                />
+              )}
+            </div>
           </div>
         </figure>
       ))}

@@ -7,6 +7,31 @@ const bad = (s:number,m:any)=>({ statusCode:s, body:JSON.stringify(typeof m==='s
 const isUuid = (s:string)=> /^[0-9a-f-]{36}$/i.test(s||'');
 const isHttps = (s:string)=> /^https?:\/\//i.test(s||'');
 
+// Extract Cloudinary public ID from various URL formats
+function extractCloudinaryPublicId(url: string): string {
+  try {
+    // Handle AIML API URLs: https://cdn.aimlapi.com/eagle/files/koala/fdfMdi3HFx5vxm8EIDcZ6.jpeg
+    if (url.includes('cdn.aimlapi.com')) {
+      const parts = url.split('/');
+      const filename = parts[parts.length - 1];
+      return filename.split('.')[0]; // Remove extension
+    }
+    
+    // Handle Cloudinary URLs: https://res.cloudinary.com/dw2xaqjmg/image/upload/v1755044530/users/mkkpxnuldynbmo1zbnet.png
+    if (url.includes('cloudinary.com')) {
+      const parts = url.split('/');
+      const filename = parts[parts.length - 1];
+      return filename.split('.')[0]; // Remove extension
+    }
+    
+    // Fallback: generate a unique ID
+    return `generated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  } catch (error) {
+    console.error('Error extracting Cloudinary public ID:', error);
+    return `fallback_${Date.now()}`;
+  }
+}
+
 function base64urlToJson(b64url:string){
   const raw = b64url.replace(/-/g,'+').replace(/_/g,'/');
   const pad = raw.length % 4 ? raw + '='.repeat(4 - (raw.length % 4)) : raw;
@@ -93,22 +118,23 @@ export const handler = async (event:any) => {
 
     const metaPayload = body.meta ?? { mode, model, prompt, negative_prompt, strength }; // use `meta`, not `metadata`
 
-    const row = {
-      job_id, user_id, result_url,
-      url: result_url,                 // 👈 add this to satisfy NOT NULL constraint
-      source_url: source_url ?? result_url,
-      model, mode, prompt: prompt || '', 
-      negative_prompt, strength,
-      visibility, env: APP_ENV,        // <- SERVER decides env, not the client
+    // Save to the new unified assets table
+    const assetRow = {
+      user_id,
+      cloudinary_public_id: extractCloudinaryPublicId(result_url), // Extract public ID from URL
+      media_type: 'image', // Default to image for now
+      status: 'ready',
+      is_public: visibility === 'public',
       allow_remix: visibility === 'public' ? !!allow_remix : false,
-      parent_asset_id,
-      resource_type: 'image', // Required field with CHECK constraint
-      meta: metaPayload               // ✅ write to `meta` (not `metadata`)
+      published_at: visibility === 'public' ? new Date().toISOString() : null,
+      source_asset_id: parent_asset_id,
+      preset_key: null, // Will be set by the preset system
+      prompt: prompt || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
-    const q = job_id
-      ? supa.from('media_assets').upsert(row, { onConflict: 'job_id', ignoreDuplicates: true }).select().maybeSingle()
-      : supa.from('media_assets').insert(row).select().single();
+    const q = supa.from('assets').insert(assetRow).select().single();
 
     const { data, error } = await q;
     if (error) return bad(400, { error: error.message, code: (error as any).code });
