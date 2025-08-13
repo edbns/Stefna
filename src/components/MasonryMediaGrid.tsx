@@ -240,8 +240,8 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             ) : null}
                           </button>
                         )}
-                        {/* Username tooltip on hover - only show when not hiding avatars */}
-                        {!hideUserAvatars && (
+                        {/* Username tooltip on hover - only show when not hiding avatars and userId exists */}
+                        {!hideUserAvatars && item.userId && (
                           <div className="absolute bottom-full left-0 mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                             {item.userId}
                           </div>

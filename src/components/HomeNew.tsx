@@ -391,13 +391,13 @@ const HomeNew: React.FC = () => {
           
           return ({
             id: item.id,
-            userId: 'public', // Placeholder since user info not exposed in public_feed_v2
-            userAvatar: undefined, // Not exposed in public_feed_v2
-            userTier: undefined, // Not exposed in public_feed_v2
+            userId: item.user_id || '', // Use actual user ID or empty string to hide tooltip
+            userAvatar: item.user_avatar || undefined, // Use actual user avatar if available
+            userTier: item.user_tier || undefined, // Use actual user tier if available
             type: item.media_type === 'video' ? 'video' : 'photo',
             url: mediaUrl,
             thumbnailUrl: mediaUrl, // Use same URL for thumbnail
-            prompt: 'AI Generated Content', // Not exposed in public_feed_v2
+            prompt: item.prompt || 'AI Generated Content', // Use actual prompt or fallback
             style: undefined,
             aspectRatio: 4/3, // Default aspect ratio
             width: 800, // Default width
@@ -1029,6 +1029,7 @@ const HomeNew: React.FC = () => {
             mediaTypeHint: 'image',
             userId,
             shareNow: !!shareToFeed,
+            prompt: effectivePrompt,
                 })
               });
               

@@ -21,6 +21,51 @@ exports.handler = async (event) => {
     const { id } = body
     if (!id) return { statusCode: 400, body: JSON.stringify({ error: 'id is required' }) }
 
+    // NO_DB_MODE: Delete directly from Cloudinary using public_id
+    if (process.env.NO_DB_MODE === 'true') {
+      try {
+        console.log(`[delete-media] NO_DB_MODE: Deleting Cloudinary asset: ${id}`)
+        
+        // In NO_DB_MODE, the 'id' is actually the Cloudinary public_id
+        // Try both image and video resource types since we don't know which one it is
+        let deleteSuccess = false
+        
+        // Try image first
+        try {
+          await cloudinary.uploader.destroy(id, {
+            resource_type: 'image',
+            invalidate: true,
+          })
+          deleteSuccess = true
+          console.log(`[delete-media] Successfully deleted image: ${id}`)
+        } catch (imageErr) {
+          console.log(`[delete-media] Not an image, trying video: ${id}`)
+          
+          // Try video if image failed
+          try {
+            await cloudinary.uploader.destroy(id, {
+              resource_type: 'video',
+              invalidate: true,
+            })
+            deleteSuccess = true
+            console.log(`[delete-media] Successfully deleted video: ${id}`)
+          } catch (videoErr) {
+            console.warn(`[delete-media] Failed to delete as both image and video: ${id}`, videoErr?.message)
+          }
+        }
+
+        if (deleteSuccess) {
+          return { statusCode: 200, body: JSON.stringify({ ok: true }) }
+        } else {
+          return { statusCode: 404, body: JSON.stringify({ error: 'Asset not found in Cloudinary' }) }
+        }
+      } catch (e) {
+        console.error('[delete-media] NO_DB_MODE error:', e)
+        return { statusCode: 500, body: JSON.stringify({ error: 'Cloudinary deletion failed' }) }
+      }
+    }
+
+    // DB_MODE: Original Supabase + Cloudinary logic
     const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
     // Fetch media row to verify ownership and get public_id if present

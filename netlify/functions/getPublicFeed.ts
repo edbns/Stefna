@@ -30,6 +30,10 @@ export const handler: Handler = async (event) => {
       published_at: r.created_at,
       preset_key: r.context?.custom?.preset_key || null,
       source_public_id: r.context?.custom?.source_public_id || null,
+      user_id: r.context?.custom?.user_id || r.context?.user_id || null,
+      user_avatar: null, // Not stored in Cloudinary context
+      user_tier: null, // Not stored in Cloudinary context
+      prompt: r.context?.custom?.prompt || null, // Extract prompt from Cloudinary context
     }));
 
     return { statusCode: 200, body: JSON.stringify({ ok:true, source:'cloudinary', data }) };

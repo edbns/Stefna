@@ -133,7 +133,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
         <div className="bg-black/80 backdrop-blur-sm p-4">
           <div className="flex items-center justify-center h-full">
             <div className="flex items-center space-x-2 pt-2">
-              <span className="text-white text-sm">User {current.userId?.slice(0, 6) || 'Unknown'}</span>
+              <span className="text-white text-sm">{current.userId || 'Anonymous User'}</span>
               <span className="text-white text-sm">•</span>
               <span className="text-white text-sm">{formattedTime}</span>
             </div>
