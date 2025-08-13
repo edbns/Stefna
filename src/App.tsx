@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { ToastProvider } from './components/ui/Toasts'
 // StickyFooter removed per new minimal UI
@@ -10,6 +10,7 @@ import CookiesPolicy from './screens/CookiesPolicy'
 import ProfileScreen from './screens/ProfileScreen'
 import { Navigate } from 'react-router-dom'
 import AuthScreen from './screens/AuthScreen'
+import { initializeAuthBootstrap } from './services/authBootstrap'
 
 const AppContent: React.FC = () => {
   const location = useLocation()
@@ -56,6 +57,11 @@ const AppContent: React.FC = () => {
 }
 
 const App: React.FC = () => {
+  useEffect(() => {
+    // Initialize auth bootstrap on app start
+    initializeAuthBootstrap();
+  }, []);
+
   return (
     <BrowserRouter>
       <ToastProvider>

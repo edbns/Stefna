@@ -5,6 +5,7 @@ export interface UserMedia {
   id: string
   userId: string
   userAvatar?: string
+  userUsername?: string // New: display name from profiles table
   userTier?: string
   type: 'photo' | 'video' | 'remix'
   url: string
@@ -23,6 +24,7 @@ export interface UserMedia {
   remixCount: number
   isPublic: boolean
   allowRemix: boolean
+  visibility?: 'public' | 'private' // New: explicit visibility field
   tags: string[]
   metadata: {
     quality: 'standard' | 'high'

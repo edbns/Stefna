@@ -37,3 +37,46 @@ export async function uploadToCloudinary(fileOrDataUrl: File | string, folder: s
 
   return { secure_url: up.secure_url as string, width: up.width as number, height: up.height as number, public_id: up.public_id as string };
 }
+
+/**
+ * Upload avatar image to Cloudinary with optimized settings for profile photos
+ */
+export async function uploadAvatarToCloudinary(file: File, userId: string): Promise<string> {
+  const folder = `avatars/${userId}`;
+  
+  // Get signed upload parameters
+  const sig = await signedFetch("/.netlify/functions/cloudinary-sign", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ 
+      folder, 
+      resource_type: "image",
+      transformation: "c_fill,w_200,h_200,q_auto,f_auto" // Optimize for avatars
+    })
+  }).then(r => r.json());
+
+  // Prepare form data
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("api_key", sig.api_key);
+  formData.append("timestamp", String(sig.timestamp));
+  formData.append("signature", sig.signature);
+  formData.append("folder", folder);
+  formData.append("resource_type", "image");
+  formData.append("transformation", "c_fill,w_200,h_200,q_auto,f_auto"); // Square crop, 200x200, auto quality/format
+
+  // Upload to Cloudinary
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloud_name}/image/upload`, {
+    method: "POST",
+    body: formData
+  });
+
+  const result = await response.json();
+
+  if (!result?.secure_url) {
+    console.error("Avatar upload failed:", result);
+    throw new Error(result?.error?.message || "Avatar upload failed");
+  }
+
+  return result.secure_url as string;
+}

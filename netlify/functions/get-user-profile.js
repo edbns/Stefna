@@ -19,9 +19,9 @@ exports.handler = async (event) => {
 
     console.log(`📥 Getting user profile for: ${userId}`)
 
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, name, avatar_url, tier, created_at')
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url, share_to_feed, allow_remix, onboarding_completed, created_at')
       .eq('id', userId)
       .single()
 
@@ -32,11 +32,16 @@ exports.handler = async (event) => {
 
     // Return profile data in the format expected by the frontend
     const profileData = {
-      id: user.id,
-      name: user.name || '',
-      avatar: user.avatar_url || '',
-      tier: user.tier || 'registered',
-      createdAt: user.created_at
+      id: profile.id,
+      username: profile.username || '',
+      name: profile.username || '', // Keep for backward compatibility
+      avatar: profile.avatar_url || '',
+      avatar_url: profile.avatar_url || '',
+      shareToFeed: profile.share_to_feed || false,
+      allowRemix: profile.allow_remix || false,
+      onboarding_completed: profile.onboarding_completed || false,
+      tier: 'registered', // Default tier
+      createdAt: profile.created_at
     }
 
     console.log(`✅ Retrieved profile for user ${userId}:`, profileData)

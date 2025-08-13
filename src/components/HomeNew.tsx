@@ -15,6 +15,8 @@ import presetRotationService from '../services/presetRotationService'
 import captionService from '../services/captionService'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
 import ShareModal from './ShareModal'
+import ProfileSetupModal from './ProfileSetupModal'
+import { needsOnboarding } from '../services/profile'
 import { requireUserIntent } from '../utils/generationGuards'
 import userMediaService from '../services/userMediaService'
 import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
@@ -210,6 +212,10 @@ const HomeNew: React.FC = () => {
   const [creatorFilter, setCreatorFilter] = useState<string | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
+  
+  // Profile onboarding state
+  const [showProfileSetup, setShowProfileSetup] = useState(false)
+  const [userProfile, setUserProfile] = useState<any>(null)
   const [currentFilter, setCurrentFilter] = useState<'all' | 'images' | 'videos'>('all')
   const [navGenerating, setNavGenerating] = useState(false)
   const [generateTwo, setGenerateTwo] = useState(false)
@@ -1585,6 +1591,16 @@ const HomeNew: React.FC = () => {
         const userData = await response.json()
         console.log('✅ User profile loaded from database:', userData)
         
+        // Store full user profile for onboarding check
+        setUserProfile(userData)
+        
+        // Check if user needs onboarding using the profile service
+        const needsSetup = await needsOnboarding()
+        if (needsSetup) {
+          console.log('🎯 User needs onboarding, showing profile setup modal')
+          setShowProfileSetup(true)
+        }
+        
         // Update localStorage with profile data
         const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
         const updatedProfile = { 
@@ -2132,6 +2148,20 @@ const HomeNew: React.FC = () => {
 
       {/* Video Job Status Display removed in favor of unified toasts */}
 
+      {/* Profile Setup Modal */}
+      <ProfileSetupModal
+        isOpen={showProfileSetup}
+        onClose={() => setShowProfileSetup(false)}
+        userId={authService.getCurrentUser()?.id || ''}
+        token={authService.getToken() || ''}
+        onComplete={(profile) => {
+          console.log('✅ Profile setup completed:', profile)
+          setUserProfile(profile)
+          setShowProfileSetup(false)
+          // Refresh user profile data
+          loadUserProfileFromDatabase()
+        }}
+      />
 
     </div>
   )

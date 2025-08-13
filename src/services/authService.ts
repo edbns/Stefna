@@ -21,6 +21,7 @@ class AuthService {
     user: null,
     token: null
   }
+  private authChangeListeners: ((authState: AuthState) => void)[] = []
 
   static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -81,6 +82,8 @@ class AuthService {
 
   // Set auth state after successful login
   setAuthState(token: string, user: User): void {
+    const wasAuthenticated = this.authState.isAuthenticated
+    
     this.authState = {
       isAuthenticated: true,
       user,
@@ -88,6 +91,11 @@ class AuthService {
     }
     localStorage.setItem('auth_token', token)
     localStorage.setItem('user_data', JSON.stringify(user))
+    
+    // Notify listeners if auth state changed
+    if (!wasAuthenticated) {
+      this.notifyAuthChange()
+    }
   }
 
   // Clear auth state on logout
@@ -136,6 +144,29 @@ class AuthService {
     this.loadAuthState()
   }
 
+  // Add auth state change listener
+  onAuthStateChange(callback: (authState: AuthState) => void): () => void {
+    this.authChangeListeners.push(callback)
+    
+    // Return unsubscribe function
+    return () => {
+      const index = this.authChangeListeners.indexOf(callback)
+      if (index > -1) {
+        this.authChangeListeners.splice(index, 1)
+      }
+    }
+  }
+
+  // Notify all listeners of auth state change
+  private notifyAuthChange(): void {
+    this.authChangeListeners.forEach(callback => {
+      try {
+        callback(this.authState)
+      } catch (error) {
+        console.error('Error in auth state change listener:', error)
+      }
+    })
+  }
 
 }
 
