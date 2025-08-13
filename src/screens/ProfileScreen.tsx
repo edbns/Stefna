@@ -143,6 +143,21 @@ const ProfileScreen: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated) {
       loadProfileFromDatabase()
+      // Load persisted user settings (shareToFeed, allowRemix)
+      ;(async () => {
+        try {
+          const token = authService.getToken()
+          if (!token) return
+          const r = await fetch('/.netlify/functions/user-settings', { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+          if (r.ok) {
+            const s = await r.json()
+            setProfileData(prev => ({ ...prev, shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix }))
+            localStorage.setItem('userProfile', JSON.stringify({ ...profileData, shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix }))
+          }
+        } catch (e) {
+          // ignore, fallback to defaults/localStorage
+        }
+      })()
     } else {
       // Fallback to localStorage for non-authenticated users
       const savedProfile = localStorage.getItem('userProfile')
@@ -925,6 +940,26 @@ const ProfileScreen: React.FC = () => {
     { id: 'settings', label: 'Settings', icon: Settings }
   ]
 
+  // Persist user settings helper
+  const updateUserSettings = async (shareToFeed: boolean, allowRemix: boolean) => {
+    const token = authService.getToken()
+    if (!token) return
+    try {
+      const r = await fetch('/.netlify/functions/user-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ shareToFeed, allowRemix })
+      })
+      if (r.ok) {
+        const s = await r.json()
+        setProfileData(prev => ({ ...prev, shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix }))
+        localStorage.setItem('userProfile', JSON.stringify({ ...profileData, shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix }))
+      }
+    } catch (e) {
+      // keep local state; will retry next time
+    }
+  }
+
   return (
     <div className="min-h-screen bg-black flex">
       {/* Sidebar - 20% */}
@@ -963,16 +998,12 @@ const ProfileScreen: React.FC = () => {
                 </div>
                 <button
                   onClick={() => {
-                    const newShareToFeed = !profileData.shareToFeed
-                    const updatedProfileData = { 
-                      ...profileData, 
-                      shareToFeed: newShareToFeed,
-                      // If turning off share to feed, also turn off allow remix
-                      allowRemix: newShareToFeed ? profileData.allowRemix : false
-                    }
-                    setProfileData(updatedProfileData)
-                    // Save to localStorage immediately
-                    localStorage.setItem('userProfile', JSON.stringify(updatedProfileData))
+                    const nextShare = !profileData.shareToFeed
+                    const nextAllow = nextShare ? profileData.allowRemix : false
+                    setProfileData(prev => ({ ...prev, shareToFeed: nextShare, allowRemix: nextAllow }))
+                    localStorage.setItem('userProfile', JSON.stringify({ ...profileData, shareToFeed: nextShare, allowRemix: nextAllow }))
+                    // Persist to server
+                    updateUserSettings(nextShare, nextAllow)
                   }}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
                     profileData.shareToFeed ? 'bg-white' : 'bg-white/20'
@@ -1000,10 +1031,10 @@ const ProfileScreen: React.FC = () => {
                   onClick={() => {
                     // Only allow toggling if share to feed is enabled
                     if (profileData.shareToFeed) {
-                      const updatedProfileData = { ...profileData, allowRemix: !profileData.allowRemix }
-                      setProfileData(updatedProfileData)
-                      // Save to localStorage immediately
-                      localStorage.setItem('userProfile', JSON.stringify(updatedProfileData))
+                      const nextAllow = !profileData.allowRemix
+                      setProfileData(prev => ({ ...prev, allowRemix: nextAllow }))
+                      localStorage.setItem('userProfile', JSON.stringify({ ...profileData, allowRemix: nextAllow }))
+                      updateUserSettings(true, nextAllow)
                     }
                   }}
                   disabled={!profileData.shareToFeed}
