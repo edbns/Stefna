@@ -35,7 +35,6 @@ export const handler = async (event:any) => {
   if (process.env.NO_DB_MODE === 'true') {
     try {
       const cloudinary = initCloudinary();
-      // allow query param for now
       const qpUserId = event.queryStringParameters?.userId || '';
       let userId = qpUserId;
       if (!userId) {
@@ -43,10 +42,10 @@ export const handler = async (event:any) => {
         const claims = decodeClaims(jwt) || {};
         userId = pickUuidClaim(claims) || '';
       }
-      if (!userId) return ok({ ok:true, data: [] });
+      if (!userId) return ok({ ok:true, items: [] });
 
-      const exprUserTag = `tags="stefna" AND tags="type:output" AND tags="user:${userId}"`;
-      const exprContext = `tags="stefna" AND tags="type:output" AND context.user_id="${userId}"`;
+      const exprUserTag = `tags=\"stefna\" AND tags=\"type:output\" AND tags=\"user:${userId}\"`;
+      const exprContext = `tags=\"stefna\" AND tags=\"type:output\" AND context.user_id=\"${userId}\"`;
       const expr = `(${exprUserTag}) OR (${exprContext})`;
 
       const res = await cloudinary.search
@@ -55,17 +54,21 @@ export const handler = async (event:any) => {
         .max_results(100)
         .execute();
 
-      const data = (res?.resources || []).map((r: any) => ({
+      const items = (res?.resources || []).map((r: any) => ({
         id: r.public_id,
-        cloudinary_public_id: r.public_id,
-        media_type: r.resource_type === 'video' ? 'video' : 'image',
-        is_public: (r.tags || []).includes('public'),
+        user_id: r.context?.custom?.user_id || userId,
+        resource_type: r.resource_type,
+        url: r.secure_url,
+        result_url: r.secure_url,
         created_at: r.created_at,
-        preset_key: r.context?.custom?.preset_key || null,
-        source_public_id: r.context?.custom?.source_public_id || null,
+        visibility: (r.tags || []).includes('public') ? 'public' : 'private',
+        allow_remix: r.context?.custom?.allow_remix === 'true',
+        prompt: null,
+        mode: null,
+        meta: r.context?.custom || {},
       }));
 
-      return ok({ ok:true, data });
+      return ok({ ok:true, items });
     } catch (e:any) {
       console.error('[getUserMedia] error', e);
       return err(500, e?.message || 'Internal server error');
