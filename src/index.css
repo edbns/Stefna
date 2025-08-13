@@ -19,6 +19,8 @@ body {
   overflow-x: hidden;
 }
 
+
+
 /* Optimized button transitions for better responsiveness */
 .btn-optimized {
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
