@@ -615,7 +615,7 @@ const HomeNew: React.FC = () => {
                 {userMenu && (
                   <div className="absolute right-0 mt-2 bg-[#222222] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
                     <button onClick={() => { setUserMenu(false); navigate('/profile') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Profile</button>
-                    <button onClick={() => { setUserMenu(false); navigate('/auth') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Sign out</button>
+                    <button onClick={() => { setUserMenu(false); authService.logout(); navigate('/') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Sign out</button>
                   </div>
                 )}
               </div>

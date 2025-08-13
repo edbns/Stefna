@@ -757,12 +757,17 @@ const HomeNew: React.FC = () => {
       const payload: Record<string, any> = {
         prompt: effectivePrompt,
         ...(isVideo ? { video_url: sourceUrl } : { image_url: sourceUrl }), // ✅ Use correct key
-        resource_type: isVideo ? 'video' : 'image',
+        isVideo, // Explicit flag for server-side model selection
+        // Clean payload - only essential fields for vendor
+        fps: 24,
+        duration: isVideo ? 5 : undefined,
+        stabilization: false,
+        // Internal fields for our system (not sent to vendor)
         source: kind,
         visibility: shareToFeed ? 'public' : 'private',
         allow_remix: shareToFeed ? allowRemix : false,
         num_variations: generateTwo ? 2 : 1,
-        strength: 0.85,  // Increased from default for more visible changes
+        strength: 0.85,  // For I2I processing
         seed: Date.now(), // Prevent provider-side caching
         request_id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, // Idempotency key for credit charging
       };
@@ -812,14 +817,12 @@ const HomeNew: React.FC = () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
             body: JSON.stringify({
-              video_url: sourceUrl,  // ← Fixed: use video_url instead of source_url
+              video_url: sourceUrl,  // Clean: only vendor-accepted fields
               prompt: effectivePrompt,
               duration: 5,  // Kling supports 5 or 10 seconds
-              // Optional fields for future use:
-              strength: payload.strength ?? 0.7,
-              visibility: shareToFeed ? 'public' : 'private',
-              allowRemix: shareToFeed ? allowRemix : false,
-              model: 'eagle-v2v'
+              fps: 24,
+              stabilization: false
+              // Removed: strength, visibility, allowRemix, model (server decides model)
             })
           });
           const startJson = await startRes.json().catch(() => ({}));
@@ -1445,7 +1448,7 @@ const HomeNew: React.FC = () => {
         const token = authService.getToken()
         const modelParam = model ? `&model=${encodeURIComponent(model)}` : ''
         const promptParam = prompt ? `&prompt=${encodeURIComponent(prompt)}` : ''
-        const response = await fetch(`/.netlify/functions/poll-v2v?id=${jobId}&persist=true${modelParam}${promptParam}`, {
+        const response = await fetch(`/.netlify/functions/poll-v2v?id=${encodeURIComponent(jobId)}&model=${encodeURIComponent(model || 'kling-video/v1.6/standard/video-to-video')}&persist=true${promptParam}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
         if (response.ok) {
@@ -1730,7 +1733,7 @@ const HomeNew: React.FC = () => {
             {userMenu && (
               <div className="absolute right-0 mt-2 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
                 <button onClick={() => { setUserMenu(false); navigate('/profile') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Profile</button>
-                <button onClick={() => { setUserMenu(false); navigate('/auth') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Sign out</button>
+                <button onClick={() => { setUserMenu(false); authService.logout(); navigate('/') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Sign out</button>
               </div>
             )}
           </div>

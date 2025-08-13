@@ -73,7 +73,7 @@ export async function dispatchGenerate({
         
         const promptParam = payload.prompt ? `&prompt=${encodeURIComponent(payload.prompt)}` : '';
         const pollRes = await fetch(
-          `/.netlify/functions/poll-v2v?id=${encodeURIComponent(job_id)}&persist=true&userId=${payload.userId || 'public'}${promptParam}`
+          `/.netlify/functions/poll-v2v?id=${encodeURIComponent(job_id)}&model=${encodeURIComponent(model)}&persist=true${promptParam}`
         );
         
         if (!pollRes.ok) {
