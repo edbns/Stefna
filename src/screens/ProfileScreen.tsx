@@ -478,6 +478,17 @@ const ProfileScreen: React.FC = () => {
             
             console.log('📊 Setting userMedia with', transformedMedia.length, 'items')
             setUserMedia(transformedMedia);
+            
+            // Also derive remixes immediately from the fresh list (avoid stale state)
+            const remixesWithAvatar = transformedMedia
+              .filter(m => m.type === 'remix')
+              .map(remix => ({
+                ...remix,
+                userAvatar: typeof profileData.avatar === 'string' ? profileData.avatar : undefined,
+                userTier: _userTier
+              }));
+            console.log('🔄 Setting remixedMedia with', remixesWithAvatar.length, 'items (from transformed)')
+            setRemixedMedia(remixesWithAvatar)
                   } else {
           console.error('Failed to load user media from database:', response.statusText);
           // Fallback to local service if database fails
@@ -494,18 +505,18 @@ const ProfileScreen: React.FC = () => {
       }
 
       // Load remixed media (for now, filter from user media)
-      const remixes = userMedia.filter(m => m.type === 'remix')
-      // Ensure remixes have user avatar for home page display
-      const remixesWithAvatar = remixes.map(remix => ({
-        ...remix,
-        userAvatar: typeof profileData.avatar === 'string' ? profileData.avatar : undefined,
-        userTier: _userTier
-      }));
-      console.log('🔄 Setting remixedMedia with', remixesWithAvatar.length, 'items')
-      setRemixedMedia(remixesWithAvatar)
+        // Derive remixes from current userMedia state on first load
+        const remixesBootstrap = userMedia.filter(m => m.type === 'remix')
+        const remixesBootstrapWithAvatar = remixesBootstrap.map(remix => ({
+          ...remix,
+          userAvatar: typeof profileData.avatar === 'string' ? profileData.avatar : undefined,
+          userTier: _userTier
+        }));
+        console.log('🔄 Bootstrapping remixedMedia with', remixesBootstrapWithAvatar.length, 'items')
+        setRemixedMedia(remixesBootstrapWithAvatar)
       
       // Ensure we have the latest userMedia for filtering
-      console.log('🔄 Current userMedia for filtering:', userMedia.length, 'items')
+        console.log('🔄 Current userMedia for filtering (state):', userMedia.length, 'items')
 
       // Load liked media (for now, empty - will be implemented with database)
       setLikedMedia([])
