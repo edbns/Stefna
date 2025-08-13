@@ -519,6 +519,14 @@ const HomeNew: React.FC = () => {
     }
   }, [videoJobPolling])
 
+  // Ensure UI never stays globally locked on unmount
+  useEffect(() => {
+    return () => {
+      setIsGenerating(false)
+      setNavGenerating(false)
+    }
+  }, [])
+
   // Get user profile settings for sharing
   const getUserProfileSettings = async () => {
     // Try to get from database first (for authenticated users)
@@ -834,7 +842,7 @@ const HomeNew: React.FC = () => {
           } catch {}
         } catch (err:any) {
           console.error('start-v2v error', err);
-          addNotification('Error please try again', err?.message || 'Video job failed to start', 'error');
+          notifyError({ title: 'Failed', message: err?.message || 'Video job failed to start' });
         }
         endGeneration(genId);
         setNavGenerating(false);
@@ -853,7 +861,7 @@ const HomeNew: React.FC = () => {
 
       // Handle video job creation (status 202)
       if (res.status === 202 && body.job_id && isVideoPreview) {
-        addNotification('Add to queue', 'Video job created successfully. Processing will begin shortly.', 'queue')
+        notifyQueue({ title: 'Add to queue', message: 'Processing will begin shortly.' })
         setCurrentVideoJob({ id: body.job_id, status: 'queued' })
         startVideoJobPolling(body.job_id)
         endGeneration(genId)
@@ -1200,12 +1208,6 @@ const HomeNew: React.FC = () => {
       console.log('❌ No previewUrl available, cannot generate')
       return;
     }
-    
-    // Prevent multiple simultaneous generations
-    if (isGenerating) {
-      console.log('⚠️ Generation already in progress, ignoring request');
-      return;
-    }
 
     console.log('🚀 Auto-generating with preset:', presetName);
     
@@ -1323,7 +1325,7 @@ const HomeNew: React.FC = () => {
         error = { error: errorText };
       }
       console.error('❌ Unshare failed:', error)
-      addNotification('Error please try again', error.error || 'Failed to remove media from feed', 'error')
+      notifyError({ title: 'Failed', message: error.error || 'Failed to remove media from feed' })
     }
   }
 
@@ -1438,11 +1440,11 @@ const HomeNew: React.FC = () => {
             notifyReady({ title: 'Your media is ready', message: 'Tap to open' })
             window.dispatchEvent(new CustomEvent('refreshFeed'))
             window.dispatchEvent(new Event('userMediaUpdated'))
-          } else if (jobStatus && jobStatus.status === 'failed') {
+          } else if (jobStatus && (jobStatus.status === 'failed' || jobStatus.status === 'timeout')) {
             clearInterval(interval)
             setVideoJobPolling(null)
             setCurrentVideoJob(null)
-            notifyError({ title: 'Something went wrong', message: jobStatus.error || 'Video processing failed' })
+            notifyError({ title: 'Failed', message: jobStatus.error || (jobStatus.status === 'timeout' ? 'Timed out' : 'Video processing failed') })
             try {
               // mark any optimistic placeholder as failed so the tile shows red briefly
               const user = authService.getCurrentUser()
@@ -1590,12 +1592,8 @@ const HomeNew: React.FC = () => {
         if (result.promoted) {
           console.log('🎉 User was promoted!', result)
           
-          // Show surprise notification
-          addNotification(
-            result.message,
-            `You've been promoted from ${result.oldTier} to ${result.newTier}!`,
-            'ready'
-          )
+          // Show surprise notification (unified toasts)
+          notifyReady({ title: result.message, message: `Upgraded to ${result.newTier}` })
           
           // Refresh user data to show new tier
           await getUserProfileSettings()
@@ -2016,24 +2014,22 @@ const HomeNew: React.FC = () => {
                   <button 
                     onClick={() => {
                       // Show immediate feedback that button was clicked
-                      if (!isGenerating) {
                         setNavGenerating(true)
                         // Small delay to show the loading state before starting generation
                         setTimeout(() => {
                           dispatchGenerate(selectedPreset ? 'preset' : 'custom')
                         }, 100)
-                      }
                     }} 
-                    disabled={!previewUrl || (!prompt.trim() && !selectedPreset) || isGenerating} 
+                    disabled={!previewUrl || (!prompt.trim() && !selectedPreset)} 
                     className={`w-10 h-10 rounded-full btn-optimized flex items-center justify-center shadow-lg hover:shadow-xl ${
-                      !previewUrl || (!prompt.trim() && !selectedPreset) || isGenerating 
+                      !previewUrl || (!prompt.trim() && !selectedPreset)
                         ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
                         : 'bg-white text-black hover:bg-white/90'
                     }`}
                     aria-label="Generate"
-                    title={`${!isAuthenticated ? 'Sign up to generate AI content' : !previewUrl ? 'Upload media first' : (!prompt.trim() && !selectedPreset) ? 'Enter a prompt or select a preset first' : isGenerating ? 'Generation in progress...' : selectedPreset ? `Generate with ${PRESETS[selectedPreset].label} preset` : 'Generate AI content'}`}
+                    title={`${!isAuthenticated ? 'Sign up to generate AI content' : !previewUrl ? 'Upload media first' : (!prompt.trim() && !selectedPreset) ? 'Enter a prompt or select a preset first' : selectedPreset ? `Generate with ${PRESETS[selectedPreset].label} preset` : 'Generate AI content'}`}
                   >
-                    {isGenerating || navGenerating ? (
+                    {navGenerating ? (
                       <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
                     ) : (
                       <ArrowUp size={18} />
