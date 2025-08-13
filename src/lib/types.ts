@@ -3,8 +3,8 @@ export type MediaType = 'image' | 'video';
 export type Asset = {
   id: string;
   user_id: string;
-  cloudinary_public_id: string;
-  media_type: MediaType;
+  cloudinary_public_id: string | null;
+  media_type: MediaType | null;
   status: 'queued' | 'processing' | 'ready' | 'failed';
   is_public: boolean;
   allow_remix: boolean;

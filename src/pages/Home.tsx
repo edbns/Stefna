@@ -1,31 +1,113 @@
 import { useEffect, useState } from 'react';
 import { fetchPublicFeed } from '../lib/feed';
 import type { Asset } from '../lib/types';
+import RemixButton from '../components/RemixButton';
+
+// Get Cloudinary cloud name from environment
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 
 export default function Home() {
   const [items, setItems] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleRemix = (sourceAssetId: string, sourcePublicId: string) => {
+    // Navigate to editor with remix data
+    // You can implement navigation logic here or use a callback prop
+    console.log(`[Home] Remix requested:`, { sourceAssetId, sourcePublicId });
+    // Example: navigate to editor with remix data
+    // navigate('/editor', { state: { remixData: { sourceAssetId, sourcePublicId } } });
+  };
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
-      const data = await fetchPublicFeed(50);
-      setItems(data);
-      setLoading(false);
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchPublicFeed(50);
+        setItems(data);
+        console.log(`[Home] Loaded ${data.length} public assets`);
+      } catch (err) {
+        console.error('[Home] Error loading feed:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load feed');
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
-  if (loading) return <div className="p-6">Loading…</div>;
+  if (loading) return <div className="p-6">Loading feed...</div>;
+  
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <strong>Error:</strong> {error}
+        </div>
+      </div>
+    );
+  }
+
+  const renderMedia = (asset: Asset) => {
+    if (!asset.cloudinary_public_id || !asset.media_type) {
+      return (
+        <div className="w-full h-48 bg-gray-200 rounded flex items-center justify-center">
+          <span className="text-gray-500">Media not available</span>
+        </div>
+      );
+    }
+
+    const mediaUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${asset.media_type}/upload/${asset.cloudinary_public_id}`;
+    
+    if (asset.media_type === 'video') {
+      return (
+        <video 
+          src={mediaUrl} 
+          className="w-full h-48 object-cover rounded"
+          controls
+          preload="metadata"
+        />
+      );
+    } else {
+      return (
+        <img 
+          src={mediaUrl} 
+          alt={`AI generated ${asset.preset_key || 'custom'} image`}
+          className="w-full h-48 object-cover rounded"
+          loading="lazy"
+        />
+      );
+    }
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="p-6 text-center">
+        <div className="text-gray-500 text-lg">
+          No public media found yet. Be the first to share something!
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {items.map((a) => (
         <figure key={a.id} className="rounded-2xl shadow p-2">
-          {/* Render Cloudinary media by public_id */}
-          {/* Example: <img src={`https://res.cloudinary.com/${cloud}/image/upload/${a.cloudinary_public_id}.jpg`} /> */}
-          <figcaption className="text-sm opacity-70 mt-2">
-            {a.preset_key ?? 'custom'} • {new Date(a.published_at!).toLocaleString()}
-          </figcaption>
+          {renderMedia(a)}
+          <div className="mt-2 space-y-2">
+            <figcaption className="text-sm opacity-70">
+              {a.preset_key ?? 'custom'} • {new Date(a.published_at!).toLocaleString()}
+            </figcaption>
+            {a.allow_remix && (
+              <RemixButton
+                assetId={a.id}
+                cloudinaryPublicId={a.cloudinary_public_id!}
+                mediaType={a.media_type!}
+                onRemix={handleRemix}
+              />
+            )}
+          </div>
         </figure>
       ))}
     </div>

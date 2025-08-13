@@ -163,7 +163,11 @@ export default function Editor() {
         </div>
 
         {/* Status Display */}
-        <div className="p-3 bg-gray-100 rounded">
+        <div className={`p-3 rounded ${
+          status.includes('Error') ? 'bg-red-100 border border-red-300' :
+          status.includes('complete') ? 'bg-green-100 border border-green-300' :
+          'bg-gray-100'
+        }`}>
           <strong>Status:</strong> {status}
         </div>
 
@@ -180,10 +184,11 @@ export default function Editor() {
           {currentAssetId && (
             <button
               onClick={handlePublish}
-              disabled={loading}
+              disabled={loading || status !== 'Processing complete! Ready to publish.'}
               className="px-4 py-2 bg-green-500 text-white rounded disabled:opacity-50"
+              title={status !== 'Processing complete! Ready to publish.' ? 'Wait for processing to complete' : 'Publish to public feed'}
             >
-              Publish
+              Share to Feed
             </button>
           )}
         </div>

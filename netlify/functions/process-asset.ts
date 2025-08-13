@@ -49,15 +49,27 @@ export const handler: Handler = async (event) => {
       }
     });
 
+    console.log(`[process-asset] Updating asset ${payload.assetId} with:`, {
+      status: 'ready',
+      cloudinary_public_id: finalPublicId,
+      media_type: payload.mediaType
+    });
+
     const { error: updErr } = await supabaseAdmin
       .from('assets')
       .update({
         status: 'ready',
         cloudinary_public_id: finalPublicId,
+        media_type: payload.mediaType, // Ensure media_type is set
       })
       .eq('id', payload.assetId);
 
-    if (updErr) return resp({ ok: false, error: updErr.message });
+    if (updErr) {
+      console.error(`[process-asset] DB update failed:`, updErr);
+      return resp({ ok: false, error: updErr.message });
+    }
+
+    console.log(`[process-asset] Asset ${payload.assetId} successfully updated to ready status`);
 
     return resp({ ok: true, data: { assetId: payload.assetId, finalPublicId } });
   } catch (e: any) {
