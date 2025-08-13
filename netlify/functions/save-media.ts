@@ -118,10 +118,14 @@ export const handler = async (event:any) => {
 
     const metaPayload = body.meta ?? { mode, model, prompt, negative_prompt, strength }; // use `meta`, not `metadata`
 
+    // Extract Cloudinary public ID from the result URL
+    const cloudinaryPublicId = extractCloudinaryPublicId(result_url);
+    console.log(`[save-media] Extracted public ID: ${cloudinaryPublicId} from URL: ${result_url}`);
+    
     // Save to the new unified assets table
     const assetRow = {
       user_id,
-      cloudinary_public_id: extractCloudinaryPublicId(result_url), // Extract public ID from URL
+      cloudinary_public_id: cloudinaryPublicId,
       media_type: 'image', // Default to image for now
       status: 'ready',
       is_public: visibility === 'public',
@@ -137,8 +141,12 @@ export const handler = async (event:any) => {
     const q = supa.from('assets').insert(assetRow).select().single();
 
     const { data, error } = await q;
-    if (error) return bad(400, { error: error.message, code: (error as any).code });
+    if (error) {
+      console.error(`[save-media] Database insert failed:`, error);
+      return bad(400, { error: error.message, code: (error as any).code });
+    }
 
+    console.log(`[save-media] Successfully saved asset:`, data);
     return ok({ saved: data });
   }catch(e:any){
     return bad(500, e?.message || 'save-media crashed');

@@ -113,10 +113,10 @@ const MediaCard: React.FC<MediaCardProps> = ({
         </div>
       </div>
 
-      {/* Overlay for actions - only visible on hover */}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300">
+      {/* Overlay for actions - always visible */}
+      <div className="absolute inset-0 bg-black/20 transition-all duration-300">
         {/* Profile Avatar - Top Left */}
-        <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute top-3 left-3 opacity-100 transition-opacity duration-300">
           <button
             onClick={(e) => { e.stopPropagation(); onFilterCreator?.(creatorName) }}
             className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300"
@@ -129,7 +129,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
         </div>
 
         {/* Action Buttons - Bottom Right */}
-        <div className="absolute bottom-3 right-3 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute bottom-3 right-3 flex items-center space-x-2 opacity-100 transition-opacity duration-300">
           {/* Share Button */}
           {onShare && (
             <button
@@ -168,7 +168,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
         </div>
 
         {/* Interaction counts - Bottom Left */}
-        <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col space-y-1">
+        <div className="absolute bottom-3 left-3 opacity-100 transition-opacity duration-300 flex flex-col space-y-1">
           {localLikesCount > 0 && (
             <span className="text-white/80 text-xs bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
               {localLikesCount} {localLikesCount === 1 ? 'like' : 'likes'}

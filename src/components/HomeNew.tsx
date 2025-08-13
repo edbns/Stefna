@@ -812,13 +812,13 @@ const HomeNew: React.FC = () => {
       setPreviewUrl(cacheBustedResultUrl);
       
       // Add success notification
-              addNotification('Your media is ready', 'Your image has been generated successfully.', 'ready', previewUrl, 'image', () => {
+              addNotification('Your media is ready', 'Your image has been generated successfully.', 'ready', resultUrl, 'image', () => {
               // Open the media viewer to show the generated image
               setViewerMedia([{
                 id: 'generated-' + Date.now(),
                 userId: 'current-user',
                 type: 'photo',
-                url: previewUrl,
+                url: resultUrl,
                 prompt: prompt,
                 aspectRatio: 4/3,
                 width: 800,
@@ -1700,7 +1700,7 @@ const HomeNew: React.FC = () => {
               className="pb-24"
               hideUserAvatars={false}
               hideShareButton={true}
-              hideLikeButton={true}
+              hideLikeButton={false}
             />
           ) : (
             <div className="text-center py-12">
