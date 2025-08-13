@@ -46,7 +46,7 @@ export const handler: Handler = async (event) => {
       durationMs = Math.round((up.duration ?? 0) * 1000)
 
       // Save DB media row for All-media
-      const { error: aerr } = await supabase.from('media_assets').insert({
+      const { data: assetRow, error: aerr } = await supabase.from('media_assets').insert({
         user_id: job.user_id,
         url: resultUrl,
         result_url: resultUrl,
@@ -60,14 +60,31 @@ export const handler: Handler = async (event) => {
         visibility: job.visibility || 'public',
         allow_remix: (job.visibility || 'public')==='public' ? !!job.allow_remix : false,
         meta: { job_id: job.id }
-      })
+      }).select('id').single()
       if (aerr) return bad(500, aerr.message)
 
       // Mark job persisted
       await supabase.from('video_jobs').update({ provider_persisted: true, result_url: resultUrl }).eq('id', jobId)
     }
 
-    return ok({ ok:true, job_id: jobId, status:'done', result_url: resultUrl, cloudinary_public_id: cloudinaryPublicId, duration_ms: durationMs })
+    // Stable i2i-like envelope
+    if (persist) {
+      return ok({ ok:true, status: 'done', job_id: jobId, data: {
+        mediaType: 'video',
+        resultUrl: resultUrl,
+        publicId: cloudinaryPublicId,
+        assetId: (assetRow as any)?.id || null,
+        width: undefined,
+        height: undefined,
+        duration: durationMs || undefined,
+      } })
+    }
+    return ok({ ok:true, status: 'done', job_id: jobId, data: {
+      mediaType: 'video',
+      resultUrl: resultUrl,
+      publicId: null,
+      assetId: null
+    } })
   } catch (e:any) {
     return bad(500, e?.message || 'poll-v2v error')
   }

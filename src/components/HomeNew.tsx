@@ -1411,6 +1411,13 @@ const HomeNew: React.FC = () => {
             clearInterval(interval)
             setVideoJobPolling(null)
             setCurrentVideoJob(null)
+            // Defensive parse of V2V payload
+            const resultUrl = jobStatus?.data?.resultUrl || jobStatus?.result_url
+            const publicId = jobStatus?.data?.publicId || jobStatus?.cloudinary_public_id
+            console.log('poll-v2v payload:', jobStatus)
+            if (!resultUrl && !publicId) {
+              console.warn('V2V done but missing resultUrl/publicId')
+            }
             addNotification('Your media is ready', 'Video processing completed successfully!', 'ready', undefined, 'video', () => {})
             window.dispatchEvent(new CustomEvent('refreshFeed'))
             window.dispatchEvent(new Event('userMediaUpdated'))
