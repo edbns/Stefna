@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE UNIQUE INDEX IF NOT EXISTS profiles_username_lower_idx
   ON public.profiles (lower(username));
 
+-- Additional unique constraint for direct username uniqueness
+CREATE UNIQUE INDEX IF NOT EXISTS profiles_username_key 
+  ON public.profiles (lower(username));
+
 -- Step 3: Updated-at trigger function
 CREATE OR REPLACE FUNCTION public.set_updated_at()
 RETURNS trigger

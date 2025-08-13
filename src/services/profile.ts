@@ -1,6 +1,7 @@
 // src/services/profile.ts
 import { signedFetch } from '../lib/auth';
 import authService from './authService';
+import { supabaseClient as supabase } from '../lib/supabaseClient';
 
 export interface ProfileData {
   username?: string | null;
@@ -137,4 +138,92 @@ export async function updateAvatar(avatarUrl: string): Promise<Profile> {
   return ensureAndUpdateProfile({
     avatar_url: avatarUrl
   });
+}
+
+// ============================================================================
+// DIRECT SUPABASE METHODS (Alternative to Netlify Functions)
+// ============================================================================
+
+/**
+ * Direct Supabase profile update (alternative to Netlify Functions)
+ * Must be called with an authenticated session
+ */
+export async function updateMyProfile({
+  username,
+  avatarUrl,
+  shareToFeed,
+  allowRemix,
+}: {
+  username: string;
+  avatarUrl: string | null;
+  shareToFeed: boolean;
+  allowRemix: boolean;
+}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      username,
+      avatar_url: avatarUrl,
+      share_to_feed: shareToFeed,
+      allow_remix: allowRemix,
+      onboarding_completed: true, // Mark as completed when updating
+    })
+    .eq('id', user.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Get current user profile directly from Supabase
+ */
+export async function getMyProfileDirect(): Promise<Profile | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  if (error) {
+    console.error('Error getting profile:', error);
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Ensure profile exists and update it with new data (direct Supabase)
+ */
+export async function ensureAndUpdateProfileDirect(profileData: Partial<ProfileData>): Promise<Profile> {
+  const { data: { user }, error: userErr } = await supabase.auth.getUser();
+  if (userErr) throw userErr;
+  if (!user) throw new Error("Not signed in");
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        id: user.id,
+        username: profileData.username ?? undefined,
+        avatar_url: profileData.avatar_url ?? undefined,
+        share_to_feed: profileData.share_to_feed,
+        allow_remix: profileData.allow_remix,
+        onboarding_completed: profileData.onboarding_completed,
+      },
+      { onConflict: "id" }
+    )
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
