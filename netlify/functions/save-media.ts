@@ -24,35 +24,37 @@ export const handler: Handler = async (event) => {
     const { resultUrl, userId, presetKey, sourcePublicId, allowRemix, shareNow, mediaTypeHint } =
       JSON.parse(event.body || '{}');
 
-    if (!resultUrl || !userId) {
-      return { statusCode: 400, body: JSON.stringify({ ok:false, error:'resultUrl and userId required' }) };
+    if (!resultUrl) {
+      return { statusCode: 400, body: JSON.stringify({ ok:false, error:'MISSING: resultUrl' }) };
     }
 
+    const uid = (userId && String(userId)) || 'anonymous';
     const finalType = inferTypeFromUrl(resultUrl, mediaTypeHint);
     const tags = [
       'stefna',
       'type:output',
-      `user:${userId}`,
-      ...(presetKey ? [`preset:${presetKey}`] : []),
+      ...(uid !== 'anonymous' ? [`user:${uid}`] : []),
       ...(shareNow ? ['public'] : []),
     ];
+
+    const commonOptions = {
+      resource_type: finalType === 'video' ? 'video' : 'image',
+      folder: `stefna/outputs/${uid}`,
+      tags,
+      context: {
+        source_public_id: sourcePublicId || '',
+        allow_remix: allowRemix ? 'true' : 'false',
+        preset_key: presetKey || '',
+        created_at: new Date().toISOString(),
+      },
+      overwrite: true,
+      invalidate: true,
+    } as const;
 
     // Try direct URL upload first
     let upload: any;
     try {
-      upload = await cloudinary.uploader.upload(resultUrl, {
-        resource_type: finalType === 'video' ? 'video' : 'image',
-        folder: `stefna/outputs/${userId}`,
-        tags,
-        context: {
-          source_public_id: sourcePublicId || '',
-          allow_remix: allowRemix ? 'true' : 'false',
-          preset_key: presetKey || '',
-          created_at: new Date().toISOString(),
-        },
-        overwrite: true,
-        invalidate: true,
-      });
+      upload = await cloudinary.uploader.upload(resultUrl, commonOptions);
     } catch (directErr: any) {
       console.warn('[save-media] direct upload failed, falling back to stream', directErr?.message || directErr);
       const resp = await fetch(resultUrl);
@@ -64,19 +66,7 @@ export const handler: Handler = async (event) => {
       const buf = Buffer.from(await resp.arrayBuffer());
       upload = await new Promise((resolve, reject) => {
         const stream = (initCloudinary() as any).uploader.upload_stream(
-          {
-            resource_type: finalType === 'video' ? 'video' : 'image',
-            folder: `stefna/outputs/${userId}`,
-            tags,
-            context: {
-              source_public_id: sourcePublicId || '',
-              allow_remix: allowRemix ? 'true' : 'false',
-              preset_key: presetKey || '',
-      created_at: new Date().toISOString(),
-            },
-            overwrite: true,
-            invalidate: true,
-          },
+          commonOptions,
           (err: any, res: any) => err ? reject(err) : resolve(res)
         );
         stream.end(buf);
@@ -98,6 +88,7 @@ export const handler: Handler = async (event) => {
           resource_type: upload.resource_type,
           url: upload.secure_url,
           created_at: upload.created_at,
+          tags: upload.tags,
         }
       })
     };
