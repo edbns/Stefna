@@ -559,8 +559,13 @@ const ProfileScreen: React.FC = () => {
     loadUserMedia()
     
     // Listen for user media updates from other components
-    const handleUserMediaUpdated = () => {
+    const handleUserMediaUpdated = (e: any) => {
       console.log('🔄 ProfileScreen received userMediaUpdated event, refreshing...')
+      // If an optimistic item is provided, prepend it immediately
+      const optimistic = e?.detail?.optimistic as UserMedia | undefined
+      if (optimistic) {
+        setUserMedia(prev => [optimistic, ...prev])
+      }
       loadUserMedia()
       
       // Also refresh drafts specifically
@@ -576,10 +581,10 @@ const ProfileScreen: React.FC = () => {
       }
     }
     
-    window.addEventListener('userMediaUpdated', handleUserMediaUpdated)
+    window.addEventListener('userMediaUpdated', handleUserMediaUpdated as any)
     
     return () => {
-      window.removeEventListener('userMediaUpdated', handleUserMediaUpdated)
+      window.removeEventListener('userMediaUpdated', handleUserMediaUpdated as any)
     }
   }, [])
   

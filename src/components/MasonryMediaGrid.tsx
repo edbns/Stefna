@@ -3,6 +3,7 @@ import { Share2, Heart, FileText } from 'lucide-react'
 import { UserMedia } from '../services/userMediaService'
 import RemixIcon from './RemixIcon'
 import ProfileIcon from './ProfileIcon'
+import { MediaCard as SpinnerCard } from './ui/Toasts'
 
 interface MasonryMediaGridProps {
   media: UserMedia[]
@@ -168,22 +169,30 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   )}
 
                   {/* Media */}
-                  {item.type === 'video' ? (
-                    <video
-                      src={item.url}
-                      className="w-full h-auto object-cover"
-                      muted
-                      loop
-                      onMouseEnter={(e) => e.currentTarget.play()}
-                      onMouseLeave={(e) => e.currentTarget.pause()}
+                  {/* If item is processing, show spinner card overlay */}
+                  {item.status === 'processing' ? (
+                    <SpinnerCard
+                      kind={item.type === 'video' ? 'video' : 'image'}
+                      status="processing"
+                      src={item.thumbnailUrl || item.url}
+                      onClick={() => onMediaClick?.(item)}
                     />
+                  ) : item.type === 'video' ? (
+                      <video
+                        src={item.url}
+                        className="w-full h-auto object-cover"
+                        muted
+                        loop
+                        onMouseEnter={(e) => e.currentTarget.play()}
+                        onMouseLeave={(e) => e.currentTarget.pause()}
+                      />
                   ) : (
-                    <img
-                      src={item.url}
-                      alt={item.prompt}
-                      className="w-full h-auto object-cover"
-                      loading="lazy"
-                    />
+                      <img
+                        src={item.url}
+                        alt={item.prompt}
+                        className="w-full h-auto object-cover"
+                        loading="lazy"
+                      />
                   )}
 
                   {/* Type indicator */}

@@ -804,6 +804,34 @@ const HomeNew: React.FC = () => {
           notifyQueue({ title: 'Added to queue', message: 'We’ll start processing shortly.' })
           setCurrentVideoJob({ id: startJson.job_id, status: 'queued' });
           startVideoJobPolling(startJson.job_id);
+          // Optimistic placeholder in Profile: show processing tile
+          try {
+            const user = authService.getCurrentUser()
+            if (user?.id) {
+              const placeholder: UserMedia = {
+                id: `job-${startJson.job_id}`,
+                userId: user.id,
+                type: 'video',
+                url: sourceUrl!,
+                thumbnailUrl: sourceUrl!,
+                status: 'processing',
+                prompt: effectivePrompt,
+                aspectRatio: 4/3,
+                width: 800,
+                height: 600,
+                timestamp: new Date().toISOString(),
+                tokensUsed: 0,
+                likes: 0,
+                remixCount: 0,
+                isPublic: shareToFeed,
+                allowRemix: allowRemix,
+                tags: [],
+                metadata: { quality: 'high', generationTime: 0, modelVersion: 'pending' }
+              }
+              // Broadcast to profile to render immediately
+              window.dispatchEvent(new CustomEvent('userMediaUpdated', { detail: { optimistic: placeholder } }))
+            }
+          } catch {}
         } catch (err:any) {
           console.error('start-v2v error', err);
           addNotification('Error please try again', err?.message || 'Video job failed to start', 'error');

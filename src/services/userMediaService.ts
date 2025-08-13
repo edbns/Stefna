@@ -9,6 +9,8 @@ export interface UserMedia {
   type: 'photo' | 'video' | 'remix'
   url: string
   thumbnailUrl?: string
+  // Optional generation status for in-flight items
+  status?: 'processing' | 'ready' | 'failed'
   prompt: string
   style?: string
   aspectRatio: number // width/height ratio
