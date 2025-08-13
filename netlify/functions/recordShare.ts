@@ -19,6 +19,19 @@ function getUserIdFromToken(auth?: string): string | null {
   }
 }
 
+async function resolvePublicIdByAssetId(cloudinary: any, assetId: string): Promise<string | null> {
+  const expr = `tags=\"stefna\" AND context.asset_id=\"${assetId}\"`;
+  const maxAttempts = 6;
+  const delayMs = 300;
+  for (let i = 0; i < maxAttempts; i++) {
+    const found = await cloudinary.search.expression(expr).max_results(1).execute();
+    const pid = found?.resources?.[0]?.public_id as string | undefined;
+    if (pid) return pid;
+    await new Promise(r => setTimeout(r, delayMs));
+  }
+  return null;
+}
+
 export const handler: Handler = async (event) => {
   try {
     if (event.httpMethod !== 'POST') {
@@ -38,13 +51,9 @@ export const handler: Handler = async (event) => {
       try {
         assertCloudinaryEnv();
         const cloudinary = initCloudinary();
-        // Resolve from assetId using context if needed
+        // Resolve from assetId using context if needed, with retry (indexing delay)
         if (!publicId && assetId) {
-          const found = await cloudinary.search
-            .expression(`tags="stefna" AND context.asset_id="${assetId}"`)
-            .max_results(1)
-            .execute();
-          publicId = found?.resources?.[0]?.public_id;
+          publicId = await resolvePublicIdByAssetId(cloudinary, assetId);
           if (!publicId) {
             return { statusCode: 404, body: JSON.stringify({ ok:false, error:`No Cloudinary asset found for assetId ${assetId}` }) };
           }
