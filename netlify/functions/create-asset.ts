@@ -30,6 +30,8 @@ export const handler: Handler = async (event) => {
         user_id: userId,
         cloudinary_public_id: input.sourcePublicId ?? null,
         media_type: mediaType,
+        // compatibility with legacy schemas that still require resource_type
+        resource_type: mediaType,
         preset_key: input.presetKey ?? null,
         prompt: input.prompt ?? null,
         source_asset_id: input.sourceAssetId ?? null,
