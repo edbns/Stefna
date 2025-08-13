@@ -1,10 +1,11 @@
 // netlify/functions/recordShare.ts
 import type { Handler } from '@netlify/functions';
+import { initCloudinary, assertCloudinaryEnv } from './_cloudinary';
 import { createClient } from '@supabase/supabase-js';
 
 const url = process.env.SUPABASE_URL!;
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY!; // needs update perms
-const supabase = createClient(url, key, { auth: { persistSession: false } });
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = url && key ? createClient(url, key, { auth: { persistSession: false } }) : null as any;
 
 function getUserIdFromToken(auth?: string): string | null {
   try {
@@ -21,23 +22,52 @@ function getUserIdFromToken(auth?: string): string | null {
 export const handler: Handler = async (event) => {
   try {
     if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, body: 'Method Not Allowed' };
+      return { statusCode: 405, body: JSON.stringify({ ok:false, error: 'Method not allowed' }) };
     }
 
+    const body = JSON.parse(event.body || '{}');
+
+    // Cloudinary-only path
+    if (process.env.NO_DB_MODE === 'true') {
+      const publicId: string | undefined = body.publicId;
+      const allowRemix: boolean = !!body.allowRemix;
+      if (!publicId) {
+        return { statusCode: 400, body: JSON.stringify({ ok:false, error:'MISSING: publicId' }) };
+      }
+      try {
+        assertCloudinaryEnv();
+        const cloudinary = initCloudinary();
+        // ensure base tags
+        await cloudinary.api.add_tag('stefna', [publicId]);
+        await cloudinary.api.add_tag('type:output', [publicId]);
+        await cloudinary.api.add_tag('public', [publicId]);
+        // optional context
+        await cloudinary.uploader.explicit(publicId, {
+          type: 'upload',
+          context: { allow_remix: allowRemix ? 'true' : 'false', published_at: new Date().toISOString() },
+        });
+        return { statusCode: 200, body: JSON.stringify({ ok:true }) };
+      } catch (e:any) {
+        const msg = e?.message || 'unknown error';
+        console.error('[recordShare] cloudinary error', msg);
+        return { statusCode: 400, body: JSON.stringify({ ok:false, error: msg }) };
+      }
+    }
+
+    // DB MODE (legacy)
     const userId = getUserIdFromToken(event.headers.authorization);
     if (!userId) {
-      return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
+      return { statusCode: 401, body: JSON.stringify({ ok:false, error: 'Unauthorized' }) };
     }
 
-    const { asset_id, shareToFeed, allowRemix } = JSON.parse(event.body || '{}');
+    const { asset_id, shareToFeed, allowRemix } = body;
     if (!asset_id) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'asset_id required' }) };
+      return { statusCode: 400, body: JSON.stringify({ ok:false, error: 'asset_id required' }) };
     }
 
     const is_public = !!shareToFeed;
-    const allow_remix = !!shareToFeed && !!allowRemix; // cannot be true if not public
+    const allow_remix = !!shareToFeed && !!allowRemix;
 
-    // Update only if user owns it
     const { data, error } = await supabase
       .from('assets')
       .update({ is_public, allow_remix })
@@ -47,13 +77,14 @@ export const handler: Handler = async (event) => {
       .single();
 
     if (error) {
-      return { statusCode: 400, body: JSON.stringify({ error: error.message }) };
+      return { statusCode: 400, body: JSON.stringify({ ok:false, error: error.message }) };
     }
 
-    return { statusCode: 200, body: JSON.stringify({ ok: true, asset: data }) };
+    return { statusCode: 200, body: JSON.stringify({ ok:true, asset: data }) };
   } catch (e: any) {
-    console.error('recordShare error:', e);
-    return { statusCode: 500, body: JSON.stringify({ error: e?.message || 'recordShare error' }) };
+    const msg = e?.message || 'unknown error';
+    console.error('recordShare error:', msg);
+    return { statusCode: 500, body: JSON.stringify({ ok:false, error: msg }) };
   }
 };
 

@@ -869,10 +869,16 @@ const HomeNew: React.FC = () => {
               mediaTypeHint: 'image',
             })
             console.log('✅ saveMediaNoDB ok:', saved)
-            // Refresh feed if shared
-            if (shareToFeed) {
-              setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
+            // If not auto-published, publish via recordShare with Cloudinary publicId
+            if (!shareToFeed && saved?.public_id) {
+              await fetch('/.netlify/functions/recordShare', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ publicId: saved.public_id, allowRemix: true })
+              })
             }
+            // Refresh feed
+            setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
           } catch (e:any) {
             console.error('❌ saveMediaNoDB failed:', e)
             addNotification('Error please try again', e?.message || 'Failed to save media', 'error')
