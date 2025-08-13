@@ -1406,7 +1406,8 @@ const HomeNew: React.FC = () => {
         })
         if (response.ok) {
           const jobStatus = await response.json()
-          setCurrentVideoJob(jobStatus)
+          const normalized = { id: jobStatus?.job_id || jobId, status: jobStatus?.status, error: jobStatus?.error }
+          setCurrentVideoJob(normalized as any)
           if (jobStatus && jobStatus.status === 'done') {
             clearInterval(interval)
             setVideoJobPolling(null)
@@ -2110,7 +2111,7 @@ const HomeNew: React.FC = () => {
             <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
             <div className="text-white text-sm">
               <div className="font-medium">Video Processing</div>
-              <div className="text-white/60 text-xs">Job #{currentVideoJob.id.slice(0, 8)}</div>
+              <div className="text-white/60 text-xs">Job #{String((currentVideoJob as any).id || (currentVideoJob as any).job_id || '').slice(0, 8)}</div>
             </div>
             <button 
               onClick={stopVideoJobPolling}
