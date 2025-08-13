@@ -19,9 +19,17 @@ export const handler: Handler = async (event) => {
     const { data: job, error } = await supabase.from('video_jobs').select('*').eq('id', jobId).single()
     if (error || !job) return bad(404, 'Job not found')
 
+    // Auto-fail stale jobs (no heartbeat)
+    const STALE_MS = 6 * 60 * 1000
+    const updatedAtMs = job.updated_at ? new Date(job.updated_at as any).getTime() : Date.now()
+    if ((job.status === 'queued' || job.status === 'running') && Date.now() - updatedAtMs > STALE_MS) {
+      await supabase.from('video_jobs').update({ status: 'failed', error: 'stalled' }).eq('id', jobId)
+      return ok({ ok:false, job_id: jobId, status: 'failed', error: 'stalled' })
+    }
+
     // Map statuses to contract
-    if (job.status === 'queued') return ok({ ok:true, job_id: jobId, status: 'queued', progress: 0 })
-    if (job.status === 'running') return ok({ ok:true, job_id: jobId, status: 'running', progress: null })
+    if (job.status === 'queued') return ok({ ok:true, job_id: jobId, status: 'processing' })
+    if (job.status === 'running') return ok({ ok:true, job_id: jobId, status: 'processing' })
     if (job.status === 'failed' || job.status === 'canceled') return ok({ ok:false, job_id: jobId, status: 'failed', error: job.error || 'failed' })
 
     // succeeded: ensure we have result_url; optionally persist to Cloudinary and DB
@@ -67,23 +75,21 @@ export const handler: Handler = async (event) => {
       await supabase.from('video_jobs').update({ provider_persisted: true, result_url: resultUrl }).eq('id', jobId)
     }
 
-    // Stable i2i-like envelope
+    // Stable envelope
     if (persist) {
-      return ok({ ok:true, status: 'done', job_id: jobId, data: {
-        mediaType: 'video',
+      return ok({ ok:true, status: 'completed', job_id: jobId, record: {
+        id: (assetRow as any)?.id || null,
+        type: 'video',
         resultUrl: resultUrl,
         publicId: cloudinaryPublicId,
-        assetId: (assetRow as any)?.id || null,
-        width: undefined,
-        height: undefined,
         duration: durationMs || undefined,
       } })
     }
-    return ok({ ok:true, status: 'done', job_id: jobId, data: {
-      mediaType: 'video',
+    return ok({ ok:true, status: 'completed', job_id: jobId, record: {
+      id: null,
+      type: 'video',
       resultUrl: resultUrl,
-      publicId: null,
-      assetId: null
+      publicId: cloudinaryPublicId
     } })
   } catch (e:any) {
     return bad(500, e?.message || 'poll-v2v error')

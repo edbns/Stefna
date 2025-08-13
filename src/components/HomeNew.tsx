@@ -1365,13 +1365,13 @@ const HomeNew: React.FC = () => {
           const jobStatus = await response.json()
           const normalized = { id: jobStatus?.job_id || jobId, status: jobStatus?.status, error: jobStatus?.error }
           setCurrentVideoJob(normalized as any)
-          if (jobStatus && jobStatus.status === 'done') {
+          if (jobStatus && (jobStatus.status === 'done' || jobStatus.status === 'completed')) {
             clearInterval(interval)
             setVideoJobPolling(null)
             setCurrentVideoJob(null)
             // Defensive parse of V2V payload
-            const resultUrl = jobStatus?.data?.resultUrl || jobStatus?.result_url
-            const publicId = jobStatus?.data?.publicId || jobStatus?.cloudinary_public_id
+            const resultUrl = jobStatus?.record?.resultUrl || jobStatus?.data?.resultUrl || jobStatus?.result_url
+            const publicId = jobStatus?.record?.publicId || jobStatus?.data?.publicId || jobStatus?.cloudinary_public_id
             console.log('poll-v2v payload:', jobStatus)
             if (!resultUrl && !publicId) {
               console.warn('V2V done but missing resultUrl/publicId')
