@@ -29,18 +29,15 @@ export const handler: Handler = async (evt) => {
     const body = JSON.parse(evt.body || '{}');
     const prompt = body.prompt || body.effectivePrompt || 'Enhance with cinematic look';
     
-    // Accept many aliases; client should use video_url for V2V
-    const aliases = [
-      'video_url','videoUrl','input_video','inputVideo',
-      'source_url','sourceUrl','asset_url','assetUrl',
-      'input_url','inputUrl','url','source',
-      'image_url','imageUrl' // legacy / accidental
-    ];
+    // Accept multiple aliases; prefer explicit video_url
+    const source = body.video_url ||
+                  body.source_url ||
+                  body.url ||
+                  body.image_url || // legacy - might be video sent under wrong key
+                  pick(evt.queryStringParameters || {}, ['video_url', 'source_url', 'url', 'image_url']) ||
+                  null;
 
-    let src = pick(body, aliases) || pick(evt.queryStringParameters || {}, aliases);
-    const resourceType = body.resource_type; // 'video'|'image' maybe
-
-    if (!src) {
+    if (!source) {
       return {
         statusCode: 400,
         body: JSON.stringify({
@@ -51,7 +48,8 @@ export const handler: Handler = async (evt) => {
     }
 
     // Determine if this is video-to-video or image-to-video
-    const isVideo = resourceType === 'video' || looksLikeVideoUrl(src);
+    // Be forgiving - detect videos even if sent under image_url key
+    const isVideo = body.resource_type === 'video' || looksLikeVideoUrl(source);
 
     // Build provider model + payload
     const MODEL_BASE = 'kling-video/v1.6/standard';
@@ -68,10 +66,10 @@ export const handler: Handler = async (evt) => {
 
     if (isVideo) {
       // True V2V: send video_url directly
-      providerPayload.video_url = src;
+      providerPayload.video_url = source;
     } else {
       // I2V: send image_url (or convert video to first frame)
-      providerPayload.image_url = looksLikeVideoUrl(src) ? firstFrameFromCloudinary(src) : src;
+      providerPayload.image_url = looksLikeVideoUrl(source) ? firstFrameFromCloudinary(source) : source;
     }
 
     const res = await fetch(`${AIML_API_URL}/v2/generate/video/kling/generation`, {

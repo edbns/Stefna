@@ -748,11 +748,16 @@ const HomeNew: React.FC = () => {
         promptFieldValue: prompt
       });
 
-      // Build payload
+      // Detect if source is a video based on multiple criteria
+      const isVideo = isVideoPreview || 
+                     /\/video\/upload\//.test(sourceUrl || '') ||
+                     /\.(mp4|mov|webm|m4v)(\?|$)/i.test(sourceUrl || '');
+
+      // Build payload with correct URL key based on media type
       const payload: Record<string, any> = {
         prompt: effectivePrompt,
-        image_url: sourceUrl,
-        resource_type: isVideoPreview ? 'video' : 'image',
+        ...(isVideo ? { video_url: sourceUrl } : { image_url: sourceUrl }), // ✅ Use correct key
+        resource_type: isVideo ? 'video' : 'image',
         source: kind,
         visibility: shareToFeed ? 'public' : 'private',
         allow_remix: shareToFeed ? allowRemix : false,
