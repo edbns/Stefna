@@ -122,11 +122,14 @@ export const handler = async (event:any) => {
     const cloudinaryPublicId = extractCloudinaryPublicId(result_url);
     console.log(`[save-media] Extracted public ID: ${cloudinaryPublicId} from URL: ${result_url}`);
     
+    // Determine media type from the result URL
+    const finalType = result_url.includes('/video/') ? 'video' : 'image';
+    
     // Save to the new unified assets table
     const assetRow = {
       user_id,
       cloudinary_public_id: cloudinaryPublicId,
-      media_type: 'image', // Default to image for now
+      media_type: finalType,
       status: 'ready',
       is_public: visibility === 'public',
       allow_remix: visibility === 'public' ? !!allow_remix : false,

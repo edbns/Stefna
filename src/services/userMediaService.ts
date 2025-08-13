@@ -30,6 +30,9 @@ export interface UserMedia {
   }
   // Optional expiration for guest media
   expiresAt?: string
+  // Additional fields for new feed structure
+  cloudinaryPublicId?: string
+  mediaType?: 'image' | 'video'
 }
 
 export interface UserMediaStats {

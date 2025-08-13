@@ -105,8 +105,49 @@ CREATE TRIGGER trg_update_updated_at
 BEFORE UPDATE ON public.assets
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
--- Note: Feed views are created separately using database-create-feed-views.sql
--- to avoid conflicts with existing views
+-- Optional: Create a view for the public feed
+CREATE OR REPLACE VIEW public.public_feed AS
+SELECT 
+  id,
+  user_id,
+  cloudinary_public_id,
+  media_type,
+  status,
+  is_public,
+  allow_remix,
+  published_at,
+  source_asset_id,
+  preset_key,
+  prompt,
+  created_at
+FROM public.assets
+WHERE is_public = true 
+  AND status = 'ready'
+  AND published_at IS NOT NULL
+  AND cloudinary_public_id IS NOT NULL
+  AND media_type IS NOT NULL
+ORDER BY published_at DESC;
+
+-- Create public_feed_v2 view with only the six exposed fields (no user_id/prompt leaks)
+CREATE OR REPLACE VIEW public.public_feed_v2 AS
+SELECT 
+  id,
+  cloudinary_public_id,
+  media_type,
+  published_at,
+  source_asset_id,
+  preset_key
+FROM public.assets
+WHERE is_public = true 
+  AND status = 'ready'
+  AND published_at IS NOT NULL
+  AND cloudinary_public_id IS NOT NULL
+  AND media_type IS NOT NULL
+ORDER BY published_at DESC;
+
+-- Grant access to the views
+GRANT SELECT ON public.public_feed TO anon, authenticated;
+GRANT SELECT ON public.public_feed_v2 TO anon, authenticated;
 
 -- Refresh schema cache
 NOTIFY pgrst, 'reload schema';

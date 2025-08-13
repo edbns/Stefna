@@ -17,6 +17,8 @@ import ShareModal from './ShareModal'
 import { requireUserIntent } from '../utils/generationGuards'
 import userMediaService from '../services/userMediaService'
 import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
+import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
+import { createAsset } from '../lib/api'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
@@ -359,45 +361,51 @@ const HomeNew: React.FC = () => {
       if (res.ok) {
         const resp = await res.json()
         console.log('📊 Raw feed response:', resp)
-        console.log('📥 Feed items received:', Array.isArray(resp.items) ? resp.items.length : 'not array')
+        console.log('📥 Feed items received:', resp.ok ? 'success' : 'failed')
         
-        const { items: media } = resp
+        if (!resp.ok) {
+          console.error('❌ Feed API error:', resp.error)
+          return
+        }
+        
+        const { data: media } = resp
         console.log('📊 Raw feed data:', media)
         console.log('📊 Feed length:', media?.length || 0)
         
         const mapped: UserMedia[] = (media || []).map((item: any): UserMedia => {
-          // Debug URL resolution
-          const resultUrl = toAbsoluteCloudinaryUrl(item.result_url) || toAbsoluteCloudinaryUrl(item.url) || item.result_url || item.url
+          // Construct Cloudinary URL using the new utility
+          const mediaUrl = cloudinaryUrlFromEnv(item.cloudinary_public_id, item.media_type)
           console.log(`🔗 URL mapping for item ${item.id}:`, {
-            result_url: item.result_url,
-            url: item.url,
-            final: resultUrl,
-            env: item.env,
-            visibility: item.visibility
+            cloudinary_public_id: item.cloudinary_public_id,
+            media_type: item.media_type,
+            final: mediaUrl
           })
           
           return ({
             id: item.id,
-            userId: item.user_id,
-            userAvatar: item.user_avatar || undefined,
-            userTier: item.user_tier || undefined,
-            type: item.mode === 'v2v' ? 'video' : 'photo',
-            url: resultUrl,
-            thumbnailUrl: undefined,
-            prompt: item.prompt || 'AI Generated Content',
+            userId: 'public', // Placeholder since user info not exposed in public_feed_v2
+            userAvatar: undefined, // Not exposed in public_feed_v2
+            userTier: undefined, // Not exposed in public_feed_v2
+            type: item.media_type === 'video' ? 'video' : 'photo',
+            url: mediaUrl,
+            thumbnailUrl: mediaUrl, // Use same URL for thumbnail
+            prompt: 'AI Generated Content', // Not exposed in public_feed_v2
             style: undefined,
-            aspectRatio: item.width && item.height ? item.width / Math.max(1, item.height) : 4 / 3,
-            width: item.width || 800,
-            height: item.height || 600,
-            timestamp: item.created_at,
-            originalMediaId: item.parent_asset_id || undefined,
-            tokensUsed: item.mode === 'v2v' ? 5 : 2,
-            likes: item.likes_count || 0,
-            remixCount: item.remixes_count || 0,
+            aspectRatio: 4/3, // Default aspect ratio
+            width: 800, // Default width
+            height: 600, // Default height
+            timestamp: item.published_at,
+            originalMediaId: item.source_asset_id || undefined,
+            tokensUsed: item.media_type === 'video' ? 5 : 2,
+            likes: 0, // Not exposed in public_feed_v2
+            remixCount: 0, // Not exposed in public_feed_v2
             isPublic: true,
-            allowRemix: Boolean(item.allow_remix),
+            allowRemix: false, // Not exposed in public_feed_v2
             tags: [],
             metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
+            // Store additional fields needed for remix functionality
+            cloudinaryPublicId: item.cloudinary_public_id,
+            mediaType: item.media_type,
           })
         })
         
@@ -1196,6 +1204,13 @@ const HomeNew: React.FC = () => {
   }
 
   const handleShare = async (media: UserMedia) => {
+    // UI guards: prevent sharing until asset is ready
+    if (!media.cloudinaryPublicId || !media.mediaType) {
+      console.error('Cannot share: missing cloudinary_public_id or media_type');
+      addNotification('Cannot share incomplete media', undefined, 'error');
+      return;
+    }
+    
     // Open social media share modal instead of feed sharing
     setShareModalOpen(true)
     setShareModalMedia(media)
@@ -1242,26 +1257,58 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  const handleRemix = (media: UserMedia) => {
+  const handleRemix = async (media: UserMedia) => {
     if (!media.allowRemix) return
     if (!authService.getToken()) {
-              // Sign up required - no notification needed
+      // Sign up required - no notification needed
       navigate('/auth')
       return
     }
-    setPreviewUrl(media.url)
-    setIsVideoPreview(media.type === 'video')
-    setSelectedFile(null)
-    setIsComposerOpen(true)
-    setPrompt(media.prompt || '')
     
-    // Clear selectedPreset when remixing
-            requestClearPreset('remix started')
-    
-    // Auto-generate remix if we have the prompt
-    if (media.prompt) {
-      // Small delay to ensure state is set
-      setTimeout(() => dispatchGenerate('remix'), 100)
+    try {
+      // Use the stored cloudinary_public_id and media_type from the feed data
+      if (!media.cloudinaryPublicId || !media.mediaType) {
+        console.error('Missing cloudinary_public_id or media_type for remix');
+        addNotification('Failed to start remix', undefined, 'error');
+        return;
+      }
+      
+      // Create new asset using the OUTPUT as next INPUT
+      const { ok, data, error } = await createAsset({
+        sourcePublicId: media.cloudinaryPublicId,
+        mediaType: media.mediaType,
+        presetKey: selectedPreset,
+        sourceAssetId: media.id, // Keep lineage
+      });
+      
+      if (!ok) {
+        console.error('Failed to create remix asset:', error);
+        addNotification('Failed to create remix', undefined, 'error');
+        return;
+      }
+      
+      console.log('✅ Remix asset created:', data);
+      
+      // Set up the composer with the source media
+      setPreviewUrl(media.url);
+      setIsVideoPreview(media.type === 'video');
+      setSelectedFile(null);
+      setIsComposerOpen(true);
+      setPrompt(media.prompt || '');
+      
+      // Clear selectedPreset when remixing
+      requestClearPreset('remix started');
+      
+      // Auto-generate remix if we have the prompt
+      if (media.prompt) {
+        // Small delay to ensure state is set
+        setTimeout(() => dispatchGenerate('remix'), 100);
+      }
+      
+      addNotification('Remix started', undefined, 'queue');
+    } catch (error) {
+      console.error('Error creating remix:', error);
+      addNotification('Failed to start remix', undefined, 'error');
     }
   }
 
