@@ -12,14 +12,28 @@ export const handler: Handler = async (event) => {
 
     // NO_DB_MODE: talk straight to vendor
     if (String(process.env.NO_DB_MODE).toLowerCase() === "true") {
-      const res = await fetch(aiml(`/v2v/${id}`), {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.AIML_API_KEY}`,
-        },
-      });
+      // Try multiple common status paths
+      const statusBases = [ "/v2v", "/eagle/v2v", "/v1/v2v", "/video/v2v" ];
+      let vendor: any = null;
+      for (const sb of statusBases) {
+        const url = aiml(`${sb}/${encodeURIComponent(id)}`);
+        try {
+          console.log("[poll-v2v] trying", url);
+          const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${process.env.AIML_API_KEY}` },
+          });
+          if (res.ok) { vendor = await res.json().catch(() => ({} as any)); break; }
+          if (res.status === 404) continue;
+          const t = await res.text().catch(() => '');
+          console.warn("[poll-v2v] non-404 status", res.status, t);
+        } catch (e:any) {
+          console.warn("[poll-v2v] error", e?.message || e);
+        }
+      }
 
-      const vendor: any = await res.json().catch(() => ({} as any));
+      if (!vendor) {
+        return resp(502, { ok:false, status:'failed', job_id: id, error: 'All status paths failed' });
+      }
       const vStatus =
         vendor?.status || vendor?.state || (res.ok ? "processing" : "failed");
 

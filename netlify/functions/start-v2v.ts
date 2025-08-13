@@ -38,18 +38,34 @@ export const handler: Handler = async (event) => {
       Authorization: `Bearer ${process.env.AIML_API_KEY}`,
     } as Record<string, string>;
 
-    // Try both common endpoints
-    const candidates = ["/v2v/start", "/v2v"];
+    // Try common endpoint variants
+    const candidates = [
+      "/v2v/start", "/v2v",
+      "/eagle/v2v/start", "/eagle/v2v",
+      "/v1/v2v/start", "/v1/v2v",
+      "/video/v2v/start", "/video/v2v",
+    ];
     let out: any = null;
     let lastStatus = 0;
     let lastText = "";
 
     for (const path of candidates) {
-      const res = await fetch(A(path), { method: "POST", headers, body: JSON.stringify(payload) });
-      lastStatus = res.status;
-      lastText = await res.text();
-      if (res.ok) { out = safeJson(lastText); break; }
-      if (res.status !== 404 && res.status !== 405) { out = safeJson(lastText); break; }
+      const url = A(path);
+      try {
+        console.log("[start-v2v] trying", url);
+        const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(payload) });
+        lastStatus = res.status;
+        lastText = await res.text();
+        if (res.ok || res.status === 202) { out = safeJson(lastText); break; }
+        if (res.status === 404 || res.status === 405) {
+          console.log("[start-v2v] path not found", url, res.status);
+          continue;
+        }
+        out = safeJson(lastText);
+        break;
+      } catch (err:any) {
+        console.log("[start-v2v] error on", url, err?.message || err);
+      }
     }
 
     if (!out || lastStatus >= 400) {
