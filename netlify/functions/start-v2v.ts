@@ -75,11 +75,14 @@ export const handler: Handler = async (event) => {
     if (jerr || !job) return bad(400, jerr?.message || 'Failed to create job')
 
     // Kick existing worker (fire-and-forget) to talk to provider
-    fetch(`${process.env.URL}/.netlify/functions/video-job-worker`, {
+    const base = process.env.URL || process.env.DEPLOY_URL || process.env.DEPLOY_PRIME_URL || (event.headers.host ? `https://${event.headers.host}` : '');
+    if (base) {
+      fetch(`${base}/.netlify/functions/video-job-worker`, {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'x-internal': '1' },
       body: JSON.stringify({ job_id: job.id })
-    }).catch(() => {})
+      }).catch(() => {})
+    }
 
     return ok({ ok:true, job_id: job.id, status: 'queued' })
   } catch (e:any) {

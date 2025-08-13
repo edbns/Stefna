@@ -20,7 +20,7 @@ export const handler: Handler = async (event) => {
   // Load job
   const { data: job, error: jerr } = await supabase.from('video_jobs').select('*').eq('id', job_id).single();
   if (jerr || !job) return { statusCode: 404, body: 'Job not found' };
-  if (job.status !== 'queued') return { statusCode: 200, body: 'Already handled' };
+  if (job.status !== 'queued') return { statusCode: 200, body: JSON.stringify({ ok:true, message:'Already handled', status: job.status }) };
 
   // Mark running
   await supabase.from('video_jobs').update({ status:'running' }).eq('id', job_id);
@@ -58,10 +58,12 @@ export const handler: Handler = async (event) => {
     if (!provider.result_url && providerJobId) {
       const statusUrl = `${AIML_V2V_ENDPOINT}/${providerJobId}`;
       const started = Date.now();
-      while (Date.now() - started < 240000) { // up to 4 minutes
+      while (Date.now() - started < 420000) { // up to 7 minutes
         await new Promise(r => setTimeout(r, 3000));
         const sRes = await fetch(statusUrl, { headers: { Authorization: `Bearer ${AIML_API_KEY}` }});
         const sJson = await sRes.json();
+        // Persist progress for UI polling
+        try { await supabase.from('video_jobs').update({ status: sJson.status === 'succeeded' ? 'succeeded' : 'running' }).eq('id', job_id); } catch {}
         if (sJson.status === 'succeeded' && sJson.result_url) {
           resultUrl = sJson.result_url;
           break;

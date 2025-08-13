@@ -21,7 +21,7 @@ export const handler: Handler = async (event) => {
 
     // Map statuses to contract
     if (job.status === 'queued') return ok({ ok:true, job_id: jobId, status: 'queued', progress: 0 })
-    if (job.status === 'running') return ok({ ok:true, job_id: jobId, status: 'running', progress: 35 })
+    if (job.status === 'running') return ok({ ok:true, job_id: jobId, status: 'running', progress: null })
     if (job.status === 'failed' || job.status === 'canceled') return ok({ ok:false, job_id: jobId, status: 'failed', error: job.error || 'failed' })
 
     // succeeded: ensure we have result_url; optionally persist to Cloudinary and DB
