@@ -66,9 +66,14 @@ export async function saveMediaNoDB(params: {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(params),
   });
-  const body = await res.json();
-  if (!res.ok || !body.ok) throw new Error(body.error || 'save-media failed');
-  return body.data as { public_id: string; resource_type: string; url: string; created_at: string };
+  const text = await res.text();
+  let body: any = {};
+  try { body = JSON.parse(text); } catch { /* leave as text */ }
+  if (!res.ok || body?.ok === false) {
+    const msg = (body && body.error) ? body.error : (text || 'save-media failed');
+    throw new Error(msg);
+  }
+  return (body?.data ?? {}) as { public_id: string; resource_type: string; url: string; created_at: string };
 }
 
 export async function togglePublish(publicId: string, publish: boolean) {
