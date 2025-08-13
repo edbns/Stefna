@@ -53,10 +53,14 @@ export async function dispatchGenerate({
       // VIDEO FLOW: start-v2v → poll-v2v with Cloudinary persistence
       console.log('🎬 Starting V2V generation...');
       
-      const startRes = await fetch("/.netlify/functions/start-v2v", {
+      const startRes = await fetch("/.netlify/functions/start-gen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload), // { video_url, prompt, ... }
+        body: JSON.stringify({
+          ...payload,
+          frameSecond: payload.frameSecond || 0,
+          tier: payload.tier || 'standard'
+        }), // I2V with frame extraction
       });
       
       if (!startRes.ok) {
@@ -73,7 +77,7 @@ export async function dispatchGenerate({
         
         const promptParam = payload.prompt ? `&prompt=${encodeURIComponent(payload.prompt)}` : '';
         const pollRes = await fetch(
-          `/.netlify/functions/poll-v2v?id=${encodeURIComponent(job_id)}&model=${encodeURIComponent(model)}&persist=true${promptParam}`
+          `/.netlify/functions/poll-gen?id=${encodeURIComponent(job_id)}&model=${encodeURIComponent(model)}&persist=true${promptParam}`
         );
         
         if (!pollRes.ok) {

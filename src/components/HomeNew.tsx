@@ -813,16 +813,17 @@ const HomeNew: React.FC = () => {
           return;
         }
         try {
-          const startRes = await fetch('/.netlify/functions/start-v2v', {
+          const startRes = await fetch('/.netlify/functions/start-gen', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
             body: JSON.stringify({
-              video_url: sourceUrl,  // Clean: only vendor-accepted fields
+              video_url: sourceUrl,  // Will be converted to frame on server
               prompt: effectivePrompt,
-              duration: 5,  // Kling supports 5 or 10 seconds
+              duration: 3,  // I2V default duration
               fps: 24,
-              stabilization: false
-              // Removed: strength, visibility, allowRemix, model (server decides model)
+              stabilization: false,
+              frameSecond: 0,  // Extract frame at start (TODO: add UI slider)
+              tier: 'standard'  // TODO: add pro tier selection
             })
           });
           const startJson = await startRes.json().catch(() => ({}));
@@ -1448,7 +1449,7 @@ const HomeNew: React.FC = () => {
         const token = authService.getToken()
         const modelParam = model ? `&model=${encodeURIComponent(model)}` : ''
         const promptParam = prompt ? `&prompt=${encodeURIComponent(prompt)}` : ''
-        const response = await fetch(`/.netlify/functions/poll-v2v?id=${encodeURIComponent(jobId)}&model=${encodeURIComponent(model || 'kling-video/v1.6/standard/video-to-video')}&persist=true${promptParam}`, {
+        const response = await fetch(`/.netlify/functions/poll-gen?id=${encodeURIComponent(jobId)}&model=${encodeURIComponent(model || 'kling-video/v1.6/standard/image-to-video')}&persist=true${promptParam}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
         if (response.ok) {
@@ -1882,7 +1883,12 @@ const HomeNew: React.FC = () => {
             <div className="relative w-full max-w-2xl px-6">
               <div ref={containerRef} className="w-full flex items-center justify-center">
                 {isVideoPreview ? (
-                  <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
+                  <div className="text-center">
+                    <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
+                    <div className="mt-3 text-white/70 text-sm max-w-md mx-auto">
+                      💡 We'll extract a frame from your video and animate it with AI motion. Choose your prompt to guide the animation style.
+                    </div>
+                  </div>
                 ) : (
                   <img ref={(el) => (mediaRef.current = el as HTMLImageElement)} src={previewUrl || ''} alt="Preview" className="max-w-full max-h-[60vh] object-contain" onLoad={measure} />
                 )}

@@ -1,7 +1,7 @@
-// models.ts - Explicit model definitions for V2V/I2V
+// models.ts - I2V-only models (Kling v1.6 supports image-to-video only)
 export const MODELS = {
-  I2V: 'kling-video/v1.6/standard/image-to-video',
-  V2V: 'kling-video/v1.6/standard/video-to-video',
+  I2V_STD: 'kling-video/v1.6/standard/image-to-video',
+  I2V_PRO: 'kling-video/v1.6/pro/image-to-video',
 };
 
 export function detectIsVideo(url?: string): boolean {
@@ -11,4 +11,14 @@ export function detectIsVideo(url?: string): boolean {
 export function isVideoAsset(asset: any): boolean {
   return asset?.resource_type === 'video'
       || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(asset?.secure_url || asset?.url || '');
+}
+
+// Convert Cloudinary video URL to a frame image URL
+export function toCloudinaryFrame(url: string, second = 0, width = 1024): string {
+  if (!url?.includes('res.cloudinary.com')) return url;
+  
+  // Turn a Cloudinary video into a JPG frame URL
+  return url
+    .replace('/video/upload/', `/video/upload/so_${second},w_${width},f_jpg,q_auto/`)
+    .replace(/\.(mp4|mov|m4v|webm)(\?|$)/i, '.jpg$2');
 }
