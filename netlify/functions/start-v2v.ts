@@ -22,6 +22,41 @@ export const handler: Handler = async (event) => {
   try {
     if (event.httpMethod !== 'POST') return bad(405, 'Method Not Allowed')
 
+    // NO_DB_MODE: call vendor directly and return vendor job id
+    if (process.env.NO_DB_MODE === 'true') {
+      const { AIML_API_URL, AIML_API_KEY } = process.env as any
+      if (!AIML_API_URL || !AIML_API_KEY) return bad(500, 'MISSING_AIML_CONFIG')
+
+      const body = JSON.parse(event.body || '{}')
+      const sourceUrl: string | undefined = body.source_url || body.video_url
+      const prompt: string = String(body.prompt || '').trim()
+      const useWebhook: boolean = !!body.webhook
+      if (!sourceUrl) return bad(400, 'MISSING: video_url')
+
+      const siteUrl = process.env.SITE_URL || process.env.URL || process.env.DEPLOY_URL || process.env.DEPLOY_PRIME_URL || ''
+      const webhook_url = useWebhook && siteUrl ? `${siteUrl}/.netlify/functions/v2v-webhook` : undefined
+      const payload: Record<string, any> = {
+        video_url: sourceUrl,
+        prompt,
+      }
+      if (webhook_url) payload.webhook_url = webhook_url
+      if (webhook_url && process.env.V2V_WEBHOOK_SECRET) payload.webhook_secret = process.env.V2V_WEBHOOK_SECRET
+
+      const res = await fetch(`${AIML_API_URL.replace(/\/$/, '')}/v2v/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${AIML_API_KEY}` },
+        body: JSON.stringify(payload)
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        return bad(res.status, text || 'UPSTREAM_ERROR')
+      }
+      const data = await res.json().catch(() => ({}))
+      const id = data.id || data.request_id || data.job_id
+      if (!id) return bad(502, 'NO_JOB_ID')
+      return ok({ ok: true, job_id: id, status: 'queued' })
+    }
+
     // Auth (decode JWT minimally)
     const auth = event.headers.authorization || ''
     const token = auth.replace(/^Bearer\s+/i, '')

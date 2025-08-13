@@ -16,6 +16,31 @@ export const handler: Handler = async (event) => {
     const jobId = params.id || params.job_id
     if (!jobId) return bad(400, 'job_id required')
 
+    // NO_DB_MODE: poll vendor directly and optionally persist
+    if (process.env.NO_DB_MODE === 'true') {
+      const { AIML_API_URL, AIML_API_KEY } = process.env as any
+      if (!AIML_API_URL || !AIML_API_KEY) return bad(500, 'MISSING_AIML_CONFIG')
+
+      const res = await fetch(`${AIML_API_URL.replace(/\/$/, '')}/v2v/${jobId}`, {
+        headers: { Authorization: `Bearer ${AIML_API_KEY}` }
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        return ok({ ok:false, status:'failed', job_id: jobId, error: text || 'UPSTREAM_ERROR' })
+      }
+      const data = await res.json().catch(() => ({}))
+      const status = String(data.status || data.state || '').toLowerCase()
+      if (!['succeeded','done','failed','error'].includes(status)) {
+        return ok({ ok:true, status:'processing', job_id: jobId, progress: data.progress ?? null })
+      }
+      if (['failed','error'].includes(status)) {
+        return ok({ ok:false, status:'failed', job_id: jobId, error: data.error || data.message || 'failed' })
+      }
+      const resultUrl = data.result_url || data.video_url || data.url || null
+      if (!resultUrl) return ok({ ok:false, status:'failed', job_id: jobId, error: 'NO_RESULT_URL' })
+      return ok({ ok:true, status:'completed', job_id: jobId, data: { mediaType: 'video', resultUrl, publicId: null } })
+    }
+
     const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
     const { data: job, error } = await supabase
       .from('ai_generations')
