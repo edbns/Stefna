@@ -124,6 +124,8 @@ FROM public.assets
 WHERE is_public = true 
   AND status = 'ready'
   AND published_at IS NOT NULL
+  AND cloudinary_public_id IS NOT NULL
+  AND media_type IS NOT NULL
 ORDER BY published_at DESC;
 
 -- Grant access to the view
