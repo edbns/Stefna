@@ -29,20 +29,31 @@ export const handler: Handler = async (event) => {
 
     // Cloudinary-only path
     if (process.env.NO_DB_MODE === 'true') {
-      const publicId: string | undefined = body.publicId;
+      let publicId: string | undefined = body.publicId as string | undefined;
       const allowRemix: boolean = !!body.allowRemix;
-      if (!publicId) {
-        return { statusCode: 400, body: JSON.stringify({ ok:false, error:'MISSING: publicId' }) };
+      const assetId: string | undefined = body.assetId as string | undefined;
+      if (!publicId && !assetId) {
+        return { statusCode: 400, body: JSON.stringify({ ok:false, error:'MISSING: publicId (or assetId)' }) };
       }
       try {
         assertCloudinaryEnv();
         const cloudinary = initCloudinary();
-        // ensure base tags
-        await cloudinary.api.add_tag('stefna', [publicId]);
-        await cloudinary.api.add_tag('type:output', [publicId]);
-        await cloudinary.api.add_tag('public', [publicId]);
-        // optional context
-        await cloudinary.uploader.explicit(publicId, {
+        // Resolve from assetId using context if needed
+        if (!publicId && assetId) {
+          const found = await cloudinary.search
+            .expression(`tags=stefna AND context.asset_id=${assetId}`)
+            .max_results(1)
+            .execute();
+          publicId = found?.resources?.[0]?.public_id;
+          if (!publicId) {
+            return { statusCode: 404, body: JSON.stringify({ ok:false, error:`No Cloudinary asset found for assetId ${assetId}` }) };
+          }
+        }
+        // ensure base tags & publish tag
+        await cloudinary.api.add_tag('stefna', [publicId!]);
+        await cloudinary.api.add_tag('type:output', [publicId!]);
+        await cloudinary.api.add_tag('public', [publicId!]);
+        await cloudinary.uploader.explicit(publicId!, {
           type: 'upload',
           context: { allow_remix: allowRemix ? 'true' : 'false', published_at: new Date().toISOString() },
         });

@@ -21,7 +21,7 @@ export const handler: Handler = async (event) => {
     assertCloudinaryEnv();
     const cloudinary = initCloudinary();
 
-    const { resultUrl, userId, presetKey, sourcePublicId, allowRemix, shareNow, mediaTypeHint } =
+    const { resultUrl, userId, presetKey, sourcePublicId, allowRemix, shareNow, mediaTypeHint, assetId } =
       JSON.parse(event.body || '{}');
 
     if (!resultUrl) {
@@ -46,6 +46,7 @@ export const handler: Handler = async (event) => {
         allow_remix: allowRemix ? 'true' : 'false',
         preset_key: presetKey || '',
         created_at: new Date().toISOString(),
+        asset_id: assetId || '',
       },
       overwrite: true,
       invalidate: true,
