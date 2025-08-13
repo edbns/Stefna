@@ -1,8 +1,8 @@
+# Allow access to functions for development/testing (must be first)
+/.netlify/functions/* /.netlify/functions/:splat 200
+
 # Coming Soon Page - Main Site (Public)
 / /coming-soon.html 200
-
-# Allow access to functions for development/testing
-/.netlify/functions/* /.netlify/functions/:splat 200
 
 # Catch all - Everything else redirects to coming soon (prevents exploration)
 /* /coming-soon.html 200 
