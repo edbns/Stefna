@@ -1,5 +1,6 @@
 // netlify/functions/getUserMedia.ts
 import { createClient } from '@supabase/supabase-js';
+import { initCloudinary } from './_cloudinary';
 
 const ok=(b:any)=>({statusCode:200,body:JSON.stringify(b)});
 const err=(s:number,m:string)=>({statusCode:s,body:JSON.stringify({error:m})});
@@ -31,12 +32,37 @@ function pickUuidClaim(claims:any){
 }
 
 export const handler = async (event:any) => {
-  console.log('[getUserMedia]', { 
-    method: event.httpMethod, 
-    hasAuth: !!(event.headers?.authorization), 
-    now: new Date().toISOString() 
-  });
-  
+  if (process.env.NO_DB_MODE === 'true') {
+    try {
+      const cloudinary = initCloudinary();
+      const jwt = getJwt(event);
+      const claims = decodeClaims(jwt) || {};
+      const userId = pickUuidClaim(claims);
+      if (!userId) return ok({ ok:true, data: [] });
+
+      const res = await cloudinary.search
+        .expression(`tags=stefna AND tags="user:${userId}"`)
+        .sort_by('created_at','desc')
+        .max_results(100)
+        .execute();
+
+      const data = (res?.resources || []).map((r: any) => ({
+        id: r.public_id,
+        cloudinary_public_id: r.public_id,
+        media_type: r.resource_type === 'video' ? 'video' : 'image',
+        is_public: (r.tags || []).includes('public'),
+        created_at: r.created_at,
+        preset_key: r.context?.custom?.preset_key || null,
+        source_public_id: r.context?.custom?.source_public_id || null,
+      }));
+
+      return ok({ ok:true, data });
+    } catch (e:any) {
+      console.error('[getUserMedia] error', e);
+      return err(500, e?.message || 'Internal server error');
+    }
+  }
+
   try {
     const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -50,7 +76,6 @@ export const handler = async (event:any) => {
     const tokenUserId = pickUuidClaim(claims);
     if (!tokenUserId) return ok({ items: [] }); // invalid token = guest
 
-    // Use service role key to bypass RLS temporarily while we fix policies
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const { data, error } = await supabase
