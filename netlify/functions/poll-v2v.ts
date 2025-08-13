@@ -11,19 +11,28 @@ export const handler: Handler = async (evt) => {
     let model = qs.model || '';
     const persist = qs.persist === 'true';
 
-    // Back-compat: if id carries model after a colon, split it out
+    // Back-compat: id like "<uuid>:<model>"
     if (!model && jobId.includes(':')) {
-      const parts = jobId.split(':');
-      jobId = parts[0];
-      model = parts.slice(1).join(':'); // in case model has colons
+      const [id, ...rest] = jobId.split(':');
+      jobId = id;
+      model = rest.join(':');
     }
 
-    // Final fallback (prefer video-to-video on V2V endpoint)
+    // Default to v2v pipeline if unknown (safer for your current flow)
     if (!model) model = 'kling-video/v1.6/standard/video-to-video';
 
     if (!jobId) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'missing job id' }) };
+      return { 
+        statusCode: 400, 
+        body: JSON.stringify({ 
+          ok: false,
+          error: 'missing job id',
+          debug: 'Expected ?id=<jobId>&model=<model> or ?id=<jobId>:<model>'
+        }) 
+      };
     }
+
+    console.log(`[poll-v2v] Polling job_id=${jobId}, model=${model}`);
 
     const url = `${AIML_API_URL}/v2/generate/video/kling/generation?generation_id=${encodeURIComponent(jobId)}`;
 
@@ -32,7 +41,7 @@ export const handler: Handler = async (evt) => {
     });
     const text = await res.text();
     if (!res.ok) {
-      return {
+  return {
         statusCode: res.status,
         body: JSON.stringify({ message: 'Vendor polling error', body: text }),
       };
@@ -103,9 +112,16 @@ export const handler: Handler = async (evt) => {
       }),
     };
   } catch (err: any) {
+    console.error('[poll-v2v] Exception:', err);
+    const details = err?.response?.data || err?.message || String(err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ ok: false, status: 'failed', error: String(err) }),
+      body: JSON.stringify({ 
+        ok: false, 
+        status: 'failed', 
+        error: 'poll-v2v crashed', 
+        details 
+      }),
     };
   }
 };

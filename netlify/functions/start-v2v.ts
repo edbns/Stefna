@@ -4,111 +4,134 @@ import type { Handler } from '@netlify/functions';
 const AIML_API_URL = process.env.AIML_API_URL!;
 const AIML_API_KEY = process.env.AIML_API_KEY!;
 
-// Helper to pick first non-empty string value from object keys
-const pick = (obj: any, keys: string[]) =>
-  keys.map(k => obj?.[k]).find(v => typeof v === 'string' && v);
-
-// Detect if URL looks like a video based on path or extension
-const looksLikeVideoUrl = (s?: string) =>
-  typeof s === 'string' && (
-    /\/video\/upload\//.test(s) || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(s)
-  );
-
-// Convert Cloudinary video URL to first frame image for I2V
-const firstFrameFromCloudinary = (videoUrl: string) => {
-  if (!/res\.cloudinary\.com\/.+\/video\/upload\//.test(videoUrl)) return videoUrl;
-  return videoUrl
-    .replace('/video/upload/', '/video/upload/so_0,f_jpg/')
-    .replace(/\.mp4(\?.*)?$/i, '.jpg$1');
+type StartReq = {
+  prompt?: string;
+  image_url?: string;    // legacy
+  video_url?: string;    // preferred for v2v
+  url?: string;          // extra alias
+  source_url?: string;   // extra alias
+  resource_type?: 'image' | 'video';
+  duration?: number;
+  fps?: number;
+  quality?: 'low' | 'medium' | 'high';
+  stabilization?: boolean;
+  negative_prompt?: string;
 };
 
-const clampDuration = (n?: number) => (n && n >= 10 ? 10 : 5);
+const looksLikeVideo = (url?: string) =>
+  typeof url === 'string' &&
+  (/\/video\/upload\//.test(url) || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url));
+
+function resp(statusCode: number, body: unknown) {
+  return { statusCode, body: JSON.stringify(body) };
+}
+
+function clampNum(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, Number(n) || min));
+}
 
 export const handler: Handler = async (evt) => {
   try {
-    const body = JSON.parse(evt.body || '{}');
-    const prompt = body.prompt || body.effectivePrompt || 'Enhance with cinematic look';
-    
-    // Accept multiple aliases; prefer explicit video_url
-    const source = body.video_url ||
-                  body.source_url ||
-                  body.url ||
-                  body.image_url || // legacy - might be video sent under wrong key
-                  pick(evt.queryStringParameters || {}, ['video_url', 'source_url', 'url', 'image_url']) ||
-                  null;
+    const body: StartReq = JSON.parse(evt.body || '{}');
+
+    // Unify source - accept multiple aliases
+    const source =
+      body.video_url ||
+      body.source_url ||
+      body.url ||
+      body.image_url ||
+      null;
 
     if (!source) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          error: 'No source provided',
-          received_keys: Object.keys(body || {}),
-        }),
-      };
+      return resp(400, { 
+        ok: false, 
+        error: 'No source provided',
+        received_keys: Object.keys(body || {}),
+        debug: 'Expected video_url, source_url, url, or image_url'
+      });
     }
 
-    // Determine if this is video-to-video or image-to-video
-    // Be forgiving - detect videos even if sent under image_url key
-    const isVideo = body.resource_type === 'video' || looksLikeVideoUrl(source);
+    const isVideo =
+      body.resource_type === 'video' || looksLikeVideo(source);
 
-    // Build provider model + payload
-    const MODEL_BASE = 'kling-video/v1.6/standard';
-    const task = isVideo ? 'video-to-video' : 'image-to-video';
-    const model = `${MODEL_BASE}/${task}`;
+    // Choose model explicitly
+    const BASE = 'kling-video/v1.6/standard';
+    const model = `${BASE}/${isVideo ? 'video-to-video' : 'image-to-video'}`;
 
-    // Normalize payload keys based on detected type
-    const providerPayload: any = {
+    // Vendor payload
+    const payload: Record<string, unknown> = {
       model,
-      prompt,
-      duration: clampDuration(Number(body.duration)),
+      prompt: body.prompt ?? 'Enhance with cinematic look',
+      duration: clampNum(body.duration ?? 5, 1, 10), // Kling supports 5 or 10
+      fps: clampNum(body.fps ?? 24, 1, 60),
+      quality: body.quality ?? 'high',
+      stabilization: !!body.stabilization,
+      ...(isVideo ? { video_url: source } : { image_url: source }),
       ...(body.negative_prompt ? { negative_prompt: body.negative_prompt } : {}),
     };
 
-    if (isVideo) {
-      // True V2V: send video_url directly
-      providerPayload.video_url = source;
-    } else {
-      // I2V: send image_url (or convert video to first frame)
-      providerPayload.image_url = looksLikeVideoUrl(source) ? firstFrameFromCloudinary(source) : source;
-    }
+    console.log(`[start-v2v] Calling vendor with model: ${model}`, {
+      isVideo,
+      source: source.substring(0, 50) + '...',
+      payload_keys: Object.keys(payload)
+    });
 
+    // Call vendor API
     const res = await fetch(`${AIML_API_URL}/v2/generate/video/kling/generation`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${AIML_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(providerPayload),
+      body: JSON.stringify(payload),
     });
 
     const text = await res.text();
+    
     if (!res.ok) {
-      return {
-        statusCode: res.status,
-        body: JSON.stringify({
-          message: `Vendor error creating Kling ${task} job`,
-          body: text,
-        }),
-      };
+      // Surface vendor errors transparently
+      console.error(`[start-v2v] Vendor error ${res.status}:`, text);
+      return resp(res.status, {
+        ok: false,
+        error: `Vendor error creating Kling ${isVideo ? 'V2V' : 'I2V'} job`,
+        vendor_status: res.status,
+        vendor_response: text,
+        model_used: model,
+        debug: 'Check if AIML API supports this model/payload combination'
+      });
     }
 
     const json = JSON.parse(text || '{}');
     const job_id = json.generation_id || json.id || json.request_id || json.task_id;
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        ok: true,
-        job_id,
-        model, // ✅ Return the model so client can poll correctly
-        vendor: `kling-v1.6-${isVideo ? 'v2v' : 'i2v'}`,
-        raw: json
-      }),
-    };
+    if (!job_id) {
+      return resp(400, {
+        ok: false,
+        error: 'No job ID in vendor response',
+        vendor_response: json,
+        model_used: model
+      });
+    }
+
+    console.log(`[start-v2v] Success: job_id=${job_id}, model=${model}`);
+
+    // Return model so the client knows what to poll
+    return resp(200, { 
+      ok: true, 
+      job_id, 
+      model,
+      vendor: `kling-v1.6-${isVideo ? 'v2v' : 'i2v'}`,
+      debug: { isVideo, source_type: isVideo ? 'video' : 'image' }
+    });
   } catch (err: any) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'start-v2v crashed', detail: String(err) }),
-    };
+    // Surface meaningful errors to the client for debugging
+    console.error('[start-v2v] Exception:', err);
+    const details = err?.response?.data || err?.message || String(err);
+    return resp(500, { 
+      ok: false, 
+      error: 'start-v2v crashed', 
+      details,
+      stack: err?.stack?.split('\n').slice(0, 3) // First few lines of stack
+    });
   }
 };
