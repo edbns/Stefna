@@ -476,7 +476,7 @@ const ProfileScreen: React.FC = () => {
               };
             });
             
-            console.log('📊 Setting userMedia with', transformedMedia.length, 'items')
+      console.log('📊 Setting userMedia with', transformedMedia.length, 'items')
             setUserMedia(transformedMedia);
             
             // Also derive remixes immediately from the fresh list (avoid stale state)
@@ -543,8 +543,8 @@ const ProfileScreen: React.FC = () => {
       // Debug: Log final state
       console.log('🎯 Final media state:', {
         userMedia: userMedia.length,
-        remixedMedia: remixesWithAvatar.length,
-        totalItems: userMedia.length + remixesWithAvatar.length
+        remixedMedia: remixedMedia.length,
+        totalItems: userMedia.length + remixedMedia.length
       })
 
       setIsLoading(false)

@@ -994,7 +994,6 @@ const HomeNew: React.FC = () => {
           notifyReady({ title: 'Your media is ready', message: 'Tap to open' });
               // Refresh user media to show the new video
               // TODO: Implement user media refresh
-            });
         }
       }
 
@@ -1202,7 +1201,7 @@ const HomeNew: React.FC = () => {
     // UI guards: prevent sharing until asset is ready
     if (!media.cloudinaryPublicId || !media.mediaType) {
       console.error('Cannot share: missing cloudinary_public_id or media_type');
-      addNotification('Cannot share incomplete media', undefined, 'error');
+      notifyError({ title: 'Something went wrong', message: 'Cannot share incomplete media' });
       return;
     }
     
@@ -1281,7 +1280,7 @@ const HomeNew: React.FC = () => {
       // Use the stored cloudinary_public_id and media_type from the feed data
       if (!media.cloudinaryPublicId || !media.mediaType) {
         console.error('Missing cloudinary_public_id or media_type for remix');
-        addNotification('Failed to start remix', undefined, 'error');
+        notifyError({ title: 'Something went wrong', message: 'Failed to start remix' });
         return;
       }
       
@@ -1295,7 +1294,7 @@ const HomeNew: React.FC = () => {
       
       if (!ok) {
         console.error('Failed to create remix asset:', error);
-        addNotification('Failed to create remix', undefined, 'error');
+        notifyError({ title: 'Something went wrong', message: 'Failed to create remix' });
         return;
       }
       
@@ -1317,10 +1316,10 @@ const HomeNew: React.FC = () => {
         setTimeout(() => dispatchGenerate('remix'), 100);
       }
       
-      addNotification('Remix started', undefined, 'queue');
+      notifyQueue({ title: 'Added to queue', message: 'Remix started' });
     } catch (error) {
       console.error('Error creating remix:', error);
-      addNotification('Failed to start remix', undefined, 'error');
+      notifyError({ title: 'Something went wrong', message: 'Failed to start remix' });
     }
   }
 
@@ -1733,40 +1732,7 @@ const HomeNew: React.FC = () => {
 
       {/* Guest gate overlay removed - existing system in place */}
 
-      {/* Compact floating notifications - positioned under the profile section */}
-      {notifications.length > 0 && (
-        <div className="fixed top-20 right-4 z-50 space-y-2" style={{ position: 'fixed', top: '5rem', right: '1rem', zIndex: 9999 }}>
-          {notifications.map((n) => (
-            <div 
-              key={n.id} 
-              className={`w-64 bg-[#333333] border border-white/20 rounded-lg shadow-2xl btn-fast ${
-                n.onClick ? 'cursor-pointer hover:bg-[#3a3a3a]' : ''
-              }`}
-              onClick={n.onClick}
-            >
-              <div className="px-3 py-2 relative">
-                {/* Close button - top right */}
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeNotification(n.id);
-                  }} 
-                  className="absolute top-1 right-1 w-4 h-4 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 btn-fast"
-                >
-                  <X size={10} className="text-white" />
-                </button>
-                
-                {/* Title only - compact */}
-                <div className="pr-6">
-                  <h3 className="text-white text-sm font-medium truncate">
-                    {n.title}
-                  </h3>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Unified toasts handle notifications globally */}
 
       {/* Mobile FAB */}
       <div className="md:hidden fixed bottom-6 right-6 relative navbar-stable">
