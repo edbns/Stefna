@@ -144,52 +144,21 @@ export function usePerformanceMonitoring(config: PerformanceConfig = {}) {
   }
 }
 
-// Enhanced LazyImage with performance tracking
+// Enhanced LazyImage with performance tracking - DISABLED
 export function useImagePerformanceTracking() {
-  const { trackImageLoad, isMonitoring } = usePerformanceMonitoring()
-
+  // Temporarily disabled - return mock functions
   const trackImage = (imageUrl: string) => {
-    if (!isMonitoring) return { onLoadStart: () => {}, onLoadEnd: () => {} }
-
-    let startTime: number
-
-    return {
-      onLoadStart: () => {
-        startTime = performance.now()
-      },
-      onLoadEnd: () => {
-        const endTime = performance.now()
-        trackImageLoad(startTime, endTime, imageUrl)
-      }
-    }
+    return { onLoadStart: () => {}, onLoadEnd: () => {} }
   }
 
   return { trackImage }
 }
 
-// Performance-aware fetch wrapper
+// Performance-aware fetch wrapper - DISABLED
 export function usePerformantFetch() {
-  const { trackApiCall, isMonitoring } = usePerformanceMonitoring()
-
+  // Temporarily disabled - return standard fetch
   const performantFetch = async (url: string, options?: RequestInit) => {
-    const startTime = isMonitoring ? performance.now() : 0
-    
-    try {
-      const response = await fetch(url, options)
-      
-      if (isMonitoring) {
-        const endTime = performance.now()
-        trackApiCall(url, startTime, endTime)
-      }
-      
-      return response
-    } catch (error) {
-      if (isMonitoring) {
-        const endTime = performance.now()
-        trackApiCall(`${url} (failed)`, startTime, endTime)
-      }
-      throw error
-    }
+    return fetch(url, options)
   }
 
   return { performantFetch }
