@@ -5,6 +5,7 @@ import RemixIcon from './RemixIcon'
 import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
 import { MediaCard as SpinnerCard } from './ui/Toasts'
+import LazyImage from './LazyImage'
 
 interface MasonryMediaGridProps {
   media: UserMedia[]
@@ -184,7 +185,13 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                       {item.type === 'video' ? (
                         <video src={item.url} className="w-full h-auto object-cover opacity-50" muted />
                       ) : (
-                        <img src={item.url} alt={item.prompt} className="w-full h-auto object-cover opacity-50" />
+                        <LazyImage 
+                          src={item.url} 
+                          alt={item.prompt} 
+                          className="w-full h-auto opacity-50"
+                          quality={60} // Lower quality for generating state
+                          format="auto"
+                        />
                       )}
                       <div className="absolute inset-0 grid place-items-center">
                         <div className="px-3 py-1 rounded-full bg-red-600/80 text-white text-xs font-semibold">Failed</div>
@@ -200,9 +207,13 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         onMouseLeave={(e) => e.currentTarget.pause()}
                       />
                   ) : (
-                      <img
+                      <LazyImage
                         src={item.url}
                         alt={item.prompt}
+                        priority={index < 6} // First 6 images load immediately
+                        quality={85} // High quality for main images
+                        format="auto"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="w-full h-auto object-cover"
                         loading="lazy"
                       />

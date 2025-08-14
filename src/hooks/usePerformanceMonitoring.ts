@@ -1,0 +1,184 @@
+// Performance Monitoring Hook
+// Track Core Web Vitals and media loading performance
+
+import { useEffect, useRef } from 'react'
+
+interface PerformanceMetrics {
+  // Core Web Vitals
+  lcp?: number // Largest Contentful Paint
+  fid?: number // First Input Delay
+  cls?: number // Cumulative Layout Shift
+  
+  // Custom metrics
+  imageLoadTime?: number
+  apiResponseTime?: number
+  renderTime?: number
+}
+
+interface PerformanceConfig {
+  enableCoreWebVitals?: boolean
+  enableCustomMetrics?: boolean
+  sampleRate?: number // 0-1, percentage of sessions to monitor
+  onMetric?: (metric: string, value: number, rating: 'good' | 'needs-improvement' | 'poor') => void
+}
+
+export function usePerformanceMonitoring(config: PerformanceConfig = {}) {
+  const {
+    enableCoreWebVitals = true,
+    enableCustomMetrics = true,
+    sampleRate = 0.1, // Monitor 10% of sessions by default
+    onMetric
+  } = config
+
+  const metricsRef = useRef<PerformanceMetrics>({})
+  const shouldMonitor = useRef(Math.random() < sampleRate)
+
+  useEffect(() => {
+    if (!shouldMonitor.current) return
+
+    // Core Web Vitals monitoring
+    if (enableCoreWebVitals) {
+      import('web-vitals').then(({ getCLS, getFID, getLCP }) => {
+        getCLS((metric) => {
+          metricsRef.current.cls = metric.value
+          const rating = metric.value < 0.1 ? 'good' : metric.value < 0.25 ? 'needs-improvement' : 'poor'
+          onMetric?.('CLS', metric.value, rating)
+        })
+
+        getFID((metric) => {
+          metricsRef.current.fid = metric.value
+          const rating = metric.value < 100 ? 'good' : metric.value < 300 ? 'needs-improvement' : 'poor'
+          onMetric?.('FID', metric.value, rating)
+        })
+
+        getLCP((metric) => {
+          metricsRef.current.lcp = metric.value
+          const rating = metric.value < 2500 ? 'good' : metric.value < 4000 ? 'needs-improvement' : 'poor'
+          onMetric?.('LCP', metric.value, rating)
+        })
+      }).catch(() => {
+        // Fallback if web-vitals library is not available
+        console.warn('web-vitals library not available')
+      })
+    }
+
+    // Custom performance monitoring
+    if (enableCustomMetrics) {
+      // Monitor navigation timing
+      const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
+      if (navigationEntry) {
+        const renderTime = navigationEntry.loadEventEnd - navigationEntry.navigationStart
+        metricsRef.current.renderTime = renderTime
+        const rating = renderTime < 1000 ? 'good' : renderTime < 3000 ? 'needs-improvement' : 'poor'
+        onMetric?.('renderTime', renderTime, rating)
+      }
+    }
+  }, [enableCoreWebVitals, enableCustomMetrics, onMetric])
+
+  // Track image loading performance
+  const trackImageLoad = (startTime: number, endTime: number, imageUrl: string) => {
+    if (!shouldMonitor.current) return
+
+    const loadTime = endTime - startTime
+    metricsRef.current.imageLoadTime = loadTime
+    
+    const rating = loadTime < 500 ? 'good' : loadTime < 1500 ? 'needs-improvement' : 'poor'
+    onMetric?.('imageLoadTime', loadTime, rating)
+
+    // Log slow images for debugging
+    if (loadTime > 2000) {
+      console.warn(`Slow image load: ${imageUrl} took ${loadTime}ms`)
+    }
+  }
+
+  // Track API response time
+  const trackApiCall = (endpoint: string, startTime: number, endTime: number) => {
+    if (!shouldMonitor.current) return
+
+    const responseTime = endTime - startTime
+    metricsRef.current.apiResponseTime = responseTime
+    
+    const rating = responseTime < 200 ? 'good' : responseTime < 1000 ? 'needs-improvement' : 'poor'
+    onMetric?.('apiResponseTime', responseTime, rating)
+
+    // Log slow API calls
+    if (responseTime > 3000) {
+      console.warn(`Slow API call: ${endpoint} took ${responseTime}ms`)
+    }
+  }
+
+  // Get current metrics snapshot
+  const getMetrics = (): PerformanceMetrics => ({ ...metricsRef.current })
+
+  // Report metrics to analytics service
+  const reportMetrics = () => {
+    if (!shouldMonitor.current) return
+
+    const metrics = getMetrics()
+    
+    // Send to analytics service (replace with your analytics provider)
+    if (process.env.NODE_ENV === 'production') {
+      // Example: Send to Google Analytics, DataDog, etc.
+      console.log('Performance metrics:', metrics)
+    }
+  }
+
+  return {
+    trackImageLoad,
+    trackApiCall,
+    getMetrics,
+    reportMetrics,
+    isMonitoring: shouldMonitor.current
+  }
+}
+
+// Enhanced LazyImage with performance tracking
+export function useImagePerformanceTracking() {
+  const { trackImageLoad, isMonitoring } = usePerformanceMonitoring()
+
+  const trackImage = (imageUrl: string) => {
+    if (!isMonitoring) return { onLoadStart: () => {}, onLoadEnd: () => {} }
+
+    let startTime: number
+
+    return {
+      onLoadStart: () => {
+        startTime = performance.now()
+      },
+      onLoadEnd: () => {
+        const endTime = performance.now()
+        trackImageLoad(startTime, endTime, imageUrl)
+      }
+    }
+  }
+
+  return { trackImage }
+}
+
+// Performance-aware fetch wrapper
+export function usePerformantFetch() {
+  const { trackApiCall, isMonitoring } = usePerformanceMonitoring()
+
+  const performantFetch = async (url: string, options?: RequestInit) => {
+    const startTime = isMonitoring ? performance.now() : 0
+    
+    try {
+      const response = await fetch(url, options)
+      
+      if (isMonitoring) {
+        const endTime = performance.now()
+        trackApiCall(url, startTime, endTime)
+      }
+      
+      return response
+    } catch (error) {
+      if (isMonitoring) {
+        const endTime = performance.now()
+        trackApiCall(`${url} (failed)`, startTime, endTime)
+      }
+      throw error
+    }
+  }
+
+  return { performantFetch }
+}
