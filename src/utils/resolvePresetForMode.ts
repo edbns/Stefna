@@ -1,44 +1,79 @@
-export function resolvePresetForMode({ mode, option, activeRotation = [] }: {
+import { StoryTheme, TimeEra, RestoreOp } from '../config/modes'
+import { getPresetDef, MASTER_PRESET_CATALOG, type PresetDef } from '../services/presets'
+
+export function resolvePresetForMode({ 
+  mode, 
+  option, 
+  activePresets 
+}: {
   mode: 'time_machine'|'story'|'restore',
   option?: string,
-  activeRotation?: string[]
+  activePresets: Record<string, PresetDef>
 }) {
+  // Define preset mappings
+  const timeMachineMap: Record<string, string> = {
+    '1920s_noir_glam': 'noir_classic',
+    '1960s_kodachrome': 'vintage_film_35mm',
+    '1980s_vhs_retro': 'retro_polaroid',
+    '1990s_disposable': 'vintage_film_35mm',
+    '2100_cyberpunk': 'neon_nights',
+  };
+
+  const restoreMap: Record<string, string> = {
+    'colorize_bw': 'crystal_clear',
+    'revive_faded': 'vivid_pop',
+    'sharpen_enhance': 'crystal_clear',
+    'remove_scratches': 'crystal_clear'
+  };
+
+  // Story mode theme pools (prefer active presets, fall back to master catalog)
+  const storyThemePools: Record<string, string[]> = {
+    auto: Object.keys(activePresets).length > 0 ? Object.keys(activePresets).slice(0, 6) : [
+      'cinematic_glow', 'bright_airy', 'vivid_pop', 'vintage_film_35mm', 'urban_grit', 'dreamy_pastels'
+    ],
+    spring: ['bright_airy', 'dreamy_pastels'],
+    summer: ['vivid_pop', 'cinematic_glow'],
+    autumn: ['vintage_film_35mm', 'urban_grit'],
+    winter: ['crystal_clear', 'noir_classic'],
+    sunrise: ['cinematic_glow', 'bright_airy'],
+    day: ['crystal_clear', 'vivid_pop'],
+    sunset: ['cinematic_glow', 'vintage_film_35mm'],
+    night: ['neon_nights', 'noir_classic'],
+    calm: ['bright_airy', 'dreamy_pastels'],
+    vibrant: ['vivid_pop', 'neon_nights'],
+    dramatic: ['noir_classic', 'urban_grit'],
+    dreamy: ['dreamy_pastels', 'cinematic_glow'],
+    photorealistic: ['crystal_clear', 'bright_airy'],
+    vintage_film: ['vintage_film_35mm', 'retro_polaroid'],
+    pastels: ['dreamy_pastels', 'bright_airy'],
+    neon_pop: ['neon_nights', 'vivid_pop']
+  };
+
+  let targetPreset: string | null = null;
+
   if (mode === 'time_machine') {
-    const map: Record<string,string> = {
-      '1920s_noir_glam': 'noir_classic',
-      '1960s_kodachrome': 'vintage_film_35mm',
-      '1980s_vhs_retro': 'retro_polaroid',
-      '1990s_disposable': 'vintage_film_35mm',
-      '2100_cyberpunk': 'neon_nights',
-    };
-    return map[option || ''] || 'noir_classic';
+    targetPreset = timeMachineMap[option || ''] || 'noir_classic';
+  } else if (mode === 'restore') {
+    targetPreset = restoreMap[option || ''] || 'crystal_clear';
+  } else if (mode === 'story') {
+    const pool = storyThemePools[option || 'auto'] || storyThemePools.auto;
+    // Filter pool to only include presets that exist (either in active or master catalog)
+    const validPresets = pool.filter(preset => getPresetDef(preset, activePresets));
+    if (validPresets.length > 0) {
+      targetPreset = validPresets[Math.floor(Math.random() * validPresets.length)];
+    } else {
+      // Fallback to first available preset
+      targetPreset = Object.keys(activePresets)[0] || 'crystal_clear';
+    }
   }
 
-  if (mode === 'story') {
-    const themeMap: Record<string,string[]> = {
-      auto: (activeRotation.length ? activeRotation : [
-        'cinematic_glow','bright_airy','vivid_pop','vintage_film_35mm','tropical_boost','urban_grit'
-      ]),
-      seasons: ['dreamy_pastels','sun_kissed','moody_forest','frost_light'],
-      daypart: ['golden_hour_magic','crystal_clear','cinematic_glow','neon_nights'],
-      mood: ['bright_airy','vivid_pop','urban_grit','dreamy_pastels'],
-      art: ['crystal_clear','vintage_film_35mm','dreamy_pastels','neon_nights'],
-    };
-    const pick = (arr: string[]) => arr[Math.floor(Math.random()*arr.length)];
-    const key = (option || 'auto').toLowerCase();
-    const pool = themeMap[key] || themeMap.auto;
-    return pick(pool);
+  // Ensure the target preset exists (either in active rotation or master catalog)
+  if (targetPreset && getPresetDef(targetPreset, activePresets)) {
+    return targetPreset;
   }
 
-  if (mode === 'restore') {
-    const map: Record<string,string> = {
-      'colorize_bw': 'crystal_clear',
-      'revive_faded': 'vivid_pop',
-      'sharpen_enhance': 'crystal_clear',
-      'remove_scratches': 'crystal_clear'
-    };
-    return map[option || ''] || 'crystal_clear';
-  }
-
-  return 'crystal_clear';
+  // Final fallback: pick first available active preset or crystal_clear
+  const fallback = Object.keys(activePresets)[0] || 'crystal_clear';
+  console.warn(`Preset ${targetPreset} not found, falling back to ${fallback}`);
+  return fallback;
 }

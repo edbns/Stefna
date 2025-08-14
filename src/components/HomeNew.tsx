@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, X, ArrowUp, Filter, FileText } from 'lucide-react'
+import { Plus, X, ArrowUp, Filter, FileText, ChevronDown } from 'lucide-react'
 import { authenticatedFetch } from '../utils/apiClient'
 import authService from '../services/authService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
@@ -12,6 +12,52 @@ import { useToasts } from './ui/Toasts'
 import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
 
+// Story Category Section Component with collapsible themes
+interface StoryCategorySectionProps {
+  title: string
+  themes: StoryTheme[]
+  selectedTheme: StoryTheme | null
+  onThemeSelect: (theme: StoryTheme) => void
+}
+
+const StoryCategorySection: React.FC<StoryCategorySectionProps> = ({ title, themes, selectedTheme, onThemeSelect }) => {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  return (
+    <div className="border-b border-white/10 last:border-b-0 pb-2 last:pb-0">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between px-2 py-2 rounded-lg transition-colors text-sm text-white/90 hover:text-white hover:bg-white/5"
+      >
+        <span className="font-medium">{title}</span>
+        <ChevronDown size={14} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {isExpanded && (
+        <div className="mt-1 space-y-1 pl-2">
+          {themes.map((theme) => (
+            <button
+              key={theme}
+              onClick={() => onThemeSelect(theme)}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
+                selectedTheme === theme 
+                  ? 'bg-white/20 text-white' 
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <span>{STORY_THEME_LABELS[theme]}</span>
+              {selectedTheme === theme ? (
+                <div className="w-3 h-3 rounded-full bg-white border border-white/30"></div>
+              ) : (
+                <div className="w-3 h-3 rounded-full border border-white/30"></div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 import { PRESETS, type PresetKey, promptForPreset } from '../config/presets'
 import presetRotationService from '../services/presetRotationService'
@@ -28,6 +74,8 @@ import { createAsset } from '../lib/api'
 import { saveMediaNoDB, togglePublish } from '../lib/api'
 import { Mode, StoryTheme, TimeEra, RestoreOp, MODE_LABELS, STORY_THEME_LABELS, TIME_ERA_LABELS, RESTORE_OP_LABELS } from '../config/modes'
 import { resolvePresetForMode } from '../utils/resolvePresetForMode'
+import { getPresetDef, getPresetLabel, MASTER_PRESET_CATALOG } from '../services/presets'
+import { buildEffectivePrompt } from '../services/prompt'
 const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
@@ -162,7 +210,7 @@ const HomeNew: React.FC = () => {
       keys: Object.keys(PRESETS),
       sample: Object.keys(PRESETS).slice(0, 3).map(key => ({
         key,
-        label: PRESETS[key as PresetKey]?.label,
+        label: getPresetLabel(key, PRESETS),
         prompt: PRESETS[key as PresetKey]?.prompt?.substring(0, 50) + '...'
       }))
     })
@@ -668,23 +716,42 @@ const HomeNew: React.FC = () => {
     // Get stable snapshot of selectedPreset at click time
     const chosen = selectedPresetRef.current;
     
-    // Handle mode-based generation
-    if (selectedMode && (selectedTheme || selectedEra || selectedOp)) {
+    // Handle mode-based generation with new system
+    if (kind === 'mode' && selectedMode && (selectedTheme || selectedEra || selectedOp)) {
       const resolvedPreset = resolvePresetForMode({
         mode: selectedMode,
         option: (selectedTheme || selectedEra || selectedOp) as string,
+        activePresets: PRESETS
       });
       
       // Create mode metadata for tracking
       modeMeta = {
         mode: selectedMode,
         option: (selectedTheme || selectedEra || selectedOp) as string,
-        mapping_version: 'v1',
+        mapping_version: 'v2',
       };
       
-      // Use the resolved preset prompt
-      effectivePrompt = promptForPreset(resolvedPreset, isVideoPreview);
-      console.log(`🎭 Using mode "${selectedMode}" → preset "${resolvedPreset}":`, effectivePrompt);
+      // Get preset definition from active presets or master catalog
+      const presetDef = getPresetDef(resolvedPreset, PRESETS);
+      if (presetDef) {
+        // Use the new prompt building system
+        const { positive, negatives } = buildEffectivePrompt({
+          base: presetDef.prompt,
+          user: prompt.trim() || undefined,
+          mode: selectedMode,
+          wantDetailBoost: selectedMode !== 'story', // ON for restore & time machine
+          extraNeg: presetDef.negative_prompt
+        });
+        
+        effectivePrompt = positive;
+        console.log(`🎭 Using mode "${selectedMode}" → preset "${resolvedPreset}":`, effectivePrompt);
+        if (negatives) {
+          console.log(`🚫 Negative prompt:`, negatives);
+        }
+      } else {
+        console.warn(`⚠️ Preset ${resolvedPreset} not found, using fallback`);
+        effectivePrompt = 'stylize, preserve subject and composition';
+      }
     }
 
     // Check if we have either a preset, mode, or user prompt
@@ -747,7 +814,7 @@ const HomeNew: React.FC = () => {
     if (chosen && PRESETS[chosen]) {
       console.log('🎨 Preset used in generation:', {
         presetName: chosen,
-        presetLabel: PRESETS[chosen].label,
+        presetLabel: getPresetLabel(chosen, PRESETS),
         presetPrompt: PRESETS[chosen].prompt,
         finalPrompt: effectivePrompt
       });
@@ -1445,11 +1512,11 @@ const HomeNew: React.FC = () => {
         return
       }
 
-      // Resolve mode to preset
+      // Resolve mode to preset using the new system
       const presetRef = resolvePresetForMode({ 
         mode, 
         option, 
-        activeRotation: Object.keys(PRESETS).slice(0, 6)
+        activePresets: PRESETS
       })
       
       console.log('🎯 Mode resolved:', { mode, option, preset: presetRef, sourceUrl: remoteUrl })
@@ -1458,8 +1525,13 @@ const HomeNew: React.FC = () => {
       setSelectedMode(mode)
       setSelectedPreset(presetRef as PresetKey)
       
-      // Dispatch with correct payload
-      await dispatchGenerate('mode')
+      // Show immediate feedback that button was clicked (same as presets)
+      setNavGenerating(true)
+      
+      // Small delay to show the loading state before starting generation (same as presets)
+      setTimeout(() => {
+        dispatchGenerate('mode')
+      }, 100)
       
     } catch (error) {
       console.error('❌ Mode generation failed:', error)
@@ -1938,8 +2010,10 @@ const HomeNew: React.FC = () => {
           </div>
 
           {/* Notification bell */}
-          <div className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white/90 hover:text-white transition-colors border border-white/20">
-            <NotificationBell userId={authService.getCurrentUser()?.id || ''} />
+          <div className="relative">
+            <div className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white/90 hover:text-white transition-colors border border-white/20">
+              <NotificationBell userId={authService.getCurrentUser()?.id || ''} />
+            </div>
           </div>
 
           {/* Profile with progress ring */}
@@ -2193,7 +2267,7 @@ const HomeNew: React.FC = () => {
                       title={isAuthenticated ? 'Choose AI style presets' : 'Sign up to use AI presets'}
                       disabled={!isAuthenticated}
                     >
-                      {selectedPreset && PRESETS[selectedPreset]?.label ? PRESETS[selectedPreset].label : 'Presets'}
+                      {selectedPreset ? getPresetLabel(selectedPreset, PRESETS) : 'Presets'}
                     </button>
                     
                     {/* Presets dropdown - clean and simple */}
@@ -2233,7 +2307,7 @@ const HomeNew: React.FC = () => {
                                   : 'text-white/80 hover:text-white hover:bg-white/10'
                               }`}
                             >
-                              <span>{PRESETS[name].label}</span>
+                              <span>{getPresetLabel(name, PRESETS)}</span>
                               {selectedPreset === name ? (
                                 <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
                               ) : (
@@ -2269,28 +2343,43 @@ const HomeNew: React.FC = () => {
                     </button>
                                       {storyOpen && (
                     <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
-                      <div className="space-y-1">
-                        {Object.entries(STORY_THEME_LABELS).map(([theme, label]) => (
-                          <button
-                            key={theme}
-                            onClick={() => {
-                              handleModeClick('story', theme as StoryTheme)
-                              setStoryOpen(false)
-                            }}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
-                              selectedTheme === theme 
-                                ? 'bg-white/20 text-white' 
-                                : 'text-white/80 hover:text-white hover:bg-white/10'
-                            }`}
-                          >
-                            <span>{label}</span>
-                            {selectedTheme === theme ? (
-                              <div className="w-3 h-3 rounded-full bg-white border border-white/30"></div>
-                            ) : (
-                              <div className="w-3 h-3 rounded-full border border-white/30"></div>
-                            )}
-                          </button>
-                        ))}
+                      <div className="space-y-2">
+                        <StoryCategorySection 
+                          title="Four Seasons"
+                          themes={['spring', 'summer', 'autumn', 'winter']}
+                          selectedTheme={selectedTheme}
+                          onThemeSelect={(theme) => {
+                            handleModeClick('story', theme)
+                            setStoryOpen(false)
+                          }}
+                        />
+                        <StoryCategorySection 
+                          title="Time of Day"
+                          themes={['sunrise', 'day', 'sunset', 'night']}
+                          selectedTheme={selectedTheme}
+                          onThemeSelect={(theme) => {
+                            handleModeClick('story', theme)
+                            setStoryOpen(false)
+                          }}
+                        />
+                        <StoryCategorySection 
+                          title="Mood Shift"
+                          themes={['calm', 'vibrant', 'dramatic', 'dreamy']}
+                          selectedTheme={selectedTheme}
+                          onThemeSelect={(theme) => {
+                            handleModeClick('story', theme)
+                            setStoryOpen(false)
+                          }}
+                        />
+                        <StoryCategorySection 
+                          title="Art Style"
+                          themes={['photorealistic', 'vintage_film', 'pastels', 'neon_pop']}
+                          selectedTheme={selectedTheme}
+                          onThemeSelect={(theme) => {
+                            handleModeClick('story', theme)
+                            setStoryOpen(false)
+                          }}
+                        />
                       </div>
                     </div>
                   )}
@@ -2439,7 +2528,7 @@ const HomeNew: React.FC = () => {
                         : 'bg-white text-black hover:bg-white/90'
                     }`}
                     aria-label="Generate"
-                    title={`${!isAuthenticated ? 'Sign up to generate AI content' : !previewUrl ? 'Upload media first' : (!prompt.trim() && !selectedPreset) ? 'Enter a prompt or select a preset first' : selectedPreset && PRESETS[selectedPreset]?.label ? `Generate with ${PRESETS[selectedPreset].label} preset` : 'Generate AI content'}`}
+                    title={`${!isAuthenticated ? 'Sign up to generate AI content' : !previewUrl ? 'Upload media first' : (!prompt.trim() && !selectedPreset) ? 'Enter a prompt or select a preset first' : selectedPreset ? `Generate with ${getPresetLabel(selectedPreset, PRESETS)} preset` : 'Generate AI content'}`}
                   >
                     {navGenerating ? (
                       <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />

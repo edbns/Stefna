@@ -56,6 +56,7 @@ export const handler: Handler = async (event) => {
 
     // Parse request body
     const body: UpdateProfileRequest = JSON.parse(event.body || '{}');
+    console.log('📝 Update profile request:', { userId, body });
     
     // Validate username if provided (treating as display name, so more lenient)
     if (body.username !== undefined) {
@@ -94,10 +95,19 @@ export const handler: Handler = async (event) => {
       .single();
 
     if (error) {
-      console.error('Profile update error:', error);
+      console.error('Profile update error:', {
+        error,
+        userId,
+        updateData,
+        supabaseUrl: !!supabaseUrl,
+        supabaseServiceKey: !!supabaseServiceKey
+      });
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'Failed to update profile' })
+        body: JSON.stringify({ 
+          error: 'Failed to update profile',
+          details: error.message || 'Database error'
+        })
       };
     }
 
