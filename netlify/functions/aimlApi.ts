@@ -14,6 +14,16 @@ const ok = (b: any) => ({
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(Math.max(n, lo), hi);
 
+// --- Sharpening & subject locks ---
+const CLARITY_BOOST_HARD =
+  "maximize micro-contrast and fine detail; razor-sharp edges; crisp textures (hair, neoprene seams, surfboard wax); strictly no halos or oversharpening artifacts; preserve natural skin texture";
+
+const SURFER_POS_LOCK =
+  "same subject, adult male surfer, holding a surfboard, same clothing and gear, same pose and camera angle, same composition on a beach with ocean waves";
+
+const SURFER_NEG_DRIFT =
+  "female, woman, girl, bikini, makeup glam, banana, banana boat, inflatable, kayak, canoe, raft, jetski, paddle, oar, dinghy, extra people, different subject, face swap, body swap";
+
 export const handler = async (event: any) => {
   console.log('[aimlApi]', { 
     method: event.httpMethod, 
@@ -134,39 +144,64 @@ export const handler = async (event: any) => {
     const APP_ENV = /netlify\.app$/i.test(event.headers.host || '') ? 'dev' : 'prod';
 
     // Build mode-aware prompt with subject preservation
-    const basePrompt = String(body.prompt || 'stylize').trim();
+    const basePrompt = String(
+      body.prompt || 'high-fidelity edit; preserve subject and composition'
+    ).trim();
     const keepSubject = 'Keep the same people, faces, pose, and framing. Do not add or remove people.';
     const noChildDrift = 'no children, no baby, no toddler, keep adult facial proportions';
     
     let finalPrompt = basePrompt;
     let finalNegativePrompt = '';
+    // Parse guidance robustly (handles string/number)
+    const requestedCfg = Number(body.cfg_scale ?? body.guidance_scale);
+    let finalGuidanceScale = Number.isFinite(requestedCfg) ? requestedCfg : 7.2;
+    
     // Use sharp inference parameters for better results
     let finalStrength = clamp(Number(body.strength ?? 0.28), 0.22, 0.35); // Sharp default
-    let finalGuidanceScale = Number.isFinite(body.cfg_scale) ? body.cfg_scale : 7.2; // Sharp default
     
     // Mode-specific enhancements for subject preservation with sharp settings
     if (body.modeMeta?.mode === 'time_machine') {
       const era = body.modeMeta.era || 'vintage';
       finalPrompt = `${basePrompt} Reimagine in the ${era} aesthetic. ${keepSubject}`;
       finalStrength = clamp(Number(body.strength ?? 0.28), 0.25, 0.32); // Sharp for identity preservation
-      finalGuidanceScale = Number.isFinite(body.cfg_scale) ? body.cfg_scale : 7.2;
+      finalGuidanceScale = Number.isFinite(requestedCfg) ? requestedCfg : 7.2;
     } else if (body.modeMeta?.mode === 'story') {
       finalPrompt = `${basePrompt} ${keepSubject}`;
       finalStrength = clamp(Number(body.strength ?? 0.30), 0.28, 0.35); // Slightly higher for story
-      finalGuidanceScale = Number.isFinite(body.cfg_scale) ? body.cfg_scale : 6.8;
+      finalGuidanceScale = Number.isFinite(requestedCfg) ? requestedCfg : 6.8;
     } else if (body.modeMeta?.mode === 'restore') {
       finalPrompt = `${basePrompt} ${keepSubject}`;
       finalStrength = clamp(Number(body.strength ?? 0.25), 0.22, 0.30); // Lowest for maximum preservation
-      finalGuidanceScale = Number.isFinite(body.cfg_scale) ? body.cfg_scale : 7.5; // Higher for restoration
+      finalGuidanceScale = Number.isFinite(requestedCfg) ? requestedCfg : 7.6; // tiny bump helps edges
+    }
+    
+    // Detail level (defaults to hard)
+    const detail = String(body.detail || 'hard').toLowerCase();
+    if (detail === 'hard') {
+      finalPrompt = `${finalPrompt}. ${CLARITY_BOOST_HARD}`;
+    }
+
+    // Subject lock: male surfer + surfboard
+    const lockSurfer =
+      !!body.lock_surfer ||
+      body.subject === 'male_surfer' ||
+      /(^|[\s;.,])surfer([\s;.,]|$)/i.test(basePrompt);
+
+    if (lockSurfer) {
+      finalPrompt = `${finalPrompt}. ${SURFER_POS_LOCK}`;
     }
     
     // Build comprehensive negative prompt
     const negativePrompts = [
       body.negative_prompt,
-      noChildDrift,
-      'low quality, distortions, extra fingers, artifacts, wrong number of people, different person, face swap'
-    ].filter(Boolean);
-    finalNegativePrompt = negativePrompts.join(', ');
+      'low quality, distortions, extra fingers, artifacts, wrong number of people, different person, face swap',
+      'no boats other than a surfboard',
+      'no gear changes'
+    ];
+
+    if (lockSurfer) negativePrompts.push(SURFER_NEG_DRIFT);
+
+    const finalNegativePrompt = negativePrompts.filter(Boolean).join(', ');
 
     const payload = {
       model: 'flux/dev/image-to-image',
@@ -329,7 +364,10 @@ export const handler = async (event: any) => {
       // Include mode metadata for tracking and display
       ...(body.modeMeta && { modeMeta: body.modeMeta }),
       // Include any errors for debugging (but don't fail the request)
-      ...(errors.length > 0 && { partial_errors: errors.slice(0, 3) })
+      ...(errors.length > 0 && { partial_errors: errors.slice(0, 3) }),
+      postprocess: {
+        recommended_usm: { radius: 0.9, amount: 1.0, threshold: 3 } // tiny radius, no halos
+      }
     });
   } catch (e: any) {
     console.error('[aimlApi] unexpected error:', e);
