@@ -1150,17 +1150,50 @@ const ProfileScreen: React.FC = () => {
 
             {/* Navigation Tabs */}
             {sidebarItems.map((item) => {
+              // Handle dividers
+              if (item.type === 'divider') {
+                return <div key={item.id} className="h-px bg-white/10 my-2" />
+              }
+              
+              // Handle toggle items
+              if (item.type === 'toggle') {
+                const settingValue = item.setting === 'autoShareToFeed' ? profileData.shareToFeed : profileData.allowRemix
+                return (
+                  <div key={item.id} className="flex items-center justify-between py-1.5 px-3">
+                    <span className="text-xs font-medium text-white/60">{item.label}</span>
+                    <button
+                      onClick={() => {
+                        const newValue = !settingValue
+                        if (item.setting === 'autoShareToFeed') {
+                          updateProfile({ shareToFeed: newValue })
+                          updateUserSettings(newValue, profileData.allowRemix)
+                        } else {
+                          updateProfile({ allowRemix: newValue })
+                          updateUserSettings(profileData.shareToFeed, newValue)
+                        }
+                      }}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
+                        settingValue ? 'bg-white' : 'bg-white/20'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3 w-3 transform rounded-full bg-black transition-transform duration-200 ${
+                          settingValue ? 'translate-x-5' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                )
+              }
+              
+              // Handle regular navigation items
               const IconComponent = item.icon
               return (
                 <div key={item.id}>
                   <button
                     onClick={() => {
-                      if (item.id === 'settings') {
-                        setShowSettingsDropdown(!showSettingsDropdown)
-                      } else {
-                        setActiveTab(item.id)
-                        setShowSettingsDropdown(false)
-                      }
+                      setActiveTab(item.id)
+                      setShowSettingsDropdown(false)
                     }}
                     className={`w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-3 ${
                       activeTab === item.id 
@@ -1173,26 +1206,13 @@ const ProfileScreen: React.FC = () => {
                     </div>
                     <span className="text-xs font-medium">{item.label}</span>
                   </button>
-                  
-                  {/* Settings Dropdown */}
-                  {item.id === 'settings' && showSettingsDropdown && (
-                    <div className="mt-1 space-y-1">
+                </div>
+              )
+            })}
+          </div>
+        </div>
 
-                      <button 
-                        onClick={() => setShowDeleteAccountModal(true)}
-                        className="w-full py-1.5 px-3 rounded-lg text-left btn-optimized flex items-center justify-start space-x-3 text-red-400/60 hover:text-red-400 hover:bg-red-500/20 active:bg-red-500/30"
-                      >
-                        <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-current">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </div>
-                        <span className="text-xs font-medium">Delete Account</span>
-                      </button>
-                    </div>
-                  )}
-
-      {/* Bulk Delete Confirmation Modal */}
+        {/* Bulk Delete Confirmation Modal */}
       {showBulkDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowBulkDeleteModal(false)} />
@@ -1403,8 +1423,14 @@ const ProfileScreen: React.FC = () => {
                 <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
                   <Image size={48} className="text-white/40" />
                 </div>
-                <p className="text-white/60 text-lg text-center">No media yet</p>
-                <p className="text-white/40 text-sm text-center mt-2">Your created media will appear here</p>
+                <p className="text-white/60 text-lg text-center">Create your first piece</p>
+                <p className="text-white/40 text-sm text-center mt-2">Your edits will appear here. Defaults: auto-share {profileData.shareToFeed ? 'ON' : 'OFF'}, allow remix {profileData.allowRemix ? 'ON' : 'OFF'}</p>
+                <button 
+                  onClick={() => navigate('/')}
+                  className="mt-4 px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
+                >
+                  Create now
+                </button>
               </div>
             ) : (
               <MasonryMediaGrid
@@ -1517,14 +1543,73 @@ const ProfileScreen: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'notification' && (
+        {activeTab === 'notifications' && (
           <div className="flex-1 overflow-y-auto p-6">
             <div className="flex flex-col items-center justify-center h-full">
               <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
                 <Bell size={48} className="text-white/40" />
               </div>
-              <p className="text-white/60 text-lg text-center">Notifications disabled</p>
-              <p className="text-white/40 text-sm text-center mt-2">Notifications only appear on the home page</p>
+              <p className="text-white/60 text-lg text-center">No notifications yet</p>
+              <p className="text-white/40 text-sm text-center mt-2">Remix notifications will appear here</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'account' && (
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-2xl mx-auto space-y-6">
+              {/* Email Section */}
+              <section className="rounded-2xl border border-white/20 p-4 bg-neutral-900/40">
+                <h3 className="text-sm font-medium mb-3 text-white">Email</h3>
+                <div className="text-sm mb-3 text-white/80">
+                  Current: <span className="text-neutral-300">{profileData.name || 'user@example.com'}</span>
+                </div>
+                <p className="text-xs text-neutral-400">
+                  To change your email, use the existing OTP system in the main app.
+                </p>
+              </section>
+
+              {/* Notifications Section */}
+              <section className="rounded-2xl border border-white/20 p-4 bg-neutral-900/40">
+                <h3 className="text-sm font-medium mb-3 text-white">Notifications</h3>
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-sm text-white/80">Remix notifications</span>
+                  <button
+                    onClick={() => {
+                      // Toggle remix notifications - this would connect to your settings system
+                      console.log('Toggle remix notifications')
+                    }}
+                    className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 bg-white/20"
+                  >
+                    <span className="inline-block h-3 w-3 transform rounded-full bg-black transition-transform duration-200 translate-x-1" />
+                  </button>
+                </label>
+                <p className="mt-3 text-xs text-neutral-400">
+                  Get a daily digest if someone remixes your work.
+                </p>
+              </section>
+
+              {/* Danger Zone */}
+              <section className="rounded-2xl border border-red-900/50 p-4 bg-red-950/30">
+                <h3 className="text-sm font-semibold text-red-300 mb-3">Danger zone</h3>
+                <div className="flex gap-3 flex-wrap">
+                  <button 
+                    className="rounded px-3 py-2 border border-white/20 text-white hover:bg-white/10" 
+                    onClick={() => {
+                      // Sign out all devices - connect to your auth system
+                      console.log('Sign out all devices')
+                    }}
+                  >
+                    Sign out all devices
+                  </button>
+                  <button 
+                    className="rounded px-3 py-2 border border-red-600 text-red-300 hover:bg-red-500/20"
+                    onClick={() => setShowDeleteAccountModal(true)}
+                  >
+                    Delete account
+                  </button>
+                </div>
+              </section>
             </div>
           </div>
         )}
