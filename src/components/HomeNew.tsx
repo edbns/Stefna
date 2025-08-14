@@ -1500,43 +1500,46 @@ const HomeNew: React.FC = () => {
       return
     }
     
-    try {
-      // Import the new utility
-      const { prepareSourceAsset } = await import('../utils/prepareSourceAsset')
-      
-      // Always upload the asset (prefer File; fall back to blob URL)
-      const source = selectedFile || previewUrl;
-      const { url: remoteUrl, resource_type } = await prepareSourceAsset(source)
-      if (resource_type !== 'image') { 
-        notifyError({ title: 'Photo required', message: 'Story / Time Machine / Restore need a photo' })
-        return
-      }
+    // Show immediate feedback that button was clicked (same as presets)
+    setNavGenerating(true)
+    
+    // Small delay to show the loading state before starting generation (same as presets)
+    setTimeout(async () => {
+      try {
+        // Import the new utility
+        const { prepareSourceAsset } = await import('../utils/prepareSourceAsset')
+        
+        // Always upload the asset (prefer File; fall back to blob URL)
+        const source = selectedFile || previewUrl;
+        const { url: remoteUrl, resource_type } = await prepareSourceAsset(source)
+        if (resource_type !== 'image') { 
+          notifyError({ title: 'Photo required', message: 'Story / Time Machine / Restore need a photo' })
+          setNavGenerating(false) // Reset loading state on error
+          return
+        }
 
-      // Resolve mode to preset using the new system
-      const presetRef = resolvePresetForMode({ 
-        mode, 
-        option, 
-        activePresets: PRESETS
-      })
-      
-      console.log('🎯 Mode resolved:', { mode, option, preset: presetRef, sourceUrl: remoteUrl })
+        // Resolve mode to preset using the new system
+        const presetRef = resolvePresetForMode({ 
+          mode, 
+          option, 
+          activePresets: PRESETS
+        })
+        
+        console.log('🎯 Mode resolved:', { mode, option, preset: presetRef, sourceUrl: remoteUrl })
 
-      // Set UI state
-      setSelectedMode(mode)
-      setSelectedPreset(presetRef as PresetKey)
-      
-      // Show immediate feedback that button was clicked (same as presets)
-      setNavGenerating(true)
-      
-      // Small delay to show the loading state before starting generation (same as presets)
-      setTimeout(() => {
+        // Set UI state
+        setSelectedMode(mode)
+        setSelectedPreset(presetRef as PresetKey)
+        
+        // Dispatch generation
         dispatchGenerate('mode')
-      }, 100)
-      
-    } catch (error) {
-      console.error('❌ Mode generation failed:', error)
-      notifyError({ title: 'Generation failed', message: 'Please try another photo or style.' })
-    }
+        
+      } catch (error) {
+        console.error('❌ Mode generation failed:', error)
+        notifyError({ title: 'Generation failed', message: 'Please try another photo or style.' })
+        setNavGenerating(false) // Reset loading state on error
+      }
+    }, 100)
   }
 
 
