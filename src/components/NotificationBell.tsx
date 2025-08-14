@@ -145,79 +145,49 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
           />
           
           {/* Dropdown Panel */}
-          <div className="absolute right-0 top-12 w-80 bg-black/90 backdrop-blur-sm border border-white/20 rounded-lg shadow-xl z-50">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
-              <h3 className="text-white font-medium">Notifications</h3>
-              {unreadCount > 0 && (
-                <button
-                  onClick={handleMarkAllRead}
-                  className="text-white/60 hover:text-white text-sm transition-colors"
-                >
-                  Mark all read
-                </button>
-              )}
-            </div>
-
+          <div className="absolute right-0 top-12 w-80 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl z-50">
             {/* Notifications List */}
-            <div className="max-h-96 overflow-y-auto">
+            <div className="p-2">
               {loading ? (
-                <div className="p-4 text-center text-white/60">
+                <div className="px-3 py-2 text-center text-white/60 text-sm">
                   Loading...
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="p-4 text-center text-white/60">
+                <div className="px-3 py-2 text-center text-white/60 text-sm">
                   No notifications yet
                 </div>
               ) : (
-                notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className={`p-4 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors ${
-                      !notification.read ? 'bg-white/5' : ''
-                    }`}
-                  >
-                    <div className="flex items-start space-x-3">
-                      {/* Icon */}
-                      <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                        <span className="text-blue-400 text-sm">🎨</span>
+                <>
+                  {notifications.slice(0, 5).map((notification) => (
+                    <button
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                        !notification.read 
+                          ? 'bg-white/10 text-white hover:bg-white/15' 
+                          : 'text-white/70 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="text-sm">
+                        {notification.message}
                       </div>
-                      
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm ${!notification.read ? 'text-white font-medium' : 'text-white/80'}`}>
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-white/50 mt-1">
-                          {formatTime(notification.createdAt)}
-                        </p>
+                      <div className="text-xs text-white/50 mt-1">
+                        {formatTime(notification.createdAt)}
                       </div>
-                      
-                      {/* Unread Indicator */}
-                      {!notification.read && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />
-                      )}
-                    </div>
-                  </div>
-                ))
+                    </button>
+                  ))}
+                  
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllRead}
+                      className="w-full text-left px-3 py-2 text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-sm border-t border-white/10 mt-1 pt-3"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </>
               )}
             </div>
-
-            {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="p-3 border-t border-white/10 text-center">
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    // Could navigate to full notifications page
-                  }}
-                  className="text-white/60 hover:text-white text-sm transition-colors"
-                >
-                  View all notifications
-                </button>
-              </div>
-            )}
           </div>
         </>
       )}
