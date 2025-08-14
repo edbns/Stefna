@@ -11,6 +11,8 @@ import NotificationBell from './NotificationBell'
 import { useToasts } from './ui/Toasts'
 import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
+import { usePresetRunner } from '../hooks/usePresetRunner'
+import { useSelectedPreset } from '../stores/selectedPreset'
 
 // Safe wrapper for MasonryMediaGrid with fallback
 interface SafeMasonryGridProps {
@@ -154,7 +156,9 @@ const HomeNew: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [prompt, setPrompt] = useState('')
   // Selected preset to optionally include negative prompt / strength on generate
-  const [selectedPreset, setSelectedPreset] = useState<PresetKey | null>(null)
+  // Using sticky preset store instead of local state
+  const selectedPreset = stickySelectedPreset
+  const setSelectedPreset = setStickySelectedPreset
   
   // Mode state for Story Mode, Time Machine, and Restore
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null)
@@ -190,24 +194,16 @@ const HomeNew: React.FC = () => {
     }
   }
   
-  // Centralized setter with guards
+  // Preset clearing functions updated for sticky presets
   function requestClearPreset(reason: string) {
-    // never clear while generating
-    if (isGenerating) {
-      console.debug('🛑 Blocked preset clear while generating:', reason)
-      return
-    }
-    setSelectedPreset(null)
-    selectedPresetRef.current = null
-    localStorage.removeItem('selectedPreset')
+    console.log(`🔒 Keeping sticky preset (${reason}):`, selectedPreset)
+    // No longer clearing presets - they stay sticky for better UX
   }
 
-  // Clear preset after successful generation
+  // Keep preset after successful generation (sticky behavior)
   const clearPresetAfterGeneration = () => {
-    console.log('🎯 Clearing preset after generation')
-    setSelectedPreset(null)
-    selectedPresetRef.current = null
-    localStorage.removeItem('selectedPreset')
+    console.log('🔒 Keeping sticky preset after generation:', selectedPreset)
+    // No longer clearing presets - they stay sticky for better UX
   }
 
   // Clear mode state after successful generation
@@ -233,32 +229,22 @@ const HomeNew: React.FC = () => {
     })()
   }, [])
 
-  // Restore or default preset on mount/when PRESETS update
+  // Initialize sticky preset system when PRESETS are loaded
   useEffect(() => {
-    const saved = localStorage.getItem('selectedPreset') as PresetKey | null
-    if (saved && PRESETS[saved]) {
-      setSelectedPreset(saved)
-      selectedPresetRef.current = saved
-      return
+    if (Object.keys(PRESETS).length > 0) {
+      const activePresets = Object.keys(PRESETS) as PresetKey[]
+      ensureDefault(activePresets)
     }
-    const firstKey = (Object.keys(PRESETS)[0] as PresetKey | undefined) || null
-    setSelectedPreset(firstKey || null)
-    selectedPresetRef.current = firstKey || null
-    if (firstKey) localStorage.setItem('selectedPreset', firstKey)
-  }, [PRESETS])
+  }, [PRESETS, ensureDefault])
 
   // Debug preset changes
   useEffect(() => {
     console.log('🔍 selectedPreset changed to:', selectedPreset)
     if (selectedPreset) {
       console.log('🎨 Preset details:', PRESETS[selectedPreset])
-      // Persist preset selection to localStorage
-      localStorage.setItem('selectedPreset', selectedPreset)
-      // Also update the ref
+      // Update the ref for compatibility
       selectedPresetRef.current = selectedPreset
     } else {
-      // Clear from localStorage when preset is cleared
-      localStorage.removeItem('selectedPreset')
       selectedPresetRef.current = null
     }
   }, [selectedPreset, PRESETS])
@@ -353,6 +339,10 @@ const HomeNew: React.FC = () => {
   const [navGenerating, setNavGenerating] = useState(false)
   const [generateTwo, setGenerateTwo] = useState(false)
   const [userMenu, setUserMenu] = useState(false)
+  
+  // New preset runner system
+  const { queuePreset, queueOption, queueStory, onSourceReady, clearQueue, busy: presetRunnerBusy } = usePresetRunner()
+  const { selectedPreset: stickySelectedPreset, setSelectedPreset: setStickySelectedPreset, ensureDefault } = useSelectedPreset()
   
   // Media viewer state
   const [viewerOpen, setViewerOpen] = useState(false)
@@ -477,8 +467,8 @@ const HomeNew: React.FC = () => {
     setIsVideoPreview(false) // Always treat as image for now
     setSelectedFile(file)
     setIsComposerOpen(true)
-    // Clear selectedPreset when new media is uploaded
-            requestClearPreset('new media uploaded')
+    // Keep selectedPreset when new media is uploaded (sticky behavior)
+    console.log('📁 New media uploaded, keeping preset:', selectedPreset)
   }
 
   const measure = () => {
