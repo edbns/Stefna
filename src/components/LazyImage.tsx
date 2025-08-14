@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Image, Loader2 } from 'lucide-react'
 import { useImagePerformanceTracking } from '../hooks/usePerformanceMonitoring'
 
-import { loadFramerMotion } from '../utils/loadFramerMotion'
+import { motion, AnimatePresence } from '../utils/motionShim'
 import { optimizeCloudinaryUrl } from '../utils/cloudinaryOptimization'
 
 interface LazyImageProps {
@@ -40,18 +40,7 @@ const LazyImage = ({
   const imgRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   
-  // Framer Motion state - starts with fallback, enhanced after import
-  const [{ motion, AnimatePresence }, setFramerMotion] = useState<any>(() => ({
-    motion: { div: 'div', img: 'img' }, // render right away; enhanced after import
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  }))
-
-  // Load Framer Motion asynchronously
-  useEffect(() => {
-    let alive = true
-    loadFramerMotion().then((fm) => alive && setFramerMotion(fm))
-    return () => { alive = false }
-  }, [])
+  // Motion components are always available from motionShim
   
   // Performance tracking (now using safe mock implementation)
   const { trackImage } = useImagePerformanceTracking()
@@ -124,26 +113,17 @@ const LazyImage = ({
     imageTracker.onLoadStart() // Start performance tracking
   }
 
-  // Helper function to create motion props safely
-  const getMotionProps = (props: any) => {
-    // If motion is still the fallback (string), return empty props
-    if (typeof motion.div === 'string') return {}
-    return props
-  }
-
-  const SafeAnimatePresence = AnimatePresence || (({ children }: { children: React.ReactNode }) => <>{children}</>)
+  // Motion components are always defined from motionShim
 
   return (
     <div ref={containerRef} className={`relative overflow-hidden ${className}`}>
-      <SafeAnimatePresence>
+      <AnimatePresence>
         {/* Low-res placeholder (progressive loading) */}
         {lowResLoaded && !isLoaded && !isError && (
           <motion.div
-            {...getMotionProps({
-              initial: { opacity: 0 },
-              animate: { opacity: 1 },
-              exit: { opacity: 0 }
-            })}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="absolute inset-0"
             style={{
               backgroundImage: `url(${lowResSrc})`,
@@ -158,10 +138,8 @@ const LazyImage = ({
         {/* Loading State */}
         {!lowResLoaded && !isLoaded && !isError && (
           <motion.div
-            {...getMotionProps({
-              initial: { opacity: 1 },
-              exit: { opacity: 0 }
-            })}
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="absolute inset-0 bg-gray-100 flex items-center justify-center"
           >
             <div className="flex items-center space-x-2 text-gray-500">
@@ -174,10 +152,8 @@ const LazyImage = ({
         {/* Error State */}
         {isError && (
           <motion.div
-            {...getMotionProps({
-              initial: { opacity: 0 },
-              animate: { opacity: 1 }
-            })}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             className="absolute inset-0 bg-gray-100 flex items-center justify-center"
           >
             <div className="flex flex-col items-center space-y-2 text-gray-500">
@@ -200,15 +176,13 @@ const LazyImage = ({
             className={`w-full h-full object-cover transition-opacity duration-500 ${
               isLoaded ? 'opacity-100' : 'opacity-0'
             }`}
-            {...getMotionProps({
-              initial: { scale: 1.02 },
-              animate: { scale: 1 },
-              transition: { duration: 0.5, ease: 'easeOut' }
-            })}
+            initial={{ scale: 1.02 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
             loading={priority ? 'eager' : 'lazy'}
           />
         )}
-      </SafeAnimatePresence>
+      </AnimatePresence>
     </div>
   )
   } catch (error) {

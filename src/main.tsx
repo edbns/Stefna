@@ -8,13 +8,13 @@ import { AppErrorBoundary } from './components/AppErrorBoundary'
 window.addEventListener('error', e => console.error('[window.onerror]', e.error || e.message));
 window.addEventListener('unhandledrejection', e => console.error('[unhandledrejection]', e.reason));
 
-// Constructor diagnostic - catches the actual failing new calls
-(function () {
+// Constructor diagnostic - DEV ONLY (removed from production)
+if (import.meta.env.DEV && typeof window !== 'undefined') {
   const orig = Reflect.construct;
   Reflect.construct = function (Target, args, NewTarget) {
     try {
       return orig(Target, args, NewTarget);
-    } catch (e) {
+    } catch (e: any) {
       console.error('🔧 Reflect.construct failed', {
         targetType: typeof Target,
         targetName: (Target && (Target.name || Target.toString())) || '<unknown>',
@@ -25,7 +25,7 @@ window.addEventListener('unhandledrejection', e => console.error('[unhandledreje
       throw e;
     }
   };
-})();
+}
 
 // Loud fetch
 (() => {

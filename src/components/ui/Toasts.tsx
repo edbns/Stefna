@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { X, CheckCircle2, AlertTriangle, Loader2, Play, ImageIcon } from "lucide-react";
-import { loadFramerMotion } from "../../utils/loadFramerMotion";
+import { motion, AnimatePresence } from "../../utils/motionShim";
 
 /**
  * Stefna Notifications & MediaCard
@@ -61,18 +61,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const queue = useRef<ToastBase[]>([]);
   const timeouts = useRef<Record<string, number>>({});
   
-  // Framer Motion state - starts with fallback, enhanced after import
-  const [{ motion, AnimatePresence }, setFramerMotion] = useState<any>(() => ({
-    motion: { div: 'div' }, // render right away; enhanced after import
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  }))
-
-  // Load Framer Motion asynchronously
-  useEffect(() => {
-    let alive = true
-    loadFramerMotion().then((fm) => alive && setFramerMotion(fm))
-    return () => { alive = false }
-  }, [])
+  // Motion components are always available from motionShim
 
   const removeToast = useCallback((id: string) => {
     setVisible((curr) => curr.filter((t) => t.id !== id));
@@ -127,28 +116,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       {/* Floating stack */}
       <div className="fixed z-[100] right-4 top-16 flex w-[min(92vw,380px)] flex-col gap-2">
-        {(() => {
-          const SafeAnimatePresence = AnimatePresence || (({ children }: { children: React.ReactNode }) => <>{children}</>)
-          return (
-            <SafeAnimatePresence initial={false}>
-          {visible.map((t) => {
-            const MotionDiv = (motion?.div as any) || 'div';
-            const motionProps = typeof motion.div === 'string' ? {} : {
-              initial: { opacity: 0, y: -12, scale: 0.98 },
-              animate: { opacity: 1, y: 0, scale: 1 },
-              exit: { opacity: 0, y: -10, scale: 0.98 },
-              transition: { type: "spring", stiffness: 400, damping: 28 }
-            };
-            
-            return (
-              <MotionDiv key={t.id} {...motionProps}>
-                <ToastCard toast={t} onClose={() => removeToast(t.id)} />
-              </MotionDiv>
-            );
-          })}
-            </SafeAnimatePresence>
-          )
-        })()}
+        <AnimatePresence initial={false}>
+          {visible.map((t) => (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, y: -12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 400, damping: 28 }}
+            >
+              <ToastCard toast={t} onClose={() => removeToast(t.id)} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </ToastContext.Provider>
   );

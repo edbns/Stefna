@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { loadFramerMotion } from '../utils/loadFramerMotion'
+import { motion, AnimatePresence } from '../utils/motionShim'
 
 interface SafeMotionModalProps {
   isOpen: boolean
@@ -12,33 +12,10 @@ export const SafeMotionModal: React.FC<SafeMotionModalProps> = ({
   onClose, 
   children 
 }) => {
-  // Framer Motion state - starts with fallback, enhanced after import
-  const [{ motion, AnimatePresence }, setFramerMotion] = useState<any>(() => ({
-    motion: { div: 'div' }, // render right away; enhanced after import
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  }))
-
-  // Load Framer Motion asynchronously
-  useEffect(() => {
-    let alive = true
-    loadFramerMotion().then((fm) => alive && setFramerMotion(fm))
-    return () => { alive = false }
-  }, [])
-
   if (!isOpen) return null
 
-  const MotionDiv = (motion?.div as any) || 'div'
-  const motionProps = typeof motion.div === 'string' ? {} : {
-    initial: { opacity: 0, scale: 0.95 },
-    animate: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.95 },
-    transition: { duration: 0.2 }
-  }
-
-  const SafeAnimatePresence = AnimatePresence || (({ children }: { children: React.ReactNode }) => <>{children}</>)
-
   return (
-    <SafeAnimatePresence>
+    <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
@@ -48,14 +25,17 @@ export const SafeMotionModal: React.FC<SafeMotionModalProps> = ({
           />
           
           {/* Modal */}
-          <MotionDiv 
+          <motion.div 
             className="relative z-10 w-full max-w-md mx-4"
-            {...motionProps}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
           >
             {children}
-          </MotionDiv>
+          </motion.div>
         </div>
       )}
-    </SafeAnimatePresence>
+    </AnimatePresence>
   )
 }

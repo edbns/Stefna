@@ -1,5 +1,5 @@
 import React from 'react'
-import { loadFramerMotion } from '../utils/loadFramerMotion'
+import { motion, AnimatePresence } from '../utils/motionShim'
 import { X, Sparkles, Heart, Share2, Camera, Lock } from 'lucide-react'
 
 interface SignupGateModalProps {
