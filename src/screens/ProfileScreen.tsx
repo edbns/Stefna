@@ -34,7 +34,7 @@ const ProfileScreen: React.FC = () => {
   // const location = useLocation()
   const [activeTab, setActiveTab] = useState<string>('all-media')
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
-  const [showEditProfileModal, setShowEditProfileModal] = useState(false)
+
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
   const [bulkDeleteConfirmed, setBulkDeleteConfirmed] = useState(false)
@@ -155,7 +155,7 @@ const ProfileScreen: React.FC = () => {
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null)
   const [userMedia, setUserMedia] = useState<UserMedia[]>([])
   const [remixedMedia, setRemixedMedia] = useState<UserMedia[]>([])
-  const [likedMedia, setLikedMedia] = useState<UserMedia[]>([])
+
   const [draftMedia, setDraftMedia] = useState<UserMedia[]>([])
   const [currentUserId, setCurrentUserId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
@@ -569,8 +569,7 @@ const ProfileScreen: React.FC = () => {
       // Ensure we have the latest userMedia for filtering
         console.log('🔄 Current userMedia for filtering (state):', userMedia.length, 'items')
 
-      // Load liked media (for now, empty - will be implemented with database)
-      setLikedMedia([])
+
 
       // Load draft media (empty for now - will be populated when users create drafts)
       setDraftMedia([])
@@ -746,7 +745,7 @@ const ProfileScreen: React.FC = () => {
       return
     }
     
-    const active = activeTab === 'liked' ? likedMedia : activeTab === 'remixed' ? remixedMedia : activeTab === 'draft' ? draftMedia : userMedia
+    const active = activeTab === 'remixed' ? remixedMedia : activeTab === 'draft' ? draftMedia : userMedia
     const index = active.findIndex(m => m.id === media.id)
     setViewerMedia(active)
     setViewerStartIndex(Math.max(0, index))
@@ -1002,12 +1001,17 @@ const ProfileScreen: React.FC = () => {
   }
 
   const sidebarItems = [
+    { id: 'tokens', label: 'Tokens', icon: Coins },
+    { id: 'invite', label: 'Invite Friends', icon: Users },
+    { id: 'divider_prefs', type: 'divider', label: ' ' },
+    { id: 'pref_share', label: 'Share to Feed', type: 'toggle', setting: 'autoShareToFeed' },
+    { id: 'pref_remix', label: 'Allow Remix', type: 'toggle', setting: 'allowRemixByDefault' },
+    { id: 'divider_media', type: 'divider', label: ' ' },
     { id: 'all-media', label: 'All Media', icon: Image },
-    { id: 'liked', label: 'Liked', icon: Heart },
-    { id: 'remixed', label: 'Remixed', icon: RemixIcon },
-    { id: 'draft', label: 'Draft', icon: FileText },
-    { id: 'notification', label: 'Notification', icon: Bell },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'remixed', label: 'Remixes', icon: RemixIcon },
+    { id: 'draft', label: 'Drafts', icon: FileText },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'account', label: 'Account', icon: Settings }
   ]
 
   // Persist user settings helper
@@ -1173,15 +1177,7 @@ const ProfileScreen: React.FC = () => {
                   {/* Settings Dropdown */}
                   {item.id === 'settings' && showSettingsDropdown && (
                     <div className="mt-1 space-y-1">
-                      <button 
-                        onClick={() => setShowEditProfileModal(true)}
-                        className="w-full py-1.5 px-3 rounded-lg text-left btn-optimized flex items-center justify-start space-x-3 text-white/60 hover:text-white hover:bg-white/10 active:bg-white/20"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <User size={16} className="text-current" />
-                          <span className="text-xs font-medium">Edit Profile</span>
-                        </div>
-                      </button>
+
                       <button 
                         onClick={() => setShowDeleteAccountModal(true)}
                         className="w-full py-1.5 px-3 rounded-lg text-left btn-optimized flex items-center justify-start space-x-3 text-red-400/60 hover:text-red-400 hover:bg-red-500/20 active:bg-red-500/30"
@@ -1439,50 +1435,7 @@ const ProfileScreen: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'liked' && (
-          <div className="flex-1 overflow-y-auto p-6">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                  <Heart size={48} className="text-white/40" />
-                </div>
-                <p className="text-white/60 text-lg text-center">Loading your liked media...</p>
-              </div>
-            ) : (() => {
-              console.log('🔍 Rendering liked tab:', { likedMediaLength: likedMedia.length, likedMedia: likedMedia, isLoading })
-              return !isLoading && likedMedia.length === 0
-            })() ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
-                  <Heart size={48} className="text-white/40" />
-                </div>
-                <p className="text-white/60 text-lg text-center">No liked media yet</p>
-                <p className="text-white/40 text-sm text-center mt-2">Like media to see it here</p>
-              </div>
-            ) : (
-              <MasonryMediaGrid
-                media={likedMedia.map(m => ({
-                  ...m,
-                  aspectRatio: m.width && m.height ? m.width / Math.max(1, m.height) : (m.aspectRatio || 4/3),
-                  width: m.width || 800,
-                  height: m.height || Math.round((m.width || 800) / ((m.aspectRatio || 4/3)))
-                }))}
-                columns={3}
-                onMediaClick={handleMediaClick}
-                onDownload={handleDownload}
-                onShare={handleShare}
-                onUnshare={handleUnshare}
-                onRemix={handleRemix}
-                onDelete={handleDeleteMedia}
-                onGenerateCaption={handleGenerateCaption}
-                showActions={true}
-                className="pb-20"
-                hideRemixCount={true}
-                hideUserAvatars={true}
-              />
-            )}
-          </div>
-        )}
+
 
         {activeTab === 'remixed' && (
           <div className="flex-1 overflow-y-auto p-6">
