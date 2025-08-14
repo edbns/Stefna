@@ -1252,11 +1252,6 @@ const ProfileScreen: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
-  )
-})}
-          </div>
-        </div>
 
         {/* Legal and Social Media Links - Bottom Section */}
         <div className="mt-auto">
@@ -1700,7 +1695,7 @@ const ProfileScreen: React.FC = () => {
         }}
       />
       
-      {showEditProfileModal && (
+      {false && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowEditProfileModal(false)} />
           <div className="relative bg-[#222222] border border-white/20 rounded-2xl max-w-md w-full p-6 shadow-2xl">
