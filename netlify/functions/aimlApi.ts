@@ -221,22 +221,30 @@ export const handler = async (event: any) => {
     const requestedCfg = Number(body.cfg_scale ?? body.guidance_scale);
     let finalGuidanceScale = Number.isFinite(requestedCfg) ? requestedCfg : 7.2;
     
-    // Use sharp inference parameters for better results
-    let finalStrength = clamp(Number(body.strength ?? 0.28), 0.22, 0.35); // Sharp default
+    // Mode-aware strength ranges (no more capping!)
+    const mode = body.modeMeta?.mode;
     
-    // Mode-specific enhancements for subject preservation with sharp settings
-    if (body.modeMeta?.mode === 'time_machine') {
+    function pickStrength(input: any) {
+      const s = Number(input);
+      if (mode === 'restore')        return clamp(isFinite(s) ? s : 0.22, 0.15, 0.35);
+      if (mode === 'time_machine')   return clamp(isFinite(s) ? s : 0.45, 0.30, 0.65);
+      if (mode === 'story')          return clamp(isFinite(s) ? s : 0.55, 0.40, 0.75); // push look
+      // default i2i edit
+      return clamp(isFinite(s) ? s : 0.40, 0.25, 0.80);
+    }
+    
+    let finalStrength = pickStrength(body.strength);
+    
+    // Mode-specific enhancements for subject preservation
+    if (mode === 'time_machine') {
       const era = body.modeMeta.era || 'vintage';
       finalPrompt = `${basePrompt} Reimagine in the ${era} aesthetic. ${keepSubject}`;
-      finalStrength = clamp(Number(body.strength ?? 0.28), 0.25, 0.32); // Sharp for identity preservation
       finalGuidanceScale = Number.isFinite(requestedCfg) ? requestedCfg : 7.2;
-    } else if (body.modeMeta?.mode === 'story') {
+    } else if (mode === 'story') {
       finalPrompt = `${basePrompt} ${keepSubject}`;
-      finalStrength = clamp(Number(body.strength ?? 0.30), 0.28, 0.35); // Slightly higher for story
       finalGuidanceScale = Number.isFinite(requestedCfg) ? requestedCfg : 6.8;
-    } else if (body.modeMeta?.mode === 'restore') {
+    } else if (mode === 'restore') {
       finalPrompt = `${basePrompt} ${keepSubject}`;
-      finalStrength = clamp(Number(body.strength ?? 0.25), 0.22, 0.30); // Lowest for maximum preservation
       finalGuidanceScale = Number.isFinite(requestedCfg) ? requestedCfg : 7.6; // tiny bump helps edges
     }
     
@@ -268,14 +276,14 @@ export const handler = async (event: any) => {
 
     const finalNegativePrompt = negativePrompts.filter(Boolean).join(', ');
 
-    const model = pickI2IModel(body);
+    const model = body.model || 'stable-diffusion-v35-large'; // Premium default
     const payload = {
       model,
       prompt: finalPrompt,
       negative_prompt: finalNegativePrompt,
       image_url,
       strength: finalStrength,
-      num_inference_steps: Math.round(clamp(Number(body.num_inference_steps ?? body.steps ?? 32), 1, 150)), // Default to 32 for sharp results
+      num_inference_steps: Math.round(clamp(Number(body.num_inference_steps ?? body.steps ?? 40), 20, 80)), // Bump steps for premium models
       guidance_scale: finalGuidanceScale,
       seed: body.seed || Date.now(), // Add seed to prevent provider-side caching
       // Optional sharp parameters (if supported by AIML)

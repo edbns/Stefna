@@ -1386,14 +1386,27 @@ const HomeNew: React.FC = () => {
         const up = await uploadToCloudinary(selectedFile, `users/${authService.getCurrentUser()?.id || 'me'}`)
         sourceUrl = up.secure_url
       }
+      // Determine if this should be a video job (Story Mode creates MP4s)
+      const isStoryMode = selectedMode === 'story';
+      const shouldBeVideo = isVideoPreview || isStoryMode;
+      
       const body: Record<string, any> = {
         prompt: (promptOverride ?? prompt).trim(),
         image_url: sourceUrl,
-        resource_type: isVideoPreview ? 'video' : 'image',
+        resource_type: shouldBeVideo ? 'video' : 'image',
         source: 'custom',
         visibility: shareToFeed ? 'public' : 'private',
         allow_remix: shareToFeed ? allowRemix : false,
-        num_variations: generateTwo ? 2 : 1,
+        num_variations: isStoryMode ? 4 : (generateTwo ? 2 : 1), // Story Mode needs 4 frames
+      }
+      
+      // Add Story Mode specific parameters
+      if (isStoryMode) {
+        body.fps = 30;
+        body.width = 1080;
+        body.height = 1920;
+        body.duration_ms = 7000;
+        body.model = 'kling-1.6-standard-image-to-video'; // or preferred i2v model
       }
       // If a preset is selected, include its negative prompt and strength
       if (selectedPreset && PRESETS[selectedPreset]) {
