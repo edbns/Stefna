@@ -57,6 +57,11 @@ export const handler: Handler = async (event) => {
     // Parse request body
     const body: UpdateProfileRequest = JSON.parse(event.body || '{}');
     console.log('📝 Update profile request:', { userId, body });
+    console.log('🔧 Environment check:', { 
+      supabaseUrl: !!supabaseUrl, 
+      supabaseServiceKey: !!supabaseServiceKey,
+      jwtSecret: !!jwtSecret 
+    });
     
     // Validate username if provided (treating as display name, so more lenient)
     if (body.username !== undefined) {
@@ -86,27 +91,44 @@ export const handler: Handler = async (event) => {
     }
     if (body.onboarding_completed !== undefined) updateData.onboarding_completed = body.onboarding_completed;
 
-    // Update profile
+    // Upsert profile (create if doesn't exist, update if it does)
     const { data, error } = await supabase
       .from('profiles')
-      .update(updateData)
-      .eq('id', userId)
+      .upsert({
+        id: userId, // Include the user ID for upsert
+        ...updateData
+      })
       .select()
       .single();
 
     if (error) {
-      console.error('Profile update error:', {
+      console.error('Profile upsert error:', {
         error,
+        errorCode: error.code,
+        errorMessage: error.message,
+        errorDetails: error.details,
         userId,
         updateData,
         supabaseUrl: !!supabaseUrl,
         supabaseServiceKey: !!supabaseServiceKey
       });
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to update profile';
+      if (error.code === 'PGRST116') {
+        errorMessage = 'Profile not found and could not be created';
+      } else if (error.code === '42P01') {
+        errorMessage = 'Profiles table does not exist in database';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       return {
         statusCode: 500,
         body: JSON.stringify({ 
-          error: 'Failed to update profile',
-          details: error.message || 'Database error'
+          error: errorMessage,
+          details: error.details || error.message || 'Database error',
+          code: error.code
         })
       };
     }
