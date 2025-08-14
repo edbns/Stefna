@@ -18,15 +18,16 @@ interface StoryCategorySectionProps {
   themes: StoryTheme[]
   selectedTheme: StoryTheme | null
   onThemeSelect: (theme: StoryTheme) => void
+  isExpanded: boolean
+  onToggle: () => void
 }
 
-const StoryCategorySection: React.FC<StoryCategorySectionProps> = ({ title, themes, selectedTheme, onThemeSelect }) => {
-  const [isExpanded, setIsExpanded] = useState(true) // Start expanded for better UX
+const StoryCategorySection: React.FC<StoryCategorySectionProps> = ({ title, themes, selectedTheme, onThemeSelect, isExpanded, onToggle }) => {
   
   return (
     <div className="border-b border-white/10 last:border-b-0 pb-2 last:pb-0">
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={onToggle}
         className="w-full flex items-center justify-between px-2 py-2 rounded-lg transition-colors text-sm text-white hover:bg-white/5"
       >
         <span className="font-medium text-white">{title}</span>
@@ -286,6 +287,7 @@ const HomeNew: React.FC = () => {
   const [creatorFilter, setCreatorFilter] = useState<string | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
+  const [expandedStorySection, setExpandedStorySection] = useState<string | null>(null)
   
   // Profile state from context
   const { profileData } = useProfile()
@@ -2383,6 +2385,8 @@ const HomeNew: React.FC = () => {
                             handleModeClick('story', theme)
                             setStoryOpen(false)
                           }}
+                          isExpanded={expandedStorySection === 'Four Seasons'}
+                          onToggle={() => setExpandedStorySection(expandedStorySection === 'Four Seasons' ? null : 'Four Seasons')}
                         />
                         <StoryCategorySection 
                           title="Time of Day"
@@ -2392,6 +2396,8 @@ const HomeNew: React.FC = () => {
                             handleModeClick('story', theme)
                             setStoryOpen(false)
                           }}
+                          isExpanded={expandedStorySection === 'Time of Day'}
+                          onToggle={() => setExpandedStorySection(expandedStorySection === 'Time of Day' ? null : 'Time of Day')}
                         />
                         <StoryCategorySection 
                           title="Mood Shift"
@@ -2401,6 +2407,8 @@ const HomeNew: React.FC = () => {
                             handleModeClick('story', theme)
                             setStoryOpen(false)
                           }}
+                          isExpanded={expandedStorySection === 'Mood Shift'}
+                          onToggle={() => setExpandedStorySection(expandedStorySection === 'Mood Shift' ? null : 'Mood Shift')}
                         />
                         <StoryCategorySection 
                           title="Art Style"
@@ -2410,6 +2418,8 @@ const HomeNew: React.FC = () => {
                             handleModeClick('story', theme)
                             setStoryOpen(false)
                           }}
+                          isExpanded={expandedStorySection === 'Art Style'}
+                          onToggle={() => setExpandedStorySection(expandedStorySection === 'Art Style' ? null : 'Art Style')}
                         />
                       </div>
                     </div>
