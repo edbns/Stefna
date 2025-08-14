@@ -21,16 +21,16 @@ interface StoryCategorySectionProps {
 }
 
 const StoryCategorySection: React.FC<StoryCategorySectionProps> = ({ title, themes, selectedTheme, onThemeSelect }) => {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true) // Start expanded for better UX
   
   return (
     <div className="border-b border-white/10 last:border-b-0 pb-2 last:pb-0">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-2 py-2 rounded-lg transition-colors text-sm text-white/90 hover:text-white hover:bg-white/5"
+        className="w-full flex items-center justify-between px-2 py-2 rounded-lg transition-colors text-sm text-white hover:bg-white/5"
       >
-        <span className="font-medium">{title}</span>
-        <ChevronDown size={14} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+        <span className="font-medium text-white">{title}</span>
+        <ChevronDown size={14} className={`transition-transform text-white ${isExpanded ? 'rotate-180' : ''}`} />
       </button>
       
       {isExpanded && (
@@ -42,10 +42,10 @@ const StoryCategorySection: React.FC<StoryCategorySectionProps> = ({ title, them
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
                 selectedTheme === theme 
                   ? 'bg-white/20 text-white' 
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
+                  : 'text-white hover:bg-white/10'
               }`}
             >
-              <span>{STORY_THEME_LABELS[theme]}</span>
+              <span className="text-white">{STORY_THEME_LABELS[theme]}</span>
               {selectedTheme === theme ? (
                 <div className="w-3 h-3 rounded-full bg-white border border-white/30"></div>
               ) : (
@@ -2346,7 +2346,7 @@ const HomeNew: React.FC = () => {
                       <div className="space-y-2">
                         <StoryCategorySection 
                           title="Four Seasons"
-                          themes={['spring', 'summer', 'autumn', 'winter']}
+                          themes={['four_seasons_spring', 'four_seasons_summer', 'four_seasons_autumn', 'four_seasons_winter']}
                           selectedTheme={selectedTheme}
                           onThemeSelect={(theme) => {
                             handleModeClick('story', theme)
@@ -2355,7 +2355,7 @@ const HomeNew: React.FC = () => {
                         />
                         <StoryCategorySection 
                           title="Time of Day"
-                          themes={['sunrise', 'day', 'sunset', 'night']}
+                          themes={['time_sunrise', 'time_day', 'time_sunset', 'time_night']}
                           selectedTheme={selectedTheme}
                           onThemeSelect={(theme) => {
                             handleModeClick('story', theme)
@@ -2364,7 +2364,7 @@ const HomeNew: React.FC = () => {
                         />
                         <StoryCategorySection 
                           title="Mood Shift"
-                          themes={['calm', 'vibrant', 'dramatic', 'dreamy']}
+                          themes={['mood_calm', 'mood_vibrant', 'mood_dramatic', 'mood_dreamy']}
                           selectedTheme={selectedTheme}
                           onThemeSelect={(theme) => {
                             handleModeClick('story', theme)
@@ -2373,7 +2373,7 @@ const HomeNew: React.FC = () => {
                         />
                         <StoryCategorySection 
                           title="Art Style"
-                          themes={['photorealistic', 'vintage_film', 'pastels', 'neon_pop']}
+                          themes={['style_photorealistic', 'style_vintage', 'style_pastels', 'style_neon']}
                           selectedTheme={selectedTheme}
                           onThemeSelect={(theme) => {
                             handleModeClick('story', theme)
