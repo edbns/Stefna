@@ -2,26 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Image, Loader2 } from 'lucide-react'
 import { useImagePerformanceTracking } from '../hooks/usePerformanceMonitoring'
 
-// Safe Framer Motion imports with fallback
-let motion: any = null
-let AnimatePresence: any = null
-let hasFramerMotion = false
-
-try {
-  const framerMotion = require('framer-motion')
-  motion = framerMotion.motion
-  AnimatePresence = framerMotion.AnimatePresence
-  hasFramerMotion = true
-} catch (error) {
-  console.warn('Framer Motion failed to load, using fallback animations:', error)
-  // Fallback: use regular div instead of motion.div
-  motion = {
-    div: 'div',
-    img: 'img'
-  }
-  AnimatePresence = ({ children }: { children: React.ReactNode }) => <>{children}</>
-  hasFramerMotion = false
-}
+import { loadFramerMotion } from '../utils/loadFramerMotion'
 import { optimizeCloudinaryUrl } from '../utils/cloudinaryOptimization'
 
 interface LazyImageProps {
@@ -58,6 +39,19 @@ const LazyImage = ({
   const [lowResLoaded, setLowResLoaded] = useState(false)
   const imgRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  
+  // Framer Motion state - starts with fallback, enhanced after import
+  const [{ motion, AnimatePresence }, setFramerMotion] = useState<any>(() => ({
+    motion: { div: 'div', img: 'img' }, // render right away; enhanced after import
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  }))
+
+  // Load Framer Motion asynchronously
+  useEffect(() => {
+    let alive = true
+    loadFramerMotion().then((fm) => alive && setFramerMotion(fm))
+    return () => { alive = false }
+  }, [])
   
   // Performance tracking (now using safe mock implementation)
   const { trackImage } = useImagePerformanceTracking()
@@ -131,7 +125,11 @@ const LazyImage = ({
   }
 
   // Helper function to create motion props safely
-  const getMotionProps = (props: any) => hasFramerMotion ? props : {}
+  const getMotionProps = (props: any) => {
+    // If motion is still the fallback (string), return empty props
+    if (typeof motion.div === 'string') return {}
+    return props
+  }
 
   return (
     <div ref={containerRef} className={`relative overflow-hidden ${className}`}>

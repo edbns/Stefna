@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { loadFramerMotion } from '../utils/loadFramerMotion'
 import { Activity, Zap, AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import performanceService from '../services/performanceService'
 

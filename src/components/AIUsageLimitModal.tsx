@@ -1,5 +1,5 @@
 import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { loadFramerMotion } from '../utils/loadFramerMotion'
 import { X, Users, Gift, Clock, Share2 } from 'lucide-react'
 
 interface AIUsageLimitModalProps {
