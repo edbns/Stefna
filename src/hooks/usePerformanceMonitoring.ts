@@ -24,41 +24,53 @@ interface PerformanceConfig {
 
 export function usePerformanceMonitoring(config: PerformanceConfig = {}) {
   const {
-    enableCoreWebVitals = true,
-    enableCustomMetrics = true,
+    enableCoreWebVitals = false, // Temporarily disabled
+    enableCustomMetrics = false, // Temporarily disabled
     sampleRate = 0.1, // Monitor 10% of sessions by default
     onMetric
   } = config
 
   const metricsRef = useRef<PerformanceMetrics>({})
-  const shouldMonitor = useRef(Math.random() < sampleRate)
+  const shouldMonitor = useRef(false) // Temporarily disabled
 
   useEffect(() => {
     if (!shouldMonitor.current) return
 
     // Core Web Vitals monitoring
     if (enableCoreWebVitals) {
-      import('web-vitals').then(({ getCLS, getFID, getLCP }) => {
-        getCLS((metric) => {
-          metricsRef.current.cls = metric.value
-          const rating = metric.value < 0.1 ? 'good' : metric.value < 0.25 ? 'needs-improvement' : 'poor'
-          onMetric?.('CLS', metric.value, rating)
-        })
+      import('web-vitals').then((webVitals) => {
+        // Check if the import was successful and has the expected functions
+        if (!webVitals || typeof webVitals.getCLS !== 'function') {
+          console.warn('web-vitals library not properly loaded')
+          return
+        }
 
-        getFID((metric) => {
-          metricsRef.current.fid = metric.value
-          const rating = metric.value < 100 ? 'good' : metric.value < 300 ? 'needs-improvement' : 'poor'
-          onMetric?.('FID', metric.value, rating)
-        })
+        const { getCLS, getFID, getLCP } = webVitals
 
-        getLCP((metric) => {
-          metricsRef.current.lcp = metric.value
-          const rating = metric.value < 2500 ? 'good' : metric.value < 4000 ? 'needs-improvement' : 'poor'
-          onMetric?.('LCP', metric.value, rating)
-        })
-      }).catch(() => {
+        try {
+          getCLS((metric) => {
+            metricsRef.current.cls = metric.value
+            const rating = metric.value < 0.1 ? 'good' : metric.value < 0.25 ? 'needs-improvement' : 'poor'
+            onMetric?.('CLS', metric.value, rating)
+          })
+
+          getFID((metric) => {
+            metricsRef.current.fid = metric.value
+            const rating = metric.value < 100 ? 'good' : metric.value < 300 ? 'needs-improvement' : 'poor'
+            onMetric?.('FID', metric.value, rating)
+          })
+
+          getLCP((metric) => {
+            metricsRef.current.lcp = metric.value
+            const rating = metric.value < 2500 ? 'good' : metric.value < 4000 ? 'needs-improvement' : 'poor'
+            onMetric?.('LCP', metric.value, rating)
+          })
+        } catch (error) {
+          console.warn('Error setting up web-vitals:', error)
+        }
+      }).catch((error) => {
         // Fallback if web-vitals library is not available
-        console.warn('web-vitals library not available')
+        console.warn('web-vitals library not available:', error)
       })
     }
 

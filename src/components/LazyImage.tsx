@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Image, Loader2 } from 'lucide-react'
-import { useImagePerformanceTracking } from '../hooks/usePerformanceMonitoring'
+// import { useImagePerformanceTracking } from '../hooks/usePerformanceMonitoring' // Temporarily disabled
 import { optimizeCloudinaryUrl } from '../utils/cloudinaryOptimization'
 
 interface LazyImageProps {
@@ -37,9 +37,10 @@ const LazyImage = ({
   const imgRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   
-  // Performance tracking
-  const { trackImage } = useImagePerformanceTracking()
-  const imageTracker = trackImage(src)
+  // Performance tracking - temporarily disabled
+  // const { trackImage } = useImagePerformanceTracking()
+  // const imageTracker = trackImage(src)
+  const imageTracker = { onLoadStart: () => {}, onLoadEnd: () => {} } // Mock tracker
 
   // Optimize Cloudinary URLs for performance using centralized utility
   const optimizedSrc = optimizeCloudinaryUrl(src, {
