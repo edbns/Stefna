@@ -92,12 +92,32 @@ export const handler: Handler = async (event) => {
           };
         }
         
-        // Check for valid characters
+        // Check for valid characters (must match database constraint)
+        // Updated database constraint: ^[a-zA-Z0-9_-]{3,30}$ with additional rules
         if (!/^[a-zA-Z0-9_-]+$/.test(body.username)) {
           return {
             statusCode: 400,
             body: JSON.stringify({ 
               error: 'Username can only contain letters, numbers, underscores, and hyphens' 
+            })
+          };
+        }
+        
+        // Additional validation rules
+        if (body.username.startsWith('-')) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ 
+              error: 'Username cannot start with a hyphen' 
+            })
+          };
+        }
+        
+        if (body.username.includes('---')) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ 
+              error: 'Username cannot contain multiple consecutive hyphens' 
             })
           };
         }

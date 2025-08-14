@@ -4,7 +4,7 @@
 export const TIME_MACHINE_OPTIONS = [
   // Historical Periods
   "1920s_art_deco", "1930s_golden_age", "1940s_wartime", "1950s_americana", 
-  "1960s_psychedelic", "1970s_disco", "1980s_neon", "1990s_grunge", 
+  "1960s_psychedelic", "1960s_kodachrome", "1970s_disco", "1980s_neon", "1990s_grunge", 
   "2000s_y2k", "2010s_hipster", "2020s_minimalist", "2100_cyberpunk",
   
   // Decades - Alternative naming
@@ -45,6 +45,7 @@ export const TIME_MACHINE_MAP = {
   "1940s_wartime": "mono_drama",
   "1950s_americana": "retro_polaroid", 
   "1960s_psychedelic": "vivid_pop",
+  "1960s_kodachrome": "retro_polaroid",
   "1970s_disco": "neon_nights",
   "1980s_neon": "neon_nights",
   "1990s_grunge": "urban_grit",

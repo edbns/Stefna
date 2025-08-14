@@ -122,8 +122,17 @@ export async function updateSharingPreferences(shareToFeed: boolean, allowRemix:
  * Update username (with validation)
  */
 export async function updateUsername(username: string): Promise<Profile> {
-  if (!username || !/^[a-z0-9_]{3,30}$/.test(username)) {
-    throw new Error('Username must be 3-30 characters, lowercase letters, numbers, and underscores only');
+  if (!username || !/^[a-zA-Z0-9_-]{3,30}$/.test(username)) {
+    throw new Error('Username must be 3-30 characters, letters, numbers, underscores, and hyphens only');
+  }
+  
+  // Additional validation rules
+  if (username.startsWith('-')) {
+    throw new Error('Username cannot start with a hyphen');
+  }
+  
+  if (username.includes('---')) {
+    throw new Error('Username cannot contain multiple consecutive hyphens');
   }
 
   return ensureAndUpdateProfile({

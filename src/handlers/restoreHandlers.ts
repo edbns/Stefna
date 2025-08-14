@@ -1,6 +1,6 @@
 import { presetsStore } from '../stores/presetsStore'
 import { runGeneration } from '../services/generationPipeline'
-import { RESTORE_MAP } from '../config/timeMachineMap'
+import { RESTORE_MAP, RestoreOption } from '../config/restoreMap'
 
 // Media interface for restore operations
 interface Media {
@@ -25,15 +25,17 @@ export function onRestoreClick(media: Media, operation?: string) {
     let prompt: string
     let params: Record<string, unknown>
 
-    if (operation && RESTORE_MAP[operation]) {
-      // Use operation-specific preset
-      presetId = RESTORE_MAP[operation]
+    if (operation && RESTORE_MAP[operation as RestoreOption]) {
+      // Use operation-specific preset and prompt
+      const cfg = RESTORE_MAP[operation as RestoreOption]
+      presetId = cfg.presetId
       const preset = presetsStore.getState().byId[presetId]
       if (!preset) {
         console.warn(`Restore operation "${operation}" → missing preset "${presetId}"`)
         return null
       }
-      prompt = preset.prompt
+      // Combine preset prompt with restore-specific prompt
+      prompt = `${preset.prompt}, ${cfg.prompt}`
       params = { ...preset.params, restore_operation: operation }
     } else if (snap) {
       // Use original generation settings

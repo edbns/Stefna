@@ -7,6 +7,10 @@ import { authFetch } from '../utils/authFetch'
 import { logger } from '../utils/logger'
 import { preventDuplicateOperation, networkGuardRails, buttonGuardRails } from '../utils/guardRails'
 
+// File type guard to prevent uploading strings as files
+const isFileLike = (x: unknown): x is File | Blob =>
+  typeof x === "object" && x !== null && "size" in (x as any) && "type" in (x as any)
+
 export type GenerateJob = {
   mode: "i2i" | "t2i" | "story" | "time_machine" | "restore"
   presetId: string
@@ -160,14 +164,16 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
 
     // 2) SIDE-EFFECTS (after preflight only) ──────────────────────
     const uploadLogger = jobLogger.generationStep('upload')
-    let sourceUrl = job.source?.url
-    if (!sourceUrl && job.source?.file) {
+    let sourceUrl: string | undefined
+    
+    // ✅ Strictly detect file vs url before uploading
+    if (isFileLike(job.source?.file)) {
       try {
         uploadLogger.info('Starting file upload', { 
-          fileName: job.source.file.name,
-          fileSize: job.source.file.size 
+          fileName: (job.source!.file as File).name,
+          fileSize: job.source!.file.size 
         })
-        sourceUrl = await uploadToCloudinary(job.source.file, { signal: controller.signal })
+        sourceUrl = await uploadToCloudinary(job.source!.file as File, { signal: controller.signal })
         uploadLogger.info('Upload completed', { sourceUrl })
       } catch (error) {
         if (controller.signal.aborted) return null
@@ -175,6 +181,13 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
         showError("Upload failed: " + (error instanceof Error ? error.message : 'Unknown error'), runId)
         return null
       }
+    } else if (typeof job.source?.url === "string" && job.source.url) {
+      sourceUrl = job.source.url
+      uploadLogger.info('Using provided URL', { sourceUrl })
+    } else {
+      uploadLogger.error('No valid source found', { source: job.source })
+      showError("No source image found", runId)
+      return null
     }
 
     if (controller.signal.aborted) return null
