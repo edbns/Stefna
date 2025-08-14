@@ -1733,47 +1733,43 @@ const ProfileScreen: React.FC = () => {
 
 
 
-            {/* Sharing Preferences */}
-            <div className="mb-6 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
+            {/* Sharing Preferences - Compact Row Layout */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between space-x-6">
+                <div className="flex items-center justify-between flex-1">
                   <label className="text-sm font-medium text-white">Share to Feed</label>
-                  <p className="text-xs text-white/60">Make your creations visible to the community</p>
-                </div>
-                <button
-                  onClick={() => setEditingProfileData(prev => ({ ...prev, shareToFeed: !prev.shareToFeed }))}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    editingProfileData.shareToFeed ? 'bg-white' : 'bg-white/20'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${
-                      editingProfileData.shareToFeed ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {editingProfileData.shareToFeed && (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-sm font-medium text-white">Allow Remix</label>
-                    <p className="text-xs text-white/60">Let others remix your shared creations</p>
-                  </div>
                   <button
-                    onClick={() => setEditingProfileData(prev => ({ ...prev, allowRemix: !prev.allowRemix }))}
+                    onClick={() => setEditingProfileData(prev => ({ ...prev, shareToFeed: !prev.shareToFeed }))}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      editingProfileData.allowRemix ? 'bg-white' : 'bg-white/20'
+                      editingProfileData.shareToFeed ? 'bg-white' : 'bg-white/20'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${
-                        editingProfileData.allowRemix ? 'translate-x-6' : 'translate-x-1'
+                        editingProfileData.shareToFeed ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>
                 </div>
-              )}
+
+                {editingProfileData.shareToFeed && (
+                  <div className="flex items-center justify-between flex-1">
+                    <label className="text-sm font-medium text-white">Allow Remix</label>
+                    <button
+                      onClick={() => setEditingProfileData(prev => ({ ...prev, allowRemix: !prev.allowRemix }))}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        editingProfileData.allowRemix ? 'bg-white' : 'bg-white/20'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${
+                          editingProfileData.allowRemix ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Action Buttons */}
