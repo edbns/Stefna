@@ -385,6 +385,30 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
 
     console.log('✅ Generation saved to DB successfully')
 
+    // If this is a remix (has parentId), send anonymous notification
+    if (job.parentId) {
+      try {
+        const notifyResponse = await fetch('/.netlify/functions/notify-remix', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            parentId: job.parentId,
+            childId: record.id || 'unknown',
+            createdAt: new Date().toISOString()
+          })
+        });
+
+        if (notifyResponse.ok) {
+          console.log('📬 Remix notification sent successfully');
+        } else {
+          console.warn('⚠️ Failed to send remix notification:', notifyResponse.status);
+        }
+      } catch (notifyError) {
+        console.warn('⚠️ Remix notification error:', notifyError);
+        // Don't fail the generation if notification fails
+      }
+    }
+
     // Update UI state immediately so user sees result without reload
     // Dispatch custom event for UI components to listen to
     window.dispatchEvent(new CustomEvent('generation-complete', { 
