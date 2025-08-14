@@ -21,7 +21,7 @@ export const handler: Handler = async (event) => {
 		assertCloudinaryEnv();
 		const cloudinary = initCloudinary();
 
-			const { resultUrl, userId, presetKey, sourcePublicId, allowRemix, shareNow, shareToFeed, mediaTypeHint, assetId, prompt } =
+			const { resultUrl, userId, presetKey, sourcePublicId, allowRemix, shareNow, shareToFeed, mediaTypeHint, assetId, prompt, modeMeta } =
 		JSON.parse(event.body || '{}');
 
 		if (!resultUrl) {
@@ -43,6 +43,8 @@ export const handler: Handler = async (event) => {
 			created_at: new Date().toISOString(),
 			asset_id: assetId || '',
 			prompt: prompt || '',
+			// Store mode metadata for tracking and display
+			...(modeMeta && { mode_meta: JSON.stringify(modeMeta) }),
 		},
 			overwrite: true,
 			invalidate: true,

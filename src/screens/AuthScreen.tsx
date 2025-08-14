@@ -11,6 +11,12 @@ const AuthScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  
+  // Extract referrer email from URL parameters
+  const [referrerEmail] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    return urlParams.get('referrer') || ''
+  })
 
   const handleRequestOTP = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,7 +58,7 @@ const AuthScreen: React.FC = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, otp })
+        body: JSON.stringify({ email, otp, referrerEmail: referrerEmail || undefined })
       })
 
       const data = await response.json()
@@ -101,6 +107,18 @@ const AuthScreen: React.FC = () => {
             }
           </p>
         </div>
+
+        {/* Referral Bonus Indicator */}
+        {referrerEmail && (
+          <div className="mb-6 bg-gradient-to-r from-green-500/20 to-blue-500/20 border border-green-500/30 rounded-xl p-4">
+            <div className="flex items-center space-x-2">
+              <CheckCircle size={16} className="text-green-400" />
+              <span className="text-sm font-medium text-white">
+                🎁 You're invited by {referrerEmail}! Get 5 bonus credits when you sign up
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <div className="bg-white/5 backdrop-blur-md border border-white/20 rounded-2xl p-8">

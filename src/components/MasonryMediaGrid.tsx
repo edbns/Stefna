@@ -209,10 +209,21 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   {/* Type indicator */}
                   {getTypeIcon(item.type)}
 
-                  {/* Quality indicator */}
-                  {item.metadata.quality === 'high' && (
+                  {/* Preset indicator - show the style/preset used */}
+                  {item.style && (
                     <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
-                      <span className="text-white text-xs font-medium">HD</span>
+                      <span className="text-white text-xs font-medium">{item.style}</span>
+                    </div>
+                  )}
+
+                  {/* Mode badge - bottom left if mode metadata is available */}
+                  {(item as any).modeMeta?.mode && (
+                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
+                      <span className="text-white text-xs font-medium">
+                        {(item as any).modeMeta.mode === 'story' && '✨ Story'}
+                        {(item as any).modeMeta.mode === 'time_machine' && '⏰ Time Machine'}
+                        {(item as any).modeMeta.mode === 'restore' && '🔧 Restore'}
+                      </span>
                     </div>
                   )}
 

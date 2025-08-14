@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, ChevronRight } from 'lucide-react'
+import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, ChevronRight, Coins, Users } from 'lucide-react'
 import { InstagramIcon, XIcon, FacebookIcon, TikTokIcon, ThreadsIcon, YouTubeIcon } from '../components/SocialIcons'
 import RemixIcon from '../components/RemixIcon'
 import MasonryMediaGrid from '../components/MasonryMediaGrid'
@@ -403,8 +403,26 @@ const ProfileScreen: React.FC = () => {
         
         // Load referral stats for authenticated users
         try {
-          const stats = await tokenService.getReferralStats(userId)
-          setReferralStats(stats)
+          // Load referral stats from real database
+          try {
+            const referralRes = await authenticatedFetch('/.netlify/functions/get-referral-stats', { method: 'GET' })
+            if (referralRes.ok) {
+              const stats = await referralRes.json()
+              setReferralStats({
+                invites: stats.totalInvites,
+                tokensEarned: stats.tokensEarned,
+                referralCode: '' // No codes needed for email-based referrals
+              })
+            } else {
+              // Fallback to client service
+              const stats = await tokenService.getReferralStats(userId)
+              setReferralStats(stats)
+            }
+          } catch {
+            // Fallback to client service
+            const stats = await tokenService.getReferralStats(userId)
+            setReferralStats(stats)
+          }
           
           // Load token count - force refresh if tier changed
           // Prefer server-side quota for accuracy
@@ -1031,6 +1049,24 @@ const ProfileScreen: React.FC = () => {
         {/* All Navigation Items in One Block */}
         <div className="flex-1">
           <div className="space-y-1">
+            {/* Token Counter */}
+            <div className="flex items-center justify-between py-1.5 px-3 rounded-lg text-left transition-all duration-300">
+              <div className="flex items-center space-x-2">
+                <Coins size={16} className="text-white/60" />
+                <span className="text-xs font-medium text-white/60">Tokens</span>
+              </div>
+              <span className="text-xs font-medium text-white">{tokenCount}</span>
+            </div>
+
+            {/* Invite Friends Button */}
+            <button
+              onClick={() => setShowInviteFriendsModal(true)}
+              className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-2 text-white/60 hover:text-white hover:bg-white/10"
+            >
+              <Users size={16} className="text-white/60" />
+              <span className="text-xs font-medium">Invite Friends</span>
+            </button>
+
             {/* Toggle Switches */}
             <div className="space-y-1">
               {/* Share to Feed Toggle */}
@@ -1291,6 +1327,8 @@ const ProfileScreen: React.FC = () => {
               </a>
             </div>
           </div>
+
+
         </div>
       </div>
 

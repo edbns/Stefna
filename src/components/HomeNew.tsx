@@ -23,6 +23,8 @@ import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
 import { saveMediaNoDB, togglePublish } from '../lib/api'
+import { Mode, StoryTheme, TimeEra, RestoreOp, MODE_LABELS, STORY_THEME_LABELS, TIME_ERA_LABELS, RESTORE_OP_LABELS } from '../config/modes'
+import { resolvePresetForMode, createModeMeta } from '../utils/resolvePresetForMode'
 const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
@@ -51,6 +53,17 @@ const HomeNew: React.FC = () => {
   const [prompt, setPrompt] = useState('')
   // Selected preset to optionally include negative prompt / strength on generate
   const [selectedPreset, setSelectedPreset] = useState<PresetKey | null>(null)
+  
+  // Mode state for Story Mode, Time Machine, and Restore
+  const [selectedMode, setSelectedMode] = useState<Mode | null>(null)
+  const [selectedTheme, setSelectedTheme] = useState<StoryTheme | null>(null)
+  const [selectedEra, setSelectedEra] = useState<TimeEra | null>(null)
+  const [selectedOp, setSelectedOp] = useState<RestoreOp | null>(null)
+  
+  // Mode dropdown states
+  const [storyOpen, setStoryOpen] = useState(false)
+  const [timeMachineOpen, setTimeMachineOpen] = useState(false)
+  const [restoreOpen, setRestoreOpen] = useState(false)
   
   // Stable ref for selectedPreset to prevent re-render issues during generation
   const selectedPresetRef = useRef<PresetKey | null>(null)
@@ -92,6 +105,15 @@ const HomeNew: React.FC = () => {
     setSelectedPreset(null)
     selectedPresetRef.current = null
     localStorage.removeItem('selectedPreset')
+  }
+
+  // Clear mode state after successful generation
+  const clearModeAfterGeneration = () => {
+    console.log('🎭 Clearing mode after generation')
+    setSelectedMode(null)
+    setSelectedTheme(null)
+    setSelectedEra(null)
+    setSelectedOp(null)
   }
 
   // Clear preset when user exits composer (debounced to avoid race)
@@ -253,6 +275,17 @@ const HomeNew: React.FC = () => {
       if (presetsOpen && !target.closest('[data-presets-dropdown]')) {
         setPresetsOpen(false)
       }
+      
+      // Close mode dropdowns
+      if (storyOpen && !target.closest('[data-story-dropdown]')) {
+        setStoryOpen(false)
+      }
+      if (timeMachineOpen && !target.closest('[data-timemachine-dropdown]')) {
+        setTimeMachineOpen(false)
+      }
+      if (restoreOpen && !target.closest('[data-restore-dropdown]')) {
+        setRestoreOpen(false)
+      }
     }
 
     // Close dropdowns when global nav close event is dispatched
@@ -260,6 +293,9 @@ const HomeNew: React.FC = () => {
       setFilterOpen(false)
       setUserMenu(false)
       setPresetsOpen(false)
+      setStoryOpen(false)
+      setTimeMachineOpen(false)
+      setRestoreOpen(false)
     }
 
     // Close dropdowns when Escape key is pressed
@@ -268,6 +304,9 @@ const HomeNew: React.FC = () => {
         setFilterOpen(false)
         setUserMenu(false)
         setPresetsOpen(false)
+        setStoryOpen(false)
+        setTimeMachineOpen(false)
+        setRestoreOpen(false)
       }
     }
 
@@ -302,13 +341,16 @@ const HomeNew: React.FC = () => {
       window.removeEventListener('global-nav-close', handleGlobalNavClose)
       document.removeEventListener('keydown', handleEscapeKey)
     }
-  }, [filterOpen, userMenu, presetsOpen])
+  }, [filterOpen, userMenu, presetsOpen, storyOpen, timeMachineOpen, restoreOpen])
 
   // Function to close all dropdowns
   const closeAllDropdowns = () => {
     setFilterOpen(false)
     setUserMenu(false)
     setPresetsOpen(false)
+    setStoryOpen(false)
+    setTimeMachineOpen(false)
+    setRestoreOpen(false)
   }
 
   const handleUploadClick = () => {
@@ -619,13 +661,36 @@ const HomeNew: React.FC = () => {
 
     // Use preset prompt if no user prompt provided
     let effectivePrompt = '';
+    let modeMeta: any = null;
     
     // Get stable snapshot of selectedPreset at click time
     const chosen = selectedPresetRef.current;
+    
+    // Handle mode-based generation
+    if (selectedMode && (selectedTheme || selectedEra || selectedOp)) {
+      const resolvedPreset = resolvePresetForMode({
+        mode: selectedMode,
+        theme: selectedTheme || undefined,
+        era: selectedEra || undefined,
+        op: selectedOp || undefined,
+      });
+      
+      // Create mode metadata for tracking
+      modeMeta = createModeMeta({
+        mode: selectedMode,
+        theme: selectedTheme || undefined,
+        era: selectedEra || undefined,
+        op: selectedOp || undefined,
+      });
+      
+      // Use the resolved preset prompt
+      effectivePrompt = promptForPreset(resolvedPreset, isVideoPreview);
+      console.log(`🎭 Using mode "${selectedMode}" → preset "${resolvedPreset}":`, effectivePrompt);
+    }
 
-    // Check if we have either a preset or a user prompt
-    if (!chosen && !prompt.trim()) {
-      console.warn('No preset selected and no user prompt; aborting.');
+    // Check if we have either a preset, mode, or user prompt
+    if (!chosen && !selectedMode && !prompt.trim()) {
+      console.warn('No preset, mode, or user prompt selected; aborting.');
               // Pick a preset or add a prompt - no notification needed
       endGeneration(genId);
       setNavGenerating(false);
@@ -640,18 +705,21 @@ const HomeNew: React.FC = () => {
       presetPrompt: chosen ? PRESETS[chosen]?.prompt : 'N/A'
     });
     
-    if (chosen && PRESETS[chosen]) {
-      // If preset is selected, use ONLY the preset prompt (ignore user prompt field)
-      effectivePrompt = PRESETS[chosen].prompt;
-      console.log(`🎨 Using preset "${chosen}":`, effectivePrompt);
-    } else if (prompt.trim()) {
-      // If no preset but user typed a prompt, use that
-      effectivePrompt = prompt.trim();
-      console.log('✍️ Using user prompt:', effectivePrompt);
-    } else {
-      // Only use fallback if no preset and no user prompt
-      effectivePrompt = 'stylize, preserve subject and composition';
-      console.log('🔄 Using fallback prompt:', effectivePrompt);
+    // Skip this logic if we already set effectivePrompt from mode
+    if (!effectivePrompt) {
+      if (chosen && PRESETS[chosen]) {
+        // If preset is selected, use ONLY the preset prompt (ignore user prompt field)
+        effectivePrompt = PRESETS[chosen].prompt;
+        console.log(`🎨 Using preset "${chosen}":`, effectivePrompt);
+      } else if (prompt.trim()) {
+        // If no preset but user typed a prompt, use that
+        effectivePrompt = prompt.trim();
+        console.log('✍️ Using user prompt:', effectivePrompt);
+      } else {
+        // Only use fallback if no preset and no user prompt
+        effectivePrompt = 'stylize, preserve subject and composition';
+        console.log('🔄 Using fallback prompt:', effectivePrompt);
+      }
     }
     
     // Add "Make it obvious" test option for debugging
@@ -772,6 +840,8 @@ const HomeNew: React.FC = () => {
         source: kind,
         visibility: shareToFeed ? 'public' : 'private',
         allow_remix: shareToFeed ? allowRemix : false,
+        // Mode metadata for tracking and display
+        ...(modeMeta && { modeMeta }),
         num_variations: generateTwo ? 2 : 1,
         strength: 0.85,  // For I2I processing
         seed: Date.now(), // Prevent provider-side caching
@@ -911,16 +981,19 @@ const HomeNew: React.FC = () => {
         }
       }
 
-      // Process the generated result using robust parsing
+      // Process the generated result(s) using robust parsing
       const resultUrl = pickResultUrl(body);
+      const allResultUrls = body.result_urls || [resultUrl];
+      const variationsGenerated = body.variations_generated || 1;
+      
       if (!resultUrl) {
         console.error('No result URL in response:', body);
         throw new Error('No result URL in API response');
       }
 
-      console.info('Generated result URL:', resultUrl);
+      console.info(`Generated ${variationsGenerated} variation(s):`, allResultUrls);
 
-      // Show the generated result immediately with cache busting
+      // Show the first generated result immediately with cache busting
       const cacheBustedResultUrl = `${resultUrl}${resultUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
       setPreviewUrl(cacheBustedResultUrl);
       
@@ -1033,40 +1106,76 @@ const HomeNew: React.FC = () => {
         const assetId = assetResult.data.id;
         console.log('✅ Asset created:', assetId);
 
-        // Now call save-media with the assetId and resultUrl; include userId and publish flag so server adds tags
-        const saveRes = await fetch('/.netlify/functions/save-media', {
-                method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json', 
-                  'Authorization': `Bearer ${jwt}` 
-                },
-                body: JSON.stringify({
-            assetId: assetId,
-            resultUrl: resultUrl,
-            mediaTypeHint: 'image',
-            userId,
-            shareNow: !!shareToFeed,
-            prompt: effectivePrompt,
-                })
-              });
-              
-        const saveText = await saveRes.text();
-        let saveBody: any = {};
-        try { saveBody = JSON.parse(saveText); } catch {}
-        console.log('💾 Save-media response:', saveRes.status, saveBody || saveText)
+        // Save all variations to the database
+        console.log(`💾 Saving ${allResultUrls.length} variation(s) to database...`);
+        let savedCount = 0;
+        let saveErrors: any[] = [];
 
-        if (saveRes.ok && saveBody?.ok) {
-          console.info('Media saved successfully:', saveBody);
+        for (let i = 0; i < allResultUrls.length; i++) {
+          const variationUrl = allResultUrls[i];
+          console.log(`💾 Saving variation ${i + 1}/${allResultUrls.length}:`, variationUrl);
+
+          try {
+            const saveRes = await fetch('/.netlify/functions/save-media', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${jwt}` 
+              },
+              body: JSON.stringify({
+                assetId: assetId,
+                resultUrl: variationUrl,
+                mediaTypeHint: 'image',
+                userId,
+                shareNow: !!shareToFeed,
+                prompt: effectivePrompt,
+                // Include mode metadata from aimlApi response
+                ...(body.modeMeta && { modeMeta: body.modeMeta }),
+                // Add variation metadata
+                variationIndex: i,
+                totalVariations: allResultUrls.length,
+              })
+            });
+            
+            const saveText = await saveRes.text();
+            let saveBody: any = {};
+            try { saveBody = JSON.parse(saveText); } catch {}
+            
+            if (saveRes.ok && saveBody?.ok) {
+              savedCount++;
+              console.log(`✅ Variation ${i + 1} saved successfully:`, saveBody);
+            } else {
+              console.error(`❌ Variation ${i + 1} save failed:`, saveRes.status, saveBody || saveText);
+              saveErrors.push({ variation: i + 1, error: saveBody?.error || 'Save failed' });
+            }
+          } catch (error) {
+            console.error(`❌ Variation ${i + 1} save error:`, error);
+            saveErrors.push({ variation: i + 1, error: error instanceof Error ? error.message : 'Unknown error' });
+          }
+        }
+
+        console.log(`💾 Saved ${savedCount}/${allResultUrls.length} variations successfully`);
+
+        if (savedCount > 0) {
           // Refresh the feed to show the new content if shared
           if (shareToFeed) {
-                setTimeout(() => {
-                  console.log('🔄 Dispatching refreshFeed event...')
+            setTimeout(() => {
+              console.log('🔄 Dispatching refreshFeed event...')
               window.dispatchEvent(new CustomEvent('refreshFeed'))
             }, 800)
-            }
-          } else {
-          console.error('❌ Save-media failed:', saveRes.status, saveBody || saveText);
-          notifyError({ title: 'Something went wrong', message: saveBody?.error || 'Failed to save media' });
+          }
+          
+          // Show success notification with variation count
+          if (variationsGenerated > 1) {
+            notifyReady({ 
+              title: 'Your media is ready', 
+              message: `${savedCount} variation${savedCount > 1 ? 's' : ''} generated`,
+              thumbUrl: resultUrl 
+            });
+          }
+        } else {
+          console.error('❌ All variations failed to save:', saveErrors);
+          notifyError({ title: 'Something went wrong', message: 'Failed to save generated media' });
         }
         endGeneration(genId);
         setNavGenerating(false);
@@ -1083,6 +1192,35 @@ const HomeNew: React.FC = () => {
       // Clear preset only on success
       if (chosen && PRESETS[chosen]) {
         clearPresetAfterGeneration();
+      }
+      
+      // Clear mode state on success
+      if (selectedMode) {
+        // Track mode success analytics before clearing
+        try {
+          const resolvedPreset = resolvePresetForMode({
+            mode: selectedMode,
+            theme: selectedTheme || undefined,
+            era: selectedEra || undefined,
+            op: selectedOp || undefined,
+          });
+          
+          console.log('📊 Mode analytics - success:', {
+            mode: selectedMode,
+            theme: selectedTheme,
+            era: selectedEra,
+            op: selectedOp,
+            preset: resolvedPreset,
+            timestamp: new Date().toISOString()
+          });
+          
+          // TODO: Send to analytics service when available
+          // analytics.track('mode_generation_completed', { mode: selectedMode, theme: selectedTheme, era: selectedEra, op: selectedOp, preset: resolvedPreset });
+        } catch (error) {
+          console.warn('⚠️ Analytics tracking failed:', error);
+        }
+        
+        clearModeAfterGeneration();
       }
       
       // Handle V2V processing status
@@ -1183,6 +1321,35 @@ const HomeNew: React.FC = () => {
         clearPresetAfterGeneration();
       }
       
+      // Clear mode state after successful generation
+      if (selectedMode) {
+        // Track mode success analytics before clearing
+        try {
+          const resolvedPreset = resolvePresetForMode({
+            mode: selectedMode,
+            theme: selectedTheme || undefined,
+            era: selectedEra || undefined,
+            op: selectedOp || undefined,
+          });
+          
+          console.log('📊 Mode analytics - success (alt path):', {
+            mode: selectedMode,
+            theme: selectedTheme,
+            era: selectedEra,
+            op: selectedOp,
+            preset: resolvedPreset,
+            timestamp: new Date().toISOString()
+          });
+          
+          // TODO: Send to analytics service when available
+          // analytics.track('mode_generation_completed', { mode: selectedMode, theme: selectedTheme, era: selectedEra, op: selectedOp, preset: resolvedPreset });
+        } catch (error) {
+          console.warn('⚠️ Analytics tracking failed:', error);
+        }
+        
+        clearModeAfterGeneration();
+      }
+      
       // Optionally refresh quota
       try {
         const qRes = await authenticatedFetch('/.netlify/functions/getQuota')
@@ -1247,6 +1414,86 @@ const HomeNew: React.FC = () => {
     
     // Use the existing dispatchGenerate function with 'preset' kind
     // This ensures all the proper validation, error handling, and database saving happens
+    await dispatchGenerate('preset');
+  }
+
+  // Mode handlers for one-click generation
+  const handleModeClick = (mode: Mode, option: StoryTheme | TimeEra | RestoreOp) => {
+    console.log('🎯 handleModeClick called with:', { mode, option })
+    
+    // Check authentication first
+    if (!isAuthenticated) {
+      console.log('❌ User not authenticated, redirecting to auth')
+      navigate('/auth')
+      return
+    }
+    
+    if (!previewUrl) {
+      console.log('❌ No previewUrl available, cannot generate')
+      return
+    }
+    
+    // Clear any existing preset selection
+    setSelectedPreset(null)
+    
+    // Set mode state
+    setSelectedMode(mode)
+    if (mode === 'story') {
+      setSelectedTheme(option as StoryTheme)
+      setSelectedEra(null)
+      setSelectedOp(null)
+    } else if (mode === 'time_machine') {
+      setSelectedEra(option as TimeEra)
+      setSelectedTheme(null)
+      setSelectedOp(null)
+    } else if (mode === 'restore') {
+      setSelectedOp(option as RestoreOp)
+      setSelectedTheme(null)
+      setSelectedEra(null)
+    }
+    
+    console.log('🚀 Starting auto-generation with mode:', { mode, option })
+    
+    // Track mode usage analytics
+    try {
+      const resolvedPreset = resolvePresetForMode({
+        mode,
+        theme: mode === 'story' ? option as StoryTheme : undefined,
+        era: mode === 'time_machine' ? option as TimeEra : undefined,
+        op: mode === 'restore' ? option as RestoreOp : undefined,
+      });
+      
+      // Analytics tracking for mode submit
+      console.log('📊 Mode analytics - submit:', {
+        mode,
+        option,
+        preset: resolvedPreset,
+        timestamp: new Date().toISOString()
+      });
+      
+      // TODO: Send to analytics service when available
+      // analytics.track('mode_generation_started', { mode, option, preset: resolvedPreset });
+    } catch (error) {
+      console.warn('⚠️ Analytics tracking failed:', error);
+    }
+    
+    // Auto-start generation with mode immediately
+    handleModeAutoGeneration(mode, option);
+  }
+
+  // Auto-generate with mode - similar to preset auto-generation
+  const handleModeAutoGeneration = async (mode: Mode, option: StoryTheme | TimeEra | RestoreOp) => {
+    console.log('🚀 handleModeAutoGeneration called with:', { mode, option })
+    
+    if (!previewUrl) {
+      console.log('❌ No previewUrl available, cannot generate')
+      return;
+    }
+
+    console.log('🚀 Auto-generating with mode:', { mode, option });
+    
+    // Use the existing dispatchGenerate function with 'preset' kind
+    // The mode metadata will be handled in dispatchGenerate
     await dispatchGenerate('preset');
   }
 
@@ -1909,21 +2156,24 @@ const HomeNew: React.FC = () => {
 
           {/* Bottom composer bar - 70% width, centered */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-[70%] min-w-[500px] max-w-[800px]">
-            <div className="bg-[#1a1a1a] border border-white/20 rounded-2xl px-4 pt-2 pb-2 shadow-2xl">
+            <div className="bg-[#0f0f0f] border border-white/20 rounded-2xl px-4 pt-2 pb-2 shadow-2xl">
                             {/* Prompt input - horizontal bar like screenshot */}
               <div className="mb-8">
                 <input
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Describe the style you want..."
-                  className="w-full bg-transparent text-white placeholder-white/40 text-xs focus:outline-none"
+                  className="w-full bg-transparent text-white placeholder-white/40 text-xs focus:outline-none py-2"
                 />
               </div>
 
+
+
               {/* Bottom controls row - variations/presets left, actions right */}
-              <div className="flex items-center justify-between">
-                {/* Left: Variations toggle + Presets */}
-                <div className="flex items-center gap-3">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  {/* Left: Variations toggle + Presets */}
+                  <div className="flex items-center gap-3">
                   {/* Variations selector */}
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
@@ -2029,9 +2279,159 @@ const HomeNew: React.FC = () => {
                       </div>
                     )}
                   </div>
-                </div>
 
-                {/* Right: Action buttons */}
+                  {/* Story Mode dropdown */}
+                  <div className="relative" data-story-dropdown>
+                    <button
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          navigate('/auth')
+                          return
+                        }
+                        setStoryOpen(!storyOpen)
+                      }}
+                      className={`px-3 py-1.5 rounded-2xl text-xs border transition-colors ${
+                        isAuthenticated 
+                          ? 'bg-white/10 text-white border-white/20 hover:bg-white/15' 
+                          : 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
+                      }`}
+                      aria-expanded={storyOpen}
+                      aria-haspopup="menu"
+                      disabled={!isAuthenticated}
+                    >
+                      Story Mode
+                    </button>
+                    {storyOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                        <div className="space-y-1">
+                          {Object.entries(STORY_THEME_LABELS).map(([theme, label]) => (
+                            <button
+                              key={theme}
+                              onClick={() => {
+                                handleModeClick('story', theme as StoryTheme)
+                                setStoryOpen(false)
+                              }}
+                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
+                                selectedTheme === theme 
+                                  ? 'bg-white/20 text-white' 
+                                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                              }`}
+                            >
+                              <span>{label}</span>
+                              {selectedTheme === theme ? (
+                                <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
+                              ) : (
+                                <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Time Machine dropdown */}
+                  <div className="relative" data-timemachine-dropdown>
+                    <button
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          navigate('/auth')
+                          return
+                        }
+                        setTimeMachineOpen(!timeMachineOpen)
+                      }}
+                      className={`px-3 py-1.5 rounded-2xl text-xs border transition-colors ${
+                        isAuthenticated 
+                          ? 'bg-white/10 text-white border-white/20 hover:bg-white/15' 
+                          : 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
+                      }`}
+                      aria-expanded={timeMachineOpen}
+                      aria-haspopup="menu"
+                      disabled={!isAuthenticated}
+                    >
+                      Time Machine
+                    </button>
+                    {timeMachineOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                        <div className="space-y-1">
+                          {Object.entries(TIME_ERA_LABELS).map(([era, label]) => (
+                            <button
+                              key={era}
+                              onClick={() => {
+                                handleModeClick('time_machine', era as TimeEra)
+                                setTimeMachineOpen(false)
+                              }}
+                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
+                                selectedEra === era 
+                                  ? 'bg-white/20 text-white' 
+                                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                              }`}
+                            >
+                              <span>{label}</span>
+                              {selectedEra === era ? (
+                                <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
+                              ) : (
+                                <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Restore dropdown */}
+                  <div className="relative" data-restore-dropdown>
+                    <button
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          navigate('/auth')
+                          return
+                        }
+                        setRestoreOpen(!restoreOpen)
+                      }}
+                      className={`px-3 py-1.5 rounded-2xl text-xs border transition-colors ${
+                        isAuthenticated 
+                          ? 'bg-white/10 text-white border-white/20 hover:bg-white/15' 
+                          : 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
+                      }`}
+                      aria-expanded={restoreOpen}
+                      aria-haspopup="menu"
+                      disabled={!isAuthenticated}
+                    >
+                      Restore
+                    </button>
+                    {restoreOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                        <div className="space-y-1">
+                          {Object.entries(RESTORE_OP_LABELS).map(([op, label]) => (
+                            <button
+                              key={op}
+                              onClick={() => {
+                                handleModeClick('restore', op as RestoreOp)
+                                setRestoreOpen(false)
+                              }}
+                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
+                                selectedOp === op 
+                                  ? 'bg-white/20 text-white' 
+                                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                              }`}
+                            >
+                              <span>{label}</span>
+                              {selectedOp === op ? (
+                                <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
+                              ) : (
+                                <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  </div>
+
+                  {/* Right: Action buttons */}
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -2082,6 +2482,9 @@ const HomeNew: React.FC = () => {
                     )}
                   </button>
                 </div>
+                </div>
+
+
               </div>
             </div>
           </div>

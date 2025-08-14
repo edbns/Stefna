@@ -38,6 +38,7 @@ export const handler = async (event: any) => {
     const image_url: string = body.image_url;
     const resource_type: string = body.resource_type || 'image';
     const request_id: string = body.request_id || crypto.randomUUID();
+    const num_variations: number = Math.max(1, Math.min(Number(body.num_variations) || 1, 4)); // Limit to 1-4 variations
     
     // Extract JWT and get user ID early (needed for both image and video processing)
     const auth = event.headers?.authorization || '';
@@ -145,102 +146,146 @@ export const handler = async (event: any) => {
       guidance: payload.guidance_scale,
       userId,
       request_id,
+      num_variations,
       env: APP_ENV
     });
 
-    // Call AIML with timeout protection
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-    
-    try {
-      const resp = await fetch('https://api.aimlapi.com/v1/images/generations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.AIML_API_KEY}`,
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
+    // Generate multiple variations if requested
+    const results: string[] = [];
+    const errors: any[] = [];
 
-      clearTimeout(timeoutId);
+    for (let i = 0; i < num_variations; i++) {
+      // Use different seeds for each variation to ensure variety
+      const variationPayload = {
+        ...payload,
+        seed: (payload.seed || Date.now()) + i * 1000 + Math.floor(Math.random() * 1000)
+      };
 
-      const text = await resp.text();
-      let json: any = null; try { json = JSON.parse(text); } catch {}
+      console.log(`[aimlApi] generating variation ${i + 1}/${num_variations} with seed:`, variationPayload.seed);
 
-      if (!resp.ok) {
-        console.error('[aimlApi] AIML error:', { status: resp.status, body: json || text });
-        // Bubble up provider details (400/401/etc) so the UI can show real reason
-        return bad(resp.status, json || text || { error: 'AIML error' });
-      }
-
-      const result_url = pickUrl(json);
-      if (!result_url) return bad(502, { error: 'No image returned by provider', provider: json });
-
-      console.log('[aimlApi] success:', { result_url: result_url.substring(0, 50) + '...' });
-
-      // CHARGE CREDITS - Only after successful generation
+      // Call AIML with timeout protection
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout per variation
+      
       try {
-        const { createClient } = require('@supabase/supabase-js');
-        const supabaseAdmin = createClient(
-          process.env.SUPABASE_URL,
-          process.env.SUPABASE_SERVICE_ROLE_KEY,
-          { auth: { persistSession: false } }
-        );
+        const resp = await fetch('https://api.aimlapi.com/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.AIML_API_KEY}`,
+          },
+          body: JSON.stringify(variationPayload),
+          signal: controller.signal,
+        });
 
-        // 1) Idempotent guard: if we already charged, skip
-        const { data: already, error: alreadyErr } = await supabaseAdmin
-          .from('credits_ledger')
-          .select('id')
-          .eq('request_id', request_id)
-          .single();
+        clearTimeout(timeoutId);
 
-        if (!already && !alreadyErr) {
-          // 2) Insert a single credit charge (1 credit per I2I generation)
-          const { error: chargeErr } = await supabaseAdmin
-            .from('credits_ledger')
-            .insert({
-              user_id: userId,
-              amount: 1,
-              reason: 'i2i_generate',
-              request_id: request_id,
-              env: APP_ENV
-            });
+        const text = await resp.text();
+        let json: any = null; try { json = JSON.parse(text); } catch {}
 
-          if (chargeErr) {
-            console.error('[aimlApi] charge credits failed:', chargeErr);
-            // Don't fail the generation response; just log the charging error
-          } else {
-            console.log('[aimlApi] charged 1 credit for user:', userId);
-          }
-        } else {
-          console.log('[aimlApi] credits already charged for request_id:', request_id);
+        if (!resp.ok) {
+          console.error(`[aimlApi] AIML error for variation ${i + 1}:`, { status: resp.status, body: json || text });
+          errors.push({ variation: i + 1, status: resp.status, error: json || text });
+          continue; // Try next variation
         }
-      } catch (chargeError) {
-        console.error('[aimlApi] credit charging error:', chargeError);
-        // Don't fail the generation response; just log the charging error
-      }
 
-      // Return result with both new+legacy keys for compatibility
-      return ok({ 
-        success: true,
-        result_url, 
-        image_url: result_url, // Legacy compatibility
-        result_urls: [result_url], // Array format for some clients
-        request_id,
-        user_id: userId,
-        env: APP_ENV,
-        model: payload.model,
-        mode: body.mode || 'i2i'
-      });
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId);
-      if (fetchError.name === 'AbortError') {
-        console.error('[aimlApi] timeout after 30s');
-        return bad(504, 'Request timeout - try reducing num_inference_steps to 36-40');
+        const result_url = pickUrl(json);
+        if (!result_url) {
+          console.error(`[aimlApi] No image returned for variation ${i + 1}:`, json);
+          errors.push({ variation: i + 1, error: 'No image returned by provider', provider: json });
+          continue; // Try next variation
+        }
+
+        results.push(result_url);
+        console.log(`[aimlApi] variation ${i + 1} success:`, { result_url: result_url.substring(0, 50) + '...' });
+
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          console.error(`[aimlApi] timeout for variation ${i + 1} after 30s`);
+          errors.push({ variation: i + 1, error: 'Request timeout' });
+        } else {
+          console.error(`[aimlApi] fetch error for variation ${i + 1}:`, fetchError);
+          errors.push({ variation: i + 1, error: fetchError.message });
+        }
+        continue; // Try next variation
       }
-      throw fetchError;
     }
+
+    // Check if we got at least one successful result
+    if (results.length === 0) {
+      console.error('[aimlApi] All variations failed:', errors);
+      return bad(502, { 
+        error: 'All variations failed to generate', 
+        variations_attempted: num_variations,
+        errors: errors.slice(0, 3) // Limit error details
+      });
+    }
+
+    console.log(`[aimlApi] completed ${results.length}/${num_variations} variations successfully`);
+
+    // CHARGE CREDITS - Only after successful generation (charge per successful variation)
+    try {
+      const { createClient } = require('@supabase/supabase-js');
+      const supabaseAdmin = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY,
+        { auth: { persistSession: false } }
+      );
+
+      // 1) Idempotent guard: if we already charged, skip
+      const { data: already, error: alreadyErr } = await supabaseAdmin
+        .from('credits_ledger')
+        .select('id')
+        .eq('request_id', request_id)
+        .single();
+
+      if (!already && !alreadyErr) {
+        // 2) Insert credit charge (1 credit per successful variation)
+        const creditsToCharge = results.length;
+        const { error: chargeErr } = await supabaseAdmin
+          .from('credits_ledger')
+          .insert({
+            user_id: userId,
+            amount: creditsToCharge,
+            reason: `i2i_generate_${creditsToCharge}_variations`,
+            request_id: request_id,
+            env: APP_ENV
+          });
+
+        if (chargeErr) {
+          console.error('[aimlApi] charge credits failed:', chargeErr);
+          // Don't fail the generation response; just log the charging error
+        } else {
+          console.log(`[aimlApi] charged ${creditsToCharge} credits for user:`, userId);
+        }
+      } else {
+        console.log('[aimlApi] credits already charged for request_id:', request_id);
+      }
+    } catch (chargeError) {
+      console.error('[aimlApi] credit charging error:', chargeError);
+      // Don't fail the generation response; just log the charging error
+    }
+
+    // Return result with both new+legacy keys for compatibility
+    const primaryResult = results[0]; // First result for legacy compatibility
+    return ok({ 
+      success: true,
+      result_url: primaryResult, 
+      image_url: primaryResult, // Legacy compatibility
+      result_urls: results, // Array format with all variations
+      variations_generated: results.length,
+      variations_requested: num_variations,
+      request_id,
+      user_id: userId,
+      env: APP_ENV,
+      model: payload.model,
+      mode: body.mode || 'i2i',
+      // Include mode metadata for tracking and display
+      ...(body.modeMeta && { modeMeta: body.modeMeta }),
+      // Include any errors for debugging (but don't fail the request)
+      ...(errors.length > 0 && { partial_errors: errors.slice(0, 3) })
+    });
   } catch (e: any) {
     console.error('[aimlApi] unexpected error:', e);
     return bad(500, e?.message || 'aimlApi crashed');

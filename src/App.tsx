@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ToastProvider } from './components/ui/Toasts'
 // StickyFooter removed per new minimal UI
 import SignupGateModal from './components/SignupGateModal'
@@ -82,12 +82,6 @@ const ComingSoonPage: React.FC = () => {
 }
 
 const AppContent: React.FC = () => {
-  const location = useLocation()
-  const [showComingSoon, setShowComingSoon] = useState(false)
-  
-  // Check if we're in development mode
-  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  
   // Check if we're on the live domain
   const isLiveDomain = window.location.hostname === 'stefna.xyz' || window.location.hostname === 'stefna.netlify.app'
   
@@ -95,28 +89,11 @@ const AppContent: React.FC = () => {
   if (isLiveDomain) {
     return <ComingSoonPage />
   }
-  
-  // Check if we're on profile page to hide footer
-  const isProfilePage = location.pathname.startsWith('/profile')
 
-  // If coming soon is enabled (for testing), show it
-  if (showComingSoon) {
-    return <ComingSoonPage />
-  }
+  // For development, always show the full app
 
   return (
     <div className="min-h-screen bg-black pb-16">
-      {/* Toggle button for testing */}
-      {isDev && (
-        <div className="fixed top-4 right-4 z-50">
-          <button
-            onClick={() => setShowComingSoon(!showComingSoon)}
-            className="bg-white text-black px-3 py-2 rounded text-sm font-medium hover:bg-gray-200 transition-colors"
-          >
-            {showComingSoon ? 'Show App' : 'Show Coming Soon'}
-          </button>
-        </div>
-      )}
       
       <div>
         <Routes>

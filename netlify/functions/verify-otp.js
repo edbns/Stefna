@@ -9,8 +9,8 @@ exports.handler = async (event, context) => {
     if (event.httpMethod !== 'POST') {
       return { statusCode: 405, body: 'Method Not Allowed' };
     }
-    const { email, otp } = JSON.parse(event.body || '{}');
-    console.log('Input:', { email, otp });
+    const { email, otp, referrerEmail } = JSON.parse(event.body || '{}');
+    console.log('Input:', { email, otp, referrerEmail });
     if (!email || !otp) {
       return { statusCode: 400, body: 'Email and OTP required' };
     }
@@ -81,6 +81,32 @@ exports.handler = async (event, context) => {
       if (createErr) throw createErr;
       user = newUser;
       isNewUser = true;
+
+      // Process referral if provided
+      if (referrerEmail) {
+        console.log(`🎁 Processing referral for new user: ${referrerEmail} -> ${email}`);
+        try {
+          const referralResponse = await fetch(`${event.headers.origin || 'https://stefna.xyz'}/.netlify/functions/process-referral`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              referrerEmail: referrerEmail,
+              newUserId: user.id,
+              newUserEmail: email
+            })
+          });
+
+          if (referralResponse.ok) {
+            const referralResult = await referralResponse.json();
+            console.log(`✅ Referral processed: ${referralResult.totalAwarded} total credits awarded`);
+          } else {
+            console.log(`⚠️ Referral processing failed: ${referralResponse.status}`);
+          }
+        } catch (referralError) {
+          console.error('❌ Referral processing error:', referralError);
+          // Don't fail signup if referral processing fails
+        }
+      }
     } else if (userCheckErr) {
       // Other error occurred
       throw userCheckErr;
