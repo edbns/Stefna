@@ -63,8 +63,8 @@ export const handler = async (event:any) => {
         created_at: r.created_at,
         visibility: (r.tags || []).includes('public') ? 'public' : 'private',
         allow_remix: r.context?.custom?.allow_remix === 'true',
-        prompt: null,
-        mode: null,
+        prompt: r.context?.custom?.prompt || null,
+        mode: r.context?.custom?.mode_meta ? JSON.parse(r.context?.custom?.mode_meta) : null,
         meta: r.context?.custom || {},
       }));
 
