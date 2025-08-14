@@ -15,15 +15,15 @@ import presetRotationService from '../services/presetRotationService'
 import captionService from '../services/captionService'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
 import ShareModal from './ShareModal'
-import ProfileSetupModal from './ProfileSetupModal'
-import { needsOnboarding } from '../services/profile'
+
+
 import { requireUserIntent } from '../utils/generationGuards'
 import userMediaService from '../services/userMediaService'
 import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
 import { saveMediaNoDB, togglePublish } from '../lib/api'
-import { Mode, StoryTheme, TimeEra, RestoreOp, MODE_LABELS, STORY_THEME_LABELS, TIME_ERA_LABELS, RESTORE_OP_LABELS } from '../config/modes'
+import { Mode, StoryTheme, TimeEra, RestoreOp, MODE_LABELS, STORY_THEME_LABELS, STORY_CATEGORIES, TIME_ERA_LABELS, RESTORE_OP_LABELS } from '../config/modes'
 import { resolvePresetForMode, createModeMeta } from '../utils/resolvePresetForMode'
 const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
 
@@ -235,8 +235,7 @@ const HomeNew: React.FC = () => {
   const [filterOpen, setFilterOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
   
-  // Profile onboarding state
-  const [showProfileSetup, setShowProfileSetup] = useState(false)
+  // Profile state
   const [userProfile, setUserProfile] = useState<any>(null)
   const [currentFilter, setCurrentFilter] = useState<'all' | 'images' | 'videos'>('all')
   const [navGenerating, setNavGenerating] = useState(false)
@@ -689,9 +688,13 @@ const HomeNew: React.FC = () => {
     }
 
     // Check if we have either a preset, mode, or user prompt
-    if (!chosen && !selectedMode && !prompt.trim()) {
+    const hasPreset = Boolean(chosen);
+    const hasPrompt = Boolean(prompt.trim());
+    const hasMode = Boolean(selectedMode);
+    
+    if (!hasPreset && !hasPrompt && !hasMode) {
       console.warn('No preset, mode, or user prompt selected; aborting.');
-              // Pick a preset or add a prompt - no notification needed
+      // Pick a preset or add a prompt - no notification needed
       endGeneration(genId);
       setNavGenerating(false);
       return;
@@ -1433,8 +1436,24 @@ const HomeNew: React.FC = () => {
       return
     }
     
-    // Clear any existing preset selection
-    setSelectedPreset(null)
+    // Resolve the mode to a concrete preset FIRST
+    const resolvedPreset = resolvePresetForMode({
+      mode,
+      theme: mode === 'story' ? option as StoryTheme : undefined,
+      era: mode === 'time_machine' ? option as TimeEra : undefined,
+      op: mode === 'restore' ? option as RestoreOp : undefined,
+      activeRotation: Object.keys(PRESETS).slice(0, 6) as PresetKey[] // Current 6 active presets
+    });
+    
+    console.log('🎯 Mode resolved:', { 
+      mode, 
+      option, 
+      preset: resolvedPreset, 
+      sourceUrl: previewUrl 
+    })
+    
+    // Set the resolved preset so generation can proceed
+    setSelectedPreset(resolvedPreset as PresetKey)
     
     // Set mode state
     setSelectedMode(mode)
@@ -1456,14 +1475,6 @@ const HomeNew: React.FC = () => {
     
     // Track mode usage analytics
     try {
-      const resolvedPreset = resolvePresetForMode({
-        mode,
-        theme: mode === 'story' ? option as StoryTheme : undefined,
-        era: mode === 'time_machine' ? option as TimeEra : undefined,
-        op: mode === 'restore' ? option as RestoreOp : undefined,
-      });
-      
-      // Analytics tracking for mode submit
       console.log('📊 Mode analytics - submit:', {
         mode,
         option,
@@ -1841,12 +1852,7 @@ const HomeNew: React.FC = () => {
         // Store full user profile for onboarding check
         setUserProfile(userData)
         
-        // Check if user needs onboarding using the profile service
-        const needsSetup = await needsOnboarding()
-        if (needsSetup) {
-          console.log('🎯 User needs onboarding, showing profile setup modal')
-          setShowProfileSetup(true)
-        }
+        // Profile setup is now handled through the edit profile modal in ProfileScreen
         
         // Update localStorage with profile data
         const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
@@ -2303,27 +2309,36 @@ const HomeNew: React.FC = () => {
                     </button>
                     {storyOpen && (
                       <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
-                        <div className="space-y-1">
-                          {Object.entries(STORY_THEME_LABELS).map(([theme, label]) => (
-                            <button
-                              key={theme}
-                              onClick={() => {
-                                handleModeClick('story', theme as StoryTheme)
-                                setStoryOpen(false)
-                              }}
-                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
-                                selectedTheme === theme 
-                                  ? 'bg-white/20 text-white' 
-                                  : 'text-white/80 hover:text-white hover:bg-white/10'
-                              }`}
-                            >
-                              <span>{label}</span>
-                              {selectedTheme === theme ? (
-                                <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
-                              ) : (
-                                <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
-                              )}
-                            </button>
+                        <div className="space-y-3">
+                          {Object.entries(STORY_CATEGORIES).map(([categoryKey, category]) => (
+                            <div key={categoryKey}>
+                              <div className="text-xs font-medium text-white/60 mb-2 px-3">
+                                {category.title}
+                              </div>
+                              <div className="space-y-1">
+                                {category.themes.map((theme) => (
+                                  <button
+                                    key={theme}
+                                    onClick={() => {
+                                      handleModeClick('story', theme)
+                                      setStoryOpen(false)
+                                    }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
+                                      selectedTheme === theme 
+                                        ? 'bg-white/20 text-white' 
+                                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                                    }`}
+                                  >
+                                    <span>{STORY_THEME_LABELS[theme]}</span>
+                                    {selectedTheme === theme ? (
+                                      <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
+                                    ) : (
+                                      <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -2546,20 +2561,7 @@ const HomeNew: React.FC = () => {
 
       {/* Video Job Status Display removed in favor of unified toasts */}
 
-      {/* Profile Setup Modal */}
-      <ProfileSetupModal
-        isOpen={showProfileSetup}
-        onClose={() => setShowProfileSetup(false)}
-        userId={authService.getCurrentUser()?.id || ''}
-        token={authService.getToken() || ''}
-        onComplete={(profile) => {
-          console.log('✅ Profile setup completed:', profile)
-          setUserProfile(profile)
-          setShowProfileSetup(false)
-          // Refresh user profile data
-          loadUserProfileFromDatabase()
-        }}
-      />
+
 
     </div>
   )

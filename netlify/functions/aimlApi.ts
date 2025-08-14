@@ -129,11 +129,42 @@ export const handler = async (event: any) => {
     // Auto-detect environment
     const APP_ENV = /netlify\.app$/i.test(event.headers.host || '') ? 'dev' : 'prod';
 
+    // Build mode-aware prompt with subject preservation
+    const basePrompt = String(body.prompt || 'stylize').trim();
+    const keepSubject = 'Keep the same people, faces, pose, and framing. Do not add or remove people.';
+    const noChildDrift = 'no children, no baby, no toddler, keep adult facial proportions';
+    
+    let finalPrompt = basePrompt;
+    let finalNegativePrompt = '';
+    let finalStrength = clamp(Number(body.strength ?? 0.75), 0.4, 0.95);
+    
+    // Mode-specific enhancements for subject preservation
+    if (body.modeMeta?.mode === 'time_machine') {
+      const era = body.modeMeta.era || 'vintage';
+      finalPrompt = `${basePrompt} Reimagine in the ${era} aesthetic. ${keepSubject}`;
+      finalStrength = clamp(Number(body.strength ?? 0.45), 0.3, 0.6); // Conservative for identity preservation
+    } else if (body.modeMeta?.mode === 'story') {
+      finalPrompt = `${basePrompt} ${keepSubject}`;
+      finalStrength = clamp(Number(body.strength ?? 0.45), 0.3, 0.6);
+    } else if (body.modeMeta?.mode === 'restore') {
+      finalPrompt = `${basePrompt} ${keepSubject}`;
+      finalStrength = clamp(Number(body.strength ?? 0.4), 0.3, 0.5); // Very conservative for restoration
+    }
+    
+    // Build comprehensive negative prompt
+    const negativePrompts = [
+      body.negative_prompt,
+      noChildDrift,
+      'low quality, distortions, extra fingers, artifacts, wrong number of people, different person, face swap'
+    ].filter(Boolean);
+    finalNegativePrompt = negativePrompts.join(', ');
+
     const payload = {
       model: 'flux/dev/image-to-image',
-      prompt: String(body.prompt || 'stylize').trim(),
+      prompt: finalPrompt,
+      negative_prompt: finalNegativePrompt,
       image_url,
-      strength: clamp(Number(body.strength ?? 0.75), 0.4, 0.95),
+      strength: finalStrength,
       num_inference_steps: Math.round(clamp(Number(body.num_inference_steps ?? body.steps ?? 36), 1, 150)),
       guidance_scale: Number.isFinite(body.guidance_scale) ? body.guidance_scale : 7.5,
       seed: body.seed || Date.now(), // Add seed to prevent provider-side caching
@@ -141,9 +172,11 @@ export const handler = async (event: any) => {
 
     console.log('[aimlApi] calling AIML with:', { 
       prompt: payload.prompt, 
+      negative_prompt: payload.negative_prompt,
       strength: payload.strength, 
       steps: payload.num_inference_steps,
       guidance: payload.guidance_scale,
+      mode: body.modeMeta?.mode,
       userId,
       request_id,
       num_variations,

@@ -79,6 +79,30 @@ export const STORY_THEME_LABELS: Record<StoryTheme, string> = {
   style_neon: 'Neon Pop',
 };
 
+// Organized categories for Story Mode dropdown
+export const STORY_CATEGORIES = {
+  auto: {
+    title: 'Quick Start',
+    themes: ['auto'] as StoryTheme[]
+  },
+  seasons: {
+    title: 'Four Seasons',
+    themes: ['four_seasons_spring', 'four_seasons_summer', 'four_seasons_autumn', 'four_seasons_winter'] as StoryTheme[]
+  },
+  time: {
+    title: 'Time of Day',
+    themes: ['time_sunrise', 'time_day', 'time_sunset', 'time_night'] as StoryTheme[]
+  },
+  mood: {
+    title: 'Mood Shift',
+    themes: ['mood_calm', 'mood_vibrant', 'mood_dramatic', 'mood_dreamy'] as StoryTheme[]
+  },
+  style: {
+    title: 'Art Style',
+    themes: ['style_photorealistic', 'style_vintage', 'style_pastels', 'style_neon'] as StoryTheme[]
+  }
+};
+
 export const TIME_ERA_LABELS: Record<TimeEra, string> = {
   '1920s_noir_glam': '1920s Noir Glam',
   '1960s_kodachrome': '1960s Kodachrome',

@@ -26,7 +26,7 @@ export function initializeAuthBootstrap(): void {
         
         if (needsSetup) {
           console.log('🎯 User needs onboarding - modal will be shown by HomeNew component');
-          // The HomeNew component will handle showing the ProfileSetupModal
+          // Profile setup will be handled through the edit profile modal
         } else {
           console.log('✅ User profile is complete');
         }
