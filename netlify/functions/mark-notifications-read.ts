@@ -2,7 +2,7 @@
 // Marks notifications as read for the authenticated user
 
 import { Handler } from '@netlify/functions';
-import { supabase } from '../lib/supabaseAdmin';
+import { supabaseAdmin } from '../lib/supabaseAdmin';
 import jwt from 'jsonwebtoken';
 
 function getUserIdFromToken(auth?: string): string | null {
@@ -40,7 +40,7 @@ export const handler: Handler = async (event) => {
     const { notificationIds }: MarkReadPayload = JSON.parse(event.body || '{}');
 
     // Use the database function to mark notifications as read
-    const { data: updatedCount, error } = await supabase
+    const { data: updatedCount, error } = await supabaseAdmin
       .rpc('mark_notifications_read', {
         target_user_id: userId,
         notification_ids: notificationIds || null

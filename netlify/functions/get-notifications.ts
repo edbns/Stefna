@@ -2,7 +2,7 @@
 // Returns notifications for the authenticated user
 
 import { Handler } from '@netlify/functions';
-import { supabase } from '../lib/supabaseAdmin';
+import { supabaseAdmin } from '../lib/supabaseAdmin';
 import jwt from 'jsonwebtoken';
 
 function getUserIdFromToken(auth?: string): string | null {
@@ -36,7 +36,7 @@ export const handler: Handler = async (event) => {
     const { limit = '20', offset = '0', unread_only = 'false' } = event.queryStringParameters || {};
 
     // Build query
-    let query = supabase
+    let query = supabaseAdmin
       .from('notifications')
       .select(`
         id,
@@ -67,7 +67,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Get unread count
-    const { data: unreadCountData, error: countError } = await supabase
+    const { data: unreadCountData, error: countError } = await supabaseAdmin
       .rpc('get_unread_notification_count', { target_user_id: userId });
 
     const unreadCount = countError ? 0 : (unreadCountData || 0);
