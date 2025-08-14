@@ -3,6 +3,14 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { validateAllSync, validateAll } from './utils/presets/validate'
+import { PRESETS } from './utils/presets/types'
+
+// Sanity check: ensure preset keys match preset.id
+for (const [key, preset] of Object.entries(PRESETS)) {
+  if (key !== preset.id) {
+    console.warn(`⚠️ Preset key/id mismatch: ${key} !== ${preset.id}`);
+  }
+}
 
 // Validate preset system on startup (sync for immediate feedback)
 validateAllSync()

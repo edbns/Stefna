@@ -13,7 +13,7 @@ type StoryBeat = {
 };
 
 // Theme → 4 beats. Uses your existing preset ids.
-const STORY_THEMES: Record<string, StoryBeat[] | { strategy: 'auto' }> = {
+export const STORY_THEMES: Record<string, StoryBeat[] | { strategy: 'auto' }> = {
   // Auto: pick 4 from the *current 6 active* (distinct & shuffled)
   auto: { strategy: 'auto' },
 
@@ -35,7 +35,7 @@ const STORY_THEMES: Record<string, StoryBeat[] | { strategy: 'auto' }> = {
 
   // Mood Shift
   mood_shift: [
-    { label: 'Calm', use: 'crystal_clear', overrides: { prompt: 'enhance clarity and sharpness, crisp details, clean and precise look, bright, airy, soft highlights' } },
+    { label: 'Calm', use: 'bright_airy' },
     { label: 'Vibrant', use: 'vivid_pop' },
     { label: 'Dramatic', use: 'urban_grit' },
     { label: 'Dreamy', use: 'dreamy_pastels' },
