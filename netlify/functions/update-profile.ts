@@ -63,18 +63,33 @@ export const handler: Handler = async (event) => {
       jwtSecret: !!jwtSecret 
     });
     
-    // Validate username if provided (treating as display name, so more lenient)
-    if (body.username !== undefined) {
-      if (body.username && (body.username.length < 1 || body.username.length > 50)) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ 
-            error: 'Name must be 1-50 characters' 
-          })
-        };
+    // Validate username if provided - must match database constraints
+    if (body.username !== undefined && body.username !== null) {
+      // Allow empty string (will be stored as null)
+      if (body.username === '') {
+        // Convert empty string to null for database
+        body.username = null;
+      } else {
+        // Validate non-empty usernames
+        if (body.username.length < 3 || body.username.length > 30) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ 
+              error: 'Username must be 3-30 characters or empty' 
+            })
+          };
+        }
+        
+        // Check for valid characters (alphanumeric, underscore, hyphen)
+        if (!/^[a-zA-Z0-9_-]+$/.test(body.username)) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ 
+              error: 'Username can only contain letters, numbers, underscores, and hyphens' 
+            })
+          };
+        }
       }
-
-      // Note: Display names don't need to be unique, so no uniqueness check needed
     }
 
     // Prepare update data
