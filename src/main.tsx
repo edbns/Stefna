@@ -13,6 +13,10 @@ validateAll().catch(console.error)
 // Import test in development
 if (import.meta.env.DEV) {
   import('./utils/presets/test')
+  // Run system tests
+  import('./utils/presets/test-system').then(({ logTestResults }) => {
+    logTestResults();
+  }).catch(console.error);
 }
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 
