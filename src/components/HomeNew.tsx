@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, X, ArrowUp, Filter, FileText } from 'lucide-react'
+import { Plus, X, ArrowUp, Filter, FileText, ChevronDown } from 'lucide-react'
 import { authenticatedFetch } from '../utils/apiClient'
 import authService from '../services/authService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
@@ -11,6 +11,57 @@ import NotificationBell from './NotificationBell'
 import { useToasts } from './ui/Toasts'
 import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
+
+// Story Mode Category Component with nested dropdown
+interface StoryModeCategoryProps {
+  category: { title: string; themes: StoryTheme[] }
+  selectedTheme: StoryTheme | null
+  onThemeSelect: (theme: StoryTheme) => void
+}
+
+const StoryModeCategory: React.FC<StoryModeCategoryProps> = ({ category, selectedTheme, onThemeSelect }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-white/80 hover:text-white hover:bg-white/10"
+      >
+        <span>{category.title}</span>
+        <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <div className="absolute left-full top-0 ml-1 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-2 w-48 z-50">
+          <div className="space-y-1">
+            {category.themes.map((theme) => (
+              <button
+                key={theme}
+                onClick={() => {
+                  onThemeSelect(theme)
+                  setIsOpen(false)
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
+                  selectedTheme === theme 
+                    ? 'bg-white/20 text-white' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <span>{STORY_THEME_LABELS[theme]}</span>
+                {selectedTheme === theme ? (
+                  <div className="w-3 h-3 rounded-full bg-white border border-white/30"></div>
+                ) : (
+                  <div className="w-3 h-3 rounded-full border border-white/30"></div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 import { PRESETS, type PresetKey, promptForPreset } from '../config/presets'
 import presetRotationService from '../services/presetRotationService'
 import captionService from '../services/captionService'
@@ -25,7 +76,7 @@ import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
 import { saveMediaNoDB, togglePublish } from '../lib/api'
 import { Mode, StoryTheme, TimeEra, RestoreOp, MODE_LABELS, STORY_THEME_LABELS, STORY_CATEGORIES, TIME_ERA_LABELS, RESTORE_OP_LABELS } from '../config/modes'
-import { resolvePresetForMode, createModeMeta } from '../utils/resolvePresetForMode'
+import { resolvePresetForMode } from '../utils/resolvePresetForMode'
 const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
@@ -632,7 +683,7 @@ const HomeNew: React.FC = () => {
   }
 
   // Centralized generation dispatcher with comprehensive logging
-  async function dispatchGenerate(kind: 'preset' | 'custom' | 'remix') {
+  async function dispatchGenerate(kind: 'preset' | 'custom' | 'remix' | 'mode') {
     const t0 = performance.now();
     console.info('▶ dispatchGenerate', { kind });
     
@@ -670,18 +721,15 @@ const HomeNew: React.FC = () => {
     if (selectedMode && (selectedTheme || selectedEra || selectedOp)) {
       const resolvedPreset = resolvePresetForMode({
         mode: selectedMode,
-        theme: selectedTheme || undefined,
-        era: selectedEra || undefined,
-        op: selectedOp || undefined,
+        option: (selectedTheme || selectedEra || selectedOp) as string,
       });
       
       // Create mode metadata for tracking
-      modeMeta = createModeMeta({
+      modeMeta = {
         mode: selectedMode,
-        theme: selectedTheme || undefined,
-        era: selectedEra || undefined,
-        op: selectedOp || undefined,
-      });
+        option: (selectedTheme || selectedEra || selectedOp) as string,
+        mapping_version: 'v1',
+      };
       
       // Use the resolved preset prompt
       effectivePrompt = promptForPreset(resolvedPreset, isVideoPreview);
@@ -1204,9 +1252,7 @@ const HomeNew: React.FC = () => {
         try {
           const resolvedPreset = resolvePresetForMode({
             mode: selectedMode,
-            theme: selectedTheme || undefined,
-            era: selectedEra || undefined,
-            op: selectedOp || undefined,
+            option: (selectedTheme || selectedEra || selectedOp) as string,
           });
           
           console.log('📊 Mode analytics - success:', {
@@ -1331,9 +1377,7 @@ const HomeNew: React.FC = () => {
         try {
           const resolvedPreset = resolvePresetForMode({
             mode: selectedMode,
-            theme: selectedTheme || undefined,
-            era: selectedEra || undefined,
-            op: selectedOp || undefined,
+            option: (selectedTheme || selectedEra || selectedOp) as string,
           });
           
           console.log('📊 Mode analytics - success (alt path):', {
@@ -1422,7 +1466,7 @@ const HomeNew: React.FC = () => {
   }
 
   // Mode handlers for one-click generation
-  const handleModeClick = (mode: Mode, option: StoryTheme | TimeEra | RestoreOp) => {
+  const handleModeClick = async (mode: 'time_machine'|'story'|'restore', option: string) => {
     console.log('🎯 handleModeClick called with:', { mode, option })
     
     // Check authentication first
@@ -1434,80 +1478,44 @@ const HomeNew: React.FC = () => {
     
     if (!previewUrl) {
       console.log('❌ No previewUrl available, cannot generate')
+      notifyError({ title: 'Upload a photo first', message: 'Please upload a photo to use this mode' })
       return
     }
     
-    // Resolve the mode to a concrete preset FIRST
-    const resolvedPreset = resolvePresetForMode({
-      mode,
-      theme: mode === 'story' ? option as StoryTheme : undefined,
-      era: mode === 'time_machine' ? option as TimeEra : undefined,
-      op: mode === 'restore' ? option as RestoreOp : undefined,
-      activeRotation: Object.keys(PRESETS).slice(0, 6) as PresetKey[] // Current 6 active presets
-    });
-    
-    console.log('🎯 Mode resolved:', { 
-      mode, 
-      option, 
-      preset: resolvedPreset, 
-      sourceUrl: previewUrl 
-    })
-    
-    // Set the resolved preset so generation can proceed
-    setSelectedPreset(resolvedPreset as PresetKey)
-    
-    // Set mode state
-    setSelectedMode(mode)
-    if (mode === 'story') {
-      setSelectedTheme(option as StoryTheme)
-      setSelectedEra(null)
-      setSelectedOp(null)
-    } else if (mode === 'time_machine') {
-      setSelectedEra(option as TimeEra)
-      setSelectedTheme(null)
-      setSelectedOp(null)
-    } else if (mode === 'restore') {
-      setSelectedOp(option as RestoreOp)
-      setSelectedTheme(null)
-      setSelectedEra(null)
-    }
-    
-    console.log('🚀 Starting auto-generation with mode:', { mode, option })
-    
-    // Track mode usage analytics
     try {
-      console.log('📊 Mode analytics - submit:', {
-        mode,
-        option,
-        preset: resolvedPreset,
-        timestamp: new Date().toISOString()
-      });
+      // Import the new utility
+      const { prepareSourceAsset } = await import('../utils/prepareSourceAsset')
       
-      // TODO: Send to analytics service when available
-      // analytics.track('mode_generation_started', { mode, option, preset: resolvedPreset });
+      // Always upload the asset (no more blob: URLs)
+      const { url: remoteUrl, resource_type } = await prepareSourceAsset(previewUrl)
+      if (resource_type !== 'image') { 
+        notifyError({ title: 'Photo required', message: 'Story / Time Machine / Restore need a photo' })
+        return
+      }
+
+      // Resolve mode to preset
+      const presetRef = resolvePresetForMode({ 
+        mode, 
+        option, 
+        activeRotation: Object.keys(PRESETS).slice(0, 6)
+      })
+      
+      console.log('🎯 Mode resolved:', { mode, option, preset: presetRef, sourceUrl: remoteUrl })
+
+      // Set UI state
+      setSelectedMode(mode)
+      setSelectedPreset(presetRef as PresetKey)
+      
+      // Dispatch with correct payload
+      await dispatchGenerate('mode')
+      
     } catch (error) {
-      console.warn('⚠️ Analytics tracking failed:', error);
+      console.error('❌ Mode generation failed:', error)
+      notifyError({ title: 'Generation failed', message: 'Please try another photo or style.' })
     }
-    
-    // Auto-start generation with mode immediately
-    handleModeAutoGeneration(mode, option);
   }
 
-  // Auto-generate with mode - similar to preset auto-generation
-  const handleModeAutoGeneration = async (mode: Mode, option: StoryTheme | TimeEra | RestoreOp) => {
-    console.log('🚀 handleModeAutoGeneration called with:', { mode, option })
-    
-    if (!previewUrl) {
-      console.log('❌ No previewUrl available, cannot generate')
-      return;
-    }
 
-    console.log('🚀 Auto-generating with mode:', { mode, option });
-    
-    // Use the existing dispatchGenerate function with 'preset' kind
-    // The mode metadata will be handled in dispatchGenerate
-    await dispatchGenerate('preset');
-  }
 
   const handleGenerateCaption = () => {
     if (!prompt.trim()) {
@@ -2233,7 +2241,7 @@ const HomeNew: React.FC = () => {
                       title={isAuthenticated ? 'Choose AI style presets' : 'Sign up to use AI presets'}
                       disabled={!isAuthenticated}
                     >
-                      {selectedPreset ? PRESETS[selectedPreset].label : 'Presets'}
+                      {selectedPreset && PRESETS[selectedPreset]?.label ? PRESETS[selectedPreset].label : 'Presets'}
                     </button>
                     
                     {/* Presets dropdown - clean and simple */}
@@ -2308,37 +2316,18 @@ const HomeNew: React.FC = () => {
                       Story Mode
                     </button>
                     {storyOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
-                        <div className="space-y-3">
+                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-2 w-64 z-50">
+                        <div className="space-y-1">
                           {Object.entries(STORY_CATEGORIES).map(([categoryKey, category]) => (
-                            <div key={categoryKey}>
-                              <div className="text-xs font-medium text-white/60 mb-2 px-3">
-                                {category.title}
-                              </div>
-                              <div className="space-y-1">
-                                {category.themes.map((theme) => (
-                                  <button
-                                    key={theme}
-                                    onClick={() => {
-                                      handleModeClick('story', theme)
-                                      setStoryOpen(false)
-                                    }}
-                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
-                                      selectedTheme === theme 
-                                        ? 'bg-white/20 text-white' 
-                                        : 'text-white/80 hover:text-white hover:bg-white/10'
-                                    }`}
-                                  >
-                                    <span>{STORY_THEME_LABELS[theme]}</span>
-                                    {selectedTheme === theme ? (
-                                      <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
-                                    ) : (
-                                      <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
-                                    )}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
+                            <StoryModeCategory
+                              key={categoryKey}
+                              category={category}
+                              selectedTheme={selectedTheme}
+                              onThemeSelect={(theme) => {
+                                handleModeClick('story', theme)
+                                setStoryOpen(false)
+                              }}
+                            />
                           ))}
                         </div>
                       </div>
@@ -2488,7 +2477,7 @@ const HomeNew: React.FC = () => {
                         : 'bg-white text-black hover:bg-white/90'
                     }`}
                     aria-label="Generate"
-                    title={`${!isAuthenticated ? 'Sign up to generate AI content' : !previewUrl ? 'Upload media first' : (!prompt.trim() && !selectedPreset) ? 'Enter a prompt or select a preset first' : selectedPreset ? `Generate with ${PRESETS[selectedPreset].label} preset` : 'Generate AI content'}`}
+                    title={`${!isAuthenticated ? 'Sign up to generate AI content' : !previewUrl ? 'Upload media first' : (!prompt.trim() && !selectedPreset) ? 'Enter a prompt or select a preset first' : selectedPreset && PRESETS[selectedPreset]?.label ? `Generate with ${PRESETS[selectedPreset].label} preset` : 'Generate AI content'}`}
                   >
                     {navGenerating ? (
                       <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />

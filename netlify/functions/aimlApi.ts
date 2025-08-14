@@ -122,7 +122,11 @@ export const handler = async (event: any) => {
       }
     }
     
-    if (!image_url || !/^https?:\/\//i.test(image_url) || image_url.includes('...')) {
+    if (!image_url || /^blob:/i.test(image_url)) {
+      return bad(400, 'Upload required: image_url must be a reachable https URL (no blob: URLs)');
+    }
+    
+    if (!/^https?:\/\//i.test(image_url) || image_url.includes('...')) {
       return bad(400, 'image_url must be a full https URL (no "...")');
     }
 
