@@ -1,29 +1,47 @@
+import authService from '../services/authService';
+
 export async function prepareSourceAsset(activeFileOrUrl: File | string) {
-  // Already a remote URL? just return it.
-  if (typeof activeFileOrUrl === 'string' && !activeFileOrUrl.startsWith('blob:')) {
+  // If it's already a public http(s) URL, skip upload.
+  if (typeof activeFileOrUrl === 'string' && /^https?:\/\//i.test(activeFileOrUrl)) {
     const resource_type = /\.(mp4|mov|webm)$/i.test(activeFileOrUrl) ? 'video' : 'image';
     return { url: activeFileOrUrl, resource_type };
   }
 
-  // Blob/File -> upload via Cloudinary signed upload
-  const signRes = await fetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
-  if (!signRes.ok) {
-    throw new Error(`Cloudinary sign failed: ${signRes.status}`);
+  // If it's a blob URL string, convert to File first
+  let file: File;
+  if (typeof activeFileOrUrl === 'string' && activeFileOrUrl.startsWith('blob:')) {
+    const resp = await fetch(activeFileOrUrl);
+    const blob = await resp.blob();
+    const ext = blob.type.startsWith('image/') ? (blob.type.split('/')[1] || 'png') :
+                blob.type.startsWith('video/') ? (blob.type.split('/')[1] || 'mp4') : 'bin';
+    file = new File([blob], `source.${ext}`, { type: blob.type || 'application/octet-stream' });
+  } else {
+    file = activeFileOrUrl as File;
   }
-  
-  const signData = await signRes.json();
-  const { timestamp, signature, api_key, cloud_name, folder } = signData;
+
+  // Signed params
+  const signRes = await fetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
+  const { timestamp, signature, api_key, cloud_name, folder, upload_preset } = await signRes.json();
 
   const form = new FormData();
-  form.append('file', activeFileOrUrl as any);
-  form.append('timestamp', timestamp.toString());
+  form.append('file', file); // <-- real File now
+  form.append('timestamp', String(timestamp));
   form.append('signature', signature);
   form.append('api_key', api_key);
   if (folder) form.append('folder', folder);
+  if (upload_preset) form.append('upload_preset', upload_preset);
 
-  const up = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/auto/upload`, { method: 'POST', body: form });
-  if (!up.ok) throw new Error('Cloudinary upload failed');
-  const json = await up.json();
+  const up = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/auto/upload`, {
+    method: 'POST',
+    body: form,
+  });
+
+  // Better 400 debug
+  const json = await up.json().catch(() => ({} as any));
+  if (!up.ok) {
+    console.error('Cloudinary upload failed:', json);
+    throw new Error('Cloudinary upload failed');
+  }
 
   const resource_type = json.resource_type; // 'image' | 'video'
   return { url: json.secure_url as string, resource_type };

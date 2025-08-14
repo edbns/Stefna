@@ -1486,8 +1486,9 @@ const HomeNew: React.FC = () => {
       // Import the new utility
       const { prepareSourceAsset } = await import('../utils/prepareSourceAsset')
       
-      // Always upload the asset (no more blob: URLs)
-      const { url: remoteUrl, resource_type } = await prepareSourceAsset(previewUrl)
+      // Always upload the asset (prefer File; fall back to blob URL)
+      const source = selectedFile || previewUrl;
+      const { url: remoteUrl, resource_type } = await prepareSourceAsset(source)
       if (resource_type !== 'image') { 
         notifyError({ title: 'Photo required', message: 'Story / Time Machine / Restore need a photo' })
         return
