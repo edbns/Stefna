@@ -1503,60 +1503,76 @@ const ProfileScreen: React.FC = () => {
         )}
 
         {activeTab === 'account' && (
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-2xl mx-auto space-y-6">
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="w-full max-w-md space-y-8">
+              {/* Account Header */}
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-white mb-2">Account Settings</h2>
+                <p className="text-white/60">Manage your account preferences</p>
+              </div>
+
               {/* Email Section */}
-              <section className="rounded-2xl border border-white/20 p-4 bg-neutral-900/40">
-                <h3 className="text-sm font-medium mb-3 text-white">Email</h3>
-                <div className="text-sm mb-3 text-white/80">
-                  Current: <span className="text-neutral-300">{profileData.name || 'user@example.com'}</span>
+              <div className="bg-[#333333] rounded-xl p-6">
+                <h3 className="text-lg font-semibold mb-4 text-white">Email</h3>
+                <div className="text-white/80 mb-4">
+                  <span className="text-white/60">Current:</span>
+                  <div className="text-white font-medium mt-1">{profileData.name || 'user@example.com'}</div>
                 </div>
-                <p className="text-xs text-neutral-400">
-                  To change your email, use the existing OTP system in the main app.
+                <button className="w-full bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 transition-colors">
+                  Change Email
+                </button>
+                <p className="text-xs text-white/50 mt-3 text-center">
+                  Uses existing OTP verification system
                 </p>
-              </section>
+              </div>
 
               {/* Notifications Section */}
-              <section className="rounded-2xl border border-white/20 p-4 bg-neutral-900/40">
-                <h3 className="text-sm font-medium mb-3 text-white">Notifications</h3>
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-sm text-white/80">Remix notifications</span>
+              <div className="bg-[#333333] rounded-xl p-6">
+                <h3 className="text-lg font-semibold mb-4 text-white">Notifications</h3>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-white font-medium">Remix notifications</div>
+                    <div className="text-white/60 text-sm">Daily digest when someone remixes your work</div>
+                  </div>
                   <button
                     onClick={() => {
                       // Toggle remix notifications - this would connect to your settings system
                       console.log('Toggle remix notifications')
                     }}
-                    className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 bg-white/20"
+                    className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
                   >
-                    <span className="inline-block h-3 w-3 transform rounded-full bg-black transition-transform duration-200 translate-x-1" />
-                  </button>
-                </label>
-                <p className="mt-3 text-xs text-neutral-400">
-                  Get a daily digest if someone remixes your work.
-                </p>
-              </section>
-
-              {/* Danger Zone */}
-              <section className="rounded-2xl border border-red-900/50 p-4 bg-red-950/30">
-                <h3 className="text-sm font-semibold text-red-300 mb-3">Danger zone</h3>
-                <div className="flex gap-3 flex-wrap">
-                  <button 
-                    className="rounded px-3 py-2 border border-white/20 text-white hover:bg-white/10" 
-                    onClick={() => {
-                      // Sign out all devices - connect to your auth system
-                      console.log('Sign out all devices')
-                    }}
-                  >
-                    Sign out all devices
-                  </button>
-                  <button 
-                    className="rounded px-3 py-2 border border-red-600 text-red-300 hover:bg-red-500/20"
-                    onClick={() => setShowDeleteAccountModal(true)}
-                  >
-                    Delete account
+                    <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
                   </button>
                 </div>
-              </section>
+              </div>
+
+              {/* Security Section */}
+              <div className="bg-[#333333] rounded-xl p-6">
+                <h3 className="text-lg font-semibold mb-4 text-white">Security</h3>
+                <button 
+                  className="w-full bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 transition-colors mb-3" 
+                  onClick={() => {
+                    // Sign out all devices - connect to your auth system
+                    console.log('Sign out all devices')
+                  }}
+                >
+                  Sign out all devices
+                </button>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-red-400 mb-4">Danger Zone</h3>
+                <p className="text-red-300/80 text-sm mb-4">
+                  This action cannot be undone. Your account and all media will be permanently deleted.
+                </p>
+                <button 
+                  className="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                  onClick={() => setShowDeleteAccountModal(true)}
+                >
+                  Delete Account
+                </button>
+              </div>
             </div>
           </div>
         )}
