@@ -140,19 +140,24 @@ export const handler = async (event: any) => {
     
     let finalPrompt = basePrompt;
     let finalNegativePrompt = '';
-    let finalStrength = clamp(Number(body.strength ?? 0.75), 0.4, 0.95);
+    // Use sharp inference parameters for better results
+    let finalStrength = clamp(Number(body.strength ?? 0.28), 0.22, 0.35); // Sharp default
+    let finalGuidanceScale = Number.isFinite(body.cfg_scale) ? body.cfg_scale : 7.2; // Sharp default
     
-    // Mode-specific enhancements for subject preservation
+    // Mode-specific enhancements for subject preservation with sharp settings
     if (body.modeMeta?.mode === 'time_machine') {
       const era = body.modeMeta.era || 'vintage';
       finalPrompt = `${basePrompt} Reimagine in the ${era} aesthetic. ${keepSubject}`;
-      finalStrength = clamp(Number(body.strength ?? 0.45), 0.3, 0.6); // Conservative for identity preservation
+      finalStrength = clamp(Number(body.strength ?? 0.28), 0.25, 0.32); // Sharp for identity preservation
+      finalGuidanceScale = Number.isFinite(body.cfg_scale) ? body.cfg_scale : 7.2;
     } else if (body.modeMeta?.mode === 'story') {
       finalPrompt = `${basePrompt} ${keepSubject}`;
-      finalStrength = clamp(Number(body.strength ?? 0.45), 0.3, 0.6);
+      finalStrength = clamp(Number(body.strength ?? 0.30), 0.28, 0.35); // Slightly higher for story
+      finalGuidanceScale = Number.isFinite(body.cfg_scale) ? body.cfg_scale : 6.8;
     } else if (body.modeMeta?.mode === 'restore') {
       finalPrompt = `${basePrompt} ${keepSubject}`;
-      finalStrength = clamp(Number(body.strength ?? 0.4), 0.3, 0.5); // Very conservative for restoration
+      finalStrength = clamp(Number(body.strength ?? 0.25), 0.22, 0.30); // Lowest for maximum preservation
+      finalGuidanceScale = Number.isFinite(body.cfg_scale) ? body.cfg_scale : 7.5; // Higher for restoration
     }
     
     // Build comprehensive negative prompt
@@ -169,9 +174,12 @@ export const handler = async (event: any) => {
       negative_prompt: finalNegativePrompt,
       image_url,
       strength: finalStrength,
-      num_inference_steps: Math.round(clamp(Number(body.num_inference_steps ?? body.steps ?? 36), 1, 150)),
-      guidance_scale: Number.isFinite(body.guidance_scale) ? body.guidance_scale : 7.5,
+      num_inference_steps: Math.round(clamp(Number(body.num_inference_steps ?? body.steps ?? 32), 1, 150)), // Default to 32 for sharp results
+      guidance_scale: finalGuidanceScale,
       seed: body.seed || Date.now(), // Add seed to prevent provider-side caching
+      // Optional sharp parameters (if supported by AIML)
+      sampler: body.sampler || 'dpmpp_2m_sde',
+      cfg_scale: finalGuidanceScale, // Alternative parameter name
     };
 
     console.log('[aimlApi] calling AIML with:', { 

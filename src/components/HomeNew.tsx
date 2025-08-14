@@ -75,7 +75,8 @@ import { saveMediaNoDB, togglePublish } from '../lib/api'
 import { Mode, StoryTheme, TimeEra, RestoreOp, MODE_LABELS, STORY_THEME_LABELS, TIME_ERA_LABELS, RESTORE_OP_LABELS } from '../config/modes'
 import { resolvePresetForMode } from '../utils/resolvePresetForMode'
 import { getPresetDef, getPresetLabel, MASTER_PRESET_CATALOG } from '../services/presets'
-import { buildEffectivePrompt } from '../services/prompt'
+import { buildEffectivePrompt, type DetailLevel } from '../services/prompt'
+import { paramsForI2ISharp } from '../services/infer-params'
 const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
@@ -734,17 +735,21 @@ const HomeNew: React.FC = () => {
       // Get preset definition from active presets or master catalog
       const presetDef = getPresetDef(resolvedPreset, PRESETS);
       if (presetDef) {
-        // Use the new prompt building system
-        const { positive, negatives } = buildEffectivePrompt({
+        // Determine detail level based on mode
+        const detailLevel: DetailLevel = selectedMode === 'story' ? 'medium' : 'hard';
+        
+        // Use the new prompt building system with subject locking
+        const { positives, negatives } = buildEffectivePrompt({
           base: presetDef.prompt,
           user: prompt.trim() || undefined,
+          detail: detailLevel,
+          lockSurfer: true, // Enable surfer subject lock for all modes
           mode: selectedMode,
-          wantDetailBoost: selectedMode !== 'story', // ON for restore & time machine
           extraNeg: presetDef.negative_prompt
         });
         
-        effectivePrompt = positive;
-        console.log(`🎭 Using mode "${selectedMode}" → preset "${resolvedPreset}":`, effectivePrompt);
+        effectivePrompt = positives;
+        console.log(`🎭 Using mode "${selectedMode}" → preset "${resolvedPreset}" (${detailLevel} detail):`, effectivePrompt);
         if (negatives) {
           console.log(`🚫 Negative prompt:`, negatives);
         }

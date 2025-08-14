@@ -72,8 +72,25 @@ export function resolvePresetForMode({
     return targetPreset;
   }
 
-  // Final fallback: pick first available active preset or crystal_clear
-  const fallback = Object.keys(activePresets)[0] || 'crystal_clear';
+  // Fallback mapping to prevent subject drift
+  const fallbackMap: Record<string, string> = {
+    retro_polaroid: "vivid_pop",
+    neon_nights: "vivid_pop", 
+    crystal_clear: "bright_airy",
+    noir_classic: "urban_grit"
+  };
+
+  // Try fallback mapping first
+  if (targetPreset && fallbackMap[targetPreset]) {
+    const mappedPreset = fallbackMap[targetPreset];
+    if (getPresetDef(mappedPreset, activePresets)) {
+      console.log(`🔄 Mapped ${targetPreset} → ${mappedPreset}`);
+      return mappedPreset;
+    }
+  }
+
+  // Final fallback: pick first available active preset or vivid_pop
+  const fallback = Object.keys(activePresets)[0] || 'vivid_pop';
   console.warn(`Preset ${targetPreset} not found, falling back to ${fallback}`);
   return fallback;
 }
