@@ -68,22 +68,38 @@ export async function handleTimeMachine(option: TimeMachineOption) {
 // Legacy function for backward compatibility
 export function onTimeMachineClick(option: string, file?: File, sourceUrl?: string) {
   return runGeneration(async () => {
-    const presetId = TIME_MACHINE_MAP[option]
-    if (!presetId) {
+    // Handle specific missing options mentioned in logs
+    const TIME_MACHINE_OPTIONS: Record<string, {presetId: string, prompt: string}> = {
+      '1990s_disposable': { presetId: 'retro_polaroid', prompt: 'disposable camera look, flash photography, grain, vintage 90s aesthetic' },
+      'sharpen_enhance': { presetId: 'crystal_clear', prompt: 'enhance details, deblur, denoise, increase clarity and sharpness' },
+      // Add more as needed from the comprehensive map
+      ...Object.fromEntries(
+        Object.entries(TIME_MACHINE_MAP).map(([key, presetId]) => [
+          key, 
+          { presetId, prompt: `${key.replace(/_/g, ' ')} aesthetic, period-appropriate styling` }
+        ])
+      )
+    }
+
+    const config = TIME_MACHINE_OPTIONS[option]
+    if (!config) {
       console.warn(`Option "${option}" not configured`)
       return null
     }
     
-    const preset = presetsStore.getState().byId[presetId]
+    const preset = presetsStore.getState().byId[config.presetId]
     if (!preset) {
-      console.warn(`Time Machine "${option}" → missing preset "${presetId}"`)
+      console.warn(`Time Machine "${option}" → missing preset "${config.presetId}"`)
       return null
     }
     
+    // Combine preset prompt with time machine specific prompt
+    const combinedPrompt = `${preset.prompt}, ${config.prompt}`
+    
     return {
       mode: "time_machine" as const,
-      presetId,
-      prompt: preset.prompt,
+      presetId: config.presetId,
+      prompt: combinedPrompt,
       params: { 
         ...preset.params, 
         time_machine_option: option 

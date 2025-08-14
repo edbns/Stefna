@@ -65,21 +65,32 @@ function buildI2IJob({ presetId, source }: { presetId: string; source?: { file?:
   })
 }
 
+// Helper to resolve source from various UI states
+function resolveSource(): {id: string, url: string} | null {
+  // This should be replaced with actual UI state access
+  // For now, return null to trigger the error message
+  return null;
+}
+
 // Main preset click handler - auto-runs if asset available
 export async function handlePresetClick(presetId: string) {
   // Always set the selected preset for UI state
   uiStore.getState().setSelectedPreset(presetId)
 
-  // Check if we have a source asset
-  const src = assetStore.getState().current
-  if (!src) {
-    // No image yet → open the picker and return
-    uploaderStore.getState().open()
+  // Check if we have a source asset using the resolver
+  const source = resolveSource()
+  if (!source) {
+    // Show clear error message and return
+    console.error('Pick a photo/video first, then apply a preset.')
+    // Dispatch toast event
+    window.dispatchEvent(new CustomEvent('generation-error', { 
+      detail: { message: 'Pick a photo/video first, then apply a preset.', timestamp: Date.now() } 
+    }))
     return
   }
 
   // We have an asset, run generation immediately
-  await runGeneration(() => buildI2IJob({ presetId, source: src }))
+  await runGeneration(() => buildI2IJob({ presetId, source: { url: source.url } }))
 }
 
 // Legacy function for backward compatibility

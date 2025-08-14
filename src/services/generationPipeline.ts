@@ -204,11 +204,17 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
     const res = await callAimlApi(payload, { signal: controller.signal })
     apiLogger.info('API call completed', { success: res.success })
 
-    // 4) SAVE & UI updates (ignore stale/aborted runs) ───────────────────
-    if (!controller.signal.aborted && activeRunId === runId) {
+    // 4) SAVE & UI updates (process even if run is out-of-date) ───────────────────
+    if (!controller.signal.aborted) {
       const saveLogger = jobLogger.generationStep('save')
-      // TODO: Update media store with result
-      saveLogger.info('Generation result processed')
+      
+      if (activeRunId !== runId) {
+        console.info('Out-of-date run completed, still surfacing result', {runId});
+      }
+      
+      // Always process the result to update UI state
+      await onGenerationComplete(res, job);
+      saveLogger.info('Generation result processed and UI updated')
     }
     
     const duration = Date.now() - startTime
@@ -329,6 +335,74 @@ export function setupNavigationCleanup() {
   setInterval(() => {
     uiStore.abortStaleRuns()
   }, 60000) // Every minute
+}
+
+// Handle generation completion - save to DB and update UI
+async function onGenerationComplete(result: GenerationResult, job: GenerateJob) {
+  if (!result.success || !result.resultUrl) {
+    console.error('Generation failed, skipping completion handling')
+    return
+  }
+
+  try {
+    // Save to database with proper metadata (record-asset format)
+    const record = {
+      url: result.resultUrl,
+      public_id: extractPublicId(result.resultUrl),
+      resource_type: 'image', // TODO: detect video vs image from result
+      folder: 'stefna/outputs',
+      meta: {
+        preset_id: job.presetId,
+        mode: job.mode,
+        prompt: job.prompt,
+        source_url: job.source?.url,
+        tags: ['transformed', `preset:${job.presetId}`, `mode:${job.mode}`]
+      }
+    }
+
+    console.log('💾 Saving generation result to DB:', record)
+    const response = await fetch('/.netlify/functions/record-asset', {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify(record)
+    })
+
+    if (!response.ok) {
+      console.error('Failed to save to DB:', response.status, await response.text())
+      return
+    }
+
+    console.log('✅ Generation saved to DB successfully')
+
+    // Update UI state immediately so user sees result without reload
+    // Dispatch custom event for UI components to listen to
+    window.dispatchEvent(new CustomEvent('generation-complete', { 
+      detail: { 
+        record, 
+        resultUrl: result.resultUrl,
+        presetId: job.presetId,
+        mode: job.mode,
+        timestamp: Date.now() 
+      } 
+    }))
+
+    // Show success toast
+    window.dispatchEvent(new CustomEvent('generation-success', { 
+      detail: { message: 'Preset applied!', resultUrl: result.resultUrl, timestamp: Date.now() } 
+    }))
+
+  } catch (error) {
+    console.error('Failed to complete generation:', error)
+  }
+}
+
+// Helper to extract Cloudinary public_id from URL
+function extractPublicId(url: string): string {
+  if (!url) return ''
+  
+  // Extract public_id from Cloudinary URL
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[^.]+)?(?:\?|$)/)
+  return match?.[1] || url.split('/').pop()?.split('.')[0] || ''
 }
 
 // Route change cleanup (call this in your router)

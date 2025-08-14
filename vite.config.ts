@@ -9,13 +9,6 @@ export default defineConfig({
     host: true
   },
   build: {
-    sourcemap: true,
-    minify: 'terser',
-    terserOptions: {
-      keep_fnames: true,
-      mangle: { keep_fnames: true, keep_classnames: true },
-      compress: { keep_fargs: true }
-    },
     rollupOptions: {
       output: {
         manualChunks: undefined

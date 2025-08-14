@@ -38,7 +38,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         onMediaClick={handleMediaClick}
         onLike={handleLike}
         onShare={handleShare}
-        onRemix={handleRemix}
+        onRemix={(media) => handleRemix(media)}
         onFilterCreator={(userId) => setCreatorFilter(userId)}
         showActions={true}
         className="pb-24"
@@ -527,6 +527,75 @@ const HomeNew: React.FC = () => {
       // Don't clear selectedPreset - it should persist for remix generation
     }
   }, [location])
+
+  // Handle generation completion events from the pipeline
+  useEffect(() => {
+    const handleGenerationComplete = (event: CustomEvent) => {
+      const { record, resultUrl } = event.detail
+      console.log('🎉 Generation completed, updating UI state:', record)
+      
+      // Create UserMedia object for the new result
+      const newMedia: UserMedia = {
+        id: record.public_id || `generated-${Date.now()}`,
+        userId: record.user_id || 'current-user',
+        type: 'photo', // TODO: detect video vs image
+        url: resultUrl,
+        prompt: record.prompt || 'AI Generated Content',
+        aspectRatio: 4/3,
+        width: 800,
+        height: 600,
+        timestamp: new Date().toISOString(),
+        tokensUsed: 2,
+        likes: 0,
+        remixCount: 0,
+        isPublic: false,
+        allowRemix: false,
+        tags: record.tags || [],
+        metadata: {
+          quality: 'high',
+          generationTime: 0,
+          modelVersion: '1.0'
+        }
+      }
+      
+      // Update feed if it should be public
+      if (record.visibility === 'public') {
+        setFeed(prev => [newMedia, ...prev])
+      }
+      
+      // Dispatch event to update user media
+      window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+        detail: { optimistic: newMedia } 
+      }))
+      
+      // Show the result in viewer
+      setViewerMedia([newMedia])
+      setViewerStartIndex(0)
+      setViewerOpen(true)
+    }
+
+    const handleGenerationSuccess = (event: CustomEvent) => {
+      const { message } = event.detail
+      console.log('✅ Generation success:', message)
+      // The toast is already handled by the generation pipeline
+    }
+
+    const handleGenerationError = (event: CustomEvent) => {
+      const { message } = event.detail
+      console.log('❌ Generation error:', message)
+      notifyError({ title: 'Generation failed', message })
+    }
+
+    window.addEventListener('generation-complete', handleGenerationComplete as EventListener)
+    window.addEventListener('generation-success', handleGenerationSuccess as EventListener)
+    window.addEventListener('generation-error', handleGenerationError as EventListener)
+
+    return () => {
+      window.removeEventListener('generation-complete', handleGenerationComplete as EventListener)
+      window.removeEventListener('generation-success', handleGenerationSuccess as EventListener)
+      window.removeEventListener('generation-error', handleGenerationError as EventListener)
+    }
+  }, [])
 
   // Load public feed on mount
   const loadFeed = async () => {
@@ -1568,6 +1637,14 @@ const HomeNew: React.FC = () => {
     }
   }
 
+  // Helper to resolve source from various UI states
+  function resolveSource(): {id: string, url: string} | null {
+    // For now, just use previewUrl if available
+    // TODO: Implement proper fullscreen viewer, selected media, and upload tracking
+    if (previewUrl) return { id: 'preview', url: previewUrl };
+    return null;
+  }
+
   const handlePresetClick = async (presetName: PresetKey) => {
     console.log('🎯 handlePresetClick called with:', presetName)
     
@@ -1582,17 +1659,19 @@ const HomeNew: React.FC = () => {
     setSelectedPreset(presetName)
     console.log('✅ selectedPreset set to:', presetName)
     
-    // Check if we have media to work with
-    if (!previewUrl) {
-      console.log('⚠️ No previewUrl available, cannot auto-generate')
+    // Check if we have a valid source using the resolver
+    const source = resolveSource()
+    if (!source) {
+      console.log('⚠️ No valid source found for preset generation')
+      notifyError({ title: 'Pick a photo/video first', message: 'Select media, then apply a preset.' })
       return
     }
     
-    console.log('🚀 Starting bulletproof generation with preset:', presetName)
-    // Use the new bulletproof handler
+    console.log('🚀 Starting generation with preset:', presetName, 'source:', source.id)
+    // Use the new bulletproof handler with proper source
     setNavGenerating(true)
     try {
-      await onPresetClick(presetName, previewUrl)
+      await onPresetClick(presetName, undefined, source.url)
     } catch (error) {
       console.error('❌ Preset generation failed:', error)
       notifyError({ title: 'Generation failed', message: 'Please try another preset.' })
