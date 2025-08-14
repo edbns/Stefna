@@ -1,10 +1,8 @@
 import { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
-import jwt from 'jsonwebtoken';
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const jwtSecret = process.env.JWT_SECRET!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -25,7 +23,7 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // Verify JWT token
+    // Get authenticated user from Supabase Auth
     const authHeader = event.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
       return {
@@ -35,32 +33,26 @@ export const handler: Handler = async (event) => {
     }
 
     const token = authHeader.substring(7);
-    let decoded: any;
     
-    try {
-      decoded = jwt.verify(token, jwtSecret);
-    } catch (err) {
+    // Use Supabase Auth to get the user (this ensures the user exists in auth.users)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error('Auth error:', authError);
       return {
         statusCode: 401,
-        body: JSON.stringify({ error: 'Invalid token' })
+        body: JSON.stringify({ error: 'Invalid or expired token' })
       };
     }
 
-    const userId = decoded.userId;
-    if (!userId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'Invalid token payload' })
-      };
-    }
+    const userId = user.id; // This is guaranteed to exist in auth.users
 
     // Parse request body
     const body: UpdateProfileRequest = JSON.parse(event.body || '{}');
     console.log('📝 Update profile request:', { userId, body });
     console.log('🔧 Environment check:', { 
       supabaseUrl: !!supabaseUrl, 
-      supabaseServiceKey: !!supabaseServiceKey,
-      jwtSecret: !!jwtSecret 
+      supabaseServiceKey: !!supabaseServiceKey
     });
     
     // Validate username if provided - must match database constraints
