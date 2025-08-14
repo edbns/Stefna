@@ -57,33 +57,18 @@ export const handler: Handler = async (event) => {
     // Parse request body
     const body: UpdateProfileRequest = JSON.parse(event.body || '{}');
     
-    // Validate username if provided
+    // Validate username if provided (treating as display name, so more lenient)
     if (body.username !== undefined) {
-      if (body.username && !/^[a-z0-9_]{3,30}$/.test(body.username)) {
+      if (body.username && (body.username.length < 1 || body.username.length > 50)) {
         return {
           statusCode: 400,
           body: JSON.stringify({ 
-            error: 'Username must be 3-30 characters, lowercase letters, numbers, and underscores only' 
+            error: 'Name must be 1-50 characters' 
           })
         };
       }
 
-      // Check username uniqueness (case-insensitive)
-      if (body.username) {
-        const { data: existingUser } = await supabase
-          .from('profiles')
-          .select('id')
-          .ilike('username', body.username)
-          .neq('id', userId)
-          .single();
-
-        if (existingUser) {
-          return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'Username already taken' })
-          };
-        }
-      }
+      // Note: Display names don't need to be unique, so no uniqueness check needed
     }
 
     // Prepare update data
