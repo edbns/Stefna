@@ -1921,6 +1921,16 @@ const HomeNew: React.FC = () => {
     return true
   })
 
+  // Debug: Log filter results
+  console.log(`🔍 Filter Debug:`, {
+    currentFilter,
+    totalFeed: feed.length,
+    filteredFeed: filteredFeed.length,
+    videoCount: feed.filter(item => item.type === 'video').length,
+    imageCount: feed.filter(item => item.type === 'photo').length,
+    sampleTypes: feed.slice(0, 5).map(item => ({ id: item.id, type: item.type }))
+  })
+
   // Local floating notifications in Home - New beautiful design
   // Legacy notifications removed in favor of unified toasts
 
