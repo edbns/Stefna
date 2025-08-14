@@ -2,6 +2,15 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { validateAll } from './utils/presets/validate'
+
+// Validate preset system on startup
+validateAll()
+
+// Import test in development
+if (import.meta.env.DEV) {
+  import('./utils/presets/test')
+}
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 
 // Loud errors
