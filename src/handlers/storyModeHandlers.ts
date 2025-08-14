@@ -1,56 +1,68 @@
 import { presetsStore } from '../stores/presetsStore'
-import { startGeneration } from '../services/startGeneration'
+import { runGeneration } from '../services/generationPipeline'
+import { STORY_PRESET_IDS } from '../config/storyModeConfig'
 import { GenerateJob } from '../types/generation'
 
-function pickRotation(presets: any[]): any[] {
-  // Pick a rotation of presets for story mode
-  const goodForStory = presets.filter(p => 
-    p.id && !p.id.includes('restore') && !p.id.includes('enhance')
-  )
-  
-  // Return first 4 or all if less than 4
-  return goodForStory.slice(0, 4)
+export function onStoryClick(files: File[], basePrompt?: string) {
+  return runGeneration(async () => {
+    await presetsStore.getState().ready()
+    const { byId } = presetsStore.getState()
+    
+    // Get available story presets
+    const activePresets = STORY_PRESET_IDS.filter(id => byId[id])
+    if (activePresets.length === 0) {
+      console.warn('No story presets available')
+      // Error will be shown by pipeline
+      return null
+    }
+    
+    // Use first available preset for the job
+    const firstPreset = byId[activePresets[0]]
+    
+    return {
+      mode: 'story' as const,
+      presetId: firstPreset.id,
+      prompt: basePrompt || firstPreset.prompt,
+      params: { 
+        sequence: activePresets, 
+        frames: files.length,
+        story_shot: true
+      },
+      source: files?.[0] ? { file: files[0] } : undefined,
+    }
+  })
 }
 
+// Legacy function for backward compatibility
 export async function runStory(sourceUrl: string, basePrompt?: string): Promise<void> {
-  try {
-    // Wait for presets to be ready
-    const { ready, byId } = presetsStore.getState()
-    await ready()
+  console.log('🎬 Starting Story Mode (legacy)...')
+  
+  const result = await runGeneration(async () => {
+    await presetsStore.getState().ready()
+    const { byId } = presetsStore.getState()
     
-    // Get rotation of presets
-    const rotation = pickRotation(Object.values(byId))
-    if (!rotation.length) {
-      throw new Error('No active presets available for Story Mode')
+    const activePresets = STORY_PRESET_IDS.filter(id => byId[id])
+    if (activePresets.length === 0) {
+      return null
     }
     
-    console.log('🎬 Starting Story Mode with rotation:', rotation.map(p => p.id))
-    console.log(`Creating story with ${rotation.length} shots...`)
+    const firstPreset = byId[activePresets[0]]
     
-    // Generate each shot in the story
-    for (const preset of rotation) {
-      const job: GenerateJob = {
-        mode: 'story',
-        presetId: preset.id,
-        prompt: basePrompt || preset.prompt,
-        params: {
-          ...preset.params,
-          story_shot: true,
-          num_variations: 1 // Each shot is one variation
-        },
-        source: { url: sourceUrl }
-      }
-      
-      const result = await startGeneration(job)
-      
-      if (!result.success) {
-        console.error('Story shot failed:', result.error)
-        // Continue with other shots even if one fails
-      }
+    return {
+      mode: 'story' as const,
+      presetId: firstPreset.id,
+      prompt: basePrompt || firstPreset.prompt,
+      params: { 
+        sequence: activePresets,
+        story_shot: true
+      },
+      source: { url: sourceUrl },
     }
-    
+  })
+  
+  if (result?.success) {
     console.log('Story Mode complete!')
-  } catch (error) {
-    console.error('Story Mode error:', error)
+  } else {
+    console.error('Story Mode failed:', result?.error)
   }
 }

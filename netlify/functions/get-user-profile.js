@@ -19,25 +19,39 @@ exports.handler = async (event) => {
 
     console.log(`📥 Getting user profile for: ${userId}`)
 
+    // First verify user exists in users table
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, name, email, tier')
+      .eq('id', userId)
+      .single()
+
+    if (userError) {
+      console.error('❌ User not found in users table:', userError)
+      return { statusCode: 401, body: JSON.stringify({ error: 'User not found' }) }
+    }
+
+    // Get profile data (may not exist yet)
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('id, username, avatar_url, share_to_feed, allow_remix, onboarding_completed, created_at')
+      .select('id, username, avatar_url, share_to_feed, allow_remix, onboarding_completed, created_at, updated_at')
       .eq('id', userId)
       .single()
 
     // If profile doesn't exist (PGRST116), return safe defaults instead of 500
     if (error && error.code === 'PGRST116') {
-      console.log(`⚠️ Profile not found for user ${userId}, returning defaults`)
+      console.log(`⚠️ Profile not found for user ${userId}, returning defaults with user data`)
       const defaultProfile = {
         id: userId,
         username: '',
-        name: '',
+        name: user.name || '',
+        email: user.email || '',
         avatar: '',
         avatar_url: '',
         shareToFeed: false,
         allowRemix: false,
         onboarding_completed: false,
-        tier: 'registered',
+        tier: user.tier || 'registered',
         createdAt: new Date().toISOString()
       }
       

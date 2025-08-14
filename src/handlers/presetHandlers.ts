@@ -1,33 +1,22 @@
-import { presetsStore, getPresetOrThrow } from '../stores/presetsStore'
-import { startGeneration } from '../services/startGeneration'
+import { presetsStore } from '../stores/presetsStore'
+import { runGeneration } from '../services/generationPipeline'
 import { GenerateJob } from '../types/generation'
 
-export async function onPresetClick(presetId: string, sourceUrl?: string): Promise<void> {
-  try {
-    // 1) Ensure presets are ready
-    await presetsStore.getState().ready()
+export function onPresetClick(presetId: string, file?: File, sourceUrl?: string) {
+  return runGeneration(async () => {
+    const preset = presetsStore.getState().byId[presetId]
+    if (!preset) {
+      console.warn(`Preset "${presetId}" not found`)
+      // Error will be shown by pipeline
+      return null
+    }
     
-    // 2) Validate preset exists
-    const preset = getPresetOrThrow(presetId)
-    
-    // 3) Build the job atomically
-    const job: GenerateJob = {
-      mode: 'i2i',
+    return {
+      mode: 'i2i' as const,
       presetId,
       prompt: preset.prompt,
       params: preset.params || {},
-      source: sourceUrl ? { url: sourceUrl } : undefined
+      source: file ? { file } : sourceUrl ? { url: sourceUrl } : undefined
     }
-    
-    // 4) Fire once
-    const result = await startGeneration(job)
-    
-    if (!result.success) {
-      console.error('Generation failed:', result.error)
-    } else {
-      console.log('Generation complete!')
-    }
-  } catch (error) {
-    console.error('Preset click error:', error)
-  }
+  })
 }
