@@ -1,1 +1,0 @@
-const t={i2i:"eagle",txt2img:"flux",restore:"eagle",story:"eagle"};function a({preset:o,src:l}){return{model:o.model??t[o.mode],mode:o.mode,inputType:o.input,prompt:o.prompt,negative:o.negative_prompt,strength:o.strength??.6,sourceUrl:l,post:o.post,meta:{presetId:o.id,label:o.label}}}export{a as b};

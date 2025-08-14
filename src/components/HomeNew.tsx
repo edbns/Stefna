@@ -106,7 +106,7 @@ const StoryCategorySection: React.FC<StoryCategorySectionProps> = ({ title, them
   )
 }
 
-import { PRESETS, type PresetKey, promptForPreset } from '../config/presets'
+import { PRESETS, resolvePreset } from '../utils/presets/types'
 import presetRotationService from '../services/presetRotationService'
 import captionService from '../services/captionService'
 import { presetsStore } from '../stores/presetsStore'
@@ -167,8 +167,16 @@ const HomeNew: React.FC = () => {
   const [timeMachineOpen, setTimeMachineOpen] = useState(false)
   const [restoreOpen, setRestoreOpen] = useState(false)
   
+  // New preset runner system - MUST be declared before use
+  const { queuePreset, queueOption, queueStory, onSourceReady, clearQueue, busy: presetRunnerBusy } = usePresetRunner()
+  const { selectedPreset: stickySelectedPreset, setSelectedPreset: setStickySelectedPreset, ensureDefault } = useSelectedPreset()
+  
+  // Selected preset using sticky store instead of local state
+  const selectedPreset = stickySelectedPreset
+  const setSelectedPreset = setStickySelectedPreset
+
   // Stable ref for selectedPreset to prevent re-render issues during generation
-  const selectedPresetRef = useRef<PresetKey | null>(null)
+  const selectedPresetRef = useRef<keyof typeof PRESETS | null>(null)
   const genIdRef = useRef(0) // increments per job to prevent race conditions
   const [currentRunId, setCurrentRunId] = useState<string | null>(null)
   
@@ -228,7 +236,7 @@ const HomeNew: React.FC = () => {
   // Initialize sticky preset system when PRESETS are loaded
   useEffect(() => {
     if (Object.keys(PRESETS).length > 0) {
-      const activePresets = Object.keys(PRESETS) as PresetKey[]
+      const activePresets = Object.keys(PRESETS) as (keyof typeof PRESETS)[]
       ensureDefault(activePresets)
     }
   }, [PRESETS, ensureDefault])
@@ -253,7 +261,7 @@ const HomeNew: React.FC = () => {
       sample: Object.keys(PRESETS).slice(0, 3).map(key => ({
         key,
         label: getPresetLabel(key, PRESETS),
-        prompt: PRESETS[key as PresetKey]?.prompt?.substring(0, 50) + '...'
+        prompt: PRESETS[key as keyof typeof PRESETS]?.prompt?.substring(0, 50) + '...'
       }))
     })
   }, [PRESETS])
@@ -276,7 +284,7 @@ const HomeNew: React.FC = () => {
   const weeklyPresetNames = useMemo(() => {
     try {
       // Use direct preset keys instead of complex rotation service
-      const presetKeys = Object.keys(PRESETS) as PresetKey[]
+      const presetKeys = Object.keys(PRESETS) as (keyof typeof PRESETS)[]
       if (import.meta.env.DEV) {
         console.log('🎨 Active presets for UI:', presetKeys)
       }
@@ -287,7 +295,7 @@ const HomeNew: React.FC = () => {
           console.debug('⚠️ No active presets from API, using rotation fallback')
         }
         // Fallback to hardcoded presets if the rotation service fails
-        const fallbackPresets: PresetKey[] = [
+        const fallbackPresets: (keyof typeof PRESETS)[] = [
           'cinematic_glow',
           'bright_airy', 
           'vivid_pop',
@@ -306,7 +314,7 @@ const HomeNew: React.FC = () => {
     } catch (error) {
       console.error('❌ Error getting active presets:', error)
       // Fallback to hardcoded presets
-      const fallbackPresets: PresetKey[] = [
+      const fallbackPresets: (keyof typeof PRESETS)[] = [
         'cinematic_glow',
         'bright_airy', 
         'vivid_pop',
@@ -345,13 +353,7 @@ const HomeNew: React.FC = () => {
   const [currentVideoJob, setCurrentVideoJob] = useState<{ id: string; status: string } | null>(null)
   const [videoJobPolling, setVideoJobPolling] = useState<NodeJS.Timeout | null>(null)
   
-  // New preset runner system
-  const { queuePreset, queueOption, queueStory, onSourceReady, clearQueue, busy: presetRunnerBusy } = usePresetRunner()
-  const { selectedPreset: stickySelectedPreset, setSelectedPreset: setStickySelectedPreset, ensureDefault } = useSelectedPreset()
-  
-  // Selected preset using sticky store instead of local state
-  const selectedPreset = stickySelectedPreset
-  const setSelectedPreset = setStickySelectedPreset
+  // Hooks moved up to avoid "used before declaration" errors
   
   // Share modal state
   const [shareModalOpen, setShareModalOpen] = useState(false)
@@ -701,7 +703,7 @@ const HomeNew: React.FC = () => {
 
   // Restore preset selection from localStorage on mount
   useEffect(() => {
-    const savedPreset = localStorage.getItem('selectedPreset') as PresetKey | null
+    const savedPreset = localStorage.getItem('selectedPreset') as keyof typeof PRESETS | null
     if (savedPreset && PRESETS[savedPreset]) {
       console.log('🔄 Restoring preset from localStorage:', savedPreset)
       setSelectedPreset(savedPreset)
@@ -975,9 +977,9 @@ const HomeNew: React.FC = () => {
     
     // Use the new preset system for better prompt mapping
     if (currentPresetId) {
-      const presetPrompt = promptForPreset(currentPresetId, isVideoPreview);
-      if (presetPrompt !== 'stylize, preserve subject and composition') {
-        effectivePrompt = presetPrompt;
+      const preset = PRESETS[currentPresetId as keyof typeof PRESETS];
+      if (preset?.prompt) {
+        effectivePrompt = preset.prompt;
         console.log(`🎨 Using new preset system "${currentPresetId}" (${isVideoPreview ? 'V2V' : 'I2I'}):`, effectivePrompt);
       }
     }
@@ -1624,7 +1626,7 @@ const HomeNew: React.FC = () => {
     return null;
   }
 
-  const handlePresetClick = async (presetName: PresetKey) => {
+  const handlePresetClick = async (presetName: keyof typeof PRESETS) => {
     console.log('🎯 handlePresetClick called with:', presetName)
     
     // Check authentication first
@@ -1660,7 +1662,7 @@ const HomeNew: React.FC = () => {
   }
 
   // Auto-generate with preset - simplified to use existing dispatchGenerate
-  const handlePresetAutoGeneration = async (presetName: PresetKey) => {
+  const handlePresetAutoGeneration = async (presetName: keyof typeof PRESETS) => {
     console.log('🚀 handlePresetAutoGeneration called with:', presetName)
     
     if (!previewUrl) {

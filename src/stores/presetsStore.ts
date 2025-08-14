@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { PRESETS } from '../config/presets'
+import { PRESETS } from '../utils/presets/types'
 
 export type PresetKey = keyof typeof PRESETS
 export type Preset = typeof PRESETS[PresetKey]
