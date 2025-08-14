@@ -127,7 +127,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       {/* Floating stack */}
       <div className="fixed z-[100] right-4 top-16 flex w-[min(92vw,380px)] flex-col gap-2">
-        <AnimatePresence initial={false}>
+        {(() => {
+          const SafeAnimatePresence = AnimatePresence || (({ children }: { children: React.ReactNode }) => <>{children}</>)
+          return (
+            <SafeAnimatePresence initial={false}>
           {visible.map((t) => {
             const MotionDiv = (motion?.div as any) || 'div';
             const motionProps = typeof motion.div === 'string' ? {} : {
@@ -143,7 +146,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               </MotionDiv>
             );
           })}
-        </AnimatePresence>
+            </SafeAnimatePresence>
+          )
+        })()}
       </div>
     </ToastContext.Provider>
   );

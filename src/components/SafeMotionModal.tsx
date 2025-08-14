@@ -35,8 +35,10 @@ export const SafeMotionModal: React.FC<SafeMotionModalProps> = ({
     transition: { duration: 0.2 }
   }
 
+  const SafeAnimatePresence = AnimatePresence || (({ children }: { children: React.ReactNode }) => <>{children}</>)
+
   return (
-    <AnimatePresence>
+    <SafeAnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
@@ -54,6 +56,6 @@ export const SafeMotionModal: React.FC<SafeMotionModalProps> = ({
           </MotionDiv>
         </div>
       )}
-    </AnimatePresence>
+    </SafeAnimatePresence>
   )
 }

@@ -131,9 +131,11 @@ const LazyImage = ({
     return props
   }
 
+  const SafeAnimatePresence = AnimatePresence || (({ children }: { children: React.ReactNode }) => <>{children}</>)
+
   return (
     <div ref={containerRef} className={`relative overflow-hidden ${className}`}>
-      <AnimatePresence>
+      <SafeAnimatePresence>
         {/* Low-res placeholder (progressive loading) */}
         {lowResLoaded && !isLoaded && !isError && (
           <motion.div
@@ -206,7 +208,7 @@ const LazyImage = ({
             loading={priority ? 'eager' : 'lazy'}
           />
         )}
-      </AnimatePresence>
+      </SafeAnimatePresence>
     </div>
   )
   } catch (error) {
