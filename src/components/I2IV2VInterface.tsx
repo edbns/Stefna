@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react'
 import { Image, Video, Upload, Settings, Play, Square, RotateCcw } from 'lucide-react'
 import ImageToImageUpload from './ImageToImageUpload'
-import aiGenerationService, { GenerationRequest, GenerationStatus } from '../services/aiGenerationService'
+import AIGenerationService, { GenerationRequest, GenerationStatus } from '../services/aiGenerationService'
 import fileUploadService from '../services/fileUploadService'
-import aimlModelService from '../services/aimlModelService'
+import AIMLModelService from '../services/aimlModelService'
 import { requireUserIntent } from '../utils/generationGuards'
 
 interface I2IV2VInterfaceProps {
@@ -33,9 +33,9 @@ const I2IV2VInterface: React.FC<I2IV2VInterfaceProps> = ({
   // Get available models for the current mode
   const getAvailableModels = useCallback(() => {
     if (mode === 'i2i') {
-      return aimlModelService.getModelsByCapability('image-to-image')
+      return AIMLModelService.getInstance().getModelsByCapability('image-to-image')
     } else {
-      return aimlModelService.getModelsByCapability('video-to-video')
+      return AIMLModelService.getInstance().getModelsByCapability('video-to-video')
     }
   }, [mode])
 
@@ -87,7 +87,7 @@ const I2IV2VInterface: React.FC<I2IV2VInterfaceProps> = ({
         videoUrl: mode === 'v2v' ? fileUrl : undefined
       }
 
-      const result = await aiGenerationService.generateContent(request)
+      const result = await AIGenerationService.getInstance().generateContent(request)
 
       if (result.success && result.result) {
         onGenerationComplete(result.result)

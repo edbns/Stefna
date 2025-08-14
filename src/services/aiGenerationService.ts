@@ -2,7 +2,7 @@
 import tokenService, { UserTier } from './tokenService'
 import environmentConfig from '../config/environment'
 import contentModerationService from './contentModerationService'
-import aimlModelService, { AIMLModel, ModelConfig } from './aimlModelService'
+import AIMLModelService, { AIMLModel, ModelConfig } from './aimlModelService'
 import fileUploadService, { UploadResult, UploadProgress } from './fileUploadService'
 import { signedFetch } from '../utils/apiClient'
 
@@ -57,21 +57,26 @@ class AIGenerationService {
   }
 
   constructor() {
-    // Initialize AIML client with API key (try both possible names)
-    const apiKey = import.meta.env.VITE_AIML_API_KEY
-    
-    // Environment check for debugging
-    const availableVars = Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')).join(', ');
-    console.log('🔍 Environment check:', {
-      VITE_AIML_API_KEY: import.meta.env.VITE_AIML_API_KEY ? '✅ Found' : '❌ Missing',
-      allEnvVars: availableVars
-    });
+    try {
+      // Initialize AIML client with API key (try both possible names)
+      const apiKey = import.meta.env.VITE_AIML_API_KEY
+      
+      // Environment check for debugging
+      const availableVars = Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')).join(', ');
+      console.log('🔍 Environment check:', {
+        VITE_AIML_API_KEY: import.meta.env.VITE_AIML_API_KEY ? '✅ Found' : '❌ Missing',
+        allEnvVars: availableVars
+      });
 
-    if (!apiKey) {
-      console.error('Missing AIML API key!')
-      console.error('Expected: VITE_AIML_API_KEY')
-      console.error('Available VITE_ vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')))
-      return null
+      if (!apiKey) {
+        console.error('Missing AIML API key!')
+        console.error('Expected: VITE_AIML_API_KEY')
+        console.error('Available VITE_ vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')))
+        // Don't return null from constructor - just log the error
+      }
+    } catch (error) {
+      console.error('Error initializing AIGenerationService:', error)
+      // Don't throw from constructor to prevent "ii is not a constructor" errors
     }
   }
 
@@ -371,4 +376,5 @@ class AIGenerationService {
   }
 }
 
-export default AIGenerationService.getInstance() 
+// Export the class, not the instance to prevent immediate instantiation
+export default AIGenerationService 

@@ -77,7 +77,13 @@ class AIMLModelService {
   }
 
   constructor() {
-    this.initializeModels()
+    try {
+      this.initializeModels()
+    } catch (error) {
+      console.error('Error initializing AIMLModelService:', error)
+      // Don't throw from constructor to prevent "ii is not a constructor" errors
+      this.models = [] // Fallback to empty models array
+    }
   }
 
   // Initialize with popular AIML models
@@ -532,4 +538,5 @@ class AIMLModelService {
   }
 }
 
-export default AIMLModelService.getInstance()
+// Export the class, not the instance to prevent immediate instantiation
+export default AIMLModelService
