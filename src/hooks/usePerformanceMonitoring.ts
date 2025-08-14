@@ -34,56 +34,24 @@ export function usePerformanceMonitoring(config: PerformanceConfig = {}) {
   const shouldMonitor = useRef(false) // Temporarily disabled
 
   useEffect(() => {
+    // PERFORMANCE MONITORING COMPLETELY DISABLED
+    // The web-vitals import was causing "TypeError: ii is not a constructor" in production
+    // All monitoring code is disabled until the constructor issue is resolved
+    
+    // Early return - no monitoring code will execute
+    return
+    
+    // All monitoring code below is unreachable and disabled
     if (!shouldMonitor.current) return
 
-    // Core Web Vitals monitoring
-    if (enableCoreWebVitals) {
-      import('web-vitals').then((webVitals) => {
-        // Check if the import was successful and has the expected functions
-        if (!webVitals || typeof webVitals.getCLS !== 'function') {
-          console.warn('web-vitals library not properly loaded')
-          return
-        }
-
-        const { getCLS, getFID, getLCP } = webVitals
-
-        try {
-          getCLS((metric) => {
-            metricsRef.current.cls = metric.value
-            const rating = metric.value < 0.1 ? 'good' : metric.value < 0.25 ? 'needs-improvement' : 'poor'
-            onMetric?.('CLS', metric.value, rating)
-          })
-
-          getFID((metric) => {
-            metricsRef.current.fid = metric.value
-            const rating = metric.value < 100 ? 'good' : metric.value < 300 ? 'needs-improvement' : 'poor'
-            onMetric?.('FID', metric.value, rating)
-          })
-
-          getLCP((metric) => {
-            metricsRef.current.lcp = metric.value
-            const rating = metric.value < 2500 ? 'good' : metric.value < 4000 ? 'needs-improvement' : 'poor'
-            onMetric?.('LCP', metric.value, rating)
-          })
-        } catch (error) {
-          console.warn('Error setting up web-vitals:', error)
-        }
-      }).catch((error) => {
-        // Fallback if web-vitals library is not available
-        console.warn('web-vitals library not available:', error)
-      })
+    // Core Web Vitals monitoring - DISABLED (web-vitals import causes constructor errors)
+    if (false && enableCoreWebVitals) {
+      // web-vitals import completely removed to prevent constructor errors
     }
 
-    // Custom performance monitoring
-    if (enableCustomMetrics) {
-      // Monitor navigation timing
-      const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
-      if (navigationEntry) {
-        const renderTime = navigationEntry.loadEventEnd - navigationEntry.navigationStart
-        metricsRef.current.renderTime = renderTime
-        const rating = renderTime < 1000 ? 'good' : renderTime < 3000 ? 'needs-improvement' : 'poor'
-        onMetric?.('renderTime', renderTime, rating)
-      }
+    // Custom performance monitoring - DISABLED
+    if (false && enableCustomMetrics) {
+      // Custom metrics disabled
     }
   }, [enableCoreWebVitals, enableCustomMetrics, onMetric])
 
