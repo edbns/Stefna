@@ -1,16 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { X, ChevronLeft, ChevronRight, Heart, Copy } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Copy } from 'lucide-react'
 import { UserMedia } from '../services/userMediaService'
 import RemixIcon from './RemixIcon'
 import authService from '../services/authService'
 import { useProfile } from '../contexts/ProfileContext'
+import { getCardChips, formatRemixCount } from '../utils/mediaCardHelpers'
 
 interface FullScreenMediaViewerProps {
   isOpen: boolean
   media: UserMedia[]
   startIndex?: number
   onClose: () => void
-  onLike?: (media: UserMedia) => void
   onRemix?: (media: UserMedia) => void
   onShowAuth?: () => void
 }
@@ -20,16 +20,12 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
   media,
   startIndex = 0,
   onClose,
-  onLike,
   onRemix,
   onShowAuth
 }) => {
   const { profileData } = useProfile()
   const [currentIndex, setCurrentIndex] = useState(startIndex)
   const current = useMemo(() => media[currentIndex], [media, currentIndex])
-  const [localLikes, setLocalLikes] = useState<number>(current?.likes ?? 0)
-  const [isLiked, setIsLiked] = useState<boolean>(false)
-  const [localRemixes, setLocalRemixes] = useState<number>(current?.remixCount ?? 0)
   const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   // Debug: Log current media data
@@ -50,30 +46,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
     setCurrentIndex(startIndex)
   }, [startIndex])
 
-  useEffect(() => {
-    if (!current) return
-    setLocalLikes(current.likes ?? 0)
-    setLocalRemixes(current.remixCount ?? 0)
-  }, [current])
 
-  const handleLike = () => {
-    // Check if user is authenticated
-    if (!authService.isAuthenticated()) {
-      if (onShowAuth) {
-        onShowAuth()
-      } else {
-        // Fallback: redirect to auth page
-        window.location.href = '/auth'
-      }
-      return
-    }
-    
-    if (!onLike) return
-    
-    setIsLiked(!isLiked)
-    setLocalLikes(isLiked ? localLikes - 1 : localLikes + 1)
-    onLike(current)
-  }
 
   const handleRemix = () => {
     // Check if user is authenticated
@@ -89,7 +62,6 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
     
     if (!onRemix) return
     
-    setLocalRemixes(localRemixes + 1)
     onRemix(current)
   }
 
@@ -260,25 +232,52 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
               )}
             </div>
 
-            {/* Actions - Centered under prompt */}
-            <div className="flex items-center justify-center space-x-6">
-              <button 
-                onClick={handleLike}
-                className="flex flex-col items-center space-y-1 text-white hover:text-white/80 transition-colors"
-              >
-                <Heart 
-                  size={16} 
-                  className={`${isLiked ? 'text-red-500 fill-red-500' : 'text-white'}`} 
-                />
-                <span className="text-xs">{localLikes > 0 ? localLikes : 'Like'}</span>
-              </button>
+            {/* Generation Info Chips */}
+            {(() => {
+              const { modeChip, detailChip } = getCardChips(current)
+              const remixText = formatRemixCount(current.remixCount)
               
+              return (
+                <div className="flex items-center justify-center space-x-3 mb-4">
+                  {/* Mode Chip */}
+                  <span 
+                    className="text-white/90 text-xs bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/20"
+                    aria-label={`Generation mode: ${modeChip}`}
+                  >
+                    {modeChip}
+                  </span>
+                  
+                  {/* Detail Chip */}
+                  <span 
+                    className="text-white/80 text-xs bg-white/5 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10"
+                    aria-label={`Style: ${detailChip}`}
+                    title={detailChip}
+                  >
+                    {detailChip}
+                  </span>
+                  
+                  {/* Remix Count */}
+                  {remixText && (
+                    <span 
+                      className="text-white/70 text-xs bg-white/5 px-3 py-1 rounded-full backdrop-blur-sm"
+                      aria-label={remixText}
+                    >
+                      {remixText}
+                    </span>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* Single Remix Action */}
+            <div className="flex items-center justify-center">
               <button
                 onClick={handleRemix}
-                className="flex flex-col items-center space-y-1 text-white hover:text-white/80 transition-colors"
+                className="flex items-center space-x-2 px-6 py-3 bg-white/10 hover:bg-white/20 rounded-full border border-white/20 text-white transition-all duration-300 hover:scale-105"
+                title="Remix this creation"
               >
-                <RemixIcon size={16} className="text-white" />
-                <span className="text-xs">{localRemixes > 0 ? localRemixes : 'Remix'}</span>
+                <RemixIcon size={18} className="text-white" />
+                <span className="text-sm font-medium">Remix</span>
               </button>
             </div>
           </div>

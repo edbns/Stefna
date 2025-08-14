@@ -885,26 +885,7 @@ const ProfileScreen: React.FC = () => {
     setNotifications(prev => prev.filter(n => n.id !== id))
   }
 
-  // Handle likes and remixes with real functionality
-  const handleLike = async (media: UserMedia) => {
-    // Check if user is authenticated
-    if (!authService.isAuthenticated()) {
-      addNotification('Login Required', 'Please sign in to like media', 'warning')
-      navigate('/auth')
-      return
-    }
-    
-    const user = authService.getCurrentUser()
-    const currentUserId = user?.id || localStorage.getItem('stefna_guest_id') || 'guest-anon'
-    const { liked, likes } = await userMediaService.toggleLike(media.id, currentUserId)
-    setLikedMedia(prev => {
-      const exists = prev.some(m => m.id === media.id)
-      if (liked && !exists) return [media, ...prev]
-      if (!liked && exists) return prev.filter(m => m.id !== media.id)
-      return prev
-    })
-    setUserMedia(prev => prev.map(item => item.id === media.id ? { ...item, likes } : item))
-  }
+
 
   const handleRemix = (media: UserMedia) => {
     // Check if user is authenticated
@@ -1601,7 +1582,7 @@ const ProfileScreen: React.FC = () => {
           media={viewerMedia}
           startIndex={viewerStartIndex}
           onClose={() => setViewerOpen(false)}
-          onLike={(m) => handleLike(m)}
+
           onRemix={(m) => handleRemix(m)}
           onShowAuth={() => navigate('/auth')}
         />

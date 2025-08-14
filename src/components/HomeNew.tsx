@@ -16,19 +16,13 @@ import { useProfile } from '../contexts/ProfileContext'
 interface SafeMasonryGridProps {
   feed: UserMedia[]
   handleMediaClick: (media: UserMedia) => void
-  handleLike: (mediaId: string) => void
-  handleShare: (media: UserMedia) => void
   handleRemix: (media: UserMedia) => void
-  setCreatorFilter: (userId: string) => void
 }
 
 const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   feed,
   handleMediaClick,
-  handleLike,
-  handleShare,
-  handleRemix,
-  setCreatorFilter
+  handleRemix
 }) => {
   try {
     return (
@@ -36,15 +30,10 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         media={feed}
         columns={3}
         onMediaClick={handleMediaClick}
-        onLike={handleLike}
-        onShare={handleShare}
         onRemix={(media) => handleRemix(media)}
-        onFilterCreator={(userId) => setCreatorFilter(userId)}
         showActions={true}
         className="pb-24"
-        hideUserAvatars={false}
-        hideShareButton={true}
-        hideLikeButton={false}
+
       />
     )
   } catch (error) {
@@ -1782,17 +1771,7 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  const handleLike = async (media: UserMedia) => {
-    if (!authService.getToken()) {
-              // Sign up required - no notification needed
-      navigate('/auth')
-      return
-    }
-    const res = await interactionService.toggleLike(media.id)
-    if (res.success) {
-      setFeed((cur) => cur.map((m) => (m.id === media.id ? { ...m, likes: res.likeCount ?? m.likes } : m)))
-    }
-  }
+
 
   const handleShare = async (media: UserMedia) => {
     // UI guards: prevent sharing until asset is ready
@@ -2373,7 +2352,7 @@ const HomeNew: React.FC = () => {
         media={viewerMedia}
         startIndex={viewerStartIndex}
         onClose={() => setViewerOpen(false)}
-        onLike={handleLike}
+
         onRemix={handleRemix}
         onShowAuth={() => navigate('/auth')}
       />
