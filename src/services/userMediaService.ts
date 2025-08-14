@@ -18,7 +18,7 @@ export interface UserMedia {
   width: number
   height: number
   timestamp: string
-  originalMediaId?: string // For remixes, reference to original
+  originalMediaId?: string // For remixes, reference to original (parentId)
   tokensUsed: number
   likes: number
   remixCount: number
@@ -31,6 +31,13 @@ export interface UserMedia {
     generationTime: number
     modelVersion: string
     seed?: number
+    // New metadata fields for generation tracking
+    presetId?: string;              // Preset['id']
+    mode?: 'i2i'|'txt2img'|'restore'|'story';
+    group?: 'story'|'time_machine'|'restore'|null;
+    optionKey?: string | null;     // e.g. 'vhs_1980s', 'four_seasons/spring', 'colorize_bw'
+    storyKey?: string | null;      // e.g. 'four_seasons'
+    storyLabel?: string | null;    // e.g. 'Spring'
   }
   // Optional expiration for guest media
   expiresAt?: string

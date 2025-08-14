@@ -18,6 +18,12 @@ export type GenerateJob = {
   params: Record<string, unknown>
   source?: { url?: string, file?: File }
   runId?: string
+  // New metadata fields for tracking generation context
+  group?: 'story'|'time_machine'|'restore'|null;
+  optionKey?: string | null;     // e.g. 'vhs_1980s', 'four_seasons/spring', 'colorize_bw'
+  storyKey?: string | null;      // e.g. 'four_seasons'
+  storyLabel?: string | null;    // e.g. 'Spring'
+  parentId?: string | null;      // if this is a remix, points to original media
 }
 
 export type GenerationResult = {
@@ -351,9 +357,14 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
       public_id: extractPublicId(result.resultUrl),
       resource_type: 'image', // TODO: detect video vs image from result
       folder: 'stefna/outputs',
+      parent_id: job.parentId || null,
       meta: {
-        preset_id: job.presetId,
+        presetId: job.presetId,
         mode: job.mode,
+        group: job.group || null,
+        optionKey: job.optionKey || null,
+        storyKey: job.storyKey || null,
+        storyLabel: job.storyLabel || null,
         prompt: job.prompt,
         source_url: job.source?.url,
         tags: ['transformed', `preset:${job.presetId}`, `mode:${job.mode}`]

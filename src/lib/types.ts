@@ -1,4 +1,21 @@
 export type MediaType = 'image' | 'video';
+export type Mode = 'i2i'|'txt2img'|'restore'|'story';
+
+export type MediaRecord = {
+  id: string;
+  ownerUserId: string;
+  parentId?: string;               // if this is a remix, points to original media
+  createdAt: string;
+  remixCount?: number;             // optional denormalized count
+  meta: {
+    presetId: string;              // Preset['id']
+    mode: Mode;                    // 'i2i' | 'txt2img' | 'restore' | 'story'
+    group?: 'story'|'time_machine'|'restore'|null;
+    optionKey?: string | null;     // e.g. 'vhs_1980s', 'four_seasons/spring', 'colorize_bw'
+    storyKey?: string | null;      // e.g. 'four_seasons'
+    storyLabel?: string | null;    // e.g. 'Spring'
+  };
+};
 
 export type Asset = {
   id: string;
