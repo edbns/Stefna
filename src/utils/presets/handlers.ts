@@ -2,6 +2,7 @@
 import type { Preset, PresetId } from './types';
 import { PRESETS, OPTION_GROUPS, resolvePreset } from './types';
 import { runGeneration, GenerateJob } from '../../services/generationPipeline';
+import { getCurrentSourceUrl } from '../../stores/sourceStore';
 
 // Helper to resolve source from UI state (will be integrated with existing source resolution)
 function resolveSourceOrToast(): { id: string; url: string } | null {
@@ -17,18 +18,22 @@ function showToast(type: 'success' | 'error', message: string): void {
 }
 
 // Core preset execution function
-export async function runPreset(preset: Preset, source?: { id: string; url: string }, metadata?: { group?: string; optionKey?: string }): Promise<any> {
+export async function runPreset(preset: Preset, srcOverride?: string, metadata?: { group?: string; optionKey?: string }): Promise<any> {
   try {
     console.log('🎯 Running preset:', preset.label);
     
-    // 1) Check source requirement
-    const src = source || (preset.requiresSource ? resolveSourceOrToast() : null);
-    if (preset.requiresSource && !src) {
-      showToast('error', 'Pick a photo/video first, then apply a preset.');
-      return null;
+    // 1) Source: prefer override (fresh Cloudinary URL), else global store
+    const src = preset.requiresSource ? (srcOverride ?? getCurrentSourceUrl()) : null;
+
+    // 2) Guard: never pass blob:/data:/preview into API
+    if (preset.requiresSource) {
+      if (!src || !/^https?:\/\//.test(src)) {
+        showToast('error', 'Pick a photo/video first, then apply a preset.');
+        return null;
+      }
     }
 
-    // 2) Create generation job
+    // 3) Create generation job with both image_url and sourceUrl for compatibility
     const job: GenerateJob = {
       mode: preset.mode as any,
       presetId: preset.id,
@@ -37,13 +42,15 @@ export async function runPreset(preset: Preset, source?: { id: string; url: stri
         strength: preset.strength || 0.7,
         negative_prompt: preset.negative_prompt,
         model: preset.model || 'eagle',
-        post: preset.post
+        post: preset.post,
+        image_url: src || undefined,    // server expects image_url
+        sourceUrl: src || undefined     // keep old field for readers
       },
-      source: src ? { url: src.url } : undefined,
+      source: src ? { url: src } : undefined,
       runId: crypto.randomUUID(),
       group: metadata?.group as any || null,
       optionKey: metadata?.optionKey || null,
-      parentId: src?.id || null
+      parentId: null // Will be set by the generation pipeline if needed
     };
 
     // 3) Use the existing generation pipeline
@@ -63,10 +70,10 @@ export async function runPreset(preset: Preset, source?: { id: string; url: stri
 }
 
 // Direct preset click handler
-export async function onPresetClick(presetId: PresetId, source?: { id: string; url: string }): Promise<void> {
+export async function onPresetClick(presetId: PresetId, srcOverride?: string): Promise<void> {
   try {
     const preset = resolvePreset(presetId);
-    await runPreset(preset, source);
+    await runPreset(preset, srcOverride);
   } catch (error) {
     console.error('❌ Preset click failed:', error);
     showToast('error', `Failed to apply ${presetId}. Please try again.`);
@@ -74,7 +81,7 @@ export async function onPresetClick(presetId: PresetId, source?: { id: string; u
 }
 
 // Option click handler (time_machine, restore)
-export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: string, source?: { id: string; url: string }): Promise<void> {
+export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: string, srcOverride?: string): Promise<void> {
   try {
     const opt = OPTION_GROUPS[group]?.[key];
     if (!opt) { 
@@ -85,8 +92,9 @@ export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: stri
     
     const preset = resolvePreset(opt.use, opt.overrides);
     console.log(`🔧 Resolved option ${group}/${key} to preset:`, preset.label);
+    console.info('🧭 Using new preset system', { mode: group, key });
     
-    await runPreset(preset, source, { group, optionKey: key });
+    await runPreset(preset, srcOverride, { group, optionKey: key });
   } catch (error) {
     console.error(`❌ Option click failed for ${group}/${key}:`, error);
     showToast('error', 'Generation failed. Please try again.');

@@ -10,22 +10,26 @@ type SelState = {
   ensureDefault: (actives: PresetId[]) => void;
 };
 
+// Make the preset selection truly sticky (can't be reset to null)
+const bootSet = new Set<string>();
+
 export const useSelectedPreset = create<SelState>((set, get) => ({
   selectedPreset: null,
   setSelectedPreset: (id) => {
+    if (!id) {
+      console.warn('🚫 Ignoring attempt to set selectedPreset to null/undefined');
+      return; // ignore null/undefined writes
+    }
     console.log('🎯 Setting selectedPreset to:', id);
     set({ selectedPreset: id });
   },
   ensureDefault: (actives) => {
-    const cur = get().selectedPreset;
-    if (cur) {
-      console.log('🔒 Keeping sticky selection:', cur);
-      return; // keep sticky selection
-    }
+    if (get().selectedPreset) return;
     const first = actives[0];
-    if (first) {
-      console.log('🎯 Setting default preset to:', first);
-      set({ selectedPreset: first });
+    if (first && !bootSet.has('done')) {
+      bootSet.add('done');
+      console.log('🎯 Setting boot default preset to:', first);
+      set({ selectedPreset: first as PresetId });
     }
   },
 }));

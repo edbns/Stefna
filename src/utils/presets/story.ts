@@ -4,6 +4,8 @@
 import type { Preset, PresetId } from './types';
 import { PRESETS, ACTIVE_PRESET_IDS, resolvePreset } from './types';
 import { buildAimlPayload } from './payload';
+import { getCurrentSourceUrl } from '../../stores/sourceStore';
+import { runPreset } from './handlers';
 
 // A tiny descriptor for one story "beat"
 type StoryBeat = { 
@@ -101,12 +103,14 @@ function showToast(type: 'success' | 'error', message: string): void {
 }
 
 // Runner: reuse one source, run 4 beats, prepend all to UI in order
-export async function onStoryThemeClick(themeKey: keyof typeof STORY_THEMES, source?: { id: string; url: string }): Promise<void> {
+export async function onStoryThemeClick(themeKey: keyof typeof STORY_THEMES, srcOverride?: string): Promise<void> {
   try {
     const theme = STORY_THEMES[themeKey];
-    const src = source || resolveSourceOrToast(); // Allow passing source directly
-    if (!src) {
-      showToast('error', 'Pick a photo/video first, then select a story theme.');
+    const src = srcOverride ?? getCurrentSourceUrl();
+    
+    // Guard: never pass blob:/data:/preview into API
+    if (!src || !/^https?:\/\//.test(src)) {
+      showToast('error', 'Upload first');
       return;
     }
 
@@ -123,10 +127,10 @@ export async function onStoryThemeClick(themeKey: keyof typeof STORY_THEMES, sou
         
         const preset = resolvePreset(beat.use, beat.overrides);
         
-        // Run the story beat using the generation pipeline
-        const result = await runStoryBeat(preset, src, {
-          storyKey: String(themeKey),
-          storyLabel: beat.label
+        // Use the runPreset function which handles everything properly
+        const result = await runPreset(preset, src, {
+          group: 'story',
+          optionKey: `${themeKey}_${index + 1}`
         });
         
         if (!result?.success) {

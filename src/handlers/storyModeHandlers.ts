@@ -97,36 +97,11 @@ export function onStoryClick(files: File[], basePrompt?: string) {
   })
 }
 
-// Legacy function for backward compatibility
+// Legacy function for backward compatibility - now uses new runner
 export async function runStory(sourceUrl: string, basePrompt?: string): Promise<void> {
-  console.log('🎬 Starting Story Mode (legacy)...')
+  console.info('Starting Story Mode (new runner)...');
   
-  const result = await runGeneration(async () => {
-    await presetsStore.getState().ready()
-    const { byId } = presetsStore.getState()
-    
-    const activePresets = STORY_PRESET_IDS.filter(id => byId[id])
-    if (activePresets.length === 0) {
-      return null
-    }
-    
-    const firstPreset = byId[activePresets[0]]
-    
-    return {
-      mode: 'story' as const,
-      presetId: firstPreset.id,
-      prompt: basePrompt || firstPreset.prompt,
-      params: { 
-        sequence: activePresets,
-        story_shot: true
-      },
-      source: { url: sourceUrl },
-    }
-  })
-  
-  if (result?.success) {
-    console.log('Story Mode complete!')
-  } else {
-    console.error('Story Mode failed:', result?.error)
-  }
+  // Import and use the new story runner
+  const { onStoryThemeClick } = await import('../utils/presets/story');
+  await onStoryThemeClick('auto', sourceUrl);
 }
