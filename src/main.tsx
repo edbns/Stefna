@@ -2,10 +2,13 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { validateAll } from './utils/presets/validate'
+import { validateAllSync, validateAll } from './utils/presets/validate'
 
-// Validate preset system on startup
-validateAll()
+// Validate preset system on startup (sync for immediate feedback)
+validateAllSync()
+
+// Async validation for story themes
+validateAll().catch(console.error)
 
 // Import test in development
 if (import.meta.env.DEV) {

@@ -50,8 +50,38 @@ export function validateOptions(
 }
 
 // Call once on startup
-export function validateAll() {
+export async function validateAll() {
   console.info('🔍 Validating preset system...');
+  const presetErrors = validatePresets(PRESETS);
+  const optionErrors = validateOptions(OPTION_GROUPS, PRESETS);
+  
+  // Validate story themes
+  let storyErrors: string[] = [];
+  try {
+    const { validateStoryThemes } = await import('./story');
+    storyErrors = validateStoryThemes();
+    if (storyErrors.length === 0) {
+      console.info('✅ validateStoryThemes: OK');
+    } else {
+      console.warn(`validateStoryThemes: ${storyErrors.length} issue(s)`, storyErrors);
+    }
+  } catch (error) {
+    console.warn('Could not validate story themes:', error);
+  }
+  
+  const totalErrors = presetErrors.length + optionErrors.length + storyErrors.length;
+  if (totalErrors === 0) {
+    console.info('✅ Preset system validation complete - all good!');
+  } else {
+    console.warn(`⚠️ Preset system has ${totalErrors} validation issues`);
+  }
+  
+  return { presetErrors, optionErrors, storyErrors };
+}
+
+// Synchronous version for immediate validation
+export function validateAllSync() {
+  console.info('🔍 Validating preset system (sync)...');
   const presetErrors = validatePresets(PRESETS);
   const optionErrors = validateOptions(OPTION_GROUPS, PRESETS);
   

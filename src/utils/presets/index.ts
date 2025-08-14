@@ -32,3 +32,12 @@ export {
   onStoryClick,
   debugPresetSystem 
 } from './integration';
+
+export {
+  onStoryThemeClick,
+  getStoryThemes
+} from './story';
+
+export {
+  ACTIVE_PRESET_IDS
+} from './types';
