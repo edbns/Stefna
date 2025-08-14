@@ -1,7 +1,27 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Image, Loader2 } from 'lucide-react'
 import { useImagePerformanceTracking } from '../hooks/usePerformanceMonitoring'
+
+// Safe Framer Motion imports with fallback
+let motion: any = null
+let AnimatePresence: any = null
+let hasFramerMotion = false
+
+try {
+  const framerMotion = require('framer-motion')
+  motion = framerMotion.motion
+  AnimatePresence = framerMotion.AnimatePresence
+  hasFramerMotion = true
+} catch (error) {
+  console.warn('Framer Motion failed to load, using fallback animations:', error)
+  // Fallback: use regular div instead of motion.div
+  motion = {
+    div: 'div',
+    img: 'img'
+  }
+  AnimatePresence = ({ children }: { children: React.ReactNode }) => <>{children}</>
+  hasFramerMotion = false
+}
 import { optimizeCloudinaryUrl } from '../utils/cloudinaryOptimization'
 
 interface LazyImageProps {
@@ -108,15 +128,20 @@ const LazyImage = ({
     imageTracker.onLoadStart() // Start performance tracking
   }
 
+  // Helper function to create motion props safely
+  const getMotionProps = (props: any) => hasFramerMotion ? props : {}
+
   return (
     <div ref={containerRef} className={`relative overflow-hidden ${className}`}>
       <AnimatePresence>
         {/* Low-res placeholder (progressive loading) */}
         {lowResLoaded && !isLoaded && !isError && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...getMotionProps({
+              initial: { opacity: 0 },
+              animate: { opacity: 1 },
+              exit: { opacity: 0 }
+            })}
             className="absolute inset-0"
             style={{
               backgroundImage: `url(${lowResSrc})`,
@@ -131,8 +156,10 @@ const LazyImage = ({
         {/* Loading State */}
         {!lowResLoaded && !isLoaded && !isError && (
           <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...getMotionProps({
+              initial: { opacity: 1 },
+              exit: { opacity: 0 }
+            })}
             className="absolute inset-0 bg-gray-100 flex items-center justify-center"
           >
             <div className="flex items-center space-x-2 text-gray-500">
@@ -145,8 +172,10 @@ const LazyImage = ({
         {/* Error State */}
         {isError && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            {...getMotionProps({
+              initial: { opacity: 0 },
+              animate: { opacity: 1 }
+            })}
             className="absolute inset-0 bg-gray-100 flex items-center justify-center"
           >
             <div className="flex flex-col items-center space-y-2 text-gray-500">
@@ -169,9 +198,11 @@ const LazyImage = ({
             className={`w-full h-full object-cover transition-opacity duration-500 ${
               isLoaded ? 'opacity-100' : 'opacity-0'
             }`}
-            initial={{ scale: 1.02 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+            {...getMotionProps({
+              initial: { scale: 1.02 },
+              animate: { scale: 1 },
+              transition: { duration: 0.5, ease: 'easeOut' }
+            })}
             loading={priority ? 'eager' : 'lazy'}
           />
         )}
