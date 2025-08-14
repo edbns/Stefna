@@ -155,10 +155,6 @@ const HomeNew: React.FC = () => {
   const [isVideoPreview, setIsVideoPreview] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [prompt, setPrompt] = useState('')
-  // Selected preset to optionally include negative prompt / strength on generate
-  // Using sticky preset store instead of local state
-  const selectedPreset = stickySelectedPreset
-  const setSelectedPreset = setStickySelectedPreset
   
   // Mode state for Story Mode, Time Machine, and Restore
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null)
@@ -340,10 +336,6 @@ const HomeNew: React.FC = () => {
   const [generateTwo, setGenerateTwo] = useState(false)
   const [userMenu, setUserMenu] = useState(false)
   
-  // New preset runner system
-  const { queuePreset, queueOption, queueStory, onSourceReady, clearQueue, busy: presetRunnerBusy } = usePresetRunner()
-  const { selectedPreset: stickySelectedPreset, setSelectedPreset: setStickySelectedPreset, ensureDefault } = useSelectedPreset()
-  
   // Media viewer state
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerMedia, setViewerMedia] = useState<UserMedia[]>([])
@@ -352,6 +344,14 @@ const HomeNew: React.FC = () => {
   // Video job state
   const [currentVideoJob, setCurrentVideoJob] = useState<{ id: string; status: string } | null>(null)
   const [videoJobPolling, setVideoJobPolling] = useState<NodeJS.Timeout | null>(null)
+  
+  // New preset runner system
+  const { queuePreset, queueOption, queueStory, onSourceReady, clearQueue, busy: presetRunnerBusy } = usePresetRunner()
+  const { selectedPreset: stickySelectedPreset, setSelectedPreset: setStickySelectedPreset, ensureDefault } = useSelectedPreset()
+  
+  // Selected preset using sticky store instead of local state
+  const selectedPreset = stickySelectedPreset
+  const setSelectedPreset = setStickySelectedPreset
   
   // Share modal state
   const [shareModalOpen, setShareModalOpen] = useState(false)
