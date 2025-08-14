@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Image, Loader2 } from 'lucide-react'
+import { Image as ImageIcon, Loader2 } from 'lucide-react'
 import { useImagePerformanceTracking } from '../hooks/usePerformanceMonitoring'
 
 import { motion, AnimatePresence } from '../utils/motionShim'
@@ -91,10 +91,16 @@ const LazyImage = ({
   useEffect(() => {
     if (!isInView) return
 
-    // Load low-res placeholder first
-    const lowResImg = new Image()
-    lowResImg.onload = () => setLowResLoaded(true)
-    lowResImg.src = lowResSrc
+    // Load low-res placeholder first using native Image constructor
+    const NativeImage = typeof window !== 'undefined' && 'Image' in window ? window.Image : null
+    if (NativeImage) {
+      const lowResImg = new NativeImage()
+      lowResImg.onload = () => setLowResLoaded(true)
+      lowResImg.src = lowResSrc
+    } else {
+      // SSR or very old env: skip preloading
+      setLowResLoaded(true)
+    }
   }, [isInView, lowResSrc])
 
   const handleLoad = () => {
@@ -157,7 +163,7 @@ const LazyImage = ({
             className="absolute inset-0 bg-gray-100 flex items-center justify-center"
           >
             <div className="flex flex-col items-center space-y-2 text-gray-500">
-              <Image size={24} />
+              <ImageIcon size={24} />
               <span className="text-sm">Failed to load</span>
             </div>
           </motion.div>
