@@ -194,31 +194,31 @@ type OptionGroups<P extends Record<string, Preset>> = {
 export const OPTION_GROUPS: OptionGroups<typeof PRESETS> = {
   // TIME MACHINE (1→1 mapping + tiny overrides when needed)
   time_machine: {
-    noir_1920s: { use: 'noir_classic' },
-    kodachrome_1960s: { use: 'vintage_film_35mm' },
-    vhs_1980s: { use: 'retro_polaroid' },
-    disposable_1990s: { 
+    '1920s_noir_glam': { use: 'noir_classic' },
+    '1960s_kodachrome': { use: 'vintage_film_35mm' },
+    '1980s_vhs_retro': { use: 'retro_polaroid' },
+    '1990s_disposable': { 
       use: 'vintage_film_35mm', 
       overrides: { 
         strength: 0.55, 
         prompt: 'vintage 35mm film aesthetic, warm color grading, subtle grain, soft contrast, soft grain variant' 
       } 
     },
-    cyberpunk_2100: { use: 'neon_nights' },
+    'futuristic_cyberpunk': { use: 'neon_nights' },
   },
   
   // RESTORE (base preset + low-risk overrides)
   restore: {
-    colorize_bw: { 
+    'colorize_bw': { 
       use: 'crystal_clear', 
       overrides: { 
         mode: 'restore', 
         prompt: 'enhance clarity and sharpness, crisp details, clean and precise look, colorize black and white photo, soft color restore overlay' 
       } 
     },
-    revive_faded: { use: 'vivid_pop', overrides: { strength: 0.45 } },
-    sharpen_enhance: { use: 'crystal_clear', overrides: { post: { sharpen: true } } },
-    remove_scratches: { 
+    'revive_faded': { use: 'vivid_pop', overrides: { strength: 0.45 } },
+    'sharpen_enhance': { use: 'crystal_clear', overrides: { post: { sharpen: true } } },
+    'remove_scratches': { 
       use: 'crystal_clear', 
       overrides: { 
         strength: 0.5, 

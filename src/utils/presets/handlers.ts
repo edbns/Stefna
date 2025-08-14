@@ -1,92 +1,80 @@
 // utils/presets/handlers.ts
 import type { Preset, PresetId } from './types';
 import { PRESETS, OPTION_GROUPS, resolvePreset } from './types';
-import { buildAimlPayload } from './payload';
+import { runGeneration, GenerateJob } from '../../services/generationPipeline';
 
 // Helper to resolve source from UI state (will be integrated with existing source resolution)
-function resolveSourceOrToast(): string | null {
+function resolveSourceOrToast(): { id: string; url: string } | null {
   // TODO: Integrate with existing source resolution logic from HomeNew
-  // For now, this will be handled by the existing generation pipeline
+  // For now, this will be handled by the calling component
   return null;
 }
 
-// Mock functions that will be replaced with actual implementations
-async function callAimlApi(payload: any): Promise<any> {
-  // This will be integrated with the existing AIML API call
-  console.log('🚀 Calling AIML API with payload:', payload);
-  return { success: true, resultUrl: 'mock-result-url' };
-}
-
-async function saveMediaToDbAndCloudinary(result: any): Promise<any> {
-  // This will be integrated with existing save logic
-  console.log('💾 Saving media to DB and Cloudinary:', result);
-  return { id: 'mock-record-id', url: result.resultUrl };
-}
-
-function addResultToUi(record: any): void {
-  // This will dispatch the generation-complete event
-  console.log('🎉 Adding result to UI:', record);
-  window.dispatchEvent(new CustomEvent('generation-complete', { 
-    detail: { record, resultUrl: record.url, timestamp: Date.now() } 
-  }));
-}
-
 function showToast(type: 'success' | 'error', message: string): void {
-  // This will integrate with existing toast system
-  console.log(`${type === 'success' ? '✅' : '❌'} Toast: ${message}`);
   window.dispatchEvent(new CustomEvent(`generation-${type}`, { 
     detail: { message, timestamp: Date.now() } 
   }));
 }
 
 // Core preset execution function
-export async function runPreset(preset: Preset): Promise<void> {
+export async function runPreset(preset: Preset, source?: { id: string; url: string }, metadata?: { group?: string; optionKey?: string }): Promise<any> {
   try {
     console.log('🎯 Running preset:', preset.label);
     
     // 1) Check source requirement
-    const src = preset.requiresSource ? resolveSourceOrToast() : null;
+    const src = source || (preset.requiresSource ? resolveSourceOrToast() : null);
     if (preset.requiresSource && !src) {
       showToast('error', 'Pick a photo/video first, then apply a preset.');
-      return;
+      return null;
     }
 
-    // 2) Build payload
-    const payload = buildAimlPayload({ preset, src });
-    console.log('📦 Built payload:', payload);
+    // 2) Create generation job
+    const job: GenerateJob = {
+      mode: preset.mode as any,
+      presetId: preset.id,
+      prompt: preset.prompt,
+      params: {
+        strength: preset.strength || 0.7,
+        negative_prompt: preset.negative_prompt,
+        model: preset.model || 'eagle',
+        post: preset.post
+      },
+      source: src ? { url: src.url } : undefined,
+      runId: crypto.randomUUID(),
+      group: metadata?.group as any || null,
+      optionKey: metadata?.optionKey || null,
+      parentId: src?.id || null
+    };
 
-    // 3) Call model
-    const result = await callAimlApi(payload);
-    if (!result.success) {
-      throw new Error('Generation failed');
+    // 3) Use the existing generation pipeline
+    const result = await runGeneration(() => Promise.resolve(job));
+    
+    if (result?.success) {
+      showToast('success', `${preset.label} applied!`);
     }
-
-    // 4) Save to DB and Cloudinary
-    const record = await saveMediaToDbAndCloudinary(result);
-
-    // 5) Update UI
-    addResultToUi(record);
-    showToast('success', `${preset.label} applied!`);
+    
+    return result;
 
   } catch (error) {
     console.error('❌ Preset execution failed:', error);
     showToast('error', 'Generation failed. Please try again.');
+    return null;
   }
 }
 
 // Direct preset click handler
-export async function onPresetClick(presetId: PresetId): Promise<void> {
+export async function onPresetClick(presetId: PresetId, source?: { id: string; url: string }): Promise<void> {
   try {
     const preset = resolvePreset(presetId);
-    await runPreset(preset);
+    await runPreset(preset, source);
   } catch (error) {
     console.error('❌ Preset click failed:', error);
     showToast('error', `Failed to apply ${presetId}. Please try again.`);
   }
 }
 
-// Option click handler (time_machine, restore, story)
-export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: string): Promise<void> {
+// Option click handler (time_machine, restore)
+export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: string, source?: { id: string; url: string }): Promise<void> {
   try {
     const opt = OPTION_GROUPS[group]?.[key];
     if (!opt) { 
@@ -97,7 +85,8 @@ export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: stri
     
     const preset = resolvePreset(opt.use, opt.overrides);
     console.log(`🔧 Resolved option ${group}/${key} to preset:`, preset.label);
-    await runPreset(preset);
+    
+    await runPreset(preset, source, { group, optionKey: key });
   } catch (error) {
     console.error(`❌ Option click failed for ${group}/${key}:`, error);
     showToast('error', 'Generation failed. Please try again.');
@@ -127,24 +116,4 @@ export async function withTelemetry<T>(
       error: error ? String(error) : undefined 
     });
   }
-}
-
-// Enhanced option click with telemetry
-export async function onOptionClickWithTelemetry(group: keyof typeof OPTION_GROUPS, key: string): Promise<void> {
-  const opt = OPTION_GROUPS[group]?.[key];
-  if (!opt) { 
-    showToast('error', 'Coming soon!'); 
-    return; 
-  }
-  
-  const preset = resolvePreset(opt.use, opt.overrides);
-  await withTelemetry(
-    { 
-      runId: crypto.randomUUID(), 
-      presetId: preset.id, 
-      group, 
-      optionKey: key 
-    }, 
-    () => runPreset(preset)
-  );
 }

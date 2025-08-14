@@ -61,75 +61,80 @@ function pickAutoFromActive(): StoryBeat[] {
 }
 
 // Helper to resolve source (will be integrated with existing source resolution)
-function resolveSourceOrToast(): string | null {
-  // TODO: Integrate with existing source resolution logic
+function resolveSourceOrToast(): { id: string; url: string } | null {
+  // This will be replaced by the actual source resolution logic from the UI
+  // For now, return null to trigger the error toast
   return null;
 }
 
-// Mock functions that will be replaced with actual implementations
-async function callAimlApi(payload: any): Promise<any> {
-  console.log('🚀 Calling AIML API with payload:', payload);
-  return { success: true, resultUrl: 'mock-result-url' };
-}
+// Integration with actual generation pipeline
+import { runGeneration, GenerateJob } from '../../services/generationPipeline';
+import { authFetch } from '../authFetch';
 
-async function saveMediaToDbAndCloudinary(result: any): Promise<any> {
-  console.log('💾 Saving media to DB and Cloudinary:', result);
-  return { id: 'mock-record-id', url: result.resultUrl };
-}
+async function runStoryBeat(preset: Preset, source: { id: string; url: string }, metadata: { storyKey: string; storyLabel: string }): Promise<any> {
+  // Create a generation job with story metadata
+  const job: GenerateJob = {
+    mode: 'story',
+    presetId: preset.id,
+    prompt: preset.prompt,
+    params: {
+      strength: preset.strength || 0.7,
+      negative_prompt: preset.negative_prompt,
+      model: preset.model || 'eagle'
+    },
+    source: { url: source.url },
+    runId: crypto.randomUUID(),
+    group: 'story',
+    storyKey: metadata.storyKey,
+    storyLabel: metadata.storyLabel,
+    parentId: source.id // Track remix relationship
+  };
 
-function addResultToUi(record: any): void {
-  console.log('🎉 Adding result to UI:', record);
-  window.dispatchEvent(new CustomEvent('generation-complete', { 
-    detail: { record, resultUrl: record.url, timestamp: Date.now() } 
-  }));
+  // Use the existing generation pipeline
+  return await runGeneration(() => Promise.resolve(job));
 }
 
 function showToast(type: 'success' | 'error', message: string): void {
-  console.log(`${type === 'success' ? '✅' : '❌'} Toast: ${message}`);
   window.dispatchEvent(new CustomEvent(`generation-${type}`, { 
     detail: { message, timestamp: Date.now() } 
   }));
 }
 
 // Runner: reuse one source, run 4 beats, prepend all to UI in order
-export async function onStoryThemeClick(themeKey: keyof typeof STORY_THEMES): Promise<void> {
+export async function onStoryThemeClick(themeKey: keyof typeof STORY_THEMES, source?: { id: string; url: string }): Promise<void> {
   try {
     const theme = STORY_THEMES[themeKey];
-    const src = resolveSourceOrToast(); // your existing guard
+    const src = source || resolveSourceOrToast(); // Allow passing source directly
     if (!src) {
       showToast('error', 'Pick a photo/video first, then select a story theme.');
       return;
     }
 
     const beats = ('strategy' in theme) ? pickAutoFromActive() : theme;
-    const runId = crypto.randomUUID();
 
     console.log(`📖 Starting story sequence: ${String(themeKey)} (${beats.length} beats)`);
+
+    // Show initial toast
+    showToast('success', `Starting ${String(themeKey).replaceAll('_', ' ')} story...`);
 
     for (const [index, beat] of beats.entries()) {
       try {
         console.log(`🎬 Processing beat ${index + 1}/4: ${beat.label}`);
         
         const preset = resolvePreset(beat.use, beat.overrides);
-        // Keep the same source so the set feels cohesive
-        const payload = buildAimlPayload({ preset, src });
         
-        const res = await callAimlApi(payload);
-        if (!res.success) {
+        // Run the story beat using the generation pipeline
+        const result = await runStoryBeat(preset, src, {
+          storyKey: String(themeKey),
+          storyLabel: beat.label
+        });
+        
+        if (!result?.success) {
           console.warn(`Beat ${index + 1} failed, continuing with others`);
           continue;
         }
         
-        const record = await saveMediaToDbAndCloudinary(res);
-        
-        // Add story metadata for UI display
-        addResultToUi({ 
-          ...record, 
-          storyLabel: beat.label, 
-          storyKey: themeKey,
-          storyIndex: index + 1,
-          storyTotal: beats.length
-        });
+        console.log(`✅ Beat ${index + 1}/4 completed: ${beat.label}`);
         
       } catch (error) {
         console.warn(`Beat ${index + 1} (${beat.label}) failed:`, error);
@@ -138,7 +143,7 @@ export async function onStoryThemeClick(themeKey: keyof typeof STORY_THEMES): Pr
     }
     
     const themeName = String(themeKey).replaceAll('_', ' ');
-    showToast('success', `Story: ${themeName} created`);
+    showToast('success', `Story: ${themeName} completed!`);
     
   } catch (error) {
     console.error('Story sequence failed:', error);
