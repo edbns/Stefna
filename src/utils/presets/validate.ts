@@ -42,10 +42,47 @@ export function validateOptions(
   for (const [group, entries] of Object.entries(groups)) {
     for (const [key, ref] of Object.entries(entries ?? {})) {
       if (!keys.has(String(ref.use))) errs.push(`[${group}/${key}] references missing preset "${String(ref.use)}"`);
+      
+      // Validate overrides if present
+      if (ref.overrides) {
+        if (ref.overrides.strength !== undefined && 
+            (ref.overrides.strength < 0 || ref.overrides.strength > 1)) {
+          errs.push(`[${group}/${key}] override strength must be between 0 and 1`);
+        }
+      }
     }
   }
   if (errs.length) console.warn(`validateOptions: ${errs.length} issue(s)`, errs);
   else console.info('✅ validateOptions: OK');
+  return errs;
+}
+
+// UI configuration checks
+export function isConfigured<G extends keyof typeof OPTION_GROUPS>(group: G, key: string): boolean {
+  return Boolean(OPTION_GROUPS[group]?.[key]);
+}
+
+export function getConfiguredOptions<G extends keyof typeof OPTION_GROUPS>(group: G): string[] {
+  const groupOptions = OPTION_GROUPS[group];
+  return groupOptions ? Object.keys(groupOptions) : [];
+}
+
+export function validateUIConfiguration(): string[] {
+  const errs: string[] = [];
+  
+  // Check that all option groups have at least one configured option
+  const requiredGroups: (keyof typeof OPTION_GROUPS)[] = ['time_machine', 'restore'];
+  
+  requiredGroups.forEach(group => {
+    const configuredOptions = getConfiguredOptions(group);
+    if (configuredOptions.length === 0) {
+      errs.push(`Option group ${group} has no configured options`);
+    }
+  });
+  
+  if (errs.length) console.warn(`validateUIConfiguration: ${errs.length} issue(s)`, errs);
+  else console.info('✅ validateUIConfiguration: OK');
+  
   return errs;
 }
 
@@ -54,6 +91,7 @@ export async function validateAll() {
   console.info('🔍 Validating preset system...');
   const presetErrors = validatePresets(PRESETS);
   const optionErrors = validateOptions(OPTION_GROUPS, PRESETS);
+  const uiErrors = validateUIConfiguration();
   
   // Validate story themes
   let storyErrors: string[] = [];
@@ -69,14 +107,14 @@ export async function validateAll() {
     console.warn('Could not validate story themes:', error);
   }
   
-  const totalErrors = presetErrors.length + optionErrors.length + storyErrors.length;
+  const totalErrors = presetErrors.length + optionErrors.length + uiErrors.length + storyErrors.length;
   if (totalErrors === 0) {
     console.info('✅ Preset system validation complete - all good!');
   } else {
     console.warn(`⚠️ Preset system has ${totalErrors} validation issues`);
   }
   
-  return { presetErrors, optionErrors, storyErrors };
+  return { presetErrors, optionErrors, uiErrors, storyErrors };
 }
 
 // Synchronous version for immediate validation
@@ -84,13 +122,14 @@ export function validateAllSync() {
   console.info('🔍 Validating preset system (sync)...');
   const presetErrors = validatePresets(PRESETS);
   const optionErrors = validateOptions(OPTION_GROUPS, PRESETS);
+  const uiErrors = validateUIConfiguration();
   
-  const totalErrors = presetErrors.length + optionErrors.length;
+  const totalErrors = presetErrors.length + optionErrors.length + uiErrors.length;
   if (totalErrors === 0) {
     console.info('✅ Preset system validation complete - all good!');
   } else {
     console.warn(`⚠️ Preset system has ${totalErrors} validation issues`);
   }
   
-  return { presetErrors, optionErrors };
+  return { presetErrors, optionErrors, uiErrors };
 }
