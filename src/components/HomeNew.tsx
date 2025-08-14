@@ -1056,9 +1056,13 @@ const HomeNew: React.FC = () => {
       const body = await res.json().catch(() => ({}));
       console.info('aimlApi body', body);
 
-      // Handle video job creation (status 202)
-      if (res.status === 202 && body.job_id && isVideoPreview) {
-        notifyQueue({ title: 'Add to queue', message: 'Processing will begin shortly.' })
+      // Handle video job creation (status 202) - includes Story Mode
+      if (res.status === 202 && body.job_id && (isVideoPreview || body.kind === 'story')) {
+        if (body.kind === 'story') {
+          notifyQueue({ title: 'Your Story is ready', message: 'Creating your 4-shot story video...' })
+        } else {
+          notifyQueue({ title: 'Add to queue', message: 'Processing will begin shortly.' })
+        }
         setCurrentVideoJob({ id: body.job_id, status: 'queued' })
         startVideoJobPolling(body.job_id, body.model, effectivePrompt)
         endGeneration(genId)
