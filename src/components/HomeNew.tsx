@@ -121,6 +121,7 @@ const HomeNew: React.FC = () => {
   // Stable ref for selectedPreset to prevent re-render issues during generation
   const selectedPresetRef = useRef<PresetKey | null>(null)
   const genIdRef = useRef(0) // increments per job to prevent race conditions
+  const [currentRunId, setCurrentRunId] = useState<string | null>(null)
   
   useEffect(() => { 
     selectedPresetRef.current = selectedPreset 
@@ -175,6 +176,20 @@ const HomeNew: React.FC = () => {
     setTimeout(() => requestClearPreset('composer exit'), 300)
   }
   
+  // Load presets and set ready flag
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // Check if presets are available
+      const presetKeys = Object.keys(PRESETS);
+      if (!cancelled && presetKeys.length > 0) {
+        setPresetsReady(true);
+        console.log('✅ Presets loaded and ready:', presetKeys.length);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [PRESETS]);
+
   // Restore or default preset on mount/when PRESETS update
   useEffect(() => {
     const saved = localStorage.getItem('selectedPreset') as PresetKey | null
@@ -288,6 +303,7 @@ const HomeNew: React.FC = () => {
   const [filterOpen, setFilterOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
   const [expandedStorySection, setExpandedStorySection] = useState<string | null>(null)
+  const [presetsReady, setPresetsReady] = useState(false)
   
   // Profile state from context
   const { profileData } = useProfile()
@@ -719,7 +735,21 @@ const HomeNew: React.FC = () => {
     }
   ) {
     const t0 = performance.now();
-    console.info('▶ dispatchGenerate', { kind, options });
+    
+    // Generate run ID to avoid cross-talk
+    const runId = crypto.randomUUID();
+    setCurrentRunId(runId);
+    console.info('▶ dispatchGenerate', { kind, options, runId });
+    
+    // Assertions before calling aimlApi
+    if (options?.presetId) {
+      console.assert(PRESETS[options.presetId], `Preset ${options.presetId} must be valid before generate`);
+      if (!PRESETS[options.presetId]) {
+        console.error('❌ Invalid preset assertion failed:', options.presetId);
+        notifyError({ title: 'Invalid preset', message: 'Please select a valid style preset' });
+        return;
+      }
+    }
     
     // Start generation with ID guard
     const genId = startGeneration();
@@ -904,8 +934,7 @@ const HomeNew: React.FC = () => {
       // Just close the composer; keep using outer genId
       setIsComposerOpen(false);
       
-      // Don't clear preset when composer closes during generation
-      // clearPresetOnExit();
+      // Keep preset selected for user convenience (stateless generation doesn't need clearing)
 
       // Ensure we have a remote URL (not blob:)
       let sourceUrl = previewUrl;
@@ -1306,10 +1335,7 @@ const HomeNew: React.FC = () => {
       endGeneration(genId);
       setNavGenerating(false);
       
-      // Clear preset only on success
-      if (chosen && PRESETS[chosen]) {
-        clearPresetAfterGeneration();
-      }
+      // Keep preset selected for user convenience (stateless generation doesn't need clearing)
       
       // Clear mode state on success
       if (selectedMode) {
@@ -1362,9 +1388,13 @@ const HomeNew: React.FC = () => {
       endGeneration(genId);
       setNavGenerating(false);
     } finally {
-      // Only clear preset on success, not on failure
-      // We'll handle preset clearing in the success path instead
-      console.info('⏹ dispatchGenerate done', (performance.now() - t0).toFixed(1), 'ms');
+      // Check if this is still the current run (ignore late completions)
+      if (currentRunId === runId) {
+        setCurrentRunId(null);
+        console.info('⏹ dispatchGenerate done', (performance.now() - t0).toFixed(1), 'ms');
+      } else {
+        console.warn('⚠️ Ignoring late completion for run:', runId, 'current:', currentRunId);
+      }
     }
   }
 
@@ -1444,10 +1474,7 @@ const HomeNew: React.FC = () => {
       endGeneration(genId)
       setNavGenerating(false)
       
-      // Clear preset after successful generation
-      if (selectedPreset && PRESETS[selectedPreset]) {
-        clearPresetAfterGeneration();
-      }
+      // Keep preset selected for user convenience (stateless generation doesn't need clearing)
       
       // Clear mode state after successful generation
       if (selectedMode) {
@@ -1563,6 +1590,13 @@ const HomeNew: React.FC = () => {
     if (!isAuthenticated) {
       console.log('❌ User not authenticated, redirecting to auth')
       navigate('/auth')
+      return
+    }
+    
+    // Gate story mode on presets ready
+    if (mode === 'story' && !presetsReady) {
+      console.log('⏳ Story mode waiting for presets to load...')
+      notifyQueue({ title: 'Loading presets...', message: 'Please wait while styles load' })
       return
     }
     
