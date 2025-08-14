@@ -1,69 +1,46 @@
 import React, { useRef, useMemo } from 'react'
-import { Share2, Heart, FileText } from 'lucide-react'
 import { UserMedia } from '../services/userMediaService'
 import RemixIcon from './RemixIcon'
-import ProfileIcon from './ProfileIcon'
-import { useProfile } from '../contexts/ProfileContext'
 import { MediaCard as SpinnerCard } from './ui/Toasts'
 import LazyImage from './LazyImage'
+import { getCardChips, formatRemixCount } from '../utils/mediaCardHelpers'
 
 interface MasonryMediaGridProps {
   media: UserMedia[]
   columns?: number
   onMediaClick?: (media: UserMedia) => void
   onDownload?: (media: UserMedia) => void
-  onShare?: (media: UserMedia) => void
-  onUnshare?: (media: UserMedia) => void
-  onLike?: (media: UserMedia) => void
   onRemix?: (media: UserMedia) => void
   onDelete?: (media: UserMedia) => void
   onEdit?: (media: UserMedia) => void
-  onFilterCreator?: (userId: string) => void
   onGenerateCaption?: (media: UserMedia) => void
   showActions?: boolean
   className?: string
-  isLikedMedia?: boolean
   // Selection props
   isSelectionMode?: boolean
   selectedMediaIds?: Set<string>
   onToggleSelection?: (mediaId: string) => void
-  hideRemixCount?: boolean
-  // Profile mode - hide user avatars
-  hideUserAvatars?: boolean
-  // Home page mode - hide share button
-  hideShareButton?: boolean
-  // Home page mode - hide like button
-  hideLikeButton?: boolean
+  // Show auth modal for logged out users
+  onShowAuth?: () => void
+  isLoggedIn?: boolean
 }
 
 const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   media,
-  columns = 3,
   onMediaClick,
   onDownload,
-  onShare,
-  onUnshare,
-  onLike,
   onRemix,
   onDelete,
-  onFilterCreator,
-  onGenerateCaption,
   showActions = true,
   className = '',
-  isLikedMedia = false,
   // Selection props
   isSelectionMode = false,
   selectedMediaIds = new Set(),
   onToggleSelection,
-  hideRemixCount = false,
-  // Profile mode - hide user avatars
-  hideUserAvatars = false,
-  // Home page mode - hide share button
-  hideShareButton = false,
-  // Home page mode - hide like button
-  hideLikeButton = false
+  // Auth props
+  onShowAuth,
+  isLoggedIn = true
 }) => {
-  const { profileData } = useProfile()
   const gridRef = useRef<HTMLDivElement>(null)
 
   // Generate true masonry layout based on aspect ratios
@@ -75,7 +52,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
     const columnArrays: UserMedia[][] = Array.from({ length: numColumns }, () => [])
     
     // Simple distribution: put each item in the shortest column
-    media.forEach((item, index) => {
+    media.forEach((item) => {
       // Find the shortest column
       const columnHeights = columnArrays.map(column => 
         column.reduce((height, mediaItem) => height + (1 / mediaItem.aspectRatio), 0)
@@ -139,7 +116,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
       >
         {masonryColumns.map((column, columnIndex) => (
           <div key={columnIndex} className="flex-1 flex flex-col gap-2 min-w-0">
-            {column.map((item, itemIndex) => (
+            {column.map((item) => (
               <div
                 key={item.id}
                 className="relative group cursor-pointer bg-white/5 overflow-hidden"
@@ -215,156 +192,110 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         format="auto"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="w-full h-auto object-cover"
-                        loading="lazy"
                       />
                   )}
 
                   {/* Type indicator */}
                   {getTypeIcon(item.type)}
 
-                  {/* Preset indicator - show the style/preset used */}
-                  {item.style && (
-                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
-                      <span className="text-white text-xs font-medium">{item.style}</span>
-                    </div>
-                  )}
+                  {/* New chip-based overlay system */}
+                  {(() => {
+                    const { modeChip, detailChip } = getCardChips(item)
+                    const remixText = formatRemixCount(item.remixCount)
+                    
+                    return (
+                      <>
+                        {/* Mode and Detail Chips - Top */}
+                        <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-1 opacity-100 transition-opacity duration-300">
+                          {/* Mode Chip */}
+                          <span 
+                            className="text-white/90 text-xs bg-black/60 px-2 py-1 rounded-full backdrop-blur-sm border border-white/20"
+                            aria-label={`Generation mode: ${modeChip}`}
+                          >
+                            {modeChip}
+                          </span>
+                          
+                          {/* Detail Chip */}
+                          <span 
+                            className="text-white/80 text-xs bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm border border-white/10"
+                            aria-label={`Style: ${detailChip}`}
+                            title={detailChip}
+                          >
+                            {detailChip.length > 15 ? `${detailChip.substring(0, 15)}...` : detailChip}
+                          </span>
+                        </div>
 
-                  {/* Mode badge - bottom left if mode metadata is available */}
-                  {(item as any).modeMeta?.mode && (
-                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
-                      <span className="text-white text-xs font-medium">
-                        {(item as any).modeMeta.mode === 'story' && '✨ Story'}
-                        {(item as any).modeMeta.mode === 'time_machine' && '⏰ Time Machine'}
-                        {(item as any).modeMeta.mode === 'restore' && '🔧 Restore'}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Bottom overlays */}
-                  {showActions && (
-                    <>
-                      {/* Left: user info with avatar, username, and sharing badges */}
-                      <div className="absolute bottom-2 left-2 flex items-center space-x-2">
-                        {hideUserAvatars ? (
-                          <ProfileIcon size={18} className="text-white" />
-                        ) : (
-                          <div className="flex items-center space-x-2 group">
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); onFilterCreator?.(item.userId) }}
-                              className="relative w-8 h-8 rounded-full overflow-hidden bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
-                              title={`View ${item.userUsername || item.userId}'s content`}
-                            >
-                              {(() => {
-                                // Use profile context avatar if this is the current user's media
-                                const isCurrentUser = item.userId === profileData.id
-                                const avatarUrl = isCurrentUser && typeof profileData.avatar === 'string' 
-                                  ? profileData.avatar 
-                                  : item.userAvatar
-                                
-                                return avatarUrl ? (
-                                  <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                                ) : (
-                                  <ProfileIcon size={18} className="text-white" />
-                                )
-                              })()}
-                              {String(item.userTier || '').toLowerCase() === 'contributor' || String(item.userTier || '').toLowerCase() === 'creator' ? (
-                                <span className="absolute -right-1 -bottom-1 w-3 h-3 rounded-full bg-white text-black text-[9px] flex items-center justify-center">✓</span>
-                              ) : null}
-                            </button>
-                            
-                            {/* Username and sharing badges */}
-                            {(item.userUsername || item.userId) && (
-                              <div className="flex items-center space-x-1">
-                                <span className="text-white text-xs font-medium bg-black/60 backdrop-blur-sm px-2 py-1 rounded">
-                                  {item.userUsername || item.userId}
-                                </span>
-                                
-                                {/* Sharing badges */}
-                                <div className="flex items-center space-x-1">
-                                  {item.visibility === 'public' && (
-                                    <span className="text-white/80 text-[10px] bg-green-600/80 px-1.5 py-0.5 rounded text-center font-medium">
-                                      Public
-                                    </span>
-                                  )}
-                                  {item.allowRemix && (
-                                    <span className="text-white/80 text-[10px] bg-blue-600/80 px-1.5 py-0.5 rounded text-center font-medium">
-                                      Remix OK
-                                    </span>
-                                  )}
-                                </div>
+                        {/* Actions - Bottom */}
+                        {showActions && (
+                          <>
+                            {/* Remix Button - Bottom Right (Primary CTA) */}
+                            {onRemix && (
+                              <div className="absolute bottom-2 right-2 opacity-100 transition-opacity duration-300">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (!isLoggedIn) {
+                                      onShowAuth?.()
+                                      return
+                                    }
+                                    onRemix(item)
+                                  }}
+                                  className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/25 transition-all duration-300 hover:scale-105"
+                                  title="Remix this creation"
+                                  aria-label="Remix this media"
+                                >
+                                  <RemixIcon size={15} className="text-white" />
+                                </button>
                               </div>
                             )}
-                          </div>
-                        )}
-                      </div>
 
-                      {/* Right: actions */}
-                      <div className="absolute bottom-2 right-2 flex items-center space-x-2">
-                        {onDownload && (
-                          <button
-                            onClick={(e) => handleAction(() => onDownload(item), e)}
-                            className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
-                            title="Download"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7,10 12,15 17,10"/>
-                              <line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                          </button>
-                        )}
-
-                        {onRemix && (
-                          <div className="flex items-center space-x-1">
-                            <button
-                              onClick={(e) => handleAction(() => onRemix(item), e)}
-                              className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
-                              title="Remix"
-                            >
-                              <RemixIcon size={14} />
-                            </button>
-                            {!hideRemixCount && (
-                              <span className="text-white/80 text-xs font-medium">{item.remixCount || 0}</span>
+                            {/* Remix Count - Bottom Left (Passive metric) */}
+                            {remixText && (
+                              <div className="absolute bottom-2 left-2 opacity-100 transition-opacity duration-300">
+                                <span 
+                                  className="text-white/70 text-xs bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm"
+                                  aria-label={remixText}
+                                >
+                                  {remixText}
+                                </span>
+                              </div>
                             )}
-                          </div>
+
+                            {/* Additional actions (download, delete) - Top Right */}
+                            {(onDownload || onDelete) && (
+                              <div className="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                {onDownload && (
+                                  <button
+                                    onClick={(e) => handleAction(() => onDownload(item), e)}
+                                    className="w-7 h-7 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
+                                    title="Download"
+                                  >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
+                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                      <polyline points="7,10 12,15 17,10"/>
+                                      <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                  </button>
+                                )}
+                                {onDelete && (
+                                  <button
+                                    onClick={(e) => handleAction(() => onDelete(item), e)}
+                                    className="w-7 h-7 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-red-500/80 transition-all duration-200"
+                                    title="Delete"
+                                  >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
+                                      <polyline points="3,6 5,6 21,6"/>
+                                      <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </>
                         )}
-                        {onShare && !hideShareButton && (
-                          <button
-                            onClick={(e) => handleAction(() => onShare(item), e)}
-                            className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized"
-                            title="Share"
-                          >
-                            <Share2 size={14} className="text-white" />
-                          </button>
-                        )}
-                        {onLike && !hideLikeButton && (
-                          <div className="flex items-center space-x-1">
-                            <button
-                              onClick={(e) => handleAction(() => onLike(item), e)}
-                              className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized"
-                              title="Like"
-                            >
-                              <Heart size={14} className={isLikedMedia ? 'text-red-500 fill-red-500' : 'text-white'} />
-                            </button>
-                            <span className="text-white/80 text-xs font-medium">{item.likes || 0}</span>
-                          </div>
-                        )}
-                        {onDelete && (
-                          <button
-                            onClick={(e) => handleAction(() => onDelete(item), e)}
-                            className="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
-                            title="Delete"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
-                              <polyline points="3,6 5,6 21,6"/>
-                              <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
             ))}

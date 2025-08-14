@@ -1,6 +1,8 @@
-import React, { useState } from 'react'
-import { Heart, Share2 } from 'lucide-react'
+import React from 'react'
 import RemixIcon from './RemixIcon'
+import { getCardChips, formatRemixCount } from '../utils/mediaCardHelpers'
+import { MediaRecord } from '../lib/types'
+import { UserMedia } from '../services/userMediaService'
 
 interface MediaCardProps {
   id: string
@@ -9,22 +11,14 @@ interface MediaCardProps {
   prompt: string
   gradient: string
   icon: React.ComponentType<{ size?: number; className?: string }>
-  creatorName: string
   isLoggedIn: boolean
-  onLike: (id: string) => void
   onRemix?: (id: string) => void
-  onShare?: (id: string) => void
-  onDownload?: (id: string) => void
-  onDelete?: (id: string) => void
   onShowAuth: () => void
-  onFilterAiAsBrush?: () => void
-  onFilterCreator?: (creatorName: string) => void
   onShowMedia?: (id: string, title: string, prompt: string) => void
-  isLiked?: boolean
-  likesCount?: number
-  remixesCount?: number
-  isAiAsBrush?: boolean
+  remixCount?: number
   aspectRatio?: number
+  // New props for metadata-driven chips
+  media?: MediaRecord | UserMedia  // Full media object for metadata
 }
 
 const MediaCard: React.FC<MediaCardProps> = ({
@@ -33,37 +27,14 @@ const MediaCard: React.FC<MediaCardProps> = ({
   prompt,
   gradient,
   icon: IconComponent,
-  creatorName,
   isLoggedIn,
-  onLike,
   onRemix,
-  onShare,
   onShowAuth,
-  onFilterCreator,
   onShowMedia,
-  isLiked = false,
-  likesCount = 0,
-  remixesCount = 0,
-  aspectRatio = 1
+  remixCount = 0,
+  aspectRatio = 1,
+  media
 }) => {
-  const [isLikedState, setIsLikedState] = useState(isLiked)
-  const [localLikesCount, setLocalLikesCount] = useState(likesCount)
-
-  const handleLike = async () => {
-    if (!isLoggedIn) {
-      onShowAuth()
-      return
-    }
-    
-    // Optimistically update UI
-    const newLikedState = !isLikedState
-    setIsLikedState(newLikedState)
-    setLocalLikesCount(newLikedState ? localLikesCount + 1 : localLikesCount - 1)
-    
-    // Call the parent handler
-    onLike(id)
-  }
-
   const handleRemix = () => {
     if (!isLoggedIn) {
       onShowAuth()
@@ -75,17 +46,6 @@ const MediaCard: React.FC<MediaCardProps> = ({
     }
   }
 
-  const handleShare = () => {
-    if (!isLoggedIn) {
-      onShowAuth()
-      return
-    }
-    
-    if (onShare) {
-      onShare(id)
-    }
-  }
-
   // Determine aspect ratio class
   const getAspectClass = () => {
     if (aspectRatio <= 0.6) {
@@ -94,6 +54,10 @@ const MediaCard: React.FC<MediaCardProps> = ({
       return 'aspect-square'
     }
   }
+
+  // Get chips for display
+  const { modeChip, detailChip } = media ? getCardChips(media) : { modeChip: 'Preset', detailChip: title }
+  const remixText = formatRemixCount(remixCount)
 
   return (
     <div 
@@ -115,71 +79,51 @@ const MediaCard: React.FC<MediaCardProps> = ({
 
       {/* Overlay for actions - always visible */}
       <div className="absolute inset-0 bg-black/20 transition-all duration-300">
-        {/* Profile Avatar - Top Left */}
-        <div className="absolute top-3 left-3 opacity-100 transition-opacity duration-300">
-          <button
-            onClick={(e) => { e.stopPropagation(); onFilterCreator?.(creatorName) }}
-            className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300"
-            title={`View ${creatorName}'s content`}
+        {/* Mode and Detail Chips - Top */}
+        <div className="absolute top-3 left-3 right-3 flex flex-wrap gap-2 opacity-100 transition-opacity duration-300">
+          {/* Mode Chip */}
+          <span 
+            className="text-white/90 text-xs bg-black/60 px-2 py-1 rounded-full backdrop-blur-sm border border-white/20"
+            aria-label={`Generation mode: ${modeChip}`}
           >
-            <span className="text-white text-xs font-medium">
-              {creatorName.charAt(0).toUpperCase()}
-            </span>
-          </button>
+            {modeChip}
+          </span>
+          
+          {/* Detail Chip */}
+          <span 
+            className="text-white/80 text-xs bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm border border-white/10"
+            aria-label={`Style: ${detailChip}`}
+            title={detailChip} // Show full text on hover if truncated
+          >
+            {detailChip.length > 20 ? `${detailChip.substring(0, 20)}...` : detailChip}
+          </span>
         </div>
 
-        {/* Action Buttons - Bottom Right */}
-        <div className="absolute bottom-3 right-3 flex items-center space-x-2 opacity-100 transition-opacity duration-300">
-          {/* Share Button */}
-          {onShare && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleShare() }}
-              className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300"
-              title="Share"
-            >
-              <Share2 size={14} className="text-white" />
-            </button>
-          )}
-
-          {/* Like Button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); handleLike() }}
-            className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300"
-            title="Like"
-          >
-            <Heart 
-              size={14} 
-              className={`${
-                isLikedState ? 'text-red-500 fill-red-500' : 'text-white'
-              }`} 
-            />
-          </button>
-
-          {/* Remix Button - Only show if onRemix is provided */}
-          {onRemix && (
+        {/* Remix Button - Bottom Right (Single CTA) */}
+        {onRemix && (
+          <div className="absolute bottom-3 right-3 opacity-100 transition-opacity duration-300">
             <button
               onClick={(e) => { e.stopPropagation(); handleRemix() }}
-              className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300"
-              title="Remix"
+              className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/25 transition-all duration-300 hover:scale-105"
+              title="Remix this creation"
+              aria-label="Remix this media"
             >
-              <RemixIcon size={14} className="text-white" />
+              <RemixIcon size={16} className="text-white" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Interaction counts - Bottom Left */}
-        <div className="absolute bottom-3 left-3 opacity-100 transition-opacity duration-300 flex flex-col space-y-1">
-          {localLikesCount > 0 && (
-            <span className="text-white/80 text-xs bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
-              {localLikesCount} {localLikesCount === 1 ? 'like' : 'likes'}
+        {/* Remix Count - Bottom Left (Optional passive metric) */}
+        {remixText && (
+          <div className="absolute bottom-3 left-3 opacity-100 transition-opacity duration-300">
+            <span 
+              className="text-white/70 text-xs bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm"
+              aria-label={remixText}
+            >
+              {remixText}
             </span>
-          )}
-          {remixesCount > 0 && (
-            <span className="text-white/80 text-xs bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
-              {remixesCount} {remixesCount === 1 ? 'remix' : 'remixes'}
-            </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )
