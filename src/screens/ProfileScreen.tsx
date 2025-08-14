@@ -45,7 +45,6 @@ const ProfileScreen: React.FC = () => {
   // Local state for editing (synced with context)
   const [editingProfileData, setEditingProfileData] = useState({
     name: profileData.name,
-    bio: profileData.bio,
     avatar: profileData.avatar,
     shareToFeed: profileData.shareToFeed,
     allowRemix: profileData.allowRemix
@@ -55,7 +54,6 @@ const ProfileScreen: React.FC = () => {
   useEffect(() => {
     setEditingProfileData({
       name: profileData.name,
-      bio: profileData.bio,
       avatar: profileData.avatar,
       shareToFeed: profileData.shareToFeed,
       allowRemix: profileData.allowRemix
@@ -107,7 +105,7 @@ const ProfileScreen: React.FC = () => {
           avatar: userData.avatar || userData.avatar_url || ''  // Support both field names
         }
         
-        setProfileData(prev => ({ ...prev, ...profileData }))
+        updateProfile(profileData)
         
         // Sync preview photo with loaded avatar
         if (userData.avatar) {
@@ -123,7 +121,7 @@ const ProfileScreen: React.FC = () => {
         if (savedProfile) {
           try {
             const parsedProfile = JSON.parse(savedProfile)
-            setProfileData(prev => ({ ...prev, ...parsedProfile }))
+            updateProfile(parsedProfile)
             
             // Sync preview photo with saved avatar
             if (parsedProfile.avatar && typeof parsedProfile.avatar === 'string') {
@@ -685,7 +683,8 @@ const ProfileScreen: React.FC = () => {
       
       // Handle avatar upload if it's a file
       if (editingProfileData.avatar instanceof File) {
-        const up = await uploadToCloudinary(editingProfileData.avatar, `users/${authService.getCurrentUser()?.id || 'me'}`)
+        // Use the existing uploadToCloudinary function which handles signing correctly
+        const up = await uploadToCloudinary(editingProfileData.avatar, 'users')
         avatarUrl = up.secure_url
         profileDataToSave.avatar = avatarUrl
       } else if (typeof editingProfileData.avatar === 'string') {
@@ -1732,21 +1731,7 @@ const ProfileScreen: React.FC = () => {
               />
             </div>
 
-            {/* Bio Input */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-white mb-2">Bio</label>
-              <textarea
-                value={editingProfileData.bio}
-                onChange={(e) => setEditingProfileData(prev => ({ ...prev, bio: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 resize-none"
-                placeholder="Tell us about yourself..."
-                rows={3}
-                maxLength={150}
-              />
-              <div className="text-xs text-white/40 mt-1 text-right">
-                {editingProfileData.bio.length}/150
-              </div>
-            </div>
+
 
             {/* Sharing Preferences */}
             <div className="mb-6 space-y-3">

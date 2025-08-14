@@ -6,7 +6,6 @@ interface ProfileData {
   id?: string
   name: string
   username?: string
-  bio: string
   avatar: string | File | null
   shareToFeed: boolean
   allowRemix: boolean
@@ -25,7 +24,6 @@ interface ProfileContextType {
 
 const defaultProfileData: ProfileData = {
   name: 'User Name',
-  bio: 'AI artist exploring the boundaries of creativity 🎨',
   avatar: null,
   shareToFeed: false,
   allowRemix: false
@@ -67,7 +65,6 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
             id: userData.id,
             name: userData.name || userData.username || '',
             username: userData.username || '',
-            bio: userData.bio || 'AI artist exploring the boundaries of creativity 🎨',
             avatar: userData.avatar || userData.avatar_url || '',
             shareToFeed: userData.shareToFeed || false,
             allowRemix: userData.allowRemix || false,

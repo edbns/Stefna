@@ -7,11 +7,16 @@ export async function prepareSourceAsset(activeFileOrUrl: File | string) {
 
   // Blob/File -> upload via Cloudinary signed upload
   const signRes = await fetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
-  const { timestamp, signature, api_key, cloud_name, folder } = await signRes.json();
+  if (!signRes.ok) {
+    throw new Error(`Cloudinary sign failed: ${signRes.status}`);
+  }
+  
+  const signData = await signRes.json();
+  const { timestamp, signature, api_key, cloud_name, folder } = signData;
 
   const form = new FormData();
   form.append('file', activeFileOrUrl as any);
-  form.append('timestamp', timestamp);
+  form.append('timestamp', timestamp.toString());
   form.append('signature', signature);
   form.append('api_key', api_key);
   if (folder) form.append('folder', folder);
