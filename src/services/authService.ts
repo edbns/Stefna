@@ -115,6 +115,10 @@ class AuthService {
       fetch('/.netlify/functions/logout', { method: 'POST' }).catch(() => {})
     } finally {
       this.clearAuthState()
+      // Notify listeners of auth state change
+      this.notifyAuthChange()
+      // Dispatch global auth state change event for components that listen for it
+      window.dispatchEvent(new CustomEvent('auth-state-changed'))
     }
   }
 

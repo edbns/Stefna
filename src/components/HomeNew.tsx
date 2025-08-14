@@ -557,6 +557,29 @@ const HomeNew: React.FC = () => {
     checkAuth()
   }, [])
 
+  // Listen for auth state changes (like logout)
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const authState = authService.getAuthState()
+      setIsAuthenticated(authState.isAuthenticated)
+      console.log('🔐 Auth state changed:', authState)
+      
+      // If user logged out, clear any user-specific state
+      if (!authState.isAuthenticated) {
+        console.log('🚪 User logged out, clearing state')
+        // Clear any user-specific state here if needed
+        setQuota(null)
+      }
+    }
+
+    // Listen for custom auth events
+    window.addEventListener('auth-state-changed', handleAuthChange)
+    
+    return () => {
+      window.removeEventListener('auth-state-changed', handleAuthChange)
+    }
+  }, [])
+
   // Restore preset selection from localStorage on mount
   useEffect(() => {
     const savedPreset = localStorage.getItem('selectedPreset') as PresetKey | null
