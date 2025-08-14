@@ -139,7 +139,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
       >
         {masonryColumns.map((column, columnIndex) => (
           <div key={columnIndex} className="flex-1 flex flex-col gap-2 min-w-0">
-            {column.map((item) => (
+            {column.map((item, itemIndex) => (
               <div
                 key={item.id}
                 className="relative group cursor-pointer bg-white/5 overflow-hidden"
@@ -210,7 +210,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                       <LazyImage
                         src={item.url}
                         alt={item.prompt}
-                        priority={index < 6} // First 6 images load immediately
+                        priority={media.findIndex(m => m.id === item.id) < 6} // First 6 images load immediately
                         quality={85} // High quality for main images
                         format="auto"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
