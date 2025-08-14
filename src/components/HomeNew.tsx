@@ -10,6 +10,7 @@ import type { UserMedia } from '../services/userMediaService'
 import NotificationBell from './NotificationBell'
 import { useToasts } from './ui/Toasts'
 import ProfileIcon from './ProfileIcon'
+import { useProfile } from '../contexts/ProfileContext'
 import { PRESETS, type PresetKey, promptForPreset } from '../config/presets'
 import presetRotationService from '../services/presetRotationService'
 import captionService from '../services/captionService'
@@ -235,8 +236,8 @@ const HomeNew: React.FC = () => {
   const [filterOpen, setFilterOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
   
-  // Profile state
-  const [userProfile, setUserProfile] = useState<any>(null)
+  // Profile state from context
+  const { profileData } = useProfile()
   const [currentFilter, setCurrentFilter] = useState<'all' | 'images' | 'videos'>('all')
   const [navGenerating, setNavGenerating] = useState(false)
   const [generateTwo, setGenerateTwo] = useState(false)
@@ -1850,7 +1851,7 @@ const HomeNew: React.FC = () => {
         console.log('✅ User profile loaded from database:', userData)
         
         // Store full user profile for onboarding check
-        setUserProfile(userData)
+        // Profile data is now managed by ProfileContext
         
         // Profile setup is now handled through the edit profile modal in ProfileScreen
         
@@ -1989,11 +1990,10 @@ const HomeNew: React.FC = () => {
               {navGenerating && (<span className="absolute -inset-1 rounded-full border-2 border-white/50 animate-spin" style={{ borderTopColor: 'transparent' }} />)}
               {(() => {
                 const user = authService.getCurrentUser()
-                const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
-                if (userProfile.avatar) {
-                  return <img src={userProfile.avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
-                } else if (user?.name || user?.email) {
-                  const initial = (user.name || user.email || 'U').charAt(0).toUpperCase()
+                if (profileData.avatar && typeof profileData.avatar === 'string') {
+                  return <img src={profileData.avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+                } else if (profileData.name || user?.name || user?.email) {
+                  const initial = (profileData.name || user?.name || user?.email || 'U').charAt(0).toUpperCase()
                   return <div className="w-6 h-6 rounded-full bg-white/20 text-white text-xs font-medium flex items-center justify-center">{initial}</div>
                 } else {
                   return <ProfileIcon size={16} className="text-white" />

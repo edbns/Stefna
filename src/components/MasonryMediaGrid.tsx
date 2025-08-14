@@ -3,6 +3,7 @@ import { Share2, Heart, FileText } from 'lucide-react'
 import { UserMedia } from '../services/userMediaService'
 import RemixIcon from './RemixIcon'
 import ProfileIcon from './ProfileIcon'
+import { useProfile } from '../contexts/ProfileContext'
 import { MediaCard as SpinnerCard } from './ui/Toasts'
 
 interface MasonryMediaGridProps {
@@ -61,6 +62,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   // Home page mode - hide like button
   hideLikeButton = false
 }) => {
+  const { profileData } = useProfile()
   const gridRef = useRef<HTMLDivElement>(null)
 
   // Generate true masonry layout based on aspect ratios
@@ -242,11 +244,19 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                               className="relative w-8 h-8 rounded-full overflow-hidden bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
                               title={`View ${item.userUsername || item.userId}'s content`}
                             >
-                              {item.userAvatar ? (
-                                <img src={item.userAvatar} alt="avatar" className="w-full h-full object-cover" />
-                              ) : (
-                                <ProfileIcon size={18} className="text-white" />
-                              )}
+                              {(() => {
+                                // Use profile context avatar if this is the current user's media
+                                const isCurrentUser = item.userId === profileData.id
+                                const avatarUrl = isCurrentUser && typeof profileData.avatar === 'string' 
+                                  ? profileData.avatar 
+                                  : item.userAvatar
+                                
+                                return avatarUrl ? (
+                                  <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                  <ProfileIcon size={18} className="text-white" />
+                                )
+                              })()}
                               {String(item.userTier || '').toLowerCase() === 'contributor' || String(item.userTier || '').toLowerCase() === 'creator' ? (
                                 <span className="absolute -right-1 -bottom-1 w-3 h-3 rounded-full bg-white text-black text-[9px] flex items-center justify-center">✓</span>
                               ) : null}

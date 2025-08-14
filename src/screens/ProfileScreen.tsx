@@ -17,6 +17,7 @@ import { useToasts } from '../components/ui/Toasts'
 import userService from '../services/userService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import { ensureAndUpdateProfile } from '../services/profile'
+import { useProfile } from '../contexts/ProfileContext'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
@@ -38,13 +39,28 @@ const ProfileScreen: React.FC = () => {
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
   const [bulkDeleteConfirmed, setBulkDeleteConfirmed] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [profileData, setProfileData] = useState({
-    name: 'User Name',
-    bio: 'AI artist exploring the boundaries of creativity 🎨',
-    avatar: null as File | string | null,
-    shareToFeed: false,
-    allowRemix: false
+  // Use profile context
+  const { profileData, updateProfile, refreshProfile } = useProfile()
+  
+  // Local state for editing (synced with context)
+  const [editingProfileData, setEditingProfileData] = useState({
+    name: profileData.name,
+    bio: profileData.bio,
+    avatar: profileData.avatar,
+    shareToFeed: profileData.shareToFeed,
+    allowRemix: profileData.allowRemix
   })
+  
+  // Sync editing state when profile context changes
+  useEffect(() => {
+    setEditingProfileData({
+      name: profileData.name,
+      bio: profileData.bio,
+      avatar: profileData.avatar,
+      shareToFeed: profileData.shareToFeed,
+      allowRemix: profileData.allowRemix
+    })
+  }, [profileData])
 
   // Handle navigation state for activeTab
   useEffect(() => {
@@ -171,8 +187,7 @@ const ProfileScreen: React.FC = () => {
           const r = await fetch('/.netlify/functions/user-settings', { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
           if (r.ok) {
             const s = await r.json()
-            setProfileData(prev => ({ ...prev, shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix }))
-            localStorage.setItem('userProfile', JSON.stringify({ ...profileData, shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix }))
+            updateProfile({ shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix })
           }
         } catch (e) {
           // ignore, fallback to defaults/localStorage
@@ -653,7 +668,7 @@ const ProfileScreen: React.FC = () => {
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      setProfileData(prev => ({ ...prev, avatar: file }))
+      setEditingProfileData(prev => ({ ...prev, avatar: file }))
       const reader = new FileReader()
       reader.onload = (e) => {
         setPreviewPhoto(e.target?.result as string)
@@ -665,16 +680,16 @@ const ProfileScreen: React.FC = () => {
   const handleSaveProfile = async () => {
     try {
       setIsSaving(true)
-      const profileDataToSave = { ...profileData }
+      const profileDataToSave = { ...editingProfileData }
       let avatarUrl: string | undefined = undefined
       
       // Handle avatar upload if it's a file
-      if (profileData.avatar instanceof File) {
-        const up = await uploadToCloudinary(profileData.avatar, `users/${authService.getCurrentUser()?.id || 'me'}`)
+      if (editingProfileData.avatar instanceof File) {
+        const up = await uploadToCloudinary(editingProfileData.avatar, `users/${authService.getCurrentUser()?.id || 'me'}`)
         avatarUrl = up.secure_url
         profileDataToSave.avatar = avatarUrl
-      } else if (typeof profileData.avatar === 'string') {
-        avatarUrl = profileData.avatar
+      } else if (typeof editingProfileData.avatar === 'string') {
+        avatarUrl = editingProfileData.avatar
       }
 
       // Use the new profile service to update
@@ -685,8 +700,8 @@ const ProfileScreen: React.FC = () => {
         allow_remix: profileDataToSave.allowRemix
       })
 
-      // Save locally for UI (including bio)
-      localStorage.setItem('userProfile', JSON.stringify(profileDataToSave))
+      // Update the profile context - this will trigger updates across all components
+      updateProfile(profileDataToSave)
       
       // Update the preview photo state
       if (avatarUrl) {
@@ -1027,8 +1042,7 @@ const ProfileScreen: React.FC = () => {
       })
       if (r.ok) {
         const s = await r.json()
-        setProfileData(prev => ({ ...prev, shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix }))
-        localStorage.setItem('userProfile', JSON.stringify({ ...profileData, shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix }))
+        updateProfile({ shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix })
       }
     } catch (e) {
       // keep local state; will retry next time
@@ -1093,8 +1107,7 @@ const ProfileScreen: React.FC = () => {
                   onClick={() => {
                     const nextShare = !profileData.shareToFeed
                     const nextAllow = nextShare ? profileData.allowRemix : false
-                    setProfileData(prev => ({ ...prev, shareToFeed: nextShare, allowRemix: nextAllow }))
-                    localStorage.setItem('userProfile', JSON.stringify({ ...profileData, shareToFeed: nextShare, allowRemix: nextAllow }))
+                    updateProfile({ shareToFeed: nextShare, allowRemix: nextAllow })
                     // Persist to server
                     updateUserSettings(nextShare, nextAllow)
                   }}
@@ -1125,8 +1138,7 @@ const ProfileScreen: React.FC = () => {
                     // Only allow toggling if share to feed is enabled
                     if (profileData.shareToFeed) {
                       const nextAllow = !profileData.allowRemix
-                      setProfileData(prev => ({ ...prev, allowRemix: nextAllow }))
-                      localStorage.setItem('userProfile', JSON.stringify({ ...profileData, allowRemix: nextAllow }))
+                      updateProfile({ allowRemix: nextAllow })
                       updateUserSettings(true, nextAllow)
                     }
                   }}
@@ -1713,8 +1725,8 @@ const ProfileScreen: React.FC = () => {
               <label className="block text-sm font-medium text-white mb-2">Name</label>
               <input
                 type="text"
-                value={profileData.name}
-                onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                value={editingProfileData.name}
+                onChange={(e) => setEditingProfileData(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40"
                 placeholder="Enter your name"
               />
@@ -1724,15 +1736,15 @@ const ProfileScreen: React.FC = () => {
             <div className="mb-4">
               <label className="block text-sm font-medium text-white mb-2">Bio</label>
               <textarea
-                value={profileData.bio}
-                onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+                value={editingProfileData.bio}
+                onChange={(e) => setEditingProfileData(prev => ({ ...prev, bio: e.target.value }))}
                 className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 resize-none"
                 placeholder="Tell us about yourself..."
                 rows={3}
                 maxLength={150}
               />
               <div className="text-xs text-white/40 mt-1 text-right">
-                {profileData.bio.length}/150
+                {editingProfileData.bio.length}/150
               </div>
             </div>
 
@@ -1744,34 +1756,34 @@ const ProfileScreen: React.FC = () => {
                   <p className="text-xs text-white/60">Make your creations visible to the community</p>
                 </div>
                 <button
-                  onClick={() => setProfileData(prev => ({ ...prev, shareToFeed: !prev.shareToFeed }))}
+                  onClick={() => setEditingProfileData(prev => ({ ...prev, shareToFeed: !prev.shareToFeed }))}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    profileData.shareToFeed ? 'bg-white' : 'bg-white/20'
+                    editingProfileData.shareToFeed ? 'bg-white' : 'bg-white/20'
                   }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${
-                      profileData.shareToFeed ? 'translate-x-6' : 'translate-x-1'
+                      editingProfileData.shareToFeed ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
                 </button>
               </div>
 
-              {profileData.shareToFeed && (
+              {editingProfileData.shareToFeed && (
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="text-sm font-medium text-white">Allow Remix</label>
                     <p className="text-xs text-white/60">Let others remix your shared creations</p>
                   </div>
                   <button
-                    onClick={() => setProfileData(prev => ({ ...prev, allowRemix: !prev.allowRemix }))}
+                    onClick={() => setEditingProfileData(prev => ({ ...prev, allowRemix: !prev.allowRemix }))}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      profileData.allowRemix ? 'bg-white' : 'bg-white/20'
+                      editingProfileData.allowRemix ? 'bg-white' : 'bg-white/20'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${
-                        profileData.allowRemix ? 'translate-x-6' : 'translate-x-1'
+                        editingProfileData.allowRemix ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>

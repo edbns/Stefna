@@ -3,6 +3,7 @@ import { X, ChevronLeft, ChevronRight, Heart, Copy } from 'lucide-react'
 import { UserMedia } from '../services/userMediaService'
 import RemixIcon from './RemixIcon'
 import authService from '../services/authService'
+import { useProfile } from '../contexts/ProfileContext'
 
 interface FullScreenMediaViewerProps {
   isOpen: boolean
@@ -23,6 +24,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
   onRemix,
   onShowAuth
 }) => {
+  const { profileData } = useProfile()
   const [currentIndex, setCurrentIndex] = useState(startIndex)
   const current = useMemo(() => media[currentIndex], [media, currentIndex])
   const [localLikes, setLocalLikes] = useState<number>(current?.likes ?? 0)
@@ -133,7 +135,25 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
         <div className="bg-black/80 backdrop-blur-sm p-4">
           <div className="flex items-center justify-center h-full">
             <div className="flex items-center space-x-2 pt-2">
-              <span className="text-white text-sm">{current.userId || 'Anonymous User'}</span>
+              {(() => {
+                // Use profile context data if this is the current user's media
+                const isCurrentUser = current.userId === profileData.id
+                const displayName = isCurrentUser && profileData.name 
+                  ? profileData.name 
+                  : (current.userUsername || current.userId || 'Anonymous User')
+                const avatarUrl = isCurrentUser && typeof profileData.avatar === 'string'
+                  ? profileData.avatar
+                  : current.userAvatar
+                
+                return (
+                  <>
+                    {avatarUrl && (
+                      <img src={avatarUrl} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+                    )}
+                    <span className="text-white text-sm">{displayName}</span>
+                  </>
+                )
+              })()}
               <span className="text-white text-sm">•</span>
               <span className="text-white text-sm">{formattedTime}</span>
             </div>

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ToastProvider } from './components/ui/Toasts'
+import { ProfileProvider } from './contexts/ProfileContext'
 // StickyFooter removed per new minimal UI
 import SignupGateModal from './components/SignupGateModal'
 import HomeNew from './components/HomeNew'
@@ -129,7 +130,9 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <ToastProvider>
-        <AppContent />
+        <ProfileProvider>
+          <AppContent />
+        </ProfileProvider>
       </ToastProvider>
     </BrowserRouter>
   )
