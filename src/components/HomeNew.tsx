@@ -63,6 +63,11 @@ const StoryCategorySection: React.FC<StoryCategorySectionProps> = ({ title, them
 import { PRESETS, type PresetKey, promptForPreset } from '../config/presets'
 import presetRotationService from '../services/presetRotationService'
 import captionService from '../services/captionService'
+import { presetsStore } from '../stores/presetsStore'
+import { onPresetClick } from '../handlers/presetHandlers'
+import { onTimeMachineClick } from '../handlers/timeMachineHandlers'
+import { runStory } from '../handlers/storyModeHandlers'
+import { validateModeMappings } from '../utils/validateMappings'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
 import ShareModal from './ShareModal'
 
@@ -176,19 +181,13 @@ const HomeNew: React.FC = () => {
     setTimeout(() => requestClearPreset('composer exit'), 300)
   }
   
-  // Load presets and set ready flag
+  // Initialize presets store and validate mappings
   useEffect(() => {
-    let cancelled = false;
     (async () => {
-      // Check if presets are available
-      const presetKeys = Object.keys(PRESETS);
-      if (!cancelled && presetKeys.length > 0) {
-        setPresetsReady(true);
-        console.log('✅ Presets loaded and ready:', presetKeys.length);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [PRESETS]);
+      await presetsStore.getState().load()
+      validateModeMappings()
+    })()
+  }, [])
 
   // Restore or default preset on mount/when PRESETS update
   useEffect(() => {
@@ -303,7 +302,6 @@ const HomeNew: React.FC = () => {
   const [filterOpen, setFilterOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
   const [expandedStorySection, setExpandedStorySection] = useState<string | null>(null)
-  const [presetsReady, setPresetsReady] = useState(false)
   
   // Profile state from context
   const { profileData } = useProfile()
@@ -828,9 +826,9 @@ const HomeNew: React.FC = () => {
     }
 
     // Check if we have either a preset, mode, or user prompt
-    const hasPreset = Boolean(chosen);
+    const hasPreset = Boolean(currentPresetId);
     const hasPrompt = Boolean(prompt.trim());
-    const hasMode = Boolean(selectedMode);
+    const hasMode = Boolean(currentMode);
     
     if (!hasPreset && !hasPrompt && !hasMode) {
       console.warn('No preset, mode, or user prompt selected; aborting.');
@@ -842,18 +840,18 @@ const HomeNew: React.FC = () => {
     
     console.log('🔍 Preset selection debug:', {
       selectedPreset,
-      selectedPresetRef: chosen,
-      hasPreset: !!chosen,
-      presetExists: chosen ? !!PRESETS[chosen] : false,
-      presetPrompt: chosen ? PRESETS[chosen]?.prompt : 'N/A'
+      currentPresetId,
+      hasPreset: !!currentPresetId,
+      presetExists: currentPresetId ? !!PRESETS[currentPresetId] : false,
+      presetPrompt: currentPresetId ? PRESETS[currentPresetId]?.prompt : 'N/A'
     });
     
     // Skip this logic if we already set effectivePrompt from mode
     if (!effectivePrompt) {
-      if (chosen && PRESETS[chosen]) {
+      if (currentPresetId && PRESETS[currentPresetId]) {
         // If preset is selected, use ONLY the preset prompt (ignore user prompt field)
-        effectivePrompt = PRESETS[chosen].prompt;
-        console.log(`🎨 Using preset "${chosen}":`, effectivePrompt);
+        effectivePrompt = PRESETS[currentPresetId].prompt;
+        console.log(`🎨 Using preset "${currentPresetId}":`, effectivePrompt);
       } else if (prompt.trim()) {
         // If no preset but user typed a prompt, use that
         effectivePrompt = prompt.trim();
@@ -873,29 +871,29 @@ const HomeNew: React.FC = () => {
     }
     
     // Use the new preset system for better prompt mapping
-    if (chosen) {
-      const presetPrompt = promptForPreset(chosen, isVideoPreview);
+    if (currentPresetId) {
+      const presetPrompt = promptForPreset(currentPresetId, isVideoPreview);
       if (presetPrompt !== 'stylize, preserve subject and composition') {
         effectivePrompt = presetPrompt;
-        console.log(`🎨 Using new preset system "${chosen}" (${isVideoPreview ? 'V2V' : 'I2I'}):`, effectivePrompt);
+        console.log(`🎨 Using new preset system "${currentPresetId}" (${isVideoPreview ? 'V2V' : 'I2I'}):`, effectivePrompt);
       }
     }
     
     console.log('🎯 Final effective prompt:', effectivePrompt);
     
     // Log preset usage for debugging
-    if (chosen && PRESETS[chosen]) {
+    if (currentPresetId && PRESETS[currentPresetId]) {
       console.log('🎨 Preset used in generation:', {
-        presetName: chosen,
-        presetLabel: getPresetLabel(chosen, PRESETS),
-        presetPrompt: PRESETS[chosen].prompt,
+        presetName: currentPresetId,
+        presetLabel: getPresetLabel(currentPresetId, PRESETS),
+        presetPrompt: PRESETS[currentPresetId].prompt,
         finalPrompt: effectivePrompt
       });
       
       // Track preset usage for rotation analytics
-      presetRotationService.trackPresetUsage(chosen);
-    } else if (chosen && !PRESETS[chosen]) {
-      console.warn('⚠️ Invalid preset selected:', chosen);
+      presetRotationService.trackPresetUsage(currentPresetId);
+    } else if (currentPresetId && !PRESETS[currentPresetId]) {
+      console.warn('⚠️ Invalid preset selected:', currentPresetId);
     }
     
     if (!effectivePrompt) {
@@ -926,7 +924,7 @@ const HomeNew: React.FC = () => {
       console.log('🚀 Starting generation with:', {
         kind,
         effectivePrompt,
-        selectedPreset: chosen,
+        selectedPreset: currentPresetId,
         isVideo: isVideoPreview
       });
       
@@ -1515,33 +1513,19 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  const handlePresetClick = (presetName: PresetKey) => {
+  const handlePresetClick = async (presetName: PresetKey) => {
     console.log('🎯 handlePresetClick called with:', presetName)
     
     // Check authentication first
     if (!isAuthenticated) {
       console.log('❌ User not authenticated, redirecting to auth')
-              // Sign up required - no notification needed
       navigate('/auth')
       return
     }
     
-    // Check if preset exists
-    if (!PRESETS[presetName]) {
-      console.error('❌ Preset not found in PRESETS:', presetName)
-      console.log('🔍 Available presets:', Object.keys(PRESETS))
-      return
-    }
-    
-    // Selecting a preset should use the preset prompt, not populate user input
-    const preset = PRESETS[presetName]
-    console.log('🎯 Preset clicked:', presetName, preset)
-    
+    // Set UI state (selectedPreset is now UI-only)
     setSelectedPreset(presetName)
     console.log('✅ selectedPreset set to:', presetName)
-    
-    // Show success message
-            // Preset applied - no notification needed
     
     // Check if we have media to work with
     if (!previewUrl) {
@@ -1549,21 +1533,17 @@ const HomeNew: React.FC = () => {
       return
     }
     
-    console.log('🚀 Starting auto-generation with preset:', presetName)
-    // Auto-start generation with explicit preset data (stateless)
+    console.log('🚀 Starting bulletproof generation with preset:', presetName)
+    // Use the new bulletproof handler
     setNavGenerating(true)
-    setTimeout(async () => {
-      try {
-        await dispatchGenerate('preset', {
-          presetId: presetName,
-          presetData: PRESETS[presetName]
-        })
-      } catch (error) {
-        console.error('❌ Preset generation failed:', error)
-        notifyError({ title: 'Generation failed', message: 'Please try another preset.' })
-        setNavGenerating(false)
-      }
-    }, 100)
+    try {
+      await onPresetClick(presetName, previewUrl)
+    } catch (error) {
+      console.error('❌ Preset generation failed:', error)
+      notifyError({ title: 'Generation failed', message: 'Please try another preset.' })
+    } finally {
+      setNavGenerating(false)
+    }
   }
 
   // Auto-generate with preset - simplified to use existing dispatchGenerate
@@ -1593,63 +1573,47 @@ const HomeNew: React.FC = () => {
       return
     }
     
-    // Gate story mode on presets ready
-    if (mode === 'story' && !presetsReady) {
-      console.log('⏳ Story mode waiting for presets to load...')
-      notifyQueue({ title: 'Loading presets...', message: 'Please wait while styles load' })
-      return
-    }
-    
     if (!previewUrl) {
       console.log('❌ No previewUrl available, cannot generate')
       notifyError({ title: 'Upload a photo first', message: 'Please upload a photo to use this mode' })
       return
     }
     
-    // Show immediate feedback that button was clicked (same as presets)
+    // Show immediate feedback that button was clicked
     setNavGenerating(true)
     
-    // Small delay to show the loading state before starting generation (same as presets)
-    setTimeout(async () => {
-      try {
-        // Import the new utility
-        const { prepareSourceAsset } = await import('../utils/prepareSourceAsset')
-        
-        // Always upload the asset (prefer File; fall back to blob URL)
-        const source = selectedFile || previewUrl;
-        const { url: remoteUrl, resource_type } = await prepareSourceAsset(source)
-        if (resource_type !== 'image') { 
-          notifyError({ title: 'Photo required', message: 'Story / Time Machine / Restore need a photo' })
-          setNavGenerating(false) // Reset loading state on error
-          return
-        }
-
-        // Resolve mode to preset using the new system
-        const presetRef = resolvePresetForMode({ 
-          mode, 
-          option, 
-          activePresets: PRESETS
-        })
-        
-        console.log('🎯 Mode resolved:', { mode, option, preset: presetRef, sourceUrl: remoteUrl })
-
-        // Set UI state
-        setSelectedMode(mode)
-        setSelectedPreset(presetRef as PresetKey)
-        
-        // Dispatch generation with explicit mode data (stateless)
-        dispatchGenerate('mode', {
-          mode: mode,
-          modeOption: option,
-          presetId: presetRef
-        })
-        
-      } catch (error) {
-        console.error('❌ Mode generation failed:', error)
-        notifyError({ title: 'Generation failed', message: 'Please try another photo or style.' })
-        setNavGenerating(false) // Reset loading state on error
+    try {
+      // Import the new utility
+      const { prepareSourceAsset } = await import('../utils/prepareSourceAsset')
+      
+      // Always upload the asset (prefer File; fall back to blob URL)
+      const source = selectedFile || previewUrl;
+      const { url: remoteUrl, resource_type } = await prepareSourceAsset(source)
+      if (resource_type !== 'image') { 
+        notifyError({ title: 'Photo required', message: 'Story / Time Machine / Restore need a photo' })
+        setNavGenerating(false)
+        return
       }
-    }, 100)
+
+      // Set UI state
+      setSelectedMode(mode)
+      
+      // Use bulletproof handlers
+      if (mode === 'story') {
+        await runStory(remoteUrl, prompt)
+      } else if (mode === 'time_machine') {
+        await onTimeMachineClick(option, remoteUrl)
+      } else if (mode === 'restore') {
+        // For restore, we can use time machine handler with restore mapping
+        await onTimeMachineClick(option, remoteUrl)
+      }
+      
+    } catch (error) {
+      console.error('❌ Mode generation failed:', error)
+      notifyError({ title: 'Generation failed', message: 'Please try another photo or style.' })
+    } finally {
+      setNavGenerating(false)
+    }
   }
 
 
