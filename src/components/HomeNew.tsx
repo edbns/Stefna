@@ -708,9 +708,18 @@ const HomeNew: React.FC = () => {
   }
 
   // Centralized generation dispatcher with comprehensive logging
-  async function dispatchGenerate(kind: 'preset' | 'custom' | 'remix' | 'mode') {
+  async function dispatchGenerate(
+    kind: 'preset' | 'custom' | 'remix' | 'mode',
+    options?: {
+      presetId?: string;
+      presetData?: any;
+      mode?: string;
+      modeOption?: string;
+      promptOverride?: string;
+    }
+  ) {
     const t0 = performance.now();
-    console.info('▶ dispatchGenerate', { kind });
+    console.info('▶ dispatchGenerate', { kind, options });
     
     // Start generation with ID guard
     const genId = startGeneration();
@@ -739,21 +748,25 @@ const HomeNew: React.FC = () => {
     let effectivePrompt = '';
     let modeMeta: any = null;
     
-    // Get stable snapshot of selectedPreset at click time
-    const chosen = selectedPresetRef.current;
+    // Use passed preset data or fallback to global state
+    const currentPresetId = options?.presetId || selectedPreset;
+    const currentPrompt = options?.promptOverride || prompt;
     
     // Handle mode-based generation with new system
-    if (kind === 'mode' && selectedMode && (selectedTheme || selectedEra || selectedOp)) {
+    const currentMode = options?.mode || selectedMode;
+    const currentModeOption = options?.modeOption || (selectedTheme || selectedEra || selectedOp);
+    
+    if (kind === 'mode' && currentMode && currentModeOption) {
       const resolvedPreset = resolvePresetForMode({
-        mode: selectedMode,
-        option: (selectedTheme || selectedEra || selectedOp) as string,
+        mode: currentMode,
+        option: currentModeOption as string,
         activePresets: PRESETS
       });
       
       // Create mode metadata for tracking
       modeMeta = {
-        mode: selectedMode,
-        option: (selectedTheme || selectedEra || selectedOp) as string,
+        mode: currentMode,
+        option: currentModeOption as string,
         mapping_version: 'v2',
       };
       
@@ -1510,8 +1523,20 @@ const HomeNew: React.FC = () => {
     }
     
     console.log('🚀 Starting auto-generation with preset:', presetName)
-    // Auto-start generation with preset immediately (no delay)
-    handlePresetAutoGeneration(presetName);
+    // Auto-start generation with explicit preset data (stateless)
+    setNavGenerating(true)
+    setTimeout(async () => {
+      try {
+        await dispatchGenerate('preset', {
+          presetId: presetName,
+          presetData: PRESETS[presetName]
+        })
+      } catch (error) {
+        console.error('❌ Preset generation failed:', error)
+        notifyError({ title: 'Generation failed', message: 'Please try another preset.' })
+        setNavGenerating(false)
+      }
+    }, 100)
   }
 
   // Auto-generate with preset - simplified to use existing dispatchGenerate
@@ -1578,8 +1603,12 @@ const HomeNew: React.FC = () => {
         setSelectedMode(mode)
         setSelectedPreset(presetRef as PresetKey)
         
-        // Dispatch generation
-        dispatchGenerate('mode')
+        // Dispatch generation with explicit mode data (stateless)
+        dispatchGenerate('mode', {
+          mode: mode,
+          modeOption: option,
+          presetId: presetRef
+        })
         
       } catch (error) {
         console.error('❌ Mode generation failed:', error)
@@ -2576,7 +2605,17 @@ const HomeNew: React.FC = () => {
                         setNavGenerating(true)
                         // Small delay to show the loading state before starting generation
                         setTimeout(() => {
-                          dispatchGenerate(selectedPreset ? 'preset' : 'custom')
+                          if (selectedPreset) {
+                            dispatchGenerate('preset', {
+                              presetId: selectedPreset,
+                              presetData: PRESETS[selectedPreset],
+                              promptOverride: prompt
+                            })
+                          } else {
+                            dispatchGenerate('custom', {
+                              promptOverride: prompt
+                            })
+                          }
                         }, 100)
                     }} 
                     disabled={!previewUrl || (!prompt.trim() && !selectedPreset)} 
