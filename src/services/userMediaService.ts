@@ -152,29 +152,7 @@ class UserMediaService {
     await this.saveToStorage()
   }
 
-  // Toggle like for a media by a user; returns new like state and count
-  async toggleLike(mediaId: string, userId: string): Promise<{ liked: boolean; likes: number }> {
-    // Initialize index
-    if (!this.likesIndex.has(mediaId)) {
-      this.likesIndex.set(mediaId, [])
-    }
-    const users = this.likesIndex.get(mediaId) as string[]
-    const hasLiked = users.includes(userId)
-    const nextUsers = hasLiked ? users.filter(u => u !== userId) : [...users, userId]
-    this.likesIndex.set(mediaId, nextUsers)
-
-    // Sync count into media object across ALL instances
-    for (const [userId, userMedia] of this.mediaStorage.entries()) {
-      const mediaIndex = userMedia.findIndex(m => m.id === mediaId)
-      if (mediaIndex !== -1) {
-        userMedia[mediaIndex].likes = nextUsers.length
-      }
-    }
-
-    await this.saveLikesIndex()
-    await this.saveToStorage()
-    return { liked: !hasLiked, likes: nextUsers.length }
-  }
+  // Likes functionality removed - no longer needed in simplified design
 
   async getLikeCount(mediaId: string): Promise<number> {
     const users = this.likesIndex.get(mediaId) || []
