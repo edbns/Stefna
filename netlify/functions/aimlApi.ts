@@ -14,6 +14,14 @@ const ok = (b: any) => ({
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(Math.max(n, lo), hi);
 
+// Pick a better default unless the caller explicitly asks for "fast"
+const pickI2IModel = (body: any) => {
+  const req = String(body.quality || body.tier || '').toLowerCase();
+  if (req === 'fast' || req === 'cheap') return 'flux/dev/image-to-image';
+  // Prefer your crisper model here
+  return body.model || 'stable-diffusion-v35-large'; // higher fidelity
+};
+
 // --- Sharpening & subject locks ---
 const CLARITY_BOOST_HARD =
   "maximize micro-contrast and fine detail; razor-sharp edges; crisp textures (hair, neoprene seams, surfboard wax); strictly no halos or oversharpening artifacts; preserve natural skin texture";
@@ -62,6 +70,63 @@ export const handler = async (event: any) => {
       return bad(401, 'Invalid user token');
     }
     
+    // Check if this is a Story Mode request (should become a video job)
+    const isStory = body.modeMeta?.mode === 'story' || body.mode === 'story';
+
+    if (isStory) {
+      // Force video path for Story Mode - generate 4-shot MP4
+      const numShots = clamp(Number(body.num_shots ?? 4), 3, 6);
+      const fps = clamp(Number(body.fps ?? 30), 24, 60);
+
+      // Simple 4-beat surfer shotlist (customize per theme)
+      const shotlist = [
+        { name: 'establish', add: 'wide beach establishing shot, horizon and waves', duration_ms: 2600 },
+        { name: 'paddle',    add: 'medium shot paddling out, water splashes',       duration_ms: 2600 },
+        { name: 'ride',      add: 'dynamic action carving on a wave, spray, speed', duration_ms: 2600 },
+        { name: 'hero',      add: 'close-up at shore, board under arm, sunset',     duration_ms: 2600 },
+      ].slice(0, numShots);
+
+      // Store everything the worker needs
+      const { createClient } = require('@supabase/supabase-js');
+      const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+
+      const { data, error } = await supabaseAdmin
+        .from('video_jobs')
+        .insert({
+          user_id: userId,
+          type: 'story',                   // <-- mark as story
+          source_url: image_url,           // base image for I2I
+          prompt: String(body.prompt || 'high-fidelity edit; preserve subject and composition'),
+          model: pickI2IModel(body),
+          params: {
+            strength: clamp(Number(body.strength ?? 0.28), 0.22, 0.35),
+            steps: Math.round(clamp(Number(body.num_inference_steps ?? body.steps ?? 32), 1, 150)),
+            guidance: Number.isFinite(Number(body.cfg_scale ?? body.guidance_scale)) ? Number(body.cfg_scale ?? body.guidance_scale) : 7.2,
+            negative: String(body.negative_prompt || ''),
+          },
+          shotlist,
+          fps,
+          width: body.width ?? 1080,
+          height: body.height ?? 1920,
+          allow_remix: !!body.allow_remix,
+          visibility: body.visibility || 'private',
+          request_id
+        })
+        .select('id')
+        .single();
+
+      if (error) return bad(400, { error: 'Failed to create story job', details: error.message });
+
+      // Kick the worker
+      fetch(`${process.env.URL}/.netlify/functions/video-job-worker`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'x-internal':'1' },
+        body: JSON.stringify({ job_id: data.id })
+      }).catch(() => {});
+
+      return ok({ job_id: data.id, status: 'queued', kind: 'story' });
+    }
+
     if (resource_type === 'video') {
       // Video processing - check if video_jobs table exists first
       try {
@@ -203,8 +268,9 @@ export const handler = async (event: any) => {
 
     const finalNegativePrompt = negativePrompts.filter(Boolean).join(', ');
 
+    const model = pickI2IModel(body);
     const payload = {
-      model: 'flux/dev/image-to-image',
+      model,
       prompt: finalPrompt,
       negative_prompt: finalNegativePrompt,
       image_url,
