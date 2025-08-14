@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, X, ArrowUp, Filter, FileText, ChevronDown } from 'lucide-react'
+import { Plus, X, ArrowUp, Filter, FileText } from 'lucide-react'
 import { authenticatedFetch } from '../utils/apiClient'
 import authService from '../services/authService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
@@ -12,56 +12,7 @@ import { useToasts } from './ui/Toasts'
 import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
 
-// Story Mode Category Component with nested dropdown
-interface StoryModeCategoryProps {
-  category: { title: string; themes: StoryTheme[] }
-  selectedTheme: StoryTheme | null
-  onThemeSelect: (theme: StoryTheme) => void
-}
 
-const StoryModeCategory: React.FC<StoryModeCategoryProps> = ({ category, selectedTheme, onThemeSelect }) => {
-  const [isOpen, setIsOpen] = useState(false)
-  
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-white/80 hover:text-white hover:bg-white/10"
-      >
-        <span>{category.title}</span>
-        <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-      
-      {isOpen && (
-        <div className="absolute left-full top-0 ml-1 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-2 w-48 z-50">
-          <div className="space-y-1">
-            {category.themes.map((theme) => (
-              <button
-                key={theme}
-                onClick={() => {
-                  onThemeSelect(theme)
-                  setIsOpen(false)
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
-                  selectedTheme === theme 
-                    ? 'bg-white/20 text-white' 
-                    : 'text-white/80 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                <span>{STORY_THEME_LABELS[theme]}</span>
-                {selectedTheme === theme ? (
-                  <div className="w-3 h-3 rounded-full bg-white border border-white/30"></div>
-                ) : (
-                  <div className="w-3 h-3 rounded-full border border-white/30"></div>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
 import { PRESETS, type PresetKey, promptForPreset } from '../config/presets'
 import presetRotationService from '../services/presetRotationService'
 import captionService from '../services/captionService'
@@ -75,7 +26,7 @@ import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
 import { saveMediaNoDB, togglePublish } from '../lib/api'
-import { Mode, StoryTheme, TimeEra, RestoreOp, MODE_LABELS, STORY_THEME_LABELS, STORY_CATEGORIES, TIME_ERA_LABELS, RESTORE_OP_LABELS } from '../config/modes'
+import { Mode, StoryTheme, TimeEra, RestoreOp, MODE_LABELS, STORY_THEME_LABELS, TIME_ERA_LABELS, RESTORE_OP_LABELS } from '../config/modes'
 import { resolvePresetForMode } from '../utils/resolvePresetForMode'
 const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
 
@@ -2316,23 +2267,33 @@ const HomeNew: React.FC = () => {
                     >
                       Story Mode
                     </button>
-                    {storyOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-2 w-64 z-50">
-                        <div className="space-y-1">
-                          {Object.entries(STORY_CATEGORIES).map(([categoryKey, category]) => (
-                            <StoryModeCategory
-                              key={categoryKey}
-                              category={category}
-                              selectedTheme={selectedTheme}
-                              onThemeSelect={(theme) => {
-                                handleModeClick('story', theme)
-                                setStoryOpen(false)
-                              }}
-                            />
-                          ))}
-                        </div>
+                                      {storyOpen && (
+                    <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                      <div className="space-y-1">
+                        {Object.entries(STORY_THEME_LABELS).map(([theme, label]) => (
+                          <button
+                            key={theme}
+                            onClick={() => {
+                              handleModeClick('story', theme as StoryTheme)
+                              setStoryOpen(false)
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
+                              selectedTheme === theme 
+                                ? 'bg-white/20 text-white' 
+                                : 'text-white/80 hover:text-white hover:bg-white/10'
+                            }`}
+                          >
+                            <span>{label}</span>
+                            {selectedTheme === theme ? (
+                              <div className="w-3 h-3 rounded-full bg-white border border-white/30"></div>
+                            ) : (
+                              <div className="w-3 h-3 rounded-full border border-white/30"></div>
+                            )}
+                          </button>
+                        ))}
                       </div>
-                    )}
+                    </div>
+                  )}
                   </div>
 
                   {/* Time Machine dropdown */}
