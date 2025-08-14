@@ -50,6 +50,8 @@ const LazyImage = ({
   quality = 80,
   format = 'auto'
 }: LazyImageProps) => {
+  // EMERGENCY FALLBACK - if anything fails, just render a simple img
+  try {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isError, setIsError] = useState(false)
   const [isInView, setIsInView] = useState(priority) // Priority images load immediately
@@ -209,6 +211,20 @@ const LazyImage = ({
       </AnimatePresence>
     </div>
   )
+  } catch (error) {
+    console.error('🚨 LazyImage failed, using simple fallback:', error)
+    // Emergency fallback - just a simple img tag
+    return (
+      <img 
+        src={src}
+        alt={alt}
+        className={className}
+        onLoad={onLoad}
+        onError={onError}
+        loading={priority ? 'eager' : 'lazy'}
+      />
+    )
+  }
 }
 
 export default LazyImage 

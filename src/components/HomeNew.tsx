@@ -12,6 +12,61 @@ import { useToasts } from './ui/Toasts'
 import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
 
+// Safe wrapper for MasonryMediaGrid with fallback
+interface SafeMasonryGridProps {
+  feed: UserMedia[]
+  handleMediaClick: (media: UserMedia) => void
+  handleLike: (mediaId: string) => void
+  handleShare: (media: UserMedia) => void
+  handleRemix: (media: UserMedia) => void
+  setCreatorFilter: (userId: string) => void
+}
+
+const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
+  feed,
+  handleMediaClick,
+  handleLike,
+  handleShare,
+  handleRemix,
+  setCreatorFilter
+}) => {
+  try {
+    return (
+      <MasonryMediaGrid
+        media={feed}
+        columns={3}
+        onMediaClick={handleMediaClick}
+        onLike={handleLike}
+        onShare={handleShare}
+        onRemix={handleRemix}
+        onFilterCreator={(userId) => setCreatorFilter(userId)}
+        showActions={true}
+        className="pb-24"
+        hideUserAvatars={false}
+        hideShareButton={true}
+        hideLikeButton={false}
+      />
+    )
+  } catch (error) {
+    console.error('🚨 MasonryMediaGrid failed, using fallback:', error)
+    // Safe fallback - simple grid without fancy components
+    return (
+      <div className="grid grid-cols-3 gap-2 pb-24">
+        {feed.slice(0, 12).map((item, index) => (
+          <div key={item.id} className="aspect-square bg-gray-200 rounded overflow-hidden">
+            <img 
+              src={item.url} 
+              alt={item.prompt}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        ))}
+      </div>
+    )
+  }
+}
+
 // Story Category Section Component with collapsible themes
 interface StoryCategorySectionProps {
   title: string
@@ -2180,19 +2235,13 @@ const HomeNew: React.FC = () => {
               </div>
             </div>
           ) : feed.length > 0 ? (
-            <MasonryMediaGrid
-              media={feed}
-              columns={3}
-              onMediaClick={handleMediaClick}
-              onLike={handleLike}
-              onShare={handleShare}
-              onRemix={handleRemix}
-              onFilterCreator={(userId) => setCreatorFilter(userId)}
-              showActions={true}
-              className="pb-24"
-              hideUserAvatars={false}
-              hideShareButton={true}
-              hideLikeButton={false}
+            <SafeMasonryGrid 
+              feed={feed}
+              handleMediaClick={handleMediaClick}
+              handleLike={handleLike}
+              handleShare={handleShare}
+              handleRemix={handleRemix}
+              setCreatorFilter={setCreatorFilter}
             />
           ) : (
             <div className="text-center py-12">
