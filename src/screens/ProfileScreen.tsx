@@ -1061,88 +1061,7 @@ const ProfileScreen: React.FC = () => {
         {/* All Navigation Items in One Block */}
         <div className="flex-1">
           <div className="space-y-1">
-            {/* Token Counter */}
-            <div className="flex items-center justify-between py-1.5 px-3 rounded-lg text-left transition-all duration-300">
-              <div className="flex items-center space-x-2">
-                <Coins size={16} className="text-white/60" />
-                <span className="text-xs font-medium text-white/60">Tokens</span>
-              </div>
-              <span className="text-xs font-medium text-white">{tokenCount}</span>
-            </div>
 
-            {/* Invite Friends Button */}
-            <button
-              onClick={() => setShowInviteFriendsModal(true)}
-              className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-2 text-white/60 hover:text-white hover:bg-white/10"
-            >
-              <Users size={16} className="text-white/60" />
-              <span className="text-xs font-medium">Invite Friends</span>
-            </button>
-
-            {/* Toggle Switches */}
-            <div className="space-y-1">
-              {/* Share to Feed Toggle */}
-              <div className="flex items-center justify-between py-1.5 px-3 rounded-lg text-left transition-all duration-300">
-                <div className="flex items-center space-x-2">
-                  <Globe size={16} className="text-white/60" />
-                  <span className="text-xs font-medium text-white/60">Share to Feed</span>
-                </div>
-                <button
-                  onClick={() => {
-                    const nextShare = !profileData.shareToFeed
-                    const nextAllow = nextShare ? profileData.allowRemix : false
-                    updateProfile({ shareToFeed: nextShare, allowRemix: nextAllow })
-                    // Persist to server
-                    updateUserSettings(nextShare, nextAllow)
-                  }}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
-                    profileData.shareToFeed ? 'bg-white' : 'bg-white/20'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-3 w-3 transform rounded-full bg-black transition-transform duration-200 ${
-                      profileData.shareToFeed ? 'translate-x-5' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Allow Remix Toggle */}
-              <div className={`flex items-center justify-between py-1.5 px-3 rounded-lg text-left transition-all duration-300 ${
-                !profileData.shareToFeed ? 'opacity-50' : ''
-              }`}>
-                <div className="flex items-center space-x-2">
-                  <RemixIcon size={16} className={`${!profileData.shareToFeed ? 'text-white/30' : 'text-white/60'}`} />
-                  <span className={`text-xs font-medium ${!profileData.shareToFeed ? 'text-white/30' : 'text-white/60'}`}>
-                    Allow Remix
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    // Only allow toggling if share to feed is enabled
-                    if (profileData.shareToFeed) {
-                      const nextAllow = !profileData.allowRemix
-                      updateProfile({ allowRemix: nextAllow })
-                      updateUserSettings(true, nextAllow)
-                    }
-                  }}
-                  disabled={!profileData.shareToFeed}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
-                    profileData.allowRemix && profileData.shareToFeed ? 'bg-white' : 'bg-white/20'
-                  } ${!profileData.shareToFeed ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                >
-                  <span
-                    className={`inline-block h-3 w-3 transform rounded-full bg-black transition-transform duration-200 ${
-                      profileData.allowRemix && profileData.shareToFeed ? 'translate-x-5' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-
-
-
-            </div>
 
 
 
@@ -1155,14 +1074,47 @@ const ProfileScreen: React.FC = () => {
                 return <div key={item.id} className="h-px bg-white/10 my-2" />
               }
               
+              // Handle special items
+              if (item.id === 'tokens') {
+                return (
+                  <div key={item.id} className="flex items-center justify-between py-1.5 px-3">
+              <div className="flex items-center space-x-2">
+                <Coins size={16} className="text-white/60" />
+                      <span className="text-xs font-medium text-white/60">{item.label}</span>
+              </div>
+              <span className="text-xs font-medium text-white">{tokenCount}</span>
+            </div>
+                )
+              }
+
+              if (item.id === 'invite') {
+                return (
+            <button
+                    key={item.id}
+              onClick={() => setShowInviteFriendsModal(true)}
+              className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-2 text-white/60 hover:text-white hover:bg-white/10"
+            >
+              <Users size={16} className="text-white/60" />
+                    <span className="text-xs font-medium">{item.label}</span>
+            </button>
+                )
+              }
+              
               // Handle toggle items
               if (item.type === 'toggle') {
                 const settingValue = item.setting === 'autoShareToFeed' ? profileData.shareToFeed : profileData.allowRemix
                 return (
                   <div key={item.id} className="flex items-center justify-between py-1.5 px-3">
-                    <span className="text-xs font-medium text-white/60">{item.label}</span>
-                    <button
-                      onClick={() => {
+                <div className="flex items-center space-x-2">
+                      {item.setting === 'autoShareToFeed' ? (
+                  <Globe size={16} className="text-white/60" />
+                      ) : (
+                        <RemixIcon size={16} className="text-white/60" />
+                      )}
+                      <span className="text-xs font-medium text-white/60">{item.label}</span>
+                </div>
+                <button
+                  onClick={() => {
                         const newValue = !settingValue
                         if (item.setting === 'autoShareToFeed') {
                           updateProfile({ shareToFeed: newValue })
@@ -1171,18 +1123,18 @@ const ProfileScreen: React.FC = () => {
                           updateProfile({ allowRemix: newValue })
                           updateUserSettings(profileData.shareToFeed, newValue)
                         }
-                      }}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
+                  }}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
                         settingValue ? 'bg-white' : 'bg-white/20'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-3 w-3 transform rounded-full bg-black transition-transform duration-200 ${
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3 w-3 transform rounded-full bg-black transition-transform duration-200 ${
                           settingValue ? 'translate-x-5' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
+                    }`}
+                  />
+                </button>
+              </div>
                 )
               }
               
@@ -1192,8 +1144,8 @@ const ProfileScreen: React.FC = () => {
                 <div key={item.id}>
                   <button
                     onClick={() => {
-                      setActiveTab(item.id)
-                      setShowSettingsDropdown(false)
+                        setActiveTab(item.id)
+                        setShowSettingsDropdown(false)
                     }}
                     className={`w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-3 ${
                       activeTab === item.id 
@@ -1206,13 +1158,13 @@ const ProfileScreen: React.FC = () => {
                     </div>
                     <span className="text-xs font-medium">{item.label}</span>
                   </button>
-                </div>
+                        </div>
               )
             })}
-          </div>
-        </div>
+                        </div>
+                    </div>
 
-        {/* Bulk Delete Confirmation Modal */}
+      {/* Bulk Delete Confirmation Modal */}
       {showBulkDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowBulkDeleteModal(false)} />

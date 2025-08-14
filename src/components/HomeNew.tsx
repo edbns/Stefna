@@ -2296,10 +2296,7 @@ const HomeNew: React.FC = () => {
             <SafeMasonryGrid 
               feed={feed}
               handleMediaClick={handleMediaClick}
-              handleLike={handleLike}
-              handleShare={handleShare}
               handleRemix={handleRemix}
-              setCreatorFilter={setCreatorFilter}
             />
           ) : (
             <div className="text-center py-12">
