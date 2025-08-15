@@ -1,8 +1,31 @@
 export default async (event) => {
+  // Add debug logging for headers
+  console.log('aimlApi headers snapshot', {
+    keys: Object.keys(event.headers || {}).slice(0, 12),
+    hasXAppKey: Boolean(event.headers?.['x-app-key']),
+    hasAuth: Boolean(event.headers?.authorization),
+    method: event.httpMethod
+  });
+
+  // CORS (and OPTIONS preflight)
+  if (event.httpMethod === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'content-type, x-app-key, authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      },
+    });
+  }
+
   // Simple app key authentication
-  const ok = event.headers['x-app-key'] === process.env.FUNCTION_APP_KEY;
+  const ok = event.headers?.['x-app-key'] === process.env.FUNCTION_APP_KEY;
   if (!ok) {
-    console.error('Invalid or missing x-app-key header')
+    console.error('Invalid or missing x-app-key header', {
+      received: event.headers?.['x-app-key'],
+      expected: process.env.FUNCTION_APP_KEY ? 'set' : 'missing'
+    })
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Access-Control-Allow-Origin': '*' }
