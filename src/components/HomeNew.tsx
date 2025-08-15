@@ -478,8 +478,11 @@ const HomeNew: React.FC = () => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    console.log('📁 File selected:', { name: file.name, size: file.size, type: file.type })
+
     // Create preview URL for display only
     const preview = URL.createObjectURL(file)
+    console.log('🖼️ Preview URL created:', preview)
 
     // Store both: File for upload, preview URL for display
     setSelectedFile(file)                    // File used for upload
@@ -493,6 +496,7 @@ const HomeNew: React.FC = () => {
     useGenerationStore.getState().setPreviewDataUrl(undefined)
     useGenerationStore.getState().setPreviewBlob(undefined)
     
+    console.log('✅ File state updated, opening composer')
     setIsComposerOpen(true)
   }
 
@@ -531,6 +535,19 @@ const HomeNew: React.FC = () => {
       // Don't clear selectedPreset - it should persist for remix generation
     }
   }, [location])
+
+  // Debug composer state
+  useEffect(() => {
+    if (isComposerOpen) {
+      console.log('🎭 Composer opened with state:', { 
+        previewUrl, 
+        selectedFile: selectedFile?.name, 
+        isVideoPreview,
+        hasPreviewUrl: !!previewUrl,
+        previewUrlType: previewUrl?.startsWith('blob:') ? 'blob' : previewUrl?.startsWith('data:') ? 'data' : 'other'
+      })
+    }
+  }, [isComposerOpen, previewUrl, selectedFile, isVideoPreview])
 
   // Handle generation completion events from the pipeline
   useEffect(() => {
@@ -2424,7 +2441,20 @@ const HomeNew: React.FC = () => {
                 {isVideoPreview ? (
                   <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
                 ) : (
-                  <img ref={(el) => (mediaRef.current = el as HTMLImageElement)} src={previewUrl || ''} alt="Preview" className="max-w-full max-h-[60vh] object-contain" onLoad={measure} />
+                  <img 
+                    ref={(el) => (mediaRef.current = el as HTMLImageElement)} 
+                    src={previewUrl || ''} 
+                    alt="Preview" 
+                    className="max-w-full max-h-[60vh] object-contain border border-white/20 rounded-lg" 
+                    style={{ minHeight: '200px', backgroundColor: 'rgba(255,255,255,0.1)' }}
+                    onLoad={(e) => {
+                      console.log('🖼️ Image loaded successfully:', previewUrl)
+                      measure()
+                    }}
+                    onError={(e) => {
+                      console.error('❌ Image failed to load:', previewUrl, e)
+                    }}
+                  />
                 )}
               </div>
             </div>
