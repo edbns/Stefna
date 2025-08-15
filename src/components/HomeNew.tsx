@@ -2427,15 +2427,21 @@ const HomeNew: React.FC = () => {
             <div className="bg-[#0f0f0f] border border-white/20 rounded-2xl px-4 pt-2 pb-2 shadow-2xl">
               
 
-              {/* Prompt Input - only show for presets mode */}
-              {mode === 'presets' && (
+              {/* Prompt Input - show for presets mode and Style Clash mode */}
+              {(mode === 'presets' || mode === 'styleclash') && (
                 <div className="mb-6">
                   <div className="relative">
                     <textarea
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="Describe your vision or leave blank to use preset style..."
-                      className="w-full h-24 px-4 py-3 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors"
+                      placeholder={
+                        mode === 'presets' 
+                          ? "Describe your vision or leave blank to use preset style..."
+                          : "Describe your Style Clash vision or leave blank for default styles..."
+                      }
+                      className={`w-full px-4 py-3 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors ${
+                        mode === 'styleclash' ? 'h-32' : 'h-24'
+                      }`}
                       disabled={isGenerating}
                     />
                     <div className="absolute bottom-3 right-3 text-white/30 text-xs">
