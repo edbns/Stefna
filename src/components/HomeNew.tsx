@@ -2507,183 +2507,55 @@ const HomeNew: React.FC = () => {
                               )}
                             </button>
                           ))}
+                          
+                          {/* Divider */}
+                          <div className="border-t border-white/20 my-2"></div>
+                          
+                          {/* Story Mode */}
+                          <button
+                            onClick={() => {
+                              handleModeClick('story', 'four_seasons_spring')
+                              setPresetsOpen(false)
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-white/80 hover:text-white hover:bg-white/10"
+                          >
+                            <span>Story Mode</span>
+                            <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
+                          </button>
+                          
+                          {/* Time Machine */}
+                          <button
+                            onClick={() => {
+                              handleModeClick('time_machine', '1960s_kodachrome')
+                              setPresetsOpen(false)
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-white/80 hover:text-white hover:bg-white/10"
+                          >
+                            <span>Time Machine</span>
+                            <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
+                          </button>
+                          
+                          {/* Restore */}
+                          <button
+                            onClick={() => {
+                              handleModeClick('restore', 'sharpen_enhance')
+                              setPresetsOpen(false)
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-white/80 hover:text-white hover:bg-white/10"
+                          >
+                            <span>Restore</span>
+                            <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
+                          </button>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Story Mode dropdown */}
-                  <div className="relative" data-story-dropdown>
-                    <button
-                      onClick={() => {
-                        if (!isAuthenticated) {
-                          navigate('/auth')
-                          return
-                        }
-                        setStoryOpen(!storyOpen)
-                      }}
-                      className={`px-3 py-1.5 rounded-2xl text-xs border transition-colors ${
-                        isAuthenticated 
-                          ? 'bg-white/10 text-white border-white/20 hover:bg-white/15' 
-                          : 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
-                      }`}
-                      aria-expanded={storyOpen}
-                      aria-haspopup="menu"
-                      disabled={!isAuthenticated}
-                    >
-                      Story Mode
-                    </button>
-                                      {storyOpen && (
-                    <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
-                      <div className="space-y-2">
-                        <StoryCategorySection 
-                          title="Four Seasons"
-                          themes={['four_seasons_spring', 'four_seasons_summer', 'four_seasons_autumn', 'four_seasons_winter']}
-                          selectedTheme={selectedTheme}
-                          onThemeSelect={(theme) => {
-                            handleModeClick('story', theme)
-                            setStoryOpen(false)
-                          }}
-                          isExpanded={expandedStorySection === 'Four Seasons'}
-                          onToggle={() => setExpandedStorySection(expandedStorySection === 'Four Seasons' ? null : 'Four Seasons')}
-                        />
-                        <StoryCategorySection 
-                          title="Time of Day"
-                          themes={['time_sunrise', 'time_day', 'time_sunset', 'time_night']}
-                          selectedTheme={selectedTheme}
-                          onThemeSelect={(theme) => {
-                            handleModeClick('story', theme)
-                            setStoryOpen(false)
-                          }}
-                          isExpanded={expandedStorySection === 'Time of Day'}
-                          onToggle={() => setExpandedStorySection(expandedStorySection === 'Time of Day' ? null : 'Time of Day')}
-                        />
-                        <StoryCategorySection 
-                          title="Mood Shift"
-                          themes={['mood_calm', 'mood_vibrant', 'mood_dramatic', 'mood_dreamy']}
-                          selectedTheme={selectedTheme}
-                          onThemeSelect={(theme) => {
-                            handleModeClick('story', theme)
-                            setStoryOpen(false)
-                          }}
-                          isExpanded={expandedStorySection === 'Mood Shift'}
-                          onToggle={() => setExpandedStorySection(expandedStorySection === 'Mood Shift' ? null : 'Mood Shift')}
-                        />
-                        <StoryCategorySection 
-                          title="Art Style"
-                          themes={['style_photorealistic', 'style_vintage', 'style_pastels', 'style_neon']}
-                          selectedTheme={selectedTheme}
-                          onThemeSelect={(theme) => {
-                            handleModeClick('story', theme)
-                            setStoryOpen(false)
-                          }}
-                          isExpanded={expandedStorySection === 'Art Style'}
-                          onToggle={() => setExpandedStorySection(expandedStorySection === 'Art Style' ? null : 'Art Style')}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  </div>
 
-                  {/* Time Machine dropdown */}
-                  <div className="relative" data-timemachine-dropdown>
-                    <button
-                      onClick={() => {
-                        if (!isAuthenticated) {
-                          navigate('/auth')
-                          return
-                        }
-                        setTimeMachineOpen(!timeMachineOpen)
-                      }}
-                      className={`px-3 py-1.5 rounded-2xl text-xs border transition-colors ${
-                        isAuthenticated 
-                          ? 'bg-white/10 text-white border-white/20 hover:bg-white/15' 
-                          : 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
-                      }`}
-                      aria-expanded={timeMachineOpen}
-                      aria-haspopup="menu"
-                      disabled={!isAuthenticated}
-                    >
-                      Time Machine
-                    </button>
-                    {timeMachineOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
-                        <div className="space-y-1">
-                          {Object.entries(TIME_ERA_LABELS).map(([era, label]) => (
-                            <button
-                              key={era}
-                              onClick={() => {
-                                handleModeClick('time_machine', era as TimeEra)
-                                setTimeMachineOpen(false)
-                              }}
-                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
-                                selectedEra === era 
-                                  ? 'bg-white/20 text-white' 
-                                  : 'text-white/80 hover:text-white hover:bg-white/10'
-                              }`}
-                            >
-                              <span>{label}</span>
-                              {selectedEra === era ? (
-                                <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
-                              ) : (
-                                <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
 
-                  {/* Restore dropdown */}
-                  <div className="relative" data-restore-dropdown>
-                    <button
-                      onClick={() => {
-                        if (!isAuthenticated) {
-                          navigate('/auth')
-                          return
-                        }
-                        setRestoreOpen(!restoreOpen)
-                      }}
-                      className={`px-3 py-1.5 rounded-2xl text-xs border transition-colors ${
-                        isAuthenticated 
-                          ? 'bg-white/10 text-white border-white/20 hover:bg-white/15' 
-                          : 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
-                      }`}
-                      aria-expanded={restoreOpen}
-                      aria-haspopup="menu"
-                      disabled={!isAuthenticated}
-                    >
-                      Restore
-                    </button>
-                    {restoreOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
-                        <div className="space-y-1">
-                          {Object.entries(RESTORE_OP_LABELS).map(([op, label]) => (
-                            <button
-                              key={op}
-                              onClick={() => {
-                                handleModeClick('restore', op as RestoreOp)
-                                setRestoreOpen(false)
-                              }}
-                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
-                                selectedOp === op 
-                                  ? 'bg-white/20 text-white' 
-                                  : 'text-white/80 hover:text-white hover:bg-white/10'
-                              }`}
-                            >
-                              <span>{label}</span>
-                              {selectedOp === op ? (
-                                <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
-                              ) : (
-                                <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+
+
+
                   </div>
 
                   {/* Right: Action buttons */}

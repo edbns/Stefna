@@ -6,12 +6,12 @@ type PresetId = keyof typeof PRESETS;
 
 type SelState = {
   selectedPreset: PresetId | null;
-  setSelectedPreset: (id: PresetId) => void;
+  setSelectedPreset: (id: PresetId | null) => void;
   ensureDefault: (actives: PresetId[]) => void;
 };
 
 // C. Stop nuking selectedPreset during boot
-const BOOT_PRESET: PresetId = 'cinematic_glow';
+const BOOT_PRESET: PresetId | null = null;
 
 export const useSelectedPreset = create<SelState>((set, get) => ({
   // Make selectedPreset resilient to store reloads/preset refresh
@@ -26,9 +26,15 @@ export const useSelectedPreset = create<SelState>((set, get) => ({
   })(),
   
   setSelectedPreset: (id) => {
+    if (id === null) {
+      console.log('🎯 Clearing selectedPreset to None');
+      set({ selectedPreset: null });
+      localStorage.removeItem('selectedPreset');
+      return;
+    }
     if (!id) {
-      console.warn('🚫 Ignoring attempt to set selectedPreset to null/undefined');
-      return; // ignore null/undefined writes
+      console.warn('🚫 Ignoring attempt to set selectedPreset to undefined');
+      return; // ignore undefined writes
     }
     console.log('🎯 Setting selectedPreset to:', id);
     set({ selectedPreset: id });
@@ -40,18 +46,10 @@ export const useSelectedPreset = create<SelState>((set, get) => ({
   ensureDefault: (actives) => {
     const current = get().selectedPreset;
     
-    // Only set if it's currently null/undefined
+    // Don't auto-set a preset - let user choose or stay on None
     if (!current) {
-      const first = actives[0];
-      if (first) {
-        console.log('🎯 Setting boot default preset to:', first);
-        set({ selectedPreset: first as PresetId });
-        localStorage.setItem('selectedPreset', first);
-      } else {
-        console.log('🎯 Setting fallback boot preset to:', BOOT_PRESET);
-        set({ selectedPreset: BOOT_PRESET });
-        localStorage.setItem('selectedPreset', BOOT_PRESET);
-      }
+      console.log('🎯 Keeping selectedPreset as None - user must choose');
+      // Don't set anything - let it stay null
     }
   },
 }));
