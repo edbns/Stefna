@@ -1,6 +1,5 @@
 // src/lib/api.ts
 import { getAuthHeaders } from './auth'
-import crypto from 'crypto'
 
 export async function createAsset(input: import('./types').CreateAssetInput) {
   const res = await fetch('/.netlify/functions/create-asset', {
@@ -64,7 +63,7 @@ export async function saveMediaNoDB(params: {
 }) {
   // Convert to the new save-media format with variations array
   const savePayload = {
-    runId: crypto.randomUUID(), // Generate a run ID if not provided
+    runId: crypto.randomUUID(), // Use global crypto object
     presetId: params.presetKey,
     allowPublish: params.shareNow || false,
     source: params.sourcePublicId ? { url: params.sourcePublicId } : undefined,
