@@ -1,5 +1,5 @@
 // netlify/functions/getUserMedia.ts
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabasejs';
 import { initCloudinary } from './_cloudinary';
 
 const ok=(b:any)=>({statusCode:200,body:JSON.stringify(b)});
@@ -10,11 +10,13 @@ function base64urlToJson(b64url:string){
   const pad = raw.length % 4 ? raw + '='.repeat(4 - (raw.length % 4)) : raw;
   return JSON.parse(Buffer.from(pad,'base64').toString('utf8'));
 }
+
 function getJwt(event:any){
   const h = event.headers?.authorization || event.headers?.Authorization;
   const m = h && String(h).match(/^Bearer\s+(.+)/i);
   return m ? m[1] : null;
 }
+
 function decodeClaims(jwt:string|null){
   if (!jwt) return null;
   try {
@@ -23,12 +25,107 @@ function decodeClaims(jwt:string|null){
     return base64urlToJson(parts[1]) || null;
   } catch { return null; }
 }
+
 function pickUuidClaim(claims:any){
   for (const k of ['sub','uid','user_id','userId','id']) {
     const v = claims?.[k];
     if (/^[0-9a-f-]{36}$/i.test(v)) return String(v);
   }
   return null;
+}
+
+// Resolve all possible user identifiers for legacy media lookup
+async function resolveUserFromJWT(event: any, supabase: any) {
+  const jwt = getJwt(event);
+  if (!jwt) return { userId: null, identityId: null, email: null };
+
+  const claims = decodeClaims(jwt) || {};
+  const userId = pickUuidClaim(claims);
+  const email = claims.email || claims.mail || null;
+  
+  // Try to get identity ID from profiles table
+  let identityId = null;
+  if (userId) {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .single();
+      identityId = profile?.id || null;
+    } catch (e) {
+      // Profile might not exist yet
+      console.log('No profile found for userId:', userId);
+    }
+  }
+
+  return { userId, identityId, email };
+}
+
+// Try multiple user ID formats to find legacy media
+async function findMediaWithFallback(supabase: any, primaryUserId: string, identityId: string | null, email: string | null) {
+  let items = [];
+  
+  // Try primary user ID first
+  if (primaryUserId) {
+    const { data, error } = await supabase
+      .from('media_assets')
+      .select(`
+        id, user_id, visibility, allow_remix, created_at, env, prompt, model, mode,
+        url, result_url, meta
+      `)
+      .eq('user_id', primaryUserId)
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      items = data;
+      console.log(`✅ Found ${items.length} media items for primary userId: ${primaryUserId}`);
+    }
+  }
+
+  // Fallback 1: Try identity ID if different from primary
+  if (items.length === 0 && identityId && identityId !== primaryUserId) {
+    const { data, error } = await supabase
+      .from('media_assets')
+      .select(`
+        id, user_id, visibility, allow_remix, created_at, env, prompt, model, mode,
+        url, result_url, meta
+      `)
+      .eq('user_id', identityId)
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      items = data;
+      console.log(`✅ Found ${items.length} media items for identityId: ${identityId}`);
+      
+      // Enqueue background job to update ownerId for future queries
+      console.log(`🔄 Legacy media found under identityId ${identityId}, consider migrating to userId ${primaryUserId}`);
+    }
+  }
+
+  // Fallback 2: Try email-based lookup for very legacy items
+  if (items.length === 0 && email) {
+    try {
+      const { data, error } = await supabase
+        .from('media_assets')
+        .select(`
+          id, user_id, visibility, allow_remix, created_at, env, prompt, model, mode,
+          url, result_url, meta
+        `)
+        .eq('meta->>email', email) // Assuming email is stored in meta
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        items = data;
+        console.log(`✅ Found ${items.length} media items for email: ${email}`);
+        console.log(`🔄 Very legacy media found under email ${email}, consider migrating to userId ${primaryUserId}`);
+      }
+    } catch (e) {
+      console.log('Email-based lookup not supported or failed:', e);
+    }
+  }
+
+  return items;
 }
 
 export const handler = async (event:any) => {
@@ -81,30 +178,14 @@ export const handler = async (event:any) => {
       return err(500, 'Supabase credentials not configured');
     }
 
-    const jwt = getJwt(event);
-    if (!jwt) return ok({ items: [] }); // guests see nothing
-
-    const claims = decodeClaims(jwt) || {};
-    const tokenUserId = pickUuidClaim(claims);
-    if (!tokenUserId) return ok({ items: [] }); // invalid token = guest
-
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { data, error } = await supabase
-      .from('media_assets')
-      .select(`
-        id, user_id, visibility, allow_remix, created_at, env, prompt, model, mode,
-        url, result_url, meta
-      `)
-      .eq('user_id', tokenUserId)
-      .order('created_at', { ascending: false });
+    const { userId, identityId, email } = await resolveUserFromJWT(event, supabase);
+    if (!userId) return ok({ items: [] }); // invalid token = guest
 
-    if (error) {
-      console.error('[getUserMedia] Supabase error:', error);
-      return err(500, 'Database error');
-    }
+    const items = await findMediaWithFallback(supabase, userId, identityId, email);
 
-    return ok({ items: data || [] });
+    return ok({ items });
   } catch (e: any) {
     console.error('[getUserMedia] Unexpected error:', e);
     return err(500, e?.message || 'Internal server error');

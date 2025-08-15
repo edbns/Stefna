@@ -11,7 +11,6 @@ interface MasonryMediaGridProps {
   onMediaClick?: (media: UserMedia) => void
   onDownload?: (media: UserMedia) => void
   onRemix?: (media: UserMedia) => void
-  onEdit?: (media: UserMedia) => void
   onDelete?: (media: UserMedia) => void
   onGenerateCaption?: (media: UserMedia) => void
   showActions?: boolean
@@ -30,7 +29,6 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   onMediaClick,
   onDownload,
   onRemix,
-  onEdit,
   onDelete,
   showActions = true,
   className = '',
@@ -230,32 +228,11 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         {showActions && (
                           <>
                             {/* Edit Button - Bottom Right (Primary CTA) */}
-                            {onEdit && (
-                              <div className="absolute bottom-2 right-2 opacity-100 transition-opacity duration-300">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    if (!isLoggedIn) {
-                                      onShowAuth?.()
-                                      return
-                                    }
-                                    onEdit(item)
-                                  }}
-                                  className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/80 transition-all duration-300 hover:scale-105"
-                                  title="Edit this creation"
-                                  aria-label="Edit this media"
-                                >
-                                  <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                  </svg>
-                                </button>
-                              </div>
-                            )}
+                            {/* Removed onEdit prop, so this block is removed */}
 
                             {/* Remix Button - Bottom Right (Secondary CTA) */}
                             {onRemix && (
-                              <div className="absolute bottom-2 right-12 opacity-100 transition-opacity duration-300">
+                              <div className="absolute bottom-2 right-2 opacity-100 transition-opacity duration-300">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()

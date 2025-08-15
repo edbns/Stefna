@@ -1,6 +1,6 @@
 // Auth fetch wrapper that handles 401 retries
 import authService from '../services/authService'
-import { authHeaders } from '../lib/api'
+import { getAuthHeaders } from '../lib/auth'
 
 export async function authFetch(input: RequestInfo, init: RequestInit = {}): Promise<Response> {
   // Get current token
@@ -11,7 +11,7 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}): Pro
   }
 
   // Use centralized auth headers
-  const baseHeaders = authHeaders()
+  const baseHeaders = getAuthHeaders()
   
   // First attempt with current token
   let response = await fetch(input, {
@@ -22,29 +22,19 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}): Pro
     }
   })
 
-  // If 401, try to refresh and retry once
+  // If we get a 401, the token might be expired
   if (response.status === 401) {
-    console.log('🔄 Auth token expired, attempting refresh...')
+    console.log('🔄 Token expired, attempting to refresh...')
     
     try {
-      // Try to get a fresh token (this depends on your auth implementation)
-      const freshToken = await refreshAccessToken()
-      
-      if (freshToken) {
-        // Retry with fresh token
-        response = await fetch(input, {
-          ...init,
-          headers: {
-            ...baseHeaders,
-            ...init.headers
-          }
-        })
-      }
+      // For now, just clear the auth state since we don't have a refresh method
+      // In a real app, you'd call authService.refreshToken() here
+      console.warn('No refresh method available, clearing auth state')
+      authService.clearAuthState()
+      throw new Error('Authentication failed - please log in again')
     } catch (refreshError) {
-      console.error('❌ Token refresh failed:', refreshError)
-      // If refresh fails, redirect to auth
-      window.location.href = '/auth'
-      throw new Error('Authentication failed')
+      console.error('❌ Auth refresh failed:', refreshError)
+      throw new Error('Authentication failed - please log in again')
     }
   }
 
@@ -70,12 +60,12 @@ async function refreshAccessToken(): Promise<string | null> {
       return currentToken
     } else {
       // Token is invalid, clear it and redirect to auth
-      authService.clearAuth()
+      authService.clearAuthState()
       return null
     }
   } catch (error) {
     console.error('Token validation failed:', error)
-    authService.clearAuth()
+    authService.clearAuthState()
     return null
   }
 }

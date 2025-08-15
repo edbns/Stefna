@@ -1,31 +1,11 @@
-// Centralized authentication headers for all API calls
-export function authHeaders() {
-  // Get token from multiple sources
-  const token = 
-    localStorage.getItem('auth_token') ||
-    sessionStorage.getItem('auth_token') ||
-    localStorage.getItem('token') ||
-    sessionStorage.getItem('token');
-
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  
-  // Add app-level key so server can gate traffic
-  const appKey = import.meta.env.VITE_FUNCTION_APP_KEY;
-  if (appKey) {
-    headers['x-app-key'] = appKey;
-  }
-  
-  return headers;
-}
+// src/lib/api.ts
+import { getAuthHeaders } from './auth'
+import crypto from 'crypto'
 
 export async function createAsset(input: import('./types').CreateAssetInput) {
   const res = await fetch('/.netlify/functions/create-asset', {
     method: 'POST',
-    headers: authHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify(input),
   });
   return res.json();
@@ -34,7 +14,7 @@ export async function createAsset(input: import('./types').CreateAssetInput) {
 export async function processAsset(payload: import('./types').ProcessAssetPayload) {
   const res = await fetch('/.netlify/functions/process-asset', {
     method: 'POST',
-    headers: authHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   return res.json();
@@ -43,7 +23,7 @@ export async function processAsset(payload: import('./types').ProcessAssetPayloa
 export async function publishAsset(input: import('./types').PublishAssetInput) {
   const res = await fetch('/.netlify/functions/publish-asset', {
     method: 'POST',
-    headers: authHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify(input),
   });
   return res.json();
@@ -65,7 +45,7 @@ export async function getPublicFeed(limit = 50) {
 export async function getUserMediaNoDB(userId: string) {
   const res = await fetch(`/.netlify/functions/getUserMedia`, {
     method: 'POST',
-    headers: authHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify({ userId }),
   });
   const body = await res.json();
@@ -82,10 +62,35 @@ export async function saveMediaNoDB(params: {
   shareNow?: boolean;
   mediaTypeHint?: 'image' | 'video';
 }) {
+  // Convert to the new save-media format with variations array
+  const savePayload = {
+    runId: crypto.randomUUID(), // Generate a run ID if not provided
+    presetId: params.presetKey,
+    allowPublish: params.shareNow || false,
+    source: params.sourcePublicId ? { url: params.sourcePublicId } : undefined,
+    variations: [{
+      url: params.resultUrl,
+      type: params.mediaTypeHint || 'image',
+      meta: {
+        presetKey: params.presetKey,
+        userId: params.userId,
+        allowRemix: params.allowRemix,
+        shareNow: params.shareNow,
+        source: 'no-db-mode'
+      }
+    }],
+    tags: ['transformed', 'no-db-mode'],
+    extra: {
+      source: 'no-db-mode',
+      timestamp: new Date().toISOString(),
+      userId: params.userId
+    }
+  };
+
   const res = await fetch(`/.netlify/functions/save-media`, {
     method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(params),
+    headers: getAuthHeaders(),
+    body: JSON.stringify(savePayload),
   });
   const text = await res.text();
   let body: any = {};
@@ -100,7 +105,7 @@ export async function saveMediaNoDB(params: {
 export async function togglePublish(publicId: string, publish: boolean) {
   const res = await fetch(`/.netlify/functions/togglePublish`, {
     method: 'POST',
-    headers: authHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify({ publicId, publish }),
   });
   const body = await res.json();

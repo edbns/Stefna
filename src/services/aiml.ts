@@ -1,5 +1,5 @@
 // src/services/aiml.ts
-import { authHeaders } from '../lib/api'
+import { getAuthHeaders } from '../lib/auth'
 
 // Retry configuration
 const RETRY_CONFIG = {
@@ -49,7 +49,7 @@ export async function callAimlApi(payload: any) {
       
       const response = await fetch('/.netlify/functions/aimlApi', {
         method: 'POST',
-        headers: authHeaders(),
+        headers: getAuthHeaders(),
         body: JSON.stringify(enrichedPayload),
         signal: controller.signal
       })

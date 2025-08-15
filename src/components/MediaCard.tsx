@@ -13,7 +13,6 @@ interface MediaCardProps {
   icon: React.ComponentType<{ size?: number; className?: string }>
   isLoggedIn: boolean
   onRemix?: (id: string) => void
-  onEdit?: (id: string) => void
   onShowAuth: () => void
   onShowMedia?: (id: string, title: string, prompt: string) => void
   remixCount?: number
@@ -30,7 +29,6 @@ const MediaCard: React.FC<MediaCardProps> = ({
   icon: IconComponent,
   isLoggedIn,
   onRemix,
-  onEdit,
   onShowAuth,
   onShowMedia,
   remixCount = 0,
@@ -45,17 +43,6 @@ const MediaCard: React.FC<MediaCardProps> = ({
     
     if (onRemix) {
       onRemix(id)
-    }
-  }
-
-  const handleEdit = () => {
-    if (!isLoggedIn) {
-      onShowAuth()
-      return
-    }
-    
-    if (onEdit) {
-      onEdit(id)
     }
   }
 
@@ -85,9 +72,12 @@ const MediaCard: React.FC<MediaCardProps> = ({
       return 'MoodMorph';
     }
     
-    // For presets, show the preset name
+    // For presets, show ONLY the preset name (not "Preset, Custom Preset")
     if (meta.presetId) {
-      return detailChip;
+      // Get the actual preset name from the presetId
+      const presetName = meta.presetId;
+      // If it's a known preset, use its label, otherwise use the ID
+      return presetName || 'Custom';
     }
     
     // For story mode, show the story theme
@@ -100,8 +90,8 @@ const MediaCard: React.FC<MediaCardProps> = ({
       return modeChip;
     }
     
-    // Default fallback
-    return detailChip || modeChip;
+    // Default fallback - show the detail chip (preset name) if available
+    return detailChip || 'Custom';
   }
 
   const smartTag = getSmartTag();
@@ -139,21 +129,6 @@ const MediaCard: React.FC<MediaCardProps> = ({
 
         {/* Action Buttons - Bottom Right */}
         <div className="absolute bottom-3 right-3 flex items-center gap-2 opacity-100 transition-opacity duration-300">
-          {/* Edit Button */}
-          {onEdit && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleEdit() }}
-              className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/80 transition-all duration-300 hover:scale-105"
-              title="Edit this creation"
-              aria-label="Edit this media"
-            >
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-            </button>
-          )}
-
           {/* Remix Button */}
           {onRemix && (
             <button

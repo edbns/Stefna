@@ -1,6 +1,6 @@
 import { GenerateJob, GenerationResult } from '../types/generation'
 import { nanoid } from 'nanoid'
-import { authHeaders } from '../lib/api'
+import { getAuthHeaders } from '../lib/auth'
 
 export async function startGeneration(job: GenerateJob): Promise<GenerationResult> {
   // Validate required fields
@@ -15,7 +15,7 @@ export async function startGeneration(job: GenerateJob): Promise<GenerationResul
     // Call the existing aimlApi function
     const response = await fetch('/.netlify/functions/aimlApi', {
       method: 'POST',
-      headers: authHeaders(),
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         ...job.params,
         prompt: job.prompt,

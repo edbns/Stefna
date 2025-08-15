@@ -31,14 +31,12 @@ interface SafeMasonryGridProps {
   feed: UserMedia[]
   handleMediaClick: (media: UserMedia) => void
   handleRemix: (media: UserMedia) => void
-  onEdit: (media: UserMedia) => void
 }
 
 const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   feed,
   handleMediaClick,
-  handleRemix,
-  onEdit
+  handleRemix
 }) => {
   try {
     return (
@@ -47,10 +45,8 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         columns={3}
         onMediaClick={handleMediaClick}
         onRemix={(media) => handleRemix(media)}
-        onEdit={(media) => onEdit(media)}
         showActions={true}
         className="pb-24"
-
       />
     )
   } catch (error) {
@@ -1866,30 +1862,7 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  const handleEdit = async (media: UserMedia) => {
-    if (!authService.getToken()) {
-      // Sign up required - no notification needed
-      navigate('/auth')
-      return
-    }
-    
-    try {
-      // Set up the composer with the source media for editing
-      setPreviewUrl(media.url);
-      setIsVideoPreview(media.type === 'video');
-      setSelectedFile(null);
-      setIsComposerOpen(true);
-      setPrompt(media.prompt || '');
-      
-      // Clear selectedPreset when editing
-      requestClearPreset('edit started');
-      
-      notifyQueue({ title: 'Edit mode', message: 'Composer opened for editing' });
-    } catch (error) {
-      console.error('Error opening editor:', error);
-      notifyError({ title: 'Something went wrong', message: 'Failed to open editor' });
-    }
-  }
+
 
   const handleMediaClick = (media: UserMedia) => {
     console.log('🔍 HomeNew handleMediaClick:', {
@@ -2336,7 +2309,6 @@ const HomeNew: React.FC = () => {
               feed={feed}
               handleMediaClick={handleMediaClick}
               handleRemix={handleRemix}
-              onEdit={handleEdit}
             />
           ) : (
             <div className="text-center py-12">

@@ -2,8 +2,6 @@
 // Fixes: preflight checks, side-effect ordering, error cleanup
 import { logger } from '../utils/logger'
 import { presetsStore } from '../stores/presetsStore'
-import { uiStore } from '../stores/ui'
-import { quotaStore } from '../stores/quota'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import { useToasts } from '../components/ui/Toasts'
 import { authFetch } from '../utils/authFetch'
@@ -249,13 +247,19 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
     showError(msg, runId)
     return null
   } finally {
-    // 🔧 ALWAYS reset so you don't need a page refresh
-    if (activeRunId === runId) {
+    // 🔧 ALWAYS reset UI state for this specific run
+    uiStore.unregisterActiveRun(runId)
+    
+    // Check if NO inflight runs remain, then clear the spinner
+    const remainingRuns = runsStore.getState().getActiveCount()
+    if (remainingRuns === 0) {
       uiStore.setBusy(false)
       uiStore.setCurrentRunId(null)
       activeRunId = null
+      console.log('🎯 All runs completed, spinner cleared')
+    } else {
+      console.log(`🎯 Run ${runId} completed, ${remainingRuns} runs still active`)
     }
-    uiStore.unregisterActiveRun(runId)
     
     // Clean up file input and blob URLs
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
