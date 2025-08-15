@@ -245,13 +245,23 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
     showError(msg, runId)
     return null
   } finally {
-    // ALWAYS clear busy state for this run
+    // 🔧 ALWAYS reset so you don't need a page refresh
     if (activeRunId === runId) {
       uiStore.setBusy(false)
       uiStore.setCurrentRunId(null)
       activeRunId = null
     }
     uiStore.unregisterActiveRun(runId)
+    
+    // Clean up file input and blob URLs
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+    if (fileInput) fileInput.value = ''
+    
+    // Revoke any blob URLs to prevent memory leaks
+    if (window.__lastSelectedFile) {
+      const previewUrl = document.querySelector('img[src^="blob:"]')?.getAttribute('src')
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
     
     const duration = Date.now() - startTime
     genLogger.info('Generation pipeline completed', { duration: `${duration}ms` })

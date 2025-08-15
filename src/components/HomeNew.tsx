@@ -467,17 +467,18 @@ const HomeNew: React.FC = () => {
     fileInputRef.current?.click()
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const url = URL.createObjectURL(file)
-    setPreviewUrl(url)
-    setIsVideoPreview(false) // Always treat as image for now
-    setSelectedFile(file)
-    storeSelectedFile(file) // Store globally for blob: fallback
+
+    // Create preview URL for display only
+    const preview = URL.createObjectURL(file)
+
+    // Store both: File for upload, preview URL for display
+    setSelectedFile(file)                    // File used for upload
+    setPreviewUrl(preview)                   // blob: used only for <img> preview
+    storeSelectedFile(file)                  // Store globally for blob: fallback
     setIsComposerOpen(true)
-    // Keep selectedPreset when new media is uploaded (sticky behavior)
-    console.log('📁 New media uploaded, keeping preset:', selectedPreset)
   }
 
   const measure = () => {
@@ -1053,10 +1054,10 @@ const HomeNew: React.FC = () => {
       // Keep preset selected for user convenience (stateless generation doesn't need clearing)
 
       // Enforce server-side quota and generate via aimlApi
-      // Use new uploadSource service - never fetch blob URLs
+      // Use new uploadSource service - pass File object, not blob URL
       const uploadResult = await uploadSourceToCloudinary({
-        file: selectedFile,
-        url: previewUrl
+        file: selectedFile,    // Pass the File object directly
+        url: undefined         // Don't pass preview URL
       })
       const sourceUrl = uploadResult.secureUrl
       
@@ -2184,6 +2185,25 @@ const HomeNew: React.FC = () => {
       return false
     }
   }
+
+  // Clean up when composer closes
+  useEffect(() => {
+    if (!isComposerOpen) {
+      // User cancelled / modal closed → make uploader reusable
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+      if (fileInput) fileInput.value = ''
+      
+      // Revoke blob URL to prevent memory leaks
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+        setPreviewUrl(null)
+      }
+      
+      // Reset file state
+      setSelectedFile(null)
+      window.__lastSelectedFile = undefined
+    }
+  }, [isComposerOpen, previewUrl])
 
   return (
     <div className="flex min-h-screen bg-black relative overflow-hidden">

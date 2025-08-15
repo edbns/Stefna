@@ -7,7 +7,14 @@ export async function uploadSourceToCloudinary(src: Source) {
   // 1) prefer the original File object
   const isFile = !!src.file
   if (!isFile && src.url && (src.url.startsWith('blob:') || src.url.startsWith('data:'))) {
-    throw new Error('Pass the original File, not a blob/data URL')
+    // Borrow the last user-selected file if available
+    const f = window.__lastSelectedFile as File | undefined
+    if (f) {
+      console.warn('uploadSource: blob URL detected, falling back to last selected file')
+      src = { file: f }
+    } else {
+      throw new Error('Pass the original File, not a blob/data URL')
+    }
   }
 
   // 2) get a fresh signature
