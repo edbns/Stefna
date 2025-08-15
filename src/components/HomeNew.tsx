@@ -15,6 +15,9 @@ import { usePresetRunner } from '../hooks/usePresetRunner'
 import { useSelectedPreset } from '../stores/selectedPreset'
 import { HiddenUploader } from './HiddenUploader'
 import { useIntentQueue } from '../state/intentQueue'
+import { getHttpsSource, storeSelectedFile } from '../services/mediaSource'
+import { postAuthed } from '../utils/fetchAuthed'
+import { runsStore } from '../stores/runs'
 
 // Safe wrapper for MasonryMediaGrid with fallback
 interface SafeMasonryGridProps {
@@ -470,6 +473,7 @@ const HomeNew: React.FC = () => {
     setPreviewUrl(url)
     setIsVideoPreview(false) // Always treat as image for now
     setSelectedFile(file)
+    storeSelectedFile(file) // Store globally for blob: fallback
     setIsComposerOpen(true)
     // Keep selectedPreset when new media is uploaded (sticky behavior)
     console.log('📁 New media uploaded, keeping preset:', selectedPreset)
@@ -1226,7 +1230,7 @@ const HomeNew: React.FC = () => {
       if (!res.ok) {
         // Handle different error types
         if (res.status === 501 && isVideoPreview) {
-          notifyQueue({ title: 'Added to queue', message: 'We’ll start processing shortly.' });
+          notifyQueue({ title: 'Added to queue', message: 'We will start processing shortly.' });
           // Don't return - let the processing continue
         } else if (res.status === 429) {
           notifyError({ title: 'Something went wrong', message: 'Rate limited' });
@@ -1255,29 +1259,34 @@ const HomeNew: React.FC = () => {
       setPreviewUrl(cacheBustedResultUrl);
       
       // Add success notification
-              notifyReady({ title: 'Your media is ready', message: 'Tap to open', thumbUrl: resultUrl, onClickThumb: () => {
-              // Open the media viewer to show the generated image
-              setViewerMedia([{
-                id: 'generated-' + Date.now(),
-                userId: 'current-user',
-                type: 'photo',
-                url: resultUrl,
-                prompt: prompt,
-                aspectRatio: 4/3,
-                width: 800,
-                height: 600,
-                timestamp: new Date().toISOString(),
-                tokensUsed: 2,
-                likes: 0,
-                remixCount: 0,
-                isPublic: false,
-                allowRemix: false,
-                tags: [],
-                metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
-              } ]);
-              setViewerStartIndex(0);
-              setViewerOpen(true);
-            } });
+      notifyReady({ 
+        title: 'Your media is ready', 
+        message: 'Tap to open', 
+        thumbUrl: resultUrl, 
+        onClickThumb: () => {
+          // Open the media viewer to show the generated image
+          setViewerMedia([{
+            id: 'generated-' + Date.now(),
+            userId: 'current-user',
+            type: 'photo',
+            url: resultUrl,
+            prompt: prompt,
+            aspectRatio: 4/3,
+            width: 800,
+            height: 600,
+            timestamp: new Date().toISOString(),
+            tokensUsed: 2,
+            likes: 0,
+            remixCount: 0,
+            isPublic: false,
+            allowRemix: false,
+            tags: [],
+            metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
+          }]);
+          setViewerStartIndex(0);
+          setViewerOpen(true);
+        } 
+      });
 
       // Save the generated media to the database
           try {
@@ -1478,7 +1487,7 @@ const HomeNew: React.FC = () => {
       // Handle V2V processing status
       if (isVideoPreview) {
         if (body.status === 'processing' || body.status === 'queued') {
-          notifyQueue({ title: 'Added to queue', message: 'We’ll start processing shortly.' });
+          notifyQueue({ title: 'Added to queue', message: 'We will start processing shortly.' });
           // TODO: Implement polling for V2V status updates
           console.log('🎬 V2V job started:', body.job_id || 'unknown');
         } else if (body.status === 'completed') {
@@ -1534,12 +1543,11 @@ const HomeNew: React.FC = () => {
       const { shareToFeed, allowRemix } = await getUserProfileSettings()
       
       // Enforce server-side quota and generate via aimlApi
-      // Ensure source is uploaded to Cloudinary
-      let sourceUrl = previewUrl!
-      if (selectedFile) {
-        const up = await uploadToCloudinary(selectedFile, `users/${authService.getCurrentUser()?.id || 'me'}`)
-        sourceUrl = up.secure_url
-      }
+      // Use centralized HTTPS source resolution
+      const sourceUrl = await getHttpsSource({ 
+        file: selectedFile, 
+        url: previewUrl 
+      })
       // Determine if this should be a video job (Story Mode creates MP4s)
       const isStoryMode = selectedMode === 'story';
       const shouldBeVideo = isVideoPreview || isStoryMode;
@@ -1648,17 +1656,20 @@ const HomeNew: React.FC = () => {
     setSelectedPreset(presetName)
     console.log('✅ selectedPreset set to:', presetName)
     
+    // Close composer immediately and show progress on avatar
+    setIsComposerOpen(false)
+    setNavGenerating(true)
+    
     // Check if we have a valid source using the resolver
     const source = resolveSource()
     if (!source) {
       console.log('⚠️ No valid source found for preset generation')
       notifyError({ title: 'Pick a photo/video first', message: 'Select media, then apply a preset.' })
+      setNavGenerating(false)
       return
     }
     
     console.log('🚀 Starting generation with preset:', presetName, 'source:', source.id)
-    // Use the new bulletproof handler with proper source
-    setNavGenerating(true)
     try {
       await onPresetClick(presetName, undefined, source.url)
     } catch (error) {
@@ -1702,7 +1713,8 @@ const HomeNew: React.FC = () => {
       return
     }
     
-    // Show immediate feedback that button was clicked
+    // Close composer immediately and show immediate feedback that button was clicked
+    setIsComposerOpen(false)
     setNavGenerating(true)
     
     try {

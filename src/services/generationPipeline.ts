@@ -1,11 +1,17 @@
 // Bulletproof Generation Pipeline
 // Fixes: preflight checks, side-effect ordering, error cleanup
+import { logger } from '../utils/logger'
 import { presetsStore } from '../stores/presetsStore'
+import { uiStore } from '../stores/ui'
+import { quotaStore } from '../stores/quota'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import { useToasts } from '../components/ui/Toasts'
 import { authFetch } from '../utils/authFetch'
-import { logger } from '../utils/logger'
 import { preventDuplicateOperation, networkGuardRails, buttonGuardRails } from '../utils/guardRails'
+import { getHttpsSource } from '../services/mediaSource'
+import { runsStore } from '../stores/runs'
+import { postAuthed } from '../utils/fetchAuthed'
+import authService from '../services/authService'
 
 // File type guard to prevent uploading strings as files
 const isFileLike = (x: unknown): x is File | Blob =>
@@ -122,6 +128,9 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
   const controller = new AbortController()
   const startTime = Date.now()
   
+  // Track this run to prevent dropping late completions
+  runsStore.getState().startRun(runId)
+  
   // Create logger for this generation run
   const genLogger = logger.generationStart(runId, 'unknown', 'unknown')
   
@@ -172,28 +181,17 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
     const uploadLogger = jobLogger.generationStep('upload')
     let sourceUrl: string | undefined
     
-    // ✅ Strictly detect file vs url before uploading
-    if (isFileLike(job.source?.file)) {
-      try {
-        uploadLogger.info('Starting file upload', { 
-          fileName: (job.source!.file as File).name,
-          fileSize: job.source!.file.size 
-        })
-        const uploadResult = await uploadToCloudinary(job.source!.file as File, 'stefna/sources')
-        sourceUrl = uploadResult.secure_url
-        uploadLogger.info('Upload completed', { sourceUrl })
-      } catch (error) {
-        if (controller.signal.aborted) return null
-        uploadLogger.error('Upload failed', { error: error instanceof Error ? error.message : error })
-        showError("Upload failed: " + (error instanceof Error ? error.message : 'Unknown error'), runId)
-        return null
-      }
-    } else if (typeof job.source?.url === "string" && job.source.url) {
-      sourceUrl = job.source.url
-      uploadLogger.info('Using provided URL', { sourceUrl })
-    } else {
-      uploadLogger.error('No valid source found', { source: job.source })
-      showError("No source image found", runId)
+    // ✅ Use centralized HTTPS source resolution
+    try {
+      sourceUrl = await getHttpsSource({ 
+        file: job.source?.file, 
+        url: job.source?.url 
+      })
+      uploadLogger.info('HTTPS source resolved', { sourceUrl })
+    } catch (error) {
+      if (controller.signal.aborted) return null
+      uploadLogger.error('HTTPS source resolution failed', { error: error instanceof Error ? error.message : error })
+      showError("Source processing failed: " + (error instanceof Error ? error.message : 'Unknown error'), runId)
       return null
     }
 
@@ -211,17 +209,25 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
     const res = await callAimlApi(payload, { signal: controller.signal })
     apiLogger.info('API call completed', { success: res.success })
 
-    // 4) SAVE & UI updates (process even if run is out-of-date) ───────────────────
-    if (!controller.signal.aborted) {
-      const saveLogger = jobLogger.generationStep('save')
-      
-      if (activeRunId !== runId) {
-        console.info('Out-of-date run completed, still surfacing result', {runId});
-      }
-      
-      // Always process the result to update UI state
-      await onGenerationComplete(res, job);
-      saveLogger.info('Generation result processed and UI updated')
+    // 4) COMPLETION ───────────────────────────────────────────────
+    const completionLogger = jobLogger.generationStep('completion')
+    
+    // Process completion regardless of whether it's "late" - don't drop it
+    const wasActive = runsStore.getState().completeRun(runId)
+    
+    if (wasActive) {
+      completionLogger.info('Run completed normally', { runId })
+    } else {
+      completionLogger.info('Late completion processed', { runId })
+    }
+    
+    // Always process the completion, even if it was "late"
+    try {
+      await onGenerationComplete(res, job)
+      completionLogger.info('Completion processing successful')
+    } catch (error) {
+      completionLogger.error('Completion processing failed', { error: error instanceof Error ? error.message : error })
+      // Don't fail the generation - the asset was created successfully
     }
     
     const duration = Date.now() - startTime
@@ -369,49 +375,67 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
   }
 
   try {
-    // Save to database with proper metadata (record-asset format)
-    const record = {
-      url: result.resultUrl,
-      public_id: extractPublicId(result.resultUrl),
-      resource_type: 'image', // TODO: detect video vs image from result
-      folder: 'stefna/outputs',
-      parent_id: job.parentId || null,
-      meta: {
-        presetId: job.presetId,
-        mode: job.mode,
-        group: job.group || null,
-        optionKey: job.optionKey || null,
-        storyKey: job.storyKey || null,
-        storyLabel: job.storyLabel || null,
-        prompt: job.prompt,
-        source_url: job.source?.url,
-        tags: ['transformed', `preset:${job.presetId}`, `mode:${job.mode}`]
+    // Use the new unified save-media endpoint
+    const savePayload = {
+      runId: job.runId,
+      presetId: job.presetId,
+      allowPublish: true, // TODO: get from user settings
+      source: job.source,
+      variations: [{
+        url: result.resultUrl,
+        type: 'image', // TODO: detect from result
+        meta: {
+          presetId: job.presetId,
+          mode: job.mode,
+          group: job.group || null,
+          optionKey: job.optionKey || null,
+          storyKey: job.storyKey || null,
+          storyLabel: job.storyLabel || null,
+          prompt: job.prompt,
+          source_url: job.source?.url,
+        }
+      }],
+      tags: ['transformed', `preset:${job.presetId}`, `mode:${job.mode}`],
+      extra: {
+        source: 'generation',
+        timestamp: new Date().toISOString()
       }
     }
 
-    console.log('💾 Saving generation result to DB:', record)
-    const response = await fetch('/.netlify/functions/record-asset', {
+    console.log('💾 Saving generation result via save-media:', savePayload)
+    
+    // Get auth token for the request
+    const token = authService.getToken()
+    if (!token) {
+      console.warn('No auth token available, saving without DB record')
+    }
+
+    const response = await fetch('/.netlify/functions/save-media', {
       method: 'POST',
-      headers: {'content-type': 'application/json'},
-      body: JSON.stringify(record)
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` })
+      },
+      body: JSON.stringify(savePayload)
     })
 
     if (!response.ok) {
-      console.error('Failed to save to DB:', response.status, await response.text())
+      console.error('Failed to save via save-media:', response.status, await response.text())
       return
     }
 
-    console.log('✅ Generation saved to DB successfully')
+    const saveResult = await response.json()
+    console.log('✅ Generation saved via save-media:', saveResult)
 
     // If this is a remix (has parentId), send anonymous notification
     if (job.parentId) {
       try {
         const notifyResponse = await fetch('/.netlify/functions/notify-remix', {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             parentId: job.parentId,
-            childId: record.public_id || 'unknown',
+            childId: saveResult.items?.[0]?.cloudinary_public_id || 'unknown',
             createdAt: new Date().toISOString()
           })
         });
@@ -431,7 +455,7 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
     // Dispatch custom event for UI components to listen to
     window.dispatchEvent(new CustomEvent('generation-complete', { 
       detail: { 
-        record, 
+        record: saveResult.items?.[0], 
         resultUrl: result.resultUrl,
         presetId: job.presetId,
         mode: job.mode,
