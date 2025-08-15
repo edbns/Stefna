@@ -96,8 +96,8 @@ type CanonicalItem = {
 const handler: Handler = async (event, context) => {
   if (event.httpMethod === 'OPTIONS') {
     return ok({ ok: true })
-  }
-  if (event.httpMethod !== 'POST') {
+	}
+	if (event.httpMethod !== 'POST') {
     return err('Method not allowed', 405)
   }
 
@@ -200,7 +200,7 @@ const handler: Handler = async (event, context) => {
 
       if (error) throw error
       dbResult = { skipped: false, inserted: data?.length || 0 }
-    } catch (e: any) {
+	} catch (e: any) {
       // We deliberately do NOT fail the whole request if DB insert fails.
       // Client can still proceed (feed uses Cloudinary), and you see the error here.
       dbResult = { skipped: true, error: String(e?.message || e) }

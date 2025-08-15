@@ -19,6 +19,12 @@ import { getHttpsSource, storeSelectedFile } from '../services/mediaSource'
 import { postAuthed } from '../utils/fetchAuthed'
 import { runsStore } from '../stores/runs'
 import { uploadSourceToCloudinary } from '../services/uploadSource'
+import { useGenerationMode } from '../stores/generationMode'
+import { runMoodMorph } from '../services/moodMorph'
+import { runStyleClash } from '../services/styleClash'
+import { PairPicker } from '../features/styleclash/PairPicker'
+
+
 
 // Safe wrapper for MasonryMediaGrid with fallback
 interface SafeMasonryGridProps {
@@ -2205,6 +2211,8 @@ const HomeNew: React.FC = () => {
     }
   }, [isComposerOpen, previewUrl])
 
+  const { mode, setMode } = useGenerationMode()
+  
   return (
     <div className="flex min-h-screen bg-black relative overflow-hidden">
       {/* Hidden file uploader for intent-based uploads */}
@@ -2534,49 +2542,54 @@ const HomeNew: React.FC = () => {
                               )}
                             </button>
                           ))}
-                          
-                          {/* Divider */}
-                          <div className="border-t border-white/20 my-2"></div>
-                          
-                          {/* Story Mode */}
-                          <button
-                            onClick={() => {
-                              handleModeClick('story', 'four_seasons_spring')
-                              setPresetsOpen(false)
-                            }}
-                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-white/80 hover:text-white hover:bg-white/10"
-                          >
-                            <span>Story Mode</span>
-                            <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
-                          </button>
-                          
-                          {/* Time Machine */}
-                          <button
-                            onClick={() => {
-                              handleModeClick('time_machine', '1960s_kodachrome')
-                              setPresetsOpen(false)
-                            }}
-                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-white/80 hover:text-white hover:bg-white/10"
-                          >
-                            <span>Time Machine</span>
-                            <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
-                          </button>
-                          
-                          {/* Restore */}
-                          <button
-                            onClick={() => {
-                              handleModeClick('restore', 'sharpen_enhance')
-                              setPresetsOpen(false)
-                            }}
-                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-white/80 hover:text-white hover:bg-white/10"
-                          >
-                            <span>Restore</span>
-                            <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
-                          </button>
                         </div>
                       </div>
                     )}
                   </div>
+
+                  {/* MoodMorph™ button */}
+                  <button
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        navigate('/auth')
+                        return
+                      }
+                      setMode(mode === 'moodmorph' ? 'presets' : 'moodmorph')
+                    }}
+                    className={`px-3 py-1.5 rounded-2xl text-xs border transition-colors ${
+                      !isAuthenticated
+                        ? 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
+                        : mode === 'moodmorph'
+                        ? 'bg-white text-black' 
+                        : 'bg-white/10 text-white border-white/20 hover:bg-white/15'
+                    }`}
+                    title={isAuthenticated ? 'Switch to MoodMorph™ mode' : 'Sign up to use MoodMorph™'}
+                    disabled={!isAuthenticated}
+                  >
+                    MoodMorph™
+                  </button>
+
+                  {/* Style Clash button */}
+                  <button
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        navigate('/auth')
+                        return
+                      }
+                      setMode(mode === 'styleclash' ? 'presets' : 'styleclash')
+                    }}
+                    className={`px-3 py-1.5 rounded-2xl text-xs border transition-colors ${
+                      !isAuthenticated
+                        ? 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
+                        : mode === 'styleclash'
+                        ? 'bg-white text-black' 
+                        : 'bg-white/10 text-white border-white/20 hover:bg-white/15'
+                    }`}
+                    title={isAuthenticated ? 'Switch to Style Clash mode' : 'Sign up to use Style Clash'}
+                    disabled={!isAuthenticated}
+                  >
+                    Style Clash
+                  </button>
 
 
 
@@ -2621,27 +2634,42 @@ const HomeNew: React.FC = () => {
                         }, 100)
                         // Small delay to show the loading state before starting generation
                         setTimeout(() => {
-                          if (selectedPreset) {
+                          if (mode === 'moodmorph') {
+                            // Run MoodMorph™
+                            runMoodMorph(selectedFile || undefined)
+                          } else if (mode === 'styleclash') {
+                            // Run Style Clash
+                            const left = window.__styleClashLeft || 'noir';
+                            const right = window.__styleClashRight || 'vivid';
+                            runStyleClash({ 
+                              left, 
+                              right, 
+                              orientation: 'vertical', 
+                              file: selectedFile || undefined 
+                            })
+                          } else if (selectedPreset) {
+                            // Run preset generation
                             dispatchGenerate('preset', {
                               presetId: selectedPreset,
                               presetData: PRESETS[selectedPreset],
                               promptOverride: prompt
                             })
                           } else {
+                            // Run custom generation
                             dispatchGenerate('custom', {
                               promptOverride: prompt
                             })
                           }
                         }, 100)
                     }} 
-                    disabled={!previewUrl || (!prompt.trim() && !selectedPreset)} 
+                    disabled={!previewUrl || (mode === 'presets' && !prompt.trim() && !selectedPreset)} 
                     className={`w-10 h-10 rounded-full btn-optimized flex items-center justify-center shadow-lg hover:shadow-xl ${
-                      !previewUrl || (!prompt.trim() && !selectedPreset)
+                      !previewUrl || (mode === 'presets' && !prompt.trim() && !selectedPreset)
                         ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
                         : 'bg-white text-black hover:bg-white/90'
                     }`}
-                    aria-label="Generate"
-                    title={`${!isAuthenticated ? 'Sign up to generate AI content' : !previewUrl ? 'Upload media first' : (!prompt.trim() && !selectedPreset) ? 'Enter a prompt or select a preset first' : selectedPreset ? `Generate with ${getPresetLabel(selectedPreset, PRESETS)} preset` : 'Generate AI content'}`}
+                    aria-label={mode === 'moodmorph' ? 'Generate moods' : mode === 'styleclash' ? 'Create Style Clash' : 'Generate'}
+                    title={`${!isAuthenticated ? 'Sign up to generate AI content' : !previewUrl ? 'Upload media first' : mode === 'moodmorph' ? 'Generate 3 mood variations' : mode === 'styleclash' ? 'Create split image with two styles' : (mode === 'presets' && !prompt.trim() && !selectedPreset) ? 'Enter a prompt or select a preset first' : selectedPreset ? `Generate with ${getPresetLabel(selectedPreset, PRESETS)} preset` : 'Generate AI content'}`}
                   >
                     {navGenerating ? (
                       <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
@@ -2714,7 +2742,40 @@ const HomeNew: React.FC = () => {
 
       {/* Video Job Status Display removed in favor of unified toasts */}
 
+      {mode === 'moodmorph' && (
+        /* MoodMorph Mode */
+        <div className="mb-6">
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-white mb-2">MoodMorph™</h3>
+            <p className="text-white/60 text-sm mb-4">
+              Transform your photo into 3 different moods: Happy, Sad, and Cinematic
+            </p>
+          </div>
+        </div>
+      )}
 
+      {mode === 'styleclash' && (
+        /* Style Clash Mode */
+        <div className="mb-6">
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-white mb-2">Style Clash</h3>
+            <p className="text-white/60 text-sm mb-4">
+              Create a split image with two contrasting styles side by side
+            </p>
+            <div className="flex justify-center">
+              <PairPicker 
+                left="noir" 
+                right="vivid" 
+                onChange={(left, right) => {
+                  // Store the selected styles for generation
+                  window.__styleClashLeft = left;
+                  window.__styleClashRight = right;
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )
