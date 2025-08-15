@@ -90,7 +90,7 @@ import userMediaService from '../services/userMediaService'
 import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
-import { saveMediaNoDB, togglePublish } from '../lib/api'
+import { saveMedia, togglePublish } from '../lib/api'
 import { Mode, MODE_LABELS, StoryTheme, TimeEra, RestoreOp } from '../config/modes'
 import { resolvePresetForMode } from '../utils/resolvePresetForMode'
 import { getPresetDef, getPresetLabel, MASTER_PRESET_CATALOG } from '../services/presets'
@@ -1304,7 +1304,7 @@ const HomeNew: React.FC = () => {
             }
           } catch {}
           try {
-            const saved = await saveMediaNoDB({
+            const saved = await saveMedia({
               resultUrl,
               userId,
               presetKey: selectedPreset ?? null,
@@ -1313,11 +1313,11 @@ const HomeNew: React.FC = () => {
               shareNow: !!shareToFeed,
               mediaTypeHint: 'image',
             })
-            console.log('✅ saveMediaNoDB ok:', saved)
+            console.log('✅ saveMedia ok:', saved)
             // Refresh feed
             setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
           } catch (e:any) {
-            console.error('❌ saveMediaNoDB failed:', e)
+            console.error('❌ saveMedia failed:', e)
             notifyError({ title: 'Something went wrong', message: e?.message || 'Failed to save media' })
             try {
               if (userId) {

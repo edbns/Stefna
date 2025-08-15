@@ -129,6 +129,27 @@ async function findMediaWithFallback(supabase: any, primaryUserId: string, ident
 }
 
 export const handler = async (event:any) => {
+  // Check if we have Supabase credentials first - prioritize database
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+  
+  if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      const { userId, identityId, email } = await resolveUserFromJWT(event, supabase);
+      if (!userId) return ok({ items: [] }); // invalid token = guest
+
+      const items = await findMediaWithFallback(supabase, userId, identityId, email);
+      console.log(`✅ Database query returned ${items.length} items for user ${userId}`);
+
+      return ok({ items });
+    } catch (e: any) {
+      console.error('[getUserMedia] Database query error:', e);
+      // Fall back to Cloudinary if database fails
+    }
+  }
+
+  // Fallback to Cloudinary-only mode if no Supabase or database fails
   if (process.env.NO_DB_MODE === 'true') {
     try {
       const cloudinary = initCloudinary();
@@ -170,24 +191,5 @@ export const handler = async (event:any) => {
       console.error('[getUserMedia] error', e);
       return err(500, e?.message || 'Internal server error');
     }
-  }
-
-  try {
-    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return err(500, 'Supabase credentials not configured');
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    const { userId, identityId, email } = await resolveUserFromJWT(event, supabase);
-    if (!userId) return ok({ items: [] }); // invalid token = guest
-
-    const items = await findMediaWithFallback(supabase, userId, identityId, email);
-
-    return ok({ items });
-  } catch (e: any) {
-    console.error('[getUserMedia] Unexpected error:', e);
-    return err(500, e?.message || 'Internal server error');
   }
 };

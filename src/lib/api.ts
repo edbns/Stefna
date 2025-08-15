@@ -28,20 +28,12 @@ export async function publishAsset(input: import('./types').PublishAssetInput) {
   return res.json();
 }
 
-const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true' || (typeof process !== 'undefined' && (process as any).env?.NO_DB_MODE === 'true');
-
 export async function getPublicFeed(limit = 50) {
-  if (NO_DB_MODE) {
-    const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${limit}`);
-    const body = await res.json();
-    if (!res.ok || !body.ok) throw new Error(body.error || 'getPublicFeed failed');
-    return body.data;
-  }
   const res = await fetch('/.netlify/functions/getPublicFeed?limit=' + limit);
   return res.json();
 }
 
-export async function getUserMediaNoDB(userId: string) {
+export async function getUserMedia(userId: string) {
   const res = await fetch(`/.netlify/functions/getUserMedia`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -49,10 +41,10 @@ export async function getUserMediaNoDB(userId: string) {
   });
   const body = await res.json();
   if (!res.ok || !body.ok) throw new Error(body.error || 'getUserMedia failed');
-  return body.data;
+  return body.items || body.data || [];
 }
 
-export async function saveMediaNoDB(params: {
+export async function saveMedia(params: {
   resultUrl: string;
   userId: string;
   presetKey?: string | null;
@@ -75,12 +67,12 @@ export async function saveMediaNoDB(params: {
         userId: params.userId,
         allowRemix: params.allowRemix,
         shareNow: params.shareNow,
-        source: 'no-db-mode'
+        source: 'database'
       }
     }],
-    tags: ['transformed', 'no-db-mode'],
+    tags: ['transformed', 'database'],
     extra: {
-      source: 'no-db-mode',
+      source: 'database',
       timestamp: new Date().toISOString(),
       userId: params.userId
     }

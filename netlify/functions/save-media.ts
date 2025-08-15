@@ -175,26 +175,55 @@ const handler: Handler = async (event, context) => {
         auth: { persistSession: false },
       })
 
+      // First, ensure user exists in users table
+      const { error: userError } = await supabase
+        .from('users')
+        .upsert({
+          id: userId,
+          email: `user-${userId}@placeholder.com`, // Placeholder email
+          name: `User ${userId}`, // Placeholder name
+          tier: 'registered',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id',
+          ignoreDuplicates: false
+        });
+
+      if (userError) {
+        console.error('Failed to upsert user:', userError);
+        // Continue with media insert even if user upsert fails
+      }
+
       // Upsert user if needed, then insert assets
       // Adjust table/columns to match your schema.
       const assetRows = uploaded.map((u) => ({
-        owner_id: userId,
+        user_id: userId, // Changed from owner_id to user_id
         run_id: runId,
         preset_id: body.presetId || null,
         public_id: u.cloudinary_public_id,
-        url: u.secure_url,
+        url: u.secure_url, // This maps to the main URL
+        result_url: u.secure_url, // Add result_url for generated content
         resource_type: u.resource_type,
         width: u.width,
         height: u.height,
         bytes: u.bytes,
         tags: body.tags || [],
-        allow_publish: !!body.allowPublish,
-        extra: body.extra || {},
-        meta: u.meta || {},
+        visibility: body.allowPublish ? 'public' : 'private', // Changed from allow_publish to visibility
+        allow_remix: false, // Default to false, can be updated later
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        metadata: {
+          ...u.meta,
+          presetId: body.presetId,
+          runId: runId,
+          source: body.source?.url || null,
+          extra: body.extra || {}
+        }
       }))
 
       const { data, error } = await supabase
-        .from('assets') // <--- your table
+        .from('media_assets') // Changed from 'assets' to 'media_assets'
         .insert(assetRows)
         .select()
 

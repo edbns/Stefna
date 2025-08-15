@@ -3,6 +3,8 @@ import { MOODS } from '../features/moodmorph/recipes'
 import { uploadSourceToCloudinary } from './uploadSource'
 import { getSourceFileOrThrow } from './source'
 import { callAimlApi } from './aiml'
+import { saveMedia } from '../lib/api';
+import authService from './authService';
 
 // Simple AIML API call function
 async function callAimlApiMini(payload: any) {
@@ -16,13 +18,6 @@ async function callAimlApiMini(payload: any) {
     console.error('❌ MoodMorph: Payload was:', payload)
     throw error
   }
-}
-
-// Simple save function (NO_DB_MODE friendly)
-async function saveMediaNoDB(result: any, meta: any) {
-  // For now, just return success - we can implement actual saving later
-  console.log('MoodMorph: saving result', { result, meta })
-  return { success: true }
 }
 
 // Simple feed refresh
@@ -73,7 +68,15 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
       if (result.status === 'fulfilled') {
         console.log(`✅ MoodMorph: Mood ${i + 1} (${mood.id}) successful:`, result.value)
         ok.push(result.value)
-        await saveMediaNoDB(result.value, { groupId: runId })
+        // Save the result
+        await saveMedia({
+          resultUrl: result.value,
+          userId: authService.getCurrentUser()?.id || 'unknown',
+          presetKey: 'moodmorph',
+          allowRemix: true,
+          shareNow: false,
+          mediaTypeHint: 'image'
+        });
       } else {
         console.error(`❌ MoodMorph: Mood ${i + 1} (${mood.id}) failed:`, result.reason)
         failed.push({ mood: mood.id, error: result.reason })
