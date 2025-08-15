@@ -297,6 +297,9 @@ export const PRESETS = {
   },
 } satisfies Record<string, Preset>;
 
+// Freeze data to prevent runtime mutations
+Object.freeze(PRESETS);
+
 export type PresetId = keyof typeof PRESETS;
 
 // 1) Source of truth for the weekly rotation (exactly 6 ids, rotated weekly)
@@ -356,6 +359,11 @@ export const OPTION_GROUPS: OptionGroups<typeof PRESETS> = {
     },
   },
 } as const;
+
+// Freeze option groups to prevent runtime mutations
+Object.freeze(OPTION_GROUPS);
+Object.freeze(OPTION_GROUPS.time_machine);
+Object.freeze(OPTION_GROUPS.restore);
 
 // ---- Deep merge (handles nested `post`) ------------------------------------
 function mergePreset(base: Preset, overrides: DeepPartial<Preset> = {}): Preset {

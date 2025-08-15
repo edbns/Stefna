@@ -13,6 +13,8 @@ import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
 import { usePresetRunner } from '../hooks/usePresetRunner'
 import { useSelectedPreset } from '../stores/selectedPreset'
+import { HiddenUploader } from './HiddenUploader'
+import { useIntentQueue } from '../state/intentQueue'
 
 // Safe wrapper for MasonryMediaGrid with fallback
 interface SafeMasonryGridProps {
@@ -2172,8 +2174,9 @@ const HomeNew: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-black relative overflow-hidden">
+      {/* Hidden file uploader for intent-based uploads */}
+      <HiddenUploader />
 
-      
       {/* Floating top nav - only for logged in users */}
       {isAuthenticated && (
         <div className="fixed top-4 right-4 z-50 flex items-center gap-3">

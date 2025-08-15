@@ -25,12 +25,15 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
     // 1) Source: prefer override (fresh Cloudinary URL), else global store
     const src = preset.requiresSource ? (srcOverride ?? getCurrentSourceUrl()) : null;
 
-    // 2) Guard: never pass blob:/data:/preview into API
+    // 2) Hard guard: never pass blob:/data:/preview into API
     if (preset.requiresSource) {
       if (!src || !/^https?:\/\//.test(src)) {
+        // Do NOT attempt API call; let the queue wait for upload
+        console.warn('🚫 Blocked non-https source:', src);
         showToast('error', 'Pick a photo/video first, then apply a preset.');
         return null;
       }
+      console.info('✅ HTTPS source validated:', src);
     }
 
     // 3) Create generation job with both image_url and sourceUrl for compatibility
