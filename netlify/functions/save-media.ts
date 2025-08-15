@@ -113,6 +113,13 @@ const handler: Handler = async (event, context) => {
     return err('Missing "variations" array')
   }
 
+  // Validate variations are proper string URLs
+  for (const variation of body.variations) {
+    if (!variation.url || typeof variation.url !== 'string' || !variation.url.startsWith('https://')) {
+      return err(`Variation url must be https string, got: ${typeof variation.url} ${variation.url}`)
+    }
+  }
+
   const authHeader = event.headers.authorization || event.headers.Authorization
   const bearer = (authHeader || '').startsWith('Bearer ')
     ? (authHeader as string).slice(7)
@@ -243,6 +250,15 @@ const handler: Handler = async (event, context) => {
     folder,
     items: uploaded,
     db: dbResult,
+    media: uploaded.map(item => ({
+      id: item.cloudinary_public_id,
+      url: item.secure_url,
+      resource_type: item.resource_type,
+      width: item.width,
+      height: item.height,
+      bytes: item.bytes,
+      created_at: new Date().toISOString()
+    }))
   })
 }
 

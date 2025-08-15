@@ -1351,74 +1351,56 @@ const HomeNew: React.FC = () => {
 
         // Save all variations to the database
         console.log(`💾 Saving ${allResultUrls.length} variation(s) to database...`);
-        let savedCount = 0;
-        let saveErrors: any[] = [];
-
-        for (let i = 0; i < allResultUrls.length; i++) {
-          const variationUrl = allResultUrls[i];
-          console.log(`💾 Saving variation ${i + 1}/${allResultUrls.length}:`, variationUrl);
-
-          try {
-            const saveRes = await fetch('/.netlify/functions/save-media', {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json', 
-                'Authorization': `Bearer ${jwt}` 
-              },
-              body: JSON.stringify({
-                assetId: assetId,
-                resultUrl: variationUrl,
-                mediaTypeHint: 'image',
-                userId,
-                shareNow: !!shareToFeed,
+        
+        try {
+          const saveRes = await fetch('/.netlify/functions/save-media', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json', 
+              'Authorization': `Bearer ${jwt}` 
+            },
+            body: JSON.stringify({
+              runId: genId,
+              presetId: selectedPreset,
+              allowPublish: !!shareToFeed,
+              source: sourceUrl ? { url: sourceUrl } : undefined,
+              variations: allResultUrls.map((url, index) => ({
+                url: url,
+                type: 'image',
+                meta: {
+                  variationIndex: index,
+                  totalVariations: allResultUrls.length,
+                  prompt: effectivePrompt,
+                  modeMeta: body.modeMeta,
+                  userId,
+                  shareNow: !!shareToFeed
+                }
+              })),
+              tags: ['generated', 'preset'],
+              extra: {
                 prompt: effectivePrompt,
-                // Include mode metadata from aimlApi response
-                ...(body.modeMeta && { modeMeta: body.modeMeta }),
-                // Add variation metadata
-                variationIndex: i,
-                totalVariations: allResultUrls.length,
-              })
-            });
-            
-            const saveText = await saveRes.text();
-            let saveBody: any = {};
-            try { saveBody = JSON.parse(saveText); } catch {}
-            
-            if (saveRes.ok && saveBody?.ok) {
-              savedCount++;
-              console.log(`✅ Variation ${i + 1} saved successfully:`, saveBody);
-            } else {
-              console.error(`❌ Variation ${i + 1} save failed:`, saveRes.status, saveBody || saveText);
-              saveErrors.push({ variation: i + 1, error: saveBody?.error || 'Save failed' });
-            }
-          } catch (error) {
-            console.error(`❌ Variation ${i + 1} save error:`, error);
-            saveErrors.push({ variation: i + 1, error: error instanceof Error ? error.message : 'Unknown error' });
-          }
-        }
-
-        console.log(`💾 Saved ${savedCount}/${allResultUrls.length} variations successfully`);
-
-        if (savedCount > 0) {
-          // Refresh the feed to show the new content if shared
-          if (shareToFeed) {
-            setTimeout(() => {
-              console.log('🔄 Dispatching refreshFeed event...')
-              window.dispatchEvent(new CustomEvent('refreshFeed'))
-            }, 800)
-          }
+                presetId: selectedPreset,
+                userId,
+                timestamp: new Date().toISOString()
+              }
+            })
+          });
           
-          // Show success notification with variation count
-          if (variationsGenerated > 1) {
-            notifyReady({ 
-              title: 'Your media is ready', 
-              message: `${savedCount} variation${savedCount > 1 ? 's' : ''} generated`,
-              thumbUrl: resultUrl 
-            });
+          const saveText = await saveRes.text();
+          let saveBody: any = {};
+          try { saveBody = JSON.parse(saveText); } catch {}
+          
+          if (saveRes.ok && saveBody?.ok) {
+            console.log(`✅ All ${allResultUrls.length} variations saved successfully:`, saveBody);
+            // Refresh user media after successful save
+            setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated')), 800);
+          } else {
+            console.error(`❌ Save failed:`, saveRes.status, saveBody || saveText);
+            notifyError({ title: 'Save failed', message: saveBody?.error || 'Failed to save media' });
           }
-        } else {
-          console.error('❌ All variations failed to save:', saveErrors);
-          notifyError({ title: 'Something went wrong', message: 'Failed to save generated media' });
+        } catch (error) {
+          console.error(`❌ Save error:`, error);
+          notifyError({ title: 'Save failed', message: error instanceof Error ? error.message : 'Unknown error' });
         }
         endGeneration(genId);
         setNavGenerating(false);

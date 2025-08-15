@@ -81,6 +81,19 @@ const ProfileScreen: React.FC = () => {
     }
   }, [])
 
+  // Handle user media updates (after saves)
+  useEffect(() => {
+    const handleUserMediaUpdated = () => {
+      console.log('🔄 User media updated event received, refreshing profile media...')
+      loadProfileFromDatabase()
+    }
+
+    window.addEventListener('userMediaUpdated', handleUserMediaUpdated)
+    return () => {
+      window.removeEventListener('userMediaUpdated', handleUserMediaUpdated)
+    }
+  }, [])
+
   // Load profile data from database and localStorage
   const loadProfileFromDatabase = async () => {
     try {
@@ -480,11 +493,12 @@ const ProfileScreen: React.FC = () => {
         } else {
           // Authenticated user: fetch from server with JWT
           const response = await fetch('/.netlify/functions/getUserMedia', {
-            method: 'GET',
+            method: 'POST',
             headers: {
               'Authorization': `Bearer ${jwt}`,
               'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ userId })
           });
 
           if (response.status === 401) {
@@ -495,6 +509,8 @@ const ProfileScreen: React.FC = () => {
           } else if (response.ok) {
             const result = await response.json();
             const dbMedia = result.items || []; // Updated to use 'items' instead of 'media'
+            
+            console.log('📊 Database returned', dbMedia.length, 'media items');
             
             // Transform database media to UserMedia format
             const transformedMedia: UserMedia[] = dbMedia.map((item: any) => {
@@ -528,7 +544,7 @@ const ProfileScreen: React.FC = () => {
               };
             });
             
-      console.log('📊 Setting userMedia with', transformedMedia.length, 'items')
+            console.log('📊 Setting userMedia with', transformedMedia.length, 'items')
             setUserMedia(transformedMedia);
             
             // Also derive remixes immediately from the fresh list (avoid stale state)
@@ -541,19 +557,27 @@ const ProfileScreen: React.FC = () => {
               }));
             console.log('🔄 Setting remixedMedia with', remixesWithAvatar.length, 'items (from transformed)')
             setRemixedMedia(remixesWithAvatar)
-                  } else {
-          console.error('Failed to load user media from database:', response.statusText);
-          // Fallback to local service if database fails
-          const allMedia = await userMediaService.getAllUserMedia(userId);
-          console.log('📊 Fallback: Setting userMedia with', allMedia.length, 'items from local service')
-          setUserMedia(allMedia);
-        }
+          } else {
+            console.error('Failed to load user media from database:', response.statusText);
+            // Fallback to local service if database fails
+            const allMedia = await userMediaService.getAllUserMedia(userId);
+            console.log('📊 Fallback: Setting userMedia with', allMedia.length, 'items from local service')
+            setUserMedia(allMedia);
+          }
         }
       } catch (error) {
-        console.error('Failed to load user media from database:', error);
-        // Fallback to local service if database fails
-        const allMedia = await userMediaService.getAllUserMedia(userId);
-        setUserMedia(allMedia);
+        console.error('Error loading user media:', error);
+        // Fallback to local service on any error
+        try {
+          const allMedia = await userMediaService.getAllUserMedia(userId);
+          setUserMedia(allMedia);
+        } catch (fallbackError) {
+          console.error('Fallback media loading also failed:', fallbackError);
+          setUserMedia([]);
+        }
+      } finally {
+        // Always clear loading state
+        setIsLoading(false);
       }
 
       // Load remixed media (for now, filter from user media)
