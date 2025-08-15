@@ -1503,36 +1503,36 @@ const ProfileScreen: React.FC = () => {
         )}
 
         {activeTab === 'account' && (
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="w-full max-w-md space-y-8">
+          <div className="flex-1 flex items-center justify-center p-4">
+            <div className="w-full max-w-md space-y-4">
               {/* Account Header */}
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-white mb-2">Account Settings</h2>
-                <p className="text-white/60">Manage your account preferences</p>
+              <div className="text-center mb-4">
+                <h2 className="text-xl font-bold text-white mb-1">Account Settings</h2>
+                <p className="text-white/60 text-sm">Manage your account preferences</p>
               </div>
 
               {/* Email Section */}
-              <div className="bg-[#333333] rounded-xl p-6">
-                <h3 className="text-lg font-semibold mb-4 text-white">Email</h3>
-                <div className="text-white/80 mb-4">
-                  <span className="text-white/60">Current:</span>
+              <div className="bg-[#333333] rounded-xl p-4">
+                <h3 className="text-base font-semibold mb-3 text-white">Email</h3>
+                <div className="text-white/80 mb-3">
+                  <span className="text-white/60 text-sm">Current:</span>
                   <div className="text-white font-medium mt-1">{profileData.name || 'user@example.com'}</div>
                 </div>
-                <button className="w-full bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 transition-colors">
+                <button className="w-full bg-white text-black font-semibold py-2.5 px-4 rounded-lg hover:bg-white/90 transition-colors">
                   Change Email
                 </button>
-                <p className="text-xs text-white/50 mt-3 text-center">
+                <p className="text-xs text-white/50 mt-2 text-center">
                   Uses existing OTP verification system
                 </p>
               </div>
 
               {/* Notifications Section */}
-              <div className="bg-[#333333] rounded-xl p-6">
-                <h3 className="text-lg font-semibold mb-4 text-white">Notifications</h3>
+              <div className="bg-[#333333] rounded-xl p-4">
+                <h3 className="text-base font-semibold mb-3 text-white">Notifications</h3>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-white font-medium">Remix notifications</div>
-                    <div className="text-white/60 text-sm">Daily digest when someone remixes your work</div>
+                    <div className="text-white font-medium text-sm">Remix notifications</div>
+                    <div className="text-white/60 text-xs">Daily digest when someone remixes your work</div>
                   </div>
                   <button
                     onClick={() => {
@@ -1547,10 +1547,10 @@ const ProfileScreen: React.FC = () => {
               </div>
 
               {/* Security Section */}
-              <div className="bg-[#333333] rounded-xl p-6">
-                <h3 className="text-lg font-semibold mb-4 text-white">Security</h3>
+              <div className="bg-[#333333] rounded-xl p-4">
+                <h3 className="text-base font-semibold mb-3 text-white">Security</h3>
                 <button 
-                  className="w-full bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 transition-colors mb-3" 
+                  className="w-full bg-white text-black font-semibold py-2.5 px-4 rounded-lg hover:bg-white/90 transition-colors" 
                   onClick={() => {
                     // Sign out all devices - connect to your auth system
                     console.log('Sign out all devices')
@@ -1561,13 +1561,13 @@ const ProfileScreen: React.FC = () => {
               </div>
 
               {/* Danger Zone */}
-              <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-red-400 mb-4">Danger Zone</h3>
-                <p className="text-red-300/80 text-sm mb-4">
+              <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
+                <h3 className="text-base font-semibold text-red-400 mb-3">Danger Zone</h3>
+                <p className="text-red-300/80 text-xs mb-3">
                   This action cannot be undone. Your account and all media will be permanently deleted.
                 </p>
                 <button 
-                  className="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                  className="w-full bg-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-red-700 transition-colors"
                   onClick={() => setShowDeleteAccountModal(true)}
                 >
                   Delete Account

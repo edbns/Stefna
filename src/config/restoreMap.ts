@@ -1,15 +1,11 @@
 // Restore Configuration - Type-Safe with Compile-Time Guarantees
 
-// All available Restore options
+// Only the configured Restore options (matching OPTION_GROUPS)
 export const RESTORE_OPTIONS = [
+  "colorize_bw",
   "revive_faded",
   "sharpen_enhance", 
-  "fix_colors",
-  "brighten_shadows",
-  "enhance_details",
-  "reduce_noise",
-  "upscale_quality",
-  "restore_vintage"
+  "remove_scratches"
 ] as const
 
 export type RestoreOption = typeof RESTORE_OPTIONS[number]
@@ -26,39 +22,23 @@ export type PresetId =
   | "noir_classic" | "soft_skin_portrait" | "cinematic_glow" | "neon_nights"
   | "urban_grit" | "retro_polaroid" | "vintage_film_35mm" | "mono_drama"
 
-// Restore mappings - each option maps to a preset + custom prompt
+// Restore mappings - each option maps to a preset + custom prompt (matching OPTION_GROUPS)
 export const RESTORE_MAP = {
+  "colorize_bw": {
+    presetId: "crystal_clear",
+    prompt: "enhance clarity and sharpness, crisp details, clean and precise look colorize black and white photo, soft color restore overlay"
+  },
   "revive_faded": {
     presetId: "vivid_pop",
     prompt: "restore faded colors, lift shadows, reduce color cast, enhance vibrancy"
   },
   "sharpen_enhance": {
     presetId: "crystal_clear", 
-    prompt: "increase clarity and edge acuity, enhance details, avoid halos"
+    prompt: "enhance clarity and sharpness, crisp details, clean and precise look"
   },
-  "fix_colors": {
-    presetId: "vivid_pop",
-    prompt: "correct color balance, fix white balance, natural color restoration"
-  },
-  "brighten_shadows": {
-    presetId: "bright_airy",
-    prompt: "lift shadows, brighten dark areas, maintain highlight detail"
-  },
-  "enhance_details": {
+  "remove_scratches": {
     presetId: "crystal_clear",
-    prompt: "enhance fine details, improve texture clarity, sharpen edges"
-  },
-  "reduce_noise": {
-    presetId: "soft_skin_portrait",
-    prompt: "reduce image noise, smooth grain, preserve important details"
-  },
-  "upscale_quality": {
-    presetId: "crystal_clear",
-    prompt: "upscale resolution, enhance quality, preserve sharpness"
-  },
-  "restore_vintage": {
-    presetId: "retro_polaroid",
-    prompt: "restore vintage photo, fix age damage, preserve character"
+    prompt: "enhance clarity and sharpness, crisp details, clean and precise look remove fine scratches and artifacts, light smoothing, preserve texture"
   }
 } as const satisfies Record<RestoreOption, RestoreConfig>
 

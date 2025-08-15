@@ -569,14 +569,20 @@ const HomeNew: React.FC = () => {
       notifyError({ title: 'Generation failed', message })
     }
 
+    const handleCloseComposer = () => {
+      setIsComposerOpen(false)
+    }
+
     window.addEventListener('generation-complete', handleGenerationComplete as EventListener)
     window.addEventListener('generation-success', handleGenerationSuccess as EventListener)
     window.addEventListener('generation-error', handleGenerationError as EventListener)
+    window.addEventListener('close-composer', handleCloseComposer as EventListener)
 
     return () => {
       window.removeEventListener('generation-complete', handleGenerationComplete as EventListener)
       window.removeEventListener('generation-success', handleGenerationSuccess as EventListener)
       window.removeEventListener('generation-error', handleGenerationError as EventListener)
+      window.removeEventListener('close-composer', handleCloseComposer as EventListener)
     }
   }, [])
 
@@ -2710,6 +2716,10 @@ const HomeNew: React.FC = () => {
                     onClick={() => {
                       // Show immediate feedback that button was clicked
                         setNavGenerating(true)
+                        // Close composer with 100ms delay
+                        setTimeout(() => {
+                          window.dispatchEvent(new CustomEvent('close-composer'));
+                        }, 100)
                         // Small delay to show the loading state before starting generation
                         setTimeout(() => {
                           if (selectedPreset) {

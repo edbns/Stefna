@@ -121,7 +121,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
       {/* Bell Button */}
       <button
         onClick={handleBellClick}
-        className="relative w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300"
+        className="relative w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300"
         title="Notifications"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >

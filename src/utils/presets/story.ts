@@ -3,9 +3,8 @@
 
 import type { Preset, PresetId } from './types';
 import { PRESETS, ACTIVE_PRESET_IDS, resolvePreset } from './types';
-import { buildAimlPayload } from './payload';
-import { getCurrentSourceUrl } from '../../stores/sourceStore';
 import { runPreset } from './handlers';
+import { getCurrentSourceUrl } from '../../stores/sourceStore';
 
 // A tiny descriptor for one story "beat"
 type StoryBeat = { 
@@ -22,14 +21,14 @@ export const STORY_THEMES: Record<string, StoryBeat[] | { strategy: 'auto' }> = 
   // Four Seasons
   four_seasons: [
     { label: 'Spring', use: 'dreamy_pastels' },
-    { label: 'Summer', use: 'sun_kissed' },
-    { label: 'Autumn', use: 'moody_forest' },
+    { label: 'Summer', use: 'tropical_boost' },
+    { label: 'Autumn', use: 'bright_airy' },
     { label: 'Winter', use: 'frost_light' },
   ],
 
   // Time of Day
   time_of_day: [
-    { label: 'Sunrise', use: 'golden_hour_magic' },
+    { label: 'Sunrise', use: 'sun_kissed' },
     { label: 'Day', use: 'crystal_clear' },
     { label: 'Sunset', use: 'cinematic_glow' },
     { label: 'Night', use: 'neon_nights' },
@@ -39,7 +38,7 @@ export const STORY_THEMES: Record<string, StoryBeat[] | { strategy: 'auto' }> = 
   mood_shift: [
     { label: 'Calm', use: 'bright_airy' },
     { label: 'Vibrant', use: 'vivid_pop' },
-    { label: 'Dramatic', use: 'urban_grit' },
+    { label: 'Dramatic', use: 'noir_classic' },
     { label: 'Dreamy', use: 'dreamy_pastels' },
   ],
 
@@ -60,40 +59,6 @@ function pickAutoFromActive(): StoryBeat[] {
     label: `Shot ${i + 1}`, 
     use: id 
   }));
-}
-
-// Helper to resolve source (will be integrated with existing source resolution)
-function resolveSourceOrToast(): { id: string; url: string } | null {
-  // This will be replaced by the actual source resolution logic from the UI
-  // For now, return null to trigger the error toast
-  return null;
-}
-
-// Integration with actual generation pipeline
-import { runGeneration, GenerateJob } from '../../services/generationPipeline';
-import { authFetch } from '../authFetch';
-
-async function runStoryBeat(preset: Preset, source: { id: string; url: string }, metadata: { storyKey: string; storyLabel: string }): Promise<any> {
-  // Create a generation job with story metadata
-  const job: GenerateJob = {
-    mode: 'story',
-    presetId: preset.id,
-    prompt: preset.prompt,
-    params: {
-      strength: preset.strength || 0.7,
-      negative_prompt: preset.negative_prompt,
-      model: preset.model || 'eagle'
-    },
-    source: { url: source.url },
-    runId: crypto.randomUUID(),
-    group: 'story',
-    storyKey: metadata.storyKey,
-    storyLabel: metadata.storyLabel,
-    parentId: source.id // Track remix relationship
-  };
-
-  // Use the existing generation pipeline
-  return await runGeneration(() => Promise.resolve(job));
 }
 
 function showToast(type: 'success' | 'error', message: string): void {

@@ -1,8 +1,9 @@
 // utils/presets/integration.ts
 // Integration layer to connect new preset system with existing handlers
 
-import { onOptionClick as newOptionClick, onPresetClick as newPresetClick } from './handlers';
+import { onOptionClick as newOptionClick, onPresetClick as newPresetClick, onStoryClick as newStoryClick } from './handlers';
 import { OPTION_GROUPS, isConfigured } from './types';
+import { getStoryThemes } from './story';
 
 // Enhanced time machine handler that uses the new system
 export async function onTimeMachineClick(option: string, file?: File, sourceUrl?: string): Promise<void> {
@@ -43,9 +44,13 @@ export async function onRestoreClick(option: string): Promise<void> {
 export async function onStoryClick(option: string): Promise<void> {
   console.log('📖 Story click:', option);
   
-  if (isConfigured('story', option)) {
-    console.log('✅ Using new preset system for:', option);
-    await newOptionClick('story', option);
+  // Check if story option is available in story themes
+  const storyThemes = getStoryThemes();
+  const isStoryTheme = storyThemes.some(theme => theme.key === option);
+  
+  if (isStoryTheme) {
+    console.log('✅ Using new preset system for story:', option);
+    await newStoryClick(option);
     return;
   }
   
@@ -67,7 +72,8 @@ export async function onPresetClickIntegrated(presetId: string, file?: File, sou
 export function getAvailableOptions() {
   const timeMachine = Object.keys(OPTION_GROUPS.time_machine || {});
   const restore = Object.keys(OPTION_GROUPS.restore || {});
-  const story = Object.keys(OPTION_GROUPS.story || {});
+  const storyThemes = getStoryThemes();
+  const story = storyThemes.map(theme => theme.key);
   
   return {
     time_machine: timeMachine,
@@ -83,6 +89,6 @@ export function debugPresetSystem() {
   console.log('Available options:', getAvailableOptions());
   console.log('Time machine options:', Object.keys(OPTION_GROUPS.time_machine || {}));
   console.log('Restore options:', Object.keys(OPTION_GROUPS.restore || {}));
-  console.log('Story options:', Object.keys(OPTION_GROUPS.story || {}));
+  console.log('Story themes:', getStoryThemes().map(t => t.key));
   console.groupEnd();
 }

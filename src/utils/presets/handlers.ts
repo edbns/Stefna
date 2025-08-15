@@ -3,6 +3,7 @@ import type { Preset, PresetId } from './types';
 import { OPTION_GROUPS, resolvePreset } from './types';
 import { runGeneration, GenerateJob } from '../../services/generationPipeline';
 import { getCurrentSourceUrl } from '../../stores/sourceStore';
+import { onStoryThemeClick } from './story';
 
 function showToast(type: 'success' | 'error', message: string): void {
   window.dispatchEvent(new CustomEvent(`generation-${type}`, { 
@@ -10,23 +11,35 @@ function showToast(type: 'success' | 'error', message: string): void {
   }));
 }
 
-// Core preset execution function
-export async function runPreset(preset: Preset, srcOverride?: string, metadata?: { group?: string; optionKey?: string }): Promise<any> {
-  try {
-    console.log('🎯 Running preset:', preset.label);
-    
-    // 1) Source: prefer override (fresh Cloudinary URL), else global store
-    const src = preset.requiresSource ? (srcOverride ?? getCurrentSourceUrl()) : null;
+// Preflight guard: ensure we have a valid HTTPS source before any generation
+function validateHttpsSource(sourceUrl?: string | null): string | undefined {
+  if (!sourceUrl || !/^https?:\/\//.test(sourceUrl)) {
+    console.warn('🚫 Blocked non-https source:', sourceUrl);
+    showToast('error', 'Pick a photo/video first, then apply a preset.');
+    return undefined;
+  }
+  console.info('✅ HTTPS source validated:', sourceUrl);
+  return sourceUrl;
+}
 
-    // 2) Hard guard: never pass blob:/data:/preview into API
+// Core preset execution function with proper runId tracking
+export async function runPreset(preset: Preset, srcOverride?: string, metadata?: { group?: string; optionKey?: string }): Promise<any> {
+  const runId = crypto.randomUUID();
+  console.info(`🎯 [${runId}] Running preset:`, preset.label);
+  
+  try {
+    // 1) Source: prefer override (fresh Cloudinary URL), else global store
+    let src = preset.requiresSource ? (srcOverride ?? getCurrentSourceUrl()) : null;
+
+    // 2) Preflight HTTPS validation - never pass blob:/data:/preview into API
     if (preset.requiresSource) {
-      if (!src || !/^https?:\/\//.test(src)) {
-        // Do NOT attempt API call; let the queue wait for upload
-        console.warn('🚫 Blocked non-https source:', src);
-        showToast('error', 'Pick a photo/video first, then apply a preset.');
+      const validSrc = validateHttpsSource(src);
+      if (!validSrc) {
+        console.warn(`🚫 [${runId}] Blocked non-https source:`, src);
         return null;
       }
-      console.info('✅ HTTPS source validated:', src);
+      // Update src to validated version
+      src = validSrc;
     }
 
     // 3) Create generation job with both image_url and sourceUrl for compatibility
@@ -43,7 +56,7 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
         sourceUrl: src || undefined     // keep old field for readers
       },
       source: src ? { url: src } : undefined,
-      runId: crypto.randomUUID(),
+      runId,
       group: metadata?.group as any || null,
       optionKey: metadata?.optionKey || null,
       parentId: null // Will be set by the generation pipeline if needed
@@ -53,7 +66,7 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
     if (preset.requiresSource && job.params.image_url) {
       const imageUrl = String(job.params.image_url);
       if (!/^https?:\/\//.test(imageUrl)) {
-        console.warn('🚫 Blocked non-https source in payload:', imageUrl);
+        console.warn(`🚫 [${runId}] Blocked non-https source in payload:`, imageUrl);
         showToast('error', 'Invalid source URL. Please upload a new file.');
         return null;
       }
@@ -62,28 +75,43 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
     // 5) Use the existing generation pipeline
     const result = await runGeneration(() => Promise.resolve(job));
     
-    if (!result?.success) {
-      console.warn('❌ Generation failed:', result);
+    // 6) Check if this is a stale result (race condition protection)
+    if (!result) {
+      console.warn(`⚠️ [${runId}] No result returned from generation pipeline`);
+      return null;
+    }
+    
+    if (!result.success) {
+      console.warn(`❌ [${runId}] Generation failed:`, result);
       showToast('error', result?.error ?? 'Generation failed. Please try again.');
       return null; // IMPORTANT: bail out here so no success logs fire
     }
 
     // Happy path only below
-    console.info('✅ Generation completed successfully');
+    console.info(`✅ [${runId}] Generation completed successfully`);
     showToast('success', `${preset.label} applied!`);
     return result;
 
   } catch (error) {
-    console.error('❌ Preset execution failed:', error);
+    console.error(`❌ [${runId}] Preset execution failed:`, error);
     showToast('error', 'Generation failed. Please try again.');
     return null;
   }
 }
 
-// Direct preset click handler
+// Direct preset click handler with HTTPS validation
 export async function onPresetClick(presetId: PresetId, srcOverride?: string): Promise<void> {
   try {
     const preset = resolvePreset(presetId);
+    
+    // Preflight validation before running preset
+    if (preset.requiresSource) {
+      const src = srcOverride ?? getCurrentSourceUrl();
+      if (!validateHttpsSource(src)) {
+        return; // Validation failed, toast already shown
+      }
+    }
+    
     await runPreset(preset, srcOverride);
   } catch (error) {
     console.error('❌ Preset click failed:', error);
@@ -91,7 +119,7 @@ export async function onPresetClick(presetId: PresetId, srcOverride?: string): P
   }
 }
 
-// Option click handler (time_machine, restore)
+// Option click handler (time_machine, restore) with HTTPS validation
 export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: string, srcOverride?: string): Promise<void> {
   try {
     const opt = OPTION_GROUPS[group]?.[key];
@@ -105,10 +133,39 @@ export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: stri
     console.log(`🔧 Resolved option ${group}/${key} to preset:`, preset.label);
     console.info('🧭 Using new preset system', { mode: group, key });
     
+    // Preflight validation before running preset
+    if (preset.requiresSource) {
+      const src = srcOverride ?? getCurrentSourceUrl();
+      if (!validateHttpsSource(src)) {
+        return; // Validation failed, toast already shown
+      }
+    }
+    
     await runPreset(preset, srcOverride, { group, optionKey: key });
   } catch (error) {
     console.error(`❌ Option click failed for ${group}/${key}:`, error);
     showToast('error', 'Generation failed. Please try again.');
+  }
+}
+
+// Story mode handler with proper HTTPS validation and integration
+export async function onStoryClick(themeKey: string, srcOverride?: string): Promise<void> {
+  try {
+    console.log(`📖 Story mode handler called for theme: ${themeKey}`);
+    
+    // Preflight validation - story mode always requires a source
+    const src = srcOverride ?? getCurrentSourceUrl();
+    const validSrc = validateHttpsSource(src);
+    if (!validSrc) {
+      return; // Validation failed, toast already shown
+    }
+    
+    // Use the existing story mode implementation
+    await onStoryThemeClick(themeKey as any, validSrc);
+    
+  } catch (error) {
+    console.error(`❌ Story mode failed for ${themeKey}:`, error);
+    showToast('error', 'Story creation failed. Please try again.');
   }
 }
 
