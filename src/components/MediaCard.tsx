@@ -55,9 +55,41 @@ const MediaCard: React.FC<MediaCardProps> = ({
     }
   }
 
-  // Get chips for display
+  // Get single smart tag for display
   const { modeChip, detailChip } = media ? getCardChips(media) : { modeChip: 'Preset', detailChip: title }
   const remixText = formatRemixCount(remixCount)
+  
+  // Create single smart tag that combines mode and detail intelligently
+  const getSmartTag = () => {
+    if (!media) return title; // Fallback to title if no media metadata
+    
+    const meta = media.meta || media.metadata || {};
+    
+    // For MoodMorph, show "MoodMorph" as the tag
+    if (meta.tag && meta.tag.startsWith('mood:')) {
+      return 'MoodMorph';
+    }
+    
+    // For presets, show the preset name
+    if (meta.presetId) {
+      return detailChip;
+    }
+    
+    // For story mode, show the story theme
+    if (meta.group === 'story') {
+      return detailChip;
+    }
+    
+    // For time machine/restore, show the mode name
+    if (meta.group === 'time_machine' || meta.group === 'restore') {
+      return modeChip;
+    }
+    
+    // Default fallback
+    return detailChip || modeChip;
+  }
+
+  const smartTag = getSmartTag();
 
   return (
     <div 
@@ -79,23 +111,14 @@ const MediaCard: React.FC<MediaCardProps> = ({
 
       {/* Overlay for actions - always visible */}
       <div className="absolute inset-0 bg-black/20 transition-all duration-300">
-        {/* Mode and Detail Chips - Top */}
-        <div className="absolute top-3 left-3 right-3 flex flex-wrap gap-2 opacity-100 transition-opacity duration-300">
-          {/* Mode Chip */}
+        {/* Single Smart Tag - Top Left */}
+        <div className="absolute top-3 left-3 opacity-100 transition-opacity duration-300">
           <span 
             className="text-white/90 text-xs bg-black/60 px-2 py-1 rounded-full backdrop-blur-sm border border-white/20"
-            aria-label={`Generation mode: ${modeChip}`}
+            aria-label={`Style: ${smartTag}`}
+            title={smartTag} // Show full text on hover if truncated
           >
-            {modeChip}
-          </span>
-          
-          {/* Detail Chip */}
-          <span 
-            className="text-white/80 text-xs bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm border border-white/10"
-            aria-label={`Style: ${detailChip}`}
-            title={detailChip} // Show full text on hover if truncated
-          >
-            {detailChip.length > 20 ? `${detailChip.substring(0, 20)}...` : detailChip}
+            {smartTag.length > 25 ? `${smartTag.substring(0, 25)}...` : smartTag}
           </span>
         </div>
 
