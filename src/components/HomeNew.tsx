@@ -544,7 +544,8 @@ const HomeNew: React.FC = () => {
         selectedFile: selectedFile?.name, 
         isVideoPreview,
         hasPreviewUrl: !!previewUrl,
-        previewUrlType: previewUrl?.startsWith('blob:') ? 'blob' : previewUrl?.startsWith('data:') ? 'data' : 'other'
+        previewUrlType: previewUrl?.startsWith('blob:') ? 'blob' : previewUrl?.startsWith('data:') ? 'data' : 'other',
+        actualPreviewUrl: previewUrl
       })
     }
   }, [isComposerOpen, previewUrl, selectedFile, isVideoPreview])
@@ -2235,7 +2236,7 @@ const HomeNew: React.FC = () => {
       setSelectedFile(null)
       window.__lastSelectedFile = undefined
     }
-  }, [isComposerOpen, previewUrl])
+  }, [isComposerOpen])
 
   const { mode, setMode } = useGenerationMode()
   
