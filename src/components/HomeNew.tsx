@@ -18,6 +18,7 @@ import { useIntentQueue } from '../state/intentQueue'
 import { getHttpsSource, storeSelectedFile } from '../services/mediaSource'
 import { postAuthed } from '../utils/fetchAuthed'
 import { runsStore } from '../stores/runs'
+import { uploadSourceToCloudinary } from '../services/uploadSource'
 
 // Safe wrapper for MasonryMediaGrid with fallback
 interface SafeMasonryGridProps {
@@ -1051,21 +1052,13 @@ const HomeNew: React.FC = () => {
       
       // Keep preset selected for user convenience (stateless generation doesn't need clearing)
 
-      // Ensure we have a remote URL (not blob:)
-      let sourceUrl = previewUrl;
-      if (previewUrl?.startsWith('blob:') || selectedFile) {
-        try {
-          sourceUrl = await ensureRemoteUrl(previewUrl, selectedFile || undefined);
-          console.log('🌐 Using remote source URL:', sourceUrl);
-        } catch (uploadError: any) {
-          console.error('❌ Upload failed:', uploadError);
-          notifyError({ title: 'Something went wrong', message: uploadError.message || 'Failed to upload file to Cloudinary' });
-          // Don't clear preset on upload failure - let user retry
-          endGeneration(genId);
-          setNavGenerating(false);
-          return;
-        }
-      }
+      // Enforce server-side quota and generate via aimlApi
+      // Use new uploadSource service - never fetch blob URLs
+      const uploadResult = await uploadSourceToCloudinary({
+        file: selectedFile,
+        url: previewUrl
+      })
+      const sourceUrl = uploadResult.secureUrl
       
       // Final sanity check before API call
       console.table({
@@ -1543,11 +1536,13 @@ const HomeNew: React.FC = () => {
       const { shareToFeed, allowRemix } = await getUserProfileSettings()
       
       // Enforce server-side quota and generate via aimlApi
-      // Use centralized HTTPS source resolution
-      const sourceUrl = await getHttpsSource({ 
-        file: selectedFile, 
-        url: previewUrl 
+      // Use new uploadSource service - never fetch blob URLs
+      const uploadResult = await uploadSourceToCloudinary({
+        file: selectedFile,
+        url: previewUrl
       })
+      const sourceUrl = uploadResult.secureUrl
+      
       // Determine if this should be a video job (Story Mode creates MP4s)
       const isStoryMode = selectedMode === 'story';
       const shouldBeVideo = isVideoPreview || isStoryMode;

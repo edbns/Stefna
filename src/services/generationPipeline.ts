@@ -12,6 +12,7 @@ import { getHttpsSource } from '../services/mediaSource'
 import { runsStore } from '../stores/runs'
 import { postAuthed } from '../utils/fetchAuthed'
 import authService from '../services/authService'
+import { uploadSourceToCloudinary } from '../services/uploadSource'
 
 // File type guard to prevent uploading strings as files
 const isFileLike = (x: unknown): x is File | Blob =>
@@ -181,17 +182,18 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
     const uploadLogger = jobLogger.generationStep('upload')
     let sourceUrl: string | undefined
     
-    // ✅ Use centralized HTTPS source resolution
+    // ✅ Use new uploadSource service - never fetch blob URLs
     try {
-      sourceUrl = await getHttpsSource({ 
-        file: job.source?.file, 
-        url: job.source?.url 
+      const uploadResult = await uploadSourceToCloudinary({
+        file: job.source?.file,
+        url: job.source?.url
       })
-      uploadLogger.info('HTTPS source resolved', { sourceUrl })
+      sourceUrl = uploadResult.secureUrl
+      uploadLogger.info('Source uploaded to Cloudinary', { sourceUrl })
     } catch (error) {
       if (controller.signal.aborted) return null
-      uploadLogger.error('HTTPS source resolution failed', { error: error instanceof Error ? error.message : error })
-      showError("Source processing failed: " + (error instanceof Error ? error.message : 'Unknown error'), runId)
+      uploadLogger.error('Source upload failed', { error: error instanceof Error ? error.message : error })
+      showError("Source upload failed: " + (error instanceof Error ? error.message : 'Unknown error'), runId)
       return null
     }
 
