@@ -13,6 +13,7 @@ import authService from '../services/authService'
 import { uploadSourceToCloudinary } from './uploadSource'
 import { assertFile } from './sourceFile'
 import { getSourceFileOrThrow, dbgSource } from './source'
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 // File type guard to prevent uploading strings as files
 const isFileLike = (x: unknown): x is File | Blob =>
@@ -423,69 +424,64 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
 
     console.log('💾 Saving generation result via save-media:', savePayload)
     
-    // Get auth token for the request
-    const token = authService.getToken()
-    if (!token) {
-      console.warn('No auth token available, saving without DB record')
-    }
+    try {
+      const response = await fetchWithAuth('/.netlify/functions/save-media', {
+        method: 'POST',
+        body: JSON.stringify(savePayload)
+      });
 
-    const response = await fetch('/.netlify/functions/save-media', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` })
-      },
-      body: JSON.stringify(savePayload)
-    })
-
-    if (!response.ok) {
-      console.error('Failed to save via save-media:', response.status, await response.text())
-      return
-    }
-
-    const saveResult = await response.json()
-    console.log('✅ Generation saved via save-media:', saveResult)
-
-    // If this is a remix (has parentId), send anonymous notification
-    if (job.parentId) {
-      try {
-        const notifyResponse = await fetch('/.netlify/functions/notify-remix', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            parentId: job.parentId,
-            childId: saveResult.items?.[0]?.cloudinary_public_id || 'unknown',
-            createdAt: new Date().toISOString()
-          })
-        });
-
-        if (notifyResponse.ok) {
-          console.log('📬 Remix notification sent successfully');
-        } else {
-          console.warn('⚠️ Failed to send remix notification:', notifyResponse.status);
-        }
-      } catch (notifyError) {
-        console.warn('⚠️ Remix notification error:', notifyError);
-        // Don't fail the generation if notification fails
+      if (!response.ok) {
+        console.error('Failed to save via save-media:', response.status, await response.text())
+        return
       }
+
+      const saveResult = await response.json()
+      console.log('✅ Generation saved via save-media:', saveResult)
+
+      // If this is a remix (has parentId), send anonymous notification
+      if (job.parentId) {
+        try {
+          const notifyResponse = await fetchWithAuth('/.netlify/functions/notify-remix', {
+            method: 'POST',
+            body: JSON.stringify({
+              parentId: job.parentId,
+              childId: saveResult.items?.[0]?.cloudinary_public_id || 'unknown',
+              createdAt: new Date().toISOString()
+            })
+          });
+
+          if (notifyResponse.ok) {
+            console.log('📬 Remix notification sent successfully');
+          } else {
+            console.warn('⚠️ Failed to send remix notification:', notifyResponse.status);
+          }
+        } catch (notifyError) {
+          console.warn('⚠️ Remix notification error:', notifyError);
+          // Don't fail the generation if notification fails
+        }
+      }
+
+      // Update UI state immediately so user sees result without reload
+      // Dispatch custom event for UI components to listen to
+      window.dispatchEvent(new CustomEvent('generation-complete', { 
+        detail: { 
+          record: saveResult.items?.[0], 
+          resultUrl: result.resultUrl,
+          presetId: job.presetId,
+          mode: job.mode,
+          timestamp: Date.now() 
+        } 
+      }))
+
+      // Show success toast
+      window.dispatchEvent(new CustomEvent('generation-success', { 
+        detail: { message: 'Preset applied!', resultUrl: result.resultUrl, timestamp: Date.now() } 
+      }))
+
+    } catch (error) {
+      console.error('Failed to save generation result:', error);
+      // Don't fail the generation if save fails
     }
-
-    // Update UI state immediately so user sees result without reload
-    // Dispatch custom event for UI components to listen to
-    window.dispatchEvent(new CustomEvent('generation-complete', { 
-      detail: { 
-        record: saveResult.items?.[0], 
-        resultUrl: result.resultUrl,
-        presetId: job.presetId,
-        mode: job.mode,
-        timestamp: Date.now() 
-      } 
-    }))
-
-    // Show success toast
-    window.dispatchEvent(new CustomEvent('generation-success', { 
-      detail: { message: 'Preset applied!', resultUrl: result.resultUrl, timestamp: Date.now() } 
-    }))
 
   } catch (error) {
     console.error('Failed to complete generation:', error)

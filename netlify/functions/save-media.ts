@@ -49,19 +49,6 @@ function err(message: string, status = 400, extra?: Record<string, any>) {
   return ok({ ok: false, error: message, ...extra }, status)
 }
 
-// Extremely light JWT decode (no verify). If you use your own issuer,
-// swap this for proper verification with your secret/JWK.
-function tryDecodeJwt(token?: string): { userId?: string; sub?: string } | null {
-  if (!token) return null
-  try {
-    const [, payloadB64] = token.split('.')
-    const json = Buffer.from(payloadB64, 'base64').toString('utf8')
-    return JSON.parse(json)
-  } catch {
-    return null
-  }
-}
-
 type Variation = {
   url: string            // remote HTTPS URL from AIML or temp storage
   type?: 'image' | 'video' | 'gif' | string
@@ -140,12 +127,11 @@ const handler: Handler = async (event, context) => {
     }
   }
 
-  const authHeader = event.headers.authorization || event.headers.Authorization
-  const bearer = (authHeader || '').startsWith('Bearer ')
-    ? (authHeader as string).slice(7)
-    : undefined
-  const decoded = tryDecodeJwt(bearer)
-  const userId = (decoded?.userId || decoded?.sub) as string | undefined
+  // Use Netlify's built-in authentication
+  const authUser = context.clientContext?.user;
+  const userId = authUser?.sub;
+
+  console.log('🔐 Auth context:', { userId, authUser });
 
   // A stable folder for assets (groups by user if available)
   const runId = body.runId || crypto.randomUUID()
@@ -192,7 +178,7 @@ const handler: Handler = async (event, context) => {
     }
   }
 
-  // ---- DB write (optional if authorized) ----
+  // ---- DB write (if authorized) ----
   let dbResult: any = { skipped: true }
   if (userId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
     try {
@@ -205,8 +191,8 @@ const handler: Handler = async (event, context) => {
         .from('users')
         .upsert({
           id: userId,
-          email: `user-${userId}@placeholder.com`, // Placeholder email
-          name: `User ${userId}`, // Placeholder name
+          email: authUser.email || `user-${userId}@placeholder.com`,
+          name: `User ${userId}`,
           tier: 'registered',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -220,10 +206,9 @@ const handler: Handler = async (event, context) => {
         // Continue with media insert even if user upsert fails
       }
 
-      // Upsert user if needed, then insert assets
-      // Adjust table/columns to match your schema.
+      // Insert media assets with proper owner_id
       const assetRows = uploaded.map((u) => ({
-        user_id: userId, // Changed from owner_id to user_id
+        user_id: userId, // This ties the media to the authenticated user
         run_id: runId,
         preset_id: body.presetId || null,
         public_id: u.cloudinary_public_id,
@@ -234,7 +219,7 @@ const handler: Handler = async (event, context) => {
         height: u.height,
         bytes: u.bytes,
         tags: body.tags || [],
-        visibility: body.allowPublish ? 'public' : 'private', // Changed from allow_publish to visibility
+        visibility: body.allowPublish ? 'public' : 'private',
         allow_remix: false, // Default to false, can be updated later
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -248,17 +233,21 @@ const handler: Handler = async (event, context) => {
       }))
 
       const { data, error } = await supabase
-        .from('media_assets') // Changed from 'assets' to 'media_assets'
+        .from('media_assets')
         .insert(assetRows)
         .select()
 
       if (error) throw error
       dbResult = { skipped: false, inserted: data?.length || 0 }
+      console.log('✅ Media assets saved to DB:', { userId, count: data?.length });
 	} catch (e: any) {
       // We deliberately do NOT fail the whole request if DB insert fails.
       // Client can still proceed (feed uses Cloudinary), and you see the error here.
+      console.error('❌ DB insert failed:', e);
       dbResult = { skipped: true, error: String(e?.message || e) }
     }
+  } else {
+    console.log('⚠️ Skipping DB insert - no userId or DB config');
   }
 
   // ---- Response ----

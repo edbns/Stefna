@@ -3,8 +3,7 @@ import { MOODS } from '../features/moodmorph/recipes'
 import { uploadSourceToCloudinary } from './uploadSource'
 import { getSourceFileOrThrow } from './source'
 import { callAimlApi } from './aiml'
-import { saveMedia } from '../lib/api';
-import authService from './authService';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 // URL normalization function to ensure we always send strings to save-media
 function normalizeVariationUrls(input: unknown): string[] {
@@ -97,16 +96,31 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
           continue;
         }
         
-        // Save each variation
+        // Save each variation using the new fetchWithAuth utility
         for (const imageUrl of normalizedUrls) {
-          await saveMedia({
-            resultUrl: imageUrl,
-            userId: authService.getCurrentUser()?.id || 'unknown',
-            presetKey: 'moodmorph',
-            allowRemix: true,
-            shareNow: false,
-            mediaTypeHint: 'image'
-          });
+          try {
+            const response = await fetchWithAuth('/.netlify/functions/save-media', {
+              method: 'POST',
+              body: JSON.stringify({
+                variations: [imageUrl],
+                runId,
+                presetId: 'moodmorph',
+                allowPublish: false,
+                tags: [`mood:${mood.id}`],
+                extra: { mood: mood.id, group: runId }
+              })
+            });
+            
+            if (!response.ok) {
+              throw new Error(`save-media failed: ${response.status} ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log(`✅ MoodMorph: Saved ${mood.id} variation:`, result);
+          } catch (error) {
+            console.error(`❌ MoodMorph: Failed to save ${mood.id} variation:`, error);
+            // Continue with other variations
+          }
         }
       } else {
         console.error(`❌ MoodMorph: Mood ${i + 1} (${mood.id}) failed:`, result.reason)

@@ -1,10 +1,8 @@
 import { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
-const jwt = require('jsonwebtoken');
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const jwtSecret = process.env.JWT_SECRET!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -16,60 +14,53 @@ interface UpdateProfileRequest {
   onboarding_completed?: boolean;
 }
 
-// Helper function to verify custom JWT token
-function verifyCustomToken(token: string): { userId: string } | null {
-  try {
-    const decoded = jwt.verify(token, jwtSecret) as any;
-    return { userId: decoded.sub || decoded.uid || decoded.user_id || decoded.userId || decoded.id };
-  } catch (error) {
-    console.error('JWT verification failed:', error);
-    return null;
-  }
+// Helper function to create response
+function resp(status: number, body: any) {
+  return {
+    statusCode: status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    },
+    body: typeof body === 'string' ? body : JSON.stringify(body)
+  };
 }
 
-export const handler: Handler = async (event) => {
+export const handler: Handler = async (event, context) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return resp(200, { ok: true });
+  }
+
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+    return resp(405, { error: 'Method not allowed' });
   }
 
   try {
-    // Get custom JWT token
-    const authHeader = event.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'Missing or invalid authorization header' })
-      };
+    // Use Netlify's built-in authentication
+    const authUser = context.clientContext?.user;
+    if (!authUser?.sub) {
+      return resp(401, { error: 'Unauthorized - No valid user context' });
     }
 
-    const token = authHeader.substring(7);
-    
-    // Verify custom JWT token (not Supabase Auth)
-    const authResult = verifyCustomToken(token);
-    if (!authResult) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'Invalid or expired token' })
-      };
-    }
+    const uid = authUser.sub;
+    const email = authUser.email || authUser['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
 
-    const userId = authResult.userId;
+    console.log('🔐 Auth context:', { uid, email, authUser });
 
     // Parse request body
     const body: UpdateProfileRequest = JSON.parse(event.body || '{}');
-    console.log('📝 Update profile request:', { userId, body });
+    console.log('📝 Update profile request:', { uid, body });
 
-    // First, ensure user exists in users table by upserting
+    // FIRST: Ensure user exists in users table by upserting
     // This prevents the "User ID not found in users table" error
     const { data: userData, error: userUpsertError } = await supabase
       .from('users')
       .upsert({
-        id: userId,
-        email: body.email || `user-${userId}@placeholder.com`, // Placeholder email if not provided
-        name: body.username || `User ${userId}`, // Use username or generate name
+        id: uid,
+        email: email || `user-${uid}@placeholder.com`,
+        name: body.username || `User ${uid}`,
         tier: 'registered',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -82,13 +73,10 @@ export const handler: Handler = async (event) => {
 
     if (userUpsertError) {
       console.error('Failed to upsert user in users table:', userUpsertError);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ 
-          error: 'Failed to create/update user record',
-          details: userUpsertError.message
-        })
-      };
+      return resp(500, { 
+        error: 'Failed to create/update user record',
+        details: userUpsertError.message
+      });
     }
 
     console.log('✅ User upserted successfully:', userData);
@@ -100,42 +88,29 @@ export const handler: Handler = async (event) => {
       } else {
         // Validate non-empty usernames
         if (body.username.length < 3 || body.username.length > 30) {
-          return {
-            statusCode: 400,
-            body: JSON.stringify({ 
-              error: 'Username must be 3-30 characters or empty' 
-            })
-          };
+          return resp(400, { 
+            error: 'Username must be 3-30 characters or empty' 
+          });
         }
         
         // Check for valid characters (must match database constraint)
-        // Updated database constraint: ^[a-zA-Z0-9_-]{3,30}$ with additional rules
         if (!/^[a-zA-Z0-9_-]+$/.test(body.username)) {
-          return {
-            statusCode: 400,
-            body: JSON.stringify({ 
-              error: 'Username can only contain letters, numbers, underscores, and hyphens' 
-            })
-          };
+          return resp(400, { 
+            error: 'Username can only contain letters, numbers, underscores, and hyphens' 
+          });
         }
         
         // Additional validation rules
         if (body.username.startsWith('-')) {
-          return {
-            statusCode: 400,
-            body: JSON.stringify({ 
-              error: 'Username cannot start with a hyphen' 
-            })
-          };
+          return resp(400, { 
+            error: 'Username cannot start with a hyphen' 
+          });
         }
         
         if (body.username.includes('---')) {
-          return {
-            statusCode: 400,
-            body: JSON.stringify({ 
-              error: 'Username cannot contain multiple consecutive hyphens' 
-            })
-          };
+          return resp(400, { 
+            error: 'Username cannot contain multiple consecutive hyphens' 
+          });
         }
 
         // Check username uniqueness
@@ -143,16 +118,13 @@ export const handler: Handler = async (event) => {
           .from('profiles')
           .select('id')
           .eq('username', body.username)
-          .neq('id', userId)
+          .neq('id', uid)
           .single();
 
         if (existingUser && !checkError) {
-          return {
-            statusCode: 400,
-            body: JSON.stringify({ 
-              error: 'Username already taken' 
-            })
-          };
+          return resp(400, { 
+            error: 'Username already taken' 
+          });
         }
       }
     }
@@ -172,11 +144,10 @@ export const handler: Handler = async (event) => {
     if (body.onboarding_completed !== undefined) updateData.onboarding_completed = body.onboarding_completed;
 
     // Upsert profile (create if doesn't exist, update if it does)
-    // This references users(id), not auth.users(id)
     const { data, error } = await supabase
       .from('profiles')
       .upsert({
-        id: userId, // This must match users.id (UUID from custom auth)
+        id: uid, // This must match users.id (UUID from Netlify auth)
         ...updateData
       })
       .select()
@@ -188,7 +159,7 @@ export const handler: Handler = async (event) => {
         errorCode: error.code,
         errorMessage: error.message,
         errorDetails: error.details,
-        userId,
+        uid,
         updateData
       });
       
@@ -206,36 +177,24 @@ export const handler: Handler = async (event) => {
         errorMessage = error.message;
       }
       
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ 
-          error: errorMessage,
-          details: error.details || error.message || 'Database error',
-          code: error.code
-        })
-      };
+      return resp(500, { 
+        error: errorMessage,
+        details: error.details || error.message || 'Database error',
+        code: error.code
+      });
     }
 
     // Return updated profile
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        ok: true,
-        profile: data
-      })
-    };
+    return resp(200, {
+      ok: true,
+      profile: data
+    });
 
   } catch (error) {
     console.error('Update profile error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      })
-    };
+    return resp(500, { 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };
