@@ -6,7 +6,16 @@ import { callAimlApi } from './aiml'
 
 // Simple AIML API call function
 async function callAimlApiMini(payload: any) {
-  return callAimlApi(payload)
+  try {
+    console.log('🎨 MoodMorph: Calling AIML API with payload:', payload)
+    const result = await callAimlApi(payload)
+    console.log('✅ MoodMorph: AIML API call successful:', result)
+    return result
+  } catch (error) {
+    console.error('❌ MoodMorph: AIML API call failed:', error)
+    console.error('❌ MoodMorph: Payload was:', payload)
+    throw error
+  }
 }
 
 // Simple save function (NO_DB_MODE friendly)
@@ -26,43 +35,71 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
   const runId = crypto.randomUUID()
   
   try {
+    console.log('🎭 MoodMorph: Starting generation with runId:', runId)
+    
     // Use centralized file assertion
     const file = await getSourceFileOrThrow(opts?.file)
 
     // 1) Always upload the actual File (not blob:)
+    console.log('☁️ MoodMorph: Uploading to Cloudinary...')
     const { secureUrl } = await uploadSourceToCloudinary({ file })
+    console.log('✅ MoodMorph: Cloudinary upload successful:', secureUrl)
 
     // 2) Fire the three moods in parallel
+    console.log('🚀 MoodMorph: Starting 3 parallel mood generations...')
     const results = await Promise.allSettled(
-      MOODS.map((m) =>
-        callAimlApiMini({
+      MOODS.map((mood, index) => {
+        console.log(`🎨 MoodMorph: Starting mood ${index + 1}/${MOODS.length}: ${mood.id}`)
+        return callAimlApiMini({
           image_url: secureUrl,
-          prompt: m.prompt,
-          negative_prompt: m.negative,
-          strength: m.strength,
-          seed: m.seed,
-          meta: { group: runId, tag: `mood:${m.id}` }, // for grouping in UI
+          prompt: mood.prompt,
+          negative_prompt: mood.negative,
+          strength: mood.strength,
+          seed: mood.seed,
+          meta: { group: runId, tag: `mood:${mood.id}` }, // for grouping in UI
         })
-      )
+      })
     )
 
-    // 3) Save locally (works in NO_DB_MODE)
+    // 3) Process results and save locally
+    console.log('📊 MoodMorph: Processing results...')
     const ok = []
-    for (const r of results) {
-      if (r.status === 'fulfilled') {
-        ok.push(r.value)
-        await saveMediaNoDB(r.value, { groupId: runId })
+    const failed = []
+    
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i]
+      const mood = MOODS[i]
+      
+      if (result.status === 'fulfilled') {
+        console.log(`✅ MoodMorph: Mood ${i + 1} (${mood.id}) successful:`, result.value)
+        ok.push(result.value)
+        await saveMediaNoDB(result.value, { groupId: runId })
+      } else {
+        console.error(`❌ MoodMorph: Mood ${i + 1} (${mood.id}) failed:`, result.reason)
+        failed.push({ mood: mood.id, error: result.reason })
       }
     }
 
-    if (!ok.length) throw new Error('All mood generations failed. Try another image?')
+    if (!ok.length) {
+      console.error('❌ MoodMorph: All mood generations failed!')
+      console.error('❌ MoodMorph: Failed attempts:', failed)
+      throw new Error(`All mood generations failed. Failed attempts: ${failed.map(f => f.mood).join(', ')}`)
+    }
+    
+    console.log(`🎉 MoodMorph: ${ok.length}/3 variants generated successfully`)
     await refreshFeed()
 
-    console.log(`MoodMorph™ ready — ${ok.length}/3 variants generated`) // Changed from toast.success
-
   } catch (e: any) {
-    console.error('MoodMorph error:', e)
-    console.error(e?.message ?? 'MoodMorph failed') // Changed from toast.error
+    console.error('💥 MoodMorph: Critical error:', e)
+    console.error('💥 MoodMorph: Error message:', e?.message)
+    console.error('💥 MoodMorph: Error stack:', e?.stack)
+    
+    // Re-throw with more context
+    if (e.message.includes('All mood generations failed')) {
+      throw e // Already has good context
+    } else {
+      throw new Error(`MoodMorph failed: ${e?.message || 'Unknown error'}`)
+    }
   } finally {
     // make uploader reusable without page refresh
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
@@ -70,5 +107,7 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
     
     // Clean up global state
     window.__lastSelectedFile = undefined
+    
+    console.log('🧹 MoodMorph: Cleanup completed')
   }
 }

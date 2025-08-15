@@ -22,13 +22,23 @@ export function getAuthHeaders(opts = {}) {
     token = token.access_token || token.token || token.jwt || '';
   }
 
-  // If no token, fall back to guest mode (omit Authorization)
-  if (!token || typeof token !== 'string' || !token.includes('.') || token.split('.').length !== 3) {
-    return { 'Content-Type': 'application/json' };
+  // Base headers
+  const headers = { 'Content-Type': 'application/json' };
+
+  // Add x-app-key header for Netlify Functions (required by aimlApi)
+  const functionAppKey = import.meta.env.VITE_FUNCTION_APP_KEY;
+  if (functionAppKey) {
+    headers['x-app-key'] = functionAppKey;
   }
 
-  // Valid token
-  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  // If no token, fall back to guest mode (omit Authorization)
+  if (!token || typeof token !== 'string' || !token.includes('.') || token.split('.').length !== 3) {
+    return headers;
+  }
+
+  // Valid token - add Authorization header
+  headers['Authorization'] = `Bearer ${token}`;
+  return headers;
 }
 
 /**
