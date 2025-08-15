@@ -23,6 +23,7 @@ export function HiddenUploader() {
       addToast('Upload failed. Please try again.', 'error');
     } finally {
       // Allow immediate re-select same file without page refresh
+      console.info('📁 Resetting file input for next upload');
       setKey((k) => k + 1);
       if (ref.current) ref.current.value = '';
     }

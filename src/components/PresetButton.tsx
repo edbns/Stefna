@@ -17,6 +17,13 @@ export function PresetButton({ presetId, children, className = '' }: PresetButto
   async function onClick() {
     console.info('🎯 Preset button clicked:', presetId);
     
+    // Escape hatch for direct mode (bypass queue while debugging)
+    if (import.meta.env.VITE_ONE_CLICK_DIRECT === '1') {
+      console.info('🚨 Using direct mode (bypass intent queue)');
+      // Direct mode would need pickAndUpload implementation
+      console.warn('Direct mode not implemented yet - falling back to queue');
+    }
+    
     // Keep UI in sync
     setSelectedPreset(presetId);
     

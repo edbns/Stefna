@@ -1,15 +1,8 @@
 // utils/presets/handlers.ts
 import type { Preset, PresetId } from './types';
-import { PRESETS, OPTION_GROUPS, resolvePreset } from './types';
+import { OPTION_GROUPS, resolvePreset } from './types';
 import { runGeneration, GenerateJob } from '../../services/generationPipeline';
 import { getCurrentSourceUrl } from '../../stores/sourceStore';
-
-// Helper to resolve source from UI state (will be integrated with existing source resolution)
-function resolveSourceOrToast(): { id: string; url: string } | null {
-  // TODO: Integrate with existing source resolution logic from HomeNew
-  // For now, this will be handled by the calling component
-  return null;
-}
 
 function showToast(type: 'success' | 'error', message: string): void {
   window.dispatchEvent(new CustomEvent(`generation-${type}`, { 
@@ -56,7 +49,17 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
       parentId: null // Will be set by the generation pipeline if needed
     };
 
-    // 3) Use the existing generation pipeline
+    // 4) Final HTTPS gate before API call (no more preview/blob causing 400s)
+    if (preset.requiresSource && job.params.image_url) {
+      const imageUrl = String(job.params.image_url);
+      if (!/^https?:\/\//.test(imageUrl)) {
+        console.warn('🚫 Blocked non-https source in payload:', imageUrl);
+        showToast('error', 'Invalid source URL. Please upload a new file.');
+        return null;
+      }
+    }
+
+    // 5) Use the existing generation pipeline
     const result = await runGeneration(() => Promise.resolve(job));
     
     if (result?.success) {

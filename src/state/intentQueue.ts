@@ -40,4 +40,9 @@ if (typeof window !== 'undefined') {
       hasSource: !!state.sourceUrl 
     });
   });
+
+  // Quick visibility hook for debugging (remove later)
+  // @ts-ignore
+  window.debugIntent = () => ({ ...useIntentQueue.getState() });
+  console.info('🔍 Debug hook available: window.debugIntent()');
 }

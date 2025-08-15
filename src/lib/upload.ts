@@ -14,12 +14,19 @@ export async function handleUploadSelectedFile(file: File): Promise<string> {
     
     console.info('📤 Upload successful, secure_url:', secureUrl);
     
+    // Verify we have HTTPS URL from Cloudinary
+    if (!secureUrl || !secureUrl.startsWith('https://')) {
+      throw new Error(`Invalid secure_url from Cloudinary: ${secureUrl}`);
+    }
+    
     // Set the source URL in the intent queue
     const { setSourceUrl } = useIntentQueue.getState();
     setSourceUrl(secureUrl);
     
-    // Auto-run if something is queued
-    await kickRunIfReady();
+    // Kick on next microtask so state is settled (prevents race conditions)
+    queueMicrotask(() => { 
+      void kickRunIfReady(); 
+    });
     
     return secureUrl;
   } catch (error) {

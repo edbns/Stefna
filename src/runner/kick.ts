@@ -10,28 +10,35 @@ function isHttps(u?: string | null): boolean {
 }
 
 export async function kickRunIfReady(): Promise<void> {
-  const { pending, sourceUrl, clearIntent } = useIntentQueue.getState();
-  
-  console.info('🚀 kickRunIfReady called:', { pending, hasSource: !!sourceUrl });
-  
-  if (!pending) {
-    console.info('🚀 No pending intent, skipping');
+  // Single pending run at a time
+  if ((kickRunIfReady as any)._busy) {
+    console.info('🚀 Already running, skipping');
     return;
   }
-
-  // For i2i/restore/story that need a source, block until we have a proper URL
-  const needsSource = pending.kind !== 'preset'
-    ? true
-    : PRESETS[pending.presetId as keyof typeof PRESETS]?.requiresSource ?? false;
-
-  if (needsSource && !isHttps(sourceUrl)) {
-    console.info('🚀 Waiting for HTTPS source URL, current:', sourceUrl);
-    return; // wait until upload finishes
-  }
-
-  console.info('🚀 Running intent:', pending.kind, 'with source:', sourceUrl);
+  (kickRunIfReady as any)._busy = true;
 
   try {
+    const { pending, sourceUrl, clearIntent } = useIntentQueue.getState();
+    
+    console.info('🚀 kickRunIfReady called:', { pending, hasSource: !!sourceUrl });
+    
+    if (!pending) {
+      console.info('🚀 No pending intent, skipping');
+      return;
+    }
+
+    // For i2i/restore/story that need a source, block until we have a proper URL
+    const needsSource = pending.kind !== 'preset'
+      ? true
+      : PRESETS[pending.presetId as keyof typeof PRESETS]?.requiresSource ?? false;
+
+    if (needsSource && !isHttps(sourceUrl)) {
+      console.info('🚀 Waiting for HTTPS source URL, current:', sourceUrl);
+      return; // wait until upload finishes
+    }
+
+    console.info('🚀 Running intent:', pending.kind, 'with source:', sourceUrl);
+
     if (pending.kind === 'preset') {
       const preset = resolvePreset(pending.presetId as keyof typeof PRESETS);
       await runPreset(preset, sourceUrl ?? undefined);
@@ -61,5 +68,6 @@ export async function kickRunIfReady(): Promise<void> {
     throw error;
   } finally {
     clearIntent();
+    (kickRunIfReady as any)._busy = false;
   }
 }
