@@ -23,7 +23,6 @@ export {
 export { 
   onPresetClick, 
   onOptionClick, 
-  onMoodMorphClick,
   runPreset 
 } from './handlers';
 

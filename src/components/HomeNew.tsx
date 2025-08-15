@@ -20,7 +20,7 @@ import { postAuthed } from '../utils/fetchAuthed'
 import { runsStore } from '../stores/runs'
 import { uploadSourceToCloudinary } from '../services/uploadSource'
 import { useGenerationMode } from '../stores/generationMode'
-import { onMoodMorphClick } from '../utils/presets'
+import { runMoodMorph } from '../services/moodMorph'
 
 import { getSourceFileOrThrow } from '../services/source'
 
@@ -2571,9 +2571,19 @@ const HomeNew: React.FC = () => {
                                             // Small delay to show the loading state before starting generation
                       setTimeout(async () => {
                                               if (mode === 'moodmorph') {
-                        // Run MoodMorph™ using the preset system
-                        await onMoodMorphClick()
-                        setNavGenerating(false)
+                        // Run MoodMorph™ with proper error handling
+                        try {
+                          await runMoodMorph(selectedFile || undefined)
+                        } catch (error) {
+                          console.error('MoodMorph generation failed:', error)
+                          // Show error toast
+                          window.dispatchEvent(new CustomEvent('generation-error', { 
+                            detail: { message: 'MoodMorph generation failed. Please try again.', timestamp: Date.now() } 
+                          }))
+                        } finally {
+                          // Always clear the generating state
+                          setNavGenerating(false)
+                        }
                       } else if (selectedPreset) {
                           // Run preset generation
                           dispatchGenerate('preset', {
