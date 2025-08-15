@@ -31,12 +31,14 @@ interface SafeMasonryGridProps {
   feed: UserMedia[]
   handleMediaClick: (media: UserMedia) => void
   handleRemix: (media: UserMedia) => void
+  onEdit: (media: UserMedia) => void
 }
 
 const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   feed,
   handleMediaClick,
-  handleRemix
+  handleRemix,
+  onEdit
 }) => {
   try {
     return (
@@ -45,6 +47,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         columns={3}
         onMediaClick={handleMediaClick}
         onRemix={(media) => handleRemix(media)}
+        onEdit={(media) => onEdit(media)}
         showActions={true}
         className="pb-24"
 
@@ -1863,6 +1866,31 @@ const HomeNew: React.FC = () => {
     }
   }
 
+  const handleEdit = async (media: UserMedia) => {
+    if (!authService.getToken()) {
+      // Sign up required - no notification needed
+      navigate('/auth')
+      return
+    }
+    
+    try {
+      // Set up the composer with the source media for editing
+      setPreviewUrl(media.url);
+      setIsVideoPreview(media.type === 'video');
+      setSelectedFile(null);
+      setIsComposerOpen(true);
+      setPrompt(media.prompt || '');
+      
+      // Clear selectedPreset when editing
+      requestClearPreset('edit started');
+      
+      notifyQueue({ title: 'Edit mode', message: 'Composer opened for editing' });
+    } catch (error) {
+      console.error('Error opening editor:', error);
+      notifyError({ title: 'Something went wrong', message: 'Failed to open editor' });
+    }
+  }
+
   const handleMediaClick = (media: UserMedia) => {
     console.log('🔍 HomeNew handleMediaClick:', {
       id: media.id,
@@ -2308,6 +2336,7 @@ const HomeNew: React.FC = () => {
               feed={feed}
               handleMediaClick={handleMediaClick}
               handleRemix={handleRemix}
+              onEdit={handleEdit}
             />
           ) : (
             <div className="text-center py-12">
@@ -2367,9 +2396,9 @@ const HomeNew: React.FC = () => {
 
       {/* Bottom-centered composer */}
       {isComposerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm navbar-stable">
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm navbar-stable">
           {/* Close button */}
-          <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-50 pointer-events-auto text-white/80 hover:text-white transition-colors" aria-label="Close">
+          <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-50 pointer-events-auto text-white/80 hover:text-white transition-colors bg-black/60 hover:bg-black/80 rounded-full p-2 backdrop-blur-sm" aria-label="Close">
             <X size={20} />
           </button>
           

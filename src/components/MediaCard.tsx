@@ -13,6 +13,7 @@ interface MediaCardProps {
   icon: React.ComponentType<{ size?: number; className?: string }>
   isLoggedIn: boolean
   onRemix?: (id: string) => void
+  onEdit?: (id: string) => void
   onShowAuth: () => void
   onShowMedia?: (id: string, title: string, prompt: string) => void
   remixCount?: number
@@ -29,6 +30,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
   icon: IconComponent,
   isLoggedIn,
   onRemix,
+  onEdit,
   onShowAuth,
   onShowMedia,
   remixCount = 0,
@@ -43,6 +45,17 @@ const MediaCard: React.FC<MediaCardProps> = ({
     
     if (onRemix) {
       onRemix(id)
+    }
+  }
+
+  const handleEdit = () => {
+    if (!isLoggedIn) {
+      onShowAuth()
+      return
+    }
+    
+    if (onEdit) {
+      onEdit(id)
     }
   }
 
@@ -63,10 +76,12 @@ const MediaCard: React.FC<MediaCardProps> = ({
   const getSmartTag = () => {
     if (!media) return title; // Fallback to title if no media metadata
     
-    const meta = media.meta || media.metadata || {};
+    // Handle both MediaRecord and UserMedia types
+    const meta = 'meta' in media ? media.meta : media.metadata || {};
     
     // For MoodMorph, show "MoodMorph" as the tag
-    if (meta.tag && meta.tag.startsWith('mood:')) {
+    // Check if tag property exists (added by MoodMorph)
+    if ('tag' in meta && meta.tag && typeof meta.tag === 'string' && meta.tag.startsWith('mood:')) {
       return 'MoodMorph';
     }
     
@@ -122,9 +137,25 @@ const MediaCard: React.FC<MediaCardProps> = ({
           </span>
         </div>
 
-        {/* Remix Button - Bottom Right (Single CTA) */}
-        {onRemix && (
-          <div className="absolute bottom-3 right-3 opacity-100 transition-opacity duration-300">
+        {/* Action Buttons - Bottom Right */}
+        <div className="absolute bottom-3 right-3 flex items-center gap-2 opacity-100 transition-opacity duration-300">
+          {/* Edit Button */}
+          {onEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleEdit() }}
+              className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/80 transition-all duration-300 hover:scale-105"
+              title="Edit this creation"
+              aria-label="Edit this media"
+            >
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+          )}
+
+          {/* Remix Button */}
+          {onRemix && (
             <button
               onClick={(e) => { e.stopPropagation(); handleRemix() }}
               className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/80 transition-all duration-300 hover:scale-105"
@@ -133,8 +164,8 @@ const MediaCard: React.FC<MediaCardProps> = ({
             >
               <RemixIcon size={16} className="text-white" />
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Remix Count - Bottom Left (Optional passive metric) */}
         {remixText && (

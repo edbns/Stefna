@@ -1,5 +1,6 @@
 // Auth fetch wrapper that handles 401 retries
 import authService from '../services/authService'
+import { authHeaders } from '../lib/api'
 
 export async function authFetch(input: RequestInfo, init: RequestInit = {}): Promise<Response> {
   // Get current token
@@ -9,12 +10,15 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}): Pro
     throw new Error('No authentication token available')
   }
 
+  // Use centralized auth headers
+  const baseHeaders = authHeaders()
+  
   // First attempt with current token
   let response = await fetch(input, {
     ...init,
     headers: {
-      ...init.headers,
-      'Authorization': `Bearer ${token}`
+      ...baseHeaders,
+      ...init.headers
     }
   })
 
@@ -31,8 +35,8 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}): Pro
         response = await fetch(input, {
           ...init,
           headers: {
-            ...init.headers,
-            'Authorization': `Bearer ${freshToken}`
+            ...baseHeaders,
+            ...init.headers
           }
         })
       }

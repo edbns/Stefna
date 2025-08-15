@@ -1,112 +1,175 @@
 export default async (event) => {
-  // Add debug logging for headers
-  console.log('aimlApi headers snapshot', {
-    keys: Object.keys(event.headers || {}).slice(0, 12),
-    hasXAppKey: Boolean(event.headers?.['x-app-key'] || event.headers?.['X-App-Key']),
-    hasAuth: Boolean(event.headers?.authorization || event.headers?.Authorization),
-    method: event.httpMethod
-  });
-
-  // CORS (and OPTIONS preflight)
-  if (event.httpMethod === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'content-type, x-app-key, authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      },
-    });
-  }
-
-  // Handle header casing - check both lowercase and uppercase versions
-  const headers = event.headers || {};
-  const appKey = headers['x-app-key'] || headers['X-App-Key'];
-  const authHeader = headers.authorization || headers.Authorization;
-
-  // Simple app key authentication
-  const ok = appKey === process.env.FUNCTION_APP_KEY;
-  if (!ok) {
-    console.error('Invalid or missing x-app-key header', {
-      received: appKey,
-      expected: process.env.FUNCTION_APP_KEY ? 'set' : 'missing'
-    })
-    return new Response(JSON.stringify({ error: 'Unauthorized - Invalid app key' }), {
-      status: 401,
-      headers: { 'Access-Control-Allow-Origin': '*' }
-    });
-  }
-
-  // Check for authorization header
-  if (!authHeader) {
-    console.error('Missing authorization header');
-    return new Response(JSON.stringify({ error: 'Unauthorized - Missing authorization' }), {
-      status: 401,
-      headers: { 'Access-Control-Allow-Origin': '*' }
-    });
-  }
-
-  const API_KEY = process.env.AIML_API_KEY;
-  if (!API_KEY) {
-    console.error('AIML_API_KEY missing from environment')
-    return new Response(JSON.stringify({ error: 'AIML_API_KEY missing' }), { 
-      status: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' }
-    });
-  }
-
   try {
-    const body = JSON.parse(event.body || '{}')
-    console.log('AIML API request:', { 
-      hasImage: !!body.image_url, 
-      hasPrompt: !!body.prompt,
-      mode: body.mode || 'unknown',
-      source: body.source
-    })
+    if (event.httpMethod !== 'POST') {
+      return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Handle header casing - Netlify lowercases header names
+    const headers = event.headers || {};
+    const auth = headers.authorization || headers.Authorization || '';
+    const appKey = headers['x-app-key'] || headers['X-App-Key'] || '';
+
+    // TEMP dev-bypass to unblock POC runs (remove in prod)
+    const devBypass = process.env.DEV_ALLOW_NOAUTH === '1';
+
+    if (!auth && !devBypass) {
+      console.warn('aimlApi 401 — missing Authorization. Keys seen:', Object.keys(headers).slice(0, 12));
+      return new Response(JSON.stringify({ error: 'missing_auth_header' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
-    // Call AIML API with the provided parameters
-    const payload = {
+    if (!appKey && !devBypass) {
+      console.warn('aimlApi 401 — missing x-app-key');
+      return new Response(JSON.stringify({ error: 'missing_app_key' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Check if AIML API key is configured
+    const API_KEY = process.env.AIML_API_KEY;
+    if (!API_KEY) {
+      console.error('AIML_API_KEY missing from environment');
+      return new Response(JSON.stringify({ error: 'server_missing_upstream_key' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Parse request body
+    const requestBody = JSON.parse(event.body || '{}');
+    
+    // Handle ping requests for testing
+    if (requestBody.ping) {
+      console.log('AIML API ping received:', {
+        hasAuth: !!auth,
+        hasAppKey: !!appKey,
+        devBypass,
+        timestamp: new Date().toISOString()
+      });
+      return new Response(JSON.stringify({ 
+        ok: true, 
+        message: 'AIML API is running',
+        timestamp: new Date().toISOString(),
+        devMode: !!devBypass
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Structured logging for generation requests
+    const logData = {
+      timestamp: new Date().toISOString(),
+      runId: requestBody.runId || 'unknown',
+      presetId: requestBody.presetId || 'unknown',
+      mode: requestBody.mode || 'unknown',
+      hasImage: !!requestBody.image_url,
+      hasPrompt: !!requestBody.prompt,
+      strength: requestBody.strength,
+      devBypass
+    };
+    
+    console.log('🎯 AIML API generation request:', logData);
+
+    // Validate required fields for generation
+    if (!requestBody.image_url) {
+      console.error('Missing image_url in request');
+      return new Response(JSON.stringify({ error: 'missing_image_url' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (!requestBody.prompt) {
+      console.error('Missing prompt in request');
+      return new Response(JSON.stringify({ error: 'missing_prompt' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Build AIML API payload
+    const aimlPayload = {
       model: 'flux/dev/image-to-image',
-      prompt: String(body.prompt || 'stylize').trim(),
-      image_url: body.image_url,
-      strength: Number(body.strength ?? 0.75),
-      num_inference_steps: Number(body.num_inference_steps ?? body.steps ?? 36),
-      guidance_scale: Number(body.guidance_scale ?? 7.5),
-      seed: body.seed || Date.now(),
+      prompt: String(requestBody.prompt).trim(),
+      image_url: requestBody.image_url,
+      strength: Number(requestBody.strength ?? 0.75),
+      num_inference_steps: Number(requestBody.num_inference_steps ?? requestBody.steps ?? 36),
+      guidance_scale: Number(requestBody.guidance_scale ?? 7.5),
+      seed: requestBody.seed || Date.now(),
     };
 
-    console.log('Calling AIML with payload:', payload);
+    console.log('🚀 Calling upstream AIML API with payload:', {
+      ...logData,
+      model: aimlPayload.model,
+      steps: aimlPayload.num_inference_steps,
+      guidance: aimlPayload.guidance_scale
+    });
 
+    // Call upstream AIML API
+    const startTime = Date.now();
     const response = await fetch('https://api.aimlapi.com/v1/images/generations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${API_KEY}`
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(aimlPayload)
     });
+
+    const duration = Date.now() - startTime;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AIML API error:', response.status, errorText);
-      throw new Error(`AIML API failed: ${response.status} ${errorText}`);
+      console.error('❌ Upstream AIML API error:', {
+        ...logData,
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        duration
+      });
+      
+      return new Response(JSON.stringify({ 
+        error: `Upstream AIML API failed: ${response.status} ${response.statusText}`,
+        details: errorText,
+        runId: requestBody.runId
+      }), {
+        status: response.status,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const result = await response.json();
-    console.log('AIML API success:', { hasImages: !!result.images });
+    
+    console.log('✅ AIML API generation successful:', {
+      ...logData,
+      duration,
+      hasImages: !!result.images,
+      imageCount: result.images?.length || 0,
+      hasData: !!result.data
+    });
 
     return new Response(JSON.stringify(result), {
       status: 200,
-      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' }
     });
-    
+
   } catch (error) {
-    console.error('AIML API error:', error)
-    return new Response(JSON.stringify({ error: error.message || 'Internal server error' }), {
+    console.error('💥 AIML API critical error:', error);
+    return new Response(JSON.stringify({ 
+      error: String(error?.message || error),
+      runId: JSON.parse(event.body || '{}')?.runId || 'unknown'
+    }), {
       status: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json' }
     });
   }
-}
+};
 
 

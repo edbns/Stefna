@@ -6,7 +6,8 @@ export type ProfessionalPresetKey =
   | 'urban_grit' | 'mono_drama' | 'dreamy_pastels' | 'golden_hour_magic' | 'high_fashion_editorial'
   | 'moody_forest' | 'desert_glow' | 'retro_polaroid' | 'crystal_clear' | 'ocean_breeze'
   | 'festival_vibes' | 'noir_classic' | 'sun_kissed' | 'frost_light' | 'neon_nights'
-  | 'cultural_glow' | 'soft_skin_portrait' | 'rainy_day_mood' | 'wildlife_focus' | 'street_story';
+  | 'cultural_glow' | 'soft_skin_portrait' | 'rainy_day_mood' | 'wildlife_focus' | 'street_story'
+  | 'express_enhance';
 
 export interface ProfessionalPresetConfig {
   id: string
@@ -294,6 +295,17 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
     strength: 0.75,
     description: 'Documentary street photography aesthetic',
     category: 'urban'
+  },
+
+  express_enhance: {
+    id: 'express_enhance',
+    name: 'Express Enhance',
+    tag: 'Clarity',
+    prompt: 'Quickly enhance sharpness, remove haze, and boost clarity for a more polished look.',
+    negative_prompt: 'blurry, hazy, soft, distorted',
+    strength: 0.70,
+    description: 'Quickly enhance sharpness, remove haze, and boost clarity for a more polished look.',
+    category: 'minimalist'
   }
 };
 

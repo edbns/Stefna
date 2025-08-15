@@ -39,6 +39,7 @@ const ProfileScreen: React.FC = () => {
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
   const [bulkDeleteConfirmed, setBulkDeleteConfirmed] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false)
   // Use profile context
   const { profileData, updateProfile, refreshProfile } = useProfile()
   
@@ -139,14 +140,14 @@ const ProfileScreen: React.FC = () => {
       if (savedProfile) {
         try {
           const parsedProfile = JSON.parse(savedProfile)
-          setProfileData(prev => ({ ...prev, ...parsedProfile }))
+          updateProfile(parsedProfile)
           
           // Sync preview photo with saved avatar
           if (parsedProfile.avatar && typeof parsedProfile.avatar === 'string') {
             setPreviewPhoto(parsedProfile.avatar)
           }
-        } catch (error) {
-          console.error('Failed to load profile data from localStorage:', error)
+        } catch (parseError) {
+          console.error('Failed to load profile data from localStorage:', parseError)
         }
       }
     }
@@ -197,7 +198,7 @@ const ProfileScreen: React.FC = () => {
       if (savedProfile) {
         try {
           const parsedProfile = JSON.parse(savedProfile)
-          setProfileData(prev => ({ ...prev, ...parsedProfile }))
+          updateProfile(parsedProfile)
         } catch (error) {
           console.error('Failed to load profile data from localStorage:', error)
         }
@@ -1503,75 +1504,274 @@ const ProfileScreen: React.FC = () => {
         )}
 
         {activeTab === 'account' && (
-          <div className="flex-1 flex items-center justify-center p-4">
-            <div className="w-full max-w-md space-y-4">
+          <div className="flex-1 p-6">
+            <div className="max-w-6xl mx-auto">
               {/* Account Header */}
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-bold text-white mb-1">Account Settings</h2>
-                <p className="text-white/60 text-sm">Manage your account preferences</p>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-white mb-2">Account Settings</h2>
+                <p className="text-white/60 text-sm">Manage your AI generation preferences and account security</p>
               </div>
 
-              {/* Email Section */}
-              <div className="bg-[#333333] rounded-xl p-4">
-                <h3 className="text-base font-semibold mb-3 text-white">Email</h3>
-                <div className="text-white/80 mb-3">
-                  <span className="text-white/60 text-sm">Current:</span>
-                  <div className="text-white font-medium mt-1">{profileData.name || 'user@example.com'}</div>
-                </div>
-                <button className="w-full bg-white text-black font-semibold py-2.5 px-4 rounded-lg hover:bg-white/90 transition-colors">
-                  Change Email
-                </button>
-                <p className="text-xs text-white/50 mt-2 text-center">
-                  Uses existing OTP verification system
-                </p>
-              </div>
-
-              {/* Notifications Section */}
-              <div className="bg-[#333333] rounded-xl p-4">
-                <h3 className="text-base font-semibold mb-3 text-white">Notifications</h3>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-white font-medium text-sm">Remix notifications</div>
-                    <div className="text-white/60 text-xs">Daily digest when someone remixes your work</div>
+              {/* Two Column Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Left Column - AI Generation & Account */}
+                <div className="space-y-6">
+                  
+                  {/* Email & Account Info */}
+                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+                      <User size={20} className="mr-2" />
+                      Account Information
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-white/80 text-sm font-medium mb-2">Email Address</label>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="email"
+                            value={authService.getCurrentUser()?.email || 'user@example.com'}
+                            disabled
+                            className="flex-1 bg-[#2a2a2a] border border-[#444444] rounded-lg px-4 py-3 text-white/60 cursor-not-allowed"
+                          />
+                          <button 
+                            onClick={() => {
+                              // Redirect to auth page for email change
+                              navigate('/auth')
+                            }}
+                            className="bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 transition-colors whitespace-nowrap"
+                          >
+                            Change
+                          </button>
+                        </div>
+                        <p className="text-xs text-white/50 mt-2">
+                          Use the auth page to change your email for OTP verification
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      // Toggle remix notifications - this would connect to your settings system
-                      console.log('Toggle remix notifications')
-                    }}
-                    className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
-                  >
-                    <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
-                  </button>
+
+                  {/* AI Generation Preferences */}
+                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+                      <Image size={20} className="mr-2" />
+                      AI Generation Preferences
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium text-sm">Auto-share to Feed</div>
+                          <div className="text-white/60 text-xs">Automatically share your AI generations to the public feed</div>
+                        </div>
+                        <button
+                          onClick={() => updateProfile({ shareToFeed: !profileData.shareToFeed })}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                            profileData.shareToFeed ? 'bg-white' : 'bg-white/20'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform duration-200 ${
+                              profileData.shareToFeed ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium text-sm">Allow Remixes</div>
+                          <div className="text-white/60 text-xs">Let other users remix your AI creations</div>
+                        </div>
+                        <button
+                          onClick={() => updateProfile({ allowRemix: !profileData.allowRemix })}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                            profileData.allowRemix ? 'bg-white' : 'bg-white/20'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform duration-200 ${
+                              profileData.allowRemix ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Generation Statistics */}
+                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+                      <Coins size={20} className="mr-2" />
+                      Generation Statistics
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white">{userMedia.length}</div>
+                        <div className="text-white/60 text-xs">Total Generations</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white">{tokenCount}</div>
+                        <div className="text-white/60 text-xs">Tokens Available</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Generation History */}
+                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+                      <FileText size={20} className="mr-2" />
+                      Generation History
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium text-sm">Save Generation History</div>
+                          <div className="text-white/60 text-xs">Keep track of all your AI generations</div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            // TODO: Implement generation history toggle
+                            notifyError({ title: 'Coming Soon', message: 'Generation history settings will be available soon' })
+                          }}
+                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
+                        >
+                          <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium text-sm">Auto-save Prompts</div>
+                          <div className="text-white/60 text-xs">Save prompts for future reference</div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            // TODO: Implement prompt saving toggle
+                            notifyError({ title: 'Coming Soon', message: 'Prompt saving settings will be available soon' })
+                          }}
+                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
+                        >
+                          <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {/* Security Section */}
-              <div className="bg-[#333333] rounded-xl p-4">
-                <h3 className="text-base font-semibold mb-3 text-white">Security</h3>
-                <button 
-                  className="w-full bg-white text-black font-semibold py-2.5 px-4 rounded-lg hover:bg-white/90 transition-colors" 
-                  onClick={() => {
-                    // Sign out all devices - connect to your auth system
-                    console.log('Sign out all devices')
-                  }}
-                >
-                  Sign out all devices
-                </button>
-              </div>
+                {/* Right Column - Notifications & Data */}
+                <div className="space-y-6">
+                  
+                  {/* AI Generation Notifications */}
+                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+                      <Bell size={20} className="mr-2" />
+                      Generation Notifications
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium text-sm">Generation Complete</div>
+                          <div className="text-white/60 text-xs">Notify when AI generation finishes</div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            // TODO: Implement notification toggle
+                            notifyError({ title: 'Coming Soon', message: 'Notification preferences will be available soon' })
+                          }}
+                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
+                        >
+                          <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium text-sm">Token Usage Alerts</div>
+                          <div className="text-white/60 text-xs">Get notified when running low on tokens</div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            // TODO: Implement notification toggle
+                            notifyError({ title: 'Coming Soon', message: 'Notification preferences will be available soon' })
+                          }}
+                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
+                        >
+                          <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium text-sm">Weekly Generation Summary</div>
+                          <div className="text-white/60 text-xs">Receive weekly summary of your AI activity</div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            // TODO: Implement notification toggle
+                            notifyError({ title: 'Coming Soon', message: 'Notification preferences will be available soon' })
+                          }}
+                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
+                        >
+                          <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Danger Zone */}
-              <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
-                <h3 className="text-base font-semibold text-red-400 mb-3">Danger Zone</h3>
-                <p className="text-red-300/80 text-xs mb-3">
-                  This action cannot be undone. Your account and all media will be permanently deleted.
-                </p>
-                <button 
-                  className="w-full bg-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-red-700 transition-colors"
-                  onClick={() => setShowDeleteAccountModal(true)}
-                >
-                  Delete Account
-                </button>
+                  {/* Data & Export */}
+                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+                      <FileText size={20} className="mr-2" />
+                      Data & Export
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <button 
+                        onClick={() => {
+                          // TODO: Implement data export
+                          notifyError({ title: 'Coming Soon', message: 'Data export will be available soon' })
+                        }}
+                        className="w-full bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white font-medium py-3 px-4 rounded-lg border border-[#444444] hover:border-[#555555] transition-colors"
+                      >
+                        Export My Generations
+                      </button>
+                      
+                      <button 
+                        onClick={() => {
+                          // TODO: Implement data deletion
+                          notifyError({ title: 'Coming Soon', message: 'Data deletion will be available soon' })
+                        }}
+                        className="w-full bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white font-medium py-3 px-4 rounded-lg border border-[#444444] hover:border-[#555555] transition-colors"
+                      >
+                        Delete My Data
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Danger Zone */}
+                  <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-red-400 mb-4 flex items-center">
+                      <Shield size={20} className="mr-2" />
+                      Danger Zone
+                    </h3>
+                    
+                    <p className="text-red-300/80 text-sm mb-4">
+                      These actions cannot be undone. Your account and all AI generations will be permanently deleted.
+                    </p>
+                    
+                    <button 
+                      onClick={() => setShowDeleteAccountModal(true)}
+                      className="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      Delete Account
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
