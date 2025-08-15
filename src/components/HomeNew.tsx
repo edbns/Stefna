@@ -540,17 +540,18 @@ const HomeNew: React.FC = () => {
   // Debug composer state
   useEffect(() => {
     if (isComposerOpen) {
-      const { useGenerationStore } = require('../stores/generationStore')
-      const genState = useGenerationStore.getState()
-      console.log('🎭 Composer opened with state:', { 
-        previewUrl, 
-        selectedFile: selectedFile?.name, 
-        genStoreFile: genState.selectedFile instanceof File ? genState.selectedFile.name : 'not a File',
-        genStoreFileName: genState.selectedFileName,
-        isVideoPreview,
-        hasPreviewUrl: !!previewUrl,
-        previewUrlType: previewUrl?.startsWith('blob:') ? 'blob' : previewUrl?.startsWith('data:') ? 'data' : 'other',
-        actualPreviewUrl: previewUrl
+      import('../stores/generationStore').then(({ useGenerationStore }) => {
+        const genState = useGenerationStore.getState()
+        console.log('🎭 Composer opened with state:', { 
+          previewUrl, 
+          selectedFile: selectedFile?.name, 
+          genStoreFile: genState.selectedFile instanceof File ? genState.selectedFile.name : 'not a File',
+          genStoreFileName: genState.selectedFileName,
+          isVideoPreview,
+          hasPreviewUrl: !!previewUrl,
+          previewUrlType: previewUrl?.startsWith('blob:') ? 'blob' : previewUrl?.startsWith('data:') ? 'data' : 'other',
+          actualPreviewUrl: previewUrl
+        })
       })
     }
   }, [isComposerOpen, previewUrl, selectedFile, isVideoPreview])
