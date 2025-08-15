@@ -23,6 +23,7 @@ import { useGenerationMode } from '../stores/generationMode'
 import { runMoodMorph } from '../services/moodMorph'
 import { runStyleClash } from '../services/styleClash'
 import { PairPicker } from '../features/styleclash/PairPicker'
+import { getSourceFileOrThrow } from '../services/source'
 
 
 

@@ -2,6 +2,13 @@ import { json } from '@netlify/functions'
 import { getIdentity } from '@netlify/edge-functions'
 
 export default async (event) => {
+  // Add server-side logging to confirm which path we're in
+  console.log('aimlApi', {
+    NO_DB: process.env.NO_DB_MODE,
+    hasAuthHeader: Boolean(event.headers.authorization),
+    hasAppKey: Boolean(event.headers['x-app-key'])
+  });
+
   // Handle NO_DB_MODE - skip identity/DB checks entirely in local/demo
   if (process.env.NO_DB_MODE === '1') {
     console.log('NO_DB_MODE: skipping identity checks')
@@ -9,14 +16,17 @@ export default async (event) => {
     // Normal auth flow for production
     const token = event.headers.authorization?.split(' ')[1]
     if (!token) {
+      console.error('No authorization header provided')
       return json({ error: 'Unauthorized' }, { status: 401 })
     }
     
     try {
       const identity = await getIdentity({ token })
       if (!identity) {
+        console.error('Invalid token provided')
         return json({ error: 'Invalid token' }, { status: 401 })
       }
+      console.log('Identity verified:', identity.email)
     } catch (error) {
       console.error('Identity verification failed:', error)
       return json({ error: 'Identity verification failed' }, { status: 401 })
@@ -32,6 +42,11 @@ export default async (event) => {
 
   try {
     const body = JSON.parse(event.body || '{}')
+    console.log('AIML API request:', { 
+      hasImage: !!body.image_url, 
+      hasPrompt: !!body.prompt,
+      mode: body.mode || 'unknown'
+    })
     
     // Your existing AIML API logic here
     // Make sure to use the API_KEY for the actual model calls

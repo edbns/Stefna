@@ -3,7 +3,7 @@ import { STYLES } from '../features/styleclash/styles'
 import { uploadSourceToCloudinary } from './uploadSource'
 import { uploadBlobToCloudinary } from './uploadBlobToCloudinary'
 import { composeSplit } from '../features/styleclash/compose'
-import { assertFile } from './sourceFile'
+import { getSourceFileOrThrow } from './source'
 import { callAimlApi } from './aiml'
 
 type StyleId = keyof typeof STYLES;
@@ -33,7 +33,7 @@ export async function runStyleClash(params?: {
   try {
     // Use centralized file assertion
     let file = params?.file ?? window.__lastSelectedFile as File | undefined
-    file = assertFile(file)
+    file = await getSourceFileOrThrow(file)
 
     // 1) Always start from the original File
     const { secureUrl } = await uploadSourceToCloudinary({ file })

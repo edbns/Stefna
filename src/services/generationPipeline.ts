@@ -14,6 +14,7 @@ import { postAuthed } from '../utils/fetchAuthed'
 import authService from '../services/authService'
 import { uploadSourceToCloudinary } from './uploadSource'
 import { assertFile } from './sourceFile'
+import { getSourceFileOrThrow } from './source'
 
 // File type guard to prevent uploading strings as files
 const isFileLike = (x: unknown): x is File | Blob =>
@@ -185,9 +186,10 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
     
     // ✅ Use new uploadSource service - never fetch blob URLs
     try {
+      const sourceFile = await getSourceFileOrThrow(job.source?.file || job.source?.url)
       const uploadResult = await uploadSourceToCloudinary({
-        file: job.source?.file ? assertFile(job.source.file) : undefined,
-        url: job.source?.url
+        file: sourceFile,
+        url: undefined // We always use the file now
       })
       sourceUrl = uploadResult.secureUrl
       uploadLogger.info('Source uploaded to Cloudinary', { sourceUrl })

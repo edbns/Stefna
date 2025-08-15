@@ -1,7 +1,7 @@
 // src/services/moodMorph.ts
 import { MOODS } from '../features/moodmorph/recipes'
 import { uploadSourceToCloudinary } from './uploadSource'
-import { assertFile } from './sourceFile'
+import { getSourceFileOrThrow } from './source'
 import { callAimlApi } from './aiml'
 
 // Simple AIML API call function
@@ -31,7 +31,7 @@ export async function runMoodMorph(file?: File) {
       // Try to get file from global state
       file = window.__lastSelectedFile as File | undefined
     }
-    file = assertFile(file)
+    file = await getSourceFileOrThrow(file)
 
     // 1) Always upload the actual File (not blob:)
     const { secureUrl } = await uploadSourceToCloudinary({ file })
