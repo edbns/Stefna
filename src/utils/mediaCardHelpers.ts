@@ -19,7 +19,7 @@ export function getCardChips(r: MediaRecord | any) {
       ? `${(meta.storyKey ?? '').replaceAll('_',' ')}${meta.storyLabel ? ' · ' + meta.storyLabel : ''}`
       : (meta.group === 'time_machine' || meta.group === 'restore')
         ? (meta.optionKey ?? '').replaceAll('_',' ')
-        : (PRESETS[meta.presetId]?.label ?? meta.presetId ?? 'Unknown');
+        : (PRESETS[meta.presetId]?.label ?? meta.presetId ?? 'Custom Preset');
 
   return { modeChip, detailChip };
 }

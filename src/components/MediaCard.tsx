@@ -104,7 +104,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
           <div className="absolute bottom-3 right-3 opacity-100 transition-opacity duration-300">
             <button
               onClick={(e) => { e.stopPropagation(); handleRemix() }}
-              className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/25 transition-all duration-300 hover:scale-105"
+              className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/80 transition-all duration-300 hover:scale-105"
               title="Remix this creation"
               aria-label="Remix this media"
             >

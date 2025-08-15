@@ -179,7 +179,8 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
           fileName: (job.source!.file as File).name,
           fileSize: job.source!.file.size 
         })
-        sourceUrl = await uploadToCloudinary(job.source!.file as File, { signal: controller.signal })
+        const uploadResult = await uploadToCloudinary(job.source!.file as File, 'stefna/sources')
+        sourceUrl = uploadResult.secure_url
         uploadLogger.info('Upload completed', { sourceUrl })
       } catch (error) {
         if (controller.signal.aborted) return null
@@ -252,6 +253,15 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
 // Helper to call AIML API with proper error handling and cancellation
 async function callAimlApi(job: GenerateJob, options?: { signal?: AbortSignal }): Promise<GenerationResult> {
   try {
+    // Import and use ensureRemoteUrl to convert any blob URLs to HTTPS
+    const { ensureRemoteUrl } = await import('../utils/ensureRemoteUrl');
+    
+    // Ensure we have a proper HTTPS URL before calling AIML
+    const secureImageUrl = await ensureRemoteUrl({ 
+      url: job.source?.url,
+      file: job.source?.file
+    });
+    
     const response = await authFetch('/.netlify/functions/aimlApi', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -259,7 +269,7 @@ async function callAimlApi(job: GenerateJob, options?: { signal?: AbortSignal })
       body: JSON.stringify({
         ...job.params,
         prompt: job.prompt,
-        image_url: job.source?.url,
+        image_url: secureImageUrl, // Use the ensured HTTPS URL
         mode: job.mode,
         presetId: job.presetId,
         runId: job.runId
@@ -273,9 +283,17 @@ async function callAimlApi(job: GenerateJob, options?: { signal?: AbortSignal })
 
     const result = await response.json()
     
+    // Bulletproof success check - handle both response formats
+    const resultImageUrl = result.images?.[0]?.url || result.data?.[0]?.url || result.result_url || result.output_url || result.image_url
+    
+    if (!resultImageUrl) {
+      console.error('❌ No image URL in AIML response:', result)
+      throw new Error('No image URL returned from generation')
+    }
+    
     return {
       success: true,
-      resultUrl: result.result_url || result.output_url,
+      resultUrl: resultImageUrl,
       runId: job.runId,
       media: result
     }
@@ -393,7 +411,7 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             parentId: job.parentId,
-            childId: record.id || 'unknown',
+            childId: record.public_id || 'unknown',
             createdAt: new Date().toISOString()
           })
         });

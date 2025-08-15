@@ -265,21 +265,19 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
                       {remixText}
                     </span>
                   )}
+
+                  {/* Remix Button - Icon only, same row */}
+                  <button
+                    onClick={handleRemix}
+                    className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/80 transition-all duration-300 hover:scale-105"
+                    title="Remix this creation"
+                    aria-label="Remix this media"
+                  >
+                    <RemixIcon size={14} className="text-white" />
+                  </button>
                 </div>
               )
             })()}
-
-            {/* Single Remix Action */}
-            <div className="flex items-center justify-center">
-              <button
-                onClick={handleRemix}
-                className="flex items-center space-x-2 px-6 py-3 bg-white/10 hover:bg-white/20 rounded-full border border-white/20 text-white transition-all duration-300 hover:scale-105"
-                title="Remix this creation"
-              >
-                <RemixIcon size={18} className="text-white" />
-                <span className="text-sm font-medium">Remix</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>

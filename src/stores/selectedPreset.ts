@@ -8,10 +8,12 @@ type SelState = {
   selectedPreset: PresetId | null;
   setSelectedPreset: (id: PresetId | null) => void;
   ensureDefault: (actives: PresetId[]) => void;
+  resetToDefault: () => void;
+  getDefaultPreset: () => PresetId;
 };
 
-// C. Stop nuking selectedPreset during boot
-const BOOT_PRESET: PresetId | null = null;
+// Defensive default preset - never null
+const DEFAULT_PRESET: PresetId = 'cinematic_glow';
 
 export const useSelectedPreset = create<SelState>((set, get) => ({
   // Make selectedPreset resilient to store reloads/preset refresh
@@ -21,15 +23,15 @@ export const useSelectedPreset = create<SelState>((set, get) => ({
       console.log('🎯 Restored selectedPreset from localStorage:', stored);
       return stored as PresetId;
     }
-    console.log('🎯 Using boot default preset:', BOOT_PRESET);
-    return BOOT_PRESET;
+    console.log('🎯 Using boot default preset:', DEFAULT_PRESET);
+    return DEFAULT_PRESET;
   })(),
   
   setSelectedPreset: (id) => {
     if (id === null) {
-      console.log('🎯 Clearing selectedPreset to None');
-      set({ selectedPreset: null });
-      localStorage.removeItem('selectedPreset');
+      console.log('🎯 Clearing selectedPreset to default');
+      set({ selectedPreset: DEFAULT_PRESET });
+      localStorage.setItem('selectedPreset', DEFAULT_PRESET);
       return;
     }
     if (!id) {
@@ -46,19 +48,37 @@ export const useSelectedPreset = create<SelState>((set, get) => ({
   ensureDefault: (actives) => {
     const current = get().selectedPreset;
     
-    // Don't auto-set a preset - let user choose or stay on None
-    if (!current) {
-      console.log('🎯 Keeping selectedPreset as None - user must choose');
-      // Don't set anything - let it stay null
+    // Only set if it's currently null/undefined or not in active list
+    if (!current || !actives.includes(current)) {
+      const first = actives[0];
+      if (first) {
+        console.log('🎯 Setting boot default preset to:', first);
+        set({ selectedPreset: first as PresetId });
+        localStorage.setItem('selectedPreset', first);
+      } else {
+        console.log('🎯 Setting fallback boot preset to:', DEFAULT_PRESET);
+        set({ selectedPreset: DEFAULT_PRESET });
+        localStorage.setItem('selectedPreset', DEFAULT_PRESET);
+      }
     }
   },
+
+  resetToDefault: () => {
+    console.log('🎯 Resetting to default preset:', DEFAULT_PRESET);
+    set({ selectedPreset: DEFAULT_PRESET });
+    localStorage.setItem('selectedPreset', DEFAULT_PRESET);
+  },
+
+  getDefaultPreset: () => DEFAULT_PRESET,
 }));
 
 // Defensive logging to catch unexpected resets
 if (typeof window !== 'undefined') {
   useSelectedPreset.subscribe((state) => {
     if (state.selectedPreset === null) {
-      console.warn('[selectedPreset] became null unexpectedly', new Error().stack);
+      console.warn('[selectedPreset] became null unexpectedly, resetting to default', new Error().stack);
+      // Auto-recover from null state
+      useSelectedPreset.getState().resetToDefault();
     }
   });
 }
