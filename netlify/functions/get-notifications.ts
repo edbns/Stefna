@@ -33,6 +33,26 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    // First check if user exists in users table
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    // If user doesn't exist, return empty notifications instead of error
+    if (userError || !user) {
+      console.log('User not found in users table, returning empty notifications:', { userId, userError });
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          notifications: [],
+          unreadCount: 0,
+          hasMore: false
+        })
+      };
+    }
+
     const { limit = '20', offset = '0', unread_only = 'false' } = event.queryStringParameters || {};
 
     // Build query
@@ -60,9 +80,14 @@ export const handler: Handler = async (event) => {
 
     if (error) {
       console.error('Failed to fetch notifications:', error);
+      // Return empty notifications instead of error
       return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'Failed to fetch notifications' })
+        statusCode: 200,
+        body: JSON.stringify({
+          notifications: [],
+          unreadCount: 0,
+          hasMore: false
+        })
       };
     }
 
@@ -94,9 +119,14 @@ export const handler: Handler = async (event) => {
 
   } catch (error) {
     console.error('Get notifications error:', error);
+    // Return empty notifications instead of 500 error
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' })
+      statusCode: 200,
+      body: JSON.stringify({
+        notifications: [],
+        unreadCount: 0,
+        hasMore: false
+      })
     };
   }
 };

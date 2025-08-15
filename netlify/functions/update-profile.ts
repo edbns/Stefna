@@ -58,24 +58,40 @@ export const handler: Handler = async (event) => {
 
     const userId = authResult.userId;
 
-    // Verify user exists in users table (not auth.users)
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .single();
-
-    if (userError || !user) {
-      console.error('User not found in users table:', userError);
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'User not found' })
-      };
-    }
-
     // Parse request body
     const body: UpdateProfileRequest = JSON.parse(event.body || '{}');
     console.log('📝 Update profile request:', { userId, body });
+
+    // First, ensure user exists in users table by upserting
+    // This prevents the "User ID not found in users table" error
+    const { data: userData, error: userUpsertError } = await supabase
+      .from('users')
+      .upsert({
+        id: userId,
+        email: body.email || `user-${userId}@placeholder.com`, // Placeholder email if not provided
+        name: body.username || `User ${userId}`, // Use username or generate name
+        tier: 'registered',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'id',
+        ignoreDuplicates: false
+      })
+      .select()
+      .single();
+
+    if (userUpsertError) {
+      console.error('Failed to upsert user in users table:', userUpsertError);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ 
+          error: 'Failed to create/update user record',
+          details: userUpsertError.message
+        })
+      };
+    }
+
+    console.log('✅ User upserted successfully:', userData);
     
     // Validate username if provided
     if (body.username !== undefined && body.username !== null) {

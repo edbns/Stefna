@@ -2,8 +2,8 @@ export default async (event) => {
   // Add debug logging for headers
   console.log('aimlApi headers snapshot', {
     keys: Object.keys(event.headers || {}).slice(0, 12),
-    hasXAppKey: Boolean(event.headers?.['x-app-key']),
-    hasAuth: Boolean(event.headers?.authorization),
+    hasXAppKey: Boolean(event.headers?.['x-app-key'] || event.headers?.['X-App-Key']),
+    hasAuth: Boolean(event.headers?.authorization || event.headers?.Authorization),
     method: event.httpMethod
   });
 
@@ -19,14 +19,28 @@ export default async (event) => {
     });
   }
 
+  // Handle header casing - check both lowercase and uppercase versions
+  const headers = event.headers || {};
+  const appKey = headers['x-app-key'] || headers['X-App-Key'];
+  const authHeader = headers.authorization || headers.Authorization;
+
   // Simple app key authentication
-  const ok = event.headers?.['x-app-key'] === process.env.FUNCTION_APP_KEY;
+  const ok = appKey === process.env.FUNCTION_APP_KEY;
   if (!ok) {
     console.error('Invalid or missing x-app-key header', {
-      received: event.headers?.['x-app-key'],
+      received: appKey,
       expected: process.env.FUNCTION_APP_KEY ? 'set' : 'missing'
     })
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    return new Response(JSON.stringify({ error: 'Unauthorized - Invalid app key' }), {
+      status: 401,
+      headers: { 'Access-Control-Allow-Origin': '*' }
+    });
+  }
+
+  // Check for authorization header
+  if (!authHeader) {
+    console.error('Missing authorization header');
+    return new Response(JSON.stringify({ error: 'Unauthorized - Missing authorization' }), {
       status: 401,
       headers: { 'Access-Control-Allow-Origin': '*' }
     });
@@ -46,7 +60,8 @@ export default async (event) => {
     console.log('AIML API request:', { 
       hasImage: !!body.image_url, 
       hasPrompt: !!body.prompt,
-      mode: body.mode || 'unknown'
+      mode: body.mode || 'unknown',
+      source: body.source
     })
     
     // Call AIML API with the provided parameters
