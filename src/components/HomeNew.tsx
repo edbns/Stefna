@@ -21,8 +21,7 @@ import { runsStore } from '../stores/runs'
 import { uploadSourceToCloudinary } from '../services/uploadSource'
 import { useGenerationMode } from '../stores/generationMode'
 import { runMoodMorph } from '../services/moodMorph'
-import { runStyleClash } from '../services/styleClash'
-import { PairPicker } from '../features/styleclash/PairPicker'
+
 import { getSourceFileOrThrow } from '../services/source'
 
 
@@ -71,53 +70,9 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   }
 }
 
-// Story Category Section Component with collapsible themes
-interface StoryCategorySectionProps {
-  title: string
-  themes: StoryTheme[]
-  selectedTheme: StoryTheme | null
-  onThemeSelect: (theme: StoryTheme) => void
-  isExpanded: boolean
-  onToggle: () => void
-}
 
-const StoryCategorySection: React.FC<StoryCategorySectionProps> = ({ title, themes, selectedTheme, onThemeSelect, isExpanded, onToggle }) => {
   
-  return (
-    <div className="border-b border-white/10 last:border-b-0 pb-2 last:pb-0">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between px-2 py-2 rounded-lg transition-colors text-sm text-white hover:bg-white/5"
-      >
-        <span className="font-medium text-white">{title}</span>
-        <ChevronDown size={14} className={`transition-transform text-white ${isExpanded ? 'rotate-180' : ''}`} />
-      </button>
-      
-      {isExpanded && (
-        <div className="mt-1 space-y-1 pl-2">
-          {themes.map((theme) => (
-            <button
-              key={theme}
-              onClick={() => onThemeSelect(theme)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
-                selectedTheme === theme 
-                  ? 'bg-white/20 text-white' 
-                  : 'text-white hover:bg-white/10'
-              }`}
-            >
-              <span className="text-white">{STORY_THEME_LABELS[theme]}</span>
-              {selectedTheme === theme ? (
-                <div className="w-3 h-3 rounded-full bg-white border border-white/30"></div>
-              ) : (
-                <div className="w-3 h-3 rounded-full border border-white/30"></div>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
+
 
 import { PRESETS, resolvePreset } from '../utils/presets/types'
 import presetRotationService from '../services/presetRotationService'
@@ -125,7 +80,7 @@ import captionService from '../services/captionService'
 import { presetsStore } from '../stores/presetsStore'
 import { onPresetClick } from '../handlers/presetHandlers'
 import { onTimeMachineClick } from '../handlers/timeMachineHandlers'
-import { runStory } from '../handlers/storyModeHandlers'
+
 import { validateModeMappings } from '../utils/validateMappings'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
 import ShareModal from './ShareModal'
@@ -137,7 +92,7 @@ import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
 import { saveMediaNoDB, togglePublish } from '../lib/api'
-import { Mode, StoryTheme, TimeEra, RestoreOp, MODE_LABELS, STORY_THEME_LABELS, TIME_ERA_LABELS, RESTORE_OP_LABELS } from '../config/modes'
+import { Mode, MODE_LABELS, StoryTheme, TimeEra, RestoreOp } from '../config/modes'
 import { resolvePresetForMode } from '../utils/resolvePresetForMode'
 import { getPresetDef, getPresetLabel, MASTER_PRESET_CATALOG } from '../services/presets'
 import { buildEffectivePrompt, type DetailLevel } from '../services/prompt'
@@ -169,16 +124,19 @@ const HomeNew: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [prompt, setPrompt] = useState('')
   
-  // Mode state for Story Mode, Time Machine, and Restore
+  // Mode state
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null)
+  
+  // Mode dropdown states
   const [selectedTheme, setSelectedTheme] = useState<StoryTheme | null>(null)
   const [selectedEra, setSelectedEra] = useState<TimeEra | null>(null)
   const [selectedOp, setSelectedOp] = useState<RestoreOp | null>(null)
   
-  // Mode dropdown states
+  // Dropdown open states
   const [storyOpen, setStoryOpen] = useState(false)
   const [timeMachineOpen, setTimeMachineOpen] = useState(false)
   const [restoreOpen, setRestoreOpen] = useState(false)
+
   
   // New preset runner system - MUST be declared before use
   const { queuePreset, queueOption, queueStory, onSourceReady, clearQueue, busy: presetRunnerBusy } = usePresetRunner()
@@ -286,12 +244,7 @@ const HomeNew: React.FC = () => {
       console.trace('Preset clear stack trace')
     }
   }, [selectedPreset])
-  // Caption generator state
-  const [isCaptionOpen, setIsCaptionOpen] = useState(false)
-  const [captionPlatform, setCaptionPlatform] = useState<'instagram' | 'x' | 'tiktok' | 'whatsapp' | 'telegram'>('instagram')
-  const [captionStyle, setCaptionStyle] = useState<'casual' | 'professional' | 'trendy' | 'artistic'>('trendy')
-  const [captionOutput, setCaptionOutput] = useState<string>('')
-  const [isCaptionLoading, setIsCaptionLoading] = useState(false)
+
 
   // Get active presets from the rotation service
   const weeklyPresetNames = useMemo(() => {
@@ -393,15 +346,7 @@ const HomeNew: React.FC = () => {
       }
       
       // Close mode dropdowns
-      if (storyOpen && !target.closest('[data-story-dropdown]')) {
-        setStoryOpen(false)
-      }
-      if (timeMachineOpen && !target.closest('[data-timemachine-dropdown]')) {
-        setTimeMachineOpen(false)
-      }
-      if (restoreOpen && !target.closest('[data-restore-dropdown]')) {
-        setRestoreOpen(false)
-      }
+
     }
 
     // Close dropdowns when global nav close event is dispatched
@@ -457,7 +402,7 @@ const HomeNew: React.FC = () => {
       window.removeEventListener('global-nav-close', handleGlobalNavClose)
       document.removeEventListener('keydown', handleEscapeKey)
     }
-  }, [filterOpen, userMenu, presetsOpen, storyOpen, timeMachineOpen, restoreOpen])
+  }, [filterOpen, userMenu, presetsOpen])
 
   // Function to close all dropdowns
   const closeAllDropdowns = () => {
@@ -1788,35 +1733,7 @@ const HomeNew: React.FC = () => {
 
 
 
-  const handleGenerateCaption = () => {
-    if (!prompt.trim()) {
-      setCaptionOutput('')
-      return
-    }
-    setIsCaptionLoading(true)
-    try {
-      const result = captionService.generateCaption({
-        prompt: prompt.trim(),
-        platform: captionPlatform,
-        style: captionStyle
-      })
-      setCaptionOutput(result.caption)
-    } catch (e) {
-      setCaptionOutput('')
-    } finally {
-      setIsCaptionLoading(false)
-    }
-  }
 
-  const handleCopyCaption = async () => {
-    if (!captionOutput) return
-    try {
-      await navigator.clipboard.writeText(captionOutput)
-              // Copied - no notification needed
-    } catch (e) {
-              // Copy failed - no notification needed
-    }
-  }
 
 
 
@@ -2271,9 +2188,24 @@ const HomeNew: React.FC = () => {
             </button>
             {filterOpen && (
               <div className="absolute right-0 mt-2 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
-                <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='all'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>All</button>
-                <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='images'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Images</button>
-                <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${currentFilter==='videos'?'bg-white/10 text-white':'text-white/70 hover:text-white hover:bg-white/5'}`}>Videos</button>
+                <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={(() => {
+                  const baseClass = 'w-full text-left px-3 py-2 rounded-lg transition-colors';
+                  const activeClass = 'bg-white/10 text-white';
+                  const inactiveClass = 'text-white/70 hover:text-white hover:bg-white/5';
+                  return `${baseClass} ${currentFilter === 'all' ? activeClass : inactiveClass}`;
+                })()}>All</button>
+                <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={(() => {
+                  const baseClass = 'w-full text-left px-3 py-2 rounded-lg transition-colors';
+                  const activeClass = 'bg-white/10 text-white';
+                  const inactiveClass = 'text-white/70 hover:text-white hover:bg-white/5';
+                  return `${baseClass} ${currentFilter === 'images' ? activeClass : inactiveClass}`;
+                })()}>Images</button>
+                <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={(() => {
+                  const baseClass = 'w-full text-left px-3 py-2 rounded-lg transition-colors';
+                  const activeClass = 'bg-white/10 text-white';
+                  const inactiveClass = 'text-white/70 hover:text-white hover:bg-white/5';
+                  return `${baseClass} ${currentFilter === 'videos' ? activeClass : inactiveClass}`;
+                })()}>Videos</button>
               </div>
             )}
           </div>
@@ -2466,53 +2398,45 @@ const HomeNew: React.FC = () => {
             </div>
           </div>
 
-          {/* Bottom composer bar - 70% width, centered, dynamic height for Style Clash */}
-          <div className={`absolute bottom-8 left-1/2 transform -translate-x-1/2 w-[70%] min-w-[500px] max-w-[800px] transition-all duration-300 ${
-            mode === 'styleclash' ? 'pb-6' : ''
-          }`}>
-            <div className={`bg-[#0f0f0f] border border-white/20 rounded-2xl px-4 pt-2 pb-4 shadow-2xl transition-all duration-300 ${
-              mode === 'styleclash' ? 'min-h-[280px] pb-6' : ''
-            }`}>
+          {/* Bottom composer bar - compact, horizontally 70% */}
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
+            <div className="bg-black border border-[#333333] rounded-2xl px-4 py-3 shadow-2xl transition-all duration-300">
               
 
-              {/* Prompt Input - show for presets mode and Style Clash mode */}
-              {(mode === 'presets' || mode === 'styleclash') && (
-                <div className="mb-6">
+              {/* Prompt Input - show for presets mode */}
+              {mode === 'presets' && (
+                <div className="mb-2">
                   <div className="relative">
                     <textarea
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
-                      placeholder={
-                        mode === 'presets' 
-                          ? "Describe your vision or leave blank to use preset style..."
-                          : "Describe your Style Clash vision or leave blank for default styles..."
-                      }
-                      className={`w-full px-4 py-3 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors ${
-                        mode === 'styleclash' ? 'h-32' : 'h-24'
-                      }`}
+                      placeholder="Describe your vision or leave blank to use preset style..."
+                      className="w-full px-3 py-2 bg-white/5 border border-[#333333] rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors h-20 text-sm"
                       disabled={isGenerating}
                     />
-                    <div className="absolute bottom-3 right-3 text-white/30 text-xs">
+                    <div className="absolute bottom-2 right-2 text-white/30 text-xs">
                       {prompt.length}/500
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Bottom controls row - variations/presets left, actions right */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  {/* Left: Variations toggle + Presets */}
-                  <div className="flex items-center gap-3">
+              {/* Single row with all controls */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                {/* Left: Variations toggle + Presets + MoodMorph */}
+                <div className="flex items-center gap-2">
                   {/* Variations selector */}
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
-                    <button
-                      type="button"
+                      <button
+                        type="button"
                         onClick={() => setGenerateTwo(false)}
-                        className={`w-6 h-6 rounded text-xs font-medium transition-colors relative group ${
-                          !generateTwo ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
-                        }`}
+                        className={(() => {
+                          const baseClass = 'w-6 h-6 rounded text-xs font-medium transition-colors relative group';
+                          const activeClass = 'bg-white text-black';
+                          const inactiveClass = 'bg-white/10 text-white hover:bg-white/20';
+                          return `${baseClass} ${!generateTwo ? activeClass : inactiveClass}`;
+                        })()}
                         title="1 variation"
                       >
                         1
@@ -2523,16 +2447,19 @@ const HomeNew: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setGenerateTwo(true)}
-                        className={`w-6 h-6 rounded text-xs font-medium transition-colors relative group ${
-                          generateTwo ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
-                        }`}
+                        className={(() => {
+                          const baseClass = 'w-6 h-6 rounded text-xs font-medium transition-colors relative group';
+                          const activeClass = 'bg-white text-black';
+                          const inactiveClass = 'bg-white/10 text-white hover:bg-white/20';
+                          return `${baseClass} ${generateTwo ? activeClass : inactiveClass}`;
+                        })()}
                         title="2 variations"
                       >
                         2
                         <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-black/80 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                           2 variations
                         </span>
-                    </button>
+                      </button>
                     </div>
                   </div>
 
@@ -2547,11 +2474,12 @@ const HomeNew: React.FC = () => {
                         }
                         setPresetsOpen((v) => !v)
                       }}
-                      className={`px-3 py-1.5 rounded-2xl text-xs border transition-colors ${
-                        isAuthenticated 
-                          ? 'bg-white/10 text-white border-white/20 hover:bg-white/15' 
-                          : 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
-                      }`}
+                      className={(() => {
+                        const baseClass = 'px-3 py-1.5 rounded-2xl text-xs border transition-colors';
+                        const activeClass = 'bg-white/10 text-white border-white/20 hover:bg-white/15';
+                        const disabledClass = 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed';
+                        return `${baseClass} ${isAuthenticated ? activeClass : disabledClass}`;
+                      })()}
                       data-nav-button
                       data-nav-type="presets"
                       title={isAuthenticated ? 'Choose AI style presets' : 'Sign up to use AI presets'}
@@ -2571,11 +2499,12 @@ const HomeNew: React.FC = () => {
                               requestClearPreset('user clicked clear')
                               setPresetsOpen(false)
                             }}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
-                              !selectedPreset 
-                                ? 'bg-white/20 text-white' 
-                                : 'text-white/80 hover:text-white hover:bg-white/10'
-                            }`}
+                            className={(() => {
+                              const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm';
+                              const activeClass = 'bg-white/20 text-white';
+                              const inactiveClass = 'text-white/80 hover:text-white hover:bg-white/10';
+                              return `${baseClass} ${!selectedPreset ? activeClass : inactiveClass}`;
+                            })()}
                           >
                             <span>None</span>
                             {!selectedPreset && (
@@ -2591,11 +2520,12 @@ const HomeNew: React.FC = () => {
                                 handlePresetClick(name)
                                 setPresetsOpen(false)
                               }}
-                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
-                                selectedPreset === name 
-                                  ? 'bg-white/20 text-white' 
-                                  : 'text-white/80 hover:text-white hover:bg-white/10'
-                              }`}
+                              className={(() => {
+                                const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm';
+                                const activeClass = 'bg-white/20 text-white';
+                                const inactiveClass = 'text-white/80 hover:text-white hover:bg-white/10';
+                                return `${baseClass} ${selectedPreset === name ? activeClass : inactiveClass}`;
+                              })()}
                             >
                               <span>{getPresetLabel(name, PRESETS)}</span>
                               {selectedPreset === name ? (
@@ -2619,67 +2549,22 @@ const HomeNew: React.FC = () => {
                       }
                       setMode(mode === 'moodmorph' ? 'presets' : 'moodmorph')
                     }}
-                    className={`px-3 py-1.5 rounded-2xl text-xs border transition-colors ${
+                    className={
                       !isAuthenticated
-                        ? 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
+                        ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
                         : mode === 'moodmorph'
-                        ? 'bg-white text-black' 
-                        : 'bg-white/10 text-white border-white/20 hover:bg-white/15'
-                    }`}
+                        ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white text-black'
+                        : 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15'
+                    }
                     title={isAuthenticated ? 'Switch to MoodMorph™ mode' : 'Sign up to use MoodMorph™'}
                     disabled={!isAuthenticated}
                   >
                     MoodMorph™
                   </button>
+                </div>
 
-                  {/* Style Clash button */}
-                  <button
-                    onClick={() => {
-                      if (!isAuthenticated) {
-                        navigate('/auth')
-                        return
-                      }
-                      setMode(mode === 'styleclash' ? 'presets' : 'styleclash')
-                    }}
-                    className={`px-3 py-1.5 rounded-2xl text-xs border transition-colors ${
-                      !isAuthenticated
-                        ? 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
-                        : mode === 'styleclash'
-                        ? 'bg-white text-black' 
-                        : 'bg-white/10 text-white border-white/20 hover:bg-white/15'
-                    }`}
-                    title={isAuthenticated ? 'Switch to Style Clash mode' : 'Sign up to use Style Clash'}
-                    disabled={!isAuthenticated}
-                  >
-                    Style Clash
-                  </button>
-
-                  </div>
-
-                  {/* Style Clash Pair Picker - only show when in Style Clash mode */}
-                  {mode === 'styleclash' && (
-                    <div className="mt-4 w-full flex justify-center">
-                      <PairPicker 
-                        left="noir" 
-                        right="vivid" 
-                        onChange={(left, right) => {
-                          // Store the selected styles for generation
-                          window.__styleClashLeft = left;
-                          window.__styleClashRight = right;
-                        }}
-                      />
-                    </div>
-                  )}
-
-
-
-
-
-
-                  </div>
-
-                  {/* Right: Action buttons */}
-                <div className="flex items-center gap-3">
+                {/* Right: Action buttons - Save to draft and Generate */}
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -2691,125 +2576,73 @@ const HomeNew: React.FC = () => {
                       handleSaveDraft()
                     }}
                     title={isAuthenticated ? 'Save to draft' : 'Sign up to save drafts'}
-                    className={`w-9 h-9 rounded-full btn-optimized flex items-center justify-center border relative group ${
-                      isAuthenticated 
-                        ? 'bg-white/10 text-white border-white/20 hover:bg-white/15' 
-                        : 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
-                    }`}
+                    className={(() => {
+                      const baseClass = 'w-8 h-8 rounded-full flex items-center justify-center border transition-colors';
+                      const activeClass = 'bg-white/10 text-white border-white/20 hover:bg-white/15';
+                      const disabledClass = 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed';
+                      return `${baseClass} ${isAuthenticated ? activeClass : disabledClass}`;
+                    })()}
                     aria-label="Save to draft"
                     disabled={!isAuthenticated}
                   >
                     <FileText size={14} />
-                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-black/80 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                      Save to draft
-                    </span>
                   </button>
                   <button 
                     onClick={() => {
                       // Show immediate feedback that button was clicked
-                        setNavGenerating(true)
-                        // Close composer with 100ms delay
-                        setTimeout(() => {
-                          window.dispatchEvent(new CustomEvent('close-composer'));
-                        }, 100)
-                        // Small delay to show the loading state before starting generation
-                        setTimeout(() => {
-                          if (mode === 'moodmorph') {
-                            // Run MoodMorph™
-                            runMoodMorph(selectedFile || undefined)
-                          } else if (mode === 'styleclash') {
-                            // Run Style Clash
-                            const left = window.__styleClashLeft || 'noir';
-                            const right = window.__styleClashRight || 'vivid';
-                            runStyleClash({ 
-                              left, 
-                              right, 
-                              orientation: 'vertical', 
-                              file: selectedFile || undefined 
-                            })
-                          } else if (selectedPreset) {
-                            // Run preset generation
-                            dispatchGenerate('preset', {
-                              presetId: selectedPreset,
-                              presetData: PRESETS[selectedPreset],
-                              promptOverride: prompt
-                            })
-                          } else {
-                            // Run custom generation
-                            dispatchGenerate('custom', {
-                              promptOverride: prompt
-                            })
-                          }
-                        }, 100)
+                      setNavGenerating(true)
+                      // Close composer with 100ms delay
+                      setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('close-composer'));
+                      }, 100)
+                      // Small delay to show the loading state before starting generation
+                      setTimeout(() => {
+                        if (mode === 'moodmorph') {
+                          // Run MoodMorph™
+                          runMoodMorph(selectedFile || undefined)
+                        } else if (selectedPreset) {
+                          // Run preset generation
+                          dispatchGenerate('preset', {
+                            presetId: selectedPreset,
+                            presetData: PRESETS[selectedPreset],
+                            promptOverride: prompt
+                          })
+                        } else {
+                          // Run custom generation
+                          dispatchGenerate('custom', {
+                            promptOverride: prompt
+                          })
+                        }
+                      }, 100)
                     }} 
                     disabled={!selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset)} 
-                    className={`w-10 h-10 rounded-full btn-optimized flex items-center justify-center shadow-lg hover:shadow-xl ${
-                      !selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset)
-                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                        : 'bg-white text-black hover:bg-white/90'
-                    }`}
-                    aria-label={mode === 'moodmorph' ? 'Generate moods' : mode === 'styleclash' ? 'Create Style Clash' : 'Generate'}
-                    title={`${!isAuthenticated ? 'Sign up to generate AI content' : !previewUrl ? 'Upload media first' : mode === 'moodmorph' ? 'Generate 3 mood variations' : mode === 'styleclash' ? 'Create split image with two styles' : (mode === 'presets' && !prompt.trim() && !selectedPreset) ? 'Enter a prompt or select a preset first' : selectedPreset ? `Generate with ${getPresetLabel(selectedPreset, PRESETS)} preset` : 'Generate AI content'}`}
+                    className={
+                      (!selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset))
+                        ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
+                        : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
+                    }
+                    aria-label={mode === 'moodmorph' ? 'Generate moods' : 'Generate'}
+                    title={(() => {
+                      if (!isAuthenticated) return 'Sign up to generate AI content';
+                      if (!previewUrl) return 'Upload media first';
+                      if (mode === 'moodmorph') return 'Generate 3 mood variations';
+                      if (mode === 'presets' && !prompt.trim() && !selectedPreset) return 'Enter a prompt or select a preset first';
+                      if (selectedPreset) return `Generate with ${getPresetLabel(selectedPreset, PRESETS)} preset`;
+                      return 'Generate AI content';
+                    })()}
                   >
                     {navGenerating ? (
                       <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
                     ) : (
-                      <ArrowUp size={18} />
+                      <ArrowUp size={16} />
                     )}
                   </button>
                 </div>
-                </div>
-
-
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Caption Modal */}
-        {isCaptionOpen && (
-          <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-[#222222] border border-white/20 rounded-2xl p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-white font-medium text-lg">Generate Caption</div>
-                <button onClick={() => setIsCaptionOpen(false)} className="text-white/60 hover:text-white transition-colors">
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <div className="text-white/70 text-sm mb-2">Platform</div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['instagram','x','tiktok'] as const).map(p => (
-                      <button key={p} onClick={() => setCaptionPlatform(p)} className={`px-3 py-2 rounded-lg text-sm border transition-colors ${captionPlatform===p? 'border-white/40 text-white bg-white/10':'border-white/20 text-white/80 hover:text-white hover:bg-white/5'}`}>{p}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-white/70 text-sm mb-2">Style</div>
-                  <div className="grid grid-cols-4 gap-2">
-                    {(['trendy','casual','professional','artistic'] as const).map(s => (
-                      <button key={s} onClick={() => setCaptionStyle(s)} className={`px-2 py-2 rounded-lg text-xs border transition-colors ${captionStyle===s? 'border-white/40 text-white bg-white/10':'border-white/20 text-white/80 hover:text-white hover:bg-white/5'}`}>{s}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <button onClick={handleGenerateCaption} className="px-4 py-2 rounded-lg bg-white text-black text-sm font-medium disabled:opacity-50 transition-colors" disabled={!prompt.trim() || isCaptionLoading}>
-                    {isCaptionLoading? 'Generating…' : 'Generate'}
-                  </button>
-                  <button onClick={handleCopyCaption} className="px-4 py-2 rounded-lg border border-white/20 text-white text-sm disabled:opacity-50 hover:bg-white/5 transition-colors" disabled={!captionOutput}>
-                    Copy
-                  </button>
-                </div>
-                <div>
-                  <textarea value={captionOutput} onChange={(e)=>setCaptionOutput(e.target.value)} placeholder="Your caption will appear here" className="w-full h-28 p-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/40 resize-none text-sm focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors" />
-                  <div className="text-white/50 text-xs mt-2">Includes #AiAsABrush automatically</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
       {/* Share Modal */}
       <ShareModal
