@@ -47,19 +47,21 @@ export function PairPicker({
         
         {/* Left Style Dropdown - only show when open */}
         {leftOpen && (
-          <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-48 z-50">
+          <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-48 z-[100]">
             <div className="space-y-1">
               {Object.values(STYLES).map(s => (
                 <button
                   key={s.id}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
                     onChange(s.id, right)
                     setLeftOpen(false)
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm cursor-pointer ${
                     left === s.id 
                       ? 'bg-white/20 text-white' 
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                      : 'text-white/80 hover:bg-white/15 hover:text-white'
                   }`}
                 >
                   <span>{s.label}</span>
@@ -90,19 +92,21 @@ export function PairPicker({
         
         {/* Right Style Dropdown - only show when open */}
         {rightOpen && (
-          <div className="absolute bottom-full right-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-48 z-50">
+          <div className="absolute bottom-full right-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-48 z-[100]">
             <div className="space-y-1">
               {Object.values(STYLES).map(s => (
                 <button
                   key={s.id}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
                     onChange(left, s.id)
                     setRightOpen(false)
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm cursor-pointer ${
                     right === s.id 
                       ? 'bg-white/20 text-white' 
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                      : 'text-white/80 hover:bg-white/15 hover:text-white'
                   }`}
                 >
                   <span>{s.label}</span>
