@@ -1,6 +1,5 @@
 // src/components/PresetButton.tsx
-import { useIntentQueue } from '../state/intentQueue';
-import { kickRunIfReady } from '../runner/kick';
+import { ensureSourceThenRun } from '../state/intentQueue';
 import { useSelectedPreset } from '../stores/selectedPreset';
 import { PRESETS } from '../utils/presets/types';
 
@@ -11,34 +10,16 @@ interface PresetButtonProps {
 }
 
 export function PresetButton({ presetId, children, className = '' }: PresetButtonProps) {
-  const { setIntent, sourceUrl } = useIntentQueue();
   const { setSelectedPreset } = useSelectedPreset();
 
   async function onClick() {
     console.info('🎯 Preset button clicked:', presetId);
     
-    // Escape hatch for direct mode (bypass queue while debugging)
-    if (import.meta.env.VITE_ONE_CLICK_DIRECT === '1') {
-      console.info('🚨 Using direct mode (bypass intent queue)');
-      // Direct mode would need pickAndUpload implementation
-      console.warn('Direct mode not implemented yet - falling back to queue');
-    }
-    
     // Keep UI in sync
     setSelectedPreset(presetId);
     
-    // Set intent in queue
-    setIntent({ kind: 'preset', presetId: presetId as string });
-
-    if (!sourceUrl || !/^https?:\/\//.test(sourceUrl)) {
-      // No source yet → prompt file picker; upload handler will call kick()
-      console.info('🎯 No source, opening file picker');
-      document.getElementById('hidden-file-input')?.click();
-    } else {
-      // Source already present → run immediately
-      console.info('🎯 Source available, running immediately');
-      await kickRunIfReady();
-    }
+    // Use single orchestration point - no direct runs
+    await ensureSourceThenRun({ kind: 'preset', presetId: presetId as string });
   }
 
   return (
@@ -59,20 +40,9 @@ interface TimeMachineButtonProps {
 }
 
 export function TimeMachineButton({ optionKey, children, className = '' }: TimeMachineButtonProps) {
-  const { setIntent, sourceUrl } = useIntentQueue();
-
   async function onClick() {
     console.info('🕰️ Time Machine button clicked:', optionKey);
-    
-    setIntent({ kind: 'time_machine', key: optionKey });
-
-    if (!sourceUrl || !/^https?:\/\//.test(sourceUrl)) {
-      console.info('🕰️ No source, opening file picker');
-      document.getElementById('hidden-file-input')?.click();
-    } else {
-      console.info('🕰️ Source available, running immediately');
-      await kickRunIfReady();
-    }
+    await ensureSourceThenRun({ kind: 'time_machine', key: optionKey });
   }
 
   return (
@@ -93,20 +63,9 @@ interface RestoreButtonProps {
 }
 
 export function RestoreButton({ optionKey, children, className = '' }: RestoreButtonProps) {
-  const { setIntent, sourceUrl } = useIntentQueue();
-
   async function onClick() {
     console.info('🔧 Restore button clicked:', optionKey);
-    
-    setIntent({ kind: 'restore', key: optionKey });
-
-    if (!sourceUrl || !/^https?:\/\//.test(sourceUrl)) {
-      console.info('🔧 No source, opening file picker');
-      document.getElementById('hidden-file-input')?.click();
-    } else {
-      console.info('🔧 Source available, running immediately');
-      await kickRunIfReady();
-    }
+    await ensureSourceThenRun({ kind: 'restore', key: optionKey });
   }
 
   return (
@@ -127,20 +86,9 @@ interface StoryButtonProps {
 }
 
 export function StoryButton({ theme, children, className = '' }: StoryButtonProps) {
-  const { setIntent, sourceUrl } = useIntentQueue();
-
   async function onClick() {
     console.info('📖 Story button clicked:', theme);
-    
-    setIntent({ kind: 'story', theme });
-
-    if (!sourceUrl || !/^https?:\/\//.test(sourceUrl)) {
-      console.info('📖 No source, opening file picker');
-      document.getElementById('hidden-file-input')?.click();
-    } else {
-      console.info('📖 Source available, running immediately');
-      await kickRunIfReady();
-    }
+    await ensureSourceThenRun({ kind: 'story', theme });
   }
 
   return (

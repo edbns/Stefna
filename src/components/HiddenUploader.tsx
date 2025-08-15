@@ -2,11 +2,13 @@
 import { useRef, useState } from 'react';
 import { handleUploadSelectedFile } from '../lib/upload';
 import { useToasts } from './ui/Toasts';
+import { useIntentQueue } from '../state/intentQueue';
 
 export function HiddenUploader() {
   const [key, setKey] = useState(0);
   const ref = useRef<HTMLInputElement>(null);
   const { addToast } = useToasts();
+  const { setSourceUrl } = useIntentQueue();
 
   async function onChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -16,8 +18,16 @@ export function HiddenUploader() {
     
     try {
       addToast('Uploading...', 'info');
-      await handleUploadSelectedFile(file);
-      // Success toast will be shown by the generation pipeline
+      const secureUrl = await handleUploadSelectedFile(file);
+      
+      // Call back into the queue on success
+      console.info('📁 Upload success, setting source and kicking queue');
+      setSourceUrl(secureUrl);
+      
+      // Import and kick the queue
+      const { kickRunIfReady } = await import('../runner/kick');
+      await kickRunIfReady();
+      
     } catch (error) {
       console.error('Upload failed:', error);
       addToast('Upload failed. Please try again.', 'error');

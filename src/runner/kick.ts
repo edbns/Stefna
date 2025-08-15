@@ -1,12 +1,16 @@
 // src/runner/kick.ts
-import { useIntentQueue } from '../state/intentQueue';
+import { useIntentQueue, isHttps } from '../state/intentQueue';
 import { PRESETS, OPTION_GROUPS } from '../utils/presets/types';
 import { resolvePreset } from '../utils/presets/types';
 import { runPreset } from '../utils/presets/handlers';
 import { onStoryThemeClick } from '../utils/presets/story';
 
-function isHttps(u?: string | null): boolean {
-  return !!u && /^https?:\/\//.test(u);
+function getHttpsSourceOrThrow(): string {
+  const { sourceUrl } = useIntentQueue.getState();
+  if (!isHttps(sourceUrl)) {
+    throw new Error('Pick a photo/video first, then apply a preset.');
+  }
+  return sourceUrl!;
 }
 
 export async function kickRunIfReady(): Promise<void> {
@@ -27,26 +31,23 @@ export async function kickRunIfReady(): Promise<void> {
       return;
     }
 
-    // For i2i/restore/story that need a source, block until we have a proper URL
+    // Determine if we need a source and get HTTPS source or throw
     const needsSource = pending.kind !== 'preset'
       ? true
       : PRESETS[pending.presetId as keyof typeof PRESETS]?.requiresSource ?? false;
 
-    if (needsSource && !isHttps(sourceUrl)) {
-      console.info('🚀 Waiting for HTTPS source URL, current:', sourceUrl);
-      return; // wait until upload finishes
-    }
+    const src = needsSource ? getHttpsSourceOrThrow() : null;
 
-    console.info('🚀 Running intent:', pending.kind, 'with source:', sourceUrl);
+    console.info('🚀 Running intent:', pending.kind, 'with source:', src);
 
     if (pending.kind === 'preset') {
       const preset = resolvePreset(pending.presetId as keyof typeof PRESETS);
-      await runPreset(preset, sourceUrl ?? undefined);
+      await runPreset(preset, src ?? undefined);
     } else if (pending.kind === 'time_machine') {
       const opt = OPTION_GROUPS.time_machine?.[pending.key];
       if (!opt) throw new Error(`TIME_MACHINE_OPT_MISSING: ${pending.key}`);
       const preset = resolvePreset(opt.use, opt.overrides);
-      await runPreset(preset, sourceUrl ?? undefined, { 
+      await runPreset(preset, src ?? undefined, { 
         group: 'time_machine', 
         optionKey: pending.key 
       });
@@ -54,12 +55,12 @@ export async function kickRunIfReady(): Promise<void> {
       const opt = OPTION_GROUPS.restore?.[pending.key];
       if (!opt) throw new Error(`RESTORE_OPT_MISSING: ${pending.key}`);
       const preset = resolvePreset(opt.use, opt.overrides);
-      await runPreset(preset, sourceUrl ?? undefined, { 
+      await runPreset(preset, src ?? undefined, { 
         group: 'restore', 
         optionKey: pending.key 
       });
     } else if (pending.kind === 'story') {
-      await onStoryThemeClick(pending.theme as any, sourceUrl ?? undefined);
+      await onStoryThemeClick(pending.theme as any, src ?? undefined);
     }
     
     console.info('✅ Intent completed successfully');

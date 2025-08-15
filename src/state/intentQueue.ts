@@ -46,3 +46,40 @@ if (typeof window !== 'undefined') {
   window.debugIntent = () => ({ ...useIntentQueue.getState() });
   console.info('🔍 Debug hook available: window.debugIntent()');
 }
+
+// Helper functions for external use
+export function isHttps(url?: string | null): boolean {
+  return !!url && url.startsWith('https://');
+}
+
+/** Public API used by ALL buttons - single orchestration point */
+export async function ensureSourceThenRun(intent: Intent): Promise<void> {
+  console.info('🎯 ensureSourceThenRun called:', intent);
+  
+  const { setIntent, sourceUrl } = useIntentQueue.getState();
+  setIntent(intent);
+
+  if (isHttps(sourceUrl)) {
+    console.info('🎯 Source available, running immediately');
+    // Import dynamically to avoid circular dependency
+    const { kickRunIfReady } = await import('../runner/kick');
+    await kickRunIfReady();
+    return;
+  }
+
+  // No source yet -> ask for one
+  console.info('🎯 No HTTPS source, opening file picker');
+  openHiddenUploader();
+  // NOTE: HiddenUploader will call setSourceUrl(secure_url) -> kickRunIfReady()
+}
+
+/** Bridge to open the hidden uploader */
+export function openHiddenUploader(): void {
+  console.info('📁 Opening hidden uploader');
+  const input = document.getElementById('hidden-file-input') as HTMLInputElement;
+  if (input) {
+    input.click();
+  } else {
+    console.warn('Hidden file input not found');
+  }
+}

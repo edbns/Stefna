@@ -348,7 +348,7 @@ export const OPTION_GROUPS: OptionGroups<typeof PRESETS> = {
         prompt: 'enhance clarity and sharpness, crisp details, clean and precise look colorize black and white photo, soft color restore overlay' 
       } 
     },
-    'revive_faded': { use: 'vivid_pop', overrides: { strength: 0.45 } },
+    'revive_faded': { use: 'vivid_pop', overrides: { strength: 0.35 } },
     'sharpen_enhance': { use: 'crystal_clear', overrides: { post: { sharpen: true } } },
     'remove_scratches': { 
       use: 'crystal_clear', 

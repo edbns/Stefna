@@ -62,10 +62,15 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
     // 5) Use the existing generation pipeline
     const result = await runGeneration(() => Promise.resolve(job));
     
-    if (result?.success) {
-      showToast('success', `${preset.label} applied!`);
+    if (!result?.success) {
+      console.warn('❌ Generation failed:', result);
+      showToast('error', result?.error ?? 'Generation failed. Please try again.');
+      return null; // IMPORTANT: bail out here so no success logs fire
     }
-    
+
+    // Happy path only below
+    console.info('✅ Generation completed successfully');
+    showToast('success', `${preset.label} applied!`);
     return result;
 
   } catch (error) {
