@@ -2591,6 +2591,21 @@ const HomeNew: React.FC = () => {
                     Style Clash
                   </button>
 
+                  {/* Style Clash Pair Picker - only show when in Style Clash mode */}
+                  {mode === 'styleclash' && (
+                    <div className="ml-2">
+                      <PairPicker 
+                        left="noir" 
+                        right="vivid" 
+                        onChange={(left, right) => {
+                          // Store the selected styles for generation
+                          window.__styleClashLeft = left;
+                          window.__styleClashRight = right;
+                        }}
+                      />
+                    </div>
+                  )}
+
 
 
 
@@ -2741,41 +2756,6 @@ const HomeNew: React.FC = () => {
       />
 
       {/* Video Job Status Display removed in favor of unified toasts */}
-
-      {mode === 'moodmorph' && (
-        /* MoodMorph Mode */
-        <div className="mb-6">
-          <div className="text-center">
-            <h3 className="text-lg font-medium text-white mb-2">MoodMorph™</h3>
-            <p className="text-white/60 text-sm mb-4">
-              Transform your photo into 3 different moods: Happy, Sad, and Cinematic
-            </p>
-          </div>
-        </div>
-      )}
-
-      {mode === 'styleclash' && (
-        /* Style Clash Mode */
-        <div className="mb-6">
-          <div className="text-center">
-            <h3 className="text-lg font-medium text-white mb-2">Style Clash</h3>
-            <p className="text-white/60 text-sm mb-4">
-              Create a split image with two contrasting styles side by side
-            </p>
-            <div className="flex justify-center">
-              <PairPicker 
-                left="noir" 
-                right="vivid" 
-                onChange={(left, right) => {
-                  // Store the selected styles for generation
-                  window.__styleClashLeft = left;
-                  window.__styleClashRight = right;
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   )
