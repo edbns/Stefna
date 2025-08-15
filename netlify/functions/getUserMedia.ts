@@ -1,5 +1,5 @@
 // netlify/functions/getUserMedia.ts
-import { createClient } from '@supabase/supabasejs';
+import { createClient } from '@supabase/supabase-js';
 import { initCloudinary } from './_cloudinary';
 
 const ok=(b:any)=>({statusCode:200,body:JSON.stringify(b)});
