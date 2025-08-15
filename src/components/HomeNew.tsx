@@ -2445,8 +2445,7 @@ const HomeNew: React.FC = () => {
                     ref={(el) => (mediaRef.current = el as HTMLImageElement)} 
                     src={previewUrl || ''} 
                     alt="Preview" 
-                    className="max-w-full max-h-[60vh] object-contain border border-white/20 rounded-lg" 
-                    style={{ minHeight: '200px', backgroundColor: 'rgba(255,255,255,0.1)' }}
+                    className="max-w-full max-h-[60vh] object-contain" 
                     onLoad={(e) => {
                       console.log('🖼️ Image loaded successfully:', previewUrl)
                       measure()
