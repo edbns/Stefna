@@ -1,32 +1,46 @@
 // src/app/bootstrap.ts
-const NO_DB = import.meta.env.VITE_NO_DB_MODE === 'true'
+// Global bootstrap for the application
 
-if (!NO_DB) {
-  // ok to call:
-  // - get-notifications
-  // - update-profile / onboarding
-  // - record-asset
-  console.log('DB mode enabled: all endpoints available')
-} else {
-  console.debug('NO_DB_MODE: skipping DB calls (onboarding, notifications, record-asset).')
+// NO_DB_MODE: Gate noisy endpoints
+const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
+
+if (NO_DB_MODE) {
+  console.log('🚫 NO_DB_MODE: Silencing DB calls (onboarding, notifications, record-asset)')
   
-  // Override fetch to block DB endpoints in NO_DB_MODE
+  // Override fetch to block DB-related calls
   const originalFetch = window.fetch
   window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
     const url = typeof input === 'string' ? input : input.toString()
     
-    // Block DB endpoints in NO_DB_MODE
-    if (url.includes('/record-asset') || 
-        url.includes('/update-profile') || 
-        url.includes('/get-notifications') ||
-        url.includes('/onboarding')) {
-      console.debug(`NO_DB_MODE: blocking ${url}`)
+    // Block DB-related endpoints
+    if (url.includes('/.netlify/functions/') && (
+      url.includes('get-notifications') ||
+      url.includes('update-profile') ||
+      url.includes('onboarding') ||
+      url.includes('record-asset')
+    )) {
+      console.debug('NO_DB_MODE: blocking DB call to', url)
       return Promise.resolve(new Response(JSON.stringify({ 
-        ok: false, 
-        error: 'Endpoint blocked in NO_DB_MODE' 
-      }), { status: 403 }))
+        error: 'NO_DB_MODE: DB calls disabled',
+        success: false 
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }))
     }
     
+    // Allow all other calls
     return originalFetch.call(this, input, init)
+  }
+} else {
+  console.log('✅ DB_MODE: All endpoints enabled')
+}
+
+// Global file state for fallback
+declare global {
+  interface Window {
+    __lastSelectedFile?: File
+    __styleClashLeft?: string
+    __styleClashRight?: string
   }
 }

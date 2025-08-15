@@ -3,24 +3,10 @@ import { STYLES } from '../features/styleclash/styles'
 import { uploadSourceToCloudinary } from './uploadSource'
 import { uploadBlobToCloudinary } from './uploadBlobToCloudinary'
 import { composeSplit } from '../features/styleclash/compose'
+import { assertFile } from './sourceFile'
+import { callAimlApi } from './aiml'
 
 type StyleId = keyof typeof STYLES;
-
-// Simple AIML API call function (same as moodMorph)
-async function callAimlApi(payload: any) {
-  const response = await fetch('/.netlify/functions/aimlApi', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-  
-  if (!response.ok) {
-    throw new Error(`AIML API failed: ${response.status}`)
-  }
-  
-  const result = await response.json()
-  return result
-}
 
 // Simple save function (NO_DB_MODE friendly)
 async function saveMediaNoDB(result: any, meta: any) {
@@ -45,8 +31,9 @@ export async function runStyleClash(params?: {
   const orient = params?.orientation ?? 'vertical'
 
   try {
+    // Use centralized file assertion
     let file = params?.file ?? window.__lastSelectedFile as File | undefined
-    if (!file) throw new Error('Select an image first')
+    file = assertFile(file)
 
     // 1) Always start from the original File
     const { secureUrl } = await uploadSourceToCloudinary({ file })
