@@ -2424,17 +2424,25 @@ const HomeNew: React.FC = () => {
           {/* Bottom composer bar - 70% width, centered */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-[70%] min-w-[500px] max-w-[800px]">
             <div className="bg-[#0f0f0f] border border-white/20 rounded-2xl px-4 pt-2 pb-2 shadow-2xl">
-                            {/* Prompt input - horizontal bar like screenshot */}
-              <div className="mb-8">
-                <input
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Describe the style you want..."
-                  className="w-full bg-transparent text-white placeholder-white/40 text-xs focus:outline-none py-2"
-                />
-              </div>
+              
 
-
+              {/* Prompt Input - only show for presets mode */}
+              {mode === 'presets' && (
+                <div className="mb-6">
+                  <div className="relative">
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder="Describe your vision or leave blank to use preset style..."
+                      className="w-full h-24 px-4 py-3 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors"
+                      disabled={isGenerating}
+                    />
+                    <div className="absolute bottom-3 right-3 text-white/30 text-xs">
+                      {prompt.length}/500
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Bottom controls row - variations/presets left, actions right */}
               <div className="space-y-4">
@@ -2593,7 +2601,7 @@ const HomeNew: React.FC = () => {
 
                   {/* Style Clash Pair Picker - only show when in Style Clash mode */}
                   {mode === 'styleclash' && (
-                    <div className="ml-2">
+                    <div className="ml-3">
                       <PairPicker 
                         left="noir" 
                         right="vivid" 
