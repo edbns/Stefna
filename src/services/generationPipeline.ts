@@ -279,14 +279,13 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
 // Helper to call AIML API with proper error handling and cancellation
 async function callAimlApi(job: GenerateJob, options?: { signal?: AbortSignal }): Promise<GenerationResult> {
   try {
-    // Import and use ensureRemoteUrl to convert any blob URLs to HTTPS
-    const { ensureRemoteUrl } = await import('../utils/ensureRemoteUrl');
+    // The sourceUrl is already a Cloudinary HTTPS URL from the upload step
+    // No need to call ensureRemoteUrl again
+    const secureImageUrl = job.source?.url;
     
-    // Ensure we have a proper HTTPS URL before calling AIML
-    const secureImageUrl = await ensureRemoteUrl({ 
-      url: job.source?.url,
-      file: job.source?.file
-    });
+    if (!secureImageUrl) {
+      throw new Error('No source URL available for generation');
+    }
     
     const response = await authFetch('/.netlify/functions/aimlApi', {
       method: 'POST',
@@ -295,7 +294,7 @@ async function callAimlApi(job: GenerateJob, options?: { signal?: AbortSignal })
       body: JSON.stringify({
         ...job.params,
         prompt: job.prompt,
-        image_url: secureImageUrl, // Use the ensured HTTPS URL
+        image_url: secureImageUrl, // Use the already-uploaded Cloudinary URL
         mode: job.mode,
         presetId: job.presetId,
         runId: job.runId

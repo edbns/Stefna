@@ -25,8 +25,26 @@ export async function fromAnyToFile(input: File | Blob | string): Promise<File> 
 
 export async function getSourceFileOrThrow(candidate?: File | Blob | string | null): Promise<File> {
   const st = generationStore.getState();
+  
+  // Prioritize the actual File object over blob URLs
   const raw = candidate ?? st.selectedFile ?? st.previewBlob ?? st.previewDataUrl ?? st.previewUrl;
-  return fromAnyToFile(raw as any);
+  
+  // If we have a File, use it directly (no fetch needed)
+  if (raw instanceof File) {
+    return raw;
+  }
+  
+  // If we have a Blob, convert to File
+  if (raw instanceof Blob) {
+    return new File([raw], 'source.png', { type: raw.type || 'image/png' });
+  }
+  
+  // For strings (data URLs, blob URLs), use fromAnyToFile
+  if (typeof raw === 'string') {
+    return fromAnyToFile(raw);
+  }
+  
+  throw new Error('No valid image source selected.');
 }
 
 // Optional: quick debug helper
