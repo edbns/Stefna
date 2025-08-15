@@ -2460,9 +2460,13 @@ const HomeNew: React.FC = () => {
             </div>
           </div>
 
-          {/* Bottom composer bar - 70% width, centered */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-[70%] min-w-[500px] max-w-[800px]">
-            <div className="bg-[#0f0f0f] border border-white/20 rounded-2xl px-4 pt-2 pb-2 shadow-2xl">
+          {/* Bottom composer bar - 70% width, centered, dynamic height for Style Clash */}
+          <div className={`absolute bottom-8 left-1/2 transform -translate-x-1/2 w-[70%] min-w-[500px] max-w-[800px] transition-all duration-300 ${
+            mode === 'styleclash' ? 'pb-4' : ''
+          }`}>
+            <div className={`bg-[#0f0f0f] border border-white/20 rounded-2xl px-4 pt-2 pb-2 shadow-2xl transition-all duration-300 ${
+              mode === 'styleclash' ? 'min-h-[200px]' : ''
+            }`}>
               
 
               {/* Prompt Input - show for presets mode and Style Clash mode */}
@@ -2646,7 +2650,7 @@ const HomeNew: React.FC = () => {
 
                   {/* Style Clash Pair Picker - only show when in Style Clash mode */}
                   {mode === 'styleclash' && (
-                    <div className="ml-3">
+                    <div className="ml-3 flex-1">
                       <PairPicker 
                         left="noir" 
                         right="vivid" 
