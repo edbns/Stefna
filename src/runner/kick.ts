@@ -1,5 +1,5 @@
 // src/runner/kick.ts
-import { useIntentQueue, isHttps } from '../state/intentQueue';
+import { useIntentQueue, hasHttpsUrl } from '../state/intentQueue';
 import { PRESETS, OPTION_GROUPS } from '../utils/presets/types';
 import { resolvePreset } from '../utils/presets/types';
 import { runPreset } from '../utils/presets/handlers';
@@ -7,7 +7,7 @@ import { onStoryThemeClick } from '../utils/presets/story';
 
 function getHttpsSourceOrThrow(): string {
   const { sourceUrl } = useIntentQueue.getState();
-  if (!isHttps(sourceUrl)) {
+  if (!hasHttpsUrl(sourceUrl)) {
     throw new Error('Pick a photo/video first, then apply a preset.');
   }
   return sourceUrl!;

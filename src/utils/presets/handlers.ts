@@ -11,11 +11,16 @@ function showToast(type: 'success' | 'error', message: string): void {
   }));
 }
 
+// A. Gate generation on a real https asset URL
+function hasHttpsUrl(u?: string | null): boolean {
+  return typeof u === 'string' && u.startsWith('https://');
+}
+
 // Preflight guard: ensure we have a valid HTTPS source before any generation
 function validateHttpsSource(sourceUrl?: string | null): string | undefined {
-  if (!sourceUrl || !/^https?:\/\//.test(sourceUrl)) {
+  if (!hasHttpsUrl(sourceUrl)) {
     console.warn('🚫 Blocked non-https source:', sourceUrl);
-    showToast('error', 'Pick a photo/video first, then apply a preset.');
+    showToast('error', 'Please add/upload an image first.');
     return undefined;
   }
   console.info('✅ HTTPS source validated:', sourceUrl);
@@ -29,7 +34,7 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
   
   try {
     // 1) Source: prefer override (fresh Cloudinary URL), else global store
-    let src = preset.requiresSource ? (srcOverride ?? getCurrentSourceUrl()) : null;
+    let src: string | undefined = preset.requiresSource ? (srcOverride ?? (getCurrentSourceUrl() || undefined)) : undefined;
 
     // 2) Preflight HTTPS validation - never pass blob:/data:/preview into API
     if (preset.requiresSource) {
@@ -65,7 +70,7 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
     // 4) Final HTTPS gate before API call (no more preview/blob causing 400s)
     if (preset.requiresSource && job.params.image_url) {
       const imageUrl = String(job.params.image_url);
-      if (!/^https?:\/\//.test(imageUrl)) {
+      if (!hasHttpsUrl(imageUrl)) {
         console.warn(`🚫 [${runId}] Blocked non-https source in payload:`, imageUrl);
         showToast('error', 'Invalid source URL. Please upload a new file.');
         return null;
@@ -99,27 +104,30 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
   }
 }
 
-// Direct preset click handler with HTTPS validation
+// B. Queue preset clicks until the asset URL is ready (no more 400s)
+let pendingPreset: { presetId: PresetId; srcOverride?: string } | null = null;
+let isGenerating = false;
+
+// Direct preset click handler with HTTPS validation and queueing
 export async function onPresetClick(presetId: PresetId, srcOverride?: string): Promise<void> {
   try {
     const preset = resolvePreset(presetId);
     
-    // Preflight validation before running preset
-    if (preset.requiresSource) {
-      const src = srcOverride ?? getCurrentSourceUrl();
-      if (!validateHttpsSource(src)) {
-        return; // Validation failed, toast already shown
-      }
+    // Don't start until we actually have an https URL
+    if (!hasHttpsUrl(srcOverride ?? getCurrentSourceUrl()) || isGenerating) {
+      pendingPreset = { presetId, srcOverride };
+      showToast('error', 'Add/upload media first (we\'ll auto-run when it\'s ready).');
+      return;
     }
     
-    await runPreset(preset, srcOverride);
+    await generatePreset(preset, srcOverride);
   } catch (error) {
     console.error('❌ Preset click failed:', error);
     showToast('error', `Failed to apply ${presetId}. Please try again.`);
   }
 }
 
-// Option click handler (time_machine, restore) with HTTPS validation
+// Option click handler (time_machine, restore) with HTTPS validation and queueing
 export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: string, srcOverride?: string): Promise<void> {
   try {
     const opt = OPTION_GROUPS[group]?.[key];
@@ -133,40 +141,74 @@ export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: stri
     console.log(`🔧 Resolved option ${group}/${key} to preset:`, preset.label);
     console.info('🧭 Using new preset system', { mode: group, key });
     
-    // Preflight validation before running preset
-    if (preset.requiresSource) {
-      const src = srcOverride ?? getCurrentSourceUrl();
-      if (!validateHttpsSource(src)) {
-        return; // Validation failed, toast already shown
-      }
+    // Don't start until we actually have an https URL
+    if (!hasHttpsUrl(srcOverride ?? getCurrentSourceUrl()) || isGenerating) {
+      pendingPreset = { presetId: opt.use, srcOverride };
+      showToast('error', 'Add/upload media first (we\'ll auto-run when it\'s ready).');
+      return;
     }
     
-    await runPreset(preset, srcOverride, { group, optionKey: key });
+    await generatePreset(preset, srcOverride, { group, optionKey: key });
   } catch (error) {
     console.error(`❌ Option click failed for ${group}/${key}:`, error);
     showToast('error', 'Generation failed. Please try again.');
   }
 }
 
-// Story mode handler with proper HTTPS validation and integration
+// Story mode handler with proper HTTPS validation and queueing
 export async function onStoryClick(themeKey: string, srcOverride?: string): Promise<void> {
   try {
     console.log(`📖 Story mode handler called for theme: ${themeKey}`);
     
-    // Preflight validation - story mode always requires a source
-    const src = srcOverride ?? getCurrentSourceUrl();
-    const validSrc = validateHttpsSource(src);
-    if (!validSrc) {
-      return; // Validation failed, toast already shown
+    // Don't start until we actually have an https URL
+    if (!hasHttpsUrl(srcOverride ?? getCurrentSourceUrl()) || isGenerating) {
+      pendingPreset = { presetId: themeKey as any, srcOverride };
+      showToast('error', 'Add/upload media first (we\'ll auto-run when it\'s ready).');
+      return;
     }
     
     // Use the existing story mode implementation
-    await onStoryThemeClick(themeKey as any, validSrc);
+    await onStoryThemeClick(themeKey as any, srcOverride);
     
   } catch (error) {
     console.error(`❌ Story mode failed for ${themeKey}:`, error);
     showToast('error', 'Story creation failed. Please try again.');
   }
+}
+
+// Core generation function with proper state management
+async function generatePreset(preset: Preset, srcOverride?: string, metadata?: { group?: string; optionKey?: string }): Promise<void> {
+  if (isGenerating) {
+    console.warn('🚫 Generation already in progress, ignoring new request');
+    return;
+  }
+  
+  isGenerating = true;
+  try {
+    await runPreset(preset, srcOverride, metadata);
+  } finally {
+    isGenerating = false;
+    
+    // Check if we have a pending preset to run now
+    if (pendingPreset && hasHttpsUrl(pendingPreset.srcOverride ?? getCurrentSourceUrl())) {
+      const { presetId, srcOverride: pendingSrc } = pendingPreset;
+      pendingPreset = null; // Clear before running to prevent loops
+      
+      console.info('🔄 Running pending preset:', presetId);
+      const preset = resolvePreset(presetId);
+      await generatePreset(preset, pendingSrc);
+    }
+  }
+}
+
+// Public function to check if we can run a preset now
+export function canRunPreset(srcOverride?: string): boolean {
+  return hasHttpsUrl(srcOverride ?? getCurrentSourceUrl()) && !isGenerating;
+}
+
+// Public function to get pending preset info
+export function getPendingPreset() {
+  return pendingPreset;
 }
 
 // Telemetry wrapper (optional)
