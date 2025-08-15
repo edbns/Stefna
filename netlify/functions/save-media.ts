@@ -113,10 +113,30 @@ const handler: Handler = async (event, context) => {
     return err('Missing "variations" array')
   }
 
-  // Validate variations are proper string URLs
-  for (const variation of body.variations) {
-    if (!variation.url || typeof variation.url !== 'string' || !variation.url.startsWith('https://')) {
-      return err(`Variation url must be https string, got: ${typeof variation.url} ${variation.url}`)
+  // Defensive URL handling - accept both objects and strings
+  function coerceUrl(v: any): string | null {
+    if (typeof v === 'string') return v;
+    if (v && typeof v === 'object') return v.url || v.image_url || v.resultUrl || null;
+    return null;
+  }
+
+  const raw = Array.isArray(body.variations) ? body.variations : [];
+  const urls = raw.map(coerceUrl).filter(Boolean);
+
+  if (!urls.length) {
+    return err('No valid variation urls found')
+  }
+
+  // Validate all URLs are HTTPS
+  for (const url of urls) {
+    if (!url) continue; // Skip null/undefined
+    try {
+      const proto = new URL(url).protocol;
+      if (proto !== 'https:') {
+        return err(`Variation url must be https, got: ${proto} ${url}`)
+      }
+    } catch {
+      return err(`Invalid URL format: ${url}`)
     }
   }
 
@@ -137,13 +157,11 @@ const handler: Handler = async (event, context) => {
   // ---- Upload each variation to Cloudinary (by remote URL) ----
   // Note: Cloudinary auto-detects resource type if `resource_type: 'auto'`.
   const uploaded: CanonicalItem[] = []
-  for (const v of body.variations) {
-    if (!v.url || !/^https?:\/\//i.test(v.url)) {
-      return err(`Variation url must be https: ${v.url}`)
-    }
+  for (const url of urls) {
+    if (!url) continue; // Skip null/undefined
 
     try {
-      const res = await cloudinary.uploader.upload(v.url, {
+      const res = await cloudinary.uploader.upload(url, {
         folder,
         resource_type: 'auto',
         // Optional: public_id strategy; here we let Cloudinary pick
@@ -167,7 +185,7 @@ const handler: Handler = async (event, context) => {
           ? 'video'
           : 'raw') as CanonicalItem['media_type'],
         final: res.secure_url, // what your feed maps to
-        meta: v.meta,
+        meta: { url }, // Store the original URL as metadata
       })
     } catch (e: any) {
       return err('Cloudinary upload failed', 500, { detail: String(e?.message || e) })

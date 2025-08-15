@@ -5,8 +5,6 @@ import { PRESETS, OPTION_GROUPS } from './types';
 const ALLOWED: Record<Preset['mode'], { input: Preset['input'][]; requiresSource: boolean }> = {
   i2i:     { input: ['image','video'], requiresSource: true },
   txt2img: { input: ['image'],         requiresSource: false },
-  restore: { input: ['image'],         requiresSource: true },
-  story:   { input: ['image'],         requiresSource: true },
 };
 
 export function validatePresets(reg: Record<string, Preset>) {
@@ -70,15 +68,11 @@ export function getConfiguredOptions<G extends keyof typeof OPTION_GROUPS>(group
 export function validateUIConfiguration(): string[] {
   const errs: string[] = [];
   
-  // Check that all option groups have at least one configured option
-  const requiredGroups: (keyof typeof OPTION_GROUPS)[] = ['time_machine', 'restore'];
-  
-  requiredGroups.forEach(group => {
-    const configuredOptions = getConfiguredOptions(group);
-    if (configuredOptions.length === 0) {
-      errs.push(`Option group ${group} has no configured options`);
-    }
-  });
+  // Check that presets group has configured options
+  const configuredOptions = getConfiguredOptions('presets');
+  if (configuredOptions.length === 0) {
+    errs.push('Presets group has no configured options');
+  }
   
   if (errs.length) console.warn(`validateUIConfiguration: ${errs.length} issue(s)`, errs);
   else console.info('✅ validateUIConfiguration: OK');
@@ -93,28 +87,14 @@ export async function validateAll() {
   const optionErrors = validateOptions(OPTION_GROUPS, PRESETS);
   const uiErrors = validateUIConfiguration();
   
-  // Validate story themes
-  let storyErrors: string[] = [];
-  try {
-    const { validateStoryThemes } = await import('./story');
-    storyErrors = validateStoryThemes();
-    if (storyErrors.length === 0) {
-      console.info('✅ validateStoryThemes: OK');
-    } else {
-      console.warn(`validateStoryThemes: ${storyErrors.length} issue(s)`, storyErrors);
-    }
-  } catch (error) {
-    console.warn('Could not validate story themes:', error);
-  }
-  
-  const totalErrors = presetErrors.length + optionErrors.length + uiErrors.length + storyErrors.length;
+  const totalErrors = presetErrors.length + optionErrors.length + uiErrors.length;
   if (totalErrors === 0) {
     console.info('✅ Preset system validation complete - all good!');
   } else {
     console.warn(`⚠️ Preset system has ${totalErrors} validation issues`);
   }
   
-  return { presetErrors, optionErrors, uiErrors, storyErrors };
+  return { presetErrors, optionErrors, uiErrors };
 }
 
 // Synchronous version for immediate validation

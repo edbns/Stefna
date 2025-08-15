@@ -20,7 +20,7 @@ import { postAuthed } from '../utils/fetchAuthed'
 import { runsStore } from '../stores/runs'
 import { uploadSourceToCloudinary } from '../services/uploadSource'
 import { useGenerationMode } from '../stores/generationMode'
-import { runMoodMorph } from '../services/moodMorph'
+import { onMoodMorphClick } from '../utils/presets'
 
 import { getSourceFileOrThrow } from '../services/source'
 
@@ -78,7 +78,7 @@ import presetRotationService from '../services/presetRotationService'
 import captionService from '../services/captionService'
 import { presetsStore } from '../stores/presetsStore'
 import { onPresetClick } from '../handlers/presetHandlers'
-import { onTimeMachineClick } from '../handlers/timeMachineHandlers'
+
 
 import { validateModeMappings } from '../utils/validateMappings'
 import FullScreenMediaViewer from './FullScreenMediaViewer'
@@ -91,7 +91,7 @@ import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
 import { saveMedia, togglePublish } from '../lib/api'
-import { Mode, MODE_LABELS, StoryTheme, TimeEra, RestoreOp } from '../config/modes'
+import { Mode, MODE_LABELS } from '../config/modes'
 import { resolvePresetForMode } from '../utils/resolvePresetForMode'
 import { getPresetDef, getPresetLabel, MASTER_PRESET_CATALOG } from '../services/presets'
 import { buildEffectivePrompt, type DetailLevel } from '../services/prompt'
@@ -126,15 +126,7 @@ const HomeNew: React.FC = () => {
   // Mode state
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null)
   
-  // Mode dropdown states
-  const [selectedTheme, setSelectedTheme] = useState<StoryTheme | null>(null)
-  const [selectedEra, setSelectedEra] = useState<TimeEra | null>(null)
-  const [selectedOp, setSelectedOp] = useState<RestoreOp | null>(null)
-  
-  // Dropdown open states
-  const [storyOpen, setStoryOpen] = useState(false)
-  const [timeMachineOpen, setTimeMachineOpen] = useState(false)
-  const [restoreOpen, setRestoreOpen] = useState(false)
+
 
   
   // New preset runner system - MUST be declared before use
@@ -184,9 +176,6 @@ const HomeNew: React.FC = () => {
   const clearModeAfterGeneration = () => {
     console.log('🎭 Clearing mode after generation')
     setSelectedMode(null)
-    setSelectedTheme(null)
-    setSelectedEra(null)
-    setSelectedOp(null)
   }
 
   // Clear preset when user exits composer (debounced to avoid race)
@@ -243,6 +232,16 @@ const HomeNew: React.FC = () => {
       console.trace('Preset clear stack trace')
     }
   }, [selectedPreset])
+
+  // Listen for clear-generating-state events from global error handler
+  useEffect(() => {
+    const handleClearState = () => {
+      setNavGenerating(false);
+    };
+
+    window.addEventListener('clear-generating-state', handleClearState);
+    return () => window.removeEventListener('clear-generating-state', handleClearState);
+  }, []);
 
 
   // Get active presets from the rotation service
@@ -353,9 +352,6 @@ const HomeNew: React.FC = () => {
       setFilterOpen(false)
       setUserMenu(false)
       setPresetsOpen(false)
-      setStoryOpen(false)
-      setTimeMachineOpen(false)
-      setRestoreOpen(false)
     }
 
     // Close dropdowns when Escape key is pressed
@@ -364,9 +360,6 @@ const HomeNew: React.FC = () => {
         setFilterOpen(false)
         setUserMenu(false)
         setPresetsOpen(false)
-        setStoryOpen(false)
-        setTimeMachineOpen(false)
-        setRestoreOpen(false)
       }
     }
 
@@ -408,9 +401,6 @@ const HomeNew: React.FC = () => {
     setFilterOpen(false)
     setUserMenu(false)
     setPresetsOpen(false)
-    setStoryOpen(false)
-    setTimeMachineOpen(false)
-    setRestoreOpen(false)
   }
 
   const handleUploadClick = () => {
@@ -2578,12 +2568,13 @@ const HomeNew: React.FC = () => {
                       setTimeout(() => {
                         window.dispatchEvent(new CustomEvent('close-composer'));
                       }, 100)
-                      // Small delay to show the loading state before starting generation
-                      setTimeout(() => {
-                        if (mode === 'moodmorph') {
-                          // Run MoodMorph™
-                          runMoodMorph(selectedFile || undefined)
-                        } else if (selectedPreset) {
+                                            // Small delay to show the loading state before starting generation
+                      setTimeout(async () => {
+                                              if (mode === 'moodmorph') {
+                        // Run MoodMorph™ using the preset system
+                        await onMoodMorphClick()
+                        setNavGenerating(false)
+                      } else if (selectedPreset) {
                           // Run preset generation
                           dispatchGenerate('preset', {
                             presetId: selectedPreset,

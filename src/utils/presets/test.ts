@@ -12,14 +12,9 @@ export function testPresetSystem() {
   console.log('1. Running validation...');
   const validation = validateAll();
   
-  // Test 2: Check problematic options from logs
-  console.log('2. Checking problematic options...');
-  const problemOptions = ['1990s_disposable', 'sharpen_enhance'];
-  
-  problemOptions.forEach(option => {
-    const isConfigured1990s = isConfigured('time_machine', option);
-    console.log(`   ${option}: ${isConfigured1990s ? '✅ Configured' : '❌ Missing'}`);
-  });
+  // Test 2: Check preset configuration
+  console.log('2. Checking preset configuration...');
+  console.log(`   Total presets: ${Object.keys(PRESETS).length}`);
   
   // Test 3: Test preset resolution
   console.log('3. Testing preset resolution...');

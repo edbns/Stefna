@@ -1,5 +1,5 @@
 // utils/presets/types.ts
-export type Mode = 'i2i'|'txt2img'|'restore'|'story';
+export type Mode = 'i2i'|'txt2img';
 export type IO = 'image'|'video';
 
 export type Preset = {
@@ -287,7 +287,7 @@ export const PRESETS = {
   street_story: {
     id: 'street_story',
     label: 'Street Story',
-    prompt: 'street photography narrative, candid moments, urban life, authentic storytelling',
+    prompt: 'high contrast, rich shadows, enhanced textures for documentary-style street photography',
     negative_prompt: 'posed, studio, artificial, staged',
     strength: 0.7,
     model: 'eagle',
@@ -295,6 +295,7 @@ export const PRESETS = {
     input: 'image',
     requiresSource: true,
   },
+
 } satisfies Record<string, Preset>;
 
 // Freeze data to prevent runtime mutations
@@ -312,58 +313,18 @@ export const ACTIVE_PRESET_IDS: PresetId[] = [
   'vivid_pop'
 ];
 
-// Option refs must point to existing presets:
-type OptionRef<P extends Record<string, Preset>> = {
-  use: keyof P;
-  overrides?: DeepPartial<Preset>;
-};
+// Option groups for presets only
 type OptionGroups<P extends Record<string, Preset>> = {
-  time_machine?: Record<string, OptionRef<P>>;
-  restore?: Record<string, OptionRef<P>>;
+  presets?: Record<string, { use: keyof P; overrides?: DeepPartial<Preset> }>;
 };
 
-// 2) Time Machine & Restore as simple option mappings (no complexity)
+// Simple preset option mappings
 export const OPTION_GROUPS: OptionGroups<typeof PRESETS> = {
-  // TIME MACHINE (1→1 mapping + tiny overrides when needed)
-  time_machine: {
-    '1920s_noir_glam': { use: 'noir_classic' },
-    '1960s_kodachrome': { use: 'vintage_film_35mm' },
-    '1980s_vhs_retro': { use: 'retro_polaroid' },
-    '1990s_disposable': { 
-      use: 'vintage_film_35mm', 
-      overrides: { 
-        strength: 0.55, 
-        prompt: 'vintage 35mm film aesthetic, warm color grading, subtle grain, soft contrast soft grain variant' 
-      } 
-    },
-    'futuristic_cyberpunk': { use: 'neon_nights' },
-  },
-  
-  // RESTORE (base preset + low-risk overrides)
-  restore: {
-    'colorize_bw': { 
-      use: 'crystal_clear', 
-      overrides: { 
-        mode: 'restore', 
-        prompt: 'enhance clarity and sharpness, crisp details, clean and precise look colorize black and white photo, soft color restore overlay' 
-      } 
-    },
-    'revive_faded': { use: 'vivid_pop', overrides: { strength: 0.35 } },
-    'sharpen_enhance': { use: 'crystal_clear', overrides: { post: { sharpen: true } } },
-    'remove_scratches': { 
-      use: 'crystal_clear', 
-      overrides: { 
-        strength: 0.5, 
-        prompt: 'enhance clarity and sharpness, crisp details, clean and precise look remove fine scratches and artifacts, light smoothing, preserve texture' 
-      } 
-    },
-  },
+  presets: {}
 } as const;
 
 // Freeze option groups to prevent runtime mutations
 Object.freeze(OPTION_GROUPS);
-Object.freeze(OPTION_GROUPS.time_machine);
-Object.freeze(OPTION_GROUPS.restore);
 
 // ---- Deep merge (handles nested `post`) ------------------------------------
 function mergePreset(base: Preset, overrides: DeepPartial<Preset> = {}): Preset {

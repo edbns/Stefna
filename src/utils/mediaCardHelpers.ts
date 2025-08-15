@@ -8,18 +8,9 @@ export function getCardChips(r: MediaRecord | any) {
   // Handle both MediaRecord and UserMedia types
   const meta = r.meta || r.metadata || {};
   
-  const modeChip =
-    meta.group === 'story' ? 'Story' :
-    meta.group === 'time_machine' ? 'Time Machine' :
-    meta.group === 'restore' ? 'Restore' :
-    'Preset';
+  const modeChip = 'Preset';
 
-  const detailChip =
-    meta.group === 'story'
-      ? `${(meta.storyKey ?? '').replaceAll('_',' ')}${meta.storyLabel ? ' · ' + meta.storyLabel : ''}`
-      : (meta.group === 'time_machine' || meta.group === 'restore')
-        ? (meta.optionKey ?? '').replaceAll('_',' ')
-        : (PRESETS[meta.presetId]?.label ?? meta.presetId ?? 'Custom Preset');
+  const detailChip = PRESETS[meta.presetId]?.label ?? meta.presetId ?? 'Custom Preset';
 
   return { modeChip, detailChip };
 }
@@ -42,8 +33,4 @@ export function formatOptionLabel(optionKey: string): string {
     .join(' ');
 }
 
-// Helper to get story theme display name
-export function formatStoryTheme(storyKey: string, storyLabel?: string): string {
-  const themeName = storyKey.replaceAll('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-  return storyLabel ? `${themeName} · ${storyLabel}` : themeName;
-}
+

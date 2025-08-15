@@ -2,15 +2,14 @@
 import { useRef, useState } from 'react';
 import { PRESETS, OPTION_GROUPS } from '../utils/presets/types';
 import { onPresetClick, onOptionClick } from '../utils/presets/handlers';
-import { onStoryThemeClick } from '../utils/presets/story';
+
 import { setCurrentSourceUrl } from '../stores/sourceStore';
 
 type PresetId = keyof typeof PRESETS;
 
 type PendingRun =
   | { kind: 'preset'; id: PresetId }
-  | { kind: 'option'; group: keyof typeof OPTION_GROUPS; key: string }
-  | { kind: 'story'; theme: keyof typeof import('../utils/presets/story').STORY_THEMES };
+  | { kind: 'option'; group: keyof typeof OPTION_GROUPS; key: string };
 
 export function usePresetRunner() {
   const pendingRef = useRef<PendingRun | null>(null);
@@ -24,9 +23,7 @@ export function usePresetRunner() {
     pendingRef.current = { kind: 'option', group, key };
   }
   
-  function queueStory(theme: keyof typeof import('../utils/presets/story').STORY_THEMES) {
-    pendingRef.current = { kind: 'story', theme };
-  }
+
 
   async function onSourceReady(srcUrl: string) {
     // Called after Cloudinary upload succeeds
@@ -43,8 +40,6 @@ export function usePresetRunner() {
         await onPresetClick(task.id, srcUrl); // pass srcOverride
       } else if (task.kind === 'option') {
         await onOptionClick(task.group, task.key, srcUrl); // pass srcOverride
-      } else {
-        await onStoryThemeClick(task.theme, srcUrl);
       }
     } catch (error) {
       console.error('Preset runner error:', error);
@@ -58,5 +53,5 @@ export function usePresetRunner() {
     setBusy(false);
   }
 
-  return { queuePreset, queueOption, queueStory, onSourceReady, clearQueue, busy };
+  return { queuePreset, queueOption, onSourceReady, clearQueue, busy };
 }

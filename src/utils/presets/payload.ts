@@ -3,9 +3,7 @@ import type { Preset } from './types';
 
 const DEFAULT_MODEL_FOR_MODE: Record<Preset['mode'], Preset['model']> = {
   i2i: 'eagle', 
-  txt2img: 'flux', 
-  restore: 'eagle', 
-  story: 'eagle',
+  txt2img: 'flux',
 };
 
 export function buildAimlPayload({ preset, src }: { preset: Preset; src: string | null }) {

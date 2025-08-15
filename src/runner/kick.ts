@@ -3,7 +3,6 @@ import { useIntentQueue, hasHttpsUrl } from '../state/intentQueue';
 import { PRESETS, OPTION_GROUPS } from '../utils/presets/types';
 import { resolvePreset } from '../utils/presets/types';
 import { runPreset } from '../utils/presets/handlers';
-import { onStoryThemeClick } from '../utils/presets/story';
 
 function getHttpsSourceOrThrow(): string {
   const { sourceUrl } = useIntentQueue.getState();
@@ -43,24 +42,6 @@ export async function kickRunIfReady(): Promise<void> {
     if (pending.kind === 'preset') {
       const preset = resolvePreset(pending.presetId as keyof typeof PRESETS);
       await runPreset(preset, src ?? undefined);
-    } else if (pending.kind === 'time_machine') {
-      const opt = OPTION_GROUPS.time_machine?.[pending.key];
-      if (!opt) throw new Error(`TIME_MACHINE_OPT_MISSING: ${pending.key}`);
-      const preset = resolvePreset(opt.use, opt.overrides);
-      await runPreset(preset, src ?? undefined, { 
-        group: 'time_machine', 
-        optionKey: pending.key 
-      });
-    } else if (pending.kind === 'restore') {
-      const opt = OPTION_GROUPS.restore?.[pending.key];
-      if (!opt) throw new Error(`RESTORE_OPT_MISSING: ${pending.key}`);
-      const preset = resolvePreset(opt.use, opt.overrides);
-      await runPreset(preset, src ?? undefined, { 
-        group: 'restore', 
-        optionKey: pending.key 
-      });
-    } else if (pending.kind === 'story') {
-      await onStoryThemeClick(pending.theme as any, src ?? undefined);
     }
     
     console.info('✅ Intent completed successfully');
@@ -68,7 +49,6 @@ export async function kickRunIfReady(): Promise<void> {
     console.error('❌ Intent execution failed:', error);
     throw error;
   } finally {
-    clearIntent();
     (kickRunIfReady as any)._busy = false;
   }
 }

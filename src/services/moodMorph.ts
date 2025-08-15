@@ -6,6 +6,28 @@ import { callAimlApi } from './aiml'
 import { saveMedia } from '../lib/api';
 import authService from './authService';
 
+// URL normalization function to ensure we always send strings to save-media
+function normalizeVariationUrls(input: unknown): string[] {
+  const pick = (v: any) =>
+    typeof v === 'string' ? v
+    : v?.url ?? v?.image_url ?? null;
+
+  const flat = Array.isArray(input) ? input : [input];
+
+  const urls = flat
+    .flatMap((item: any) => {
+      // Support both {image_url} and {variations:[...]}
+      const base = pick(item);
+      const vars = Array.isArray(item?.variations) ? item.variations.map(pick) : [];
+      return [base, ...vars];
+    })
+    .filter(Boolean) as string[];
+
+  return urls.filter(u => {
+    try { return new URL(u).protocol === 'https:'; } catch { return false; }
+  });
+}
+
 // Simple AIML API call function
 async function callAimlApiMini(payload: any) {
   try {
@@ -68,15 +90,24 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
       if (result.status === 'fulfilled') {
         console.log(`✅ MoodMorph: Mood ${i + 1} (${mood.id}) successful:`, result.value)
         ok.push(result.value)
-        // Save the result
-        await saveMedia({
-          resultUrl: result.value,
-          userId: authService.getCurrentUser()?.id || 'unknown',
-          presetKey: 'moodmorph',
-          allowRemix: true,
-          shareNow: false,
-          mediaTypeHint: 'image'
-        });
+        // Normalize the result to ensure we get valid HTTPS URLs
+        const normalizedUrls = normalizeVariationUrls(result.value);
+        if (!normalizedUrls.length) {
+          console.error(`❌ MoodMorph: No valid URLs in result for ${mood.id}:`, result.value);
+          continue;
+        }
+        
+        // Save each variation
+        for (const imageUrl of normalizedUrls) {
+          await saveMedia({
+            resultUrl: imageUrl,
+            userId: authService.getCurrentUser()?.id || 'unknown',
+            presetKey: 'moodmorph',
+            allowRemix: true,
+            shareNow: false,
+            mediaTypeHint: 'image'
+          });
+        }
       } else {
         console.error(`❌ MoodMorph: Mood ${i + 1} (${mood.id}) failed:`, result.reason)
         failed.push({ mood: mood.id, error: result.reason })

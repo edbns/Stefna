@@ -23,20 +23,11 @@ export {
 export { 
   onPresetClick, 
   onOptionClick, 
+  onMoodMorphClick,
   runPreset 
 } from './handlers';
 
-export { 
-  onTimeMachineClick,
-  onRestoreClick,
-  onStoryClick,
-  debugPresetSystem 
-} from './integration';
 
-export {
-  onStoryThemeClick,
-  getStoryThemes
-} from './story';
 
 export {
   ACTIVE_PRESET_IDS

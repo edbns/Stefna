@@ -2,10 +2,7 @@
 import { create } from 'zustand';
 
 type Intent =
-  | { kind: 'preset'; presetId: string }
-  | { kind: 'time_machine'; key: string }
-  | { kind: 'restore'; key: string }
-  | { kind: 'story'; theme: string };
+  | { kind: 'preset'; presetId: string };
 
 type State = {
   pending: Intent | null;

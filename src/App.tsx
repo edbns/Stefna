@@ -12,6 +12,7 @@ import ProfileScreen from './screens/ProfileScreen'
 import { Navigate } from 'react-router-dom'
 import AuthScreen from './screens/AuthScreen'
 import { initializeAuthBootstrap } from './services/authBootstrap'
+import { setupGlobalErrorHandling } from './utils/globalErrorHandler'
 
 const ComingSoonPage: React.FC = () => {
   return (
@@ -83,6 +84,11 @@ const ComingSoonPage: React.FC = () => {
 }
 
 const AppContent: React.FC = () => {
+  // Set up global error handling
+  useEffect(() => {
+    setupGlobalErrorHandling();
+  }, []);
+
   // Check if we're on the live domain
   const isLiveDomain = window.location.hostname === 'stefna.xyz' || window.location.hostname === 'stefna.netlify.app'
   

@@ -3,7 +3,8 @@ import type { Preset, PresetId } from './types';
 import { OPTION_GROUPS, resolvePreset } from './types';
 import { runGeneration, GenerateJob } from '../../services/generationPipeline';
 import { getCurrentSourceUrl } from '../../stores/sourceStore';
-import { onStoryThemeClick } from './story';
+import { runMoodMorph } from '../../services/moodMorph';
+
 
 function showToast(type: 'success' | 'error', message: string): void {
   window.dispatchEvent(new CustomEvent(`generation-${type}`, { 
@@ -105,7 +106,7 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
 }
 
 // B. Queue preset clicks until the asset URL is ready (no more 400s)
-let pendingPreset: { presetId: PresetId; srcOverride?: string } | null = null;
+let pendingPreset: { presetId: PresetId | 'moodmorph'; srcOverride?: string } | null = null;
 let isGenerating = false;
 
 // Direct preset click handler with HTTPS validation and queueing
@@ -127,7 +128,24 @@ export async function onPresetClick(presetId: PresetId, srcOverride?: string): P
   }
 }
 
-// Option click handler (time_machine, restore) with HTTPS validation and queueing
+// MoodMorph click handler with HTTPS validation and queueing
+export async function onMoodMorphClick(srcOverride?: string): Promise<void> {
+  try {
+    // Don't start until we actually have an https URL
+    if (!hasHttpsUrl(srcOverride ?? getCurrentSourceUrl()) || isGenerating) {
+      pendingPreset = { presetId: 'moodmorph' as any, srcOverride };
+      showToast('error', 'Add/upload media first (we\'ll auto-run when it\'s ready).');
+      return;
+    }
+    
+    await generateMoodMorph(srcOverride);
+  } catch (error) {
+    console.error('❌ MoodMorph click failed:', error);
+    showToast('error', 'MoodMorph generation failed. Please try again.');
+  }
+}
+
+// Option click handler with HTTPS validation and queueing
 export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: string, srcOverride?: string): Promise<void> {
   try {
     const opt = OPTION_GROUPS[group]?.[key];
@@ -155,26 +173,7 @@ export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: stri
   }
 }
 
-// Story mode handler with proper HTTPS validation and queueing
-export async function onStoryClick(themeKey: string, srcOverride?: string): Promise<void> {
-  try {
-    console.log(`📖 Story mode handler called for theme: ${themeKey}`);
-    
-    // Don't start until we actually have an https URL
-    if (!hasHttpsUrl(srcOverride ?? getCurrentSourceUrl()) || isGenerating) {
-      pendingPreset = { presetId: themeKey as any, srcOverride };
-      showToast('error', 'Add/upload media first (we\'ll auto-run when it\'s ready).');
-      return;
-    }
-    
-    // Use the existing story mode implementation
-    await onStoryThemeClick(themeKey as any, srcOverride);
-    
-  } catch (error) {
-    console.error(`❌ Story mode failed for ${themeKey}:`, error);
-    showToast('error', 'Story creation failed. Please try again.');
-  }
-}
+
 
 // Core generation function with proper state management
 async function generatePreset(preset: Preset, srcOverride?: string, metadata?: { group?: string; optionKey?: string }): Promise<void> {
@@ -195,9 +194,28 @@ async function generatePreset(preset: Preset, srcOverride?: string, metadata?: {
       pendingPreset = null; // Clear before running to prevent loops
       
       console.info('🔄 Running pending preset:', presetId);
-      const preset = resolvePreset(presetId);
-      await generatePreset(preset, pendingSrc);
+      if (presetId === 'moodmorph') {
+        await generateMoodMorph(pendingSrc);
+      } else {
+        const preset = resolvePreset(presetId);
+        await generatePreset(preset, pendingSrc);
+      }
     }
+  }
+}
+
+// MoodMorph generation function with proper state management
+async function generateMoodMorph(srcOverride?: string): Promise<void> {
+  if (isGenerating) {
+    console.warn('🚫 Generation already in progress, ignoring new request');
+    return;
+  }
+  
+  isGenerating = true;
+  try {
+    await runMoodMorph({ file: srcOverride });
+  } finally {
+    isGenerating = false;
   }
 }
 
