@@ -23,8 +23,10 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
   useEffect(() => {
-    loadTokenData()
-    loadServerQuota()
+    if (import.meta.env.VITE_NO_DB_MODE !== '1') {
+      loadTokenData()
+      loadServerQuota()
+    }
   }, [userId])
 
   const loadTokenData = async () => {

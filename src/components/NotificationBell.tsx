@@ -29,6 +29,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
 
   // Fetch notifications
   const fetchNotifications = async () => {
+    // Skip in NO_DB_MODE
+    if (import.meta.env.VITE_NO_DB_MODE === '1') {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await fetch('/.netlify/functions/get-notifications?limit=10', {
@@ -51,6 +58,11 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
 
   // Mark notifications as read
   const markAsRead = async (notificationIds?: string[]) => {
+    // Skip in NO_DB_MODE
+    if (import.meta.env.VITE_NO_DB_MODE === '1') {
+      return;
+    }
+
     try {
       const response = await fetch('/.netlify/functions/mark-notifications-read', {
         method: 'POST',

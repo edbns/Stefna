@@ -22,16 +22,12 @@ async function refreshFeed() {
   window.dispatchEvent(new CustomEvent('moodmorph-complete'))
 }
 
-export async function runMoodMorph(file?: File) {
+export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
   const runId = crypto.randomUUID()
   
   try {
     // Use centralized file assertion
-    if (!file) {
-      // Try to get file from global state
-      file = window.__lastSelectedFile as File | undefined
-    }
-    file = await getSourceFileOrThrow(file)
+    const file = await getSourceFileOrThrow(opts?.file)
 
     // 1) Always upload the actual File (not blob:)
     const { secureUrl } = await uploadSourceToCloudinary({ file })

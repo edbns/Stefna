@@ -22,7 +22,7 @@ async function refreshFeed() {
 }
 
 export async function runStyleClash(params?: {
-  left?: StyleId, right?: StyleId, orientation?: 'vertical' | 'horizontal', file?: File
+  left?: StyleId, right?: StyleId, orientation?: 'vertical' | 'horizontal', file?: File|Blob|string
 }) {
   const runId = crypto.randomUUID()
 
@@ -32,8 +32,7 @@ export async function runStyleClash(params?: {
 
   try {
     // Use centralized file assertion
-    let file = params?.file ?? window.__lastSelectedFile as File | undefined
-    file = await getSourceFileOrThrow(file)
+    const file = await getSourceFileOrThrow(params?.file)
 
     // 1) Always start from the original File
     const { secureUrl } = await uploadSourceToCloudinary({ file })

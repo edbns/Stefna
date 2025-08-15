@@ -15,6 +15,13 @@ export function initializeAuthBootstrap(): void {
 
   console.log('🔧 Initializing auth bootstrap...');
 
+  // Skip DB operations in NO_DB_MODE
+  if (import.meta.env.VITE_NO_DB_MODE === '1') {
+    console.log('🚫 NO_DB_MODE: Skipping auth bootstrap DB operations');
+    isBootstrapInitialized = true;
+    return;
+  }
+
   // Listen for auth state changes
   authService.onAuthStateChange(async (authState) => {
     if (authState.isAuthenticated && authState.user) {

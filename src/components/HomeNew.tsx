@@ -485,6 +485,14 @@ const HomeNew: React.FC = () => {
     setSelectedFile(file)                    // File used for upload
     setPreviewUrl(preview)                   // blob: used only for <img> preview
     storeSelectedFile(file)                  // Store globally for blob: fallback
+    
+    // Also store in generation store for centralized access
+    const { useGenerationStore } = await import('../stores/generationStore')
+    useGenerationStore.getState().setSelectedFile(file)
+    useGenerationStore.getState().setPreviewUrl(preview)
+    useGenerationStore.getState().setPreviewDataUrl(undefined)
+    useGenerationStore.getState().setPreviewBlob(undefined)
+    
     setIsComposerOpen(true)
   }
 
@@ -2692,9 +2700,9 @@ const HomeNew: React.FC = () => {
                           }
                         }, 100)
                     }} 
-                    disabled={!previewUrl || (mode === 'presets' && !prompt.trim() && !selectedPreset)} 
+                    disabled={!selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset)} 
                     className={`w-10 h-10 rounded-full btn-optimized flex items-center justify-center shadow-lg hover:shadow-xl ${
-                      !previewUrl || (mode === 'presets' && !prompt.trim() && !selectedPreset)
+                      !selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset)
                         ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
                         : 'bg-white text-black hover:bg-white/90'
                     }`}

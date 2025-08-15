@@ -14,7 +14,7 @@ import { postAuthed } from '../utils/fetchAuthed'
 import authService from '../services/authService'
 import { uploadSourceToCloudinary } from './uploadSource'
 import { assertFile } from './sourceFile'
-import { getSourceFileOrThrow } from './source'
+import { getSourceFileOrThrow, dbgSource } from './source'
 
 // File type guard to prevent uploading strings as files
 const isFileLike = (x: unknown): x is File | Blob =>
@@ -186,6 +186,7 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
     
     // ✅ Use new uploadSource service - never fetch blob URLs
     try {
+      dbgSource('before-dispatchGenerate')
       const sourceFile = await getSourceFileOrThrow(job.source?.file || job.source?.url)
       const uploadResult = await uploadSourceToCloudinary({
         file: sourceFile,
