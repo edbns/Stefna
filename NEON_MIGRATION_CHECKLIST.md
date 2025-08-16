@@ -1,16 +1,41 @@
 # 🚀 Neon Migration Checklist - Remaining Work
 
-## 📊 **Current Status: 70% Complete**
+## 📊 **Current Status: 39% Complete - 11/28 Functions Migrated**
 
 ### ✅ **Already Migrated (Working)**
-- `save-media.ts` - ✅ Fixed and working
-- `verify-otp.js` - ✅ Fixed and working  
-- `update-profile.ts` - ✅ Fixed and working
-- `check-tier-promotion.js` - ✅ Fixed and working
-- `user-settings.js` - ✅ Fixed and working
-- `get-referral-stats.js` - ✅ Fixed and working
-- `get-user-profile.js` - ✅ **JUST MIGRATED**
-- `delete-media.js` - ✅ **JUST MIGRATED**
+- `save-media.ts` - ✅ Fixed payload handling and database schema
+- `verify-otp.js` - ✅ Fixed user creation and JWT handling
+- `update-profile.ts` - ✅ Fixed profile updates and user settings
+- `check-tier-promotion.js` - ✅ Fixed 500 errors and graceful fallbacks
+- `user-settings.js` - ✅ Fixed authentication and response format
+- `get-referral-stats.js` - ✅ Fixed database queries and error handling
+- `get-user-profile.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+- `delete-media.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+- `list-assets.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+- `updateMediaVisibility.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+- `record-asset.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+
+### 🎯 **Recent Accomplishments**
+- **Console Error Fixes**: Fixed blob URL fetching, UI validation race conditions, RUM adblock noise
+- **Migration Pattern Established**: Consistent JWT auth, Neon database, response helpers
+- **Error Handling**: Graceful fallbacks instead of 500 errors
+- **Testing Tools**: Added development helpers for debugging
+
+---
+
+## 🚨 **CRITICAL CONSOLE ERRORS - RECENTLY FIXED**
+
+### ✅ **Issues Resolved (No More Console Spam)**
+- **Blob URL Fetching**: Fixed i2i "Source upload failed: Failed to fetch" errors
+- **UI Validation Race**: Fixed "Presets group has no configured options" warnings
+- **RUM Adblock Noise**: Eliminated ERR_BLOCKED_BY_CLIENT spam
+- **getUserMedia 405**: Fixed Method Not Allowed errors
+- **Theme Fallbacks**: Added safe defaults for undefined variables
+
+### 🔧 **Debug Tools Added**
+- `window.testSaveMedia()` - Test save-media endpoint with minimal payload
+- Enhanced error messages and validation timing
+- Better logging for troubleshooting
 
 ---
 
@@ -18,9 +43,9 @@
 
 ### **High Priority (Core Functionality)**
 - [ ] `debug-feed.js` - Uses Supabase for feed debugging
-- [ ] `list-assets.js` - Uses Supabase for asset listing
-- [ ] `updateMediaVisibility.js` - Uses Supabase for visibility updates
-- [ ] `record-asset.js` - Uses Supabase for asset recording
+- [x] `list-assets.js` - ✅ **MIGRATED** - Now uses Neon + JWT
+- [x] `updateMediaVisibility.js` - ✅ **MIGRATED** - Now uses Neon + JWT
+- [x] `record-asset.js` - ✅ **MIGRATED** - Now uses Neon + JWT
 - [ ] `usage-stats.js` - Uses Supabase for usage tracking
 
 ### **Medium Priority (User Features)**
