@@ -1,6 +1,16 @@
 import type { Handler } from '@netlify/functions';
 
 export const handler: Handler = async () => {
+  // Debug: Log all AIML-related environment variables
+  console.log('🔍 AIML Environment Debug:', {
+    AIML_API_BASE: process.env.AIML_API_BASE,
+    AIML_API_KEY: process.env.AIML_API_KEY,
+    AIML_API_URL: process.env.AIML_API_URL,
+    VITE_AIML_API_BASE: process.env.VITE_AIML_API_BASE,
+    VITE_AIML_API_KEY: process.env.VITE_AIML_API_KEY,
+    VITE_AIML_API_URL: process.env.VITE_AIML_API_URL,
+  });
+
   return {
     statusCode: 200,
     headers: {
