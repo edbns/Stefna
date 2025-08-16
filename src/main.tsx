@@ -2,8 +2,16 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { validateAllSync, validateAll } from './utils/presets/validate'
+import { validateAllSync, validateAll, validateUIConfigurationWhenReady } from './utils/presets/validate'
 import { PRESETS } from './utils/presets/types'
+import { presetsStore } from './stores/presetsStore'
+
+// Extend Window interface for development helpers
+declare global {
+  interface Window {
+    testSaveMedia?: () => Promise<void>
+  }
+}
 
 // Sanity check: ensure preset keys match preset.id
 for (const [key, preset] of Object.entries(PRESETS)) {
@@ -11,6 +19,12 @@ for (const [key, preset] of Object.entries(PRESETS)) {
     console.warn(`⚠️ Preset key/id mismatch: ${key} !== ${preset.id}`);
   }
 }
+
+// Load presets store first, then validate
+presetsStore.getState().load().then(() => {
+  // Now validate UI configuration when presets are ready
+  validateUIConfigurationWhenReady();
+}).catch(console.error);
 
 // Validate preset system on startup (sync for immediate feedback)
 validateAllSync()
@@ -25,6 +39,44 @@ if (import.meta.env.DEV) {
   import('./utils/presets/test-system').then(({ logTestResults }) => {
     logTestResults();
   }).catch(console.error);
+  
+  // Add debug helper for save-media testing
+  window.testSaveMedia = async () => {
+    const token = localStorage.getItem('jwt_token');
+    if (!token) {
+      console.error('No JWT token found');
+      return;
+    }
+    
+    console.log('🧪 Testing save-media with minimal payload...');
+    try {
+      const res = await fetch('/.netlify/functions/save-media', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          kind: 'image', 
+          url: 'https://picsum.photos/512' 
+        })
+      });
+      
+      const text = await res.text();
+      console.log(`📡 save-media response: ${res.status} ${res.statusText}`);
+      console.log('📄 Response body:', text);
+      
+      if (!res.ok) {
+        console.error(`❌ save-media failed: ${res.status} ${text}`);
+      } else {
+        console.log('✅ save-media succeeded!');
+      }
+    } catch (error) {
+      console.error('🚨 save-media test error:', error);
+    }
+  };
+  
+  console.log('🔧 Development mode: Use window.testSaveMedia() to test save-media endpoint');
 }
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 

@@ -1502,7 +1502,7 @@ const HomeNew: React.FC = () => {
       // Use new uploadSource service - never fetch blob URLs
       const uploadResult = await uploadSourceToCloudinary({
         file: selectedFile,
-        url: previewUrl
+        url: undefined  // Don't pass preview URL - use File object directly
       })
       const sourceUrl = uploadResult.secureUrl
       
