@@ -1,18 +1,18 @@
-import type { Handler } from '@netlify/functions';
+import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions';
 import { randomUUID } from 'crypto';
 import { requireUser } from '../lib/auth';
 import { sql } from '../lib/db';
 
 type Variation = {
   image_url: string;
-  media_type: 'image' | 'video';
+  media_type?: 'image' | 'video';
   prompt?: string;
   cloudinary_public_id?: string;
   source_public_id?: string;
   meta?: Record<string, any>;
 };
 
-export const handler: Handler = async (event) => {
+export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResponse> => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -66,6 +66,23 @@ export const handler: Handler = async (event) => {
     `;
     await sql`
       ALTER TABLE media ADD COLUMN IF NOT EXISTS run_id TEXT
+    `;
+
+    // Add other missing columns with defensive defaults
+    await sql`
+      ALTER TABLE media ADD COLUMN IF NOT EXISTS media_type TEXT NOT NULL DEFAULT 'image'
+    `;
+    await sql`
+      ALTER TABLE media ADD COLUMN IF NOT EXISTS prompt TEXT
+    `;
+    await sql`
+      ALTER TABLE media ADD COLUMN IF NOT EXISTS cloudinary_public_id TEXT
+    `;
+    await sql`
+      ALTER TABLE media ADD COLUMN IF NOT EXISTS final_url TEXT
+    `;
+    await sql`
+      ALTER TABLE media ADD COLUMN IF NOT EXISTS meta JSONB DEFAULT '{}'::jsonb
     `;
 
     // Create index if it doesn't exist
@@ -125,16 +142,17 @@ export const handler: Handler = async (event) => {
       `;
       if (!q.length) throw new Error('Insufficient credits');
 
-      // insert all media rows
+      // insert all media rows with defensive defaults
       const items: any[] = [];
       for (const v of toInsert) {
         const id = randomUUID();
+        const mediaType = v.media_type || 'image'; // defensive default
         const row = await tx`
           INSERT INTO media (id, batch_id, user_id, run_id,
                              media_type, cloudinary_public_id, final_url,
                              prompt, is_public, source_public_id, meta, created_at)
           VALUES (${id}, ${batchId}, ${user.id}, ${runId},
-                  ${v.media_type}, ${v.cloudinary_public_id || null}, ${v.image_url},
+                  ${mediaType}, ${v.cloudinary_public_id || null}, ${v.image_url},
                   ${v.prompt || null}, true, ${v.source_public_id || null}, ${v.meta || {}}, NOW())
           RETURNING *
         `;
@@ -153,10 +171,18 @@ export const handler: Handler = async (event) => {
   } catch (e: any) {
     const code = e?.status || (String(e?.message || '').includes('credits') ? 402 : 500);
     console.error('save-media-batch error', e);
+    
+    // TEMP: return detailed error for debugging
     return { 
       statusCode: code, 
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ ok: false, message: String(e?.message || e) }) 
+      body: JSON.stringify({ 
+        ok: false, 
+        message: String(e?.message || e), 
+        stack: e?.stack,               // TEMP: remove after fix
+        hint: 'save-media-batch',
+        error: String(e?.message || e)
+      }) 
     };
   }
 };

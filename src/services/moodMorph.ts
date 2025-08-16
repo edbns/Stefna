@@ -177,8 +177,68 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
           throw new Error(result?.message || 'Batch save failed');
         }
       } catch (error) {
-        console.error(`❌ MoodMorph: Failed to save variations:`, error);
-        throw new Error(`Failed to save MoodMorph variations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.warn(`⚠️ MoodMorph: Batch save failed, falling back to individual saves:`, error);
+        
+        // Fallback: save each variation individually
+        try {
+          let savedCount = 0;
+          for (const variation of allVariations) {
+            const index = allVariations.indexOf(variation);
+            const mood = MOODS[index]?.id || 'unknown';
+            
+            // Use individual save-media with idempotency key
+            const fallbackResponse = await fetchWithAuth('/.netlify/functions/save-media', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Idempotency-Key': `${runId}:${mood}` // unique per variation
+              },
+              body: JSON.stringify({
+                url: variation.url,
+                type: 'image',
+                prompt: MOODS[index]?.prompt || `MoodMorph ${mood}`,
+                meta: {
+                  mood,
+                  runId,
+                  presetId: 'moodmorph',
+                  group: runId,
+                  variation_index: index,
+                  fallback: true
+                },
+                allowPublish: false
+              })
+            });
+
+            if (fallbackResponse.ok) {
+              savedCount++;
+              console.log(`✅ MoodMorph: Fallback saved variation ${index + 1} (${mood})`);
+            } else {
+              console.warn(`⚠️ MoodMorph: Fallback failed for variation ${index + 1}:`, fallbackResponse.status);
+            }
+
+            // Small delay between saves to avoid overwhelming the server
+            await new Promise(resolve => setTimeout(resolve, 150));
+          }
+
+          if (savedCount > 0) {
+            console.log(`✅ MoodMorph: Fallback saved ${savedCount}/${allVariations.length} variations`);
+            
+            // Refresh UI with what we saved
+            window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+              detail: { count: savedCount, runId, fallback: true } 
+            }));
+            
+            // Show fallback success toast
+            window.dispatchEvent(new CustomEvent('generation-success', {
+              detail: { message: `Saved ${savedCount} variations (fallback mode)`, timestamp: Date.now() }
+            }));
+          } else {
+            throw new Error('All fallback saves failed');
+          }
+        } catch (fallbackError) {
+          console.error(`❌ MoodMorph: Fallback saves also failed:`, fallbackError);
+          throw new Error(`Failed to save MoodMorph variations (batch and fallback failed): ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
+        }
       }
     }
     
