@@ -1,85 +1,139 @@
-const { createClient } = require('@supabase/supabase-js');
+const { neon } = require('@neondatabase/serverless');
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 const { Resend } = require('resend');
 
 exports.handler = async (event, context) => {
   console.log('=== VERIFY OTP FUNCTION STARTED ===');
+  
+  // Handle CORS
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      },
+      body: ''
+    };
+  }
+  
   try {
     if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, body: 'Method Not Allowed' };
+      return { 
+        statusCode: 405, 
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'Method Not Allowed' })
+      };
     }
+    
     const { email, otp, referrerEmail } = JSON.parse(event.body || '{}');
     console.log('Input:', { email, otp, referrerEmail });
     if (!email || !otp) {
-      return { statusCode: 400, body: 'Email and OTP required' };
+      return { 
+        statusCode: 400, 
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'Email and OTP required' })
+      };
     }
 
-    // Supabase client
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-    console.log('Supabase client created.');
+    // Connect to Neon database
+    const databaseUrl = process.env.NETLIFY_DATABASE_URL;
+    if (!databaseUrl) {
+      console.error('Missing Neon database environment variable');
+      return {
+        statusCode: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'Database configuration error' })
+      };
+    }
+    
+    console.log('=== CREATING NEON CLIENT ===');
+    const sql = neon(databaseUrl);
+    console.log('Neon client:', sql ? 'CREATED' : 'FAILED TO CREATE');
 
     // 1) Verify OTP exists, not used, and not expired
     const now = new Date().toISOString();
-    const { data: otpRows, error: selectErr } = await supabase
-      .from('user_otps')
-      .select('*')
-      .eq('email', email)
-      .eq('otp', otp)
-      .eq('used', false)
-      .gte('expires_at', now);
-    console.log('OTP lookup result:', otpRows, selectErr);
+    console.log('Looking up OTP for email:', email, 'code:', otp, 'at time:', now);
+    
+    const otpRows = await sql`
+      SELECT * FROM auth_otps 
+      WHERE email = ${email.toLowerCase()} 
+        AND code = ${otp} 
+        AND used = false 
+        AND expires_at > ${now}
+    `;
+    
+    console.log('OTP lookup result:', otpRows);
 
-    if (selectErr) throw selectErr;
     if (!otpRows || otpRows.length === 0) {
-      return { statusCode: 401, body: 'Invalid or expired OTP' };
+      console.log('Invalid or expired OTP');
+      return { 
+        statusCode: 401, 
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'Invalid or expired OTP' })
+      };
     }
 
     // 2) Mark OTP as used
     const otpId = otpRows[0].id;
-    const { error: updateErr } = await supabase
-      .from('user_otps')
-      .update({ used: true })
-      .eq('id', otpId);
-    console.log('Marked OTP used, error:', updateErr);
-    if (updateErr) throw updateErr;
+    console.log('Marking OTP as used:', otpId);
+    
+    await sql`
+      UPDATE auth_otps 
+      SET used = true 
+      WHERE id = ${otpId}
+    `;
+    
+    console.log('OTP marked as used successfully');
 
-    // 3) Check if user exists
+    // 3) Check if user exists in Neon database
     console.log('Checking if user exists with email:', email);
-    const { data: existingUser, error: userCheckErr } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
-    console.log('User check result:', existingUser, userCheckErr);
+    
+    const existingUsers = await sql`
+      SELECT * FROM app_users WHERE email = ${email.toLowerCase()}
+    `;
+    
+    console.log('User check result:', existingUsers);
 
     let user;
     let isNewUser = false;
-    if (userCheckErr && userCheckErr.code === 'PGRST116') {
+    
+    if (existingUsers.length === 0) {
       // User doesn't exist, create new user
       console.log('User does not exist, creating new user');
+      const userId = uuidv4();
       const userData = {
-        id: uuidv4(), // Generate UUID manually
-        email: email,
+        id: userId,
+        email: email.toLowerCase(),
         name: email.split('@')[0], // Use email prefix as name
         tier: 'registered',
         created_at: new Date().toISOString(),
-        last_login_at: new Date().toISOString()
+        updated_at: new Date().toISOString()
       };
       console.log('Creating user with data:', userData);
       
-      const { data: newUser, error: createErr } = await supabase
-        .from('users')
-        .insert(userData)
-        .select()
-        .single();
-      console.log('User creation result:', newUser, createErr);
+      const newUser = await sql`
+        INSERT INTO users (id, email, external_id, name, tier, created_at, updated_at)
+        VALUES (${userData.id}, ${userData.email}, ${userData.email}, ${userData.name}, ${userData.tier}, ${userData.created_at}, ${userData.updated_at})
+        RETURNING *
+      `;
       
-      if (createErr) throw createErr;
-      user = newUser;
+      console.log('User creation result:', newUser[0]);
+      user = newUser[0];
       isNewUser = true;
 
       // Process referral if provided
@@ -107,22 +161,20 @@ exports.handler = async (event, context) => {
           // Don't fail signup if referral processing fails
         }
       }
-    } else if (userCheckErr) {
-      // Other error occurred
-      throw userCheckErr;
     } else {
       // User exists, update last_login_at
       console.log('User exists, updating last_login_at');
-      const { data: updatedUser, error: updateUserErr } = await supabase
-        .from('users')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('email', email)
-        .select()
-        .single();
-      console.log('User update result:', updatedUser, updateUserErr);
+      const existingUser = existingUsers[0];
       
-      if (updateUserErr) throw updateUserErr;
-      user = updatedUser;
+      const updatedUser = await sql`
+        UPDATE users 
+        SET updated_at = ${new Date().toISOString()}
+        WHERE id = ${existingUser.id}
+        RETURNING *
+      `;
+      
+      console.log('User update result:', updatedUser[0]);
+      user = updatedUser[0];
     }
 
     // 4) Send welcome email for new users (with 5-minute delay)
@@ -205,6 +257,7 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 200,
       headers: {
+        'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
@@ -217,6 +270,10 @@ exports.handler = async (event, context) => {
     console.error('Verify-OTP error:', err);
     return {
       statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ error: err.message || 'Internal server error' }),
     };
   }
