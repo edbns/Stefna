@@ -2,6 +2,9 @@
   command = "npm run build"
   publish = "dist"
 
+[build.environment]
+  NODE_VERSION = "20"
+
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
@@ -13,6 +16,27 @@
 # Plugin to automatically install function dependencies
 [[plugins]]
   package = "@netlify/plugin-functions-install-core"
+
+# Production environment variables
+[context.production.environment]
+  DATABASE_URL = "postgresql://USER:PASSWORD@ep-xxx-pooler.neon.tech/neondb?sslmode=require"
+  AIML_API_KEY = "your-aiml-api-key-here"
+  AIML_API_BASE = "https://api.aimlapi.com"
+  AUTH_JWT_SECRET = "your-jwt-secret-here"
+
+# Deploy preview environment variables
+[context.deploy-preview.environment]
+  DATABASE_URL = "postgresql://USER:PASSWORD@ep-xxx-pooler.neon.tech/neondb?sslmode=require"
+  AIML_API_KEY = "your-aiml-api-key-here"
+  AIML_API_BASE = "https://api.aimlapi.com"
+  AUTH_JWT_SECRET = "your-jwt-secret-here"
+
+# Branch deploy environment variables
+[context.branch-deploy.environment]
+  DATABASE_URL = "postgresql://USER:PASSWORD@ep-xxx-pooler.neon.tech/neondb?sslmode=require"
+  AIML_API_KEY = "your-aiml-api-key-here"
+  AIML_API_BASE = "https://api.aimlapi.com"
+  AUTH_JWT_SECRET = "your-jwt-secret-here"
 
 [[headers]]
   for = "/*"

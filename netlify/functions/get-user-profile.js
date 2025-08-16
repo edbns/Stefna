@@ -1,96 +1,75 @@
-const { sql } = require('../lib/db');
-const { requireUser } = require('../lib/auth');
+const { sql, json, parseUserIdFromJWT } = require('./_db');
 
 exports.handler = async (event) => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-      },
-      body: ''
-    };
+    return json({}, 200);
   }
 
   try {
-    // Use the new robust auth helper
-    const user = await requireUser(event);
-    console.log('✅ User authenticated:', user.id);
+    // Parse authorization header
+    const auth = event.headers.authorization || '';
+    if (!auth) {
+      return json({ ok: false, error: 'Missing authorization header' }, 401);
+    }
 
-    // Create profiles table if it doesn't exist (safe if it already exists)
-    await sql`
-      CREATE TABLE IF NOT EXISTS profiles (
-        id TEXT PRIMARY KEY,
-        email TEXT,
-        username TEXT UNIQUE,
-        name TEXT,
-        avatar_url TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `;
+    const userId = await parseUserIdFromJWT(auth);
+    console.log('✅ User authenticated:', userId);
 
     // Try to get existing profile
     let profile = await sql`
-      SELECT id, email, username, name, avatar_url, created_at 
+      SELECT user_id, display_name, avatar_url, plan, created_at
       FROM profiles 
-      WHERE id = ${user.id} 
+      WHERE user_id = ${userId} 
       LIMIT 1
     `;
     profile = profile[0];
 
-    // If no profile exists, create one
+    // If no profile exists, create one with defaults
     if (!profile) {
-      const defaultUsername = `user-${user.id.slice(-6)}`;
-      profile = await sql`
-        INSERT INTO profiles (id, email, username, name, avatar_url)
-        VALUES (${user.id}, ${defaultUsername}, ${user.name}, ${user.avatar_url})
-        ON CONFLICT (id) DO NOTHING
-        RETURNING id, email, username, name, avatar_url, created_at
-      `;
-      profile = profile[0];
+      console.log('📝 Creating new profile for user:', userId);
       
-      // If insert didn't work, try to select again
-      if (!profile) {
-        profile = await sql`
-          SELECT id, email, username, name, avatar_url, created_at 
-          FROM profiles 
-          WHERE id = ${user.id} 
-          LIMIT 1
+      try {
+        const result = await sql`
+          INSERT INTO profiles (user_id, display_name, plan)
+          VALUES (${userId}, ${`User-${userId.slice(-6)}`}, 'free')
+          ON CONFLICT (user_id) DO NOTHING
+          RETURNING user_id, display_name, avatar_url, plan, created_at
         `;
-        profile = profile[0];
+        
+        if (result && result[0]) {
+          profile = result[0];
+          console.log('✅ Created new profile:', profile);
+        } else {
+          // Try to select again in case of race condition
+          profile = await sql`
+            SELECT user_id, display_name, avatar_url, plan, created_at
+            FROM profiles 
+            WHERE user_id = ${userId} 
+            LIMIT 1
+          `;
+          profile = profile[0];
+        }
+      } catch (insertError) {
+        console.error('❌ Failed to create profile:', insertError);
+        // Continue with null profile - will be handled by frontend
       }
     }
 
-    // Guarantee id is present and never null
-    profile = { ...profile, id: user.id };
-
-    console.log('✅ Returning profile data:', profile);
-
-    return { 
-      statusCode: 200, 
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ 
-        ok: true, 
-        profile: profile
-      }) 
-    };
+    // Return profile data (may be null if creation failed)
+    return json({ 
+      ok: true, 
+      profile: profile || null,
+      message: profile ? 'Profile loaded successfully' : 'Profile creation failed'
+    });
 
   } catch (error) {
-    const code = error?.status || 500;
-    console.error(`[auth] ${error?.message}`, error);
-    
-    return { 
-      statusCode: code, 
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ 
-        ok: false, 
-        error: error?.message || 'Internal server error',
-        message: error?.message || 'Internal server error'
-      }) 
-    };
+    console.error('❌ Get user profile error:', error);
+    return json({ 
+      ok: false, 
+      error: 'INTERNAL_ERROR',
+      details: error.message 
+    }, 500);
   }
 };
 

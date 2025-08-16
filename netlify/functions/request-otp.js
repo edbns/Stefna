@@ -149,56 +149,158 @@ exports.handler = async (event, context) => {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Stefna Login Code</title>
             <style>
-              body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #000000; color: #ffffff; }
-              .container { max-width: 600px; margin: 0 auto; background: #000000; }
-              .header { background: #000000; padding: 40px 20px; text-align: center; }
-              .logo { font-size: 32px; font-weight: 700; color: #ffffff; margin-bottom: 10px; }
-              .content { padding: 40px 30px; background: #000000; text-align: center; }
-              .title { font-size: 28px; font-weight: 600; color: #ffffff; margin-bottom: 40px; }
-              .otp-box { background: #111111; border: 2px solid #333333; border-radius: 16px; padding: 30px; text-align: center; margin-bottom: 30px; }
-              .otp-label { font-size: 14px; font-weight: 600; color: #cccccc; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
-              .otp-code { font-size: 42px; font-weight: 700; color: #ffffff; letter-spacing: 12px; margin-bottom: 15px; font-family: 'Courier New', monospace; }
-              .otp-expiry { font-size: 14px; color: #999999; }
-              .info-box { background: #111111; border-left: 4px solid #ffffff; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
-              .info-title { font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 10px; }
-              .info-text { font-size: 14px; color: #cccccc; line-height: 1.5; margin: 0; }
-              .footer { background: #111111; padding: 30px; text-align: center; border-top: 1px solid #333333; }
-              .footer-text { font-size: 14px; color: #999999; margin: 0; }
-              .contact-info { font-size: 14px; color: #ffffff; margin-top: 15px; }
+              body { 
+                margin: 0; 
+                padding: 0; 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                background: #000000; 
+                color: #ffffff; 
+              }
+              .container { 
+                max-width: 600px; 
+                margin: 0 auto; 
+                background: #000000; 
+                padding: 40px 20px;
+              }
+              .header { 
+                text-align: center; 
+                margin-bottom: 40px;
+              }
+              .logo-icon { 
+                width: 48px; 
+                height: 48px; 
+                border: 2px solid #ffffff; 
+                border-radius: 8px; 
+                margin: 0 auto 20px; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+                font-size: 24px;
+                font-weight: bold;
+              }
+              .title { 
+                font-size: 32px; 
+                font-weight: 700; 
+                color: #ffffff; 
+                margin-bottom: 20px; 
+              }
+              .subtitle { 
+                font-size: 16px; 
+                color: #cccccc; 
+                line-height: 1.5;
+                margin-bottom: 40px;
+              }
+              .otp-section { 
+                background: #1a1a1a; 
+                border-radius: 16px; 
+                padding: 30px; 
+                text-align: center; 
+                margin-bottom: 30px; 
+              }
+              .otp-label { 
+                font-size: 12px; 
+                font-weight: 600; 
+                color: #999999; 
+                text-transform: uppercase; 
+                letter-spacing: 1px; 
+                margin-bottom: 20px; 
+              }
+              .otp-code { 
+                font-size: 48px; 
+                font-weight: 700; 
+                color: #ffffff; 
+                letter-spacing: 8px; 
+                margin-bottom: 20px; 
+                font-family: 'Courier New', monospace;
+              }
+              .otp-expiry { 
+                font-size: 12px; 
+                color: #999999; 
+                text-transform: uppercase;
+                letter-spacing: 1px;
+              }
+              .security-section { 
+                background: #1a1a1a; 
+                border-radius: 16px; 
+                padding: 30px; 
+                text-align: left;
+                margin-bottom: 40px;
+              }
+              .security-title { 
+                font-size: 18px; 
+                font-weight: 600; 
+                color: #ffffff; 
+                margin-bottom: 15px; 
+                text-align: center;
+              }
+              .security-text { 
+                font-size: 14px; 
+                color: #cccccc; 
+                line-height: 1.6; 
+                margin: 0; 
+                text-align: center;
+              }
+              .footer { 
+                text-align: center; 
+                padding-top: 30px; 
+                border-top: 1px solid #333333; 
+              }
+              .company-slogan { 
+                font-size: 16px; 
+                font-weight: 600; 
+                color: #ffffff; 
+                margin-bottom: 20px; 
+              }
+              .footer-text { 
+                font-size: 14px; 
+                color: #999999; 
+                margin: 0 0 10px 0; 
+              }
+              .contact-info { 
+                font-size: 14px; 
+                color: #ffffff; 
+                margin-top: 15px; 
+              }
+              .email-highlight { 
+                background: #ffd700; 
+                color: #000000; 
+                padding: 2px 6px; 
+                border-radius: 4px; 
+                font-weight: 600;
+              }
               @media (max-width: 600px) {
-                .content { padding: 30px 20px; }
-                .otp-code { font-size: 36px; letter-spacing: 8px; }
-                .header { padding: 30px 20px; }
+                .container { padding: 30px 15px; }
+                .otp-code { font-size: 36px; letter-spacing: 6px; }
+                .title { font-size: 28px; }
               }
             </style>
           </head>
           <body>
             <div class="container">
               <div class="header">
-                <div class="logo">STEFNA</div>
+                <div class="logo-icon">S</div>
+                <h1 class="title">Login Code</h1>
+                <p class="subtitle">Enter this code to access your Stefna dashboard</p>
               </div>
               
-              <div class="content">
-                <h1 class="title">Your Login Code</h1>
-                
-                <div class="otp-box">
-                  <div class="otp-label">Verification Code</div>
-                  <div class="otp-code">${otp}</div>
-                  <div class="otp-expiry">Valid for 10 minutes</div>
-                </div>
-                
-                <div class="info-box">
-                  <div class="info-title">Security Information</div>
-                  <p class="info-text">
-                    This code was requested for your Stefna account. If you didn't request this code, 
-                    please ignore this email and ensure your account password is secure.
-                  </p>
-                </div>
+              <div class="otp-section">
+                <div class="otp-label">YOUR LOGIN CODE</div>
+                <div class="otp-code">${otp}</div>
+                <div class="otp-expiry">VALID FOR 10 MINUTES</div>
+              </div>
+              
+              <div class="security-section">
+                <div class="security-title">Security Information</div>
+                <p class="security-text">
+                  This code was requested for your Stefna account. If you didn't request this code, 
+                  please ignore this email and ensure your account password is secure.
+                </p>
               </div>
               
               <div class="footer">
-                <p class="footer-text">© 2025 Stefna. All rights reserved.</p>
-                <p class="contact-info">If you have any questions, contact us at hello@stefna.xyz</p>
+                <div class="company-slogan">Stefna - Turn Moments into Masterpieces—No Limits</div>
+                <p class="footer-text">This email was sent to ${email}</p>
+                <p class="contact-info">If you have any questions, contact us at <span class="email-highlight">hello@stefna.xyz</span></p>
               </div>
             </div>
           </body>
