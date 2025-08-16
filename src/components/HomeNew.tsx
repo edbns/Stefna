@@ -1679,8 +1679,13 @@ const HomeNew: React.FC = () => {
       // Import the new utility
       const { prepareSourceAsset } = await import('../utils/prepareSourceAsset')
       
-      // Always upload the asset (prefer File; fall back to blob URL)
-      const source = selectedFile || previewUrl;
+      // Always prefer the File object - never fall back to blob URL
+      if (!selectedFile) {
+        notifyError({ title: 'File required', message: 'Please select a file to continue' });
+        setNavGenerating(false);
+        return;
+      }
+      const source = selectedFile;
       const { url: remoteUrl, resource_type } = await prepareSourceAsset(source)
       if (resource_type !== 'image') { 
         notifyError({ title: 'Photo required', message: 'Story / Time Machine / Restore need a photo' })

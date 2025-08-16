@@ -13,11 +13,18 @@ export async function fromAnyToFile(input: File | Blob | string): Promise<File> 
     return new File([bytes], 'source.png', { type: mime });
   }
 
-  // blob: URL (what your preview uses)
+  // blob: URL (what your preview uses) - DON'T fetch these!
   if (typeof input === 'string' && input.startsWith('blob:')) {
-    const res = await fetch(input);
-    const blob = await res.blob();
-    return new File([blob], 'source.png', { type: blob.type || 'image/png' });
+    // Instead of fetching the blob URL (which can fail), 
+    // try to get the original file from global state
+    const fallback = window.__lastSelectedFile as File | undefined;
+    if (fallback) {
+      console.log('🔄 Using fallback file instead of fetching blob URL');
+      return fallback;
+    }
+    
+    // If no fallback, throw a clear error
+    throw new Error('Blob URL detected but no original file available. Please select the file again.');
   }
 
   throw new Error('No valid image source selected.');
@@ -31,16 +38,19 @@ export async function getSourceFileOrThrow(candidate?: File | Blob | string | nu
   
   // If we have a File, use it directly (no fetch needed)
   if (raw instanceof File) {
+    console.log('✅ Using File object directly (no fetch needed)');
     return raw;
   }
   
   // If we have a Blob, convert to File
   if (raw instanceof Blob) {
+    console.log('✅ Converting Blob to File (no fetch needed)');
     return new File([raw], 'source.png', { type: raw.type || 'image/png' });
   }
   
   // For strings (data URLs, blob URLs), use fromAnyToFile
   if (typeof raw === 'string') {
+    console.log('⚠️ String source detected, attempting conversion...');
     return fromAnyToFile(raw);
   }
   
