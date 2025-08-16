@@ -1,90 +1,77 @@
-const { createClient } = require('@supabase/supabase-js')
-const { verifyAuth } = require('./_auth')
+const { neon } = require('@neondatabase/serverless');
+const { requireJWTUser, resp, handleCORS, sanitizeDatabaseUrl } = require('./_auth');
+
+// ---- Database connection with safe URL sanitization ----
+const cleanDbUrl = sanitizeDatabaseUrl(process.env.NETLIFY_DATABASE_URL || '');
+if (!cleanDbUrl) {
+  throw new Error('NETLIFY_DATABASE_URL environment variable is required');
+}
+const sql = neon(cleanDbUrl);
 
 exports.handler = async (event) => {
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
+
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' }
+    return resp(405, { error: 'Method Not Allowed' });
   }
 
   try {
-    // Verify user authentication
-    const { userId } = verifyAuth(event)
-    if (!userId) {
-      return { statusCode: 401, body: JSON.stringify({ error: 'Authentication required' }) }
+    // Use new authentication helper
+    const user = requireJWTUser(event);
+    
+    if (!user) {
+      return resp(401, { error: 'Authentication required' });
     }
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
-
-    const body = JSON.parse(event.body || '{}')
-    const { action, env = 'prod' } = body
+    const body = JSON.parse(event.body || '{}');
+    const { action, env = 'prod' } = body;
 
     if (action !== 'fix-null-values') {
-      return { statusCode: 400, body: JSON.stringify({ error: 'Invalid action' }) }
+      return resp(400, { error: 'Invalid action' });
     }
 
-    console.log(`🔧 Fixing null values for user ${userId}, setting env to: ${env}`)
+    console.log(`🔧 Fixing null values for user ${user.userId}, setting env to: ${env}`);
 
     // Find all images with null env or visibility for this user
-    const { data: nullImages, error: findError } = await supabase
-      .from('media_assets')
-      .select('id, env, visibility, created_at')
-      .eq('user_id', userId)
-      .or('env.is.null,visibility.is.null')
-
-    if (findError) {
-      console.error('❌ Find null values error:', findError)
-      return { statusCode: 500, body: JSON.stringify({ error: findError.message }) }
-    }
+    const nullImages = await sql`
+      SELECT id, env, visibility, created_at
+      FROM media_assets
+      WHERE owner_id = ${user.userId}
+      AND (env IS NULL OR visibility IS NULL)
+    `;
 
     if (!nullImages || nullImages.length === 0) {
-      return { 
-        statusCode: 200, 
-        body: JSON.stringify({ 
-          message: 'No null values found to fix',
-          fixed: 0 
-        }) 
-      }
+      return resp(200, { 
+        message: 'No null values found to fix',
+        fixed: 0 
+      });
     }
 
-    console.log(`📊 Found ${nullImages.length} images with null values to fix`)
+    console.log(`📊 Found ${nullImages.length} images with null values to fix`);
 
     // Fix all null values: set env and make private (safer default)
-    const { data: fixed, error: fixError } = await supabase
-      .from('media_assets')
-      .update({ 
-        env: env,
-        visibility: 'private', // Safer default - user can then choose to share
-        updated_at: new Date().toISOString() 
-      })
-      .eq('user_id', userId)
-      .or('env.is.null,visibility.is.null')
-      .select('id, env, visibility, updated_at')
+    const fixed = await sql`
+      UPDATE media_assets 
+      SET env = ${env},
+          visibility = 'private',
+          updated_at = NOW()
+      WHERE owner_id = ${user.userId}
+      AND (env IS NULL OR visibility IS NULL)
+      RETURNING id, env, visibility, updated_at
+    `;
 
-    if (fixError) {
-      console.error('❌ Fix null values error:', fixError)
-      return { statusCode: 500, body: JSON.stringify({ error: fixError.message }) }
-    }
+    console.log(`✅ Successfully fixed ${fixed?.length || 0} images with null values`);
 
-    console.log(`✅ Successfully fixed ${fixed?.length || 0} images with null values`)
+    return resp(200, {
+      message: `Fixed ${fixed?.length || 0} images with null values`,
+      fixed: fixed?.length || 0,
+      items: fixed
+    });
 
-    return {
-      statusCode: 200,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        message: `Fixed ${fixed?.length || 0} images with null values`,
-        fixed: fixed?.length || 0,
-        items: fixed
-      })
-    }
-
-  } catch (e) {
-    console.error('❌ Fix null values error:', e)
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ error: e?.message || 'Internal server error' }) 
-    }
+  } catch (error) {
+    console.error('❌ Fix null values error:', error);
+    return resp(500, { error: error?.message || 'Internal server error' });
   }
-}
+};

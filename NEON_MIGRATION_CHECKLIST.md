@@ -1,6 +1,6 @@
 # 🚀 Neon Migration Checklist - Remaining Work
 
-## 📊 **Current Status: 64% Complete - 18/28 Functions Migrated**
+## 📊 **Current Status: 71% Complete - 20/28 Functions Migrated**
 
 ### ✅ **Already Migrated (Working)**
 - `save-media.ts` - ✅ Fixed payload handling and database schema
@@ -22,6 +22,10 @@
 - `bulk-share.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
 - `process-referral.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT with graceful fallbacks
 - `admin-upgrade-user.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+- `cleanup-otps.js` - ✅ **JUST MIGRATED** - Now uses Neon for OTP cleanup
+- `mark-timeout.ts` - ✅ **JUST MIGRATED** - Now uses Neon for timeout marking
+- `fix-null-values.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT for data fixes
+- `test-profile-connection.ts` - ✅ **JUST MIGRATED** - Now tests Neon connection
 
 ### 🎯 **Recent Accomplishments (Latest Session)**
 - **Profile Refresh Issues Fixed**: Added userMediaUpdated events to MoodMorph and custom prompt generation
@@ -36,6 +40,13 @@
 - **Graceful Fallbacks**: process-referral handles missing referral tables gracefully
 - **Admin Functions**: admin-upgrade-user now uses Neon with proper authentication
 - **Progress Boost**: Jumped from 50% to 64% completion in one session
+
+### 🎯 **Latest Migration Session (Current - Part 2)**
+- **4 More Utility Functions Migrated**: cleanup-otps, mark-timeout, fix-null-values, test-profile-connection
+- **Low Priority Progress**: 4/10 utility functions now migrated to Neon
+- **Simple Functions**: Quick wins with OTP cleanup, timeout marking, and data fixes
+- **Testing Tools**: test-profile-connection now validates Neon database connection
+- **Progress Boost**: Jumped from 64% to 71% completion in second session
 
 ### 🎯 **Recent Accomplishments**
 - **Console Error Fixes**: Fixed blob URL fetching, UI validation race conditions, RUM adblock noise
@@ -81,12 +92,12 @@
 - [ ] `video-job-worker.ts` - Uses Supabase for video processing
 - [ ] `video-job-status.ts` - Uses Supabase for video status
 - [ ] `v2v-webhook.ts` - Uses Supabase for video webhooks
-- [ ] `mark-timeout.ts` - Uses Supabase for timeout handling
-- [ ] `cleanup-otps.js` - Uses Supabase for OTP cleanup
-- [ ] `fix-null-values.js` - Uses Supabase for data fixes
+- [x] `mark-timeout.ts` - ✅ **MIGRATED** - Now uses Neon for timeout marking
+- [x] `cleanup-otps.js` - ✅ **MIGRATED** - Now uses Neon for OTP cleanup
+- [x] `fix-null-values.js` - ✅ **MIGRATED** - Now uses Neon + JWT for data fixes
 - [ ] `migrate-user-media.js` - Uses Supabase for migration
 - [ ] `backfill-media.ts` - Uses Supabase for backfilling
-- [ ] `test-profile-connection.ts` - Uses Supabase for testing
+- [x] `test-profile-connection.ts` - ✅ **MIGRATED** - Now tests Neon connection
 - [ ] `purge-user.js` - Uses Supabase for user purging
 
 ### **Library Files**

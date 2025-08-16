@@ -1,19 +1,34 @@
-const { createClient } = require('@supabase/supabase-js')
+const { neon } = require('@neondatabase/serverless');
+const { resp, sanitizeDatabaseUrl } = require('./_auth');
+
+// ---- Database connection with safe URL sanitization ----
+const cleanDbUrl = sanitizeDatabaseUrl(process.env.NETLIFY_DATABASE_URL || '');
+if (!cleanDbUrl) {
+  throw new Error('NETLIFY_DATABASE_URL environment variable is required');
+}
+const sql = neon(cleanDbUrl);
 
 exports.handler = async () => {
   try {
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-    const now = new Date().toISOString()
-    const { error } = await supabase
-      .from('user_otps')
-      .delete()
-      .lt('expires_at', now)
-      .or('used.eq.true')
-    if (error) throw error
-    return { statusCode: 200, body: JSON.stringify({ success: true }) }
-  } catch (e) {
-    return { statusCode: 500, body: JSON.stringify({ error: e.message }) }
+    const now = new Date().toISOString();
+    
+    // Clean up expired or used OTPs
+    const result = await sql`
+      DELETE FROM user_otps 
+      WHERE expires_at < ${now} OR used = true
+    `;
+    
+    console.log(`🧹 Cleaned up OTPs: ${result.rowCount || 0} rows affected`);
+    
+    return resp(200, { 
+      success: true, 
+      cleaned: result.rowCount || 0 
+    });
+    
+  } catch (error) {
+    console.error('❌ OTP cleanup error:', error);
+    return resp(500, { error: error.message || 'Internal server error' });
   }
-}
+};
 
 

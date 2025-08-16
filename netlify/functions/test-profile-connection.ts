@@ -1,10 +1,16 @@
 import { Handler } from '@netlify/functions';
-import { createClient } from '@supabase/supabase-js';
+import { neon } from '@neondatabase/serverless';
 import jwt from 'jsonwebtoken';
+import { sanitizeDatabaseUrl } from './_auth';
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const jwtSecret = process.env.JWT_SECRET!;
+
+// ---- Database connection with safe URL sanitization ----
+const cleanDbUrl = sanitizeDatabaseUrl(process.env.NETLIFY_DATABASE_URL || '');
+if (!cleanDbUrl) {
+  throw new Error('NETLIFY_DATABASE_URL environment variable is required');
+}
+const sql = neon(cleanDbUrl);
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'GET') {
@@ -17,10 +23,9 @@ export const handler: Handler = async (event) => {
   try {
     // Check environment variables
     const envCheck = {
-      supabaseUrl: !!supabaseUrl,
-      supabaseServiceKey: !!supabaseServiceKey,
+      neonDatabaseUrl: !!cleanDbUrl,
       jwtSecret: !!jwtSecret,
-      supabaseUrlValue: supabaseUrl ? supabaseUrl.substring(0, 20) + '...' : 'missing',
+      neonUrlValue: cleanDbUrl ? cleanDbUrl.substring(0, 20) + '...' : 'missing',
     };
 
     // Check JWT token if provided
@@ -37,24 +42,42 @@ export const handler: Handler = async (event) => {
       }
     }
 
-    // Test Supabase connection
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    let dbCheck = { connected: false, error: null, profilesTable: false };
+    // Test Neon connection
+    let dbCheck = { connected: false, error: null, usersTable: false, mediaAssetsTable: false };
     
     try {
-      // Test basic connection
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('count')
-        .limit(1);
+      // Test basic connection with users table
+      const usersResult = await sql`
+        SELECT COUNT(*) as count
+        FROM users 
+        LIMIT 1
+      `;
       
-      if (error) {
-        dbCheck = { connected: false, error: error.message, profilesTable: false };
-      } else {
-        dbCheck = { connected: true, error: null, profilesTable: true };
+      if (usersResult && usersResult.length > 0) {
+        dbCheck.usersTable = true;
       }
+      
+      // Test media_assets table
+      const mediaResult = await sql`
+        SELECT COUNT(*) as count
+        FROM media_assets 
+        LIMIT 1
+      `;
+      
+      if (mediaResult && mediaResult.length > 0) {
+        dbCheck.mediaAssetsTable = true;
+      }
+      
+      dbCheck.connected = true;
+      dbCheck.error = null;
+      
     } catch (err) {
-      dbCheck = { connected: false, error: err.message, profilesTable: false };
+      dbCheck = { 
+        connected: false, 
+        error: err.message, 
+        usersTable: false, 
+        mediaAssetsTable: false 
+      };
     }
 
     return {
@@ -63,7 +86,7 @@ export const handler: Handler = async (event) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        status: 'Profile connection test',
+        status: 'Neon database connection test',
         environment: envCheck,
         jwt: jwtCheck,
         database: dbCheck,
