@@ -39,8 +39,8 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom'],
           'vendor-ui': ['framer-motion', 'lucide-react'],
           'vendor-utils': ['clsx', 'tailwind-merge'],
-          // Core app chunks
-          'app-core': [
+          // Core app chunks - only include files that actually exist
+          'app-stores': [
             './src/stores/generationStore',
             './src/stores/presetsStore',
             './src/stores/sourceStore'
@@ -49,11 +49,6 @@ export default defineConfig({
             './src/services/aiGenerationService',
             './src/services/aiService',
             './src/services/uploadSource'
-          ],
-          'app-components': [
-            './src/components/Composer',
-            './src/components/MediaCard',
-            './src/components/MasonryMediaGrid'
           ]
         },
         // Optimize chunk naming
