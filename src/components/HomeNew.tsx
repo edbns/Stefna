@@ -1136,6 +1136,31 @@ const HomeNew: React.FC = () => {
 
       console.info('aimlApi payload', payload);
 
+      // Deduct credits before generation
+      const creditsNeeded = generateTwo ? 2 : 1;
+      console.log(`💰 Deducting ${creditsNeeded} credits before generation...`);
+      
+      const creditsResponse = await authenticatedFetch('/.netlify/functions/deduct-credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: creditsNeeded,
+          reason: `preset_generation_${creditsNeeded}_variations`,
+          requestId: payload.request_id
+        })
+      });
+
+      if (!creditsResponse.ok) {
+        if (creditsResponse.status === 402) {
+          const errorData = await creditsResponse.json();
+          throw new Error(`Insufficient credits: ${errorData.currentCredits} available, ${creditsNeeded} needed`);
+        }
+        throw new Error(`Credits deduction failed: ${creditsResponse.status}`);
+      }
+
+      const creditsResult = await creditsResponse.json();
+      console.log(`✅ Credits deducted successfully. New balance: ${creditsResult.newBalance}`);
+
       // Video pathway → use start-v2v + poll-v2v
       if (isVideoPreview) {
         const jwt = authService.getToken();
@@ -2619,8 +2644,27 @@ const HomeNew: React.FC = () => {
                           console.log('🎭 MoodMorph: selectedFile:', selectedFile)
                           console.log('🎭 MoodMorph: previewUrl:', previewUrl)
                           
-                          // Run MoodMorph
-                          await runMoodMorph(selectedFile || undefined)
+                          // Run MoodMorph with new callback-based API
+                          await runMoodMorph(
+                            selectedFile!,
+                            (progress) => {
+                              console.log(`🎭 MoodMorph: Progress ${progress}%`);
+                            },
+                            (variations) => {
+                              console.log('✅ MoodMorph: Generation completed successfully', variations);
+                              // Show success toast
+                              window.dispatchEvent(new CustomEvent('generation-success', { 
+                                detail: { message: `Generated ${variations.length} MoodMorph variations!`, timestamp: Date.now() } 
+                              }));
+                            },
+                            (error) => {
+                              console.error('❌ MoodMorph generation failed:', error);
+                              // Show error toast
+                              window.dispatchEvent(new CustomEvent('generation-error', { 
+                                detail: { message: `MoodMorph generation failed: ${error}`, timestamp: Date.now() } 
+                              }));
+                            }
+                          )
                           
                           console.log('✅ MoodMorph: Generation completed successfully')
                         } catch (error) {
