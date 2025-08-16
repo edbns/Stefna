@@ -1,6 +1,6 @@
 # 🚀 Neon Migration Checklist - Remaining Work
 
-## 📊 **Current Status: 50% Complete - 14/28 Functions Migrated**
+## 📊 **Current Status: 64% Complete - 18/28 Functions Migrated**
 
 ### ✅ **Already Migrated (Working)**
 - `save-media.ts` - ✅ Fixed payload handling and database schema
@@ -17,6 +17,11 @@
 - `debug-feed.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
 - `usage-stats.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
 - `add-bonus-credits.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+- `getUserMedia.ts` - ✅ **JUST MIGRATED** - Fixed 401 auth error, now uses Neon + JWT
+- `update-user.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+- `bulk-share.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+- `process-referral.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT with graceful fallbacks
+- `admin-upgrade-user.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
 
 ### 🎯 **Recent Accomplishments (Latest Session)**
 - **Profile Refresh Issues Fixed**: Added userMediaUpdated events to MoodMorph and custom prompt generation
@@ -24,6 +29,13 @@
 - **Migration Pattern Established**: Consistent JWT auth, Neon database, response helpers
 - **Error Handling**: Graceful fallbacks instead of 500 errors
 - **Testing Tools**: Added development helpers for debugging
+
+### 🎯 **Latest Migration Session (Current)**
+- **4 More Functions Migrated**: update-user, bulk-share, process-referral, admin-upgrade-user
+- **Medium Priority Complete**: All user feature functions now migrated to Neon
+- **Graceful Fallbacks**: process-referral handles missing referral tables gracefully
+- **Admin Functions**: admin-upgrade-user now uses Neon with proper authentication
+- **Progress Boost**: Jumped from 50% to 64% completion in one session
 
 ### 🎯 **Recent Accomplishments**
 - **Console Error Fixes**: Fixed blob URL fetching, UI validation race conditions, RUM adblock noise
@@ -60,10 +72,10 @@
 
 ### **Medium Priority (User Features)**
 - [x] `add-bonus-credits.js` - ✅ **MIGRATED** - Now uses Neon + JWT
-- [ ] `update-user.js` - Uses Supabase for user updates
-- [ ] `bulk-share.js` - Uses Supabase for bulk operations
-- [ ] `process-referral.js` - Uses Supabase for referral processing
-- [ ] `admin-upgrade-user.js` - Uses Supabase for admin operations
+- [x] `update-user.js` - ✅ **MIGRATED** - Now uses Neon + JWT
+- [x] `bulk-share.js` - ✅ **MIGRATED** - Now uses Neon + JWT
+- [x] `process-referral.js` - ✅ **MIGRATED** - Now uses Neon + JWT
+- [x] `admin-upgrade-user.js` - ✅ **MIGRATED** - Now uses Neon + JWT
 
 ### **Low Priority (Utility Functions)**
 - [ ] `video-job-worker.ts` - Uses Supabase for video processing

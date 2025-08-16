@@ -1,63 +1,80 @@
-const { createClient } = require('@supabase/supabase-js')
-const { verifyAuth } = require('./_auth')
+const { neon } = require('@neondatabase/serverless');
+const { requireJWTUser, resp, handleCORS, sanitizeDatabaseUrl } = require('./_auth');
+
+// ---- Database connection with safe URL sanitization ----
+const cleanDbUrl = sanitizeDatabaseUrl(process.env.NETLIFY_DATABASE_URL || '');
+if (!cleanDbUrl) {
+  throw new Error('NETLIFY_DATABASE_URL environment variable is required');
+}
+const sql = neon(cleanDbUrl);
 
 exports.handler = async (event) => {
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
+
+  if (event.httpMethod !== 'PUT') {
+    return resp(405, { error: 'Method Not Allowed' });
+  }
+
   try {
-    if (event.httpMethod !== 'PUT') {
-      return { statusCode: 405, body: 'Method Not Allowed' }
+    // Use new authentication helper
+    const user = requireJWTUser(event);
+    
+    if (!user) {
+      return resp(401, { error: 'Authentication required' });
     }
 
-    // Verify user authentication
-    const { userId } = verifyAuth(event)
-    if (!userId) {
-      return { statusCode: 401, body: JSON.stringify({ error: 'Authentication required' }) }
-    }
-
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
-
-    const { name, avatar } = JSON.parse(event.body || '{}')
+    const { name, avatar } = JSON.parse(event.body || '{}');
 
     if (!name && !avatar) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'Name or avatar required' }) }
+      return resp(400, { error: 'Name or avatar required' });
     }
 
-    console.log(`📝 Updating user ${userId}:`, { name, avatar })
+    console.log(`📝 Updating user ${user.userId}:`, { name, avatar });
 
-    const updates = {}
-    if (name) updates.name = name
-    if (avatar) updates.avatar_url = avatar
+    // Build update query dynamically
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
 
-    const { data: updated, error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', userId)
-      .select('id, name, avatar_url, updated_at')
-      .single()
-
-    if (error) {
-      console.error('❌ Update user error:', error)
-      return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
+    if (name) {
+      updates.push(`name = $${paramIndex++}`);
+      values.push(name);
+    }
+    if (avatar) {
+      updates.push(`avatar_url = $${paramIndex++}`);
+      values.push(avatar);
     }
 
-    console.log(`✅ User updated successfully:`, updated)
+    // Add updated_at
+    updates.push(`updated_at = NOW()`);
 
-    return {
-      statusCode: 200,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ 
-        success: true, 
-        user: updated 
-      })
+    const updateQuery = `
+      UPDATE users 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING id, name, avatar_url, updated_at
+    `;
+    values.push(user.userId);
+
+    const result = await sql.query(updateQuery, values);
+
+    if (result.rows.length === 0) {
+      console.error('❌ User not found for update:', user.userId);
+      return resp(404, { error: 'User not found' });
     }
 
-  } catch (e) {
-    console.error('❌ Update user error:', e)
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ error: e?.message || 'Internal server error' }) 
-    }
+    const updated = result.rows[0];
+    console.log(`✅ User updated successfully:`, updated);
+
+    return resp(200, { 
+      success: true, 
+      user: updated 
+    });
+
+  } catch (error) {
+    console.error('❌ Update user error:', error);
+    return resp(500, { error: error?.message || 'Internal server error' });
   }
-}
+};

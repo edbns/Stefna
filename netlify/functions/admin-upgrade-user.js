@@ -1,29 +1,21 @@
-const { createClient } = require('@supabase/supabase-js');
+const { neon } = require('@neondatabase/serverless');
+const { resp, handleCORS, sanitizeDatabaseUrl } = require('./_auth');
+
+// ---- Database connection with safe URL sanitization ----
+const cleanDbUrl = sanitizeDatabaseUrl(process.env.NETLIFY_DATABASE_URL || '');
+if (!cleanDbUrl) {
+  throw new Error('NETLIFY_DATABASE_URL environment variable is required');
+}
+const sql = neon(cleanDbUrl);
 
 exports.handler = async (event, context) => {
-  // Handle CORS
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST'
-      },
-      body: ''
-    };
-  }
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
 
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+    return resp(405, { error: 'Method not allowed' });
   }
 
   try {
@@ -32,120 +24,57 @@ exports.handler = async (event, context) => {
     // Validate admin secret (you should change this to a secure secret)
     const expectedSecret = process.env.ADMIN_SECRET || 'stefna-admin-2024';
     if (adminSecret !== expectedSecret) {
-      return {
-        statusCode: 401,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ error: 'Unauthorized' })
-      };
+      return resp(401, { error: 'Unauthorized' });
     }
 
     // Validate input
     if (!email || !newTier) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ error: 'Email and newTier are required' })
-      };
+      return resp(400, { error: 'Email and newTier are required' });
     }
 
     // Validate tier
     const validTiers = ['registered', 'verified', 'contributor'];
     if (!validTiers.includes(newTier)) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ error: 'Invalid tier. Must be one of: registered, verified, contributor' })
-      };
+      return resp(400, { error: 'Invalid tier. Must be one of: registered, verified, contributor' });
     }
-
-    // Connect to Supabase
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing Supabase environment variables');
-      return {
-        statusCode: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ error: 'Database configuration error' })
-      };
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Find user by email
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
+    const userResult = await sql`
+      SELECT *
+      FROM users 
+      WHERE email = ${email}
+      LIMIT 1
+    `;
 
-    if (userError) {
-      if (userError.code === 'PGRST116') {
-        return {
-          statusCode: 404,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ error: 'User not found' })
-        };
-      }
-      throw userError;
+    if (!userResult || userResult.length === 0) {
+      return resp(404, { error: 'User not found' });
     }
+
+    const user = userResult[0];
 
     // Update user tier
-    const { data: updatedUser, error: updateError } = await supabase
-      .from('users')
-      .update({ 
-        tier: newTier
-      })
-      .eq('email', email)
-      .select()
-      .single();
+    const updateResult = await sql`
+      UPDATE users 
+      SET tier = ${newTier}
+      WHERE email = ${email}
+      RETURNING *
+    `;
 
-    if (updateError) {
-      throw updateError;
+    if (!updateResult || updateResult.length === 0) {
+      return resp(500, { error: 'Failed to update user tier' });
     }
 
+    const updatedUser = updateResult[0];
     console.log(`✅ Successfully upgraded user ${email} to ${newTier} tier`);
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        success: true,
-        message: `User ${email} successfully upgraded to ${newTier} tier`,
-        user: updatedUser
-      })
-    };
+    return resp(200, {
+      success: true,
+      message: `User ${email} successfully upgraded to ${newTier} tier`,
+      user: updatedUser
+    });
 
   } catch (error) {
     console.error('Admin upgrade error:', error);
-    return {
-      statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        error: error.message || 'Internal server error' 
-      })
-    };
+    return resp(500, { error: error.message || 'Internal server error' });
   }
 };
