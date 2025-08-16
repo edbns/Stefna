@@ -126,6 +126,19 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
     // Atomic transaction: batch insert + credit deduction
     // For Neon, we'll use individual queries with error handling
     try {
+      // Create credits_ledger table if it doesn't exist
+      await sql`
+        CREATE TABLE IF NOT EXISTS credits_ledger (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id TEXT NOT NULL,
+          amount INTEGER NOT NULL CHECK (amount != 0),
+          reason TEXT NOT NULL,
+          env TEXT DEFAULT 'production',
+          request_id TEXT,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `;
+
       // ensure a batch row (for grouping + idempotency)
       const batchId = randomUUID();
       await sql`
@@ -135,13 +148,39 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
 
       // credits: require N credits atomically
       const need = toInsert.length;
+      
+      // First check if user has any credits record
+      let totalCredits = 0;
+      const currentCredits = await sql`
+        SELECT COALESCE(SUM(amount), 0) as total_credits
+        FROM credits_ledger 
+        WHERE user_id = ${user.id}
+      `;
+      
+      totalCredits = currentCredits[0]?.total_credits || 0;
+      console.log(`💰 User ${user.id} has ${totalCredits} credits, needs ${need}`);
+      
+      // If user has no credits, give them some initial credits
+      if (totalCredits === 0) {
+        const initialCredits = 10; // Give 10 free credits
+        await sql`
+          INSERT INTO credits_ledger (user_id, amount, reason, request_id, env)
+          VALUES (${user.id}, ${initialCredits}, 'initial_signup_bonus', ${runId}, ${process.env.NODE_ENV || 'production'})
+        `;
+        console.log(`🎁 Gave ${initialCredits} initial credits to user ${user.id}`);
+        totalCredits = initialCredits;
+      }
+      
+      if (totalCredits < need) {
+        throw new Error(`Insufficient credits: ${totalCredits} available, ${need} needed`);
+      }
+
+      // Deduct credits
       const q = await sql`
-        UPDATE credits_ledger 
-        SET amount = amount - ${need}
-        WHERE user_id = ${user.id} AND amount >= ${need}
+        INSERT INTO credits_ledger (user_id, amount, reason, request_id, env)
+        VALUES (${user.id}, ${-need}, ${`batch_media_generation_${toInsert.length}_items`}, ${runId}, ${process.env.NODE_ENV || 'production'})
         RETURNING amount
       `;
-      if (!q.length) throw new Error('Insufficient credits');
 
       // insert all media rows with defensive defaults and per-item idempotency
       const items: any[] = [];
