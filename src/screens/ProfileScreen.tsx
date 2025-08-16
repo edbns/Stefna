@@ -1493,7 +1493,7 @@ const ProfileScreen: React.FC = () => {
               {/* Account Header */}
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-white mb-2">Account Settings</h2>
-                <p className="text-white/60 text-sm">Manage your AI generation preferences and account security</p>
+                <p className="text-white/60 text-sm">Manage your AI media preferences and account security</p>
               </div>
 
               {/* Two Column Layout */}
@@ -1536,18 +1536,18 @@ const ProfileScreen: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* AI Generation Preferences */}
+                  {/* AI Media Preferences */}
                   <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
                     <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
                       <Image size={20} className="mr-2" />
-                      AI Generation Preferences
+                      AI Media Preferences
                     </h3>
                     
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-white font-medium text-sm">Auto-share to Feed</div>
-                          <div className="text-white/60 text-xs">Automatically share your AI generations to the public feed</div>
+                          <div className="text-white/60 text-xs">Automatically share your AI media to the public feed</div>
                         </div>
                         <button
                           onClick={() => updateProfile({ shareToFeed: !profileData.shareToFeed })}
@@ -1584,17 +1584,17 @@ const ProfileScreen: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Generation Statistics */}
+                  {/* Media Statistics */}
                   <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
                     <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
                       <Coins size={20} className="mr-2" />
-                      Generation Statistics
+                      Media Statistics
                     </h3>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-white">{userMedia.length}</div>
-                        <div className="text-white/60 text-xs">Total Generations</div>
+                        <div className="text-white/60 text-xs">Total Media</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-white">{tokenCount}</div>
@@ -1658,7 +1658,7 @@ const ProfileScreen: React.FC = () => {
                         }}
                         className="w-full bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white font-medium py-3 px-4 rounded-lg border border-[#444444] hover:border-[#555555] transition-colors"
                       >
-                        Export My Generations
+                        Export My Media
                       </button>
                       
                       <button 
@@ -1681,7 +1681,7 @@ const ProfileScreen: React.FC = () => {
                     </h3>
                     
                     <p className="text-red-300/80 text-sm mb-4">
-                      These actions cannot be undone. Your account and all AI generations will be permanently deleted.
+                      These actions cannot be undone. Your account and all AI media will be permanently deleted.
                     </p>
                     
                     <button 
@@ -1972,7 +1972,7 @@ const ProfileScreen: React.FC = () => {
                 {/* What you get */}
                  <div className="bg-white/5 rounded-lg p-4">
                   <h3 className="text-white font-semibold mb-2 text-sm">You get</h3>
-                  <p className="text-white/60 text-sm">+10 bonus tokens after your friend's first generation</p>
+                  <p className="text-white/60 text-sm">+10 bonus tokens after your friend's first media creation</p>
                 </div>
 
                 {/* What your friends get */}
