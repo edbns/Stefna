@@ -79,10 +79,11 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
       })
     )
 
-    // 3) Process results and save locally
+    // 3) Process results and collect all variations
     console.log('📊 MoodMorph: Processing results...')
     const ok = []
     const failed = []
+    const allVariations = []
     
     for (let i = 0; i < results.length; i++) {
       const result = results[i]
@@ -91,6 +92,7 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
       if (result.status === 'fulfilled') {
         console.log(`✅ MoodMorph: Mood ${i + 1} (${mood.id}) successful:`, result.value)
         ok.push(result.value)
+        
         // Normalize the result to ensure we get valid HTTPS URLs
         const normalizedUrls = normalizeVariationUrls(result.value);
         if (!normalizedUrls.length) {
@@ -98,36 +100,14 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
           continue;
         }
         
-        // Save each variation using the new fetchWithAuth utility
+        // Collect all variations for batch saving
         for (const imageUrl of normalizedUrls) {
-          try {
-            const response = await fetchWithAuth('/.netlify/functions/save-media', {
-              method: 'POST',
-              body: JSON.stringify({
-                variations: [{ 
-                  url: imageUrl, 
-                  type: 'image',
-                  is_public: false,
-                  meta: { mood: mood.id, group: runId }
-                }],
-                runId,
-                presetId: 'moodmorph',
-                allowPublish: false,
-                tags: [`mood:${mood.id}`],
-                extra: { mood: mood.id, group: runId }
-              })
-            });
-            
-            if (!response.ok) {
-              throw new Error(`save-media failed: ${response.status} ${response.statusText}`);
-            }
-            
-            const result = await response.json();
-            console.log(`✅ MoodMorph: Saved ${mood.id} variation:`, result);
-          } catch (error) {
-            console.error(`❌ MoodMorph: Failed to save ${mood.id} variation:`, error);
-            // Continue with other variations
-          }
+          allVariations.push({
+            url: imageUrl,
+            type: 'image',
+            is_public: false,
+            meta: { mood: mood.id, group: runId }
+          });
         }
       } else {
         console.error(`❌ MoodMorph: Mood ${i + 1} (${mood.id}) failed:`, result.reason)
@@ -142,6 +122,39 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
     }
     
     console.log(`🎉 MoodMorph: ${ok.length}/3 variants generated successfully`)
+    console.log(`📦 MoodMorph: Saving ${allVariations.length} variations in batch...`)
+    
+    // 4) Save all variations in a single request
+    if (allVariations.length > 0) {
+      try {
+        const response = await fetchWithAuth('/.netlify/functions/save-media', {
+          method: 'POST',
+          body: JSON.stringify({
+            variations: allVariations,
+            runId,
+            presetId: 'moodmorph',
+            allowPublish: false,
+            tags: ['moodmorph', `group:${runId}`],
+            extra: { 
+              moodCount: ok.length,
+              totalVariations: allVariations.length,
+              group: runId 
+            }
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`save-media failed: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log(`✅ MoodMorph: Saved all ${allVariations.length} variations:`, result);
+        console.log(`💰 MoodMorph: Credits deducted: ${result.creditsDeducted}`);
+      } catch (error) {
+        console.error(`❌ MoodMorph: Failed to save variations:`, error);
+        throw new Error(`Failed to save MoodMorph variations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
     
     // Refresh both the public feed and the user's profile
     await refreshFeed()
