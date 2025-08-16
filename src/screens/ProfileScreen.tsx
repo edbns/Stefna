@@ -113,6 +113,12 @@ const ProfileScreen: React.FC = () => {
         const userData = await response.json()
         console.log('✅ Profile loaded from database:', userData)
         
+        // Store the real user ID from the database response
+        if (userData.id) {
+          setCurrentUserId(userData.id);
+          console.log('✅ Set current user ID from profile:', userData.id);
+        }
+        
         const profileData = {
           name: userData.name || userData.username || '',
           bio: userData.bio || 'AI artist exploring the boundaries of creativity 🎨',
@@ -190,7 +196,19 @@ const ProfileScreen: React.FC = () => {
   // Load profile data when component mounts and user is authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      loadProfileFromDatabase()
+      // Load profile first, then media (profile sets currentUserId)
+      loadProfileFromDatabase().then(() => {
+        // Only load media after profile is loaded and currentUserId is set
+        if (currentUserId && currentUserId !== 'guest-user') {
+          console.log('✅ Profile loaded, now loading user media for:', currentUserId);
+          loadUserMedia();
+        } else {
+          // Fallback: if profile didn't set currentUserId, try to load media anyway
+          console.log('⚠️ Profile loaded but no currentUserId set, trying to load media anyway');
+          setTimeout(() => loadUserMedia(), 100);
+        }
+      });
+      
       // Load persisted user settings (shareToFeed, allowRemix)
       ;(async () => {
         try {
@@ -410,10 +428,17 @@ const ProfileScreen: React.FC = () => {
   // Load user media from database using new Netlify Function
   const loadUserMedia = async () => {
     try {
-      // Get current user ID from auth service
+      // Get current user ID from auth service or use stored ID from profile
       const user = authService.getCurrentUser()
-      const userId = user?.id || 'guest-user'
-      setCurrentUserId(userId)
+      const userId = currentUserId || user?.id || 'guest-user'
+      
+      // If we have a stored currentUserId, use that (it comes from profile loading)
+      if (currentUserId && currentUserId !== 'guest-user') {
+        console.log('✅ Using stored currentUserId for media loading:', currentUserId);
+      } else if (user?.id) {
+        setCurrentUserId(user.id);
+        console.log('✅ Set currentUserId from auth service:', user.id);
+      }
       
       // Set authentication status and user tier
       if (user) {

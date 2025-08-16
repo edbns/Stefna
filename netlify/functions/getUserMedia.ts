@@ -79,7 +79,7 @@ export const handler = async (event: any, context: any) => {
     return resp(200, {
       ok: true,
       userId: targetUserId,
-      media,
+      items: media, // Changed from 'media' to 'items' to match frontend expectation
       count: media.length
     });
 

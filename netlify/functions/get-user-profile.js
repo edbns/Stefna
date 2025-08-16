@@ -1,5 +1,5 @@
 const { neon } = require('@neondatabase/serverless')
-const { requireJWTUser, resp, handleCORS } = require('./_auth')
+const { requireJWTUser, resp, handleCORS, sanitizeDatabaseUrl } = require('./_auth')
 
 exports.handler = async (event) => {
   // Handle CORS preflight
@@ -17,100 +17,86 @@ exports.handler = async (event) => {
       return resp(401, { error: 'Unauthorized - Invalid or missing JWT token' })
     }
 
-    // Connect to Neon database
-    const sql = neon(process.env.NETLIFY_DATABASE_URL)
+    // Connect to Neon database with safe URL sanitization
+    const cleanDbUrl = sanitizeDatabaseUrl(process.env.NETLIFY_DATABASE_URL || '');
+    if (!cleanDbUrl) {
+      throw new Error('NETLIFY_DATABASE_URL environment variable is required');
+    }
+    const sql = neon(cleanDbUrl);
 
     console.log(`📥 Getting user profile for: ${user.userId}`)
 
-    // First verify user exists in users table
+    // First ensure user exists in users table
     let userData;
     try {
       const userResult = await sql`
-        SELECT id, name, email, tier FROM users WHERE id = ${user.userId}
-      `
-      if (!userResult || userResult.length === 0) {
-        console.error('❌ User not found in users table')
-        return resp(401, { error: 'User not found' })
-      }
-      userData = userResult[0]
+        INSERT INTO users (id, email, external_id, created_at, updated_at)
+        VALUES (${user.userId}, ${user.email || `user-${user.userId}@placeholder.com`}, ${user.userId}, NOW(), NOW())
+        ON CONFLICT (id) DO UPDATE SET 
+          email = EXCLUDED.email,
+          updated_at = NOW()
+        RETURNING id, name, email, tier
+      `;
+      userData = userResult[0];
+      console.log(`✅ User ensured in users table:`, userData);
     } catch (userError) {
-      console.error('❌ Error checking user:', userError)
-      return resp(401, { error: 'User not found' })
+      console.error('❌ Error ensuring user:', userError);
+      return resp(500, { error: 'Failed to ensure user exists' });
     }
 
-    // Get profile data (may not exist yet)
+    // Get profile data from user_settings (may not exist yet)
     let profile;
     try {
       const profileResult = await sql`
         SELECT id, username, share_to_feed, allow_remix, updated_at
         FROM user_settings 
         WHERE user_id = ${user.userId}
-      `
+      `;
       if (profileResult && profileResult.length > 0) {
-        profile = profileResult[0]
+        profile = profileResult[0];
+        console.log(`✅ Found existing profile settings:`, profile);
+      } else {
+        console.log(`ℹ️ No profile settings found for user ${user.userId}, will create defaults`);
       }
     } catch (profileError) {
-      console.log('Profile not found, will use defaults')
+      console.log('Profile settings not found, will create defaults:', profileError.message);
     }
 
-    // If profile doesn't exist (PGRST116), return safe defaults instead of 500
-    if (error && error.code === 'PGRST116') {
-      console.log(`⚠️ Profile not found for user ${userId}, returning defaults with user data`)
-      const defaultProfile = {
-        id: userId,
-        username: '',
-        name: user.name || '',
-        email: user.email || '',
-        avatar: '',
-        avatar_url: '',
-        shareToFeed: false,
-        allowRemix: false,
-        onboarding_completed: false,
-        tier: user.tier || 'registered',
-        createdAt: new Date().toISOString()
-      }
-      
-      return {
-        statusCode: 200,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(defaultProfile)
-      }
-    }
-    
-    if (error) {
-      console.error('❌ Get user profile error:', error)
-      // Return safe defaults instead of 500 to prevent UI crashes
-      const safeProfile = {
-        id: userId,
-        username: '',
-        name: '',
-        avatar: '',
-        avatar_url: '',
-        shareToFeed: false,
-        allowRemix: false,
-        onboarding_completed: false,
-        tier: 'registered',
-        createdAt: new Date().toISOString()
-      }
-      
-      return {
-        statusCode: 200,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(safeProfile)
+    // If no profile settings exist, create them
+    if (!profile) {
+      try {
+        const defaultUsername = `user-${user.userId.slice(-6)}`;
+        const newProfile = await sql`
+          INSERT INTO user_settings (user_id, username, share_to_feed, allow_remix, created_at, updated_at)
+          VALUES (${user.userId}, ${defaultUsername}, false, false, NOW(), NOW())
+          RETURNING id, username, share_to_feed, allow_remix, created_at, updated_at
+        `;
+        profile = newProfile[0];
+        console.log(`✅ Created default profile settings:`, profile);
+      } catch (createError) {
+        console.error('❌ Failed to create profile settings:', createError);
+        // Continue with empty profile
+        profile = {
+          id: user.userId,
+          username: `user-${user.userId.slice(-6)}`,
+          share_to_feed: false,
+          allow_remix: false,
+          updated_at: new Date().toISOString()
+        };
       }
     }
 
     // Return profile data in the format expected by the frontend
     const profileData = {
-      id: profile.id,
-      username: profile.username || '',
-      name: profile.username || '', // Keep for backward compatibility
-      avatar: '', // No avatar_url in user_settings
+      id: user.userId, // Always use the real user ID from JWT
+      username: profile.username || `user-${user.userId.slice(-6)}`,
+      name: profile.username || `user-${user.userId.slice(-6)}`, // Keep for backward compatibility
+      avatar: '', // No avatar_url in user_settings yet
       avatar_url: '',
       shareToFeed: profile.share_to_feed || false,
       allowRemix: profile.allow_remix || false,
-      onboarding_completed: false, // Not in user_settings
-      tier: 'registered', // Default tier
+      onboarding_completed: false, // Not in user_settings yet
+      tier: userData.tier || 'registered',
       createdAt: profile.updated_at || new Date().toISOString()
     }
 
@@ -123,7 +109,7 @@ exports.handler = async (event) => {
     
     // Return safe defaults instead of 500 to prevent UI crashes
     const fallbackProfile = {
-      id: null,
+      id: null, // This will be fixed by the frontend fallback
       username: '',
       name: '',
       avatar: '',
