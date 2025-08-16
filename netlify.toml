@@ -28,10 +28,6 @@
   node_bundler = "esbuild"
   external_node_modules = ["@neondatabase/serverless"]
 
-# Build optimization
-[[plugins]]
-  package = "@netlify/plugin-lighthouse"
-
 # Cache optimization
 [[headers]]
   for = "/assets/*"
