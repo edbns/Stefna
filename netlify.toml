@@ -26,7 +26,13 @@
 # Function optimization
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["@neondatabase/serverless"]
+  external_node_modules = [
+    "@neondatabase/serverless",
+    "jsonwebtoken",
+    "jose",
+    "cloudinary",
+    "resend"
+  ]
 
 # Cache optimization
 [[headers]]
