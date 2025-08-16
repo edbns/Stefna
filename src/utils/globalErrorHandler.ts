@@ -2,6 +2,9 @@
 export function setupGlobalErrorHandling() {
   // Global safety net for unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
+    const msg = String(event.reason || '');
+    if (msg.includes('ERR_BLOCKED_BY_CLIENT')) return; // ignore analytics blocks
+    
     console.error('Global unhandledrejection caught:', event.reason);
     
     // Clear any stuck generating states

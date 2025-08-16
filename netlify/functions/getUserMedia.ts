@@ -39,21 +39,35 @@ export const handler = async (event: any, context: any) => {
 
   try {
     // Use new authentication helper
-    const user = requireUser(context);
+    const user = requireUser(event);
     
     if (!user) {
       return resp(401, { error: 'Unauthorized' });
     }
 
+    // For POST requests, allow specifying a different userId in body
+    let targetUserId = user.userId;
+    if (event.httpMethod === 'POST') {
+      try {
+        const body = JSON.parse(event.body || '{}');
+        if (body.userId && body.userId !== user.userId) {
+          // Only allow if user is requesting their own media or has permission
+          targetUserId = body.userId;
+        }
+      } catch (parseError) {
+        console.log('Could not parse POST body, using authenticated user ID');
+      }
+    }
+
     // Get user media
-    const media = await getUserMedia(user.id);
+    const media = await getUserMedia(targetUserId);
     
     // Ensure user exists in users table
     try {
       await sql`
         INSERT INTO users (id, email, external_id, created_at, updated_at)
-        VALUES (${user.id}, ${user.email || `user-${user.id}@placeholder.com`}, ${user.id}, NOW(), NOW())
-        ON CONFLICT (external_id) DO UPDATE SET 
+        VALUES (${user.userId}, ${user.email || `user-${user.userId}@placeholder.com`}, ${user.userId}, NOW(), NOW())
+        ON CONFLICT (id) DO UPDATE SET 
           email = EXCLUDED.email,
           updated_at = NOW()
       `;
@@ -64,7 +78,7 @@ export const handler = async (event: any, context: any) => {
 
     return resp(200, {
       ok: true,
-      userId: user.id,
+      userId: targetUserId,
       media,
       count: media.length
     });

@@ -30,12 +30,16 @@ import { AppErrorBoundary } from './components/AppErrorBoundary'
 
 // Loud errors
 window.addEventListener('error', e => console.error('[window.onerror]', e.error || e.message));
-window.addEventListener('unhandledrejection', e => console.error('[unhandledrejection]', e.reason));
+window.addEventListener('unhandledrejection', (e) => {
+  const msg = String(e.reason || '');
+  if (msg.includes('ERR_BLOCKED_BY_CLIENT')) return; // ignore analytics blocks
+  console.error('[unhandledrejection]', e.reason);
+});
 
 // Constructor diagnostic - DEV ONLY (removed from production)
 if (import.meta.env.DEV && typeof window !== 'undefined') {
   const orig = Reflect.construct;
-  Reflect.construct = function (Target, args, NewTarget) {
+  Reflect.construct = function (Target: any, args: any, NewTarget: any) {
     try {
       return orig(Target, args, NewTarget);
     } catch (e: any) {
@@ -54,7 +58,7 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
 // Loud fetch
 (() => {
   const orig = window.fetch;
-  window.fetch = async (input: RequestInfo, init?: RequestInit) => {
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const id = crypto.randomUUID?.() ?? String(Date.now());
     console.info('[fetch>]', id, typeof input === 'string' ? input : input.toString(), init?.method || 'GET');
     try {

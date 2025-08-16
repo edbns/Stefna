@@ -16,14 +16,18 @@ export async function safeNotificationsFetch(limit: number = 10) {
 }
 
 // Safe RUM collection that ignores ad-blocker noise
-export function safeRum(payload: any) {
-  fetch('https://ingesteer.services-prod.nsvcs.net/rum_collection', { 
-    method: 'POST', 
-    body: JSON.stringify(payload) 
-  }).catch(e => { 
-    if (String(e).includes('ERR_BLOCKED_BY_CLIENT')) return; 
-    console.warn('RUM suppressed', e); 
-  });
+export async function safeRum(payload: any) {
+  try {
+    await fetch('https://ingesteer.services-prod.nsvcs.net/rum_collection', {
+      method: 'POST',
+      mode: 'no-cors',
+      keepalive: true,
+      body: JSON.stringify(payload),
+      headers: { 'content-type': 'application/json' },
+    });
+  } catch (e) {
+    // Ignore adblock failures silently
+  }
 }
 
 // Safe fetch wrapper for any endpoint

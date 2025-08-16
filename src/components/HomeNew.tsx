@@ -322,6 +322,11 @@ const HomeNew: React.FC = () => {
   // Share modal state
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [shareModalMedia, setShareModalMedia] = useState<UserMedia | null>(null)
+  
+  // Safe fallbacks for theme-related state variables
+  const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
+  const [selectedEra, setSelectedEra] = useState<string | null>(null)
+  const [selectedOp, setSelectedOp] = useState<string | null>(null)
 
   // Enhanced dropdown management - close dropdowns automatically
   useEffect(() => {
@@ -873,7 +878,11 @@ const HomeNew: React.FC = () => {
     
     // Handle mode-based generation with new system
     const currentMode = options?.mode || selectedMode;
-    const currentModeOption = options?.modeOption || (selectedTheme || selectedEra || selectedOp);
+    // Safe fallbacks for undefined theme variables
+    const safeTheme = selectedTheme || null;
+    const safeEra = selectedEra || null;
+    const safeOp = selectedOp || null;
+    const currentModeOption = options?.modeOption || (safeTheme || safeEra || safeOp);
     
     if (kind === 'mode' && currentMode && currentModeOption) {
       const resolvedPreset = resolvePresetForMode({
