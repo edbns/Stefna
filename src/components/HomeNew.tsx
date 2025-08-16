@@ -1312,8 +1312,9 @@ const HomeNew: React.FC = () => {
               mediaTypeHint: 'image',
             })
             console.log('✅ saveMedia ok:', saved)
-            // Refresh feed
+            // Refresh both feed and user profile
             setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
+            setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated')), 1000)
           } catch (e:any) {
             console.error('❌ saveMedia failed:', e)
             notifyError({ title: 'Something went wrong', message: e?.message || 'Failed to save media' })
@@ -1629,7 +1630,8 @@ const HomeNew: React.FC = () => {
     
     console.log('🚀 Starting generation with preset:', presetName, 'source:', source.id)
     try {
-      await onPresetClick(presetName, undefined, source.url)
+      // Use selectedFile instead of blob URL to avoid fetch errors
+      await onPresetClick(presetName, selectedFile, undefined)
     } catch (error) {
       console.error('❌ Preset generation failed:', error)
       notifyError({ title: 'Generation failed', message: 'Please try another preset.' })
