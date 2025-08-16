@@ -94,6 +94,24 @@ const ProfileScreen: React.FC = () => {
     }
   }, [])
 
+  // Fallback to localStorage when profile loading fails
+  const fallbackToLocalStorage = () => {
+    const savedProfile = localStorage.getItem('userProfile')
+    if (savedProfile) {
+      try {
+        const parsedProfile = JSON.parse(savedProfile)
+        updateProfile(parsedProfile)
+        
+        // Sync preview photo with saved avatar
+        if (parsedProfile.avatar && typeof parsedProfile.avatar === 'string') {
+          setPreviewPhoto(parsedProfile.avatar)
+        }
+      } catch (error) {
+        console.error('Failed to load profile data from localStorage:', error)
+      }
+    }
+  };
+
   // Load profile data from database and localStorage
   const loadProfileFromDatabase = async () => {
     try {
@@ -138,21 +156,41 @@ const ProfileScreen: React.FC = () => {
         // Also update localStorage for consistency and offline access
         localStorage.setItem('userProfile', JSON.stringify(profileData))
       } else {
-        console.warn('⚠️ Failed to load profile from database, falling back to localStorage')
-        // Fallback to localStorage if database fails
-        const savedProfile = localStorage.getItem('userProfile')
-        if (savedProfile) {
-          try {
-            const parsedProfile = JSON.parse(savedProfile)
-            updateProfile(parsedProfile)
+        console.warn('⚠️ Failed to load profile from database, falling back to JWT token parsing')
+        
+        // Frontend safety net: parse JWT client-side to grab user ID
+        try {
+          const token = authService.getToken();
+          if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1] || ''));
+            const ownerId = payload.sub || payload.user_id || payload.userId || payload.uid || payload.id;
             
-            // Sync preview photo with saved avatar
-            if (parsedProfile.avatar && typeof parsedProfile.avatar === 'string') {
-              setPreviewPhoto(parsedProfile.avatar)
+            if (ownerId) {
+              console.log('✅ Extracted user ID from JWT token:', ownerId);
+              setCurrentUserId(ownerId);
+              
+              // Create a minimal profile from JWT data
+              const fallbackProfile = {
+                name: payload.name || payload.username || `user-${ownerId.slice(-6)}`,
+                bio: 'AI artist exploring the boundaries of creativity 🎨',
+                avatar: payload.avatar_url || payload.picture || ''
+              };
+              
+              updateProfile(fallbackProfile);
+              localStorage.setItem('userProfile', JSON.stringify(fallbackProfile));
+              
+              console.log('✅ Created fallback profile from JWT:', fallbackProfile);
+            } else {
+              console.warn('⚠️ JWT token missing user ID, falling back to localStorage');
+              fallbackToLocalStorage();
             }
-          } catch (error) {
-            console.error('Failed to load profile data from localStorage:', error)
+          } else {
+            console.warn('⚠️ No JWT token, falling back to localStorage');
+            fallbackToLocalStorage();
           }
+        } catch (jwtError) {
+          console.error('❌ Failed to parse JWT token:', jwtError);
+          fallbackToLocalStorage();
         }
       }
     } catch (error) {
