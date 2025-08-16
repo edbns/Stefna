@@ -4,6 +4,23 @@
  */
 
 /**
+ * Safely sanitize database URL to prevent connection errors
+ * @param {string} rawUrl - Raw database URL from environment
+ * @returns {string} Cleaned database URL
+ */
+function sanitizeDatabaseUrl(rawUrl) {
+  if (!rawUrl) return '';
+  
+  // Remove psql prefix and quotes if present
+  let cleanUrl = rawUrl.replace(/^psql\s+['"]?/, '').replace(/['"]?$/, '');
+  
+  // Remove -pooler from hostname if present (use direct connection)
+  cleanUrl = cleanUrl.replace(/-pooler\./g, '.');
+  
+  return cleanUrl;
+}
+
+/**
  * Extract and validate user from Netlify context
  * @param {Object} context - Netlify function context
  * @returns {Object|null} User object with id and email, or null if unauthorized
@@ -55,5 +72,6 @@ function handleCORS(event) {
 module.exports = { 
   requireUser, 
   resp, 
-  handleCORS 
+  handleCORS,
+  sanitizeDatabaseUrl
 };

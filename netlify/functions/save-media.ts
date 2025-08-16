@@ -16,7 +16,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import { neon } from '@neondatabase/serverless'
 
 // ---- Auth helper ----
-import { requireUser, resp, handleCORS } from './_auth'
+import { requireUser, resp, handleCORS, sanitizeDatabaseUrl } from './_auth'
 
 // ---- ENV ----
 const {
@@ -33,8 +33,12 @@ cloudinary.config({
   secure: true,
 })
 
-// ---- Database connection ----
-const sql = neon(process.env.NETLIFY_DATABASE_URL!)
+// ---- Database connection with safe URL sanitization ----
+const cleanDbUrl = sanitizeDatabaseUrl(NETLIFY_DATABASE_URL || '');
+if (!cleanDbUrl) {
+  throw new Error('NETLIFY_DATABASE_URL environment variable is required');
+}
+const sql = neon(cleanDbUrl);
 
 type Variation = {
   url: string            // remote HTTPS URL from AIML or temp storage

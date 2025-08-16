@@ -1,9 +1,13 @@
 // netlify/functions/getUserMedia.ts
 import { neon } from '@neondatabase/serverless';
-import { requireUser, resp, handleCORS } from './_auth';
+import { requireUser, resp, handleCORS, sanitizeDatabaseUrl } from './_auth';
 
-// ---- Database connection ----
-const sql = neon(process.env.NETLIFY_DATABASE_URL!)
+// ---- Database connection with safe URL sanitization ----
+const cleanDbUrl = sanitizeDatabaseUrl(process.env.NETLIFY_DATABASE_URL || '');
+if (!cleanDbUrl) {
+  throw new Error('NETLIFY_DATABASE_URL environment variable is required');
+}
+const sql = neon(cleanDbUrl);
 
 // Get user media from new database
 async function getUserMedia(ownerId: string) {
