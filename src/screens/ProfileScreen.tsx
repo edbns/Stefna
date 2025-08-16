@@ -295,13 +295,7 @@ const ProfileScreen: React.FC = () => {
     persistent?: boolean
   }>>([])
 
-  // Caption generation state
-  const [isCaptionOpen, setIsCaptionOpen] = useState(false)
-  const [captionPlatform, setCaptionPlatform] = useState<'instagram' | 'x' | 'tiktok'>('instagram')
-  const [captionStyle, setCaptionStyle] = useState<'casual' | 'professional' | 'trendy' | 'artistic'>('trendy')
-  const [captionOutput, setCaptionOutput] = useState('')
-  const [isCaptionLoading, setIsCaptionLoading] = useState(false)
-  const [selectedMediaForCaption, setSelectedMediaForCaption] = useState<UserMedia | null>(null)
+  
 
   // Media selection state for bulk operations
   const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set())
@@ -997,39 +991,7 @@ const ProfileScreen: React.FC = () => {
     setConfirm({ open: true, media })
   }
 
-  // Caption generation handlers
-  const handleGenerateCaption = (media: UserMedia) => {
-    setSelectedMediaForCaption(media)
-    setIsCaptionOpen(true)
-    setCaptionOutput('')
-  }
 
-  const handleGenerateCaptionContent = async () => {
-    if (!selectedMediaForCaption) return
-    
-    setIsCaptionLoading(true)
-    try {
-      // For now, we'll generate a simple caption based on the media
-      // In the future, this could call an AI service
-      const caption = `Amazing AI-generated ${selectedMediaForCaption.type} created with Stefna! ✨ #AIArt #Stefna #${captionStyle}`
-      setCaptionOutput(caption)
-    } catch (error) {
-      console.error('Error generating caption:', error)
-      setCaptionOutput('Failed to generate caption')
-    } finally {
-      setIsCaptionLoading(false)
-    }
-  }
-
-  const handleCopyCaption = async () => {
-    if (!captionOutput) return
-    try {
-      await navigator.clipboard.writeText(captionOutput)
-      addNotification('Copied', 'Caption copied to clipboard', 'success')
-    } catch (e) {
-      addNotification('Copy failed', 'Unable to copy caption', 'error')
-    }
-  }
 
   // Invite Friends functionality
   const handleSendInvite = async (e: React.FormEvent) => {
@@ -1095,7 +1057,6 @@ const ProfileScreen: React.FC = () => {
     { id: 'all-media', label: 'All Media', icon: Image },
     { id: 'remixed', label: 'Remixes', icon: RemixIcon },
     { id: 'draft', label: 'Drafts', icon: FileText },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'account', label: 'Account', icon: Settings }
   ]
 
@@ -1575,21 +1536,11 @@ const ProfileScreen: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'notifications' && (
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="flex flex-col items-center justify-center h-full">
-              <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
-                <Bell size={48} className="text-white/40" />
-              </div>
-              <p className="text-white/60 text-lg text-center">No notifications yet</p>
-              <p className="text-white/40 text-sm text-center mt-2">Remix notifications will appear here</p>
-            </div>
-          </div>
-        )}
+
 
         {activeTab === 'account' && (
           <div className="flex-1 p-6">
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-4xl mx-auto">
               {/* Account Header */}
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-white mb-2">Account Settings</h2>
@@ -1599,7 +1550,7 @@ const ProfileScreen: React.FC = () => {
               {/* Two Column Layout */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
-                {/* Left Column - AI Generation & Account */}
+                {/* Left Column - Account & Preferences */}
                 <div className="space-y-6">
                   
                   {/* Email & Account Info */}
@@ -1702,116 +1653,52 @@ const ProfileScreen: React.FC = () => {
                       </div>
                     </div>
                   </div>
-
-                  {/* Generation History */}
-                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
-                      <FileText size={20} className="mr-2" />
-                      Generation History
-                    </h3>
-                    
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-white font-medium text-sm">Save Generation History</div>
-                          <div className="text-white/60 text-xs">Keep track of all your AI generations</div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            // TODO: Implement generation history toggle
-                            notifyError({ title: 'Coming Soon', message: 'Generation history settings will be available soon' })
-                          }}
-                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
-                        >
-                          <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
-                        </button>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-white font-medium text-sm">Auto-save Prompts</div>
-                          <div className="text-white/60 text-xs">Save prompts for future reference</div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            // TODO: Implement prompt saving toggle
-                            notifyError({ title: 'Coming Soon', message: 'Prompt saving settings will be available soon' })
-                          }}
-                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
-                        >
-                          <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
-                {/* Right Column - Notifications & Data */}
+                {/* Right Column - Security & Actions */}
                 <div className="space-y-6">
                   
-                  {/* AI Generation Notifications */}
+                  {/* Account Security */}
                   <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
                     <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
-                      <Bell size={20} className="mr-2" />
-                      Generation Notifications
+                      <Shield size={20} className="mr-2" />
+                      Account Security
                     </h3>
                     
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-white font-medium text-sm">Generation Complete</div>
-                          <div className="text-white/60 text-xs">Notify when AI generation finishes</div>
+                          <div className="text-white font-medium text-sm">Two-Factor Authentication</div>
+                          <div className="text-white/60 text-xs">Secure your account with OTP verification</div>
                         </div>
-                        <button
-                          onClick={() => {
-                            // TODO: Implement notification toggle
-                            notifyError({ title: 'Coming Soon', message: 'Notification preferences will be available soon' })
-                          }}
-                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
-                        >
-                          <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
-                        </button>
+                        <div className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">
+                          Enabled
+                        </div>
                       </div>
                       
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-white font-medium text-sm">Token Usage Alerts</div>
-                          <div className="text-white/60 text-xs">Get notified when running low on tokens</div>
+                          <div className="text-white font-medium text-sm">Session Management</div>
+                          <div className="text-white/60 text-xs">Manage active login sessions</div>
                         </div>
                         <button
                           onClick={() => {
-                            // TODO: Implement notification toggle
-                            notifyError({ title: 'Coming Soon', message: 'Notification preferences will be available soon' })
+                            authService.logout()
+                            navigate('/')
                           }}
-                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
+                          className="bg-white/10 text-white text-sm px-3 py-1 rounded-lg hover:bg-white/20 transition-colors"
                         >
-                          <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
-                        </button>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-white font-medium text-sm">Weekly Generation Summary</div>
-                          <div className="text-white/60 text-xs">Receive weekly summary of your AI activity</div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            // TODO: Implement notification toggle
-                            notifyError({ title: 'Coming Soon', message: 'Notification preferences will be available soon' })
-                          }}
-                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-white/20 hover:bg-white/30"
-                        >
-                          <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
+                          Logout
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  {/* Data & Export */}
+                  {/* Data Management */}
                   <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
                     <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
                       <FileText size={20} className="mr-2" />
-                      Data & Export
+                      Data Management
                     </h3>
                     
                     <div className="space-y-4">
@@ -2214,49 +2101,7 @@ const ProfileScreen: React.FC = () => {
 
       
 
-      {/* Caption Modal */}
-      {isCaptionOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-[#222222] border border-white/20 rounded-2xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-white font-medium text-lg">Generate Caption</div>
-              <button onClick={() => setIsCaptionOpen(false)} className="text-white/60 hover:text-white transition-colors">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <div className="text-white/70 text-sm mb-2">Platform</div>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['instagram','x','tiktok'] as const).map(p => (
-                    <button key={p} onClick={() => setCaptionPlatform(p)} className={`px-3 py-2 rounded-lg text-sm border transition-colors ${captionPlatform===p? 'border-white/40 text-white bg-white/10':'border-white/20 text-white/80 hover:text-white hover:bg-white/5'}`}>{p}</button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div className="text-white/70 text-sm mb-2">Style</div>
-                <div className="grid grid-cols-4 gap-2">
-                  {(['trendy','casual','professional','artistic'] as const).map(s => (
-                    <button key={s} onClick={() => setCaptionStyle(s)} className={`px-2 py-2 rounded-lg text-xs border transition-colors ${captionStyle===s? 'border-white/40 text-white bg-white/10':'border-white/20 text-white/80 hover:text-white hover:bg-white/5'}`}>{s}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <button onClick={handleGenerateCaptionContent} className="px-4 py-2 rounded-lg bg-white text-black text-sm font-medium disabled:opacity-50 transition-colors" disabled={isCaptionLoading}>
-                  {isCaptionLoading? 'Generating…' : 'Generate'}
-                </button>
-                <button onClick={handleCopyCaption} className="px-4 py-2 rounded-lg border border-white/20 text-white text-sm disabled:opacity-50 hover:bg-white/5 transition-colors" disabled={!captionOutput}>
-                  Copy
-                </button>
-              </div>
-              <div>
-                <textarea value={captionOutput} onChange={(e)=>setCaptionOutput(e.target.value)} placeholder="Your caption will appear here" className="w-full h-28 p-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/40 resize-none text-sm focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors" />
-                <div className="text-white/50 text-xs mt-2">Includes #AiAsABrush automatically</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
 
 
     </div>
