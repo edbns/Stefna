@@ -41,10 +41,42 @@ async function callAimlApiMini(payload: any) {
   }
 }
 
-// Simple feed refresh
-async function refreshFeed() {
-  // Dispatch event to refresh UI
-  window.dispatchEvent(new CustomEvent('refreshFeed'))
+// Clear composer state function
+function clearComposerState() {
+  // Clear file input so same file can be chosen again
+  const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+  if (fileInput) {
+    fileInput.value = ''
+    // Force remount if needed
+    fileInput.setAttribute('key', String(Date.now()))
+  }
+  
+  // Clean up global state
+  window.__lastSelectedFile = undefined
+  
+  // Dispatch event to clear composer state
+  window.dispatchEvent(new CustomEvent('clear-composer-state'))
+  
+  console.log('🧹 MoodMorph: Composer state cleared')
+}
+
+// Define types for variations
+interface MoodVariation {
+  url: string;
+  mood: string;
+  prompt: string;
+  negative_prompt: string;
+  strength: number;
+  seed: number;
+  meta: {
+    mood: string;
+    runId: string;
+    presetId: string;
+    group: string;
+    variation_index: number;
+    url_index: number;
+    fallback: boolean;
+  };
 }
 
 export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
@@ -83,7 +115,7 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
     console.log('📊 MoodMorph: Processing results...')
     const ok = []
     const failed = []
-    const allVariations = []
+    const allVariations: MoodVariation[] = []
     
     for (let i = 0; i < results.length; i++) {
       const result = results[i]
@@ -99,165 +131,153 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
           console.error(`❌ MoodMorph: No valid URLs in result for ${mood.id}:`, result.value);
           continue;
         }
-        
-        // Collect all variations for batch saving
-        for (const imageUrl of normalizedUrls) {
+
+        // Add each variation with proper metadata
+        normalizedUrls.forEach((url, urlIndex) => {
           allVariations.push({
-            url: imageUrl,
-            type: 'image',
-            is_public: false,
-            meta: { mood: mood.id, group: runId }
-          });
-        }
+            url,
+            mood: mood.id,
+            prompt: mood.prompt || '',
+            negative_prompt: mood.negative || '',
+            strength: mood.strength || 0.65,
+            seed: mood.seed || 1000,
+            meta: {
+              mood: mood.id,
+              runId,
+              presetId: 'moodmorph',
+              group: runId,
+              variation_index: i,
+              url_index: urlIndex,
+              fallback: false
+            }
+          })
+        })
       } else {
         console.error(`❌ MoodMorph: Mood ${i + 1} (${mood.id}) failed:`, result.reason)
         failed.push({ mood: mood.id, error: result.reason })
       }
     }
 
-    if (!ok.length) {
-      console.error('❌ MoodMorph: All mood generations failed!')
-      console.error('❌ MoodMorph: Failed attempts:', failed)
-      throw new Error(`All mood generations failed. Failed attempts: ${failed.map(f => f.mood).join(', ')}`)
+    if (ok.length === 0) {
+      throw new Error('All mood generations failed')
     }
-    
-    console.log(`🎉 MoodMorph: ${ok.length}/3 variants generated successfully`)
-    
-    // 4) Save all variations in a single batch request
-    if (allVariations.length > 0) {
-      try {
-        console.log(`📦 MoodMorph: Saving ${allVariations.length} variations in batch...`);
 
-        // Prepare variations for batch endpoint
-        const variations = allVariations.map((variation, index) => ({
-          image_url: variation.url,
-          media_type: 'image',
-          prompt: MOODS[index]?.prompt || `MoodMorph ${MOODS[index]?.label || 'variation'}`,
-          cloudinary_public_id: null,
-          source_public_id: secureUrl,
-          meta: {
-            mood: MOODS[index]?.id || 'unknown',
-            runId,
-            presetId: 'moodmorph',
-            group: runId,
-            variation_index: index
+    console.log(`🎉 MoodMorph: ${ok.length}/${MOODS.length} variants generated successfully`)
+    
+    // 4) Save all variations in batch
+    console.log('📦 MoodMorph: Saving variations in batch...')
+    try {
+      const batchResponse = await fetchWithAuth('/.netlify/functions/save-media-batch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': runId
+        },
+        body: JSON.stringify({
+          runId,
+          variations: allVariations.map(v => ({
+            image_url: v.url,
+            media_type: 'image',
+            prompt: v.prompt,
+            meta: v.meta
+          })),
+          source: {
+            public_id: secureUrl.split('/').pop()?.split('.')[0] || 'unknown',
+            url: secureUrl
           }
-        }));
+        })
+      })
 
-        const response = await fetchWithAuth('/.netlify/functions/save-media-batch', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Idempotency-Key': runId // prevents double-saves on retries
-          },
-          body: JSON.stringify({ 
-            runId, 
-            variations 
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`save-media-batch failed: ${response.status} ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        if (result.ok && result.count > 0) {
-          console.log(`✅ MoodMorph: Saved ${result.count} variations:`, result);
-          
-          // Only refresh when we actually saved something
-          window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-            detail: { count: result.count, runId } 
-          }));
-          
-          // Show success toast
-          window.dispatchEvent(new CustomEvent('generation-success', {
-            detail: { message: `Saved ${result.count} MoodMorph variations`, timestamp: Date.now() }
-          }));
-        } else {
-          throw new Error(result?.message || 'Batch save failed');
-        }
-      } catch (error) {
-        console.warn(`⚠️ MoodMorph: Batch save failed, falling back to individual saves:`, error);
+      if (batchResponse.ok) {
+        const batchData = await batchResponse.json()
+        console.log('✅ MoodMorph: Batch save successful:', batchData)
         
-        // Fallback: save each variation individually
-        try {
-          let savedCount = 0;
-          for (const variation of allVariations) {
-            const index = allVariations.indexOf(variation);
-            const mood = MOODS[index]?.id || 'unknown';
-            
-            // Use individual save-media with idempotency key
-            const fallbackResponse = await fetchWithAuth('/.netlify/functions/save-media', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Idempotency-Key': `${runId}:${mood}` // unique per variation
+        // Only refresh feed AFTER successful save
+        window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+          detail: { count: allVariations.length, runId, fallback: false } 
+        }))
+        
+        // Show success toast
+        window.dispatchEvent(new CustomEvent('generation-success', {
+          detail: { message: `Saved ${allVariations.length} MoodMorph variations!`, timestamp: Date.now() }
+        }))
+      } else {
+        throw new Error(`Batch save failed: ${batchResponse.status}`)
+      }
+    } catch (error) {
+      console.warn(`⚠️ MoodMorph: Batch save failed, falling back to individual saves:`, error);
+      
+      // Fallback: save each variation individually
+      try {
+        let savedCount = 0;
+        for (const variation of allVariations) {
+          const index = allVariations.indexOf(variation);
+          const mood = MOODS[index]?.id || 'unknown';
+          
+          // Use individual save-media with idempotency key
+          const fallbackResponse = await fetchWithAuth('/.netlify/functions/save-media', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Idempotency-Key': `${runId}:${mood}` // unique per variation
+            },
+            body: JSON.stringify({
+              url: variation.url,
+              type: 'image',
+              prompt: MOODS[index]?.prompt || `MoodMorph ${mood}`,
+              meta: {
+                mood,
+                runId,
+                presetId: 'moodmorph',
+                group: runId,
+                variation_index: index,
+                fallback: true
               },
-              body: JSON.stringify({
-                url: variation.url,
-                type: 'image',
-                prompt: MOODS[index]?.prompt || `MoodMorph ${mood}`,
-                meta: {
-                  mood,
-                  runId,
-                  presetId: 'moodmorph',
-                  group: runId,
-                  variation_index: index,
-                  fallback: true
-                },
-                allowPublish: false
-              })
-            });
+              allowPublish: false
+            })
+          });
 
-            if (fallbackResponse.ok) {
-              savedCount++;
-              console.log(`✅ MoodMorph: Fallback saved variation ${index + 1} (${mood})`);
-            } else {
-              console.warn(`⚠️ MoodMorph: Fallback failed for variation ${index + 1}:`, fallbackResponse.status);
-            }
-
-            // Small delay between saves to avoid overwhelming the server
-            await new Promise(resolve => setTimeout(resolve, 150));
-          }
-
-          if (savedCount > 0) {
-            console.log(`✅ MoodMorph: Fallback saved ${savedCount}/${allVariations.length} variations`);
-            
-            // Refresh UI with what we saved
-            window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-              detail: { count: savedCount, runId, fallback: true } 
-            }));
-            
-            // Show fallback success toast
-            window.dispatchEvent(new CustomEvent('generation-success', {
-              detail: { message: `Saved ${savedCount} variations (fallback mode)`, timestamp: Date.now() }
-            }));
+          if (fallbackResponse.ok) {
+            savedCount++;
+            console.log(`✅ MoodMorph: Fallback saved variation ${index + 1} (${mood})`);
           } else {
-            throw new Error('All fallback saves failed');
+            console.warn(`⚠️ MoodMorph: Fallback failed for variation ${index + 1}:`, fallbackResponse.status);
           }
-        } catch (fallbackError) {
-          console.error(`❌ MoodMorph: Fallback saves also failed:`, fallbackError);
-          throw new Error(`Failed to save MoodMorph variations (batch and fallback failed): ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
+
+          // Small delay between saves to avoid overwhelming the server
+          await new Promise(resolve => setTimeout(resolve, 150));
         }
+
+        if (savedCount > 0) {
+          console.log(`✅ MoodMorph: Fallback saved ${savedCount}/${allVariations.length} variations`);
+          
+          // Only refresh UI AFTER successful save
+          window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+            detail: { count: savedCount, runId, fallback: true } 
+          }))
+          
+          // Show fallback success toast
+          window.dispatchEvent(new CustomEvent('generation-success', {
+            detail: { message: `Saved ${savedCount} variations (fallback mode)`, timestamp: Date.now() }
+          }))
+        } else {
+          throw new Error('All fallback saves failed');
+        }
+      } catch (fallbackError) {
+        console.error(`❌ MoodMorph: Fallback saves also failed:`, fallbackError);
+        throw new Error(`Failed to save MoodMorph variations (batch and fallback failed): ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
       }
     }
-    
-    // Refresh both the public feed and the user's profile
-    await refreshFeed()
-    
-    // Dispatch event to refresh user's profile/media list
-    window.dispatchEvent(new CustomEvent('userMediaUpdated'))
-    
-    // Also refresh the public feed directly
-    window.dispatchEvent(new CustomEvent('refreshFeed'))
-    
-    // Dispatch a specific event to refresh user's media list
-    window.dispatchEvent(new CustomEvent('refreshUserMedia'))
 
   } catch (e: any) {
     console.error('💥 MoodMorph: Critical error:', e)
     console.error('💥 MoodMorph: Error message:', e?.message)
     console.error('💥 MoodMorph: Error stack:', e?.stack)
+    
+    // Show error toast
+    window.dispatchEvent(new CustomEvent('generation-error', {
+      detail: { message: `MoodMorph failed: ${e?.message || 'Unknown error'}`, timestamp: Date.now() }
+    }))
     
     // Re-throw with more context
     if (e.message.includes('All mood generations failed')) {
@@ -266,13 +286,8 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
       throw new Error(`MoodMorph failed: ${e?.message || 'Unknown error'}`)
     }
   } finally {
-    // make uploader reusable without page refresh
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-    if (fileInput) fileInput.value = ''
-    
-    // Clean up global state
-    window.__lastSelectedFile = undefined
-    
+    // ALWAYS clear composer state regardless of success/failure
+    clearComposerState()
     console.log('🧹 MoodMorph: Cleanup completed')
   }
 }
