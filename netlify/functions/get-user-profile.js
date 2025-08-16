@@ -1,42 +1,57 @@
-const { createClient } = require('@supabase/supabase-js')
-const { verifyAuth } = require('./_auth')
+const { neon } = require('@neondatabase/serverless')
+const { requireJWTUser, resp, handleCORS } = require('./_auth')
 
 exports.handler = async (event) => {
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
+
   try {
     if (event.httpMethod !== 'GET') {
-      return { statusCode: 405, body: 'Method Not Allowed' }
+      return resp(405, { error: 'Method Not Allowed' })
     }
 
-    const { userId } = verifyAuth(event)
-    if (!userId) {
-      return { statusCode: 401, body: JSON.stringify({ error: 'Authentication required' }) }
+    // Auth check using JWT
+    const user = requireJWTUser(event)
+    if (!user) {
+      return resp(401, { error: 'Unauthorized - Invalid or missing JWT token' })
     }
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
+    // Connect to Neon database
+    const sql = neon(process.env.NETLIFY_DATABASE_URL)
 
-    console.log(`📥 Getting user profile for: ${userId}`)
+    console.log(`📥 Getting user profile for: ${user.userId}`)
 
     // First verify user exists in users table
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, name, email, tier')
-      .eq('id', userId)
-      .single()
-
-    if (userError) {
-      console.error('❌ User not found in users table:', userError)
-      return { statusCode: 401, body: JSON.stringify({ error: 'User not found' }) }
+    let userData;
+    try {
+      const userResult = await sql`
+        SELECT id, name, email, tier FROM users WHERE id = ${user.userId}
+      `
+      if (!userResult || userResult.length === 0) {
+        console.error('❌ User not found in users table')
+        return resp(401, { error: 'User not found' })
+      }
+      userData = userResult[0]
+    } catch (userError) {
+      console.error('❌ Error checking user:', userError)
+      return resp(401, { error: 'User not found' })
     }
 
     // Get profile data (may not exist yet)
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('id, username, avatar_url, share_to_feed, allow_remix, onboarding_completed, created_at, updated_at')
-      .eq('id', userId)
-      .single()
+    let profile;
+    try {
+      const profileResult = await sql`
+        SELECT id, username, share_to_feed, allow_remix, updated_at
+        FROM user_settings 
+        WHERE user_id = ${user.userId}
+      `
+      if (profileResult && profileResult.length > 0) {
+        profile = profileResult[0]
+      }
+    } catch (profileError) {
+      console.log('Profile not found, will use defaults')
+    }
 
     // If profile doesn't exist (PGRST116), return safe defaults instead of 500
     if (error && error.code === 'PGRST116') {
@@ -90,22 +105,18 @@ exports.handler = async (event) => {
       id: profile.id,
       username: profile.username || '',
       name: profile.username || '', // Keep for backward compatibility
-      avatar: profile.avatar_url || '',
-      avatar_url: profile.avatar_url || '',
+      avatar: '', // No avatar_url in user_settings
+      avatar_url: '',
       shareToFeed: profile.share_to_feed || false,
       allowRemix: profile.allow_remix || false,
-      onboarding_completed: profile.onboarding_completed || false,
+      onboarding_completed: false, // Not in user_settings
       tier: 'registered', // Default tier
-      createdAt: profile.created_at
+      createdAt: profile.updated_at || new Date().toISOString()
     }
 
-    console.log(`✅ Retrieved profile for user ${userId}:`, profileData)
+    console.log(`✅ Retrieved profile for user ${user.userId}:`, profileData)
 
-    return {
-      statusCode: 200,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(profileData)
-    }
+    return resp(200, profileData)
 
   } catch (e) {
     console.error('❌ Get user profile error:', e)
@@ -124,11 +135,7 @@ exports.handler = async (event) => {
       createdAt: new Date().toISOString()
     }
     
-    return { 
-      statusCode: 200, 
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(fallbackProfile)
-    }
+    return resp(200, fallbackProfile)
   }
 }
 

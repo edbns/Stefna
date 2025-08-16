@@ -1,6 +1,6 @@
-const { createClient } = require('@supabase/supabase-js')
+const { neon } = require('@neondatabase/serverless')
 const { v2: cloudinary } = require('cloudinary')
-const { verifyAuth } = require('./_auth')
+const { requireJWTUser, resp, handleCORS } = require('./_auth')
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -10,12 +10,16 @@ cloudinary.config({
 })
 
 exports.handler = async (event) => {
-  try {
-    if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' }
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
 
-    const { userId } = verifyAuth(event)
-    const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
-    if (!isUuid(userId)) return { statusCode: 401, body: JSON.stringify({ error: 'Authentication required' }) }
+  try {
+    if (event.httpMethod !== 'POST') return resp(405, { error: 'Method Not Allowed' })
+
+    // Auth check using JWT
+    const user = requireJWTUser(event)
+    if (!user) return resp(401, { error: 'Unauthorized - Invalid or missing JWT token' })
 
     const body = JSON.parse(event.body || '{}')
     const { id } = body
@@ -55,28 +59,36 @@ exports.handler = async (event) => {
         }
 
         if (deleteSuccess) {
-          return { statusCode: 200, body: JSON.stringify({ ok: true }) }
+          return resp(200, { ok: true })
         } else {
-          return { statusCode: 404, body: JSON.stringify({ error: 'Asset not found in Cloudinary' }) }
+          return resp(404, { error: 'Asset not found in Cloudinary' })
         }
       } catch (e) {
         console.error('[delete-media] NO_DB_MODE error:', e)
-        return { statusCode: 500, body: JSON.stringify({ error: 'Cloudinary deletion failed' }) }
+        return resp(500, { error: 'Cloudinary deletion failed' })
       }
     }
 
-    // DB_MODE: Original Supabase + Cloudinary logic
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+    // DB_MODE: Neon + Cloudinary logic
+    const sql = neon(process.env.NETLIFY_DATABASE_URL)
 
     // Fetch media row to verify ownership and get public_id if present
-    const { data: media, error: fetchErr } = await supabase
-      .from('media_assets')
-      .select('id, user_id, public_id, resource_type')
-      .eq('id', id)
-      .single()
+    let media;
+    try {
+      const mediaResult = await sql`
+        SELECT id, owner_id, public_id, resource_type
+        FROM media_assets 
+        WHERE id = ${id}
+      `
+      if (!mediaResult || mediaResult.length === 0) {
+        return resp(404, { error: 'Not found' })
+      }
+      media = mediaResult[0]
+    } catch (fetchErr) {
+      return resp(404, { error: 'Not found' })
+    }
 
-    if (fetchErr || !media) return { statusCode: 404, body: JSON.stringify({ error: 'Not found' }) }
-    if (media.user_id !== userId) return { statusCode: 403, body: JSON.stringify({ error: 'Forbidden' }) }
+    if (media.owner_id !== user.userId) return resp(403, { error: 'Forbidden' })
 
     // Best-effort Cloudinary delete if we have public_id
     try {
@@ -91,13 +103,16 @@ exports.handler = async (event) => {
     }
 
     // Delete DB row
-    const { error: delErr } = await supabase.from('media_assets').delete().eq('id', id)
-    if (delErr) return { statusCode: 400, body: JSON.stringify({ error: delErr.message }) }
+    try {
+      await sql`DELETE FROM media_assets WHERE id = ${id}`
+    } catch (delErr) {
+      return resp(400, { error: delErr.message || 'Database deletion failed' })
+    }
 
-    return { statusCode: 200, body: JSON.stringify({ ok: true }) }
+    return resp(200, { ok: true })
   } catch (e) {
     console.error('delete-media error:', e)
-    return { statusCode: 500, body: JSON.stringify({ error: 'Internal server error' }) }
+    return resp(500, { error: 'Internal server error' })
   }
 }
 
