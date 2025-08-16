@@ -2,7 +2,7 @@
 // Sends private notifications when media is remixed
 
 import { Handler } from '@netlify/functions';
-import { supabaseAdminAdmin } from '../lib/supabaseAdminAdmin';
+import { neonAdmin } from '../lib/neonAdmin';
 
 interface NotifyRemixPayload {
   parentId: string;
@@ -42,7 +42,7 @@ export const handler: Handler = async (event) => {
     }
 
     // 1. Get the parent media to find the owner
-    const { data: parentMedia, error: parentError } = await supabaseAdmin
+    const { data: parentMedia, error: parentError } = await neonAdmin
       .from('media_assets')
       .select('user_id, remix_count')
       .eq('id', parentId)
@@ -57,7 +57,7 @@ export const handler: Handler = async (event) => {
     }
 
     // 2. Increment remix count (this should also be handled by the database trigger)
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await neonAdmin
       .from('media_assets')
       .update({ remix_count: (parentMedia.remix_count || 0) + 1 })
       .eq('id', parentId);
@@ -68,7 +68,7 @@ export const handler: Handler = async (event) => {
 
     // 3. Check if there's already a recent remix notification for this user today
     const today = new Date().toISOString().split('T')[0];
-    const { data: existingNotifications } = await supabaseAdmin
+    const { data: existingNotifications } = await neonAdmin
       .from('notifications')
       .select('id, metadata')
       .eq('user_id', parentMedia.user_id)
@@ -81,7 +81,7 @@ export const handler: Handler = async (event) => {
       const existingNotification = existingNotifications[0];
       const currentCount = existingNotification.metadata?.count || 1;
       
-      const { error: updateNotificationError } = await supabaseAdmin
+      const { error: updateNotificationError } = await neonAdmin
         .from('notifications')
         .update({
           metadata: {
@@ -112,7 +112,7 @@ export const handler: Handler = async (event) => {
         }
       };
 
-      const { error: insertError } = await supabaseAdmin
+      const { error: insertError } = await neonAdmin
         .from('notifications')
         .insert([notification]);
 

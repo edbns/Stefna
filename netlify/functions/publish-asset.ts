@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import { supabaseAdmin } from '../lib/supabaseAdmin';
+import { neonAdmin } from '../lib/neonAdmin';
 import type { PublishAssetInput, ApiResult } from '../../src/lib/types';
 
 export const handler: Handler = async (event) => {
@@ -7,7 +7,7 @@ export const handler: Handler = async (event) => {
     const input = JSON.parse(event.body || '{}') as PublishAssetInput;
     if (!input.assetId) return resp({ ok: false, error: 'assetId required' });
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await neonAdmin
       .from('assets')
       .update({
         is_public: input.isPublic,

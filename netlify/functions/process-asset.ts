@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import { supabaseAdmin } from '../lib/supabaseAdmin';
+import { neonAdmin } from '../lib/neonAdmin';
 import { cloudinary } from '../lib/cloudinary';
 import type { ProcessAssetPayload, ApiResult } from '../../src/lib/types';
 
@@ -18,14 +18,14 @@ export const handler: Handler = async (event) => {
     }
 
     // Mark processing (optional)
-    await supabaseAdmin
+    await neonAdmin
       .from('assets')
       .update({ status: 'processing' })
       .eq('id', payload.assetId);
 
     const result = await runAIMLTransform(payload);
     if (result.error) {
-      await supabaseAdmin.from('assets').update({ status: 'failed' }).eq('id', payload.assetId);
+      await neonAdmin.from('assets').update({ status: 'failed' }).eq('id', payload.assetId);
       return resp({ ok: false, error: result.error });
     }
 
@@ -55,7 +55,7 @@ export const handler: Handler = async (event) => {
       media_type: payload.mediaType
     });
 
-    const { error: updErr } = await supabaseAdmin
+    const { error: updErr } = await neonAdmin
       .from('assets')
       .update({
         status: 'ready',

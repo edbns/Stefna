@@ -4,8 +4,8 @@ exports.handler = async (event) => {
   try {
     const hasJwtSecret = !!process.env.JWT_SECRET;
     const jwtSecretLength = process.env.JWT_SECRET?.length || 0;
-    const hasSupabaseUrl = !!process.env.SUPABASE_URL;
-    const hasSupabaseKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const hasDatabaseUrl = !!process.env.DATABASE_URL;
+const hasNeonDatabaseUrl = !!process.env.NEON_DATABASE_URL;
     const hasCloudinaryName = !!process.env.CLOUDINARY_CLOUD_NAME;
     const hasCloudinaryKey = !!process.env.CLOUDINARY_API_KEY;
     const hasCloudinarySecret = !!process.env.CLOUDINARY_API_SECRET;
@@ -16,8 +16,8 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         environment: {
           JWT_SECRET: hasJwtSecret ? `set (${jwtSecretLength} chars)` : 'NOT SET',
-          SUPABASE_URL: hasSupabaseUrl ? 'set' : 'NOT SET',
-          SUPABASE_SERVICE_ROLE_KEY: hasSupabaseKey ? 'set' : 'NOT SET',
+              DATABASE_URL: hasDatabaseUrl ? 'set' : 'NOT SET',
+    NEON_DATABASE_URL: hasNeonDatabaseUrl ? 'set' : 'NOT SET',
           CLOUDINARY_CLOUD_NAME: hasCloudinaryName ? 'set' : 'NOT SET',
           CLOUDINARY_API_KEY: hasCloudinaryKey ? 'set' : 'NOT SET',
           CLOUDINARY_API_SECRET: hasCloudinarySecret ? 'set' : 'NOT SET'

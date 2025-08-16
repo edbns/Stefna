@@ -3,9 +3,9 @@ exports.handler = async (event) => {
     const ok = {
       ok: true,
       env: {
-        SUPABASE_URL: !!process.env.SUPABASE_URL,
-        ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
-        SERVICE_ROLE: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+          DATABASE_URL: !!process.env.DATABASE_URL,
+  NEON_DATABASE_URL: !!process.env.NEON_DATABASE_URL,
+  AUTH_JWT_SECRET: !!process.env.AUTH_JWT_SECRET,
         AIML_API_KEY: !!process.env.AIML_API_KEY,
       }
     };

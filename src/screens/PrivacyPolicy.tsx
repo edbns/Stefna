@@ -128,7 +128,7 @@ const PrivacyPolicy: React.FC = () => {
             <section>
               <h2 className="text-xl font-semibold mb-4">Security of Your Personal Data</h2>
               <p>
-                The security of Your Personal Data is important to Us, but remember that no method of transmission over the Internet, or method of electronic storage is 100% secure. While We strive to use commercially acceptable means to protect Your Personal Data, We cannot guarantee its absolute security. All user content and personal information are stored securely using Supabase's managed infrastructure.
+                The security of Your Personal Data is important to Us, but remember that no method of transmission over the Internet, or method of electronic storage is 100% secure. While We strive to use commercially acceptable means to protect Your Personal Data, We cannot guarantee its absolute security. All user content and personal information are stored securely using our managed database infrastructure.
               </p>
             </section>
 

@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import { supabaseAdmin } from '../lib/supabaseAdmin';
+import { neonAdmin } from '../lib/neonAdmin';
 import type { CreateAssetInput, ApiResult, Asset } from '../../src/lib/types';
 
 function getUserIdFromToken(auth?: string): string | null {
@@ -30,7 +30,7 @@ export const handler: Handler = async (event) => {
 
     const mediaType = (input.mediaType === 'video' || input.mediaType === 'image') ? input.mediaType : 'image';
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await neonAdmin
       .from('assets')
       .insert({
         user_id: userId,

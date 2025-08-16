@@ -46,7 +46,7 @@ console.log(`  ${hasDispatchGenerate ? '✅' : '❌'} Centralized generation dis
 
 // Check health.js for simple env checks
 const healthJs = fs.readFileSync('netlify/functions/health.js', 'utf8');
-const hasSimpleHealth = healthJs.includes('SUPABASE_URL: !!process.env.SUPABASE_URL');
+const hasSimpleHealth = healthJs.includes('DATABASE_URL: !!process.env.DATABASE_URL');
 console.log(`  ${hasSimpleHealth ? '✅' : '❌'} Simple health endpoint`);
 
 // Test 3: Check package.json for netlify:dev script
