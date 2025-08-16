@@ -202,7 +202,11 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
           detail: { message: `Saved ${allVariations.length} MoodMorph variations!`, timestamp: Date.now() }
         }))
       } else {
-        throw new Error(`Batch save failed: ${batchResponse.status}`)
+        // Log the actual error response content
+        const errorText = await batchResponse.text();
+        console.error('❌ MoodMorph: Batch save failed with status:', batchResponse.status);
+        console.error('❌ MoodMorph: Error response:', errorText);
+        throw new Error(`Batch save failed: ${batchResponse.status} - ${errorText}`);
       }
     } catch (error) {
       console.warn(`⚠️ MoodMorph: Batch save failed, falling back to individual saves:`, error);
@@ -241,7 +245,10 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
             savedCount++;
             console.log(`✅ MoodMorph: Fallback saved variation ${index + 1} (${mood})`);
           } else {
-            console.warn(`⚠️ MoodMorph: Fallback failed for variation ${index + 1}:`, fallbackResponse.status);
+            // Log the actual error response content
+            const errorText = await fallbackResponse.text();
+            console.error(`❌ MoodMorph: Fallback failed for variation ${index + 1}:`, fallbackResponse.status);
+            console.error(`❌ MoodMorph: Error response:`, errorText);
           }
 
           // Small delay between saves to avoid overwhelming the server

@@ -124,17 +124,18 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
     }
 
     // Atomic transaction: batch insert + credit deduction
-    const results = await sql.begin(async (tx) => {
+    // For Neon, we'll use individual queries with error handling
+    try {
       // ensure a batch row (for grouping + idempotency)
       const batchId = randomUUID();
-      await tx`
+      await sql`
         INSERT INTO media_batches (batch_id, user_id, run_id, idempotency_key, created_at)
         VALUES (${batchId}, ${user.id}, ${runId}, ${idempotencyKey || null}, NOW())
       `;
 
       // credits: require N credits atomically
       const need = toInsert.length;
-      const q = await tx`
+      const q = await sql`
         UPDATE credits_ledger 
         SET amount = amount - ${need}
         WHERE user_id = ${user.id} AND amount >= ${need}
@@ -149,7 +150,7 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
         const mediaType = v.media_type || 'image'; // defensive default
         const itemIdempotencyKey = `${runId}:${v.meta?.mood || v.meta?.variation_index || Math.random().toString(36).substr(2, 9)}`;
         
-        const row = await tx`
+        const row = await sql`
           INSERT INTO media (id, batch_id, user_id, run_id, url, idempotency_key,
                              media_type, cloudinary_public_id, final_url,
                              prompt, is_public, source_public_id, meta, created_at)
@@ -160,16 +161,20 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
         `;
         items.push(row[0]);
       }
-      return { batchId, items };
-    });
-
-    console.log(`✅ Batch save completed: ${results.items.length} variations for user ${user.id}, run ${runId}`);
-
-    return { 
-      statusCode: 200, 
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ ok: true, count: results.items.length, items: results.items }) 
-    };
+      
+      const results = { batchId, items };
+      console.log(`✅ Batch save completed: ${results.items.length} variations for user ${user.id}, run ${runId}`);
+      
+      return { 
+        statusCode: 200, 
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ ok: true, count: results.items.length, items: results.items }) 
+      };
+      
+    } catch (transactionError: any) {
+      console.error('❌ Transaction failed:', transactionError);
+      throw new Error(`Transaction failed: ${transactionError.message}`);
+    }
   } catch (e: any) {
     const code = e?.status || (String(e?.message || '').includes('credits') ? 402 : 500);
     console.error('save-media-batch error', e);
