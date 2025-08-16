@@ -1529,9 +1529,7 @@ const ProfileScreen: React.FC = () => {
                             Change
                           </button>
                         </div>
-                        <p className="text-xs text-white/50 mt-2">
-                          Use the auth page to change your email for OTP verification
-                        </p>
+
                       </div>
                     </div>
                   </div>
@@ -1674,13 +1672,13 @@ const ProfileScreen: React.FC = () => {
                   </div>
 
                   {/* Danger Zone */}
-                  <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-red-400 mb-4 flex items-center">
+                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                       <Shield size={20} className="mr-2" />
                       Danger Zone
                     </h3>
                     
-                    <p className="text-red-300/80 text-sm mb-4">
+                    <p className="text-white/60 text-sm mb-4">
                       These actions cannot be undone. Your account and all AI media will be permanently deleted.
                     </p>
                     
