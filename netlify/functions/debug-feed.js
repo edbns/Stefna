@@ -1,62 +1,76 @@
-const { createClient } = require('@supabase/supabase-js')
+const { neon } = require('@neondatabase/serverless')
+const { requireJWTUser, resp, handleCORS } = require('./_auth')
 
 exports.handler = async (event) => {
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
+
   try {
     if (event.httpMethod !== 'GET') {
-      return { statusCode: 405, body: 'Method Not Allowed' }
+      return resp(405, { error: 'Method Not Allowed' })
     }
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
+    // ---- Auth check using JWT ----
+    const user = requireJWTUser(event)
+    if (!user) {
+      return resp(401, { error: 'Unauthorized - Invalid or missing JWT token' })
+    }
+
+    const sql = neon(process.env.DATABASE_URL)
 
     console.log('🔍 Debug: Checking media_assets table...')
 
     // Check total count
-    const { count: totalCount, error: countError } = await supabase
-      .from('media_assets')
-      .select('*', { count: 'exact', head: true })
-
-    if (countError) {
+    let totalCount = 0;
+    try {
+      const countResult = await sql`SELECT COUNT(*) as count FROM media_assets`
+      totalCount = parseInt(countResult[0]?.count || 0)
+    } catch (countError) {
       console.error('❌ Count error:', countError)
-      return { statusCode: 500, body: JSON.stringify({ error: countError.message }) }
+      return resp(500, { error: countError.message })
     }
 
     // Check by visibility
-    const { data: publicMedia, error: publicError } = await supabase
-      .from('media_assets')
-      .select('id,visibility,env,created_at,user_id')
-      .eq('visibility', 'public')
-      .limit(10)
-
-    if (publicError) {
+    let publicMedia = [];
+    try {
+      publicMedia = await sql`
+        SELECT id, visibility, env, created_at, owner_id as user_id
+        FROM media_assets 
+        WHERE visibility = 'public' 
+        LIMIT 10
+      `
+    } catch (publicError) {
       console.error('❌ Public media error:', publicError)
-      return { statusCode: 500, body: JSON.stringify({ error: publicError.message }) }
+      return resp(500, { error: publicError.message })
     }
 
     // Check by environment
-    const { data: prodMedia, error: prodError } = await supabase
-      .from('media_assets')
-      .select('id,visibility,env,created_at,user_id')
-      .eq('env', 'prod')
-      .limit(10)
-
-    if (prodError) {
+    let prodMedia = [];
+    try {
+      prodMedia = await sql`
+        SELECT id, visibility, env, created_at, owner_id as user_id
+        FROM media_assets 
+        WHERE env = 'production' 
+        LIMIT 10
+      `
+    } catch (prodError) {
       console.error('❌ Prod media error:', prodError)
-      return { statusCode: 500, body: JSON.stringify({ error: prodError.message }) }
+      return resp(500, { error: prodError.message })
     }
 
     // Check your specific media (if you provide user_id)
-    const { data: userMedia, error: userError } = await supabase
-      .from('media_assets')
-      .select('id,visibility,env,created_at,user_id,prompt')
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    if (userError) {
+    let userMedia = [];
+    try {
+      userMedia = await sql`
+        SELECT id, visibility, env, created_at, owner_id as user_id, meta->>'prompt' as prompt
+        FROM media_assets 
+        ORDER BY created_at DESC 
+        LIMIT 20
+      `
+    } catch (userError) {
       console.error('❌ User media error:', userError)
-      return { statusCode: 500, body: JSON.stringify({ error: userError.message }) }
+      return resp(500, { error: userError.message })
     }
 
     const debugInfo = {
@@ -74,18 +88,11 @@ exports.handler = async (event) => {
 
     console.log('🔍 Debug info:', debugInfo)
 
-    return {
-      statusCode: 200,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(debugInfo)
-    }
+    return resp(200, debugInfo)
 
   } catch (e) {
     console.error('❌ Debug function error:', e)
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ error: e?.message || 'Debug function crashed' }) 
-    }
+    return resp(500, { error: e?.message || 'Debug function crashed' })
   }
 }
 
