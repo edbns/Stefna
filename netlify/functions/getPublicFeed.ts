@@ -10,7 +10,7 @@ export const handler: Handler = async (event) => {
     const url = new URL(event.rawUrl);
     const limit = Number(url.searchParams.get('limit') ?? 50);
 
-    // Get public media from database
+    // Get public media from database using compatibility views
     const media = await sql`
       SELECT 
         ma.id,
@@ -20,14 +20,14 @@ export const handler: Handler = async (event) => {
         u.tier AS user_tier,
         ma.url,
         ma.public_id AS cloudinary_public_id,
-        ma.resource_type,
+        ma.type AS resource_type,
         ma.prompt,
         ma.created_at AS published_at,
-        ma.visibility,
+        ma.is_public AS visibility,
         ma.allow_remix
-      FROM media_assets ma
-      LEFT JOIN users u ON ma.user_id = u.id
-      WHERE ma.visibility = 'public'
+      FROM app_media ma
+      LEFT JOIN app_users u ON ma.user_id = u.id
+      WHERE ma.is_public = true
       ORDER BY ma.created_at DESC
       LIMIT ${limit}
     `;

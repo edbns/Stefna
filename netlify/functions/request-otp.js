@@ -1,4 +1,4 @@
-const { createClient } = require('@supabase/supabase-js');
+const { neon } = require('@neondatabase/serverless');
 const { Resend } = require('resend');
 
 exports.handler = async (event, context) => {
@@ -45,17 +45,14 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Connect to Supabase
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
+    // Connect to Neon database
+    const databaseUrl = process.env.NETLIFY_DATABASE_URL;
     console.log('=== ENVIRONMENT VARIABLES ===');
-    console.log('SUPABASE_URL:', supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'UNDEFINED');
-    console.log('SUPABASE_SERVICE_ROLE_KEY:', supabaseKey ? 'LOADED' : 'MISSING');
+    console.log('NETLIFY_DATABASE_URL:', databaseUrl ? 'LOADED' : 'MISSING');
     console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'LOADED' : 'MISSING');
     
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing Supabase environment variables');
+    if (!databaseUrl) {
+      console.error('Missing Neon database environment variable');
       return {
         statusCode: 500,
         headers: {
@@ -66,9 +63,9 @@ exports.handler = async (event, context) => {
       };
     }
     
-    console.log('=== CREATING SUPABASE CLIENT ===');
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    console.log('Supabase client:', supabase ? 'CREATED' : 'FAILED TO CREATE');
+    console.log('=== CREATING NEON CLIENT ===');
+    const sql = neon(databaseUrl);
+    console.log('Neon client:', sql ? 'CREATED' : 'FAILED TO CREATE');
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -78,53 +75,60 @@ exports.handler = async (event, context) => {
     console.log('OTP:', otp);
     console.log('Expires at:', expiresAt.toISOString());
 
-    // Test Supabase connection first
-    console.log('=== TESTING SUPABASE CONNECTION ===');
-    const { data: testData, error: testError } = await supabase
-      .from('user_otps')
-      .select('count')
-      .limit(1);
+    // Check if user exists in Neon database
+    console.log('=== CHECKING USER EXISTS ===');
+    const existingUser = await sql`
+      SELECT id, email FROM app_users WHERE email = ${email.toLowerCase()}
+    `;
     
-    console.log('Test query result:', { data: testData, error: testError });
+    if (existingUser.length === 0) {
+      // Create user if they don't exist
+      console.log('=== CREATING NEW USER ===');
+      const newUser = await sql`
+        INSERT INTO users (id, email, external_id, created_at, updated_at)
+        VALUES (gen_random_uuid(), ${email.toLowerCase()}, ${email.toLowerCase()}, NOW(), NOW())
+        RETURNING id, email
+      `;
+      console.log('New user created:', newUser[0]);
+    } else {
+      console.log('User exists:', existingUser[0]);
+    }
 
-    // Save OTP to database
+    // Save OTP to database (create simple OTP table if it doesn't exist)
     console.log('=== ATTEMPTING TO INSERT OTP ===');
+    
+    // Create OTP table if it doesn't exist
+    await sql`
+      CREATE TABLE IF NOT EXISTS auth_otps (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        email text NOT NULL,
+        code text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        expires_at timestamptz NOT NULL,
+        used boolean DEFAULT false
+      )
+    `;
+    
+    // Create indexes
+    await sql`
+      CREATE INDEX IF NOT EXISTS auth_otps_email_idx ON auth_otps(email);
+      CREATE INDEX IF NOT EXISTS auth_otps_expires_idx ON auth_otps(expires_at);
+    `;
+    
     const insertData = {
       email: email.toLowerCase(),
-      otp: otp,
-      expires_at: expiresAt.toISOString(),
-      used: false
+      code: otp,
+      expires_at: expiresAt.toISOString()
     };
     console.log('Insert data:', insertData);
     
-    const { error: insertError } = await supabase
-      .from('user_otps')
-      .insert(insertData);
-
-    if (insertError) {
-      console.error('=== DATABASE INSERT ERROR ===');
-      console.error('Database error:', insertError);
-      console.error('Error details:', {
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint,
-        code: insertError.code
-      });
-      console.error('Full error object:', JSON.stringify(insertError, null, 2));
-      return {
-        statusCode: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          error: 'Failed to save OTP',
-          details: insertError.message || 'Unknown database error'
-        })
-      };
-    }
+    const insertResult = await sql`
+      INSERT INTO auth_otps (email, code, expires_at)
+      VALUES (${insertData.email}, ${insertData.code}, ${insertData.expires_at})
+      RETURNING id
+    `;
     
-    console.log('=== OTP SAVED SUCCESSFULLY ===');
+    console.log('OTP inserted successfully:', insertResult[0]);
 
     // Send email via Resend
     console.log('=== SENDING EMAIL ===');
