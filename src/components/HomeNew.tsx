@@ -501,23 +501,29 @@ const HomeNew: React.FC = () => {
       const { record, resultUrl } = event.detail
       console.log('🎉 Generation completed, updating UI state:', record)
       
+      // Check if we have a valid record
+      if (!record) {
+        console.warn('⚠️ No record in generation-complete event, cannot update UI')
+        return
+      }
+      
       // Create UserMedia object for the new result
       const newMedia: UserMedia = {
-        id: record.public_id || `generated-${Date.now()}`,
-        userId: record.user_id || 'current-user',
+        id: record.cloudinary_public_id || record.public_id || `generated-${Date.now()}`,
+        userId: record.owner_id || record.user_id || 'current-user',
         type: 'photo', // TODO: detect video vs image
-        url: resultUrl,
-        prompt: record.prompt || 'AI Generated Content',
+        url: resultUrl || record.secure_url || record.url,
+        prompt: record.meta?.prompt || record.prompt || 'AI Generated Content',
         aspectRatio: 4/3,
-        width: 800,
-        height: 600,
+        width: record.width || 800,
+        height: record.height || 600,
         timestamp: new Date().toISOString(),
         tokensUsed: 2,
         likes: 0,
         remixCount: 0,
         isPublic: false,
         allowRemix: false,
-        tags: record.tags || [],
+        tags: record.meta?.tags || record.tags || [],
         metadata: {
           quality: 'high',
           generationTime: 0,
@@ -539,6 +545,8 @@ const HomeNew: React.FC = () => {
       setViewerMedia([newMedia])
       setViewerStartIndex(0)
       setViewerOpen(true)
+      
+      console.log('✅ UI updated successfully with new media:', newMedia)
     }
 
     const handleGenerationSuccess = (event: CustomEvent) => {

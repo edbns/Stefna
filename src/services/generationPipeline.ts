@@ -445,7 +445,7 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
             method: 'POST',
             body: JSON.stringify({
               parentId: job.parentId,
-              childId: saveResult.items?.[0]?.cloudinary_public_id || 'unknown',
+              childId: saveResult.results?.[0]?.cloudinary_public_id || 'unknown',
               createdAt: new Date().toISOString()
             })
           });
@@ -465,7 +465,7 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
       // Dispatch custom event for UI components to listen to
       window.dispatchEvent(new CustomEvent('generation-complete', { 
         detail: { 
-          record: saveResult.items?.[0], 
+          record: saveResult.results?.[0], 
           resultUrl: result.resultUrl,
           presetId: job.presetId,
           mode: job.mode,
