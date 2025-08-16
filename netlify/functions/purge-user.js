@@ -1,6 +1,6 @@
-const { createClient } = require("@supabase/supabase-js");
+const { neon } = require("@neondatabase/serverless");
 const { v2: cloudinary } = require("cloudinary");
-const { verifyAuth } = require("./_auth");
+const { requireJWTUser, resp, handleCORS, sanitizeDatabaseUrl } = require("./_auth");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -9,31 +9,45 @@ cloudinary.config({
   secure: true,
 });
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
-);
+// ---- Database connection with safe URL sanitization ----
+const cleanDbUrl = sanitizeDatabaseUrl(process.env.NETLIFY_DATABASE_URL || '');
+if (!cleanDbUrl) {
+  throw new Error('NETLIFY_DATABASE_URL environment variable is required');
+}
+const sql = neon(cleanDbUrl);
 
 exports.handler = async (event) => {
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
+
   try {
-    if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
+    if (event.httpMethod !== "POST") {
+      return resp(405, { error: "Method Not Allowed" });
+    }
 
-    const { userId } = verifyAuth(event);
-    console.log(`✅ purge-user: Auth OK for user: ${userId}`);
+    // Use new authentication helper
+    const user = requireJWTUser(event);
+    
+    if (!user) {
+      return resp(401, { error: "Authentication required" });
+    }
 
-    console.log(`🗑️ Purging all assets for user: ${userId}`);
+    console.log(`✅ purge-user: Auth OK for user: ${user.userId}`);
+
+    console.log(`🗑️ Purging all assets for user: ${user.userId}`);
 
     // List all public_ids for logging
-    const { data: items, error } = await supabase
-      .from("assets").select("public_id, resource_type, folder")
-      .eq("user_id", userId);
-    if (error) throw error;
+    const items = await sql`
+      SELECT public_id, resource_type, folder
+      FROM media_assets 
+      WHERE owner_id = ${user.userId}
+    `;
 
     console.log(`Found ${items?.length || 0} assets to delete`);
 
     // Cloudinary bulk delete by prefix (fastest), then DB rows
-    const userFolder = `users/${userId}`;
+    const userFolder = `users/${user.userId}`;
     
     try {
       await cloudinary.api.delete_resources_by_prefix(userFolder, { resource_type: "image" });
@@ -58,18 +72,21 @@ exports.handler = async (event) => {
     }
 
     // Delete all DB rows for this user
-    const { error: delErr } = await supabase.from("assets").delete().eq("user_id", userId);
-    if (delErr) throw delErr;
+    const deleteResult = await sql`
+      DELETE FROM media_assets 
+      WHERE owner_id = ${user.userId}
+    `;
 
-    console.log(`✅ Deleted all DB records for user: ${userId}`);
+    console.log(`✅ Deleted all DB records for user: ${user.userId}`);
 
-    return { statusCode: 200, body: JSON.stringify({ 
+    return resp(200, { 
       ok: true, 
       deleted_assets: items?.length || 0,
-      message: `Purged ${items?.length || 0} assets for user ${userId}`
-    }) };
+      message: `Purged ${items?.length || 0} assets for user ${user.userId}`
+    });
+
   } catch (err) {
     console.error("purge-user error:", err);
-    return { statusCode: 401, body: JSON.stringify({ message: "Unauthorized" }) };
+    return resp(500, { error: err.message || "Internal server error" });
   }
 };

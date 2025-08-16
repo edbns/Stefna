@@ -1,6 +1,6 @@
 # 🚀 Neon Migration Checklist - Remaining Work
 
-## 📊 **Current Status: 71% Complete - 20/28 Functions Migrated**
+## 📊 **Current Status: 75% Complete - 21/28 Functions Migrated**
 
 ### ✅ **Already Migrated (Working)**
 - `save-media.ts` - ✅ Fixed payload handling and database schema
@@ -26,6 +26,7 @@
 - `mark-timeout.ts` - ✅ **JUST MIGRATED** - Now uses Neon for timeout marking
 - `fix-null-values.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT for data fixes
 - `test-profile-connection.ts` - ✅ **JUST MIGRATED** - Now tests Neon connection
+- `purge-user.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT for user purging
 
 ### 🎯 **Recent Accomplishments (Latest Session)**
 - **Profile Refresh Issues Fixed**: Added userMediaUpdated events to MoodMorph and custom prompt generation
@@ -98,7 +99,7 @@
 - [ ] `migrate-user-media.js` - Uses Supabase for migration
 - [ ] `backfill-media.ts` - Uses Supabase for backfilling
 - [x] `test-profile-connection.ts` - ✅ **MIGRATED** - Now tests Neon connection
-- [ ] `purge-user.js` - Uses Supabase for user purging
+- [x] `purge-user.js` - ✅ **MIGRATED** - Now uses Neon + JWT for user purging
 
 ### **Library Files**
 - [ ] `netlify/lib/supabaseAdmin.ts` - Admin Supabase client
