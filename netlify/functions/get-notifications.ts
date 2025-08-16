@@ -2,151 +2,120 @@
 // Returns notifications for the authenticated user
 
 import { Handler } from '@netlify/functions';
-import { supabaseAdmin } from '../lib/supabaseAdmin';
-import jwt from 'jsonwebtoken';
-
-function getUserIdFromToken(auth?: string): string | null {
-  if (!auth?.startsWith('Bearer ')) return null;
-  try {
-    const token = auth.slice(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    return decoded.userId || decoded.sub;
-  } catch {
-    return null;
-  }
-}
+import { sql } from '../lib/db';
+import { requireUser } from '../lib/auth';
 
 export const handler: Handler = async (event) => {
+  // Handle CORS
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      },
+      body: ''
+    };
+  }
+
   try {
     if (event.httpMethod !== 'GET') {
       return {
         statusCode: 405,
+        headers: { 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({ error: 'Method not allowed' })
       };
     }
 
-    const userId = getUserIdFromToken(event.headers.authorization);
-    if (!userId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'Unauthorized' })
-      };
-    }
-
-    // First check if user exists in users table
-    const { data: user, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .single();
-
-    // If user doesn't exist, return empty notifications instead of error
-    if (userError || !user) {
-      console.log('User not found in users table, returning empty notifications:', { userId, userError });
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          notifications: [],
-          unreadCount: 0,
-          hasMore: false
-        })
-      };
-    }
+    // Use the new robust auth helper
+    const user = await requireUser(event);
+    console.log('✅ User authenticated for notifications:', user.id);
 
     const { limit = '20', offset = '0', unread_only = 'false' } = event.queryStringParameters || {};
 
-    // Build query
-    let query = supabaseAdmin
-      .from('notifications')
-      .select(`
-        id,
-        kind,
-        media_id,
-        created_at,
-        read,
-        metadata
-      `)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(parseInt(limit))
-      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+    // Create notifications table if it doesn't exist
+    await sql`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        media_id UUID,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        read BOOLEAN DEFAULT FALSE,
+        metadata JSONB
+      )
+    `;
+
+    // Build query for notifications
+    let query = sql`
+      SELECT id, kind, media_id, created_at, read, metadata
+      FROM notifications
+      WHERE user_id = ${user.id}
+      ORDER BY created_at DESC
+      LIMIT ${parseInt(limit)}
+      OFFSET ${parseInt(offset)}
+    `;
 
     // Filter for unread only if requested
     if (unread_only === 'true') {
-      query = query.eq('read', false);
+      query = sql`
+        SELECT id, kind, media_id, created_at, read, metadata
+        FROM notifications
+        WHERE user_id = ${user.id} AND read = FALSE
+        ORDER BY created_at DESC
+        LIMIT ${parseInt(limit)}
+        OFFSET ${parseInt(offset)}
+      `;
     }
 
-    const { data: notifications, error } = await query;
-
-    if (error) {
-      console.error('Failed to fetch notifications:', error);
-      // Return empty notifications instead of error
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          notifications: [],
-          unreadCount: 0,
-          hasMore: false
-        })
-      };
-    }
+    const notifications = await query;
 
     // Get unread count
-    const { data: unreadCountData, error: countError } = await supabaseAdmin
-      .rpc('get_unread_notification_count', { target_user_id: userId });
-
-    const unreadCount = countError ? 0 : (unreadCountData || 0);
+    const unreadCountResult = await sql`
+      SELECT COUNT(*) as count
+      FROM notifications
+      WHERE user_id = ${user.id} AND read = FALSE
+    `;
+    const unreadCount = unreadCountResult[0]?.count || 0;
 
     // Format notifications for UI
-    const formattedNotifications = notifications?.map(notification => ({
+    const formattedNotifications = notifications.map((notification: any) => ({
       id: notification.id,
       kind: notification.kind,
       mediaId: notification.media_id,
       createdAt: notification.created_at,
       read: notification.read,
-      message: formatNotificationMessage(notification),
-      metadata: notification.metadata
-    })) || [];
+      metadata: notification.metadata || {}
+    }));
+
+    console.log(`✅ Returning ${formattedNotifications.length} notifications for user ${user.id}`);
 
     return {
       statusCode: 200,
+      headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
+        ok: true,
         notifications: formattedNotifications,
-        unreadCount,
-        hasMore: notifications?.length === parseInt(limit)
+        unreadCount: parseInt(unreadCount),
+        hasMore: formattedNotifications.length >= parseInt(limit)
       })
     };
 
-  } catch (error) {
-    console.error('Get notifications error:', error);
-    // Return empty notifications instead of 500 error
+  } catch (error: any) {
+    console.error('❌ Error in get-notifications:', error);
+    
+    // Return empty notifications instead of error for better UX
     return {
       statusCode: 200,
+      headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
+        ok: true,
         notifications: [],
         unreadCount: 0,
-        hasMore: false
+        hasMore: false,
+        error: error.message || 'Failed to load notifications'
       })
     };
   }
 };
-
-function formatNotificationMessage(notification: any): string {
-  switch (notification.kind) {
-    case 'remix':
-      const count = notification.metadata?.count || 1;
-      if (count === 1) {
-        return 'Your piece was remixed';
-      } else {
-        return `${count} remixes today`;
-      }
-    case 'like':
-      return 'Someone liked your creation';
-    case 'share':
-      return 'Your creation was shared';
-    case 'system':
-      return notification.metadata?.message || 'System notification';
-    default:
-      return 'New notification';
-  }
-}
