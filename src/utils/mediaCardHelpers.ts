@@ -24,16 +24,6 @@ export function getCardChips(r: MediaRecord | any) {
     return { modeChip: 'Custom Prompt', detailChip: 'AI Generated' };
   }
   
-  // For story mode, show the story theme
-  if (meta.group === 'story') {
-    return { modeChip: 'Story Mode', detailChip: meta.storyLabel || meta.storyKey || 'AI Story' };
-  }
-  
-  // For time machine/restore, show the mode name
-  if (meta.group === 'time_machine' || meta.group === 'restore') {
-    return { modeChip: meta.mode || 'AI Mode', detailChip: meta.optionKey || 'AI Generated' };
-  }
-  
   // Default fallback
   return { modeChip: 'AI Generated', detailChip: 'Media' };
 }
@@ -73,16 +63,6 @@ export function getMediaLabel(media: any): string {
   // For custom prompts, show "Custom Prompt"
   if (meta.presetId === 'custom' || (!meta.presetId && meta.prompt)) {
     return 'Custom Prompt';
-  }
-  
-  // For story mode, show the story theme
-  if (meta.group === 'story') {
-    return meta.storyLabel || meta.storyKey || 'Story Mode';
-  }
-  
-  // For time machine/restore, show the mode name
-  if (meta.group === 'time_machine' || meta.group === 'restore') {
-    return meta.mode || 'AI Mode';
   }
   
   // Default fallback
