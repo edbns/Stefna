@@ -227,7 +227,7 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
             },
             body: JSON.stringify({
               url: variation.url,
-              type: 'image',
+              media_type: 'image',
               prompt: MOODS[index]?.prompt || `MoodMorph ${mood}`,
               meta: {
                 mood,

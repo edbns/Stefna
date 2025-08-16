@@ -149,24 +149,22 @@ exports.handler = async (event, context) => {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Stefna Login Code</title>
             <style>
-              body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-              .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
-              .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); padding: 40px 20px; text-align: center; }
+              body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #000000; color: #ffffff; }
+              .container { max-width: 600px; margin: 0 auto; background: #000000; }
+              .header { background: #000000; padding: 40px 20px; text-align: center; }
               .logo { font-size: 32px; font-weight: 700; color: #ffffff; margin-bottom: 10px; }
-              .tagline { color: #cccccc; font-size: 16px; margin: 0; }
-              .content { padding: 40px 30px; background: #ffffff; }
-              .title { font-size: 28px; font-weight: 600; color: #000000; text-align: center; margin-bottom: 10px; }
-              .subtitle { font-size: 16px; color: #666666; text-align: center; margin-bottom: 40px; }
-              .otp-box { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 2px solid #dee2e6; border-radius: 16px; padding: 30px; text-align: center; margin-bottom: 30px; }
-              .otp-label { font-size: 14px; font-weight: 600; color: #495057; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
-              .otp-code { font-size: 42px; font-weight: 700; color: #000000; letter-spacing: 12px; margin-bottom: 15px; font-family: 'Courier New', monospace; }
-              .otp-expiry { font-size: 14px; color: #6c757d; }
-              .info-box { background: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
-              .info-title { font-size: 16px; font-weight: 600; color: #000000; margin-bottom: 10px; }
-              .info-text { font-size: 14px; color: #495057; line-height: 1.5; margin: 0; }
-              .footer { background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #dee2e6; }
-              .footer-text { font-size: 14px; color: #6c757d; margin: 0; }
-              .security-note { font-size: 12px; color: #868e96; margin-top: 15px; }
+              .content { padding: 40px 30px; background: #000000; text-align: center; }
+              .title { font-size: 28px; font-weight: 600; color: #ffffff; margin-bottom: 40px; }
+              .otp-box { background: #111111; border: 2px solid #333333; border-radius: 16px; padding: 30px; text-align: center; margin-bottom: 30px; }
+              .otp-label { font-size: 14px; font-weight: 600; color: #cccccc; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+              .otp-code { font-size: 42px; font-weight: 700; color: #ffffff; letter-spacing: 12px; margin-bottom: 15px; font-family: 'Courier New', monospace; }
+              .otp-expiry { font-size: 14px; color: #999999; }
+              .info-box { background: #111111; border-left: 4px solid #ffffff; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+              .info-title { font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 10px; }
+              .info-text { font-size: 14px; color: #cccccc; line-height: 1.5; margin: 0; }
+              .footer { background: #111111; padding: 30px; text-align: center; border-top: 1px solid #333333; }
+              .footer-text { font-size: 14px; color: #999999; margin: 0; }
+              .contact-info { font-size: 14px; color: #ffffff; margin-top: 15px; }
               @media (max-width: 600px) {
                 .content { padding: 30px 20px; }
                 .otp-code { font-size: 36px; letter-spacing: 8px; }
@@ -178,12 +176,10 @@ exports.handler = async (event, context) => {
             <div class="container">
               <div class="header">
                 <div class="logo">STEFNA</div>
-                <p class="tagline">AI-Powered Media Creation</p>
               </div>
               
               <div class="content">
                 <h1 class="title">Your Login Code</h1>
-                <p class="subtitle">Enter this code to access your Stefna dashboard</p>
                 
                 <div class="otp-box">
                   <div class="otp-label">Verification Code</div>
@@ -192,7 +188,7 @@ exports.handler = async (event, context) => {
                 </div>
                 
                 <div class="info-box">
-                  <div class="info-title">🔐 Security Information</div>
+                  <div class="info-title">Security Information</div>
                   <p class="info-text">
                     This code was requested for your Stefna account. If you didn't request this code, 
                     please ignore this email and ensure your account password is secure.
@@ -202,10 +198,7 @@ exports.handler = async (event, context) => {
               
               <div class="footer">
                 <p class="footer-text">© 2025 Stefna. All rights reserved.</p>
-                <p class="footer-text">hello@stefna.xyz</p>
-                <p class="security-note">
-                  This is an automated message. Please do not reply to this email.
-                </p>
+                <p class="contact-info">If you have any questions, contact us at hello@stefna.xyz</p>
               </div>
             </div>
           </body>
