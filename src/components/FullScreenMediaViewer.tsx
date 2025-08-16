@@ -4,7 +4,7 @@ import { UserMedia } from '../services/userMediaService'
 import RemixIcon from './RemixIcon'
 import authService from '../services/authService'
 import { useProfile } from '../contexts/ProfileContext'
-import { getCardChips, formatRemixCount } from '../utils/mediaCardHelpers'
+import { getMediaLabel, formatRemixCount } from '../utils/mediaCardHelpers'
 
 interface FullScreenMediaViewerProps {
   isOpen: boolean
@@ -234,26 +234,18 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
             {/* Generation Info Chips */}
             {(() => {
-              const { modeChip, detailChip } = getCardChips(current)
+              const mediaLabel = getMediaLabel(current)
               const remixText = formatRemixCount(current.remixCount)
               
               return (
                 <div className="flex items-center justify-center space-x-3 mb-4">
-                  {/* Mode Chip */}
+                  {/* Media Label Chip */}
                   <span 
                     className="text-white/90 text-xs bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/20"
-                    aria-label={`Generation mode: ${modeChip}`}
+                    aria-label={`Style: ${mediaLabel}`}
+                    title={mediaLabel}
                   >
-                    {modeChip}
-                  </span>
-                  
-                  {/* Detail Chip */}
-                  <span 
-                    className="text-white/80 text-xs bg-white/5 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10"
-                    aria-label={`Style: ${detailChip}`}
-                    title={detailChip}
-                  >
-                    {detailChip}
+                    {mediaLabel}
                   </span>
                   
                   {/* Remix Count */}

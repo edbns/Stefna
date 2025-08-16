@@ -8,11 +8,34 @@ export function getCardChips(r: MediaRecord | any) {
   // Handle both MediaRecord and UserMedia types
   const meta = r.meta || r.metadata || {};
   
-  const modeChip = 'Preset';
-
-  const detailChip = PRESETS[meta.presetId]?.label ?? meta.presetId ?? 'Custom Preset';
-
-  return { modeChip, detailChip };
+  // For MoodMorph, show "MoodMorph" as the mode
+  if (meta.presetId === 'moodmorph' || (meta.tag && typeof meta.tag === 'string' && meta.tag.startsWith('mood:'))) {
+    return { modeChip: 'MoodMorph', detailChip: 'AI Style Transfer' };
+  }
+  
+  // For presets, show the actual preset name
+  if (meta.presetId && PRESETS[meta.presetId]) {
+    const preset = PRESETS[meta.presetId];
+    return { modeChip: preset.label, detailChip: preset.category };
+  }
+  
+  // For custom prompts, show "Custom Prompt"
+  if (meta.presetId === 'custom' || (!meta.presetId && meta.prompt)) {
+    return { modeChip: 'Custom Prompt', detailChip: 'AI Generated' };
+  }
+  
+  // For story mode, show the story theme
+  if (meta.group === 'story') {
+    return { modeChip: 'Story Mode', detailChip: meta.storyLabel || meta.storyKey || 'AI Story' };
+  }
+  
+  // For time machine/restore, show the mode name
+  if (meta.group === 'time_machine' || meta.group === 'restore') {
+    return { modeChip: meta.mode || 'AI Mode', detailChip: meta.optionKey || 'AI Generated' };
+  }
+  
+  // Default fallback
+  return { modeChip: 'AI Generated', detailChip: 'Media' };
 }
 
 export function formatRemixCount(count?: number): string {
@@ -31,6 +54,39 @@ export function formatOptionLabel(optionKey: string): string {
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+// Helper to get a single, clean label for media cards
+export function getMediaLabel(media: any): string {
+  const meta = media.meta || media.metadata || {};
+  
+  // For MoodMorph, show "MoodMorph"
+  if (meta.presetId === 'moodmorph' || (meta.tag && typeof meta.tag === 'string' && meta.tag.startsWith('mood:'))) {
+    return 'MoodMorph';
+  }
+  
+  // For presets, show the actual preset name
+  if (meta.presetId && PRESETS[meta.presetId]) {
+    return PRESETS[meta.presetId].label;
+  }
+  
+  // For custom prompts, show "Custom Prompt"
+  if (meta.presetId === 'custom' || (!meta.presetId && meta.prompt)) {
+    return 'Custom Prompt';
+  }
+  
+  // For story mode, show the story theme
+  if (meta.group === 'story') {
+    return meta.storyLabel || meta.storyKey || 'Story Mode';
+  }
+  
+  // For time machine/restore, show the mode name
+  if (meta.group === 'time_machine' || meta.group === 'restore') {
+    return meta.mode || 'AI Mode';
+  }
+  
+  // Default fallback
+  return 'AI Generated';
 }
 
 

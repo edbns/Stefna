@@ -1,6 +1,6 @@
 import React from 'react'
 import RemixIcon from './RemixIcon'
-import { getCardChips, formatRemixCount } from '../utils/mediaCardHelpers'
+import { getCardChips, formatRemixCount, getMediaLabel } from '../utils/mediaCardHelpers'
 import { MediaRecord } from '../lib/types'
 import { UserMedia } from '../services/userMediaService'
 
@@ -55,47 +55,10 @@ const MediaCard: React.FC<MediaCardProps> = ({
     }
   }
 
-  // Get single smart tag for display
-  const { modeChip, detailChip } = media ? getCardChips(media) : { modeChip: 'Preset', detailChip: title }
+  // Get clean media label for display
+  const mediaLabel = media ? getMediaLabel(media) : title
   const remixText = formatRemixCount(remixCount)
   
-  // Create single smart tag that combines mode and detail intelligently
-  const getSmartTag = () => {
-    if (!media) return title; // Fallback to title if no media metadata
-    
-    // Handle both MediaRecord and UserMedia types
-    const meta = 'meta' in media ? media.meta : media.metadata || {};
-    
-    // For MoodMorph, show "MoodMorph" as the tag
-    // Check if tag property exists (added by MoodMorph)
-    if ('tag' in meta && meta.tag && typeof meta.tag === 'string' && meta.tag.startsWith('mood:')) {
-      return 'MoodMorph';
-    }
-    
-    // For presets, show ONLY the preset name (not "Preset, Custom Preset")
-    if (meta.presetId) {
-      // Get the actual preset name from the presetId
-      const presetName = meta.presetId;
-      // If it's a known preset, use its label, otherwise use the ID
-      return presetName || 'Custom';
-    }
-    
-    // For story mode, show the story theme
-    if (meta.group === 'story') {
-      return detailChip;
-    }
-    
-    // For time machine/restore, show the mode name
-    if (meta.group === 'time_machine' || meta.group === 'restore') {
-      return modeChip;
-    }
-    
-    // Default fallback - show the detail chip (preset name) if available
-    return detailChip || 'Custom';
-  }
-
-  const smartTag = getSmartTag();
-
   return (
     <div 
       className={`${getAspectClass()} relative bg-white/5 overflow-hidden cursor-pointer group`}
@@ -116,14 +79,14 @@ const MediaCard: React.FC<MediaCardProps> = ({
 
       {/* Overlay for actions - always visible */}
       <div className="absolute inset-0 bg-black/20 transition-all duration-300">
-        {/* Single Smart Tag - Top Left */}
+        {/* Single Clean Label - Top Left */}
         <div className="absolute top-3 left-3 opacity-100 transition-opacity duration-300">
           <span 
             className="text-white/90 text-xs bg-black/60 px-2 py-1 rounded-full backdrop-blur-sm border border-white/20"
-            aria-label={`Style: ${smartTag}`}
-            title={smartTag} // Show full text on hover if truncated
+            aria-label={`Style: ${mediaLabel}`}
+            title={mediaLabel} // Show full text on hover if truncated
           >
-            {smartTag.length > 25 ? `${smartTag.substring(0, 25)}...` : smartTag}
+            {mediaLabel.length > 25 ? `${mediaLabel.substring(0, 25)}...` : mediaLabel}
           </span>
         </div>
 
