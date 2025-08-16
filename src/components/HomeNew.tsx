@@ -2613,12 +2613,19 @@ const HomeNew: React.FC = () => {
                                               if (mode === 'moodmorph') {
                         // Run MoodMorph™ with proper error handling
                         try {
+                          console.log('🎭 MoodMorph: Starting generation...')
+                          console.log('🎭 MoodMorph: selectedFile:', selectedFile)
+                          console.log('🎭 MoodMorph: previewUrl:', previewUrl)
+                          
+                          // Run MoodMorph
                           await runMoodMorph(selectedFile || undefined)
+                          
+                          console.log('✅ MoodMorph: Generation completed successfully')
                         } catch (error) {
-                          console.error('MoodMorph generation failed:', error)
+                          console.error('❌ MoodMorph generation failed:', error)
                           // Show error toast
                           window.dispatchEvent(new CustomEvent('generation-error', { 
-                            detail: { message: 'MoodMorph generation failed. Please try again.', timestamp: Date.now() } 
+                            detail: { message: `MoodMorph generation failed: ${error.message || 'Unknown error'}`, timestamp: Date.now() } 
                           }))
                         } finally {
                           // Always clear the generating state

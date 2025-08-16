@@ -52,9 +52,11 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
   
   try {
     console.log('🎭 MoodMorph: Starting generation with runId:', runId)
+    console.log('🎭 MoodMorph: Input options:', opts)
     
     // Use centralized file assertion
     const file = await getSourceFileOrThrow(opts?.file)
+    console.log('🎭 MoodMorph: File resolved:', file)
 
     // 1) Always upload the actual File (not blob:)
     console.log('☁️ MoodMorph: Uploading to Cloudinary...')
