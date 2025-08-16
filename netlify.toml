@@ -26,17 +26,7 @@
 # Function optimization
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = [
-    "@neondatabase/serverless",
-    "jsonwebtoken",
-    "jose",
-    "cloudinary",
-    "resend",
-    "winston",
-    "yargs",
-    "yauzl",
-    "ws"
-  ]
+  # Remove external_node_modules to force bundling of all dependencies
 
 # Cache optimization
 [[headers]]
