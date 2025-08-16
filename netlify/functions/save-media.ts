@@ -9,6 +9,7 @@
 import type { Handler } from '@netlify/functions';
 import { sql } from '../lib/db';
 import { requireUser } from '../lib/auth';
+import { randomUUID } from 'crypto';
 
 export const handler: Handler = async (event) => {
   // Handle CORS
@@ -54,7 +55,7 @@ export const handler: Handler = async (event) => {
     // Create media table if it doesn't exist
     await sql`
       CREATE TABLE IF NOT EXISTS media (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
         media_type TEXT NOT NULL CHECK (media_type IN ('image','video')),
         cloudinary_public_id TEXT,
@@ -67,7 +68,7 @@ export const handler: Handler = async (event) => {
       )
     `;
 
-    let items = [];
+    let items: any[] = [];
 
     // Handle MoodMorph variations
     if (variations && Array.isArray(variations)) {
@@ -86,9 +87,13 @@ export const handler: Handler = async (event) => {
           continue;
         }
 
+        // Generate UUID in Node.js instead of database
+        const id = randomUUID();
+
         const row = await sql`
-          INSERT INTO media (user_id, media_type, cloudinary_public_id, final_url, prompt, is_public, source_public_id, meta)
+          INSERT INTO media (id, user_id, media_type, cloudinary_public_id, final_url, prompt, is_public, source_public_id, meta)
           VALUES (
+            ${id},
             ${user.id},
             ${type},
             ${cloudinary_public_id || null},
@@ -120,9 +125,13 @@ export const handler: Handler = async (event) => {
       }
     } else {
       // Handle single media item
+      // Generate UUID in Node.js instead of database
+      const id = randomUUID();
+
       const row = await sql`
-        INSERT INTO media (user_id, media_type, cloudinary_public_id, final_url, prompt, is_public, source_public_id, meta)
+        INSERT INTO media (id, user_id, media_type, cloudinary_public_id, final_url, prompt, is_public, source_public_id, meta)
         VALUES (
+          ${id},
           ${user.id},
           ${media_type},
           ${cloudinary_public_id || null},
@@ -168,14 +177,16 @@ export const handler: Handler = async (event) => {
     };
 
   } catch (error: any) {
-    console.error('❌ Save media error:', error);
+    const code = error?.status || 500;
+    console.error(`[auth] ${error?.message}`, error);
+    
     return { 
-      statusCode: 500, 
+      statusCode: code, 
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
         ok: false, 
-        error: 'Save media failed',
-        message: error.message || 'Unknown error'
+        error: error?.message || 'Save media failed',
+        message: error?.message || 'Unknown error'
       }) 
     };
   }

@@ -1,8 +1,12 @@
-// /.netlify/functions/whoami
-// Quick sanity check for authentication propagation
-
+// Debug function to test JWT token and secret configuration
 import type { Handler } from '@netlify/functions';
-import { getAuthedUser } from '../lib/auth';
+import { jwtVerify } from 'jose';
+
+function getBearer(event: any) {
+  const raw = event.headers?.authorization || event.headers?.Authorization || '';
+  const m = String(raw).match(/^Bearer\s+(.+)$/i);
+  return m ? m[1] : '';
+}
 
 export const handler: Handler = async (event) => {
   // Handle CORS
@@ -12,40 +16,45 @@ export const handler: Handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
       },
       body: ''
     };
   }
 
   try {
-    const { user, error } = await getAuthedUser(event);
+    const token = getBearer(event);
+    const secret = process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET;
     
     return {
-      statusCode: user ? 200 : 401,
+      statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ 
-        ok: !!user, 
-        user, 
-        error,
-        timestamp: new Date().toISOString(),
+      body: JSON.stringify({
+        ok: true,
+        hasToken: !!token,
+        hasSecret: !!secret,
+        secretLength: secret ? secret.length : 0,
+        decoded: token && secret
+          ? (await jwtVerify(token, new TextEncoder().encode(secret), { algorithms: ['HS256'] })).payload
+          : null,
         env: {
           hasAuthJwtSecret: !!process.env.AUTH_JWT_SECRET,
           hasJwtSecret: !!process.env.JWT_SECRET,
-          secretLength: (process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET || '').length
+          authJwtSecretLength: process.env.AUTH_JWT_SECRET?.length || 0,
+          jwtSecretLength: process.env.JWT_SECRET?.length || 0
         }
       }),
     };
   } catch (e: any) {
-    return {
-      statusCode: 500,
+    return { 
+      statusCode: 401, 
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
         ok: false, 
-        error: 'Server error', 
-        message: e?.message || 'Unknown error',
-        timestamp: new Date().toISOString()
-      }),
+        error: e?.message || 'Unknown error',
+        hasToken: !!getBearer(event),
+        hasSecret: !!(process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET)
+      }) 
     };
   }
 };

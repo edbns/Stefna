@@ -46,7 +46,7 @@ exports.handler = async (event) => {
       const defaultUsername = `user-${user.id.slice(-6)}`;
       profile = await sql`
         INSERT INTO profiles (id, email, username, name, avatar_url)
-        VALUES (${user.id}, ${user.email}, ${defaultUsername}, ${user.name}, ${user.avatar_url})
+        VALUES (${user.id}, ${defaultUsername}, ${user.name}, ${user.avatar_url})
         ON CONFLICT (id) DO NOTHING
         RETURNING id, email, username, name, avatar_url, created_at
       `;
@@ -79,14 +79,16 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
-    console.error('❌ Unexpected error in get-user-profile:', error);
+    const code = error?.status || 500;
+    console.error(`[auth] ${error?.message}`, error);
+    
     return { 
-      statusCode: 500, 
+      statusCode: code, 
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
         ok: false, 
-        error: 'Internal server error',
-        message: error.message || 'Internal server error'
+        error: error?.message || 'Internal server error',
+        message: error?.message || 'Internal server error'
       }) 
     };
   }

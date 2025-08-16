@@ -16,27 +16,39 @@ export function getBearer(event: any) {
 }
 
 export async function requireUser(event: any) {
-  const token = getBearer(event);
-  if (!token) throw new Error('No Authorization token');
+  const raw = event.headers?.authorization || event.headers?.Authorization || '';
+  const m = String(raw).match(/^Bearer\s+(.+)$/i);
+  if (!m) {
+    const err = new Error('Missing Bearer token');
+    (err as any).status = 401;
+    throw err;
+  }
 
   const secret = process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET;
-  if (!secret) throw new Error('Server misconfigured: AUTH_JWT_SECRET missing');
+  if (!secret) {
+    const err = new Error('AUTH_JWT_SECRET/JWT_SECRET not configured');
+    (err as any).status = 500;
+    throw err;
+  }
 
-  const { payload } = await jwtVerify(token, new TextEncoder().encode(secret), { algorithms: ['HS256'] });
-  const id =
-    (payload.sub as string) ||
-    (payload.user_id as string) ||
-    (payload.userId as string) ||
-    (payload.uid as string) ||
-    (payload.id as string);
-
-  if (!id) throw new Error('Token missing user id (sub/user_id/userId/uid/id)');
-  return {
-    id,
-    email: (payload.email as string) || null,
-    name: (payload.name as string) || null,
-    avatar_url: (payload.avatar_url as string) || (payload.picture as string) || null,
-  };
+  try {
+    const { payload } = await jwtVerify(m[1], new TextEncoder().encode(secret), { algorithms: ['HS256'] });
+    const id = (payload.sub as string) || (payload.user_id as string) || (payload.userId as string) || (payload.uid as string) || (payload.id as string);
+    if (!id) {
+      const err = new Error('Token missing user id (expected sub/user_id/userId/uid/id)');
+      (err as any).status = 401;
+      throw err;
+    }
+    return { 
+      id, 
+      email: (payload.email as string) || null, 
+      name: (payload.name as string) || null, 
+      avatar_url: ((payload as any).avatar_url as string) || ((payload as any).picture as string) || null 
+    };
+  } catch (e: any) {
+    e.status = 401;
+    throw e;
+  }
 }
 
 // Keep the existing getAuthedUser for backward compatibility
