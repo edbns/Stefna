@@ -43,6 +43,8 @@ const sql = neon(cleanDbUrl);
 type Variation = {
   url?: string            // remote HTTPS URL from AIML or temp storage
   image_url?: string      // alternative field name from AIML
+  src?: string            // alternative field name
+  cdn_url?: string        // alternative field name
   type?: 'image' | 'video' | 'gif' | string
   media_type?: string     // alternative field name
   is_public?: boolean     // whether media should be public
@@ -60,6 +62,8 @@ type SaveMediaRequest = {
   // Also accept single media item
   url?: string
   image_url?: string
+  src?: string                         // alternative field name
+  cdn_url?: string                     // alternative field name
   type?: string
   media_type?: string
   is_public?: boolean
@@ -107,31 +111,39 @@ export const handler: Handler = async (event, context) => {
     return resp(401, { error: 'Unauthorized - Invalid or missing JWT token' })
   }
 
-  // ---- Extract media items ----
+  // ---- Extract media items with multiple payload shape support ----
   let mediaItems: Variation[] = []
   
-  // Check if it's a single media item - accept both url and image_url
-  if (body.url || body.image_url) {
+  // Check if it's a single media item - accept multiple client keys
+  if (body.url || body.image_url || body.src || body.cdn_url) {
     mediaItems = [{
-      url: body.url || body.image_url,
+      url: body.url || body.image_url || body.src || body.cdn_url,
       type: body.type || body.media_type || 'image',
       is_public: body.is_public ?? true,
-      thumb_url: body.thumb_url || body.thumbnail,
+      thumb_url: body.thumb_url || body.thumbnail || (body.url || body.image_url || body.src || body.cdn_url),
       meta: body.extra || {}
     }]
   } else if (body.variations && body.variations.length > 0) {
     // Multiple variations
     mediaItems = body.variations.map(v => ({
-      url: v.url || v.image_url,
+      url: v.url || v.image_url || v.src || v.cdn_url,
       type: v.type || v.media_type || 'image',
       is_public: v.is_public ?? true,
-      thumb_url: v.thumb_url || v.thumbnail,
+      thumb_url: v.thumb_url || v.thumbnail || (v.url || v.image_url || v.src || v.cdn_url),
       meta: v.meta || {}
     }))
   }
 
   if (!mediaItems.length) {
-    return resp(400, { error: 'No media items provided. Send url/image_url or variations array.' })
+    const missing: string[] = [];
+    if (!body.url && !body.image_url && !body.src && !body.cdn_url && !body.variations) {
+      missing.push('url/image_url/src/cdn_url or variations array');
+    }
+    return resp(400, { 
+      error: 'No media items provided', 
+      missing,
+      received: Object.keys(body)
+    })
   }
 
   // ---- Validate URLs ----
@@ -181,7 +193,7 @@ export const handler: Handler = async (event, context) => {
           ) VALUES (
             ${crypto.randomUUID()}, ${user.userId}, ${uploadResult.secure_url},
             ${uploadResult.public_id}, ${item.type || 'image'}, 
-            ${item.is_public ? 'public' : 'private'}, false, 'production', NOW(), NOW()
+            ${item.is_public ?? true ? 'public' : 'private'}, false, 'production', NOW(), NOW()
           )
         `
       } catch (dbError) {

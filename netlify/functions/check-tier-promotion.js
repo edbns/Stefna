@@ -1,78 +1,76 @@
-const { createClient } = require('@supabase/supabase-js')
-const { verifyAuth } = require('./_auth')
+const { neon } = require('@neondatabase/serverless')
+const { requireJWTUser, resp, handleCORS } = require('./_auth')
 
 exports.handler = async (event) => {
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
+
   try {
     if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, body: 'Method Not Allowed' }
+      return resp(405, { error: 'Method Not Allowed' })
     }
 
-    const { userId } = verifyAuth(event)
-    if (!userId) {
-      return { statusCode: 401, body: JSON.stringify({ error: 'Authentication required' }) }
+    // Auth check using JWT
+    const user = requireJWTUser(event)
+    if (!user) {
+      return resp(401, { error: 'Unauthorized - Invalid or missing JWT token' })
     }
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
+    console.log(`🔍 Checking tier promotion for user: ${user.userId}`)
 
-    console.log(`🔍 Checking tier promotion for user: ${userId}`)
+    // Connect to Neon database
+    const sql = neon(process.env.NETLIFY_DATABASE_URL)
 
-    // Check if user was recently promoted
-    const { data: recentPromotion, error: promotionError } = await supabase
-      .from('user_promotions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('promoted_at', { ascending: false })
-      .limit(1)
-      .single()
+    try {
+      // Check if promotions table exists and has data
+      const promotions = await sql`
+        SELECT * FROM promotions 
+        WHERE user_id = ${user.userId}
+        ORDER BY created_at DESC 
+        LIMIT 1
+      `
 
-    if (promotionError && promotionError.code !== 'PGRST116') {
-      console.error('❌ Error checking promotions:', promotionError)
-      return { statusCode: 500, body: JSON.stringify({ error: promotionError.message }) }
-    }
-
-    // If user was promoted in the last hour, send notification
-    if (recentPromotion) {
-      const promotionTime = new Date(recentPromotion.promoted_at)
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
-      
-      if (promotionTime > oneHourAgo) {
-        console.log(`🎉 User ${userId} was recently promoted to ${recentPromotion.new_tier}`)
+      if (promotions && promotions.length > 0) {
+        const recentPromotion = promotions[0]
+        const promotionTime = new Date(recentPromotion.created_at)
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
         
-        return {
-          statusCode: 200,
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
+        if (promotionTime > oneHourAgo) {
+          console.log(`🎉 User ${user.userId} was recently promoted to ${recentPromotion.to_tier}`)
+          
+          return resp(200, {
             promoted: true,
-            newTier: recentPromotion.new_tier,
-            oldTier: recentPromotion.old_tier,
-            message: recentPromotion.new_tier === 'verified' 
+            newTier: recentPromotion.to_tier,
+            oldTier: recentPromotion.from_tier || 'registered',
+            message: recentPromotion.to_tier === 'verified' 
               ? 'Congratulations! You\'ve been promoted to Verified Creator! 🎉'
               : 'Amazing! You\'ve reached Contributor status! 🌟',
-            promotedAt: recentPromotion.promoted_at
+            promotedAt: recentPromotion.created_at
           })
         }
       }
-    }
 
-    // No recent promotion
-    return {
-      statusCode: 200,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
+      // No recent promotion - return safe response
+      return resp(200, {
         promoted: false,
+        changed: false,
         message: 'No recent promotion'
+      })
+
+    } catch (dbError) {
+      // Table doesn't exist or other DB error - return safe response
+      console.log('Promotions table not available, returning safe response')
+      return resp(200, {
+        promoted: false,
+        changed: false,
+        message: 'Tier system not yet implemented'
       })
     }
 
   } catch (e) {
     console.error('❌ Check tier promotion error:', e)
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ error: e?.message || 'Internal server error' }) 
-    }
+    return resp(500, { error: e?.message || 'Internal server error' })
   }
 }
 

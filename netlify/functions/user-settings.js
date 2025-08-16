@@ -1,38 +1,34 @@
 const { neon } = require('@neondatabase/serverless')
-const { verifyAuth } = require('./_auth')
+const { requireJWTUser, resp, handleCORS } = require('./_auth')
 
 // ---- Database connection ----
 const sql = neon(process.env.NETLIFY_DATABASE_URL)
 
 exports.handler = async (event) => {
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
+
   try {
     if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
-      return { 
-        statusCode: 405, 
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: 'Method Not Allowed' 
-      }
+      return resp(405, { error: 'Method Not Allowed' })
     }
 
-    // Verify user authentication
-    const { userId } = verifyAuth(event)
-    if (!userId) {
-      return { 
-        statusCode: 401, 
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: 'Authentication required' }) 
-      }
+    // Auth check using JWT
+    const user = requireJWTUser(event)
+    if (!user) {
+      return resp(401, { error: 'Unauthorized - Invalid or missing JWT token' })
     }
 
     if (event.httpMethod === 'GET') {
       // Get user settings
-      console.log(`📥 Getting settings for user: ${userId}`)
+      console.log(`📥 Getting settings for user: ${user.userId}`)
       
       try {
         const settings = await sql`
           SELECT share_to_feed, allow_remix, updated_at
           FROM user_settings
-          WHERE user_id = ${userId}
+          WHERE user_id = ${user.userId}
         `;
 
         // Return default settings if none exist
@@ -43,35 +39,21 @@ exports.handler = async (event) => {
         }
 
         const result = settings.length > 0 ? settings[0] : defaultSettings
-        console.log(`✅ Retrieved settings for user ${userId}:`, result)
+        console.log(`✅ Retrieved settings for user ${user.userId}:`, result)
 
-        return {
-          statusCode: 200,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            shareToFeed: result.share_to_feed,
-            allowRemix: result.allow_remix,
-            updatedAt: result.updated_at
-          })
-        }
+        return resp(200, {
+          shareToFeed: result.share_to_feed,
+          allowRemix: result.allow_remix,
+          updatedAt: result.updated_at
+        })
       } catch (dbError) {
         console.error('❌ Get settings error:', dbError)
         // Return default settings on error
-        return {
-          statusCode: 200,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            shareToFeed: true,
-            allowRemix: true,
-            updatedAt: null
-          })
-        }
+        return resp(200, {
+          shareToFeed: true,
+          allowRemix: true,
+          updatedAt: null
+        })
       }
     }
 
@@ -88,13 +70,13 @@ exports.handler = async (event) => {
         }
       }
 
-      console.log(`📝 Updating settings for user ${userId}:`, { shareToFeed, allowRemix })
+      console.log(`📝 Updating settings for user ${user.userId}:`, { shareToFeed, allowRemix })
 
       try {
         // Upsert settings (create if doesn't exist, update if it does)
         const updated = await sql`
           INSERT INTO user_settings (user_id, share_to_feed, allow_remix, updated_at)
-          VALUES (${userId}, ${shareToFeed}, ${allowRemix}, NOW())
+          VALUES (${user.userId}, ${shareToFeed}, ${allowRemix}, NOW())
           ON CONFLICT (user_id) DO UPDATE SET 
             share_to_feed = EXCLUDED.share_to_feed,
             allow_remix = EXCLUDED.allow_remix,
