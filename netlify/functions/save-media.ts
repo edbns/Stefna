@@ -8,13 +8,15 @@
 
 import type { Handler } from '@netlify/functions'
 import crypto from 'crypto'
-import jwt from 'jsonwebtoken'
 
 // ---- Cloudinary ----
 import { v2 as cloudinary } from 'cloudinary'
 
 // ---- DB (Netlify DB/Neon) ----
 import { neon } from '@neondatabase/serverless'
+
+// ---- Auth helper ----
+import { requireUser, resp, handleCORS } from './_auth'
 
 // ---- ENV ----
 const {
@@ -33,40 +35,6 @@ cloudinary.config({
 
 // ---- Database connection ----
 const sql = neon(process.env.NETLIFY_DATABASE_URL!)
-
-// ---- Helpers ----
-function ok<T>(data: T, status = 200) {
-  return {
-    statusCode: status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    },
-    body: JSON.stringify(data),
-  }
-}
-
-function err(message: string, status = 400, extra?: Record<string, any>) {
-  return ok({ ok: false, error: message, ...extra }, status)
-}
-
-// ---- Auth helper ----
-function requireUser(event: any) {
-  const authHeader = event.headers.authorization
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null
-  }
-  
-  try {
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret')
-    return decoded as any
-  } catch {
-    return null
-  }
-}
 
 type Variation = {
   url: string            // remote HTTPS URL from AIML or temp storage
@@ -99,12 +67,13 @@ type CanonicalItem = {
   meta?: Record<string, any>
 }
 
-const handler: Handler = async (event, context) => {
-  if (event.httpMethod === 'OPTIONS') {
-    return ok({ ok: true })
-	}
-	if (event.httpMethod !== 'POST') {
-    return err('Method not allowed', 405)
+export const handler: Handler = async (event, context) => {
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
+
+  if (event.httpMethod !== 'POST') {
+    return resp(405, { error: 'Method not allowed' })
   }
 
   // ---- Parse input ----
@@ -112,17 +81,17 @@ const handler: Handler = async (event, context) => {
   try {
     body = JSON.parse(event.body || '{}')
   } catch {
-    return err('Invalid JSON body')
+    return resp(400, { error: 'Invalid JSON body' })
   }
 
   if (!body?.variations?.length) {
-    return err('No variations provided')
+    return resp(400, { error: 'No variations provided' })
   }
 
-  // ---- Auth check ----
-  const user = requireUser(event)
+  // ---- Auth check using new helper ----
+  const user = requireUser(context)
   if (!user) {
-    return err('Unauthorized', 401)
+    return resp(401, { error: 'Unauthorized' })
   }
 
   // ---- Validate URLs ----
@@ -131,7 +100,7 @@ const handler: Handler = async (event, context) => {
   })
 
   if (!validVariations.length) {
-    return err('No valid HTTPS URLs provided')
+    return resp(400, { error: 'No valid HTTPS URLs provided' })
   }
 
   // ---- Process variations ----
@@ -164,15 +133,15 @@ const handler: Handler = async (event, context) => {
 
       results.push(item)
 
-      // Save to database
+      // Save to database using new schema
       try {
         await sql`
           INSERT INTO media_assets (
-            id, user_id, url, public_id, resource_type, 
+            id, owner_id, url, public_id, resource_type, 
             folder, bytes, width, height, meta, 
             created_at, updated_at, visibility, env
           ) VALUES (
-            ${crypto.randomUUID()}, ${user.sub || user.id}, ${item.secure_url}, 
+            ${crypto.randomUUID()}, ${user.id}, ${item.secure_url}, 
             ${item.cloudinary_public_id}, ${item.resource_type}, 
             ${item.folder || 'stefna'}, ${item.bytes || 0}, 
             ${item.width || 0}, ${item.height || 0}, 
@@ -192,14 +161,12 @@ const handler: Handler = async (event, context) => {
   }
 
   if (results.length === 0) {
-    return err('All uploads failed', 500, { errors })
+    return resp(500, { error: 'All uploads failed', errors })
   }
 
-  return ok({
+  return resp(200, {
     ok: true,
     results,
     errors: errors.length > 0 ? errors : undefined,
   })
 }
-
-export { handler }

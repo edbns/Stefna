@@ -1,39 +1,59 @@
-const jwt = require("jsonwebtoken");
+/**
+ * Authentication helper for Netlify functions
+ * Provides bulletproof user authentication and response formatting
+ */
 
-function getUserId(claims) {
-  return (
-    claims.sub ||
-    claims.user_id ||
-    claims.uid ||
-    claims.id ||
-    claims.userId ||
-    null
-  );
+/**
+ * Extract and validate user from Netlify context
+ * @param {Object} context - Netlify function context
+ * @returns {Object|null} User object with id and email, or null if unauthorized
+ */
+function requireUser(context) {
+  const u = context.clientContext?.user;
+  if (!u?.sub) return null;
+  return { id: u.sub, email: u.email };
 }
 
-function verifyAuth(event) {
-  const auth = event.headers.authorization || "";
-  const token = auth.replace(/^Bearer\s+/i, "");
-  
-  // Feature flag: Guest mode (explicit opt-in). Default OFF.
-  const GUEST_MODE_ENABLED = process.env.GUEST_MODE_ENABLED === 'true';
-  
-  if (!token) {
-    if (GUEST_MODE_ENABLED) {
-      return {
-        claims: {},
-        userId: `guest-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        token: null,
-      };
+/**
+ * Format consistent responses
+ * @param {number} status - HTTP status code
+ * @param {any} body - Response body
+ * @returns {Object} Formatted response object
+ */
+function resp(status, body) {
+  return { 
+    statusCode: status, 
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
     }
-    // Guests disabled: require auth token
-    throw new Error("no_bearer");
-  }
-  
-  const claims = jwt.verify(token, process.env.JWT_SECRET, { clockTolerance: 5 });
-  const userId = getUserId(claims);
-  if (!userId) throw new Error("no_user_id_claim");
-  return { claims, userId, token };
+  };
 }
 
-module.exports = { verifyAuth };
+/**
+ * Handle CORS preflight requests
+ * @param {Object} event - Netlify function event
+ * @returns {Object|null} CORS response or null if not preflight
+ */
+function handleCORS(event) {
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+      }
+    };
+  }
+  return null;
+}
+
+module.exports = { 
+  requireUser, 
+  resp, 
+  handleCORS 
+};
