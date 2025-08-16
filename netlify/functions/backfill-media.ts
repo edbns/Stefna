@@ -1,9 +1,8 @@
 import type { Handler } from '@netlify/functions';
-import { createClient } from '@supabase/supabase-js';
+import { sql } from '../lib/db';
+import { getAuthedUser } from '../lib/auth';
 import { v2 as cloudinary } from 'cloudinary';
 
-const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const MEGA_TAG = process.env.MEGA_COLLECTION_TAG ?? 'collection:mega';
 
 cloudinary.config({
@@ -12,8 +11,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET!,
   secure: true,
 });
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 type Body = {
   userId: string;
@@ -30,11 +27,21 @@ function chunk<T>(arr: T[], n = 100) {
 
 export const handler: Handler = async (event) => {
   try {
-    if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
+    if (event.httpMethod !== 'POST') return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+
+    // Use new auth helper
+    const { user, error } = await getAuthedUser(event);
+    if (!user || error) {
+      return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'Authentication required' }) };
+    }
 
     const body = JSON.parse(event.body || '{}') as Body;
     const { userId, dryRun = false, includeFolders = [], includeTags = [] } = body;
-    if (!userId) return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'userId required' }) };
+    
+    // Validate userId matches authenticated user
+    if (!userId || userId !== user.id) {
+      return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Invalid userId' }) };
+    }
 
     // 1) Pull all Cloudinary assets for this user (by folder or tag)
     const expressions: string[] = [
@@ -63,38 +70,68 @@ export const handler: Handler = async (event) => {
       next_cursor = res.next_cursor;
     } while (next_cursor);
 
-    // 2) Get existing user's cloudinary_public_id list to avoid duplicates
-    const { data: existingRows, error: exErr } = await supabase
-      .from('assets')
-      .select('cloudinary_public_id')
-      .eq('user_id', userId);
-    if (exErr) throw exErr;
+    // 2) Get existing user's public_id list to avoid duplicates
+    let existingRows;
+    try {
+      existingRows = await sql`
+        SELECT public_id
+        FROM media_assets
+        WHERE owner_id = ${userId}
+      `;
+    } catch (exErr) {
+      console.error('Failed to fetch existing media:', exErr);
+      existingRows = [];
+    }
 
-    const existingSet = new Set<string>((existingRows || []).map(r => r.cloudinary_public_id).filter(Boolean));
+    const existingSet = new Set<string>((existingRows || []).map(r => r.public_id).filter(Boolean));
 
     // 3) Prepare rows for insert (only missing)
     const rows = resources
       .filter(r => !existingSet.has(r.public_id))
       .map(r => ({
-        user_id: userId,
-        cloudinary_public_id: r.public_id as string,
-        media_type: (r.resource_type === 'video' ? 'video' : 'image') as 'image' | 'video',
-        status: 'ready' as const,
-        is_public: Array.isArray(r.tags) ? r.tags.includes('public') : false,
+        owner_id: userId,
+        public_id: r.public_id as string,
+        resource_type: (r.resource_type === 'video' ? 'video' : 'image') as 'image' | 'video',
+        url: r.secure_url || r.url,
+        visibility: Array.isArray(r.tags) && r.tags.includes('public') ? 'public' : 'private',
         allow_remix: (r.context?.custom?.allow_remix === 'true') || false,
-        published_at: Array.isArray(r.tags) && r.tags.includes('public') ? (r.created_at as string) : null,
-        source_asset_id: null,
-        preset_key: r.context?.custom?.preset_key || null,
-        prompt: null,
+        env: 'production',
+        meta: {
+          prompt: r.context?.custom?.prompt || null,
+          preset_key: r.context?.custom?.preset_key || null,
+          source_asset_id: null,
+          cloudinary_tags: r.tags || [],
+          cloudinary_context: r.context || {},
+          bytes: r.bytes,
+          folder: r.folder
+        },
         created_at: r.created_at as string,
         updated_at: new Date().toISOString(),
       }));
 
     let inserted = 0;
     if (!dryRun && rows.length) {
-      const { error: insErr } = await supabase.from('assets').insert(rows);
-      if (insErr) throw insErr;
-      inserted = rows.length;
+      try {
+        // Insert rows one by one to handle potential conflicts
+        for (const row of rows) {
+          await sql`
+            INSERT INTO media_assets (
+              id, owner_id, public_id, resource_type, url, visibility, 
+              allow_remix, env, meta, created_at, updated_at
+            ) VALUES (
+              gen_random_uuid(), ${row.owner_id}, ${row.public_id}, 
+              ${row.resource_type}, ${row.url}, ${row.visibility},
+              ${row.allow_remix}, ${row.env}, ${JSON.stringify(row.meta)}, 
+              ${row.created_at}, ${row.updated_at}
+            )
+            ON CONFLICT (public_id) DO NOTHING
+          `;
+          inserted++;
+        }
+      } catch (insErr) {
+        console.error('Failed to insert rows:', insErr);
+        throw insErr;
+      }
     }
 
     // 4) Ensure user and mega tags are attached (optional but useful)
@@ -103,9 +140,13 @@ export const handler: Handler = async (event) => {
       const publicIds = resources.map(r => r.public_id as string);
       const batches = chunk(publicIds, 80);
       for (const ids of batches) {
-        await cloudinary.uploader.add_tag(`user:${userId}`, ids);
-        await cloudinary.uploader.add_tag(MEGA_TAG, ids);
-        retagged += ids.length;
+        try {
+          await cloudinary.uploader.add_tag(`user:${userId}`, ids);
+          await cloudinary.uploader.add_tag(MEGA_TAG, ids);
+          retagged += ids.length;
+        } catch (tagErr) {
+          console.warn('Failed to add tags to batch:', tagErr);
+        }
       }
     }
 
@@ -122,6 +163,7 @@ export const handler: Handler = async (event) => {
       }),
     };
   } catch (err: any) {
+    console.error('Backfill media error:', err);
     return { statusCode: 500, body: JSON.stringify({ ok: false, error: err.message, stack: err.stack }) };
   }
 };
