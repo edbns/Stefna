@@ -1,6 +1,6 @@
 // netlify/functions/getUserMedia.ts
 import { neon } from '@neondatabase/serverless';
-import { requireUser, resp, handleCORS, sanitizeDatabaseUrl } from './_auth';
+import { requireJWTUser, resp, handleCORS, sanitizeDatabaseUrl } from './_auth';
 
 // ---- Database connection with safe URL sanitization ----
 const cleanDbUrl = sanitizeDatabaseUrl(process.env.NETLIFY_DATABASE_URL || '');
@@ -39,7 +39,7 @@ export const handler = async (event: any, context: any) => {
 
   try {
     // Use new authentication helper
-    const user = requireUser(event);
+    const user = requireJWTUser(event);
     
     if (!user) {
       return resp(401, { error: 'Unauthorized' });
