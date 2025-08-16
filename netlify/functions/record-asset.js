@@ -1,18 +1,24 @@
-const { createClient } = require("@supabase/supabase-js");
-const { verifyAuth } = require("./_auth");
+const { neon } = require('@neondatabase/serverless');
+const { requireJWTUser, resp, handleCORS } = require('./_auth');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY, // server-only, bypasses RLS
-  { auth: { persistSession: false } }
-);
+const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
 exports.handler = async (event) => {
-  try {
-    if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
 
-    const { userId } = verifyAuth(event);
-    console.log(`✅ record-asset: Auth OK for user: ${userId}`);
+  if (event.httpMethod !== "POST") {
+    return resp(405, { error: 'Method not allowed' });
+  }
+
+  try {
+    const user = requireJWTUser(event);
+    if (!user) {
+      return resp(401, { error: 'Unauthorized' });
+    }
+
+    console.log(`✅ record-asset: Auth OK for user: ${user.userId}`);
 
     const body = JSON.parse(event.body || "{}");
     
@@ -21,12 +27,9 @@ exports.handler = async (event) => {
     if (resource_type === "photo") resource_type = "image";
 
     if (!["image", "video"].includes(resource_type)) {
-      return { 
-        statusCode: 400, 
-        body: JSON.stringify({ 
-          message: `resource_type must be "image" or "video", got "${resource_type}"` 
-        }) 
-      };
+      return resp(400, { 
+        error: `resource_type must be "image" or "video", got "${resource_type}"` 
+      });
     }
 
     const {
@@ -35,54 +38,51 @@ exports.handler = async (event) => {
     } = body;
 
     if (!url) {
-      return { statusCode: 400, body: JSON.stringify({ message: "Missing required field: url" }) };
+      return resp(400, { error: "Missing required field: url" });
     }
 
     // Insert with normalized resource_type, make optional fields truly optional
-    const { error, data } = await supabase
-      .from("assets")  // Use assets table for uploads
-      .insert({ 
-        user_id: userId, 
-        url, 
-        public_id: public_id || null,  // Allow null
-        resource_type, 
-        folder: folder || null,        // Allow null
-        bytes, 
-        width, 
-        height, 
-        duration, 
-        meta: meta || null 
-      })
-      .select("id")
-      .single();
-
-    if (error) {
-      console.error("Supabase insert error:", error);
-      return { 
-        statusCode: 400, 
-        body: JSON.stringify({ 
-          message: `Database error: ${error.message}`,
-          details: error
-        }) 
-      };
+    try {
+      const result = await sql`
+        INSERT INTO media_assets (
+          id, owner_id, url, public_id, resource_type, folder,
+          bytes, width, height, meta, created_at, updated_at
+        ) VALUES (
+          gen_random_uuid(), ${user.userId}, ${url}, 
+          ${public_id || null}, ${resource_type}, ${folder || null},
+          ${bytes || null}, ${width || null}, ${height || null}, 
+          ${meta || null}, NOW(), NOW()
+        )
+        RETURNING id
+      `;
+      
+      const assetId = result[0]?.id;
+      console.log(`✅ Asset recorded: ${assetId} for user ${user.userId}`);
+      
+      return resp(200, { 
+        ok: true,
+        id: assetId, 
+        message: "Asset saved successfully" 
+      });
+      
+    } catch (dbError) {
+      console.error("Database insert error:", dbError);
+      return resp(400, { 
+        error: `Database error: ${dbError.message}`,
+        details: process.env.NODE_ENV === 'development' ? dbError.toString() : undefined
+      });
     }
-    
-    console.log(`✅ Asset recorded: ${data.id} for user ${userId}`);
-    return { statusCode: 200, body: JSON.stringify({ id: data.id, message: "Asset saved successfully" }) };
   } catch (err) {
     console.error("record-asset error:", err);
     
     // Return specific error messages based on error type
     if (err.message?.includes("Unauthorized") || err.message?.includes("no_bearer")) {
-      return { statusCode: 401, body: JSON.stringify({ message: "Authentication required" }) };
+      return resp(401, { error: "Authentication required" });
     }
     
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ 
-        message: err.message || "Internal server error",
-        details: process.env.NODE_ENV === 'development' ? err.toString() : undefined
-      }) 
-    };
+    return resp(500, { 
+      error: err.message || "Internal server error",
+      details: process.env.NODE_ENV === 'development' ? err.toString() : undefined
+    });
   }
 };
