@@ -561,6 +561,20 @@ const HomeNew: React.FC = () => {
       notifyError({ title: 'Generation failed', message })
     }
 
+    const handleUserMediaUpdated = () => {
+      console.log('🔄 User media updated event received, refreshing feed and user media...')
+      // Refresh the public feed
+      loadFeed()
+      // Dispatch event to refresh user profile if it's mounted
+      window.dispatchEvent(new CustomEvent('refreshUserProfile'))
+    }
+
+    const handleRefreshUserMedia = () => {
+      console.log('🔄 Refresh user media event received, refreshing user profile...')
+      // Load user profile from database to refresh user media
+      loadUserProfileFromDatabase()
+    }
+
     const handleCloseComposer = () => {
       setIsComposerOpen(false)
     }
@@ -569,12 +583,16 @@ const HomeNew: React.FC = () => {
     window.addEventListener('generation-success', handleGenerationSuccess as EventListener)
     window.addEventListener('generation-error', handleGenerationError as EventListener)
     window.addEventListener('close-composer', handleCloseComposer as EventListener)
+    window.addEventListener('userMediaUpdated', handleUserMediaUpdated as EventListener)
+    window.addEventListener('refreshUserMedia', handleRefreshUserMedia as EventListener)
 
     return () => {
       window.removeEventListener('generation-complete', handleGenerationComplete as EventListener)
       window.removeEventListener('generation-success', handleGenerationSuccess as EventListener)
       window.removeEventListener('generation-error', handleGenerationError as EventListener)
       window.removeEventListener('close-composer', handleCloseComposer as EventListener)
+      window.removeEventListener('userMediaUpdated', handleUserMediaUpdated as EventListener)
+      window.removeEventListener('refreshUserMedia', handleRefreshUserMedia as EventListener)
     }
   }, [])
 

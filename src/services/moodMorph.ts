@@ -44,7 +44,7 @@ async function callAimlApiMini(payload: any) {
 // Simple feed refresh
 async function refreshFeed() {
   // Dispatch event to refresh UI
-  window.dispatchEvent(new CustomEvent('moodmorph-complete'))
+  window.dispatchEvent(new CustomEvent('refreshFeed'))
 }
 
 export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
@@ -146,6 +146,12 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
     
     // Dispatch event to refresh user's profile/media list
     window.dispatchEvent(new CustomEvent('userMediaUpdated'))
+    
+    // Also refresh the public feed directly
+    window.dispatchEvent(new CustomEvent('refreshFeed'))
+    
+    // Dispatch a specific event to refresh user's media list
+    window.dispatchEvent(new CustomEvent('refreshUserMedia'))
 
   } catch (e: any) {
     console.error('💥 MoodMorph: Critical error:', e)
