@@ -39,6 +39,7 @@ export const handler: Handler = async (event) => {
       allowPublish = true,
       // either (a) final hosted URL from AIML or (b) a Cloudinary public id if you reuploaded it
       image_url,              // e.g. https://cdn.aimlapi.com/...
+      url,                    // fallback field name for MoodMorph
       cloudinary_public_id,   // optional
       media_type = 'image',   // 'image' | 'video'
       meta = null,
@@ -51,6 +52,9 @@ export const handler: Handler = async (event) => {
       tags,
       extra
     } = body;
+
+    // Normalize the URL field - use url if image_url is not provided
+    const finalUrl = image_url || url;
 
     // Create media table if it doesn't exist
     await sql`
@@ -151,10 +155,10 @@ export const handler: Handler = async (event) => {
         VALUES (
           ${id},
           ${user.id},
-          ${image_url || null},
+          ${finalUrl || null},
           ${media_type},
           ${cloudinary_public_id || null},
-          ${image_url || null},
+          ${finalUrl || null},
           ${prompt || null},
           ${allowPublish},
           ${source_public_id},
