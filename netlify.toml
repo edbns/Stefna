@@ -31,7 +31,11 @@
     "jsonwebtoken",
     "jose",
     "cloudinary",
-    "resend"
+    "resend",
+    "winston",
+    "yargs",
+    "yauzl",
+    "ws"
   ]
 
 # Cache optimization
