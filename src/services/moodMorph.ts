@@ -140,7 +140,12 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
     }
     
     console.log(`🎉 MoodMorph: ${ok.length}/3 variants generated successfully`)
+    
+    // Refresh both the public feed and the user's profile
     await refreshFeed()
+    
+    // Dispatch event to refresh user's profile/media list
+    window.dispatchEvent(new CustomEvent('userMediaUpdated'))
 
   } catch (e: any) {
     console.error('💥 MoodMorph: Critical error:', e)
