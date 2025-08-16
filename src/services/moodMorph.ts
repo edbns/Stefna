@@ -102,7 +102,12 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
             const response = await fetchWithAuth('/.netlify/functions/save-media', {
               method: 'POST',
               body: JSON.stringify({
-                variations: [imageUrl],
+                variations: [{ 
+                  url: imageUrl, 
+                  type: 'image',
+                  is_public: false,
+                  meta: { mood: mood.id, group: runId }
+                }],
                 runId,
                 presetId: 'moodmorph',
                 allowPublish: false,
