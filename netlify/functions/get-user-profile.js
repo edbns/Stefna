@@ -1,5 +1,5 @@
 const { sql } = require('../lib/db');
-const { getAuthedUser } = require('../lib/auth');
+const { requireUser } = require('../lib/auth');
 
 exports.handler = async (event) => {
   // Handle CORS
@@ -16,98 +16,65 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { user, error } = await getAuthedUser(event);
-    if (!user) {
-      console.error('❌ Authentication failed:', error);
-      return { 
-        statusCode: 401, 
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ 
-          ok: false, 
-          message: error || 'Not authenticated',
-          error: error || 'Not authenticated'
-        }) 
-      };
-    }
-
+    // Use the new robust auth helper
+    const user = await requireUser(event);
     console.log('✅ User authenticated:', user.id);
 
-    // First ensure user exists in users table
-    let userData;
-    try {
-      const userResult = await sql`
-        INSERT INTO users (id, email, external_id, created_at, updated_at)
-        VALUES (${user.id}, ${user.email || `user-${user.id}@placeholder.com`}, ${user.id}, NOW(), NOW())
-        ON CONFLICT (id) DO UPDATE SET 
-          email = EXCLUDED.email,
-          updated_at = NOW()
-        RETURNING id, name, email, tier, avatar_url
-      `;
-      userData = userResult[0];
-      console.log(`✅ User ensured in users table:`, userData);
-    } catch (userError) {
-      console.error('❌ Error ensuring user:', userError);
-      return { 
-        statusCode: 500, 
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: 'Failed to ensure user exists' }) 
-      };
-    }
+    // Create profiles table if it doesn't exist (safe if it already exists)
+    await sql`
+      CREATE TABLE IF NOT EXISTS profiles (
+        id TEXT PRIMARY KEY,
+        email TEXT,
+        username TEXT UNIQUE,
+        name TEXT,
+        avatar_url TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
 
-    // Get or create profile settings
+    // Try to get existing profile
     let profile = await sql`
-      SELECT id, username, share_to_feed, allow_remix, created_at, updated_at
-      FROM user_settings 
-      WHERE user_id = ${user.id}
+      SELECT id, email, username, name, avatar_url, created_at 
+      FROM profiles 
+      WHERE id = ${user.id} 
       LIMIT 1
     `;
     profile = profile[0];
 
-    // If no profile settings exist, create them
+    // If no profile exists, create one
     if (!profile) {
-      try {
-        const defaultUsername = `user-${user.id.slice(-6)}`;
-        const newProfile = await sql`
-          INSERT INTO user_settings (user_id, username, share_to_feed, allow_remix, created_at, updated_at)
-          VALUES (${user.id}, ${defaultUsername}, false, false, NOW(), NOW())
-          RETURNING id, username, share_to_feed, allow_remix, created_at, updated_at
+      const defaultUsername = `user-${user.id.slice(-6)}`;
+      profile = await sql`
+        INSERT INTO profiles (id, email, username, name, avatar_url)
+        VALUES (${user.id}, ${user.email}, ${defaultUsername}, ${user.name}, ${user.avatar_url})
+        ON CONFLICT (id) DO NOTHING
+        RETURNING id, email, username, name, avatar_url, created_at
+      `;
+      profile = profile[0];
+      
+      // If insert didn't work, try to select again
+      if (!profile) {
+        profile = await sql`
+          SELECT id, email, username, name, avatar_url, created_at 
+          FROM profiles 
+          WHERE id = ${user.id} 
+          LIMIT 1
         `;
-        profile = newProfile[0];
-        console.log(`✅ Created default profile settings:`, profile);
-      } catch (createError) {
-        console.error('❌ Failed to create profile settings:', createError);
-        profile = {
-          id: user.id,
-          username: `user-${user.id.slice(-6)}`,
-          share_to_feed: false,
-          allow_remix: false,
-          updated_at: new Date().toISOString()
-        };
+        profile = profile[0];
       }
     }
 
-    // Combine user data and profile settings
-    const profileData = {
-      id: user.id, // Always use the real user ID from JWT
-      email: userData.email,
-      name: userData.name,
-      username: profile.username,
-      avatar_url: userData.avatar_url,
-      share_to_feed: profile.share_to_feed,
-      allow_remix: profile.allow_remix,
-      tier: userData.tier,
-      created_at: profile.created_at,
-      updated_at: profile.updated_at
-    };
+    // Guarantee id is present and never null
+    profile = { ...profile, id: user.id };
 
-    console.log('✅ Returning profile data:', profileData);
+    console.log('✅ Returning profile data:', profile);
 
     return { 
       statusCode: 200, 
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
         ok: true, 
-        profile: profileData 
+        profile: profile
       }) 
     };
 

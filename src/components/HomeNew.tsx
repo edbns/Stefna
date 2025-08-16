@@ -2646,9 +2646,9 @@ const HomeNew: React.FC = () => {
                         }
                       }, 100)
                     }} 
-                    disabled={!selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset)} 
+                    disabled={!selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset) || navGenerating} 
                     className={
-                      (!selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset))
+                      (!selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset) || navGenerating)
                         ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
                         : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
                     }
