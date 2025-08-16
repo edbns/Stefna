@@ -157,130 +157,110 @@ exports.handler = async (event, context) => {
                 color: #ffffff; 
               }
               .container { 
-                max-width: 600px; 
+                max-width: 400px; 
                 margin: 0 auto; 
                 background: #000000; 
-                padding: 40px 20px;
+                padding: 30px 20px;
               }
               .header { 
                 text-align: center; 
-                margin-bottom: 40px;
+                margin-bottom: 30px;
               }
-              .logo-icon { 
+              .logo { 
                 width: 48px; 
                 height: 48px; 
-                border: 2px solid #ffffff; 
-                border-radius: 8px; 
                 margin: 0 auto 20px; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center;
-                font-size: 24px;
-                font-weight: bold;
+                display: block;
               }
               .title { 
-                font-size: 32px; 
+                font-size: 28px; 
                 font-weight: 700; 
                 color: #ffffff; 
-                margin-bottom: 20px; 
-              }
-              .subtitle { 
-                font-size: 16px; 
-                color: #cccccc; 
-                line-height: 1.5;
-                margin-bottom: 40px;
+                margin-bottom: 15px; 
               }
               .otp-section { 
                 background: #1a1a1a; 
-                border-radius: 16px; 
-                padding: 30px; 
+                border-radius: 12px; 
+                padding: 25px; 
                 text-align: center; 
-                margin-bottom: 30px; 
+                margin-bottom: 25px; 
               }
               .otp-label { 
-                font-size: 12px; 
+                font-size: 11px; 
                 font-weight: 600; 
                 color: #999999; 
                 text-transform: uppercase; 
                 letter-spacing: 1px; 
-                margin-bottom: 20px; 
+                margin-bottom: 15px; 
               }
               .otp-code { 
-                font-size: 48px; 
+                font-size: 42px; 
                 font-weight: 700; 
                 color: #ffffff; 
-                letter-spacing: 8px; 
-                margin-bottom: 20px; 
+                letter-spacing: 6px; 
+                margin-bottom: 15px; 
                 font-family: 'Courier New', monospace;
               }
               .otp-expiry { 
-                font-size: 12px; 
+                font-size: 11px; 
                 color: #999999; 
                 text-transform: uppercase;
                 letter-spacing: 1px;
               }
               .security-section { 
                 background: #1a1a1a; 
-                border-radius: 16px; 
-                padding: 30px; 
+                border-radius: 12px; 
+                padding: 25px; 
                 text-align: left;
-                margin-bottom: 40px;
+                margin-bottom: 30px;
               }
               .security-title { 
-                font-size: 18px; 
+                font-size: 16px; 
                 font-weight: 600; 
                 color: #ffffff; 
-                margin-bottom: 15px; 
+                margin-bottom: 12px; 
                 text-align: center;
               }
               .security-text { 
-                font-size: 14px; 
+                font-size: 13px; 
                 color: #cccccc; 
-                line-height: 1.6; 
+                line-height: 1.5; 
                 margin: 0; 
                 text-align: center;
               }
               .footer { 
                 text-align: center; 
-                padding-top: 30px; 
+                padding-top: 25px; 
                 border-top: 1px solid #333333; 
               }
               .company-slogan { 
-                font-size: 16px; 
+                font-size: 15px; 
                 font-weight: 600; 
                 color: #ffffff; 
-                margin-bottom: 20px; 
+                margin-bottom: 18px; 
               }
               .footer-text { 
-                font-size: 14px; 
+                font-size: 13px; 
                 color: #999999; 
-                margin: 0 0 10px 0; 
+                margin: 0 0 8px 0; 
               }
               .contact-info { 
-                font-size: 14px; 
+                font-size: 13px; 
                 color: #ffffff; 
-                margin-top: 15px; 
+                margin-top: 12px; 
               }
-              .email-highlight { 
-                background: #ffd700; 
-                color: #000000; 
-                padding: 2px 6px; 
-                border-radius: 4px; 
-                font-weight: 600;
-              }
-              @media (max-width: 600px) {
-                .container { padding: 30px 15px; }
-                .otp-code { font-size: 36px; letter-spacing: 6px; }
-                .title { font-size: 28px; }
+              @media (max-width: 400px) {
+                .container { padding: 25px 15px; }
+                .otp-code { font-size: 36px; letter-spacing: 4px; }
+                .title { font-size: 24px; }
               }
             </style>
           </head>
           <body>
             <div class="container">
               <div class="header">
-                <div class="logo-icon">S</div>
+                <img src="https://stefna.xyz/logo.png" alt="Stefna" class="logo">
                 <h1 class="title">Login Code</h1>
-                <p class="subtitle">Enter this code to access your Stefna dashboard</p>
               </div>
               
               <div class="otp-section">
@@ -300,7 +280,7 @@ exports.handler = async (event, context) => {
               <div class="footer">
                 <div class="company-slogan">Stefna - Turn Moments into Masterpieces—No Limits</div>
                 <p class="footer-text">This email was sent to ${email}</p>
-                <p class="contact-info">If you have any questions, contact us at <span class="email-highlight">hello@stefna.xyz</span></p>
+                <p class="contact-info">If you have any questions, contact us at hello@stefna.xyz</p>
               </div>
             </div>
           </body>

@@ -1,19 +1,24 @@
-const { sql, json, parseUserIdFromJWT } = require('./_db');
+const { sql } = require('./_db');
+const { requireAuth, httpErr } = require('./_auth');
 
 exports.handler = async (event) => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
-    return json({}, 200);
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+      },
+      body: ''
+    };
   }
 
   try {
-    // Parse authorization header
-    const auth = event.headers.authorization || '';
-    if (!auth) {
-      return json({ ok: false, error: 'Missing authorization header' }, 401);
-    }
-
-    const userId = await parseUserIdFromJWT(auth);
+    // Use centralized auth
+    const { userId } = requireAuth(event.headers.authorization);
     console.log('✅ User authenticated:', userId);
 
     // Try to get existing profile
@@ -57,19 +62,36 @@ exports.handler = async (event) => {
     }
 
     // Return profile data (may be null if creation failed)
-    return json({ 
-      ok: true, 
-      profile: profile || null,
-      message: profile ? 'Profile loaded successfully' : 'Profile creation failed'
-    });
+    return {
+      statusCode: 200,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        ok: true, 
+        profile: profile || null,
+        message: profile ? 'Profile loaded successfully' : 'Profile creation failed'
+      })
+    };
 
   } catch (error) {
     console.error('❌ Get user profile error:', error);
-    return json({ 
-      ok: false, 
-      error: 'INTERNAL_ERROR',
-      details: error.message 
-    }, 500);
+    const status = error.statusCode || 500;
+    const code = error.code || 'INTERNAL_ERROR';
+    
+    return {
+      statusCode: status,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        ok: false, 
+        error: code,
+        details: error.message 
+      })
+    };
   }
 };
 

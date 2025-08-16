@@ -143,6 +143,19 @@ exports.handler = async (event, context) => {
       user = newUser[0];
       isNewUser = true;
 
+      // Seed initial credits for new user
+      try {
+        await sql`
+          INSERT INTO credits (user_id, balance)
+          VALUES (${user.id}, 10)
+          ON CONFLICT (user_id) DO NOTHING
+        `;
+        console.log(`💰 Seeded 10 initial credits for new user: ${user.id}`);
+      } catch (creditError) {
+        console.error('❌ Failed to seed credits:', creditError);
+        // Don't fail signup if credit seeding fails
+      }
+
       // Process referral if provided
       if (referrerEmail) {
         console.log(`🎁 Processing referral for new user: ${referrerEmail} -> ${email}`);

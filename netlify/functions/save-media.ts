@@ -5,22 +5,27 @@
 // - Returns canonical items used by feed + UI
 
 import type { Handler } from '@netlify/functions';
-import { sql, json, parseUserIdFromJWT } from './_db';
+import { sql } from './_db';
+import { requireAuth, httpErr } from './_auth';
 
 export const handler: Handler = async (event) => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
-    return json({}, 200);
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-idempotency-key, X-Idempotency-Key',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+      },
+      body: ''
+    };
   }
 
   try {
-    // Parse authorization header
-    const auth = event.headers.authorization || '';
-    if (!auth) {
-      return json({ ok: false, error: 'Missing authorization header' }, 401);
-    }
-
-    const userId = await parseUserIdFromJWT(auth);
+    // Use centralized auth
+    const { userId } = requireAuth(event.headers.authorization);
     console.log('✅ User authenticated:', userId);
 
     // Get idempotency key from headers or generate one
@@ -62,11 +67,7 @@ export const handler: Handler = async (event) => {
     const finalUrl = image_url || url;
     if (!finalUrl) {
       console.error('❌ MISSING_URL: No valid URL found in request');
-      return json({ 
-        ok: false, 
-        error: 'MISSING_URL',
-        details: 'Request must include image_url or url field with AIML generated image URL'
-      }, 400);
+      throw httpErr(400, 'MISSING_URL', 'Request must include image_url or url field with AIML generated image URL');
     }
 
     console.log('🔗 Using URL:', finalUrl);
@@ -137,12 +138,19 @@ export const handler: Handler = async (event) => {
         }
       }
 
-      return json({ 
-        ok: true, 
-        message: `Saved ${savedItems.length} variations`,
-        items: savedItems,
-        total: savedItems.length
-      });
+      return {
+        statusCode: 200,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ 
+          ok: true, 
+          message: `Saved ${savedItems.length} variations`,
+          items: savedItems,
+          total: savedItems.length
+        })
+      };
 
     } else {
       // Single media item
@@ -181,30 +189,41 @@ export const handler: Handler = async (event) => {
 
         if (result && result[0]) {
           console.log('✅ Saved single media item:', result[0].id);
-          return json({ 
-            ok: true, 
-            media: result[0],
-            message: 'Media saved successfully'
-          });
+          return {
+            statusCode: 200,
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({ 
+              ok: true, 
+              media: result[0],
+              message: 'Media saved successfully'
+            })
+          };
         } else {
           throw new Error('No result returned from database insert');
         }
       } catch (error) {
         console.error('❌ Database error:', error);
-        return json({ 
-          ok: false, 
-          error: 'DATABASE_ERROR',
-          details: error.message 
-        }, 500);
+        throw httpErr(500, 'DATABASE_ERROR', error.message);
       }
     }
 
   } catch (error: any) {
     console.error('❌ Save media error:', error);
-    return json({ 
-      ok: false, 
-      error: 'INTERNAL_ERROR',
-      details: error.message 
-    }, 500);
+    const status = error.statusCode || 500;
+    const code = error.code || 'INTERNAL_ERROR';
+    const details = error.extra || error.message;
+    
+    return {
+      statusCode: status,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ 
+        ok: false, 
+        error: code,
+        details: details
+      })
+    };
   }
 };

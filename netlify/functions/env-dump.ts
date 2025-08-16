@@ -25,8 +25,12 @@ export const handler: Handler = async () => {
       aiml_base_set: !!process.env.AIML_API_BASE,
       
       // JWT Configuration
-      hasJwtSecret: !!process.env.AUTH_JWT_SECRET,
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      hasAuthJwtSecret: !!process.env.AUTH_JWT_SECRET,
       hasJwtSecretAlt: !!process.env.JWT_SECRET,
+      jwtSecretLength: process.env.JWT_SECRET?.length || 0,
+      authJwtSecretLength: process.env.AUTH_JWT_SECRET?.length || 0,
+      jwtSecretsMatch: process.env.JWT_SECRET === process.env.AUTH_JWT_SECRET,
       
       // Supabase (should be removed)
       supabaseUrl: (process.env.SUPABASE_URL || '').replace(/.{20}$/, '********'),
