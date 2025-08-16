@@ -1,6 +1,7 @@
 import { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const jwtSecret = process.env.JWT_SECRET!;
 
@@ -74,10 +75,11 @@ export const handler: Handler = async (event, context) => {
     // This prevents the "User ID not found in users table" error
     try {
       await sql`
-        INSERT INTO users (id, email, name, tier, created_at, updated_at)
-        VALUES (${uid}, ${email || `user-${uid}@placeholder.com`}, ${body.username || `User ${uid}`}, 'registered', NOW(), NOW())
+        INSERT INTO users (id, email, external_id, name, tier, created_at, updated_at)
+        VALUES (${uid}, ${email || `user-${uid}@placeholder.com`}, ${email || `user-${uid}@placeholder.com`}, ${body.username || `User ${uid}`}, 'registered', NOW(), NOW())
         ON CONFLICT (id) DO UPDATE SET 
           email = EXCLUDED.email,
+          external_id = EXCLUDED.external_id,
           name = EXCLUDED.name,
           updated_at = NOW()
       `;
@@ -91,20 +93,21 @@ export const handler: Handler = async (event, context) => {
       });
     }
 
-    // SECOND: Update user profile with additional fields
+    // SECOND: Update user settings
     try {
       await sql`
-        UPDATE users 
-        SET 
-          name = ${body.username || `User ${uid}`},
+        INSERT INTO user_settings (id, user_id, share_to_feed, allow_remix, updated_at)
+        VALUES (${crypto.randomUUID()}, ${uid}, ${body.share_to_feed ?? true}, ${body.allow_remix ?? true}, NOW())
+        ON CONFLICT (user_id) DO UPDATE SET
+          share_to_feed = ${body.share_to_feed ?? true},
+          allow_remix = ${body.allow_remix ?? true},
           updated_at = NOW()
-        WHERE id = ${uid}
       `;
       
-      console.log('✅ User profile updated successfully');
-    } catch (profileUpdateError) {
-      console.error('Failed to update user profile:', profileUpdateError);
-      // Don't fail the request for profile update errors
+      console.log('✅ User settings upserted successfully');
+    } catch (settingsUpsertError) {
+      console.error('Failed to upsert user settings:', settingsUpsertError);
+      // Don't fail the request for settings upsert errors
     }
 
     // Return success response

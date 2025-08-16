@@ -41,8 +41,13 @@ if (!cleanDbUrl) {
 const sql = neon(cleanDbUrl);
 
 type Variation = {
-  url: string            // remote HTTPS URL from AIML or temp storage
+  url?: string            // remote HTTPS URL from AIML or temp storage
+  image_url?: string      // alternative field name from AIML
   type?: 'image' | 'video' | 'gif' | string
+  media_type?: string     // alternative field name
+  is_public?: boolean     // whether media should be public
+  thumb_url?: string      // thumbnail URL
+  thumbnail?: string      // alternative thumbnail field
   meta?: Record<string, any>
 }
 
@@ -51,7 +56,15 @@ type SaveMediaRequest = {
   presetId?: string
   allowPublish?: boolean
   source?: { url?: string }           // optional original
-  variations: Variation[]             // REQUIRED
+  variations?: Variation[]             // REQUIRED
+  // Also accept single media item
+  url?: string
+  image_url?: string
+  type?: string
+  media_type?: string
+  is_public?: boolean
+  thumb_url?: string
+  thumbnail?: string
   tags?: string[]
   extra?: Record<string, any>
 }
@@ -88,40 +101,63 @@ export const handler: Handler = async (event, context) => {
     return resp(400, { error: 'Invalid JSON body' })
   }
 
-  if (!body?.variations?.length) {
-    return resp(400, { error: 'No variations provided' })
-  }
-
   // ---- Auth check using JWT ----
   const user = requireJWTUser(event)
   if (!user) {
     return resp(401, { error: 'Unauthorized - Invalid or missing JWT token' })
   }
 
-  // ---- Validate URLs ----
-  const validVariations = body.variations.filter(v => {
-    return v.url && v.url.startsWith('https://') && !v.url.startsWith('blob:')
-  })
-
-  if (!validVariations.length) {
-    return resp(400, { error: 'No valid HTTPS URLs provided' })
+  // ---- Extract media items ----
+  let mediaItems: Variation[] = []
+  
+  // Check if it's a single media item - accept both url and image_url
+  if (body.url || body.image_url) {
+    mediaItems = [{
+      url: body.url || body.image_url,
+      type: body.type || body.media_type || 'image',
+      is_public: body.is_public ?? true,
+      thumb_url: body.thumb_url || body.thumbnail,
+      meta: body.extra || {}
+    }]
+  } else if (body.variations && body.variations.length > 0) {
+    // Multiple variations
+    mediaItems = body.variations.map(v => ({
+      url: v.url || v.image_url,
+      type: v.type || v.media_type || 'image',
+      is_public: v.is_public ?? true,
+      thumb_url: v.thumb_url || v.thumbnail,
+      meta: v.meta || {}
+    }))
   }
 
-  // ---- Process variations ----
+  if (!mediaItems.length) {
+    return resp(400, { error: 'No media items provided. Send url/image_url or variations array.' })
+  }
+
+  // ---- Validate URLs ----
+  const validItems = mediaItems.filter(item => {
+    return item.url && item.url.startsWith('https://') && !item.url.startsWith('blob:')
+  })
+
+  if (!validItems.length) {
+    return resp(400, { error: 'No valid HTTPS URLs provided. Blob URLs are not supported.' })
+  }
+
+  // ---- Process media items ----
   const results: CanonicalItem[] = []
   const errors: string[] = []
 
-  for (const variation of validVariations) {
+  for (const item of validItems) {
     try {
       // Upload to Cloudinary
-      const uploadResult = await cloudinary.uploader.upload(variation.url, {
+      const uploadResult = await cloudinary.uploader.upload(item.url!, {
         folder: 'stefna',
         resource_type: 'auto',
         overwrite: false,
         unique_filename: true,
       })
 
-      const item: CanonicalItem = {
+      const canonicalItem: CanonicalItem = {
         cloudinary_public_id: uploadResult.public_id,
         secure_url: uploadResult.secure_url,
         resource_type: uploadResult.resource_type,
@@ -132,25 +168,20 @@ export const handler: Handler = async (event, context) => {
         folder: uploadResult.folder,
         media_type: uploadResult.resource_type as any,
         final: uploadResult.secure_url,
-        meta: variation.meta,
+        meta: item.meta,
       }
 
-      results.push(item)
+      results.push(canonicalItem)
 
-      // Save to database using new schema
+      // Save to database using the media_assets table (compatibility view is read-only)
       try {
         await sql`
           INSERT INTO media_assets (
-            id, owner_id, url, public_id, resource_type, 
-            folder, bytes, width, height, meta, 
-            created_at, updated_at, visibility, env
-          )           VALUES (
-            ${crypto.randomUUID()}, ${user.userId}, ${item.secure_url}, 
-            ${item.cloudinary_public_id}, ${item.resource_type}, 
-            ${item.folder || 'stefna'}, ${item.bytes || 0}, 
-            ${item.width || 0}, ${item.height || 0}, 
-            ${JSON.stringify(item.meta || {})}, 
-            NOW(), NOW(), 'private', 'production'
+            id, owner_id, url, public_id, resource_type, visibility, allow_remix, env, created_at, updated_at
+          ) VALUES (
+            ${crypto.randomUUID()}, ${user.userId}, ${uploadResult.secure_url},
+            ${uploadResult.public_id}, ${item.type || 'image'}, 
+            ${item.is_public ? 'public' : 'private'}, false, 'production', NOW(), NOW()
           )
         `
       } catch (dbError) {
@@ -159,8 +190,8 @@ export const handler: Handler = async (event, context) => {
       }
 
     } catch (uploadError) {
-      console.error('Upload error for:', variation.url, uploadError)
-      errors.push(`Failed to upload: ${variation.url}`)
+      console.error('Upload error for:', item.url, uploadError)
+      errors.push(`Failed to upload: ${item.url}`)
     }
   }
 

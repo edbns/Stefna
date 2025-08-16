@@ -130,7 +130,12 @@ exports.handler = async (event, context) => {
       
       const newUser = await sql`
         INSERT INTO users (id, email, external_id, name, tier, created_at, updated_at)
-        VALUES (${userData.id}, ${userData.email}, ${userData.external_id}, ${userData.name}, ${userData.tier}, ${userData.created_at}, ${userData.updated_at})
+        VALUES (${userData.id}, ${userData.email}, ${userData.email}, ${userData.name}, 'registered', ${userData.created_at}, ${userData.created_at})
+        ON CONFLICT (id) DO UPDATE SET 
+          email = EXCLUDED.email, 
+          external_id = EXCLUDED.external_id,
+          name = EXCLUDED.name,
+          updated_at = EXCLUDED.updated_at
         RETURNING *
       `;
       
