@@ -1,4 +1,7 @@
-# Local Netlify folder
-.netlify
+# Dependencies
+node_modules/
+netlify/functions/node_modules/
 
-/generated/prisma
+# Build outputs
+dist/
+build/

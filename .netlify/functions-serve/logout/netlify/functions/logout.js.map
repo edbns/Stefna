@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../Users/sennie/Desktop/Stefna-main/netlify/functions/logout.js"],
+  "sourceRoot": "/var/folders/3j/nmp5dkpd4tv8j0yq8f2ln8780000gn/T/tmp-42344-kV8r0UyQeaOp",
+  "sourcesContent": ["exports.handler = async (event) => {\n  if (event.httpMethod !== 'POST') {\n    return { statusCode: 405, body: 'Method Not Allowed' }\n  }\n  // Clear cookie by setting Max-Age=0\n  const cookie = `stefna_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''}`\n  return {\n    statusCode: 200,\n    headers: {\n      'Set-Cookie': cookie,\n      'Content-Type': 'application/json'\n    },\n    body: JSON.stringify({ success: true })\n  }\n}\n\n\n"],
+  "mappings": ";;;AAAA,QAAQ,UAAU,OAAO,UAAU;AACjC,MAAI,MAAM,eAAe,QAAQ;AAC/B,WAAO,EAAE,YAAY,KAAK,MAAM,qBAAqB;AAAA,EACvD;AAEA,QAAM,SAAS,kEAAkE,QAAQ,IAAI,aAAa,eAAe,YAAY,EAAE;AACvI,SAAO;AAAA,IACL,YAAY;AAAA,IACZ,SAAS;AAAA,MACP,cAAc;AAAA,MACd,gBAAgB;AAAA,IAClB;AAAA,IACA,MAAM,KAAK,UAAU,EAAE,SAAS,KAAK,CAAC;AAAA,EACxC;AACF;",
+  "names": []
+}

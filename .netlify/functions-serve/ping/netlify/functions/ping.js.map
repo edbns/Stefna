@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../Users/sennie/Desktop/Stefna-main/netlify/functions/ping.ts"],
+  "sourceRoot": "/var/folders/3j/nmp5dkpd4tv8j0yq8f2ln8780000gn/T/tmp-42344-LnNnNh8sdn8E",
+  "sourcesContent": ["export const handler = async (event: any) => {\n  return {\n    statusCode: 200,\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      ok: true,\n      path: event.rawUrl || event.path,\n      method: event.httpMethod,\n    }),\n  };\n};\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAO,IAAM,UAAU,OAAO,UAAe;AAC3C,SAAO;AAAA,IACL,YAAY;AAAA,IACZ,SAAS,EAAE,gBAAgB,mBAAmB;AAAA,IAC9C,MAAM,KAAK,UAAU;AAAA,MACnB,IAAI;AAAA,MACJ,MAAM,MAAM,UAAU,MAAM;AAAA,MAC5B,QAAQ,MAAM;AAAA,IAChB,CAAC;AAAA,EACH;AACF;",
+  "names": []
+}

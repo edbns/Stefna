@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../Users/sennie/Desktop/Stefna-main/netlify/functions/cleanup-otps.js"],
+  "sourceRoot": "/var/folders/3j/nmp5dkpd4tv8j0yq8f2ln8780000gn/T/tmp-42344-mImVztr2Ou8O",
+  "sourcesContent": ["const { createClient } = require('@supabase/supabase-js')\n\nexports.handler = async () => {\n  try {\n    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)\n    const now = new Date().toISOString()\n    const { error } = await supabase\n      .from('user_otps')\n      .delete()\n      .lt('expires_at', now)\n      .or('used.eq.true')\n    if (error) throw error\n    return { statusCode: 200, body: JSON.stringify({ success: true }) }\n  } catch (e) {\n    return { statusCode: 500, body: JSON.stringify({ error: e.message }) }\n  }\n}\n\n\n"],
+  "mappings": ";;;AAAA,IAAM,EAAE,aAAa,IAAI,QAAQ,uBAAuB;AAExD,QAAQ,UAAU,YAAY;AAC5B,MAAI;AACF,UAAM,WAAW,aAAa,QAAQ,IAAI,cAAc,QAAQ,IAAI,yBAAyB;AAC7F,UAAM,OAAM,oBAAI,KAAK,GAAE,YAAY;AACnC,UAAM,EAAE,MAAM,IAAI,MAAM,SACrB,KAAK,WAAW,EAChB,OAAO,EACP,GAAG,cAAc,GAAG,EACpB,GAAG,cAAc;AACpB,QAAI,MAAO,OAAM;AACjB,WAAO,EAAE,YAAY,KAAK,MAAM,KAAK,UAAU,EAAE,SAAS,KAAK,CAAC,EAAE;AAAA,EACpE,SAAS,GAAG;AACV,WAAO,EAAE,YAAY,KAAK,MAAM,KAAK,UAAU,EAAE,OAAO,EAAE,QAAQ,CAAC,EAAE;AAAA,EACvE;AACF;",
+  "names": []
+}
