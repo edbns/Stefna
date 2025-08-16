@@ -68,7 +68,21 @@ export const handler: Handler = async (event) => {
       )
     `;
 
+    // Create credits_ledger table if it doesn't exist
+    await sql`
+      CREATE TABLE IF NOT EXISTS credits_ledger (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id TEXT NOT NULL,
+        amount INTEGER NOT NULL CHECK (amount != 0),
+        reason TEXT NOT NULL,
+        env TEXT DEFAULT 'production',
+        request_id TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+
     let items: any[] = [];
+    let totalCreditsDeducted = 0;
 
     // Handle MoodMorph variations
     if (variations && Array.isArray(variations)) {
@@ -122,6 +136,9 @@ export const handler: Handler = async (event) => {
           isPublic: mediaItem.is_public,
           meta: mediaItem.meta
         });
+
+        // Deduct 1 credit per variation
+        totalCreditsDeducted += 1;
       }
     } else {
       // Handle single media item
@@ -160,6 +177,29 @@ export const handler: Handler = async (event) => {
         isPublic: mediaItem.is_public,
         meta: mediaItem.meta
       });
+
+      // Deduct 1 credit for single media
+      totalCreditsDeducted = 1;
+    }
+
+    // Deduct credits from the ledger
+    if (totalCreditsDeducted > 0) {
+      try {
+        await sql`
+          INSERT INTO credits_ledger (user_id, amount, reason, request_id, env)
+          VALUES (
+            ${user.id},
+            ${-totalCreditsDeducted},
+            ${`media_generation_${media_type}`},
+            ${runId || 'manual'},
+            ${process.env.NODE_ENV || 'production'}
+          )
+        `;
+        console.log(`💰 Deducted ${totalCreditsDeducted} credits from user ${user.id}`);
+      } catch (creditError) {
+        console.error('❌ Failed to deduct credits:', creditError);
+        // Don't fail the media save if credit deduction fails
+      }
     }
 
     console.log('✅ Saved media items:', items.length);
@@ -172,7 +212,8 @@ export const handler: Handler = async (event) => {
         ok: true, 
         items: items, 
         data: items,
-        count: items.length
+        count: items.length,
+        creditsDeducted: totalCreditsDeducted
       }) 
     };
 
