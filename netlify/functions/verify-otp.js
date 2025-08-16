@@ -120,14 +120,17 @@ exports.handler = async (event, context) => {
       const userData = {
         id: userId,
         email: email.toLowerCase(),
+        external_id: email.toLowerCase(),
         name: email.split('@')[0], // Use email prefix as name
-        created_at: new Date().toISOString()
+        tier: 'registered',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       console.log('Creating user with data:', userData);
       
       const newUser = await sql`
-        INSERT INTO users (id, email, name, created_at)
-        VALUES (${userData.id}, ${userData.email}, ${userData.name}, ${userData.created_at})
+        INSERT INTO users (id, email, external_id, name, tier, created_at, updated_at)
+        VALUES (${userData.id}, ${userData.email}, ${userData.external_id}, ${userData.name}, ${userData.tier}, ${userData.created_at}, ${userData.updated_at})
         RETURNING *
       `;
       
@@ -161,13 +164,13 @@ exports.handler = async (event, context) => {
         }
       }
     } else {
-      // User exists, update last_login
-      console.log('User exists, updating last_login');
+      // User exists, update updated_at
+      console.log('User exists, updating updated_at');
       const existingUser = existingUsers[0];
       
       const updatedUser = await sql`
         UPDATE users 
-        SET last_login = ${new Date().toISOString()}
+        SET updated_at = ${new Date().toISOString()}
         WHERE id = ${existingUser.id}
         RETURNING *
       `;
