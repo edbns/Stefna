@@ -1,19 +1,20 @@
-const { createClient } = require('@supabase/supabase-js')
-const { verifyAuth } = require('./_auth')
+const { neon } = require('@neondatabase/serverless')
+const { requireJWTUser, resp, handleCORS } = require('./_auth')
 
 exports.handler = async (event) => {
+  // Handle CORS preflight
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
+
   try {
     if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, body: 'Method Not Allowed' }
+      return resp(405, { error: 'Method Not Allowed' })
     }
 
-    const { userId } = verifyAuth(event)
-    if (!userId) {
-      return { 
-        statusCode: 401, 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Authentication required' }) 
-      }
+    // ---- Auth check using JWT ----
+    const user = requireJWTUser(event)
+    if (!user) {
+      return resp(401, { error: 'Authentication required' })
     }
 
     const { amount, reason } = JSON.parse(event.body || '{}')
@@ -28,47 +29,39 @@ exports.handler = async (event) => {
 
     // Auto-detect environment
     const APP_ENV = /netlify\.app$/i.test(event.headers.host || '') ? 'dev' : 'prod'
-    console.log(`💰 Adding ${amount} bonus credits to user ${userId} in ${APP_ENV}`)
+    console.log(`💰 Adding ${amount} bonus credits to user ${user.userId} in ${APP_ENV}`)
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
+    const sql = neon(process.env.DATABASE_URL)
 
     // Add bonus credits to the ledger
-    const { error: creditError } = await supabase
-      .from('credits_ledger')
-      .insert({
-        user_id: userId,
-        amount: amount,
-        reason: reason || 'bonus_credits',
-        request_id: `bonus_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        env: APP_ENV
-      })
-
-    if (creditError) {
+    try {
+      await sql`
+        INSERT INTO credits_ledger (
+          user_id, amount, reason, request_id, env, created_at
+        ) VALUES (
+          ${user.userId}, 
+          ${amount}, 
+          ${reason || 'bonus_credits'}, 
+          ${`bonus_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`}, 
+          ${APP_ENV},
+          NOW()
+        )
+      `
+    } catch (creditError) {
       console.error('❌ Failed to add bonus credits:', creditError)
       throw creditError
     }
 
-    console.log(`✅ Added ${amount} bonus credits to user ${userId}`)
+    console.log(`✅ Added ${amount} bonus credits to user ${user.userId}`)
 
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        success: true,
-        amount,
-        reason: reason || 'bonus_credits'
-      })
-    }
+    return resp(200, {
+      success: true,
+      amount,
+      reason: reason || 'bonus_credits'
+    })
 
   } catch (error) {
     console.error('❌ Add bonus credits error:', error)
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: error.message || 'Internal server error' })
-    }
+    return resp(500, { error: error.message || 'Internal server error' })
   }
 }
