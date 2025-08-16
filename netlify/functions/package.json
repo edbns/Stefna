@@ -9,6 +9,7 @@
     "@supabase/supabase-js": "^2.38.0",
     "cloudinary": "^1.41.0",
     "form-data": "^4.0.4",
+    "jose": "^5.2.0",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^2.6.7",
     "resend": "^2.0.0",
