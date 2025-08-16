@@ -1,11 +1,9 @@
 // netlify/functions/recordShare.ts
 import type { Handler } from '@netlify/functions';
-import { initCloudinary, assertCloudinaryEnv } from './_cloudinary';
-import { createClient } from '@supabase/supabase-js';
+import { neon } from '@neondatabase/serverless';
 
-const url = process.env.SUPABASE_URL!;
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = url && key ? createClient(url, key, { auth: { persistSession: false } }) : null as any;
+// ---- Database connection ----
+const sql = neon(process.env.NETLIFY_DATABASE_URL!)
 
 function getUserIdFromToken(auth?: string): string | null {
   try {
@@ -19,92 +17,109 @@ function getUserIdFromToken(auth?: string): string | null {
   }
 }
 
-async function resolvePublicIdByAssetId(cloudinary: any, assetId: string): Promise<string | null> {
-  const expr = `tags=\"stefna\" AND context.asset_id=\"${assetId}\"`;
-  const maxAttempts = 6;
-  const delayMs = 300;
-  for (let i = 0; i < maxAttempts; i++) {
-    const found = await cloudinary.search.expression(expr).max_results(1).execute();
-    const pid = found?.resources?.[0]?.public_id as string | undefined;
-    if (pid) return pid;
-    await new Promise(r => setTimeout(r, delayMs));
-  }
-  return null;
-}
-
 export const handler: Handler = async (event) => {
   try {
     if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, body: JSON.stringify({ ok:false, error: 'Method not allowed' }) };
+      return { 
+        statusCode: 405, 
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({ ok: false, error: 'Method not allowed' }) 
+      };
     }
 
     const body = JSON.parse(event.body || '{}');
 
-    // Cloudinary-only path
-    if (process.env.NO_DB_MODE === 'true') {
-      let publicId: string | undefined = body.publicId as string | undefined;
-      const allowRemix: boolean = !!body.allowRemix;
-      const assetId: string | undefined = (body.assetId || body.asset_id) as string | undefined;
-      if (!publicId && !assetId) {
-        return { statusCode: 400, body: JSON.stringify({ ok:false, error:'MISSING: publicId (or assetId)' }) };
-      }
-      try {
-        assertCloudinaryEnv();
-        const cloudinary = initCloudinary();
-        // Resolve from assetId using context if needed, with retry (indexing delay)
-        if (!publicId && assetId) {
-          publicId = await resolvePublicIdByAssetId(cloudinary, assetId);
-          if (!publicId) {
-            return { statusCode: 404, body: JSON.stringify({ ok:false, error:`No Cloudinary asset found for assetId ${assetId}` }) };
-          }
-        }
-        // ensure base tags & publish tag
-        await cloudinary.api.add_tag('stefna', [publicId!]);
-        await cloudinary.api.add_tag('type:output', [publicId!]);
-        await cloudinary.api.add_tag('public', [publicId!]);
-        await cloudinary.uploader.explicit(publicId!, {
-          type: 'upload',
-          context: { allow_remix: allowRemix ? 'true' : 'false', published_at: new Date().toISOString() },
-        });
-        return { statusCode: 200, body: JSON.stringify({ ok:true }) };
-      } catch (e:any) {
-        const msg = e?.message || 'unknown error';
-        console.error('[recordShare] cloudinary error', msg);
-        return { statusCode: 400, body: JSON.stringify({ ok:false, error: msg }) };
-      }
-    }
-
-    // DB MODE (legacy)
+    // Auth check
     const userId = getUserIdFromToken(event.headers.authorization);
     if (!userId) {
-      return { statusCode: 401, body: JSON.stringify({ ok:false, error: 'Unauthorized' }) };
+      return { 
+        statusCode: 401, 
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({ ok: false, error: 'Unauthorized' }) 
+      };
     }
 
     const { asset_id, shareToFeed, allowRemix } = body;
     if (!asset_id) {
-      return { statusCode: 400, body: JSON.stringify({ ok:false, error: 'asset_id required' }) };
+      return { 
+        statusCode: 400, 
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({ ok: false, error: 'asset_id required' }) 
+      };
     }
 
     const is_public = !!shareToFeed;
     const allow_remix = !!shareToFeed && !!allowRemix;
 
-    const { data, error } = await (supabase as any)
-      .from('assets')
-      .update({ is_public, allow_remix })
-      .eq('id', asset_id)
-      .eq('user_id', userId)
-      .select('id, is_public, allow_remix, published_at')
-      .single();
+    try {
+      // Update media asset in database
+      const result = await sql`
+        UPDATE media_assets 
+        SET 
+          visibility = ${is_public ? 'public' : 'private'},
+          allow_remix = ${allow_remix},
+          updated_at = NOW()
+        WHERE id = ${asset_id} AND user_id = ${userId}
+        RETURNING id, visibility, allow_remix, updated_at
+      `;
 
-    if (error) {
-      return { statusCode: 400, body: JSON.stringify({ ok:false, error: error.message }) };
+      if (result.length === 0) {
+        return { 
+          statusCode: 404, 
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+          body: JSON.stringify({ ok: false, error: 'Asset not found or not owned by user' }) 
+        };
+      }
+
+      const updatedAsset = result[0];
+
+      return { 
+        statusCode: 200, 
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({ 
+          ok: true, 
+          asset: updatedAsset,
+          message: `Asset ${is_public ? 'published' : 'unpublished'} successfully`
+        }) 
+      };
+
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      return { 
+        statusCode: 500, 
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({ ok: false, error: 'Database update failed' }) 
+      };
     }
 
-    return { statusCode: 200, body: JSON.stringify({ ok:true, asset: data }) };
-  } catch (e: any) {
-    const msg = e?.message || 'unknown error';
-    console.error('recordShare error:', msg);
-    return { statusCode: 500, body: JSON.stringify({ ok:false, error: msg }) };
+  } catch (error) {
+    console.error('[recordShare] error:', error);
+    return { 
+      statusCode: 500, 
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+      body: JSON.stringify({ ok: false, error: 'Internal server error' }) 
+    };
   }
 };
 

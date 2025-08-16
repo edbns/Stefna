@@ -1,5 +1,8 @@
 const { verifyAuth } = require('./_auth')
-const { createClient } = require('@supabase/supabase-js')
+const { neon } = require('@neondatabase/serverless')
+
+// ---- Database connection ----
+const sql = neon(process.env.NETLIFY_DATABASE_URL)
 
 exports.handler = async (event) => {
   try {
@@ -26,62 +29,62 @@ exports.handler = async (event) => {
     const APP_ENV = /netlify\.app$/i.test(event.headers.host || '') ? 'dev' : 'prod';
     console.log(`🌍 getQuota using env: ${APP_ENV} for user: ${userId}`);
 
-    const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-    
-    // Calculate start of today in UTC
-    const startUTC = new Date();
-    startUTC.setUTCHours(0, 0, 0, 0);
-    
-    // Get today's credit usage from credits_ledger
-    const { data: creditRows, error: creditError } = await supa
-      .from('credits_ledger')
-      .select('amount')
-      .eq('user_id', userId)
-      .eq('env', APP_ENV)
-      .gte('created_at', startUTC.toISOString());
+    try {
+      // Calculate start of today in UTC
+      const startUTC = new Date();
+      startUTC.setUTCHours(0, 0, 0, 0);
+      
+      // Get today's credit usage from credits_ledger
+      const creditRows = await sql`
+        SELECT amount
+        FROM credits_ledger
+        WHERE user_id = ${userId}
+          AND env = ${APP_ENV}
+          AND created_at >= ${startUTC.toISOString()}
+      `;
 
-    if (creditError) {
-      console.error('getQuota credits_ledger error:', creditError);
+      // Calculate used credits for today
+      const daily_used = (creditRows || []).reduce((sum, row) => sum + (row.amount || 0), 0);
+      
+      // For now, use hardcoded limits (you can make this dynamic later)
+      const daily_limit = 50; // Default daily limit
+      const weekly_limit = 250; // Default weekly limit
+      
+      // Calculate weekly usage (last 7 days)
+      const weekAgo = new Date();
+      weekAgo.setUTCDate(weekAgo.getUTCDate() - 7);
+      
+      const weeklyRows = await sql`
+        SELECT amount
+        FROM credits_ledger
+        WHERE user_id = ${userId}
+          AND env = ${APP_ENV}
+          AND created_at >= ${weekAgo.toISOString()}
+      `;
+
+      const weekly_used = (weeklyRows || []).reduce((sum, row) => sum + (row.amount || 0), 0);
+
+      console.log(`📊 Quota for user ${userId} (${APP_ENV}): daily ${daily_used}/${daily_limit}, weekly ${weekly_used}/${weekly_limit}`);
+
+      return {
+        statusCode: 200,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          daily_used,
+          daily_limit,
+          weekly_used,
+          weekly_limit,
+          remaining: Math.max(0, daily_limit - daily_used)
+        })
+      }
+    } catch (dbError) {
+      console.error('getQuota database error:', dbError);
       // Fallback to safe defaults
       return {
         statusCode: 200,
         headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
         body: JSON.stringify({ daily_used: 0, daily_limit: 30, weekly_used: 0, weekly_limit: 150 })
       }
-    }
-
-    // Calculate used credits for today
-    const daily_used = (creditRows || []).reduce((sum, row) => sum + (row.amount || 0), 0);
-    
-    // For now, use hardcoded limits (you can make this dynamic later)
-    const daily_limit = 50; // Default daily limit
-    const weekly_limit = 250; // Default weekly limit
-    
-    // Calculate weekly usage (last 7 days)
-    const weekAgo = new Date();
-    weekAgo.setUTCDate(weekAgo.getUTCDate() - 7);
-    
-    const { data: weeklyRows, error: weeklyError } = await supa
-      .from('credits_ledger')
-      .select('amount')
-      .eq('user_id', userId)
-      .eq('env', APP_ENV)
-      .gte('created_at', weekAgo.toISOString());
-
-    const weekly_used = weeklyError ? 0 : (weeklyRows || []).reduce((sum, row) => sum + (row.amount || 0), 0);
-
-    console.log(`📊 Quota for user ${userId} (${APP_ENV}): daily ${daily_used}/${daily_limit}, weekly ${weekly_used}/${weekly_limit}`);
-
-    return {
-      statusCode: 200,
-      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        daily_used,
-        daily_limit,
-        weekly_used,
-        weekly_limit,
-        remaining: Math.max(0, daily_limit - daily_used)
-      })
     }
   } catch (e) {
     // Fallback to safe defaults instead of hard 500s

@@ -1,9 +1,12 @@
 // netlify/functions/getUserMedia.ts
-import { createClient } from '@supabase/supabase-js';
+import { neon } from '@neondatabase/serverless';
 import { initCloudinary } from './_cloudinary';
 
 const ok=(b:any)=>({statusCode:200,body:JSON.stringify(b)});
 const err=(s:number,m:string)=>({statusCode:s,body:JSON.stringify({error:m})});
+
+// ---- Database connection ----
+const sql = neon(process.env.NETLIFY_DATABASE_URL!)
 
 function base64urlToJson(b64url:string){
   const raw = b64url.replace(/-/g,'+').replace(/_/g,'/');
@@ -34,162 +37,88 @@ function pickUuidClaim(claims:any){
   return null;
 }
 
-// Resolve all possible user identifiers for legacy media lookup
-async function resolveUserFromJWT(event: any, supabase: any) {
+// Simplified user resolution for new database
+async function resolveUserFromJWT(event: any) {
   const jwt = getJwt(event);
-  if (!jwt) return { userId: null, identityId: null, email: null };
+  if (!jwt) return { userId: null, email: null };
 
   const claims = decodeClaims(jwt) || {};
   const userId = pickUuidClaim(claims);
   const email = claims.email || claims.mail || null;
   
-  // Try to get identity ID from profiles table
-  let identityId = null;
-  if (userId) {
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .single();
-      identityId = profile?.id || null;
-    } catch (e) {
-      // Profile might not exist yet
-      console.log('No profile found for userId:', userId);
-    }
-  }
-
-  return { userId, identityId, email };
+  return { userId, email };
 }
 
-// Try multiple user ID formats to find legacy media
-async function findMediaWithFallback(supabase: any, primaryUserId: string, identityId: string | null, email: string | null) {
-  let items = [];
-  
-  // Try primary user ID first
-  if (primaryUserId) {
-    const { data, error } = await supabase
-      .from('media_assets')
-      .select(`
+// Get user media from new database
+async function getUserMedia(userId: string) {
+  try {
+    const media = await sql`
+      SELECT 
         id, user_id, visibility, allow_remix, created_at, env, prompt, model, mode,
-        url, result_url, meta
-      `)
-      .eq('user_id', primaryUserId)
-      .order('created_at', { ascending: false });
+        url, result_url, meta, public_id, resource_type, folder, bytes, width, height
+      FROM media_assets 
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `;
     
-    if (!error && data) {
-      items = data;
-      console.log(`✅ Found ${items.length} media items for primary userId: ${primaryUserId}`);
-    }
+    return media;
+  } catch (error) {
+    console.error('Database error:', error);
+    return [];
   }
-
-  // Fallback 1: Try identity ID if different from primary
-  if (items.length === 0 && identityId && identityId !== primaryUserId) {
-    const { data, error } = await supabase
-      .from('media_assets')
-      .select(`
-        id, user_id, visibility, allow_remix, created_at, env, prompt, model, mode,
-        url, result_url, meta
-      `)
-      .eq('user_id', identityId)
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      items = data;
-      console.log(`✅ Found ${items.length} media items for identityId: ${identityId}`);
-      
-      // Enqueue background job to update ownerId for future queries
-      console.log(`🔄 Legacy media found under identityId ${identityId}, consider migrating to userId ${primaryUserId}`);
-    }
-  }
-
-  // Fallback 2: Try email-based lookup for very legacy items
-  if (items.length === 0 && email) {
-    try {
-      const { data, error } = await supabase
-        .from('media_assets')
-        .select(`
-          id, user_id, visibility, allow_remix, created_at, env, prompt, model, mode,
-          url, result_url, meta
-        `)
-        .eq('meta->>email', email) // Assuming email is stored in meta
-        .order('created_at', { ascending: false });
-      
-      if (!error && data) {
-        items = data;
-        console.log(`✅ Found ${items.length} media items for email: ${email}`);
-        console.log(`🔄 Very legacy media found under email ${email}, consider migrating to userId ${primaryUserId}`);
-      }
-    } catch (e) {
-      console.log('Email-based lookup not supported or failed:', e);
-    }
-  }
-
-  return items;
 }
 
-export const handler = async (event:any) => {
-  // Check if we have Supabase credentials first - prioritize database
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
-  
-  if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-    try {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-      const { userId, identityId, email } = await resolveUserFromJWT(event, supabase);
-      if (!userId) return ok({ items: [] }); // invalid token = guest
-
-      const items = await findMediaWithFallback(supabase, userId, identityId, email);
-      console.log(`✅ Database query returned ${items.length} items for user ${userId}`);
-
-      return ok({ items });
-    } catch (e: any) {
-      console.error('[getUserMedia] Database query error:', e);
-      // Fall back to Cloudinary if database fails
-    }
+export const handler = async (event: any) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      },
+      body: JSON.stringify({ ok: true })
+    };
   }
 
-  // Fallback to Cloudinary-only mode if no Supabase or database fails
-  if (process.env.NO_DB_MODE === 'true') {
-    try {
-      const cloudinary = initCloudinary();
-      const qpUserId = event.queryStringParameters?.userId || '';
-      let userId = qpUserId;
-      if (!userId) {
-        const jwt = getJwt(event);
-        const claims = decodeClaims(jwt) || {};
-        userId = pickUuidClaim(claims) || '';
-      }
-      if (!userId) return ok({ ok:true, items: [] });
+  if (event.httpMethod !== 'GET') {
+    return err(405, 'Method not allowed');
+  }
 
-      const exprUserTag = `tags=\"stefna\" AND tags=\"type:output\" AND tags=\"user:${userId}\"`;
-      const exprContext = `tags=\"stefna\" AND tags=\"type:output\" AND context.user_id=\"${userId}\"`;
-      const expr = `(${exprUserTag}) OR (${exprContext})`;
-
-      const res = await cloudinary.search
-        .expression(expr)
-        .sort_by('created_at','desc')
-        .max_results(100)
-        .execute();
-
-      const items = (res?.resources || []).map((r: any) => ({
-        id: r.public_id,
-        user_id: r.context?.custom?.user_id || userId,
-        resource_type: r.resource_type,
-        url: r.resource_type === 'video' ? r.secure_url : r.secure_url,
-        result_url: r.secure_url,
-        created_at: r.created_at,
-        visibility: (r.tags || []).includes('public') ? 'public' : 'private',
-        allow_remix: r.context?.custom?.allow_remix === 'true',
-        prompt: r.context?.custom?.prompt || null,
-        mode: r.context?.custom?.mode_meta ? JSON.parse(r.context?.custom?.mode_meta) : null,
-        meta: r.context?.custom || {},
-      }));
-
-      return ok({ ok:true, items });
-    } catch (e:any) {
-      console.error('[getUserMedia] error', e);
-      return err(500, e?.message || 'Internal server error');
+  try {
+    // Resolve user from JWT
+    const { userId, email } = await resolveUserFromJWT(event);
+    
+    if (!userId) {
+      return err(401, 'Unauthorized - no valid user ID found');
     }
+
+    // Get user media
+    const media = await getUserMedia(userId);
+    
+    // Ensure user exists in users table
+    try {
+      await sql`
+        INSERT INTO users (id, email, created_at, updated_at)
+        VALUES (${userId}, ${email || `user-${userId}@placeholder.com`}, NOW(), NOW())
+        ON CONFLICT (id) DO UPDATE SET 
+          email = EXCLUDED.email,
+          updated_at = NOW()
+      `;
+    } catch (userError) {
+      console.error('Failed to upsert user:', userError);
+      // Continue even if user upsert fails
+    }
+
+    return ok({
+      ok: true,
+      userId,
+      media,
+      count: media.length
+    });
+
+  } catch (error) {
+    console.error('Handler error:', error);
+    return err(500, 'Internal server error');
   }
 };

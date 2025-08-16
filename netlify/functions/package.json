@@ -4,9 +4,11 @@
   "description": "Netlify Functions for Stefna",
   "main": "index.js",
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.1",
     "@netlify/functions": "^4.2.1",
     "@supabase/supabase-js": "^2.38.0",
     "cloudinary": "^1.41.0",
+    "form-data": "^4.0.4",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^2.6.7",
     "resend": "^2.0.0",
