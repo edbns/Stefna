@@ -5,17 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "netlify:dev": "netlify dev",
-    "build": "node scripts/build-env.js && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "build": "vite build",
+    "build:fast": "vite build --mode production --minify",
+    "build:preview": "vite build --mode preview",
     "preview": "vite preview",
-    "prepare": "husky",
-    "test": "echo 'No tests configured yet'",
-    "db:test": "node scripts/setup-database.js",
-    "db:migrate": "prisma migrate dev",
-    "db:generate": "prisma generate",
-    "db:studio": "prisma studio",
-    "db:reset": "prisma migrate reset"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "type-check": "tsc --noEmit",
+    "test": "echo 'No tests configured yet'"
   },
   "dependencies": {
     "@prisma/client": "^6.14.0",

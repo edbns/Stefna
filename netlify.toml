@@ -1,45 +1,49 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20"
+  NPM_FLAGS = "--prefer-offline --no-audit --production"
+  VITE_BUILD_OPTIMIZE = "true"
 
+# Production context
+[context.production]
+  command = "npm run build"
+  environment = { NODE_ENV = "production" }
+
+# Deploy preview context  
+[context.deploy-preview]
+  command = "npm run build"
+  environment = { NODE_ENV = "preview" }
+
+# Branch deploy context
+[context.branch-deploy]
+  command = "npm run build"
+  environment = { NODE_ENV = "development" }
+
+# Function optimization
 [functions]
-  directory = "netlify/functions"
   node_bundler = "esbuild"
-  external_node_modules = ["@neondatabase/serverless", "cloudinary", "jose"]
+  external_node_modules = ["@neondatabase/serverless"]
 
-[dev]
-  functions = "netlify/functions"
-
-# Plugin to automatically install function dependencies
+# Build optimization
 [[plugins]]
-  package = "@netlify/plugin-functions-install-core"
+  package = "@netlify/plugin-lighthouse"
 
-# Production environment variables
-[context.production.environment]
-  DATABASE_URL = "postgresql://USER:PASSWORD@ep-xxx-pooler.neon.tech/neondb?sslmode=require"
-  AIML_API_KEY = "your-aiml-api-key-here"
-  AIML_API_BASE = "https://api.aimlapi.com"
-  AUTH_JWT_SECRET = "your-jwt-secret-here"
-
-# Deploy preview environment variables
-[context.deploy-preview.environment]
-  DATABASE_URL = "postgresql://USER:PASSWORD@ep-xxx-pooler.neon.tech/neondb?sslmode=require"
-  AIML_API_KEY = "your-aiml-api-key-here"
-  AIML_API_BASE = "https://api.aimlapi.com"
-  AUTH_JWT_SECRET = "your-jwt-secret-here"
-
-# Branch deploy environment variables
-[context.branch-deploy.environment]
-  DATABASE_URL = "postgresql://USER:PASSWORD@ep-xxx-pooler.neon.tech/neondb?sslmode=require"
-  AIML_API_KEY = "your-aiml-api-key-here"
-  AIML_API_BASE = "https://api.aimlapi.com"
-  AUTH_JWT_SECRET = "your-jwt-secret-here"
+# Cache optimization
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
-  for = "/*"
+  for = "/*.js"
   [headers.values]
-  # Allow Cloudinary + AIML API for images and media
-  Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob: https://res.cloudinary.com https://cdn.aimlapi.com; media-src 'self' data: blob: https://res.cloudinary.com https://cdn.aimlapi.com; connect-src 'self' blob: https://api.cloudinary.com https://res.cloudinary.com https://cdn.aimlapi.com https://cdn.aimlapi.com https://stefna.netlify.app https://ingesteer.services-prod.nsvcs.net; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self'; worker-src 'self' blob:;"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
