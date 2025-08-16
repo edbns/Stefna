@@ -33,7 +33,7 @@ export const handler = async (event: any, context: any) => {
   const corsResponse = handleCORS(event);
   if (corsResponse) return corsResponse;
 
-  if (event.httpMethod !== 'GET') {
+  if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
     return resp(405, { error: 'Method not allowed' });
   }
 

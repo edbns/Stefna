@@ -108,8 +108,8 @@ export const handler: Handler = async (event, context) => {
     }
 
     // Return success response
-    return resp(200, { 
-      ok: true, 
+    return resp(200, {
+      ok: true,
       message: 'Profile updated successfully',
       user: {
         id: uid,

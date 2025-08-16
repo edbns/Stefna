@@ -3,6 +3,8 @@
  * Provides bulletproof user authentication and response formatting
  */
 
+const jwt = require('jsonwebtoken');
+
 /**
  * Safely sanitize database URL to prevent connection errors
  * @param {string} rawUrl - Raw database URL from environment
@@ -29,6 +31,51 @@ function requireUser(context) {
   const u = context.clientContext?.user;
   if (!u?.sub) return null;
   return { id: u.sub, email: u.email };
+}
+
+/**
+ * Verify JWT token from Authorization header
+ * @param {string} authHeader - Authorization header value
+ * @returns {Object|null} Decoded JWT payload or null if invalid
+ */
+function verifyJWT(authHeader) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  const token = authHeader.slice(7);
+  const secret = process.env.JWT_SECRET;
+  
+  if (!secret) {
+    console.error('JWT_SECRET environment variable not set');
+    return null;
+  }
+  
+  try {
+    const payload = jwt.verify(token, secret, { algorithms: ['HS256'] });
+    return payload;
+  } catch (error) {
+    console.error('JWT verification failed:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Extract user from JWT token in Authorization header
+ * @param {Object} event - Netlify function event
+ * @returns {Object|null} User object with userId and email, or null if unauthorized
+ */
+function requireJWTUser(event) {
+  const authHeader = event.headers?.authorization;
+  if (!authHeader) return null;
+  
+  const payload = verifyJWT(authHeader);
+  if (!payload) return null;
+  
+  return {
+    userId: payload.userId,
+    email: payload.email
+  };
 }
 
 /**
@@ -71,6 +118,8 @@ function handleCORS(event) {
 
 module.exports = { 
   requireUser, 
+  requireJWTUser,
+  verifyJWT,
   resp, 
   handleCORS,
   sanitizeDatabaseUrl

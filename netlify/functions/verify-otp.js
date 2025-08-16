@@ -103,8 +103,9 @@ exports.handler = async (event, context) => {
     // 3) Check if user exists in Neon database
     console.log('Checking if user exists with email:', email);
     
+    // First check if user exists in the users table
     const existingUsers = await sql`
-      SELECT * FROM app_users WHERE email = ${email.toLowerCase()}
+      SELECT * FROM users WHERE email = ${email.toLowerCase()}
     `;
     
     console.log('User check result:', existingUsers);
@@ -120,15 +121,13 @@ exports.handler = async (event, context) => {
         id: userId,
         email: email.toLowerCase(),
         name: email.split('@')[0], // Use email prefix as name
-        tier: 'registered',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        created_at: new Date().toISOString()
       };
       console.log('Creating user with data:', userData);
       
       const newUser = await sql`
-        INSERT INTO users (id, email, external_id, name, tier, created_at, updated_at)
-        VALUES (${userData.id}, ${userData.email}, ${userData.email}, ${userData.name}, ${userData.tier}, ${userData.created_at}, ${userData.updated_at})
+        INSERT INTO users (id, email, name, created_at)
+        VALUES (${userData.id}, ${userData.email}, ${userData.name}, ${userData.created_at})
         RETURNING *
       `;
       
@@ -162,13 +161,13 @@ exports.handler = async (event, context) => {
         }
       }
     } else {
-      // User exists, update last_login_at
-      console.log('User exists, updating last_login_at');
+      // User exists, update last_login
+      console.log('User exists, updating last_login');
       const existingUser = existingUsers[0];
       
       const updatedUser = await sql`
         UPDATE users 
-        SET updated_at = ${new Date().toISOString()}
+        SET last_login = ${new Date().toISOString()}
         WHERE id = ${existingUser.id}
         RETURNING *
       `;
@@ -245,9 +244,8 @@ exports.handler = async (event, context) => {
     const tokenPayload = {
       userId: user.id,
       email: user.email,
-      tier: user.tier,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60) // 7 days
+      exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days
     };
     
     const token = jwt.sign(tokenPayload, jwtSecret);

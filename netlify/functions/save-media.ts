@@ -16,7 +16,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import { neon } from '@neondatabase/serverless'
 
 // ---- Auth helper ----
-import { requireUser, resp, handleCORS, sanitizeDatabaseUrl } from './_auth'
+import { requireJWTUser, resp, handleCORS, sanitizeDatabaseUrl } from './_auth'
 
 // ---- ENV ----
 const {
@@ -92,10 +92,10 @@ export const handler: Handler = async (event, context) => {
     return resp(400, { error: 'No variations provided' })
   }
 
-  // ---- Auth check using new helper ----
-  const user = requireUser(context)
+  // ---- Auth check using JWT ----
+  const user = requireJWTUser(event)
   if (!user) {
-    return resp(401, { error: 'Unauthorized' })
+    return resp(401, { error: 'Unauthorized - Invalid or missing JWT token' })
   }
 
   // ---- Validate URLs ----
@@ -144,8 +144,8 @@ export const handler: Handler = async (event, context) => {
             id, owner_id, url, public_id, resource_type, 
             folder, bytes, width, height, meta, 
             created_at, updated_at, visibility, env
-          ) VALUES (
-            ${crypto.randomUUID()}, ${user.id}, ${item.secure_url}, 
+          )           VALUES (
+            ${crypto.randomUUID()}, ${user.userId}, ${item.secure_url}, 
             ${item.cloudinary_public_id}, ${item.resource_type}, 
             ${item.folder || 'stefna'}, ${item.bytes || 0}, 
             ${item.width || 0}, ${item.height || 0}, 

@@ -1,0 +1,12 @@
+{
+  "build": {
+    "rollupOptions": {
+      "onwarn": (warning, warn) => {
+        // Suppress dynamic import warnings that slow down builds
+        if (warning.code === 'DYNAMIC_IMPORT_ASSERTIONS') return;
+        if (warning.message.includes('dynamic import will not move module into another chunk')) return;
+        warn(warning);
+      }
+    }
+  }
+}
