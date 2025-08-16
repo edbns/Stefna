@@ -38,6 +38,12 @@ export async function ensureAndUpdateProfile(profileData: ProfileData): Promise<
   }
 
   console.log('🔄 Updating profile:', profileData);
+  console.log('🔐 Auth debug:', { 
+    userId: user.id, 
+    hasToken: !!token, 
+    tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+    tokenParts: token ? token.split('.').length : 0
+  });
 
   const response = await signedFetch('/.netlify/functions/update-profile', {
     method: 'POST',
@@ -48,8 +54,15 @@ export async function ensureAndUpdateProfile(profileData: ProfileData): Promise<
     body: JSON.stringify(profileData)
   });
 
+  console.log('📡 update-profile response:', { 
+    status: response.status, 
+    ok: response.ok,
+    statusText: response.statusText
+  });
+
   if (!response.ok) {
     const errorData = await response.json();
+    console.error('❌ update-profile failed:', errorData);
     throw new Error(errorData.error || 'Failed to update profile');
   }
 

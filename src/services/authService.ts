@@ -40,6 +40,13 @@ class AuthService {
       const token = localStorage.getItem('auth_token')
       const userData = localStorage.getItem('user_data')
 
+      console.log('🔐 loadAuthState:', { 
+        hasToken: !!token, 
+        tokenType: typeof token,
+        tokenPreview: token ? `${token.substring(0, 50)}...` : 'none',
+        hasUserData: !!userData
+      });
+
       if (token && userData) {
         // Basic token validation (expiration check handled on backend)
         try {
@@ -49,6 +56,11 @@ class AuthService {
             user,
             token
           }
+          console.log('🔐 Auth state loaded successfully:', { 
+            isAuthenticated: this.authState.isAuthenticated,
+            hasUser: !!this.authState.user,
+            tokenType: typeof this.authState.token
+          });
         } catch (error) {
           console.error('Error parsing user data:', error)
           this.clearAuthState()
@@ -77,11 +89,25 @@ class AuthService {
 
   // Get auth token
   getToken(): string | null {
-    return this.authState.token
+    const token = this.authState.token;
+    console.log('🔐 getToken called:', { 
+      hasToken: !!token, 
+      tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+      tokenParts: token ? token.split('.').length : 0,
+      tokenType: typeof token
+    });
+    return token;
   }
 
   // Set auth state after successful login
   setAuthState(token: string, user: User): void {
+    console.log('🔐 setAuthState called:', { 
+      tokenType: typeof token,
+      tokenPreview: token ? `${token.substring(0, 50)}...` : 'none',
+      userType: typeof user,
+      hasUser: !!user
+    });
+    
     const wasAuthenticated = this.authState.isAuthenticated
     
     this.authState = {
@@ -91,6 +117,12 @@ class AuthService {
     }
     localStorage.setItem('auth_token', token)
     localStorage.setItem('user_data', JSON.stringify(user))
+    
+    console.log('🔐 Auth state set successfully:', { 
+      isAuthenticated: this.authState.isAuthenticated,
+      hasUser: !!this.authState.user,
+      tokenType: typeof this.authState.token
+    });
     
     // Notify listeners if auth state changed
     if (!wasAuthenticated) {

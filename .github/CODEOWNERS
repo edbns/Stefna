@@ -1,0 +1,13 @@
+# Database and schema changes require approval
+/db/ @edbns
+/prisma/ @edbns
+netlify.toml @edbns
+
+# Core application logic
+/src/ @edbns
+/netlify/functions/ @edbns
+
+# Configuration files
+package.json @edbns
+package-lock.json @edbns
+tsconfig.json @edlify

@@ -1,357 +1,440 @@
-# Stefna AI Platform - Critical Fixes & Improvements Report
-
-**Date:** December 2024  
-**Developer:** AI Assistant + User Collaboration  
-**Project:** Stefna AI Photo Generation Platform  
-**Status:** ✅ COMPLETED & DEPLOYED  
-
----
-
-## 🎯 **Executive Summary**
-
-This report documents the comprehensive fixes and improvements made to resolve critical UI/UX issues, backend integration problems, and database persistence failures in the Stefna AI platform. The work involved systematic debugging, architectural improvements, and user experience enhancements across multiple components.
-
-### **Key Achievements**
-- ✅ Fixed critical database persistence issues causing "empty media" problems
-- ✅ Resolved profile spinner stuck issues and loading state management
-- ✅ Eliminated 400/500 backend errors through proper validation and user bootstrap
-- ✅ Improved media generation pipeline with proper Cloudinary integration
-- ✅ Enhanced user profile functionality and account management
-- ✅ Implemented proper error handling and fallback mechanisms
-
----
-
-## 🔍 **Root Cause Analysis**
-
-### **Primary Issues Identified**
-
-1. **Database Persistence Failure**
-   - `save-media` function was using wrong table name (`assets` instead of `media_assets`)
-   - Column mapping mismatches (`owner_id` vs `user_id`, `allow_publish` vs `visibility`)
-   - NoDB mode fallbacks preventing actual database writes
-
-2. **User Bootstrap Problems**
-   - Missing user rows in `users` table causing "User ID not found" errors
-   - Profile updates failing with 500 errors due to missing user records
-   - Incomplete user onboarding leaving profiles in half-completed state
-
-3. **Frontend Integration Issues**
-   - Wrong payload structure sent to `save-media` (individual variations vs array)
-   - Profile media loading using GET instead of POST for `getUserMedia`
-   - Missing error handling and loading state management
-
-4. **Media Loading & Display**
-   - "All media" tab showing 0 items due to database query failures
-   - Stuck spinners due to unhandled errors and missing `finally` blocks
-   - No automatic refresh after successful media saves
-
----
-
-## 🛠️ **Technical Solutions Implemented**
-
-### **1. Database Schema & Persistence Fixes**
-
-#### **save-media Function Overhaul**
-```typescript
-// Before: Wrong table and column names
-.from('assets') // ❌ Wrong table
-owner_id: userId, // ❌ Wrong column
-
-// After: Correct schema mapping
-.from('media_assets') // ✅ Correct table
-user_id: userId, // ✅ Correct column
-visibility: body.allowPublish ? 'public' : 'private', // ✅ Proper enum
-metadata: { ... } // ✅ Structured metadata
-```
-
-**Key Changes:**
-- Fixed table name from `assets` to `media_assets`
-- Corrected column mapping to match actual database schema
-- Added user upsert before media insert to ensure user exists
-- Improved response format with useful `media` array
-
-#### **User Bootstrap Enhancement**
-```typescript
-// Ensure user exists before media operations
-const { error: userError } = await supabase
-  .from('users')
-  .upsert({
-    id: userId,
-    email: `user-${userId}@placeholder.com`,
-    name: `User ${userId}`,
-    tier: 'registered',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }, {
-    onConflict: 'id',
-    ignoreDuplicates: false
-  });
-```
-
-### **2. Frontend Integration Fixes**
-
-#### **Proper Variations Payload Structure**
-```typescript
-// Before: Individual variation calls with wrong data
-body: JSON.stringify({
-  assetId: assetId,
-  resultUrl: variationUrl,
-  // ❌ Wrong structure
-})
-
-// After: Proper variations array
-body: JSON.stringify({
-  runId: genId,
-  presetId: selectedPreset,
-  allowPublish: !!shareToFeed,
-  source: sourceUrl ? { url: sourceUrl } : undefined,
-  variations: allResultUrls.map((url, index) => ({
-    url: url, // ✅ String URL
-    type: 'image',
-    meta: { /* structured metadata */ }
-  })),
-  tags: ['generated', 'preset']
-})
-```
-
-#### **Profile Media Loading Fixes**
-```typescript
-// Fixed HTTP method and body
-const response = await fetch('/.netlify/functions/getUserMedia', {
-  method: 'POST', // ✅ Changed from GET
-  headers: {
-    'Authorization': `Bearer ${jwt}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ userId }) // ✅ Added proper body
-});
-
-// Added proper error handling with finally block
-} finally {
-  setIsLoading(false); // ✅ Always clear loading state
-}
-```
-
-### **3. Error Handling & Loading State Management**
-
-#### **Comprehensive Error Handling**
-```typescript
-try {
-  // Media loading logic
-} catch (error) {
-  console.error('Error loading user media:', error);
-  // Fallback to local service on any error
-  try {
-    const allMedia = await userMediaService.getAllUserMedia(userId);
-    setUserMedia(allMedia);
-  } catch (fallbackError) {
-    console.error('Fallback media loading also failed:', fallbackError);
-    setUserMedia([]);
-  }
-} finally {
-  // Always clear loading state
-  setIsLoading(false);
-}
-```
-
-#### **Event-Driven Media Refresh**
-```typescript
-// After successful save, dispatch event
-setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated')), 800);
-
-// Profile listens for updates
-useEffect(() => {
-  const handleUserMediaUpdated = () => {
-    console.log('🔄 User media updated event received, refreshing profile media...')
-    loadProfileFromDatabase()
-  }
-
-  window.addEventListener('userMediaUpdated', handleUserMediaUpdated)
-  return () => {
-    window.removeEventListener('userMediaUpdated', handleUserMediaUpdated)
-  }
-}, [])
-```
-
----
-
-## 📁 **Files Modified**
-
-### **Backend Functions (Netlify)**
-- `netlify/functions/save-media.ts` - Complete overhaul for database persistence
-- `netlify/functions/getUserMedia.ts` - Fixed user resolution and database queries
-- `netlify/functions/update-profile.ts` - Enhanced user upsert logic
-
-### **Frontend Components**
-- `src/components/HomeNew.tsx` - Fixed save-media payload structure
-- `src/screens/ProfileScreen.tsx` - Improved media loading and error handling
-- `src/lib/api.ts` - Updated function names and database paths
-- `src/services/moodMorph.ts` - Updated to use database save functions
-
-### **Configuration Files**
-- `netlify.toml` - Fixed Content Security Policy for blob URLs
-- `public/_headers` - Added production CSP headers
-- `scripts/build-env.js` - Fixed environment variable handling
-
----
-
-## 🔧 **Technical Implementation Details**
-
-### **Database Schema Alignment**
-The platform uses a `media_assets` table with the following key columns:
-- `user_id` (TEXT) - References users.id
-- `visibility` (VARCHAR) - 'public', 'private', 'unlisted'
-- `allow_remix` (BOOLEAN) - Whether media can be remixed
-- `metadata` (JSONB) - Structured metadata including preset info
-- `result_url` (TEXT) - Final generated media URL
-
-### **Authentication Flow**
-1. **JWT Token Validation** - Custom JWT with user ID in `sub` claim
-2. **User Upsert** - Ensures user exists before any media operations
-3. **Service Role Access** - Netlify functions use Supabase service role for writes
-4. **Fallback Handling** - Graceful degradation to local storage on failures
-
-### **Media Generation Pipeline**
-1. **Source Upload** - File uploaded to Cloudinary first
-2. **AIML API Call** - Generation using Cloudinary URL (never blob:)
-3. **Result Processing** - Multiple variations handled as array
-4. **Database Save** - All variations saved in single transaction
-5. **UI Refresh** - Event-driven updates trigger profile refresh
-
----
-
-## 🧪 **Testing & Validation**
-
-### **Local Testing Completed**
-- ✅ Build process successful (`npm run build`)
-- ✅ All TypeScript compilation errors resolved
-- ✅ Function imports and exports working correctly
-- ✅ Database schema validation passed
-
-### **Expected Production Behavior**
-- **Profile Media Loading**: Should show actual generated images
-- **Spinner Management**: Loading states properly cleared
-- **Media Persistence**: Generated content saved to database
-- **Auto-Refresh**: Profile updates after successful saves
-- **Error Handling**: Graceful fallbacks on failures
-
-### **Known Limitations**
-- Some TypeScript linter warnings remain (non-functional)
-- RUM analytics errors may still occur (ad-blocker related)
-- Legacy media migration may be needed for existing users
-
----
-
-## 🚀 **Deployment & Rollout**
-
-### **Deployment Status**
-- ✅ All changes committed to main branch
-- ✅ Pushed to GitHub repository
-- ✅ Netlify automatic deployment triggered
-- ✅ Production deployment expected within 5-10 minutes
-
-### **Post-Deployment Verification**
-1. **Check Netlify build logs** for any deployment errors
-2. **Test profile media loading** - should show actual content
-3. **Generate new media** - should save to database
-4. **Verify profile refresh** - should update automatically
-5. **Monitor error logs** for any remaining issues
-
----
-
-## 📚 **Developer Notes & Recommendations**
-
-### **For Future Development**
-1. **Always use database-first approach** - avoid NoDB mode fallbacks
-2. **Implement proper error boundaries** - prevent UI crashes
-3. **Use structured logging** - include context in all log messages
-4. **Test with real data** - mock data can hide integration issues
-5. **Monitor database performance** - add indexes for user_id queries
-
-### **Architecture Improvements**
-1. **Centralized error handling** - implement global error boundary
-2. **State management optimization** - consider React Query for server state
-3. **Database connection pooling** - optimize Supabase connections
-4. **Caching strategy** - implement Redis for frequently accessed data
-5. **Monitoring & alerting** - add performance and error tracking
-
-### **Code Quality Improvements**
-1. **Type safety** - resolve remaining TypeScript warnings
-2. **Unit testing** - add comprehensive test coverage
-3. **Integration testing** - test full user workflows
-4. **Performance monitoring** - track generation and save times
-5. **Accessibility** - improve keyboard navigation and screen reader support
-
----
-
-## 🎉 **Success Metrics**
-
-### **Issues Resolved**
-- ✅ Profile spinner stuck - **FIXED**
-- ✅ "All media" tab empty - **FIXED**
-- ✅ Media not persisting - **FIXED**
-- ✅ 400/500 backend errors - **FIXED**
-- ✅ User bootstrap failures - **FIXED**
-
-### **User Experience Improvements**
-- ✅ Faster media loading
-- ✅ Reliable media persistence
-- ✅ Automatic profile updates
-- ✅ Better error messages
-- ✅ Improved loading states
-
-### **System Reliability**
-- ✅ Database persistence working
-- ✅ User authentication stable
-- ✅ Media generation pipeline robust
-- ✅ Error handling comprehensive
-- ✅ Fallback mechanisms in place
-
----
-
-## 🔮 **Next Steps & Future Work**
-
-### **Immediate Priorities**
-1. **Monitor production deployment** for any issues
-2. **User acceptance testing** of fixed functionality
-3. **Performance monitoring** of media loading
-4. **Error log analysis** for any remaining issues
-
-### **Short-term Improvements**
-1. **Add loading skeletons** for better UX
-2. **Implement retry logic** for failed operations
-3. **Add success notifications** for completed actions
-4. **Optimize media grid rendering** for large collections
-
-### **Long-term Roadmap**
-1. **Advanced media management** - bulk operations, search, filtering
-2. **Social features** - likes, comments, sharing
-3. **AI model selection** - multiple generation models
-4. **Batch processing** - generate multiple variations simultaneously
-5. **Mobile optimization** - responsive design improvements
-
----
-
-## 📞 **Support & Contact**
-
-### **For Technical Issues**
-- Check Netlify function logs for backend errors
-- Review browser console for frontend issues
-- Verify database connectivity and permissions
-- Test with minimal payloads to isolate problems
-
-### **For User Experience Issues**
-- Test with different user accounts and media types
-- Verify loading states and error messages
-- Check responsive behavior across devices
-- Validate accessibility features
-
----
-
-**Report Generated:** December 2024  
-**Status:** ✅ COMPLETED  
-**Next Review:** After production deployment verification  
-
----
-
-*This report documents the comprehensive fixes implemented to resolve critical issues in the Stefna AI platform. All changes have been tested locally and deployed to production. The platform should now provide a stable, reliable user experience with proper media persistence and profile functionality.*
+ 🎯 Restored selectedPreset from localStorage: vintage_film_35mm
+ 🔍 Debug hook available: window.debugIntent()
+ 🔍 Validating preset system (sync)...
+ ✅ validatePresets: OK
+ ✅ validateOptions: OK
+ ✅ validateUIConfiguration: OK
+ ✅ Preset system validation complete - all good!
+ 🔍 Validating preset system...
+ ✅ validatePresets: OK
+ ✅ validateOptions: OK
+ ✅ validateUIConfiguration: OK
+ ✅ validateStoryThemes: OK
+ ✅ Preset system validation complete - all good!
+ 🔍 Filter Debug: Object
+ ✅ Presets loaded and ready: 25
+ 🔍 selectedPreset changed to: vintage_film_35mm
+ 🎨 Preset details: Object
+ 🎨 PRESETS object updated: Object
+ 🔐 Auth state initialized: Object
+ 🔄 Restoring preset from localStorage: vintage_film_35mm
+ 🎯 Setting selectedPreset to: vintage_film_35mm
+ 🔄 Loading public feed...
+ [fetch>] 11eb22d6-38f7-471d-ac9e-d4734b5e3240 /.netlify/functions/getPublicFeed?limit=50 GET
+ [fetch>] 6ea44b69-cd80-4b80-876c-e8e65c81c9b9 /.netlify/functions/get-user-profile GET
+ 🔧 Initializing auth bootstrap...
+ ✅ Auth bootstrap initialized
+ 🔍 Filter Debug: Object
+ 🔍 Validating preset mappings...
+ ✅ User settings synced from database
+ 🔄 Loading user profile from database...
+ [fetch>] c965056f-7ee8-41a0-806c-c94a15fd210e /.netlify/functions/get-user-profile GET
+ ✅ Mapping validation complete
+ 🔍 Filter Debug: Object
+ [fetch>] 780b3990-c9f9-4dad-949f-265df281ff83 /.netlify/functions/get-notifications?limit=10 GET
+ [fetch<] 11eb22d6-38f7-471d-ac9e-d4734b5e3240 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/getPublicFeed?limit=50
+ 📡 Feed response status: 200
+ 📊 Raw feed response: Object
+ 📥 Feed items received: success
+ 📊 Raw feed data: Array(47)
+ 📊 Feed length: 47
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kqhjcukgsba3grwbt2jx: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rd5mcck5huegqoj4cjzt: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kvfunuvsaowgtiuebrrf: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/q9smv4pnudrntdiqshj4: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/h57wntajh8cukehc7z7q: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k88ro500hmsjmgvqvhtu: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/paqmztpmeg7fjbxkjxgw: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lpl0ixideb77ppoieqdv: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bgwfejtcrchfoixsyjpn: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rw52sfzwhagv3o1bzmts: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/em1a5bvwfagzyjhmcgls: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/r7ign5npbeyatfv5guow: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lnpgl9mbwhceale5o630: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/j07qwit7i55fdb7urnwa: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jg7k5dwut8tjorlnn6jb: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bplvjckrhb0tgj4pptin: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctg2gqpnwdycuifnferz: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/narfvt4won91if7htv0k: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/mzv5omtcnjs8clo314ii: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wr7em5ya4dsokf0vvx9z: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/et0squpvoscggtcgcqye: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bqobc5vlsyai3w4jjp90: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/b6gmv1vdd5fm5ts5gqok: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ycllfriyag1nn0ng6l42: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bdap5yosydgjrkrbxxya: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/xzg1pxawidtn8xhosorc: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ffbqfpcw2hycajbvnzjo: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ac3bff71z98kn6tpdtro: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/i0n5cb3dq8xsjavky92a: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jkkdsplpzmojjjkgiot9: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/zd8rvk6gddyuwwgwu5fq: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wmsgygyygu4b8qx9dhqj: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctl4gcisvbassaxggbwm: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/na46vnuj518xrl3sqgws: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cwxvxh5xrtyjns7wnk2i: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cxvqrj49wlis7juqd212: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/yrbquk9vk7oy1czzyhpo: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k5wgivfjtrlxyxhlugyz: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/pf9gqebjfwgykfp4sd7c: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/nzlbauqwujbvwitghoa2: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ydl7bjmduf8vcn4b5d3i: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wwswl4rgl8j4hsri1det: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wlkmgc0xnji1vx7xludu: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/qsiokvjlwbnyk2gsd2d4: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kn2l9k73cg1g89bl2qgt: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/eznasucwmldknigsqwum: Object
+ 🎯 Mapped feed items: 47
+ 🎯 Setting feed with items: 47 first item ID: stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6
+ 🔍 Filter Debug: Object
+ [fetch<] 6ea44b69-cd80-4b80-876c-e8e65c81c9b9 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/get-user-profile
+ ✅ Loaded profile from database: Object
+ 🔍 Filter Debug: Object
+ [fetch<] 780b3990-c9f9-4dad-949f-265df281ff83 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/get-notifications?limit=10
+ [fetch<] c965056f-7ee8-41a0-806c-c94a15fd210e 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/get-user-profile
+ ✅ User profile loaded from database: Object
+index-2a3910f5.js:67 ✅ User profile synced from database
+index-2a3910f5.js:67 🎉 Checking for tier promotions...
+index-2a3910f5.js:119 [fetch>] 14dc82a6-a31a-49d5-8d61-300a437ad8d6 /.netlify/functions/check-tier-promotion POST
+index-2a3910f5.js:119 [fetch<] 14dc82a6-a31a-49d5-8d61-300a437ad8d6 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/check-tier-promotion
+index-2a3910f5.js:67 📁 File selected: Object
+index-2a3910f5.js:67 🖼️ Preview URL created: blob:https://689f21f1da588f000846cf7c--stefna.netlify.app/6d9155dd-affa-419a-b72d-351bd4bb6f05
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 ✅ File state updated, opening composer
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:119 [fetch>] 93519b80-40be-4750-9f24-dbc61d5c1958 /.netlify/functions/getQuota GET
+index-2a3910f5.js:67 🎭 Composer opened with state: Object
+index-2a3910f5.js:67 🖼️ Image loaded successfully: blob:https://689f21f1da588f000846cf7c--stefna.netlify.app/6d9155dd-affa-419a-b72d-351bd4bb6f05
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:119 [fetch<] 93519b80-40be-4750-9f24-dbc61d5c1958 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/getQuota
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 ▶ dispatchGenerate Object
+index-2a3910f5.js:119 [fetch>] da995a8a-f3ae-4c0c-87c4-522a97dc626b /.netlify/functions/user-settings GET
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:119 [fetch<] da995a8a-f3ae-4c0c-87c4-522a97dc626b 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/user-settings
+index-2a3910f5.js:67 ✅ Retrieved settings from database: Object
+index-2a3910f5.js:67 🔧 Using profile settings: Object
+index-2a3910f5.js:67 Object
+index-2a3910f5.js:67 🔍 Preset selection debug: Object
+index-2a3910f5.js:67 🎨 Using preset "vintage_film_35mm": vintage 35mm film aesthetic, warm color grading, subtle grain, soft contrast
+index-2a3910f5.js:67 🎨 Using new preset system "vintage_film_35mm" (I2I): vintage 35mm film aesthetic, warm color grading, subtle grain, soft contrast
+index-2a3910f5.js:67 🎯 Final effective prompt: vintage 35mm film aesthetic, warm color grading, subtle grain, soft contrast
+index-2a3910f5.js:67 🎨 Preset used in generation: Object
+index-2a3910f5.js:67 🛡️ requireUserIntent: ALLOW Object
+index-2a3910f5.js:67 🚀 Starting generation with: Object
+index-2a3910f5.js:119 [fetch>] e9609485-174f-4f77-9ebe-4c837a9aa6b5 /.netlify/functions/cloudinary-sign POST
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:119 [fetch<] e9609485-174f-4f77-9ebe-4c837a9aa6b5 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/cloudinary-sign
+index-2a3910f5.js:119 [fetch>] 10021110-861f-4bd7-96ea-bca899704ad9 https://api.cloudinary.com/v1_1/dw2xaqjmg/auto/upload POST
+index-2a3910f5.js:119 [fetch<] 10021110-861f-4bd7-96ea-bca899704ad9 200 https://api.cloudinary.com/v1_1/dw2xaqjmg/auto/upload
+index-2a3910f5.js:67 Object
+index-2a3910f5.js:67 aimlApi payload Object
+index-2a3910f5.js:119 [fetch>] 1f8fcb41-cf07-460e-9474-e7ce9c0d211b /.netlify/functions/aimlApi POST
+index-2a3910f5.js:119 [fetch<] 1f8fcb41-cf07-460e-9474-e7ce9c0d211b 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/aimlApi
+index-2a3910f5.js:67 aimlApi status 200
+index-2a3910f5.js:67 aimlApi body {success: true, image_url: 'https://cdn.aimlapi.com/eagle/files/kangaroo/7XLdiupF3CxG31YCqwB9Y.jpeg', request_id: '640f2c41-0fc1-4588-be71-5ad176c785f4', user_id: '4bfb5be1-6951-4658-b567-4087afa2d710', env: 'dev', …}
+index-2a3910f5.js:67 Generated 1 variation(s): ['https://cdn.aimlapi.com/eagle/files/kangaroo/7XLdiupF3CxG31YCqwB9Y.jpeg']
+index-2a3910f5.js:119 [fetch>] 8b996526-4010-48ba-829c-3a703d95fef2 /.netlify/functions/save-media POST
+index-2a3910f5.js:67 🔍 Filter Debug: {currentFilter: 'all', totalFeed: 47, filteredFeed: 47, videoCount: 0, imageCount: 47, …}
+index-2a3910f5.js:67 🔍 Filter Debug: {currentFilter: 'all', totalFeed: 47, filteredFeed: 47, videoCount: 0, imageCount: 47, …}
+index-2a3910f5.js:67 🔍 FullScreenMediaViewer current media: {id: 'generated-1755261888696', prompt: 'ghibli style', userId: 'current-user', type: 'photo', hasPrompt: true, …}
+index-2a3910f5.js:119 [fetch<] 8b996526-4010-48ba-829c-3a703d95fef2 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/save-media
+index-2a3910f5.js:67 ✅ saveMedia ok: {}
+index-2a3910f5.js:67 ⚠️ Ignoring late completion for run: a0046f69-57e4-4222-b512-7fc0b3808ec9 current: null
+P @ index-2a3910f5.js:67
+index-2a3910f5.js:67 🔍 Filter Debug: {currentFilter: 'all', totalFeed: 47, filteredFeed: 47, videoCount: 0, imageCount: 47, …}
+index-2a3910f5.js:67 🔄 Loading public feed...
+index-2a3910f5.js:119 [fetch>] 9dbf103a-872f-4b37-91fe-1229631f654b /.netlify/functions/getPublicFeed?limit=50 GET
+index-2a3910f5.js:67 🔍 Filter Debug: {currentFilter: 'all', totalFeed: 47, filteredFeed: 47, videoCount: 0, imageCount: 47, …}
+index-2a3910f5.js:119 [fetch<] 9dbf103a-872f-4b37-91fe-1229631f654b 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/getPublicFeed?limit=50
+index-2a3910f5.js:67 📡 Feed response status: 200
+ 📊 Raw feed response: {ok: true, source: 'cloudinary', data: Array(47)}
+ 📥 Feed items received: success
+index-2a3910f5.js:67 📊 Raw feed data: (47) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+index-2a3910f5.js:67 📊 Feed length: 47
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kqhjcukgsba3grwbt2jx: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kqhjcukgsba3grwbt2jx', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/kqhjcukgsba3grwbt2jx.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rd5mcck5huegqoj4cjzt: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rd5mcck5huegqoj4cjzt', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/rd5mcck5huegqoj4cjzt.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kvfunuvsaowgtiuebrrf: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kvfunuvsaowgtiuebrrf', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/kvfunuvsaowgtiuebrrf.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/q9smv4pnudrntdiqshj4: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/q9smv4pnudrntdiqshj4', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/q9smv4pnudrntdiqshj4.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/h57wntajh8cukehc7z7q: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/h57wntajh8cukehc7z7q', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/h57wntajh8cukehc7z7q.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k88ro500hmsjmgvqvhtu: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k88ro500hmsjmgvqvhtu', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/k88ro500hmsjmgvqvhtu.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/paqmztpmeg7fjbxkjxgw: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/paqmztpmeg7fjbxkjxgw', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/paqmztpmeg7fjbxkjxgw.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lpl0ixideb77ppoieqdv: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lpl0ixideb77ppoieqdv', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/lpl0ixideb77ppoieqdv.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bgwfejtcrchfoixsyjpn: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bgwfejtcrchfoixsyjpn', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/bgwfejtcrchfoixsyjpn.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rw52sfzwhagv3o1bzmts: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rw52sfzwhagv3o1bzmts', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/rw52sfzwhagv3o1bzmts.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/em1a5bvwfagzyjhmcgls: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/em1a5bvwfagzyjhmcgls', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/em1a5bvwfagzyjhmcgls.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/r7ign5npbeyatfv5guow: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/r7ign5npbeyatfv5guow', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/r7ign5npbeyatfv5guow.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lnpgl9mbwhceale5o630: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lnpgl9mbwhceale5o630', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/lnpgl9mbwhceale5o630.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/j07qwit7i55fdb7urnwa: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/j07qwit7i55fdb7urnwa', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/j07qwit7i55fdb7urnwa.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jg7k5dwut8tjorlnn6jb: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jg7k5dwut8tjorlnn6jb', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/jg7k5dwut8tjorlnn6jb.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bplvjckrhb0tgj4pptin: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bplvjckrhb0tgj4pptin', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/bplvjckrhb0tgj4pptin.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctg2gqpnwdycuifnferz: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctg2gqpnwdycuifnferz', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ctg2gqpnwdycuifnferz.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/narfvt4won91if7htv0k: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/narfvt4won91if7htv0k', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/narfvt4won91if7htv0k.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/mzv5omtcnjs8clo314ii: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/mzv5omtcnjs8clo314ii', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/mzv5omtcnjs8clo314ii.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wr7em5ya4dsokf0vvx9z: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wr7em5ya4dsokf0vvx9z', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/wr7em5ya4dsokf0vvx9z.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/et0squpvoscggtcgcqye: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/et0squpvoscggtcgcqye', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/et0squpvoscggtcgcqye.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bqobc5vlsyai3w4jjp90: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bqobc5vlsyai3w4jjp90', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/bqobc5vlsyai3w4jjp90.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/b6gmv1vdd5fm5ts5gqok: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/b6gmv1vdd5fm5ts5gqok', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/b6gmv1vdd5fm5ts5gqok.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ycllfriyag1nn0ng6l42: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ycllfriyag1nn0ng6l42', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ycllfriyag1nn0ng6l42.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bdap5yosydgjrkrbxxya: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bdap5yosydgjrkrbxxya', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/bdap5yosydgjrkrbxxya.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/xzg1pxawidtn8xhosorc: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/xzg1pxawidtn8xhosorc', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/xzg1pxawidtn8xhosorc.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ffbqfpcw2hycajbvnzjo: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ffbqfpcw2hycajbvnzjo', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ffbqfpcw2hycajbvnzjo.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ac3bff71z98kn6tpdtro: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ac3bff71z98kn6tpdtro', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ac3bff71z98kn6tpdtro.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/i0n5cb3dq8xsjavky92a: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/i0n5cb3dq8xsjavky92a', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/i0n5cb3dq8xsjavky92a.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jkkdsplpzmojjjkgiot9: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jkkdsplpzmojjjkgiot9', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/jkkdsplpzmojjjkgiot9.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/zd8rvk6gddyuwwgwu5fq: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/zd8rvk6gddyuwwgwu5fq', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/zd8rvk6gddyuwwgwu5fq.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wmsgygyygu4b8qx9dhqj: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wmsgygyygu4b8qx9dhqj', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/wmsgygyygu4b8qx9dhqj.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctl4gcisvbassaxggbwm: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctl4gcisvbassaxggbwm', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ctl4gcisvbassaxggbwm.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/na46vnuj518xrl3sqgws: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/na46vnuj518xrl3sqgws', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/na46vnuj518xrl3sqgws.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cwxvxh5xrtyjns7wnk2i: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cwxvxh5xrtyjns7wnk2i', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/cwxvxh5xrtyjns7wnk2i.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cxvqrj49wlis7juqd212: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cxvqrj49wlis7juqd212', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/cxvqrj49wlis7juqd212.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/yrbquk9vk7oy1czzyhpo: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/yrbquk9vk7oy1czzyhpo', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/yrbquk9vk7oy1czzyhpo.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k5wgivfjtrlxyxhlugyz: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k5wgivfjtrlxyxhlugyz', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/k5wgivfjtrlxyxhlugyz.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/pf9gqebjfwgykfp4sd7c: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/pf9gqebjfwgykfp4sd7c', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/pf9gqebjfwgykfp4sd7c.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/nzlbauqwujbvwitghoa2: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/nzlbauqwujbvwitghoa2', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/nzlbauqwujbvwitghoa2.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ydl7bjmduf8vcn4b5d3i: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ydl7bjmduf8vcn4b5d3i', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ydl7bjmduf8vcn4b5d3i.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wwswl4rgl8j4hsri1det: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wwswl4rgl8j4hsri1det', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/wwswl4rgl8j4hsri1det.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wlkmgc0xnji1vx7xludu: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wlkmgc0xnji1vx7xludu', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/wlkmgc0xnji1vx7xludu.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/qsiokvjlwbnyk2gsd2d4: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/qsiokvjlwbnyk2gsd2d4', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/qsiokvjlwbnyk2gsd2d4.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kn2l9k73cg1g89bl2qgt: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kn2l9k73cg1g89bl2qgt', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/kn2l9k73cg1g89bl2qgt.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/eznasucwmldknigsqwum: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/eznasucwmldknigsqwum', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/eznasucwmldknigsqwum.jpg'}
+index-2a3910f5.js:67 🎯 Mapped feed items: 47
+index-2a3910f5.js:67 🎯 Setting feed with items: 47 first item ID: stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6
+index-2a3910f5.js:67 🔍 Filter Debug: {currentFilter: 'all', totalFeed: 47, filteredFeed: 47, videoCount: 0, imageCount: 47, …}
+ 🎯 Restored selectedPreset from localStorage: vintage_film_35mm
+ 🔍 Debug hook available: window.debugIntent()
+ 🔍 Validating preset system (sync)...
+ ✅ validatePresets: OK
+ ✅ validateOptions: OK
+ ✅ validateUIConfiguration: OK
+ ✅ Preset system validation complete - all good!
+ 🔍 Validating preset system...
+ ✅ validatePresets: OK
+ ✅ validateOptions: OK
+ ✅ validateUIConfiguration: OK
+ ✅ validateStoryThemes: OK
+ ✅ Preset system validation complete - all good!
+ 🔍 Filter Debug: Object
+ ✅ Presets loaded and ready: 25
+ 🔍 selectedPreset changed to: vintage_film_35mm
+ 🎨 Preset details: Object
+ 🎨 PRESETS object updated: Object
+ 🔐 Auth state initialized: Object
+ 🔄 Restoring preset from localStorage: vintage_film_35mm
+ 🎯 Setting selectedPreset to: vintage_film_35mm
+ 🔄 Loading public feed...
+ [fetch>] 11eb22d6-38f7-471d-ac9e-d4734b5e3240 /.netlify/functions/getPublicFeed?limit=50 GET
+ [fetch>] 6ea44b69-cd80-4b80-876c-e8e65c81c9b9 /.netlify/functions/get-user-profile GET
+ 🔧 Initializing auth bootstrap...
+ ✅ Auth bootstrap initialized
+ 🔍 Filter Debug: Object
+ 🔍 Validating preset mappings...
+ ✅ User settings synced from database
+ 🔄 Loading user profile from database...
+ [fetch>] c965056f-7ee8-41a0-806c-c94a15fd210e /.netlify/functions/get-user-profile GET
+ ✅ Mapping validation complete
+ 🔍 Filter Debug: Object
+ [fetch>] 780b3990-c9f9-4dad-949f-265df281ff83 /.netlify/functions/get-notifications?limit=10 GET
+ [fetch<] 11eb22d6-38f7-471d-ac9e-d4734b5e3240 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/getPublicFeed?limit=50
+ 📡 Feed response status: 200
+ 📊 Raw feed response: Object
+ 📥 Feed items received: success
+ 📊 Raw feed data: Array(47)
+ 📊 Feed length: 47
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kqhjcukgsba3grwbt2jx: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rd5mcck5huegqoj4cjzt: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kvfunuvsaowgtiuebrrf: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/q9smv4pnudrntdiqshj4: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/h57wntajh8cukehc7z7q: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k88ro500hmsjmgvqvhtu: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/paqmztpmeg7fjbxkjxgw: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lpl0ixideb77ppoieqdv: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bgwfejtcrchfoixsyjpn: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rw52sfzwhagv3o1bzmts: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/em1a5bvwfagzyjhmcgls: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/r7ign5npbeyatfv5guow: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lnpgl9mbwhceale5o630: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/j07qwit7i55fdb7urnwa: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jg7k5dwut8tjorlnn6jb: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bplvjckrhb0tgj4pptin: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctg2gqpnwdycuifnferz: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/narfvt4won91if7htv0k: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/mzv5omtcnjs8clo314ii: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wr7em5ya4dsokf0vvx9z: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/et0squpvoscggtcgcqye: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bqobc5vlsyai3w4jjp90: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/b6gmv1vdd5fm5ts5gqok: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ycllfriyag1nn0ng6l42: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bdap5yosydgjrkrbxxya: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/xzg1pxawidtn8xhosorc: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ffbqfpcw2hycajbvnzjo: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ac3bff71z98kn6tpdtro: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/i0n5cb3dq8xsjavky92a: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jkkdsplpzmojjjkgiot9: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/zd8rvk6gddyuwwgwu5fq: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wmsgygyygu4b8qx9dhqj: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctl4gcisvbassaxggbwm: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/na46vnuj518xrl3sqgws: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cwxvxh5xrtyjns7wnk2i: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cxvqrj49wlis7juqd212: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/yrbquk9vk7oy1czzyhpo: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k5wgivfjtrlxyxhlugyz: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/pf9gqebjfwgykfp4sd7c: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/nzlbauqwujbvwitghoa2: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ydl7bjmduf8vcn4b5d3i: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wwswl4rgl8j4hsri1det: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wlkmgc0xnji1vx7xludu: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/qsiokvjlwbnyk2gsd2d4: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kn2l9k73cg1g89bl2qgt: Object
+ 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/eznasucwmldknigsqwum: Object
+ 🎯 Mapped feed items: 47
+ 🎯 Setting feed with items: 47 first item ID: stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6
+ 🔍 Filter Debug: Object
+ [fetch<] 6ea44b69-cd80-4b80-876c-e8e65c81c9b9 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/get-user-profile
+ ✅ Loaded profile from database: Object
+ 🔍 Filter Debug: Object
+ [fetch<] 780b3990-c9f9-4dad-949f-265df281ff83 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/get-notifications?limit=10
+ [fetch<] c965056f-7ee8-41a0-806c-c94a15fd210e 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/get-user-profile
+ ✅ User profile loaded from database: Object
+index-2a3910f5.js:67 ✅ User profile synced from database
+index-2a3910f5.js:67 🎉 Checking for tier promotions...
+index-2a3910f5.js:119 [fetch>] 14dc82a6-a31a-49d5-8d61-300a437ad8d6 /.netlify/functions/check-tier-promotion POST
+index-2a3910f5.js:119 [fetch<] 14dc82a6-a31a-49d5-8d61-300a437ad8d6 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/check-tier-promotion
+index-2a3910f5.js:67 📁 File selected: Object
+index-2a3910f5.js:67 🖼️ Preview URL created: blob:https://689f21f1da588f000846cf7c--stefna.netlify.app/6d9155dd-affa-419a-b72d-351bd4bb6f05
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 ✅ File state updated, opening composer
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:119 [fetch>] 93519b80-40be-4750-9f24-dbc61d5c1958 /.netlify/functions/getQuota GET
+index-2a3910f5.js:67 🎭 Composer opened with state: Object
+index-2a3910f5.js:67 🖼️ Image loaded successfully: blob:https://689f21f1da588f000846cf7c--stefna.netlify.app/6d9155dd-affa-419a-b72d-351bd4bb6f05
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:119 [fetch<] 93519b80-40be-4750-9f24-dbc61d5c1958 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/getQuota
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 ▶ dispatchGenerate Object
+index-2a3910f5.js:119 [fetch>] da995a8a-f3ae-4c0c-87c4-522a97dc626b /.netlify/functions/user-settings GET
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:119 [fetch<] da995a8a-f3ae-4c0c-87c4-522a97dc626b 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/user-settings
+index-2a3910f5.js:67 ✅ Retrieved settings from database: Object
+index-2a3910f5.js:67 🔧 Using profile settings: Object
+index-2a3910f5.js:67 Object
+index-2a3910f5.js:67 🔍 Preset selection debug: Object
+index-2a3910f5.js:67 🎨 Using preset "vintage_film_35mm": vintage 35mm film aesthetic, warm color grading, subtle grain, soft contrast
+index-2a3910f5.js:67 🎨 Using new preset system "vintage_film_35mm" (I2I): vintage 35mm film aesthetic, warm color grading, subtle grain, soft contrast
+index-2a3910f5.js:67 🎯 Final effective prompt: vintage 35mm film aesthetic, warm color grading, subtle grain, soft contrast
+index-2a3910f5.js:67 🎨 Preset used in generation: Object
+index-2a3910f5.js:67 🛡️ requireUserIntent: ALLOW Object
+index-2a3910f5.js:67 🚀 Starting generation with: Object
+index-2a3910f5.js:119 [fetch>] e9609485-174f-4f77-9ebe-4c837a9aa6b5 /.netlify/functions/cloudinary-sign POST
+index-2a3910f5.js:67 🔍 Filter Debug: Object
+index-2a3910f5.js:119 [fetch<] e9609485-174f-4f77-9ebe-4c837a9aa6b5 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/cloudinary-sign
+index-2a3910f5.js:119 [fetch>] 10021110-861f-4bd7-96ea-bca899704ad9 https://api.cloudinary.com/v1_1/dw2xaqjmg/auto/upload POST
+index-2a3910f5.js:119 [fetch<] 10021110-861f-4bd7-96ea-bca899704ad9 200 https://api.cloudinary.com/v1_1/dw2xaqjmg/auto/upload
+index-2a3910f5.js:67 Object
+index-2a3910f5.js:67 aimlApi payload Object
+index-2a3910f5.js:119 [fetch>] 1f8fcb41-cf07-460e-9474-e7ce9c0d211b /.netlify/functions/aimlApi POST
+index-2a3910f5.js:119 [fetch<] 1f8fcb41-cf07-460e-9474-e7ce9c0d211b 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/aimlApi
+index-2a3910f5.js:67 aimlApi status 200
+index-2a3910f5.js:67 aimlApi body {success: true, image_url: 'https://cdn.aimlapi.com/eagle/files/kangaroo/7XLdiupF3CxG31YCqwB9Y.jpeg', request_id: '640f2c41-0fc1-4588-be71-5ad176c785f4', user_id: '4bfb5be1-6951-4658-b567-4087afa2d710', env: 'dev', …}
+index-2a3910f5.js:67 Generated 1 variation(s): ['https://cdn.aimlapi.com/eagle/files/kangaroo/7XLdiupF3CxG31YCqwB9Y.jpeg']
+index-2a3910f5.js:119 [fetch>] 8b996526-4010-48ba-829c-3a703d95fef2 /.netlify/functions/save-media POST
+index-2a3910f5.js:67 🔍 Filter Debug: {currentFilter: 'all', totalFeed: 47, filteredFeed: 47, videoCount: 0, imageCount: 47, …}
+index-2a3910f5.js:67 🔍 Filter Debug: {currentFilter: 'all', totalFeed: 47, filteredFeed: 47, videoCount: 0, imageCount: 47, …}
+index-2a3910f5.js:67 🔍 FullScreenMediaViewer current media: {id: 'generated-1755261888696', prompt: 'ghibli style', userId: 'current-user', type: 'photo', hasPrompt: true, …}
+index-2a3910f5.js:119 [fetch<] 8b996526-4010-48ba-829c-3a703d95fef2 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/save-media
+index-2a3910f5.js:67 ✅ saveMedia ok: {}
+index-2a3910f5.js:67 ⚠️ Ignoring late completion for run: a0046f69-57e4-4222-b512-7fc0b3808ec9 current: null
+P @ index-2a3910f5.js:67
+index-2a3910f5.js:67 🔍 Filter Debug: {currentFilter: 'all', totalFeed: 47, filteredFeed: 47, videoCount: 0, imageCount: 47, …}
+index-2a3910f5.js:67 🔄 Loading public feed...
+index-2a3910f5.js:119 [fetch>] 9dbf103a-872f-4b37-91fe-1229631f654b /.netlify/functions/getPublicFeed?limit=50 GET
+index-2a3910f5.js:67 🔍 Filter Debug: {currentFilter: 'all', totalFeed: 47, filteredFeed: 47, videoCount: 0, imageCount: 47, …}
+index-2a3910f5.js:119 [fetch<] 9dbf103a-872f-4b37-91fe-1229631f654b 200 https://689f21f1da588f000846cf7c--stefna.netlify.app/.netlify/functions/getPublicFeed?limit=50
+index-2a3910f5.js:67 📡 Feed response status: 200
+ 📊 Raw feed response: {ok: true, source: 'cloudinary', data: Array(47)}
+ 📥 Feed items received: success
+index-2a3910f5.js:67 📊 Raw feed data: (47) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+index-2a3910f5.js:67 📊 Feed length: 47
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kqhjcukgsba3grwbt2jx: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kqhjcukgsba3grwbt2jx', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/kqhjcukgsba3grwbt2jx.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rd5mcck5huegqoj4cjzt: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rd5mcck5huegqoj4cjzt', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/rd5mcck5huegqoj4cjzt.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kvfunuvsaowgtiuebrrf: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kvfunuvsaowgtiuebrrf', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/kvfunuvsaowgtiuebrrf.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/q9smv4pnudrntdiqshj4: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/q9smv4pnudrntdiqshj4', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/q9smv4pnudrntdiqshj4.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/h57wntajh8cukehc7z7q: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/h57wntajh8cukehc7z7q', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/h57wntajh8cukehc7z7q.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k88ro500hmsjmgvqvhtu: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k88ro500hmsjmgvqvhtu', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/k88ro500hmsjmgvqvhtu.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/paqmztpmeg7fjbxkjxgw: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/paqmztpmeg7fjbxkjxgw', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/paqmztpmeg7fjbxkjxgw.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lpl0ixideb77ppoieqdv: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lpl0ixideb77ppoieqdv', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/lpl0ixideb77ppoieqdv.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bgwfejtcrchfoixsyjpn: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bgwfejtcrchfoixsyjpn', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/bgwfejtcrchfoixsyjpn.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rw52sfzwhagv3o1bzmts: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/rw52sfzwhagv3o1bzmts', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/rw52sfzwhagv3o1bzmts.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/em1a5bvwfagzyjhmcgls: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/em1a5bvwfagzyjhmcgls', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/em1a5bvwfagzyjhmcgls.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/r7ign5npbeyatfv5guow: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/r7ign5npbeyatfv5guow', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/r7ign5npbeyatfv5guow.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lnpgl9mbwhceale5o630: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/lnpgl9mbwhceale5o630', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/lnpgl9mbwhceale5o630.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/j07qwit7i55fdb7urnwa: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/j07qwit7i55fdb7urnwa', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/j07qwit7i55fdb7urnwa.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jg7k5dwut8tjorlnn6jb: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jg7k5dwut8tjorlnn6jb', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/jg7k5dwut8tjorlnn6jb.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bplvjckrhb0tgj4pptin: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bplvjckrhb0tgj4pptin', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/bplvjckrhb0tgj4pptin.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctg2gqpnwdycuifnferz: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctg2gqpnwdycuifnferz', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ctg2gqpnwdycuifnferz.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/narfvt4won91if7htv0k: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/narfvt4won91if7htv0k', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/narfvt4won91if7htv0k.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/mzv5omtcnjs8clo314ii: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/mzv5omtcnjs8clo314ii', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/mzv5omtcnjs8clo314ii.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wr7em5ya4dsokf0vvx9z: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wr7em5ya4dsokf0vvx9z', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/wr7em5ya4dsokf0vvx9z.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/et0squpvoscggtcgcqye: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/et0squpvoscggtcgcqye', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/et0squpvoscggtcgcqye.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bqobc5vlsyai3w4jjp90: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bqobc5vlsyai3w4jjp90', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/bqobc5vlsyai3w4jjp90.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/b6gmv1vdd5fm5ts5gqok: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/b6gmv1vdd5fm5ts5gqok', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/b6gmv1vdd5fm5ts5gqok.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ycllfriyag1nn0ng6l42: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ycllfriyag1nn0ng6l42', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ycllfriyag1nn0ng6l42.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bdap5yosydgjrkrbxxya: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/bdap5yosydgjrkrbxxya', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/bdap5yosydgjrkrbxxya.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/xzg1pxawidtn8xhosorc: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/xzg1pxawidtn8xhosorc', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/xzg1pxawidtn8xhosorc.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ffbqfpcw2hycajbvnzjo: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ffbqfpcw2hycajbvnzjo', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ffbqfpcw2hycajbvnzjo.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ac3bff71z98kn6tpdtro: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ac3bff71z98kn6tpdtro', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ac3bff71z98kn6tpdtro.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/i0n5cb3dq8xsjavky92a: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/i0n5cb3dq8xsjavky92a', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/i0n5cb3dq8xsjavky92a.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jkkdsplpzmojjjkgiot9: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/jkkdsplpzmojjjkgiot9', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/jkkdsplpzmojjjkgiot9.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/zd8rvk6gddyuwwgwu5fq: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/zd8rvk6gddyuwwgwu5fq', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/zd8rvk6gddyuwwgwu5fq.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wmsgygyygu4b8qx9dhqj: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wmsgygyygu4b8qx9dhqj', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/wmsgygyygu4b8qx9dhqj.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctl4gcisvbassaxggbwm: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ctl4gcisvbassaxggbwm', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ctl4gcisvbassaxggbwm.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/na46vnuj518xrl3sqgws: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/na46vnuj518xrl3sqgws', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/na46vnuj518xrl3sqgws.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cwxvxh5xrtyjns7wnk2i: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cwxvxh5xrtyjns7wnk2i', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/cwxvxh5xrtyjns7wnk2i.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cxvqrj49wlis7juqd212: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/cxvqrj49wlis7juqd212', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/cxvqrj49wlis7juqd212.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/yrbquk9vk7oy1czzyhpo: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/yrbquk9vk7oy1czzyhpo', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/yrbquk9vk7oy1czzyhpo.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k5wgivfjtrlxyxhlugyz: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/k5wgivfjtrlxyxhlugyz', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/k5wgivfjtrlxyxhlugyz.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/pf9gqebjfwgykfp4sd7c: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/pf9gqebjfwgykfp4sd7c', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/pf9gqebjfwgykfp4sd7c.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/nzlbauqwujbvwitghoa2: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/nzlbauqwujbvwitghoa2', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/nzlbauqwujbvwitghoa2.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ydl7bjmduf8vcn4b5d3i: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ydl7bjmduf8vcn4b5d3i', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/ydl7bjmduf8vcn4b5d3i.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wwswl4rgl8j4hsri1det: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wwswl4rgl8j4hsri1det', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/wwswl4rgl8j4hsri1det.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wlkmgc0xnji1vx7xludu: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/wlkmgc0xnji1vx7xludu', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/wlkmgc0xnji1vx7xludu.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/qsiokvjlwbnyk2gsd2d4: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/qsiokvjlwbnyk2gsd2d4', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/qsiokvjlwbnyk2gsd2d4.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kn2l9k73cg1g89bl2qgt: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/kn2l9k73cg1g89bl2qgt', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/kn2l9k73cg1g89bl2qgt.jpg'}
+index-2a3910f5.js:67 🔗 URL mapping for item stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/eznasucwmldknigsqwum: {cloudinary_public_id: 'stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/eznasucwmldknigsqwum', media_type: 'image', final: 'https://res.cloudinary.com/dw2xaqjmg/image/upload/…e-4ef8-afaa-df14858d3635/eznasucwmldknigsqwum.jpg'}
+index-2a3910f5.js:67 🎯 Mapped feed items: 47
+index-2a3910f5.js:67 🎯 Setting feed with items: 47 first item ID: stefna/outputs/97f67e2e-aa9e-4ef8-afaa-df14858d3635/ni0qg1esmqokvm295ya6
+index-2a3910f5.js:67 🔍 Filter Debug: {currentFilter: 'all', totalFeed: 47, filteredFeed: 47, videoCount: 0, imageCount: 47, …}
