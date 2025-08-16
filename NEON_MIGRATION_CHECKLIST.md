@@ -1,6 +1,6 @@
 # 🚀 Neon Migration Checklist - Remaining Work
 
-## 📊 **Current Status: 39% Complete - 11/28 Functions Migrated**
+## 📊 **Current Status: 50% Complete - 14/28 Functions Migrated**
 
 ### ✅ **Already Migrated (Working)**
 - `save-media.ts` - ✅ Fixed payload handling and database schema
@@ -14,6 +14,16 @@
 - `list-assets.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
 - `updateMediaVisibility.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
 - `record-asset.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+- `debug-feed.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+- `usage-stats.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+- `add-bonus-credits.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT
+
+### 🎯 **Recent Accomplishments (Latest Session)**
+- **Profile Refresh Issues Fixed**: Added userMediaUpdated events to MoodMorph and custom prompt generation
+- **Console Error Resolution**: Fixed blob URL fetching, UI validation, and RUM adblock noise
+- **Migration Pattern Established**: Consistent JWT auth, Neon database, response helpers
+- **Error Handling**: Graceful fallbacks instead of 500 errors
+- **Testing Tools**: Added development helpers for debugging
 
 ### 🎯 **Recent Accomplishments**
 - **Console Error Fixes**: Fixed blob URL fetching, UI validation race conditions, RUM adblock noise
@@ -42,14 +52,14 @@
 ## 🔄 **REMAINING BACKEND FUNCTIONS TO MIGRATE**
 
 ### **High Priority (Core Functionality)**
-- [ ] `debug-feed.js` - Uses Supabase for feed debugging
+- [x] `debug-feed.js` - ✅ **MIGRATED** - Now uses Neon + JWT
 - [x] `list-assets.js` - ✅ **MIGRATED** - Now uses Neon + JWT
 - [x] `updateMediaVisibility.js` - ✅ **MIGRATED** - Now uses Neon + JWT
 - [x] `record-asset.js` - ✅ **MIGRATED** - Now uses Neon + JWT
-- [ ] `usage-stats.js` - Uses Supabase for usage tracking
+- [x] `usage-stats.js` - ✅ **MIGRATED** - Now uses Neon + JWT
 
 ### **Medium Priority (User Features)**
-- [ ] `add-bonus-credits.js` - Uses Supabase for credit management
+- [x] `add-bonus-credits.js` - ✅ **MIGRATED** - Now uses Neon + JWT
 - [ ] `update-user.js` - Uses Supabase for user updates
 - [ ] `bulk-share.js` - Uses Supabase for bulk operations
 - [ ] `process-referral.js` - Uses Supabase for referral processing
@@ -247,6 +257,6 @@ const data = await response.json()
 
 ---
 
-**Last Updated:** $(date)
-**Status:** 70% Complete - 8/28 functions migrated
-**Next Priority:** Complete high-priority media functions
+**Last Updated:** August 16, 2025
+**Status:** 50% Complete - 14/28 functions migrated
+**Next Priority:** Complete remaining medium-priority user management functions
