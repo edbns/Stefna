@@ -110,8 +110,11 @@ const ProfileScreen: React.FC = () => {
       })
 
       if (response.ok) {
-        const userData = await response.json()
-        console.log('✅ Profile loaded from database:', userData)
+        const result = await response.json()
+        console.log('✅ Profile loaded from database:', result)
+        
+        // Handle new response format: { ok: true, profile: {...} }
+        const userData = result.ok && result.profile ? result.profile : result;
         
         // Store the real user ID from the database response
         if (userData.id) {
@@ -515,12 +518,11 @@ const ProfileScreen: React.FC = () => {
           setUserMedia(allMedia);
         } else {
           // Authenticated user: fetch from server with JWT
-          const response = await authenticatedFetch('/.netlify/functions/getUserMedia', {
-            method: 'POST',
+          const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?ownerId=${userId}&limit=50`, {
+            method: 'GET',
             headers: {
               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ userId })
+            }
           });
 
           if (response.status === 401) {
