@@ -39,7 +39,7 @@ const ProfileScreen: React.FC = () => {
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
   const [bulkDeleteConfirmed, setBulkDeleteConfirmed] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [showEditProfileModal, setShowEditProfileModal] = useState(false)
+
   // Use profile context
   const { profileData, updateProfile, refreshProfile } = useProfile()
   
@@ -281,7 +281,7 @@ const ProfileScreen: React.FC = () => {
   // const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [tokenCount, setTokenCount] = useState(0)
   const [showAdminUpgrade, setShowAdminUpgrade] = useState(false)
-  const [isMigrating, setIsMigrating] = useState(false)
+
 
   // Unified notification system (same as home page)
   const [notifications, setNotifications] = useState<Array<{
@@ -409,56 +409,7 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
-  // Migrate user media from dev to prod environment
-  const migrateUserMedia = async () => {
-    try {
-      setIsMigrating(true)
-      const token = authService.getToken()
-      if (!token) {
-        addNotification('Migration Failed', 'Authentication required', 'error')
-        return
-      }
 
-      console.log('🔄 Starting media migration...')
-      const response = await authenticatedFetch('/.netlify/functions/migrate-user-media', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        console.log('✅ Migration completed:', result)
-        
-        if (result.totalMigrated > 0) {
-          addNotification(
-            'Migration Complete!', 
-            `Successfully migrated ${result.totalMigrated} media items to production environment. They should now appear on the home feed.`, 
-            'success'
-          )
-          
-          // Refresh user media to show updated data
-          await loadUserMedia()
-        } else {
-          addNotification(
-            'No Migration Needed', 
-            'All your media is already in the correct environment.', 
-            'info'
-          )
-        }
-      } else {
-        const errorData = await response.json()
-        console.error('❌ Migration failed:', errorData)
-        addNotification('Migration Failed', errorData.error || 'Unknown error', 'error')
-      }
-    } catch (error) {
-      console.error('❌ Migration error:', error)
-      addNotification('Migration Failed', 'Network or server error', 'error')
-    } finally {
-      setIsMigrating(false)
-    }
-  }
 
   // Load user media from database using new Netlify Function
   const loadUserMedia = async () => {
@@ -1440,7 +1391,6 @@ const ProfileScreen: React.FC = () => {
                 onUnshare={handleUnshare}
                 onRemix={handleRemix}
                 onDelete={handleDeleteMedia}
-                onGenerateCaption={handleGenerateCaption}
                 showActions={true}
                 className="pb-20"
                 hideRemixCount={true}
@@ -1491,7 +1441,6 @@ const ProfileScreen: React.FC = () => {
                 onUnshare={handleUnshare}
                 onRemix={handleRemix}
                 onDelete={handleDeleteMedia}
-                onGenerateCaption={handleGenerateCaption}
                 showActions={true}
                 className="pb-20"
                 hideRemixCount={true}
