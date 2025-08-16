@@ -762,10 +762,9 @@ const HomeNew: React.FC = () => {
     // Try to get from database first (for authenticated users)
     if (isAuthenticated && authService.getToken()) {
       try {
-        const response = await fetch('/.netlify/functions/user-settings', {
+        const response = await authenticatedFetch('/.netlify/functions/user-settings', {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${authService.getToken()}`,
             'Content-Type': 'application/json'
           }
         })
@@ -1343,11 +1342,10 @@ const HomeNew: React.FC = () => {
         console.log(`💾 Saving ${allResultUrls.length} variation(s) to database...`);
         
         try {
-          const saveRes = await fetch('/.netlify/functions/save-media', {
+          const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
             method: 'POST',
             headers: { 
-              'Content-Type': 'application/json', 
-              'Authorization': `Bearer ${jwt}` 
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               runId: genId,
@@ -1747,9 +1745,9 @@ const HomeNew: React.FC = () => {
     
     console.log('📤 Unsharing media:', media.id)
     
-    const r = await fetch('/.netlify/functions/recordShare', {
+    const r = await authenticatedFetch('/.netlify/functions/recordShare', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authService.getToken()}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         asset_id: media.id, 
         shareToFeed: false, 

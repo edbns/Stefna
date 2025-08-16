@@ -196,7 +196,7 @@ const ProfileScreen: React.FC = () => {
         try {
           const token = authService.getToken()
           if (!token) return
-          const r = await fetch('/.netlify/functions/user-settings', { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+          const r = await authenticatedFetch('/.netlify/functions/user-settings', { method: 'GET' })
           if (r.ok) {
             const s = await r.json()
             updateProfile({ shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix })
@@ -310,14 +310,13 @@ const ProfileScreen: React.FC = () => {
       // Delete each selected media item
       const deletePromises = Array.from(selectedMediaIds).map(async (mediaId) => {
         try {
-          const response = await fetch(`/.netlify/functions/delete-media`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ mediaId })
-          })
+                  const response = await authenticatedFetch(`/.netlify/functions/delete-media`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ mediaId })
+        })
           
           if (!response.ok) {
             throw new Error(`Failed to delete media ${mediaId}`)
@@ -368,10 +367,9 @@ const ProfileScreen: React.FC = () => {
       }
 
       console.log('🔄 Starting media migration...')
-      const response = await fetch('/.netlify/functions/migrate-user-media', {
+      const response = await authenticatedFetch('/.netlify/functions/migrate-user-media', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
@@ -492,10 +490,9 @@ const ProfileScreen: React.FC = () => {
           setUserMedia(allMedia);
         } else {
           // Authenticated user: fetch from server with JWT
-          const response = await fetch('/.netlify/functions/getUserMedia', {
+          const response = await authenticatedFetch('/.netlify/functions/getUserMedia', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${jwt}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({ userId })
@@ -806,10 +803,9 @@ const ProfileScreen: React.FC = () => {
       }
 
       // Update media visibility in database using recordShare
-      const response = await fetch('/.netlify/functions/recordShare', {
+      const response = await authenticatedFetch('/.netlify/functions/recordShare', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${authService.getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -857,10 +853,9 @@ const ProfileScreen: React.FC = () => {
       }
 
       // Update media visibility in database using recordShare
-      const response = await fetch('/.netlify/functions/recordShare', {
+      const response = await authenticatedFetch('/.netlify/functions/recordShare', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${authService.getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -1044,9 +1039,9 @@ const ProfileScreen: React.FC = () => {
     const token = authService.getToken()
     if (!token) return
     try {
-      const r = await fetch('/.netlify/functions/user-settings', {
+      const r = await authenticatedFetch('/.netlify/functions/user-settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shareToFeed, allowRemix })
       })
       if (r.ok) {
