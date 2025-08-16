@@ -122,34 +122,60 @@ export async function runMoodMorph(opts?: { file?: File|Blob|string }) {
     }
     
     console.log(`🎉 MoodMorph: ${ok.length}/3 variants generated successfully`)
-    console.log(`📦 MoodMorph: Saving ${allVariations.length} variations in batch...`)
     
-    // 4) Save all variations in a single request
+    // 4) Save all variations in a single batch request
     if (allVariations.length > 0) {
       try {
-        const response = await fetchWithAuth('/.netlify/functions/save-media', {
-          method: 'POST',
-          body: JSON.stringify({
-            variations: allVariations,
+        console.log(`📦 MoodMorph: Saving ${allVariations.length} variations in batch...`);
+
+        // Prepare variations for batch endpoint
+        const variations = allVariations.map((variation, index) => ({
+          image_url: variation.url,
+          media_type: 'image',
+          prompt: MOODS[index]?.prompt || `MoodMorph ${MOODS[index]?.label || 'variation'}`,
+          cloudinary_public_id: null,
+          source_public_id: secureUrl,
+          meta: {
+            mood: MOODS[index]?.id || 'unknown',
             runId,
             presetId: 'moodmorph',
-            allowPublish: false,
-            tags: ['moodmorph', `group:${runId}`],
-            extra: { 
-              moodCount: ok.length,
-              totalVariations: allVariations.length,
-              group: runId 
-            }
+            group: runId,
+            variation_index: index
+          }
+        }));
+
+        const response = await fetchWithAuth('/.netlify/functions/save-media-batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Idempotency-Key': runId // prevents double-saves on retries
+          },
+          body: JSON.stringify({ 
+            runId, 
+            variations 
           })
         });
-        
+
         if (!response.ok) {
-          throw new Error(`save-media failed: ${response.status} ${response.statusText}`);
+          throw new Error(`save-media-batch failed: ${response.status} ${response.statusText}`);
         }
-        
+
         const result = await response.json();
-        console.log(`✅ MoodMorph: Saved all ${allVariations.length} variations:`, result);
-        console.log(`💰 MoodMorph: Credits deducted: ${result.creditsDeducted}`);
+        if (result.ok && result.count > 0) {
+          console.log(`✅ MoodMorph: Saved ${result.count} variations:`, result);
+          
+          // Only refresh when we actually saved something
+          window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+            detail: { count: result.count, runId } 
+          }));
+          
+          // Show success toast
+          window.dispatchEvent(new CustomEvent('generation-success', {
+            detail: { message: `Saved ${result.count} MoodMorph variations`, timestamp: Date.now() }
+          }));
+        } else {
+          throw new Error(result?.message || 'Batch save failed');
+        }
       } catch (error) {
         console.error(`❌ MoodMorph: Failed to save variations:`, error);
         throw new Error(`Failed to save MoodMorph variations: ${error instanceof Error ? error.message : 'Unknown error'}`);

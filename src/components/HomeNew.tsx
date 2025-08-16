@@ -1378,35 +1378,34 @@ const HomeNew: React.FC = () => {
         console.log(`💾 Saving ${allResultUrls.length} variation(s) to database...`);
         
         try {
-          const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
+          // Prepare variations for batch endpoint
+          const variations = allResultUrls.map((url, index) => ({
+            image_url: url,
+            media_type: 'image',
+            prompt: effectivePrompt,
+            cloudinary_public_id: null,
+            source_public_id: sourceUrl || null,
+            meta: {
+              variationIndex: index,
+              totalVariations: allResultUrls.length,
+              prompt: effectivePrompt,
+              modeMeta: body.modeMeta,
+              userId,
+              shareNow: !!shareToFeed,
+              presetId: selectedPreset,
+              runId: genId
+            }
+          }));
+
+          const saveRes = await authenticatedFetch('/.netlify/functions/save-media-batch', {
             method: 'POST',
             headers: { 
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'X-Idempotency-Key': genId // prevents double-saves on retries
             },
             body: JSON.stringify({
               runId: genId,
-              presetId: selectedPreset,
-              allowPublish: !!shareToFeed,
-              source: sourceUrl ? { url: sourceUrl } : undefined,
-              variations: allResultUrls.map((url, index) => ({
-                url: url,
-                type: 'image',
-                meta: {
-                  variationIndex: index,
-                  totalVariations: allResultUrls.length,
-                  prompt: effectivePrompt,
-                  modeMeta: body.modeMeta,
-                  userId,
-                  shareNow: !!shareToFeed
-                }
-              })),
-              tags: ['generated', 'preset'],
-              extra: {
-                prompt: effectivePrompt,
-                presetId: selectedPreset,
-                userId,
-                timestamp: new Date().toISOString()
-              }
+              variations
             })
           });
           
@@ -1414,10 +1413,13 @@ const HomeNew: React.FC = () => {
           let saveBody: any = {};
           try { saveBody = JSON.parse(saveText); } catch {}
           
-          if (saveRes.ok && saveBody?.ok) {
-            console.log(`✅ All ${allResultUrls.length} variations saved successfully:`, saveBody);
-            // Refresh user media after successful save
-            setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated')), 800);
+          if (saveRes.ok && saveBody?.ok && saveBody.count > 0) {
+            console.log(`✅ All ${saveBody.count} variations saved successfully:`, saveBody);
+            
+            // Only refresh when we actually saved something
+            setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+              detail: { count: saveBody.count, runId: genId } 
+            })), 800);
           } else {
             console.error(`❌ Save failed:`, saveRes.status, saveBody || saveText);
             notifyError({ title: 'Save failed', message: saveBody?.error || 'Failed to save media' });
