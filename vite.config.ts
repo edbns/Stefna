@@ -20,8 +20,9 @@ export default defineConfig({
       'react',
       'react-dom',
       'framer-motion',
-      '@radix-ui/react-dialog',
-      '@radix-ui/react-dropdown-menu'
+      'lucide-react',
+      'clsx',
+      'tailwind-merge'
     ]
   },
   build: {
@@ -36,8 +37,8 @@ export default defineConfig({
         manualChunks: {
           // Vendor chunks for better caching
           'vendor-react': ['react', 'react-dom'],
-          'vendor-ui': ['framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-          'vendor-utils': ['date-fns', 'clsx', 'tailwind-merge'],
+          'vendor-ui': ['framer-motion', 'lucide-react'],
+          'vendor-utils': ['clsx', 'tailwind-merge'],
           // Core app chunks
           'app-core': [
             './src/stores/generationStore',
