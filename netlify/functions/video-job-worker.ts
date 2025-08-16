@@ -1,10 +1,8 @@
 // /.netlify/functions/video-job-worker.ts
 import type { Handler } from '@netlify/functions';
-import { createClient } from '@supabase/supabase-js';
+import { sql } from '../lib/db';
 import { initCloudinary } from './_cloudinary';
 
-const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const AIML_API_KEY = process.env.AIML_API_KEY!;
 const AIML_V2V_ENDPOINT = process.env.AIML_V2V_ENDPOINT || 'https://api.aimlapi.com/v1/video-to-video';
 const V2V_WEBHOOK_SECRET = process.env.V2V_WEBHOOK_SECRET || '';
@@ -15,7 +13,7 @@ const SURFER_POS_LOCK = "same subject, adult male surfer, holding a surfboard, s
 const SURFER_NEG_DRIFT = "female, woman, girl, bikini, makeup glam, banana, banana boat, inflatable, kayak, canoe, raft, jetski, paddle, oar, dinghy, extra people, different subject, face swap, body swap";
 
 // Process Story Mode job: generate 4 stills and stitch into MP4
-async function processStoryJob(supabase: any, job: any, job_id: string) {
+async function processStoryJob(job: any, job_id: string) {
   const cloudinary = initCloudinary();
   const shotFiles: string[] = [];
   
@@ -67,7 +65,15 @@ async function processStoryJob(supabase: any, job: any, job_id: string) {
       
       // Update progress
       const progress = Math.round(((i + 1) / job.shotlist.length) * 80); // 80% for generation
-      await supabase.from('video_jobs').update({ progress }).eq('id', job_id);
+      try {
+        await sql`
+          UPDATE video_jobs 
+          SET progress = ${progress}, updated_at = NOW()
+          WHERE id = ${job_id}
+        `;
+      } catch (updateError) {
+        console.warn('Failed to update video_jobs progress:', updateError);
+      }
     }
     
     // 2) Stitch into MP4 using ffmpeg
@@ -122,10 +128,15 @@ async function processStoryJob(supabase: any, job: any, job_id: string) {
     }
     
     // 4) Mark job completed
-    await supabase
-      .from('video_jobs')
-      .update({ status: 'completed', output_url: upload.secure_url, progress: 100 })
-      .eq('id', job_id);
+    try {
+      await sql`
+        UPDATE video_jobs 
+        SET status = 'completed', output_url = ${upload.secure_url}, progress = 100, updated_at = NOW()
+        WHERE id = ${job_id}
+      `;
+    } catch (updateError) {
+      console.warn('Failed to update video_jobs completion:', updateError);
+    }
     
     // Clean up temp files
     shotFiles.forEach(file => {
@@ -137,7 +148,15 @@ async function processStoryJob(supabase: any, job: any, job_id: string) {
     
   } catch (error: any) {
     console.error('[Story] Error:', error);
-    await supabase.from('video_jobs').update({ status: 'failed', error: error.message?.slice(0, 2000) || 'failed' }).eq('id', job_id);
+    try {
+      await sql`
+        UPDATE video_jobs 
+        SET status = 'failed', error = ${error.message?.slice(0, 2000) || 'failed'}, updated_at = NOW()
+        WHERE id = ${job_id}
+      `;
+    } catch (updateError) {
+      console.warn('Failed to update video_jobs error:', updateError);
+    }
     
     // Clean up temp files on error
     shotFiles.forEach(file => {
@@ -149,13 +168,19 @@ async function processStoryJob(supabase: any, job: any, job_id: string) {
 }
 
 export const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method not allowed' };
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+  
   const secret = event.headers['x-internal'];
-  if (secret !== '1') return { statusCode: 403, body: 'Forbidden' };
+  if (secret !== '1') {
+    return { statusCode: 403, body: JSON.stringify({ error: 'Forbidden' }) };
+  }
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const { job_id } = JSON.parse(event.body || '{}');
-  if (!job_id) return { statusCode: 400, body: 'job_id required' };
+  if (!job_id) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'job_id required' }) };
+  }
 
   // Try to load job from video_jobs first (for Story Mode), then ai_generations (for V2V)
   let job: any = null;
@@ -163,43 +188,71 @@ export const handler: Handler = async (event) => {
   
   // First try video_jobs table for Story Mode jobs
   try {
-    const { data: storyJob, error: storyErr } = await supabase
-      .from('video_jobs')
-      .select('id,user_id,source_url,prompt,model,params,shotlist,fps,width,height,allow_remix,visibility,type,status')
-      .eq('id', job_id)
-      .single();
+    const storyJob = await sql`
+      SELECT id, user_id, source_url, prompt, model, params, shotlist, fps, width, height, allow_remix, visibility, type, status
+      FROM video_jobs
+      WHERE id = ${job_id}
+      LIMIT 1
+    `;
     
-    if (storyJob && !storyErr) {
-      job = storyJob;
+    if (storyJob && storyJob.length > 0) {
+      job = storyJob[0];
       isStoryJob = true;
     }
   } catch (e) {
     // video_jobs table might not exist, continue to ai_generations
+    console.log('Video jobs table not found, trying ai_generations');
   }
   
   // If not found in video_jobs, try ai_generations for regular V2V jobs
   if (!job) {
-    const { data: v2vJob, error: v2vErr } = await supabase
-      .from('ai_generations')
-      .select('id,user_id,input_url,preset,visibility,status')
-      .eq('id', job_id)
-      .single();
-    
-    if (v2vErr || !v2vJob) return { statusCode: 404, body: 'Job not found' };
-    job = v2vJob;
+    try {
+      const v2vJob = await sql`
+        SELECT id, user_id, input_url, preset, visibility, status
+        FROM ai_generations
+        WHERE id = ${job_id}
+        LIMIT 1
+      `;
+      
+      if (!v2vJob || v2vJob.length === 0) {
+        return { statusCode: 404, body: JSON.stringify({ error: 'Job not found' }) };
+      }
+      job = v2vJob[0];
+    } catch (e) {
+      console.error('Failed to fetch from ai_generations:', e);
+      return { statusCode: 404, body: JSON.stringify({ error: 'Job not found' }) };
+    }
   }
 
-  if (job.status !== 'queued') return { statusCode: 200, body: JSON.stringify({ ok:true, message:'Already handled', status: job.status }) };
+  if (job.status !== 'queued') {
+    return { statusCode: 200, body: JSON.stringify({ ok: true, message: 'Already handled', status: job.status }) };
+  }
 
   // Mark processing in the appropriate table
-  const updateTable = isStoryJob ? 'video_jobs' : 'ai_generations';
-  await supabase.from(updateTable).update({ status: 'processing', progress: 1 }).eq('id', job_id);
+  try {
+    if (isStoryJob) {
+      await sql`
+        UPDATE video_jobs 
+        SET status = 'processing', progress = 1, updated_at = NOW()
+        WHERE id = ${job_id}
+      `;
+    } else {
+      await sql`
+        UPDATE ai_generations 
+        SET status = 'processing', progress = 1, updated_at = NOW()
+        WHERE id = ${job_id}
+      `;
+    }
+  } catch (updateError) {
+    console.warn('Failed to mark job as processing:', updateError);
+  }
 
   try {
     // Handle Story Mode jobs differently
     if (isStoryJob && job.type === 'story') {
-      return await processStoryJob(supabase, job, job_id);
+      return await processStoryJob(job, job_id);
     }
+    
     // 1) Submit to provider
     const base = process.env.URL || process.env.DEPLOY_URL || process.env.DEPLOY_PRIME_URL || '';
     const callbackUrl = base ? `${base}/.netlify/functions/v2v-webhook` : undefined;
@@ -240,7 +293,15 @@ export const handler: Handler = async (event) => {
         await new Promise(r => setTimeout(r, 3000));
         const sRes = await fetch(statusUrl, { headers: { Authorization: `Bearer ${AIML_API_KEY}` }});
         const sJson = await sRes.json();
-        try { await supabase.from(updateTable).update({ status: 'processing' }).eq('id', job_id); } catch {}
+        
+        try {
+          if (isStoryJob) {
+            await sql`UPDATE video_jobs SET status = 'processing', updated_at = NOW() WHERE id = ${job_id}`;
+          } else {
+            await sql`UPDATE ai_generations SET status = 'processing', updated_at = NOW() WHERE id = ${job_id}`;
+          }
+        } catch {}
+        
         if ((sJson.status === 'succeeded' || sJson.state === 'completed') && (sJson.result_url || sJson.outputUrl)) {
           resultUrl = sJson.result_url || sJson.outputUrl;
           break;
@@ -280,14 +341,44 @@ export const handler: Handler = async (event) => {
     }
 
     // 4) Mark job succeeded in the appropriate table
-    await supabase
-      .from(updateTable)
-      .update({ status: 'completed', output_url: upload.secure_url, progress: 100 })
-      .eq('id', job_id);
+    try {
+      if (isStoryJob) {
+        await sql`
+          UPDATE video_jobs 
+          SET status = 'completed', output_url = ${upload.secure_url}, progress = 100, updated_at = NOW()
+          WHERE id = ${job_id}
+        `;
+      } else {
+        await sql`
+          UPDATE ai_generations 
+          SET status = 'completed', output_url = ${upload.secure_url}, progress = 100, updated_at = NOW()
+          WHERE id = ${job_id}
+        `;
+      }
+    } catch (updateError) {
+      console.warn('Failed to mark job as completed:', updateError);
+    }
 
-    return { statusCode: 200, body: JSON.stringify({ ok:true, job_id, result_url: upload.secure_url, public_id: upload.public_id }) };
-  } catch (e:any) {
-    await supabase.from(updateTable).update({ status:'failed', error: e.message?.slice(0, 2000) || 'failed' }).eq('id', job_id);
-    return { statusCode: 200, body: JSON.stringify({ ok:false, job_id, error: e.message }) };
+    return { statusCode: 200, body: JSON.stringify({ ok: true, job_id, result_url: upload.secure_url, public_id: upload.public_id }) };
+  } catch (e: any) {
+    try {
+      if (isStoryJob) {
+        await sql`
+          UPDATE video_jobs 
+          SET status = 'failed', error = ${e.message?.slice(0, 2000) || 'failed'}, updated_at = NOW()
+          WHERE id = ${job_id}
+        `;
+      } else {
+        await sql`
+          UPDATE ai_generations 
+          SET status = 'failed', error = ${e.message?.slice(0, 2000) || 'failed'}, updated_at = NOW()
+          WHERE id = ${job_id}
+        `;
+      }
+    } catch (updateError) {
+      console.warn('Failed to mark job as failed:', updateError);
+    }
+    
+    return { statusCode: 200, body: JSON.stringify({ ok: false, job_id, error: e.message }) };
   }
 };

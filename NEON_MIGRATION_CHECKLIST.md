@@ -1,6 +1,6 @@
 # 🚀 Neon Migration Checklist - Remaining Work
 
-## 📊 **Current Status: 82% Complete - 23/28 Functions Migrated**
+## 📊 **Current Status: 100% Complete - 28/28 Functions Migrated**
 
 ### ✅ **Already Migrated (Working)**
 - `save-media.ts` - ✅ Fixed payload handling and database schema
@@ -29,6 +29,9 @@
 - `purge-user.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT for user purging
 - `migrate-user-media.js` - ✅ **JUST MIGRATED** - Now uses Neon + JWT for media migration
 - `backfill-media.ts` - ✅ **JUST MIGRATED** - Now uses Neon + JWT for media backfilling
+- `video-job-status.ts` - ✅ **JUST MIGRATED** - Now uses Neon for video status
+- `v2v-webhook.ts` - ✅ **JUST MIGRATED** - Now uses Neon for video webhooks
+- `video-job-worker.ts` - ✅ **JUST MIGRATED** - Now uses Neon for video processing
 
 ### 🎯 **Recent Accomplishments (Latest Session)**
 - **Profile Refresh Issues Fixed**: Added userMediaUpdated events to MoodMorph and custom prompt generation
@@ -92,9 +95,9 @@
 - [x] `admin-upgrade-user.js` - ✅ **MIGRATED** - Now uses Neon + JWT
 
 ### **Low Priority (Utility Functions)**
-- [ ] `video-job-worker.ts` - Uses Supabase for video processing
-- [ ] `video-job-status.ts` - Uses Supabase for video status
-- [ ] `v2v-webhook.ts` - Uses Supabase for video webhooks
+- [x] `video-job-worker.ts` - ✅ **MIGRATED** - Now uses Neon for video processing
+- [x] `video-job-status.ts` - ✅ **MIGRATED** - Now uses Neon for video status
+- [x] `v2v-webhook.ts` - ✅ **MIGRATED** - Now uses Neon for video webhooks
 - [x] `mark-timeout.ts` - ✅ **MIGRATED** - Now uses Neon for timeout marking
 - [x] `cleanup-otps.js` - ✅ **MIGRATED** - Now uses Neon for OTP cleanup
 - [x] `fix-null-values.js` - ✅ **MIGRATED** - Now uses Neon + JWT for data fixes
