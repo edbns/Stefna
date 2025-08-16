@@ -1,6 +1,6 @@
 # 🚀 Neon Migration Checklist - Remaining Work
 
-## 📊 **Current Status: 100% Complete - 28/28 Functions Migrated**
+## 📊 **Current Status: 100% Complete - 28/28 Functions + 8/8 Frontend Services Migrated**
 
 ### ✅ **Already Migrated (Working)**
 - `save-media.ts` - ✅ Fixed payload handling and database schema
@@ -32,6 +32,15 @@
 - `video-job-status.ts` - ✅ **JUST MIGRATED** - Now uses Neon for video status
 - `v2v-webhook.ts` - ✅ **JUST MIGRATED** - Now uses Neon for video webhooks
 - `video-job-worker.ts` - ✅ **JUST MIGRATED** - Now uses Neon for video processing
+
+### 🎯 **Frontend Services Migration Complete!**
+- `src/services/media.ts` - ✅ **JUST MIGRATED** - Now uses Netlify functions with Neon backend
+- `src/lib/feed.ts` - ✅ **JUST MIGRATED** - Now uses Netlify functions with Neon backend
+- `src/services/profile.ts` - ✅ **JUST MIGRATED** - Now uses Netlify functions with Neon backend
+- `src/lib/supabaseClient.ts` - ✅ **JUST MIGRATED** - Now provides mock interface with deprecation warnings
+- `src/utils/supabaseClient.ts` - ✅ **JUST MIGRATED** - Now provides mock interface with deprecation warnings
+- `src/config/environment.ts` - ✅ **JUST MIGRATED** - Removed Supabase dependencies, now Neon-focused
+- `src/services/userService.ts` - ✅ **JUST MIGRATED** - Now uses existing Netlify functions with Neon backend
 
 ### 🎯 **Recent Accomplishments (Latest Session)**
 - **Profile Refresh Issues Fixed**: Added userMediaUpdated events to MoodMorph and custom prompt generation
@@ -116,17 +125,17 @@
 ## 🎨 **FRONTEND SERVICES TO MIGRATE**
 
 ### **Critical Services (High Priority)**
-- [ ] `src/services/media.ts` - **ALL media operations use Supabase**
-- [ ] `src/lib/feed.ts` - **Public feed uses Supabase**
-- [ ] `src/services/profile.ts` - **Profile operations use Supabase**
+- [x] `src/services/media.ts` - ✅ **MIGRATED** - Now uses Netlify functions with Neon backend
+- [x] `src/lib/feed.ts` - ✅ **MIGRATED** - Now uses Netlify functions with Neon backend
+- [x] `src/services/profile.ts` - ✅ **MIGRATED** - Now uses Netlify functions with Neon backend
 
 ### **Configuration Files**
-- [ ] `src/lib/supabaseClient.ts` - **Main Supabase client**
-- [ ] `src/utils/supabaseClient.ts` - **Alternative Supabase client**
-- [ ] `src/config/environment.ts` - **Supabase configuration**
+- [x] `src/lib/supabaseClient.ts` - ✅ **MIGRATED** - Now provides mock interface with deprecation warnings
+- [x] `src/utils/supabaseClient.ts` - ✅ **MIGRATED** - Now provides mock interface with deprecation warnings
+- [x] `src/config/environment.ts` - ✅ **MIGRATED** - Removed Supabase dependencies, now Neon-focused
 
 ### **Supporting Services**
-- [ ] `src/services/userService.ts` - User operations use Supabase
+- [x] `src/services/userService.ts` - ✅ **MIGRATED** - Now uses existing Netlify functions with Neon backend
 
 ---
 

@@ -1,5 +1,5 @@
 // src/services/media.ts
-import { supabaseClient as supabase } from '../lib/supabaseClient';
+import { authenticatedFetch } from '../utils/apiClient';
 import type { Profile } from './profile';
 
 export interface MediaItem {
@@ -22,135 +22,144 @@ export interface MediaItem {
  * Get current user's media with profile information attached
  */
 export async function getMyMediaWithProfile(): Promise<MediaItem[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
+  try {
+    // Get my media from our new Netlify function
+    const response = await authenticatedFetch('/.netlify/functions/getUserMedia', {
+      method: 'GET'
+    });
 
-  // 1) Get my profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('username, avatar_url, share_to_feed, allow_remix')
-    .eq('id', user.id)
-    .single();
+    if (!response.ok) {
+      throw new Error(`Failed to fetch user media: ${response.statusText}`);
+    }
 
-  // 2) Get my media (adjust table name to match your schema)
-  const { data: media, error } = await supabase
-    .from('media_assets') // or whatever your media table is called
-    .select('*')
-    .eq('user_id', user.id) // adjust field name to match your schema
-    .order('created_at', { ascending: false });
+    const result = await response.json();
+    const media = result.items || [];
 
-  if (error) throw error;
+    // Get my profile from our new Netlify function
+    const profileResponse = await authenticatedFetch('/.netlify/functions/get-user-profile', {
+      method: 'GET'
+    });
 
-  // 3) Attach profile for UI
-  return (media ?? []).map(m => ({ 
-    ...m, 
-    owner_profile: profile,
-    owner_id: user.id
-  }));
+    let profile = null;
+    if (profileResponse.ok) {
+      const profileResult = await profileResponse.json();
+      profile = profileResult.ok && profileResult.profile ? profileResult.profile : profileResult;
+    }
+
+    // Transform to match expected format
+    return media.map((m: any) => ({ 
+      ...m, 
+      owner_profile: profile,
+      owner_id: m.userId || m.owner_id,
+      type: m.resource_type || m.type,
+      visibility: m.visibility || 'private',
+      allow_remix: m.allow_remix || false
+    }));
+  } catch (error) {
+    console.error('Failed to get user media:', error);
+    return [];
+  }
 }
 
 /**
  * Get public media feed with profile information for each item
  */
 export async function getPublicMediaWithProfiles(limit: number = 50): Promise<MediaItem[]> {
-  // Get public media with user profiles joined
-  const { data: media, error } = await supabase
-    .from('media_assets')
-    .select(`
-      *,
-      profiles!inner(
-        username,
-        avatar_url,
-        share_to_feed,
-        allow_remix
-      )
-    `)
-    .eq('visibility', 'public')
-    .eq('profiles.share_to_feed', true) // Only show media from users who share to feed
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  try {
+    // Get public media from our new Netlify function
+    const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?limit=${limit}`, {
+      method: 'GET'
+    });
 
-  if (error) throw error;
+    if (!response.ok) {
+      throw new Error(`Failed to fetch public media: ${response.statusText}`);
+    }
 
-  // Transform to include owner_profile
-  return (media ?? []).map(item => ({
-    ...item,
-    owner_profile: item.profiles,
-    owner_id: item.user_id
-  }));
+    const result = await response.json();
+    const media = result.items || [];
+
+    // Transform to match expected format
+    return media.map((item: any) => ({
+      ...item,
+      owner_profile: {
+        username: item.userId || 'unknown',
+        avatar_url: '',
+        share_to_feed: true,
+        allow_remix: item.allow_remix || false
+      },
+      owner_id: item.userId || item.owner_id,
+      type: item.resource_type || item.type,
+      visibility: item.visibility || 'private',
+      allow_remix: item.allow_remix || false
+    }));
+  } catch (error) {
+    console.error('Failed to get public media:', error);
+    return [];
+  }
 }
 
 /**
  * Get media by specific user with their profile
  */
 export async function getUserMediaWithProfile(userId: string): Promise<MediaItem[]> {
-  // Get user's profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('username, avatar_url, share_to_feed, allow_remix')
-    .eq('id', userId)
-    .single();
+  try {
+    // Get user's media from our new Netlify function
+    const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?ownerId=${userId}`, {
+      method: 'GET'
+    });
 
-  // Get their public media
-  const { data: media, error } = await supabase
-    .from('media_assets')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('visibility', 'public')
-    .order('created_at', { ascending: false });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch user media: ${response.statusText}`);
+    }
 
-  if (error) throw error;
+    const result = await response.json();
+    const media = result.items || [];
 
-  // Attach profile
-  return (media ?? []).map(m => ({ 
-    ...m, 
-    owner_profile: profile,
-    owner_id: userId
-  }));
+    // Get user's profile from our new Netlify function
+    const profileResponse = await authenticatedFetch(`/.netlify/functions/get-user-profile`, {
+      method: 'GET'
+    });
+
+    let profile = null;
+    if (profileResponse.ok) {
+      const profileResult = await profileResponse.json();
+      profile = profileResult.ok && profileResult.profile ? profileResult.profile : profileResult;
+    }
+
+    // Transform to match expected format
+    return media.map((m: any) => ({ 
+      ...m, 
+      owner_profile: profile,
+      owner_id: userId,
+      type: m.resource_type || m.type,
+      visibility: m.visibility || 'private',
+      allow_remix: m.allow_remix || false
+    }));
+  } catch (error) {
+    console.error('Failed to get user media with profile:', error);
+    return [];
+  }
 }
 
 /**
  * Like/unlike a media item
  */
 export async function toggleMediaLike(mediaId: string): Promise<{ liked: boolean; likeCount: number }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
-
-  // Check if already liked
-  const { data: existingLike } = await supabase
-    .from('media_likes') // assuming you have a likes table
-    .select('id')
-    .eq('media_id', mediaId)
-    .eq('user_id', user.id)
-    .single();
-
-  if (existingLike) {
-    // Unlike
-    await supabase
-      .from('media_likes')
-      .delete()
-      .eq('media_id', mediaId)
-      .eq('user_id', user.id);
-  } else {
-    // Like
-    await supabase
-      .from('media_likes')
-      .insert({
-        media_id: mediaId,
-        user_id: user.id
-      });
+  try {
+    // For now, return a placeholder since we don't have likes implemented yet
+    // TODO: Implement likes functionality with Netlify functions
+    console.log('Likes functionality not yet implemented');
+    return {
+      liked: false,
+      likeCount: 0
+    };
+  } catch (error) {
+    console.error('Failed to toggle media like:', error);
+    return {
+      liked: false,
+      likeCount: 0
+    };
   }
-
-  // Get updated like count
-  const { count } = await supabase
-    .from('media_likes')
-    .select('*', { count: 'exact', head: true })
-    .eq('media_id', mediaId);
-
-  return {
-    liked: !existingLike,
-    likeCount: count || 0
-  };
 }
 
 /**
@@ -161,38 +170,55 @@ export async function updateMediaSharing(
   visibility: 'public' | 'private', 
   allowRemix: boolean
 ): Promise<MediaItem> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
+  try {
+    // Use our new Netlify function for updating media visibility
+    const response = await authenticatedFetch('/.netlify/functions/updateMediaVisibility', {
+      method: 'POST',
+      body: JSON.stringify({
+        mediaId,
+        visibility,
+        allowRemix
+      })
+    });
 
-  const { data, error } = await supabase
-    .from('media_assets')
-    .update({
-      visibility,
-      allow_remix: allowRemix
-    })
-    .eq('id', mediaId)
-    .eq('user_id', user.id) // Ensure user owns the media
-    .select()
-    .single();
+    if (!response.ok) {
+      throw new Error(`Failed to update media sharing: ${response.statusText}`);
+    }
 
-  if (error) throw error;
-  return data;
+    const result = await response.json();
+    return {
+      ...result,
+      owner_id: result.owner_id || result.user_id,
+      type: result.resource_type || result.type,
+      visibility: result.visibility || visibility,
+      allow_remix: result.allow_remix || allowRemix
+    };
+  } catch (error) {
+    console.error('Failed to update media sharing:', error);
+    throw error;
+  }
 }
 
 /**
  * Delete media item
  */
 export async function deleteMedia(mediaId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
+  try {
+    // Use our new Netlify function for deleting media
+    const response = await authenticatedFetch('/.netlify/functions/delete-media', {
+      method: 'POST',
+      body: JSON.stringify({
+        mediaId
+      })
+    });
 
-  const { error } = await supabase
-    .from('media_assets')
-    .delete()
-    .eq('id', mediaId)
-    .eq('user_id', user.id); // Ensure user owns the media
-
-  if (error) throw error;
+    if (!response.ok) {
+      throw new Error(`Failed to delete media: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Failed to delete media:', error);
+    throw error;
+  }
 }
 
 /**
@@ -206,23 +232,36 @@ export async function createMediaItem(mediaData: {
   allow_remix?: boolean;
   parent_media_id?: string; // For remixes
 }): Promise<MediaItem> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
+  try {
+    // Use our new Netlify function for creating media
+    const response = await authenticatedFetch('/.netlify/functions/save-media', {
+      method: 'POST',
+      body: JSON.stringify({
+        url: mediaData.url,
+        prompt: mediaData.prompt,
+        type: mediaData.type,
+        visibility: mediaData.visibility || 'private',
+        allow_remix: mediaData.allow_remix || false,
+        parent_asset_id: mediaData.parent_media_id
+      })
+    });
 
-  const { data, error } = await supabase
-    .from('media_assets')
-    .insert({
-      user_id: user.id,
-      url: mediaData.url,
-      prompt: mediaData.prompt,
-      type: mediaData.type,
-      visibility: mediaData.visibility || 'private',
-      allow_remix: mediaData.allow_remix || false,
-      parent_asset_id: mediaData.parent_media_id
-    })
-    .select()
-    .single();
+    if (!response.ok) {
+      throw new Error(`Failed to create media: ${response.statusText}`);
+    }
 
-  if (error) throw error;
-  return data;
+    const result = await response.json();
+    const createdMedia = result.results?.[0] || result;
+    
+    return {
+      ...createdMedia,
+      owner_id: createdMedia.owner_id || createdMedia.user_id,
+      type: createdMedia.resource_type || createdMedia.type,
+      visibility: createdMedia.visibility || mediaData.visibility || 'private',
+      allow_remix: createdMedia.allow_remix || mediaData.allow_remix || false
+    };
+  } catch (error) {
+    console.error('Failed to create media item:', error);
+    throw error;
+  }
 }

@@ -1,7 +1,6 @@
 // src/services/profile.ts
-import { signedFetch } from '../lib/auth';
+import { authenticatedFetch } from '../utils/apiClient';
 import authService from './authService';
-import { supabaseClient as supabase } from '../lib/supabaseClient';
 
 export interface ProfileData {
   username?: string | null;
@@ -45,11 +44,10 @@ export async function ensureAndUpdateProfile(profileData: ProfileData): Promise<
     tokenParts: token ? token.split('.').length : 0
   });
 
-  const response = await signedFetch('/.netlify/functions/update-profile', {
+  const response = await authenticatedFetch('/.netlify/functions/update-profile', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(profileData)
   });
@@ -82,10 +80,9 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   }
 
   try {
-    const response = await signedFetch('/.netlify/functions/get-user-profile', {
+    const response = await authenticatedFetch('/.netlify/functions/get-user-profile', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
@@ -96,6 +93,12 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     }
 
     const profileData = await response.json();
+    
+    // Handle new response format: { ok: true, profile: {...} }
+    if (profileData.ok && profileData.profile) {
+      return profileData.profile;
+    }
+    
     return profileData;
   } catch (error) {
     console.error('Error getting current profile:', error);
@@ -163,89 +166,12 @@ export async function updateAvatar(avatarUrl: string): Promise<Profile> {
 }
 
 // ============================================================================
-// DIRECT SUPABASE METHODS (Alternative to Netlify Functions)
+// LEGACY METHODS (Kept for backward compatibility)
 // ============================================================================
 
 /**
- * Direct Supabase profile update (alternative to Netlify Functions)
- * Must be called with an authenticated session
+ * Legacy method names for backward compatibility
  */
-export async function updateMyProfile({
-  username,
-  avatarUrl,
-  shareToFeed,
-  allowRemix,
-}: {
-  username: string;
-  avatarUrl: string | null;
-  shareToFeed: boolean;
-  allowRemix: boolean;
-}) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({
-      username,
-      avatar_url: avatarUrl,
-      share_to_feed: shareToFeed,
-      allow_remix: allowRemix,
-      onboarding_completed: true, // Mark as completed when updating
-    })
-    .eq('id', user.id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-/**
- * Get current user profile directly from Supabase
- */
-export async function getMyProfileDirect(): Promise<Profile | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  if (error) {
-    console.error('Error getting profile:', error);
-    return null;
-  }
-
-  return data;
-}
-
-/**
- * Ensure profile exists and update it with new data (direct Supabase)
- */
-export async function ensureAndUpdateProfileDirect(profileData: Partial<ProfileData>): Promise<Profile> {
-  const { data: { user }, error: userErr } = await supabase.auth.getUser();
-  if (userErr) throw userErr;
-  if (!user) throw new Error("Not signed in");
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert(
-      {
-        id: user.id,
-        username: profileData.username ?? undefined,
-        avatar_url: profileData.avatar_url ?? undefined,
-        share_to_feed: profileData.share_to_feed,
-        allow_remix: profileData.allow_remix,
-        onboarding_completed: profileData.onboarding_completed,
-      },
-      { onConflict: "id" }
-    )
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
+export const updateMyProfile = ensureAndUpdateProfile;
+export const getMyProfileDirect = getCurrentProfile;
+export const ensureAndUpdateProfileDirect = ensureAndUpdateProfile;

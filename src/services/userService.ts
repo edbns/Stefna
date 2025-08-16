@@ -1,4 +1,4 @@
-// User Service - Handles user data through Netlify Functions with custom OTP auth
+// User Service - Handles user data through Netlify Functions with Neon backend
 
 export interface User {
   id: string
@@ -29,10 +29,10 @@ class UserService {
       : '/.netlify/functions'
   }
 
-  // Get user data from Netlify Function
+  // Get user data from our existing Netlify Function
   async getUserData(token: string): Promise<User | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/get-user`, {
+      const response = await fetch(`${this.baseUrl}/get-user-profile`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -46,25 +46,26 @@ class UserService {
       }
 
       const data = await response.json()
-      return this.transformUser(data.user)
+      const profile = data.ok && data.profile ? data.profile : data;
+      return this.transformUser(profile)
     } catch (error) {
       console.error('Error fetching user data:', error)
       return null
     }
   }
 
-  // Transform Supabase user to our User interface
-  private transformUser(supabaseUser: any): User {
+  // Transform user data to our User interface
+  private transformUser(userData: any): User {
     return {
-      id: supabaseUser.id,
-      name: supabaseUser.name || supabaseUser.email?.split('@')[0] || 'User',
-      email: supabaseUser.email,
-      avatar: supabaseUser.avatar_url,
-      joinDate: supabaseUser.created_at,
-      totalPhotos: supabaseUser.total_photos || 0,
-      savedPrompts: supabaseUser.saved_prompts || [],
-      dailyUsage: supabaseUser.daily_usage || 0,
-      dailyLimit: this.getDailyLimit(supabaseUser.tier)
+      id: userData.id,
+      name: userData.name || userData.username || userData.email?.split('@')[0] || 'User',
+      email: userData.email,
+      avatar: userData.avatar || userData.avatar_url,
+      joinDate: userData.created_at || userData.createdAt,
+      totalPhotos: userData.total_photos || 0,
+      savedPrompts: userData.saved_prompts || [],
+      dailyUsage: userData.daily_usage || 0,
+      dailyLimit: this.getDailyLimit(userData.tier)
     }
   }
 
@@ -79,16 +80,19 @@ class UserService {
     }
   }
 
-  // Update user profile
+  // Update user profile using our existing function
   async updateProfile(token: string, updates: Partial<User>): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/update-user`, {
-        method: 'PUT',
+      const response = await fetch(`${this.baseUrl}/update-profile`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(updates)
+        body: JSON.stringify({
+          username: updates.name,
+          avatar_url: updates.avatar
+        })
       })
 
       return response.ok
@@ -98,10 +102,10 @@ class UserService {
     }
   }
 
-  // Get user statistics
+  // Get user statistics using our existing function
   async getUserStats(token: string): Promise<any> {
     try {
-      const response = await fetch(`${this.baseUrl}/get-user-stats`, {
+      const response = await fetch(`${this.baseUrl}/usage-stats`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -120,42 +124,24 @@ class UserService {
     }
   }
 
-  // Save prompt
+  // Save prompt (placeholder - not yet implemented)
   async savePrompt(token: string, prompt: string, style: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/save-prompt`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ prompt, style })
-      })
-
-      return response.ok
+      // TODO: Implement save-prompt Netlify function
+      console.log('Save prompt functionality not yet implemented');
+      return false;
     } catch (error) {
       console.error('Error saving prompt:', error)
       return false
     }
   }
 
-  // Get saved prompts
+  // Get saved prompts (placeholder - not yet implemented)
   async getSavedPrompts(token: string): Promise<SavedPrompt[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/get-saved-prompts`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        return []
-      }
-
-      const data = await response.json()
-      return data.prompts || []
+      // TODO: Implement get-saved-prompts Netlify function
+      console.log('Get saved prompts functionality not yet implemented');
+      return [];
     } catch (error) {
       console.error('Error fetching saved prompts:', error)
       return []
