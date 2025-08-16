@@ -105,10 +105,11 @@ export const handler: Handler = async (event) => {
         const id = randomUUID();
 
         const row = await sql`
-          INSERT INTO media (id, user_id, media_type, cloudinary_public_id, final_url, prompt, is_public, source_public_id, meta)
+          INSERT INTO media (id, user_id, url, media_type, cloudinary_public_id, final_url, prompt, is_public, source_public_id, meta)
           VALUES (
             ${id},
             ${user.id},
+            ${url},
             ${type},
             ${cloudinary_public_id || null},
             ${url},
@@ -146,10 +147,11 @@ export const handler: Handler = async (event) => {
       const id = randomUUID();
 
       const row = await sql`
-        INSERT INTO media (id, user_id, media_type, cloudinary_public_id, final_url, prompt, is_public, source_public_id, meta)
+        INSERT INTO media (id, user_id, url, media_type, cloudinary_public_id, final_url, prompt, is_public, source_public_id, meta)
         VALUES (
           ${id},
           ${user.id},
+          ${image_url || null},
           ${media_type},
           ${cloudinary_public_id || null},
           ${image_url || null},

@@ -142,16 +142,18 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
       `;
       if (!q.length) throw new Error('Insufficient credits');
 
-      // insert all media rows with defensive defaults
+      // insert all media rows with defensive defaults and per-item idempotency
       const items: any[] = [];
       for (const v of toInsert) {
         const id = randomUUID();
         const mediaType = v.media_type || 'image'; // defensive default
+        const itemIdempotencyKey = `${runId}:${v.meta?.mood || v.meta?.variation_index || Math.random().toString(36).substr(2, 9)}`;
+        
         const row = await tx`
-          INSERT INTO media (id, batch_id, user_id, run_id,
+          INSERT INTO media (id, batch_id, user_id, run_id, url, idempotency_key,
                              media_type, cloudinary_public_id, final_url,
                              prompt, is_public, source_public_id, meta, created_at)
-          VALUES (${id}, ${batchId}, ${user.id}, ${runId},
+          VALUES (${id}, ${batchId}, ${user.id}, ${runId}, ${v.image_url}, ${itemIdempotencyKey},
                   ${mediaType}, ${v.cloudinary_public_id || null}, ${v.image_url},
                   ${v.prompt || null}, true, ${v.source_public_id || null}, ${v.meta || {}}, NOW())
           RETURNING *
