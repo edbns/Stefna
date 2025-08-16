@@ -5,13 +5,17 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
-  external_node_modules = ["@supabase/supabase-js", "cloudinary"]
+  external_node_modules = ["@neondatabase/serverless", "cloudinary"]
 
 [dev]
   functions = "netlify/functions"
+
+# Plugin to automatically install function dependencies
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
 
 [[headers]]
   for = "/*"
   [headers.values]
   # Allow Cloudinary + AIML API for images and media
-  Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob: https://res.cloudinary.com https://cdn.aimlapi.com; media-src 'self' data: blob: https://res.cloudinary.com https://cdn.aimlapi.com; connect-src 'self' blob: https://api.cloudinary.com https://res.cloudinary.com https://api.aimlapi.com https://cdn.aimlapi.com https://stefna.netlify.app https://ingesteer.services-prod.nsvcs.net; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self'; worker-src 'self' blob:;"
+  Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob: https://res.cloudinary.com https://cdn.aimlapi.com; media-src 'self' data: blob: https://res.cloudinary.com https://cdn.aimlapi.com; connect-src 'self' blob: https://api.cloudinary.com https://res.cloudinary.com https://cdn.aimlapi.com https://cdn.aimlapi.com https://stefna.netlify.app https://ingesteer.services-prod.nsvcs.net; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self'; worker-src 'self' blob:;"
