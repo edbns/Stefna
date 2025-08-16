@@ -72,6 +72,7 @@ export default async (event) => {
       hasImage: !!requestBody.image_url,
       hasPrompt: !!requestBody.prompt,
       strength: requestBody.strength,
+      numVariations: requestBody.num_variations || 1,
       devBypass
     };
     
@@ -94,7 +95,7 @@ export default async (event) => {
       });
     }
 
-    // Build AIML API payload
+    // Build AIML API payload with variations support
     const aimlPayload = {
       model: 'flux/dev/image-to-image',
       prompt: String(requestBody.prompt).trim(),
@@ -103,13 +104,16 @@ export default async (event) => {
       num_inference_steps: Number(requestBody.num_inference_steps ?? requestBody.steps ?? 36),
       guidance_scale: Number(requestBody.guidance_scale ?? 7.5),
       seed: requestBody.seed || Date.now(),
+      // Add variations support
+      n: Number(requestBody.num_variations ?? 1) // Number of variations to generate
     };
 
     console.log('🚀 Calling upstream AIML API with payload:', {
       ...logData,
       model: aimlPayload.model,
       steps: aimlPayload.num_inference_steps,
-      guidance: aimlPayload.guidance_scale
+      guidance: aimlPayload.guidance_scale,
+      variations: aimlPayload.n
     });
 
     // Call upstream AIML API
@@ -147,15 +151,49 @@ export default async (event) => {
 
     const result = await response.json();
     
+    // Process multiple variations if they exist
+    let processedResult = result;
+    if (aimlPayload.n > 1 && result.data && Array.isArray(result.data)) {
+      // Multiple variations were generated
+      const variations = result.data.map((item: any, index: number) => ({
+        ...item,
+        variation_index: index,
+        variation_id: `${requestBody.runId || 'unknown'}-${index}`
+      }));
+      
+      processedResult = {
+        ...result,
+        data: variations,
+        variations_generated: variations.length,
+        result_urls: variations.map((v: any) => v.url).filter(Boolean)
+      };
+      
+      console.log('🎭 Multiple variations generated:', {
+        ...logData,
+        requested: aimlPayload.n,
+        generated: variations.length,
+        urls: processedResult.result_urls
+      });
+    } else {
+      // Single result - add compatibility fields
+      processedResult = {
+        ...result,
+        variations_generated: 1,
+        result_urls: result.data?.[0]?.url ? [result.data[0].url] : []
+      };
+    }
+    
     console.log('✅ AIML API generation successful:', {
       ...logData,
       duration,
       hasImages: !!result.images,
       imageCount: result.images?.length || 0,
-      hasData: !!result.data
+      hasData: !!result.data,
+      variationsGenerated: processedResult.variations_generated,
+      resultUrls: processedResult.result_urls?.length || 0
     });
 
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify(processedResult), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
