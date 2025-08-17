@@ -1,16 +1,20 @@
 // netlify/functions/cloudinary-sign.ts
-import { json } from '@netlify/functions'
-import crypto from 'crypto'
+import { withAuth } from './_withAuth';
+import crypto from 'crypto';
 
-export default async () => {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME!
-  const apiKey = process.env.CLOUDINARY_API_KEY!
-  const apiSecret = process.env.CLOUDINARY_API_SECRET!
-  const timestamp = Math.floor(Date.now() / 1000)
-  const folder = 'stefna/sources' // single source of truth
+export default withAuth(async (event, _user) => {
+  const { params } = JSON.parse(event.body || "{}");
+  const apiSecret = process.env.CLOUDINARY_API_SECRET!;
+  
+  const toSign = Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("&");
 
-  const toSign = `folder=${folder}&timestamp=${timestamp}`
-  const signature = crypto.createHash('sha1').update(toSign + apiSecret).digest('hex')
+  const signature = crypto.createHash("sha1").update(`${toSign}${apiSecret}`).digest("hex");
 
-  return json({ cloudName, apiKey, timestamp, signature, folder })
-}
+  return new Response(JSON.stringify({ ok: true, signature }), {
+    headers: { "content-type": "application/json" },
+  });
+});

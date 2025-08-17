@@ -1,137 +1,125 @@
-import React, { useState, useEffect } from 'react'
-import { Zap, Users, Gift, Copy, Check } from 'lucide-react'
-import tokenService, { UserTier, TokenUsage } from '../services/tokenService'
-import { authenticatedFetch } from '../utils/apiClient'
+import React, { useState, useEffect } from 'react';
+import { Zap, Users, Gift } from 'lucide-react';
+import tokenService from '../services/tokenService';
+import { authenticatedFetch } from '../utils/apiClient';
+
+interface TokenUsage {
+  dailyUsage: number;
+  dailyLimit: number;
+  totalUsage: number;
+}
 
 interface ProfileTokenDisplayProps {
-  userId: string
-  userTier: UserTier
-  isAuthenticated: boolean
-  className?: string
+  userId: string;
+  className?: string;
 }
 
 const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({ 
   userId, 
-  userTier, 
-  isAuthenticated,
   className = '' 
 }) => {
-  const [usage, setUsage] = useState<TokenUsage | null>(null)
-  const [serverQuota, setServerQuota] = useState<{ daily_used: number; daily_limit: number; weekly_used: number; weekly_limit: number } | null>(null)
-  const [referralStats, setReferralStats] = useState<{ invites: number; tokensEarned: number; referralCode: string } | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [usage, setUsage] = useState<TokenUsage | null>(null);
+  const [serverQuota, setServerQuota] = useState<{ daily_used: number; daily_limit: number; weekly_used: number; weekly_limit: number } | null>(null);
+  const [referralStats, setReferralStats] = useState<{ invites: number; tokensEarned: number; referralCode: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (import.meta.env.VITE_NO_DB_MODE !== '1') {
-      loadTokenData()
-      loadServerQuota()
+      loadTokenData();
+      loadServerQuota();
     }
-  }, [userId])
+  }, [userId]);
 
   const loadTokenData = async () => {
     try {
-      const userUsage = await tokenService.getUserUsage(userId)
-      setUsage(userUsage)
+      const userUsage = await tokenService.getInstance().getUserUsage(userId);
+      setUsage(userUsage);
       
-      if (isAuthenticated) {
-        const stats = await tokenService.getReferralStats(userId)
-        setReferralStats(stats)
+      // Get real referral stats from backend instead of tokenService
+      try {
+        const res = await authenticatedFetch('/.netlify/functions/get-referral-stats', { method: 'GET' });
+        if (res.ok) {
+          const stats = await res.json();
+          setReferralStats({
+            invites: stats.invites || 0,
+            tokensEarned: stats.tokensEarned || 0,
+            referralCode: stats.referralCode || `REF_${userId.slice(-6)}`
+          });
+        } else {
+          // Fallback to tokenService if backend fails
+          const stats = await tokenService.getInstance().getReferralStats(userId);
+          setReferralStats(stats);
+        }
+      } catch (error) {
+        console.error('Failed to load referral stats from backend, using fallback:', error);
+        const stats = await tokenService.getInstance().getReferralStats(userId);
+        setReferralStats(stats);
       }
     } catch (error) {
-      console.error('Failed to load token data:', error)
+      console.error('Failed to load token data:', error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const loadServerQuota = async () => {
     try {
-      if (!isAuthenticated) {
-        setServerQuota(null)
-        return
-      }
-      const res = await authenticatedFetch('/.netlify/functions/getQuota', { method: 'GET' })
+      const res = await authenticatedFetch('/.netlify/functions/getQuota', { method: 'GET' });
       if (res.ok) {
-        setServerQuota(await res.json())
+        setServerQuota(await res.json());
       } else {
-        setServerQuota(null)
+        setServerQuota(null);
       }
     } catch (e) {
-      console.error('Failed to load server quota:', e)
-      setServerQuota(null)
+      console.error('Failed to load server quota:', e);
+      setServerQuota(null);
     }
-  }
-
-  const getTierColor = (tier: UserTier) => {
-    switch (tier) {
-      case UserTier.REGISTERED:
-        return 'text-blue-400'
-      case UserTier.VERIFIED:
-        return 'text-purple-400'
-      case UserTier.CONTRIBUTOR:
-        return 'text-yellow-400'
-      default:
-        return 'text-white'
-    }
-  }
-
-  const getTierName = (tier: UserTier) => {
-    switch (tier) {
-      case UserTier.REGISTERED:
-        return 'Registered'
-      case UserTier.VERIFIED:
-        return 'Verified'
-      case UserTier.CONTRIBUTOR:
-        return 'Contributor'
-      default:
-        return 'Unknown'
-    }
-  }
+  };
 
   const getUsagePercentage = () => {
-    if (!usage) return 0
-    return (usage.dailyUsage / usage.dailyLimit) * 100
-  }
+    if (!usage) return 0;
+    return (usage.dailyUsage / usage.dailyLimit) * 100;
+  };
 
   const getUsageColor = () => {
-    const percentage = getUsagePercentage()
-    if (percentage >= 90) return 'text-red-400'
-    if (percentage >= 75) return 'text-yellow-400'
-    return 'text-green-400'
-  }
+    const percentage = getUsagePercentage();
+    if (percentage >= 90) return 'text-red-400';
+    if (percentage >= 75) return 'text-yellow-400';
+    return 'text-green-400';
+  };
 
   const getProgressColor = () => {
-    const percentage = getUsagePercentage()
-    if (percentage >= 90) return 'bg-red-400'
-    if (percentage >= 75) return 'bg-yellow-400'
-    return 'bg-green-400'
-  }
+    const percentage = getUsagePercentage();
+    if (percentage >= 90) return 'bg-red-400';
+    if (percentage >= 75) return 'bg-yellow-400';
+    return 'bg-green-400';
+  };
 
   const handleCopyReferralCode = async () => {
     if (referralStats?.referralCode) {
       try {
-        await navigator.clipboard.writeText(referralStats.referralCode)
-        setCopiedCode(referralStats.referralCode)
-        setTimeout(() => setCopiedCode(null), 2000)
+        await navigator.clipboard.writeText(referralStats.referralCode);
+        setCopiedCode(referralStats.referralCode);
+        setTimeout(() => setCopiedCode(null), 2000);
       } catch (error) {
-        console.error('Failed to copy referral code:', error)
+        console.error('Failed to copy referral code:', error);
         // Fallback for older browsers
-        const textArea = document.createElement('textarea')
-        textArea.value = referralStats.referralCode
-        document.body.appendChild(textArea)
-        textArea.select()
-        document.execCommand('copy')
-        document.body.removeChild(textArea)
-        setCopiedCode(referralStats.referralCode)
-        setTimeout(() => setCopiedCode(null), 2000)
+        const textArea = document.createElement('textarea');
+        textArea.value = referralStats.referralCode;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopiedCode(referralStats.referralCode);
+        setTimeout(() => setCopiedCode(null), 2000);
       }
     }
-  }
+  };
 
   const handleShareInvite = async () => {
     if (referralStats?.referralCode) {
-      const shareText = `Join me on Stefna! Use my referral code ${referralStats.referralCode} to get bonus tokens when you sign up. Create amazing AI art at https://stefna.xyz`
+      const shareText = `Join me on Stefna! Use my referral code ${referralStats.referralCode} to get bonus tokens when you sign up. Create amazing AI art at https://stefna.xyz`;
       
       try {
         if (navigator.share) {
@@ -139,17 +127,17 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
             title: 'Join me on Stefna!',
             text: shareText,
             url: 'https://stefna.xyz'
-          })
+          });
         } else {
-          await navigator.clipboard.writeText(shareText)
-          setCopiedCode('shared')
-          setTimeout(() => setCopiedCode(null), 2000)
+          await navigator.clipboard.writeText(shareText);
+          setCopiedCode('shared');
+          setTimeout(() => setCopiedCode(null), 2000);
         }
       } catch (error) {
-        console.error('Failed to share invite:', error)
+        console.error('Failed to share invite:', error);
       }
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -160,16 +148,16 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
           <div className="h-3 bg-white/10 rounded"></div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!usage) {
-    return null
+    return null;
   }
 
   const remainingTokens = serverQuota 
     ? (serverQuota.daily_limit - serverQuota.daily_used) 
-    : (usage.dailyLimit - usage.dailyUsage)
+    : (usage.dailyLimit - usage.dailyUsage);
 
   return (
     <div className={`bg-[#222222] border border-white/20 rounded-2xl p-6 shadow-2xl ${className}`}>
@@ -181,8 +169,8 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
           </div>
           <div>
             <h3 className="text-white font-semibold text-lg">Token Balance</h3>
-            <p className={`text-sm font-medium ${getTierColor(userTier)}`}>
-              {getTierName(userTier)} Tier
+            <p className="text-white/60 text-sm">
+              Standard User • 30 tokens/day
             </p>
           </div>
         </div>
@@ -199,10 +187,10 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
       {/* Usage Progress */}
       <div className="mb-6">
         <div className="flex justify-between text-sm mb-2">
-             <span className="text-white/60">Daily Usage</span>
-           <span className={`font-medium ${getUsageColor()}`}>
-             {serverQuota ? serverQuota.daily_used : usage.dailyUsage} / {serverQuota ? serverQuota.daily_limit : usage.dailyLimit}
-           </span>
+          <span className="text-white/60">Daily Usage</span>
+          <span className={`font-medium ${getUsageColor()}`}>
+            {serverQuota ? serverQuota.daily_used : usage.dailyUsage} / {serverQuota ? serverQuota.daily_limit : usage.dailyLimit}
+          </span>
         </div>
         
         {/* Progress Bar */}
@@ -224,7 +212,7 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
           <div className="text-white font-semibold">{usage.totalUsage}</div>
         </div>
         
-        {isAuthenticated && referralStats && (
+        {referralStats && (
           <div className="bg-white/5 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-1">
               <Users size={14} className="text-blue-400" />
@@ -235,8 +223,8 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
         )}
       </div>
 
-      {/* Referral Section for Authenticated Users */}
-      {isAuthenticated && referralStats && (
+      {/* Referral Section */}
+      {referralStats && (
         <div className="border-t border-white/10 pt-6">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-white font-semibold">Invite Friends</h4>
@@ -249,11 +237,11 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
               // This will be handled by the parent component
               if (typeof window !== 'undefined' && window.location.pathname === '/profile') {
                 // If we're on the profile page, trigger the modal
-                const event = new CustomEvent('openInviteModal')
-                window.dispatchEvent(event)
+                const event = new CustomEvent('openInviteModal');
+                window.dispatchEvent(event);
               } else {
                 // Navigate to profile page
-                window.location.href = '/profile'
+                window.location.href = '/profile';
               }
             }}
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 flex items-center justify-center space-x-2"
@@ -275,25 +263,8 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
           </div>
         </div>
       )}
-
-      {/* Guest Upgrade Prompt */}
-      {!isAuthenticated && (
-        <div className="border-t border-white/10 pt-6">
-          <div className="text-center">
-            <p className="text-white/60 text-sm mb-3">
-              Sign up to get more tokens and unlock the invite system!
-            </p>
-            <button
-              onClick={() => window.location.href = '/auth'}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold py-2 px-6 rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300"
-            >
-              Sign Up Now
-            </button>
-          </div>
-        </div>
-      )}
     </div>
-  )
-}
+  );
+};
 
-export default ProfileTokenDisplay
+export default ProfileTokenDisplay;

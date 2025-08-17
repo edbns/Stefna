@@ -1,101 +1,78 @@
-const { neon } = require('@neondatabase/serverless')
-const { requireJWTUser, resp, handleCORS } = require('./_auth')
+const { neon } = require('@neondatabase/serverless');
+const { withAuth } = require('./_withAuth');
 
-exports.handler = async (event) => {
-  // Handle CORS preflight
-  const corsResponse = handleCORS(event);
-  if (corsResponse) return corsResponse;
+exports.handler = withAuth(async (_event, user) => {
+  const userId = user.sub;
+  const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
   try {
-    if (event.httpMethod !== 'GET') {
-      return resp(405, { error: 'Method Not Allowed' })
-    }
-
-    // Auth check using JWT
-    const user = requireJWTUser(event)
-    if (!user) {
-      return resp(401, { error: 'Unauthorized - Invalid or missing JWT token' })
-    }
-
-    // Auto-detect environment
-    const APP_ENV = /netlify\.app$/i.test(event.headers.host || '') ? 'dev' : 'prod'
-    console.log(`📊 Getting referral stats for user ${user.userId} in ${APP_ENV}`)
-
-    // Connect to Neon database
-    const sql = neon(process.env.NETLIFY_DATABASE_URL)
-
+    // Get referral stats from database
+    let referrerStats = { total_invites: 0, total_tokens_earned: 0 };
+    
     try {
-      // 1. Get or create user referral record
-      let referralData = await sql`
-        SELECT * FROM referrals 
-        WHERE referrer_id = ${user.userId}
+      const statsResult = await sql`
+        SELECT total_invites, total_tokens_earned
+        FROM user_referrals 
+        WHERE user_id = ${userId}
         LIMIT 1
-      `
-
-      if (!referralData || referralData.length === 0) {
-        // User doesn't have a referral record yet, create one
-        const newReferral = await sql`
-          INSERT INTO referrals (referrer_id, referred_email, status)
-          VALUES (${user.userId}, '', 'pending')
-          RETURNING *
-        `
-        referralData = newReferral
+      `;
+      
+      if (statsResult && statsResult.length > 0) {
+        referrerStats = statsResult[0];
       }
-
-      // 2. Get actual tokens earned from credits_ledger (more accurate than stored total)
-      let actualTokensEarned = 0
-      try {
-        const creditData = await sql`
-          SELECT amount FROM credits_ledger 
-          WHERE user_id = ${user.userId} 
-          AND env = ${APP_ENV}
-          AND reason LIKE 'referral_bonus_%'
-        `
-        if (creditData && creditData.length > 0) {
-          actualTokensEarned = creditData.reduce((sum, record) => sum + (record.amount || 0), 0)
-        }
-      } catch (creditError) {
-        console.log('Credits ledger not available, using default')
-      }
-
-      // 3. Get recent referral activity
-      let recentActivity = []
-      try {
-        const recentSignups = await sql`
-          SELECT referred_email as new_user_email, created_at
-          FROM referrals 
-          WHERE referrer_id = ${user.userId} 
-          AND env = ${APP_ENV}
-          ORDER BY created_at DESC 
-          LIMIT 10
-        `
-        recentActivity = recentSignups || []
-      } catch (signupsError) {
-        console.log('Referral signups not available, using empty array')
-      }
-
-      console.log(`✅ Referral stats for ${user.userId}: ${referralData.length || 0} referrals, ${actualTokensEarned} tokens earned`)
-
-      return resp(200, {
-        totalInvites: referralData.length || 0,
-        tokensEarned: actualTokensEarned,
-        recentActivity,
-        lastInviteAt: referralData[0]?.created_at || null
-      })
-
-    } catch (dbError) {
-      // Tables don't exist or other DB error - return safe response
-      console.log('Referral tables not available, returning safe response')
-      return resp(200, {
-        totalInvites: 0,
-        tokensEarned: 0,
-        recentActivity: [],
-        lastInviteAt: null
-      })
+    } catch (statsError) {
+      console.log('⚠️ Referral stats table may not exist, using defaults:', statsError.message);
     }
+
+    // Get total credits earned from credits_ledger
+    let totalCreditsEarned = 0;
+    try {
+      const creditsResult = await sql`
+        SELECT COALESCE(SUM(amount), 0) as total_earned
+        FROM credits_ledger 
+        WHERE user_id = ${userId} 
+          AND amount > 0 
+          AND reason LIKE 'referral_bonus_%'
+      `;
+      
+      if (creditsResult && creditsResult.length > 0) {
+        totalCreditsEarned = creditsResult[0].total_earned || 0;
+      }
+    } catch (creditsError) {
+      console.log('⚠️ Credits ledger table may not exist, using defaults:', creditsError.message);
+    }
+
+    // Generate referral code if none exists
+    const referralCode = `REF_${userId.slice(-6)}_${Date.now().toString(36)}`;
+
+    return {
+      statusCode: 200,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        ok: true,
+        invites: referrerStats.total_invites || 0,
+        tokensEarned: totalCreditsEarned,
+        referralCode: referralCode
+      })
+    };
 
   } catch (error) {
-    console.error('❌ Get referral stats error:', error)
-    return resp(500, { error: error.message || 'Internal server error' })
+    console.error('❌ Get referral stats error:', error);
+    
+    return {
+      statusCode: 500,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        ok: false,
+        error: 'INTERNAL_ERROR',
+        message: 'Failed to get referral stats'
+      })
+    };
   }
-}
+});

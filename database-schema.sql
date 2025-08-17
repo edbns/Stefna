@@ -1,16 +1,15 @@
 -- Stefna Database Schema for Custom OTP Authentication
 
--- Users table (existing, but updated for OTP auth)
+-- Users table (simplified - no more tier complexity)
 CREATE TABLE IF NOT EXISTS users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
   name VARCHAR(255),
-  tier VARCHAR(50) DEFAULT 'registered',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   last_login_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   total_photos INTEGER DEFAULT 0,
   daily_usage INTEGER DEFAULT 0,
-  daily_limit INTEGER DEFAULT 15
+  daily_limit INTEGER DEFAULT 30  -- Simplified: All users get 30 tokens/day
 );
 
 -- If your existing users table doesn't have the UNIQUE constraint on email,

@@ -1,1 +1,0 @@
-module.exports = require('./netlify/functions/start-v2v.js')

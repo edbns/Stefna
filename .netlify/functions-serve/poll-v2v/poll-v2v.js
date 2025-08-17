@@ -1,1 +1,0 @@
-module.exports = require('./netlify/functions/poll-v2v.js')

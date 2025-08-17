@@ -1,50 +1,20 @@
-// Token Management Service for AIML API
-// Smart distribution system for 250 million tokens
-
 export interface TokenUsage {
-  userId: string
-  dailyUsage: number
-  dailyLimit: number
-  lastReset: string
-  totalUsage: number
-  userTier: UserTier
-  isRateLimited: boolean
-  lastGeneration: string
+  dailyUsage: number;
+  dailyLimit: number;
+  totalUsage: number;
+  lastReset: string;
 }
 
 export interface TokenGeneration {
-  id: string
-  userId: string
-  type: 'photo' | 'video'
-  quality: 'standard' | 'high'
-  tokensUsed: number
-  timestamp: string
-  prompt: string
-  ipAddress: string
-  deviceId: string
-}
-
-export enum UserTier {
-  REGISTERED = 'registered',
-  VERIFIED = 'verified',
-  CONTRIBUTOR = 'contributor'
-}
-
-export interface TokenLimits {
-  [UserTier.REGISTERED]: number
-  [UserTier.VERIFIED]: number
-  [UserTier.CONTRIBUTOR]: number
-}
-
-export interface TokenCosts {
-  photo: {
-    standard: number
-    high: number
-  }
-  video: {
-    standard: number
-    high: number
-  }
+  id: string;
+  userId: string;
+  type: 'photo';  // Removed 'video' since it's not working yet
+  quality: 'hd';  // Simplified to HD only
+  tokensUsed: number;
+  timestamp: string;
+  prompt: string;
+  ipAddress: string;
+  deviceId: string;
 }
 
 class TokenService {
@@ -54,24 +24,12 @@ class TokenService {
   private rateLimitWindow: number = 30 // seconds
   private dailyResetHour: number = 0 // midnight UTC
 
-  // Token limits per tier (client-side display only). Server enforces authoritative limits.
-  private tokenLimits: TokenLimits = {
-    [UserTier.REGISTERED]: 30,
-    [UserTier.VERIFIED]: 60,
-    [UserTier.CONTRIBUTOR]: 120
-  }
+  // Simplified: All users get the same limits (no more tier complexity)
+  private readonly DAILY_LIMIT = 30
+  private readonly WEEKLY_LIMIT = 150
 
-  // Token costs per generation type - Always HD quality
-  private tokenCosts: TokenCosts = {
-    photo: {
-      standard: 2, // Updated to match HD quality cost
-      high: 2
-    },
-    video: {
-      standard: 5, // Updated to match HD quality cost
-      high: 5
-    }
-  }
+  // Token costs - HD photos only (video removed until AIML supports it)
+  private readonly PHOTO_COST = 2  // 2 credits per HD photo
 
   // Rate limiting cache
   private rateLimitCache: Map<string, number> = new Map()
@@ -89,10 +47,10 @@ class TokenService {
     return TokenService.instance
   }
 
-  // Check if user can generate content
-  async canGenerate(userId: string, userTier: UserTier, type: 'photo' | 'video', quality: 'standard' | 'high' = 'high'): Promise<{ canGenerate: boolean; reason?: string; remainingTokens?: number }> {
+  // Check if user can generate content (photos only for now)
+  async canGenerate(userId: string, type: 'photo', quality: 'hd' = 'hd'): Promise<{ canGenerate: boolean; reason?: string; remainingTokens?: number }> {
     const usage = await this.getUserUsage(userId)
-    const cost = this.getTokenCost(type, quality)
+    const cost = this.PHOTO_COST
 
     // Check rate limiting
     if (this.isRateLimited(userId)) {
@@ -100,11 +58,11 @@ class TokenService {
     }
 
     // Check daily limit
-    if (usage.dailyUsage + cost > usage.dailyLimit) {
+    if (usage.dailyUsage + cost > this.DAILY_LIMIT) {
       return { 
         canGenerate: false, 
-        reason: `Daily limit reached. You have ${usage.dailyLimit - usage.dailyUsage} tokens remaining.`,
-        remainingTokens: usage.dailyLimit - usage.dailyUsage
+        reason: `Daily limit reached. You have ${this.DAILY_LIMIT - usage.dailyUsage} tokens remaining.`,
+        remainingTokens: this.DAILY_LIMIT - usage.dailyUsage
       }
     }
 
@@ -113,18 +71,18 @@ class TokenService {
       return { canGenerate: false, reason: 'Service temporarily unavailable due to high demand.' }
     }
 
-    return { canGenerate: true, remainingTokens: usage.dailyLimit - usage.dailyUsage - cost }
+    return { canGenerate: true, remainingTokens: this.DAILY_LIMIT - usage.dailyUsage - cost }
   }
 
-  // Generate content and deduct tokens
-  async generateContent(userId: string, userTier: UserTier, type: 'photo' | 'video', quality: 'standard' | 'high' = 'high', prompt: string, ipAddress: string, deviceId: string): Promise<{ success: boolean; tokensUsed: number; generationId?: string }> {
-    const canGenerate = await this.canGenerate(userId, userTier, type, quality)
+  // Generate content and deduct tokens (photos only for now)
+  async generateContent(userId: string, type: 'photo', quality: 'hd' = 'hd', prompt: string, ipAddress: string, deviceId: string): Promise<{ success: boolean; tokensUsed: number; generationId?: string }> {
+    const canGenerate = await this.canGenerate(userId, type, quality)
     
     if (!canGenerate.canGenerate) {
       return { success: false, tokensUsed: 0 }
     }
 
-    const cost = this.getTokenCost(type, quality)
+    const cost = this.PHOTO_COST
     const generationId = this.generateId()
 
     // Record the generation
@@ -159,152 +117,105 @@ class TokenService {
     return { success: true, tokensUsed: cost, generationId }
   }
 
-  // Get user's current usage
+  // Get user's current token usage
   async getUserUsage(userId: string): Promise<TokenUsage> {
-    const saved = localStorage.getItem(`token_usage_${userId}`)
-    if (saved) {
-      const usage: TokenUsage = JSON.parse(saved)
-      
-      // Check if daily reset is needed
-      if (this.shouldResetDaily(usage.lastReset)) {
-        usage.dailyUsage = 0
-        usage.lastReset = new Date().toISOString()
-        await this.saveUserUsage(userId, usage)
+    const key = `token_usage_${userId}`
+    const stored = localStorage.getItem(key)
+    
+    if (stored) {
+      try {
+        const usage = JSON.parse(stored)
+        // Check if daily reset is needed
+        if (this.shouldResetDaily(usage.lastReset)) {
+          const resetUsage = {
+            ...usage,
+            dailyUsage: 0,
+            lastReset: new Date().toISOString()
+          }
+          this.saveUserUsage(userId, resetUsage)
+          return resetUsage
+        }
+        return usage
+      } catch {
+        // Invalid stored data, create new
       }
-      
-      return usage
     }
 
     // Create new usage record
-    const usage: TokenUsage = {
-      userId,
+    const newUsage: TokenUsage = {
       dailyUsage: 0,
-      dailyLimit: this.tokenLimits[UserTier.REGISTERED],
-      lastReset: new Date().toISOString(),
+      dailyLimit: this.DAILY_LIMIT,
       totalUsage: 0,
-      userTier: UserTier.REGISTERED,
-      isRateLimited: false,
-      lastGeneration: ''
-    }
-
-    await this.saveUserUsage(userId, usage)
-    return usage
-  }
-
-  // Update user tier (for engagement rewards)
-  async updateUserTier(userId: string, newTier: UserTier): Promise<void> {
-    // Clear existing cached data
-    localStorage.removeItem(`token_usage_${userId}`)
-    
-    // Create new usage record with updated tier
-    const usage: TokenUsage = {
-      userId,
-      dailyUsage: 0,
-      dailyLimit: this.tokenLimits[newTier],
-      lastReset: new Date().toISOString(),
-      totalUsage: 0,
-      userTier: newTier,
-      isRateLimited: false,
-      lastGeneration: ''
+      lastReset: new Date().toISOString()
     }
     
-    await this.saveUserUsage(userId, usage)
+    this.saveUserUsage(userId, newUsage)
+    return newUsage
   }
 
-  // Add bonus tokens (for engagement rewards)
-  async addBonusTokens(userId: string, amount: number): Promise<void> {
-    const usage = await this.getUserUsage(userId)
-    usage.dailyLimit += amount
-    await this.saveUserUsage(userId, usage)
+  // Save user's token usage
+  private async saveUserUsage(userId: string, usage: TokenUsage): Promise<void> {
+    const key = `token_usage_${userId}`
+    localStorage.setItem(key, JSON.stringify(usage))
   }
 
-  // Invite system - generate referral code and track invites
-  async generateReferralCode(userId: string): Promise<string> {
-    const code = `STEFNA-${userId.slice(-6).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`
-    
-    // Save referral code
-    const referrals = JSON.parse(localStorage.getItem('referral_codes') || '{}')
-    referrals[code] = {
-      userId,
-      createdAt: new Date().toISOString(),
-      invites: 0,
-      tokensEarned: 0
-    }
-    localStorage.setItem('referral_codes', JSON.stringify(referrals))
-    
-    return code
+  // Save generation record
+  private async saveGeneration(generation: TokenGeneration): Promise<void> {
+    const key = `generation_${generation.id}`
+    localStorage.setItem(key, JSON.stringify(generation))
   }
 
-  // Process invite and award tokens
-  async processInvite(referralCode: string, newUserId: string): Promise<{ success: boolean; tokensAwarded: number }> {
-    const referrals = JSON.parse(localStorage.getItem('referral_codes') || '{}')
-    const referral = referrals[referralCode]
-    
-    if (!referral) {
-      return { success: false, tokensAwarded: 0 }
-    }
-
-    // Award tokens to referrer (50 tokens - increased from 10)
-    const referrerTokens = 50
-    await this.addBonusTokens(referral.userId, referrerTokens)
-    
-    // Award bonus tokens to new user (25 tokens - increased from 5)
-    const newUserTokens = 25
-    await this.addBonusTokens(newUserId, newUserTokens)
-    
-    // Update referral stats
-    referral.invites += 1
-    referral.tokensEarned += referrerTokens
-    referrals[referralCode] = referral
-    localStorage.setItem('referral_codes', JSON.stringify(referrals))
-    
-    return { success: true, tokensAwarded: referrerTokens + newUserTokens }
+  // Generate unique ID
+  private generateId(): string {
+    return `gen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
 
-  // Get user's referral stats
-  async getReferralStats(userId: string): Promise<{ invites: number; tokensEarned: number; referralCode: string }> {
-    const referrals = JSON.parse(localStorage.getItem('referral_codes') || '{}')
-    
-    for (const [code, data] of Object.entries(referrals)) {
-      if ((data as any).userId === userId) {
-        return {
-          invites: (data as any).invites || 0,
-          tokensEarned: (data as any).tokensEarned || 0,
-          referralCode: code
-        }
+  // Load token usage from localStorage
+  private loadTokenUsage(): void {
+    // Load total used tokens from localStorage
+    const totalUsed = localStorage.getItem('total_tokens_used')
+    if (totalUsed) {
+      try {
+        this.usedTokens = parseInt(totalUsed) || 0
+      } catch {
+        this.usedTokens = 0
       }
     }
-    
-    // Generate new referral code if none exists
-    const newCode = await this.generateReferralCode(userId)
-    return {
-      invites: 0,
-      tokensEarned: 0,
-      referralCode: newCode
+  }
+
+  // Start daily reset timer
+  private startDailyReset(): void {
+    setInterval(() => {
+      this.resetDailyUsage()
+    }, 60000) // Check every minute
+  }
+
+  // Reset daily usage for all users
+  private resetDailyUsage(): void {
+    const now = new Date()
+    if (now.getUTCHours() === this.dailyResetHour && now.getUTCMinutes() === 0) {
+      // Reset daily usage for all users
+      const keys = Object.keys(localStorage)
+      keys.forEach(key => {
+        if (key.startsWith('token_usage_')) {
+          try {
+            const usage = JSON.parse(localStorage.getItem(key) || '{}')
+            if (this.shouldResetDaily(usage.lastReset)) {
+              usage.dailyUsage = 0
+              usage.lastReset = new Date().toISOString()
+              localStorage.setItem(key, JSON.stringify(usage))
+            }
+          } catch {
+            // Invalid data, skip
+          }
+        }
+      })
     }
   }
 
-  // Anti-abuse: Check for multiple accounts from same device/IP
-  async checkForAbuse(deviceId: string, ipAddress: string): Promise<{ isAbuse: boolean; reason?: string }> {
-    // Check device usage
-    const deviceUsers = this.deviceCache.get(deviceId) || []
-    if (deviceUsers.length > 3) {
-      return { isAbuse: true, reason: 'Too many accounts from same device' }
-    }
-
-    // Check IP usage (simplified - in production would use proper IP tracking)
-    const ipUsers = Array.from(this.deviceCache.values()).flat()
-    const ipCount = ipUsers.filter(userId => userId.includes(ipAddress)).length
-    if (ipCount > 5) {
-      return { isAbuse: true, reason: 'Too many accounts from same IP' }
-    }
-
-    return { isAbuse: false }
-  }
-
-  // Get token cost for generation type
-  public getTokenCost(type: 'photo' | 'video', quality: 'standard' | 'high'): number {
-    return this.tokenCosts[type][quality]
+  // Get token cost for generation type (simplified - photos only)
+  public getTokenCost(type: 'photo', quality: 'hd' = 'hd'): number {
+    return this.PHOTO_COST
   }
 
   // Check if user is rate limited
@@ -339,46 +250,57 @@ class TokenService {
     return lastResetDate < resetDate
   }
 
-  // Generate unique ID
-  private generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2)
+  // Get daily limit (simplified - same for all users)
+  public getDailyLimit(): number {
+    return this.DAILY_LIMIT
   }
 
-  // Save user usage to localStorage (in production would use database)
-  async saveUserUsage(userId: string, usage: TokenUsage): Promise<void> {
-    localStorage.setItem(`token_usage_${userId}`, JSON.stringify(usage))
+  // Get weekly limit (simplified - same for all users)
+  public getWeeklyLimit(): number {
+    return this.WEEKLY_LIMIT
   }
 
-  // Save generation record (in production would use database)
-  private async saveGeneration(generation: TokenGeneration): Promise<void> {
-    const generations = JSON.parse(localStorage.getItem('token_generations') || '[]')
-    generations.push(generation)
-    localStorage.setItem('token_generations', JSON.stringify(generations))
-  }
-
-  // Load token usage from localStorage
-  private loadTokenUsage(): void {
-    const saved = localStorage.getItem('total_used_tokens')
-    if (saved) {
-      this.usedTokens = parseInt(saved)
+  // Get referral stats from backend (real data, not localStorage)
+  async getReferralStats(userId: string): Promise<{ invites: number; tokensEarned: number; referralCode: string }> {
+    try {
+      // This should call the backend to get real referral data
+      // For now, return placeholder data
+      return {
+        invites: 0,
+        tokensEarned: 0,
+        referralCode: `REF_${userId.slice(-6)}`
+      }
+    } catch (error) {
+      console.error('Failed to get referral stats:', error)
+      return {
+        invites: 0,
+        tokensEarned: 0,
+        referralCode: `REF_${userId.slice(-6)}`
+      }
     }
   }
 
-  // Start daily reset timer
-  private startDailyReset(): void {
-    setInterval(() => {
-      const now = new Date()
-      if (now.getUTCHours() === this.dailyResetHour && now.getUTCMinutes() === 0) {
-        this.resetAllDailyUsage()
-      }
-    }, 60000) // Check every minute
+  // Generate referral code
+  async generateReferralCode(userId: string): Promise<string> {
+    return `REF_${userId.slice(-6)}_${Date.now().toString(36)}`
   }
 
-  // Reset all users' daily usage
-  private resetAllDailyUsage(): void {
-    // In production, this would iterate through all users in the database
-    // For now, we'll rely on individual user checks
-    console.log('Daily token reset completed')
+  // Anti-abuse: Check for multiple accounts from same device/IP
+  async checkForAbuse(deviceId: string, ipAddress: string): Promise<{ isAbuse: boolean; reason?: string }> {
+    // Check device usage
+    const deviceUsers = this.deviceCache.get(deviceId) || []
+    if (deviceUsers.length > 3) {
+      return { isAbuse: true, reason: 'Too many accounts from same device' }
+    }
+
+    // Check IP usage (simplified - in production would use proper IP tracking)
+    const ipUsers = Array.from(this.deviceCache.values()).flat()
+    const ipCount = ipUsers.filter(userId => userId.includes(ipAddress)).length
+    if (ipCount > 5) {
+      return { isAbuse: true, reason: 'Too many accounts from same IP' }
+    }
+
+    return { isAbuse: false }
   }
 
   // Get service statistics
@@ -407,4 +329,4 @@ class TokenService {
   }
 }
 
-export default TokenService.getInstance() 
+export default TokenService 
