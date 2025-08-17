@@ -1,10 +1,10 @@
-const { verifyAuth } = require('./_auth')
-const { neon } = require('@neondatabase/serverless')
+import { verifyAuth } from './_auth.js';
+import { neon } from '@neondatabase/serverless';
 
 // ---- Database connection ----
-const sql = neon(process.env.NETLIFY_DATABASE_URL)
+const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   try {
     if (event.httpMethod === 'OPTIONS') {
       return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' }, body: '' }
@@ -39,7 +39,6 @@ exports.handler = async (event) => {
         SELECT amount
         FROM credits_ledger
         WHERE user_id = ${userId}
-          AND env = ${APP_ENV}
           AND created_at >= ${startUTC.toISOString()}
       `;
 
@@ -58,7 +57,6 @@ exports.handler = async (event) => {
         SELECT amount
         FROM credits_ledger
         WHERE user_id = ${userId}
-          AND env = ${APP_ENV}
           AND created_at >= ${weekAgo.toISOString()}
       `;
 

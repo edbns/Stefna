@@ -1,10 +1,10 @@
-const { neon } = require('@neondatabase/serverless')
-const { requireJWTUser, resp, handleCORS } = require('./_auth')
+import { neon } from '@neondatabase/serverless';
+import { requireJWTUser, resp, handleCORS } from './_auth.js';
 
 // ---- Database connection ----
-const sql = neon(process.env.NETLIFY_DATABASE_URL)
+const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   // Handle CORS preflight
   const corsResponse = handleCORS(event);
   if (corsResponse) return corsResponse;
@@ -63,11 +63,7 @@ exports.handler = async (event) => {
       const { shareToFeed, allowRemix } = body
 
       if (typeof shareToFeed !== 'boolean' || typeof allowRemix !== 'boolean') {
-        return { 
-          statusCode: 400, 
-          headers: { 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ error: 'shareToFeed and allowRemix must be boolean' }) 
-        }
+        return resp(400, { error: 'shareToFeed and allowRemix must be boolean' })
       }
 
       console.log(`📝 Updating settings for user ${user.userId}:`, { shareToFeed, allowRemix })
@@ -87,34 +83,19 @@ exports.handler = async (event) => {
         const result = updated[0]
         console.log(`✅ Updated settings for user ${user.userId}:`, result)
 
-        return {
-          statusCode: 200,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            shareToFeed: result.share_to_feed,
-            allowRemix: result.allow_remix,
-            updatedAt: result.updated_at
-          })
-        }
+        return resp(200, {
+          shareToFeed: result.share_to_feed,
+          allowRemix: result.allow_remix,
+          updatedAt: result.updated_at
+        })
       } catch (dbError) {
         console.error('❌ Update settings error:', dbError)
-        return { 
-          statusCode: 500, 
-          headers: { 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ error: 'Failed to update settings' }) 
-        }
+        return resp(500, { error: 'Failed to update settings' })
       }
     }
 
   } catch (e) {
     console.error('❌ user-settings error:', e)
-    return { 
-      statusCode: 500, 
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Internal server error' }) 
-    }
+    return resp(500, { error: 'Internal server error' })
   }
 }
