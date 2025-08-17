@@ -89,14 +89,34 @@ export const handler: Handler = async (event) => {
       console.log('💰 Daily cap check result:', capOk[0]);
       if (!capOk[0]?.allowed) return json(429, { ok:false, error:"DAILY_CAP_REACHED" });
       
-      // Reserve credits
-      console.log('💰 Reserving credits for user:', userId, 'request:', request_id, 'action:', action, 'cost:', cost);
-      const result = await db.query(
-        "SELECT * FROM app.reserve_credits($1::uuid,$2::uuid,$3::text,$4::int)",
-        [userId, request_id, action, cost]
-      );
-      rows = result.rows;
-      console.log('💰 Credits reserved successfully:', rows[0]);
+      // Reserve credits with defensive logging as recommended by third party
+      console.log('💰 reserve_credits inputs:', {
+        userId,
+        request_id,
+        action,
+        cost,
+        userIdType: typeof userId,
+        requestIdType: typeof request_id,
+        actionType: typeof action,
+        costType: typeof cost
+      });
+      
+      try {
+        const result = await db.query(
+          "SELECT * FROM app.reserve_credits($1::uuid,$2::uuid,$3::text,$4::int)",
+          [userId, request_id, action, cost]
+        );
+        rows = result.rows;
+        console.log('💰 Credits reserved successfully:', rows[0]);
+      } catch (dbError) {
+        console.error("❌ reserve_credits() call failed:", dbError);
+        return json(500, {
+          ok: false,
+          error: "DB_RESERVE_CREDITS_FAILED",
+          message: dbError?.message,
+          stack: dbError?.stack,
+        });
+      }
       
     } catch (dbError) {
       console.error("💥 DB deduction failed:", dbError);
