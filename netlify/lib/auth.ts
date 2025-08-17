@@ -1,9 +1,7 @@
 import jwt from "jsonwebtoken";
 
-const SECRET =
-  process.env.AUTH_JWT_SECRET ??
-  process.env.JWT_SECRET ??
-  process.env.JWT_SECRET_ALT!;
+const SECRET = process.env.JWT_SECRET!;
+if (!SECRET) throw new Error("JWT_SECRET is not set");
 
 const ISS = process.env.JWT_ISSUER ?? "stefna";
 const AUD = process.env.JWT_AUDIENCE ?? "stefna-app";
