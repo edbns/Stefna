@@ -125,6 +125,17 @@ const HomeNew: React.FC = () => {
   // Mode state
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null)
   
+  // Composer state with explicit mode
+  const [composerState, setComposerState] = useState({
+    mode: 'custom' as 'preset' | 'moodmorph' | 'remix' | 'custom',
+    file: null as File | null,
+    sourceUrl: null as string | null,
+    selectedPresetId: null as string | null,
+    status: 'idle' as 'idle' | 'precheck' | 'reserving' | 'uploading' | 'processing' | 'error' | 'success',
+    error: null as string | null,
+    runOnOpen: false
+  })
+  
 
 
   
@@ -210,6 +221,18 @@ const HomeNew: React.FC = () => {
       selectedPresetRef.current = null
     }
   }, [selectedPreset, PRESETS])
+
+  // Debug composer state changes
+  useEffect(() => {
+    console.log('🎭 Composer state changed:', {
+      mode: composerState.mode,
+      status: composerState.status,
+      selectedPresetId: composerState.selectedPresetId,
+      hasFile: !!composerState.file,
+      hasSourceUrl: !!composerState.sourceUrl,
+      error: composerState.error
+    })
+  }, [composerState])
 
   // Debug PRESETS object
   useEffect(() => {
@@ -427,6 +450,17 @@ const HomeNew: React.FC = () => {
     setPreviewUrl(preview)                   // blob: used only for <img> preview
     storeSelectedFile(file)                  // Store globally for blob: fallback
     
+    // Update composer state
+    setComposerState(s => ({
+      ...s,
+      mode: 'custom',
+      file,
+      sourceUrl: preview,
+      status: 'idle',
+      error: null,
+      runOnOpen: false
+    }))
+    
     // Also store in generation store for centralized access
     const { useGenerationStore } = await import('../stores/generationStore')
     useGenerationStore.getState().setSelectedFile(file)                    // keep the File object
@@ -469,6 +503,18 @@ const HomeNew: React.FC = () => {
       setPreviewUrl(url)
       setIsVideoPreview(/\.(mp4|webm|mov|mkv)(\?|$)/i.test(url))
       setSelectedFile(null)
+      
+      // Update composer state for remix mode
+      setComposerState(s => ({
+        ...s,
+        mode: 'remix',
+        file: null,
+        sourceUrl: url,
+        status: 'idle',
+        error: null,
+        runOnOpen: false
+      }))
+      
       setIsComposerOpen(true)
       if (state.remixPrompt) setPrompt(state.remixPrompt)
       // Don't clear selectedPreset - it should persist for remix generation
@@ -488,11 +534,13 @@ const HomeNew: React.FC = () => {
           isVideoPreview,
           hasPreviewUrl: !!previewUrl,
           previewUrlType: previewUrl?.startsWith('blob:') ? 'blob' : previewUrl?.startsWith('data:') ? 'data' : 'other',
-          actualPreviewUrl: previewUrl
+          actualPreviewUrl: previewUrl,
+          composerMode: composerState.mode,
+          composerStatus: composerState.status
         })
       })
     }
-  }, [isComposerOpen, previewUrl, selectedFile, isVideoPreview])
+  }, [isComposerOpen, previewUrl, selectedFile, isVideoPreview, composerState.mode, composerState.status])
 
   // Handle generation completion events from the pipeline
   useEffect(() => {
@@ -1779,6 +1827,145 @@ const HomeNew: React.FC = () => {
     }
   }
 
+  // Handle preset click - only selects preset, doesn't auto-run
+  const handlePresetClick = (presetName: keyof typeof PRESETS) => {
+    console.log('🎨 Preset clicked:', presetName)
+    
+    // Update composer state for preset mode
+    setComposerState(s => ({
+      ...s,
+      mode: 'preset',
+      selectedPresetId: presetName,
+      status: 'idle',
+      error: null,
+      runOnOpen: false
+    }))
+    
+    // Set the selected preset in the store
+    setSelectedPreset(presetName)
+    
+    // Show small inline hint instead of toast
+    console.log(`🎨 Preset selected: ${PRESETS[presetName]?.name || presetName}`)
+  }
+
+  // Handle MoodMorph click - auto-runs if file+auth+signer OK
+  const handleMoodMorphClick = async (presetName: keyof typeof PRESETS) => {
+    console.log('🎭 MoodMorph clicked:', presetName)
+    
+    // Update composer state for moodmorph mode
+    setComposerState(s => ({
+      ...s,
+      mode: 'moodmorph',
+      selectedPresetId: presetName,
+      status: 'idle',
+      error: null,
+      runOnOpen: false
+    }))
+    
+    // Set the selected preset in the store
+    setSelectedPreset(presetName)
+    
+    // Check if we have a file and can auto-run
+    if (!selectedFile) {
+      console.log('❌ No file selected, cannot auto-run MoodMorph')
+      return
+    }
+    
+    try {
+      // Check authentication and Cloudinary signer
+      const jwt = await authService.getToken()
+      if (!jwt) {
+        console.log('❌ Not authenticated, cannot auto-run MoodMorph')
+        return
+      }
+      
+      // Test Cloudinary signer
+      const signRes = await fetch('/.netlify/functions/cloudinary-sign', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${jwt}` }
+      })
+      
+      if (!signRes.ok) {
+        console.log('❌ Cloudinary signer failed, cannot auto-run MoodMorph')
+        return
+      }
+      
+      const sig = await signRes.json()
+      if (!sig.cloudName) {
+        console.log('❌ Cloudinary misconfigured, cannot auto-run MoodMorph')
+        return
+      }
+      
+      // All checks passed - auto-run MoodMorph
+      console.log('🚀 Auto-running MoodMorph with preset:', presetName)
+      await startMoodMorph()
+      
+    } catch (error) {
+      console.log('❌ Auto-run check failed:', error)
+      // Don't auto-run, just show inline hint
+    }
+  }
+
+  // Open composer from remix - no auto-run, just opens for user to choose
+  const openComposerFromRemix = (media: UserMedia) => {
+    console.log('🎭 Opening composer from remix:', media.id)
+    
+    // Update composer state for remix mode
+    setComposerState(s => ({
+      ...s,
+      mode: 'remix',
+      file: null,
+      sourceUrl: media.url,
+      status: 'idle',
+      error: null,
+      runOnOpen: false
+    }))
+    
+    // Set up the composer with the source media
+    setPreviewUrl(media.url)
+    setIsVideoPreview(false) // Always treat as image for now
+    setSelectedFile(null)
+    setIsComposerOpen(true)
+    setPrompt(media.prompt || '')
+    
+    // Clear selectedPreset when remixing
+    requestClearPreset('remix started')
+    
+    // Show mode-aware toast
+    notifyReady({ 
+      title: 'Remix ready', 
+      message: 'Adjust settings or press Generate' 
+    })
+    
+    console.log('🎭 Composer opened in remix mode')
+  }
+
+  // Show mode-aware toasts based on composer state
+  const showModeAwareToast = (mode: string, action: string) => {
+    switch (mode) {
+      case 'remix':
+        notifyReady({ 
+          title: 'Remix ready', 
+          message: 'Adjust settings or press Generate' 
+        })
+        break
+      case 'preset':
+        // No toast for preset selection - just inline hint
+        console.log(`🎨 Preset selected: ${action}`)
+        break
+      case 'moodmorph':
+        // No toast for MoodMorph selection - just inline hint
+        console.log(`🎭 MoodMorph selected: ${action}`)
+        break
+      case 'custom':
+        // No toast for custom mode
+        break
+      default:
+        // Fallback for unknown modes
+        console.log(`Mode ${mode}: ${action}`)
+    }
+  }
+
   // Auto-generate with preset - simplified to use existing dispatchGenerate
   const handlePresetAutoGeneration = async (presetName: keyof typeof PRESETS) => {
     console.log('🚀 handlePresetAutoGeneration called with:', presetName)
@@ -1789,6 +1976,16 @@ const HomeNew: React.FC = () => {
     }
 
     console.log('🚀 Auto-generating with preset:', presetName);
+    
+    // Update composer state for preset mode
+    setComposerState(s => ({
+      ...s,
+      mode: 'preset',
+      selectedPresetId: presetName,
+      status: 'idle',
+      error: null,
+      runOnOpen: false
+    }))
     
     // Use the existing dispatchGenerate function with 'preset' kind
     // This ensures all the proper validation, error handling, and database saving happens
@@ -1944,37 +2141,14 @@ const HomeNew: React.FC = () => {
     
     if (media.allowRemix === false) return // allow when undefined
     if (!authService.getToken()) {
-              // Sign up required - no notification needed
+      // Sign up required - no notification needed
       navigate('/auth')
       return
     }
     
     try {
-      // Simplified remix flow - just open composer directly
-      console.log('🎭 Setting up composer for remix:', {
-        mediaUrl: media.url,
-        prompt: media.prompt,
-        willOpenComposer: true
-      });
-      
-      // Set up the composer with the source media
-      setPreviewUrl(media.url);
-      setIsVideoPreview(false); // Always treat as image for now
-      setSelectedFile(null);
-      setIsComposerOpen(true);
-      setPrompt(media.prompt || '');
-      
-      console.log('🎭 Composer state after setup:', {
-        isComposerOpen: true,
-        previewUrl: media.url,
-        prompt: media.prompt || ''
-      });
-    
-    // Clear selectedPreset when remixing
-      requestClearPreset('remix started');
-    
-    // Don't auto-generate remix - just open composer for user to choose
-    // Toast removed - now using inline "Ready to remix" indicator in composer header
+      // Use the new function for consistent behavior
+      openComposerFromRemix(media)
     } catch (error) {
       console.error('Error creating remix:', error);
       notifyError({ title: 'Something went wrong', message: 'Failed to start remix' });

@@ -26,7 +26,7 @@ export async function uploadToCloudinary(file, opts = {}) {
   form.append("folder", sign.folder);
   if (opts.public_id) form.append("public_id", opts.public_id);
 
-  const uploadUrl = `https://api.cloudinary.com/v1_1/${sign.cloud_name}/${sign.resource_type}/upload`;
+  const uploadUrl = `https://api.cloudinary.com/v1_1/${sign.cloudName}/${sign.resource_type}/upload`;
   const up = await fetch(uploadUrl, { method: "POST", body: form });
   const json = await up.json();
   if (!up.ok) throw new Error(json?.error?.message || "Cloudinary upload failed");

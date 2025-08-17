@@ -34,7 +34,7 @@ export async function uploadSourceToCloudinary(src: Source) {
   if (isFile) form.append('file', src.file!)
   else form.append('file', src.url!) // must be https
 
-  let res = await fetch(`https://api.cloudinary.com/v1_1/${sign.cloud_name}/auto/upload`, {
+  let res = await fetch(`https://api.cloudinary.com/v1_1/${sign.cloudName}/auto/upload`, {
     method: 'POST',
     body: form,
   })
@@ -47,7 +47,7 @@ export async function uploadSourceToCloudinary(src: Source) {
       fd.append('upload_preset', import.meta.env.VITE_CLD_UNSIGNED_PRESET) // e.g. "unsigned-dev-sources"
       if (isFile) fd.append('file', src.file!)
       else fd.append('file', src.url!)
-      res = await fetch(`https://api.cloudinary.com/v1_1/${sign.cloud_name}/auto/upload`, { method: 'POST', body: fd })
+      res = await fetch(`https://api.cloudinary.com/v1_1/${sign.cloudName}/auto/upload`, { method: 'POST', body: fd })
     } else {
       throw new Error(text)
     }

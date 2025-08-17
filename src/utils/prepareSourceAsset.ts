@@ -21,7 +21,7 @@ export async function prepareSourceAsset(activeFileOrUrl: File | string) {
 
   // Signed params
   const signRes = await fetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
-  const { timestamp, signature, api_key, cloud_name, folder, upload_preset } = await signRes.json();
+  const { timestamp, signature, api_key, cloudName, folder, upload_preset } = await signRes.json();
 
   const form = new FormData();
   form.append('file', file); // <-- real File now
@@ -31,7 +31,7 @@ export async function prepareSourceAsset(activeFileOrUrl: File | string) {
   if (folder) form.append('folder', folder);
   if (upload_preset) form.append('upload_preset', upload_preset);
 
-  const up = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/auto/upload`, {
+  const up = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
     method: 'POST',
     body: form,
   });

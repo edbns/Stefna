@@ -42,7 +42,7 @@ export async function uploadToCloudinary(fileOrDataUrl: File | string, folder: s
     fd.append("folder", folder);
     fd.append("resource_type", "image");
 
-    const up = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloud_name}/auto/upload`, { 
+    const up = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/auto/upload`, { 
       method: "POST", 
       body: fd,
       signal: controller.signal
@@ -118,7 +118,7 @@ export async function uploadAvatarToCloudinary(file: File, userId: string): Prom
   formData.append("transformation", "c_fill,w_200,h_200,q_auto,f_auto"); // Square crop, 200x200, auto quality/format
 
   // Upload to Cloudinary
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloud_name}/image/upload`, {
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`, {
     method: "POST",
     body: formData
   });
