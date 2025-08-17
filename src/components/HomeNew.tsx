@@ -22,8 +22,10 @@ import { uploadSourceToCloudinary } from '../services/uploadSource'
 import { useGenerationMode } from '../stores/generationMode'
 import { runMoodMorph } from '../services/moodMorph'
 import { MoodMorphPicker } from './MoodMorphPicker'
+import { EmotionMaskPicker } from './EmotionMaskPicker'
 import { MOODMORPH_PRESETS } from '../presets/moodmorph'
 import { isMoodMorphPreset } from '../lib/moodmorph'
+import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
 import { signedFetch } from '../lib/auth'
 
 import { getSourceFileOrThrow } from '../services/source'
@@ -137,6 +139,7 @@ const HomeNew: React.FC = () => {
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
     selectedMoodMorphPresetId: null as string | null, // Separate from regular presets
+    selectedEmotionMaskPresetId: null as string | null, // Separate from other presets
     customPrompt: '', // Custom mode gets its own prompt
     status: 'idle' as 'idle' | 'precheck' | 'reserving' | 'uploading' | 'processing' | 'error' | 'success',
     error: null as string | null,
@@ -358,6 +361,8 @@ const HomeNew: React.FC = () => {
   const [selectedEra, setSelectedEra] = useState<string | null>(null)
   const [selectedOp, setSelectedOp] = useState<string | null>(null)
   const [selectedMoodMorphPreset, setSelectedMoodMorphPreset] = useState<string | null>(null)
+  const [selectedEmotionMaskPreset, setSelectedEmotionMaskPreset] = useState<string | null>(null)
+  const [emotionMaskDropdownOpen, setEmotionMaskDropdownOpen] = useState(false)
 
   // Enhanced dropdown management - close dropdowns automatically
   useEffect(() => {
@@ -929,6 +934,7 @@ const HomeNew: React.FC = () => {
       presetId?: string;
       presetData?: any;
       moodMorphPresetId?: string;
+      emotionMaskPresetId?: string;
       customPrompt?: string;
       sourceUrl?: string;
       originalPrompt?: string;
@@ -1015,12 +1021,30 @@ const HomeNew: React.FC = () => {
       console.log('🔄 REMIX MODE: Using original prompt:', effectivePrompt);
       
     } else if (kind === 'emotionmask') {
-      // EMOTION MASK MODE: Use ONLY the Emotion Mask concept
-      effectivePrompt = 'dual-tone emotional lighting, one side warm soft light and the other cool harsh shadow, sharp eyes, expressive emotion layering, cinematic background blur, conflicting emotional tones, what people show on the outside vs what they feel underneath';
-      generationMeta = { mode: 'emotionmask', concept: 'emotional_truth' };
-      console.log('🎭 EMOTION MASK MODE: Using emotional layering concept:', effectivePrompt);
+      // EMOTION MASK MODE: Use the selected emotional variant
+      const emotionMaskPresetId = options?.emotionMaskPresetId || selectedEmotionMaskPreset;
+      if (!emotionMaskPresetId) {
+        console.error('❌ Invalid Emotion Mask preset:', emotionMaskPresetId);
+        notifyError({ title: 'Invalid Emotion Mask preset', message: 'Please select an emotional variant first' });
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
+      }
       
-      } else {
+      const emotionMaskPreset = EMOTION_MASK_PRESETS.find(p => p.id === emotionMaskPresetId);
+      if (!emotionMaskPreset) {
+        console.error('❌ Emotion Mask preset not found:', emotionMaskPresetId);
+        notifyError({ title: 'Emotion Mask preset not found', message: 'Please select a valid emotional variant' });
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
+      }
+      
+      effectivePrompt = emotionMaskPreset.prompt;
+      generationMeta = { mode: 'emotionmask', emotionMaskPresetId, emotionMaskLabel: emotionMaskPreset.label, vibe: emotionMaskPreset.vibe };
+      console.log('🎭 EMOTION MASK MODE: Using emotional variant:', emotionMaskPreset.label, effectivePrompt);
+      
+    } else {
       console.error('❌ Unknown generation kind:', kind);
       notifyError({ title: 'Generation error', message: 'Unknown generation type' });
       endGeneration(genId);
@@ -2045,9 +2069,14 @@ const HomeNew: React.FC = () => {
     })
   }
 
-  // 5. EMOTION MASK MODE GENERATION - Only uses emotional layering concept
+  // 5. EMOTION MASK MODE GENERATION - Uses selected emotional variant
   const generateEmotionMask = async () => {
     console.log('🎭 EMOTION MASK MODE: Generating emotional truth portrait')
+    
+    if (!selectedEmotionMaskPreset) {
+      notifyError({ title: 'Emotion Mask preset required', message: 'Please select an emotional variant first' })
+      return
+    }
     
     // Update composer state for Emotion Mask mode
     setComposerState(s => ({
@@ -2055,13 +2084,16 @@ const HomeNew: React.FC = () => {
       mode: 'emotionmask',
       selectedPresetId: null, // Clear preset
       selectedMoodMorphPresetId: null, // Clear MoodMorph preset
+      selectedEmotionMaskPresetId: selectedEmotionMaskPreset, // Set selected emotional variant
       customPrompt: '', // Clear custom prompt
       status: 'idle',
       error: null
     }))
     
-    // Generate with ONLY the Emotion Mask concept - no other contamination
-    await dispatchGenerate('emotionmask');
+    // Generate with ONLY the selected Emotion Mask variant - no other contamination
+    await dispatchGenerate('emotionmask', {
+      emotionMaskPresetId: selectedEmotionMaskPreset
+    });
   }
 
   // Mode handlers for one-click generation
@@ -3047,45 +3079,68 @@ const HomeNew: React.FC = () => {
                       )}
                   </div>
 
-                  {/* Emotion Mask™ button - NEW STANDALONE MODE */}
-                  <button
-                    onClick={async () => {
-                      if (!isAuthenticated) {
-                        navigate('/auth')
-                        return
-                      }
-                      
-                      if (composerState.mode === 'emotionmask') {
-                        // Already in Emotion Mask mode - switch back to presets
-                        setComposerState(s => ({ ...s, mode: 'presets' }))
-                      } else {
-                        // Switch to Emotion Mask mode AND auto-generate
-                        setComposerState(s => ({ ...s, mode: 'emotionmask' }))
-                        
-                        // Auto-generate Emotion Mask if file is ready
-                        if (selectedFile && isAuthenticated) {
-                          console.log('🎭 Auto-generating Emotion Mask')
-                          try {
-                            await dispatchGenerate('emotionmask')
-                          } catch (error) {
-                            console.error('❌ Emotion Mask auto-generation failed:', error)
-                            notifyError({ title: 'Generation failed', message: 'Please try again' })
-                          }
+                  {/* Emotion Mask™ button - SINGLE BUTTON with dropdown */}
+                  <div className="relative" data-emotionmask-dropdown>
+                    <button
+                      onClick={async () => {
+                        if (!isAuthenticated) {
+                          navigate('/auth')
+                          return
                         }
+                        
+                        if (composerState.mode === 'emotionmask') {
+                          // Already in Emotion Mask mode - toggle dropdown
+                          setEmotionMaskDropdownOpen((v) => !v)
+                        } else {
+                          // Switch to Emotion Mask mode AND show dropdown immediately
+                          setComposerState(s => ({ ...s, mode: 'emotionmask' }))
+                          setSelectedEmotionMaskPreset(null)
+                          setEmotionMaskDropdownOpen(true) // Show dropdown immediately
+                        }
+                      }}
+                      className={
+                        !isAuthenticated
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
+                          : composerState.mode === 'emotionmask'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white text-black'
+                          : 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15'
                       }
-                    }}
-                    className={
-                      !isAuthenticated
-                        ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
-                        : composerState.mode === 'emotionmask'
-                        ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white text-black'
-                        : 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15'
-                    }
-                    title={isAuthenticated ? 'Switch to Emotion Mask™ mode' : 'Sign up to use Emotion Mask™'}
-                    disabled={!isAuthenticated}
-                  >
-                    Emotion Mask™
-                  </button>
+                      title={isAuthenticated ? 'Switch to Emotion Mask™ mode' : 'Sign up to use Emotion Mask™'}
+                      disabled={!isAuthenticated}
+                    >
+                      {selectedEmotionMaskPreset ? 
+                        EMOTION_MASK_PRESETS.find(p => p.id === selectedEmotionMaskPreset)?.label || 'Emotion Mask™' 
+                        : 'Emotion Mask™'
+                      }
+                    </button>
+                    
+                    {/* Emotion Mask presets dropdown - show when in Emotion Mask mode */}
+                    {composerState.mode === 'emotionmask' && emotionMaskDropdownOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                        <EmotionMaskPicker
+                          value={selectedEmotionMaskPreset}
+                          onChange={async (presetId) => {
+                            setSelectedEmotionMaskPreset(presetId || null)
+                            setEmotionMaskDropdownOpen(false)
+                            
+                            // Auto-generate when Emotion Mask preset is selected
+                            if (presetId && selectedFile && isAuthenticated) {
+                              console.log('🎭 Auto-generating Emotion Mask with preset:', presetId)
+                              try {
+                                await dispatchGenerate('emotionmask', {
+                                  emotionMaskPresetId: presetId
+                                })
+                              } catch (error) {
+                                console.error('❌ Emotion Mask auto-generation failed:', error)
+                                notifyError({ title: 'Generation failed', message: 'Please try again' })
+                              }
+                            }
+                          }}
+                          disabled={!isAuthenticated}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Right: Action buttons - Save to draft and Generate */}
