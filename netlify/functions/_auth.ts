@@ -2,27 +2,31 @@ import jwt from "jsonwebtoken";
 
 // Support both environment variables temporarily during migration
 const SECRET = 
-  process.env.JWT_SECRET ||
-  process.env.AUTH_JWT_SECRET ||
-  (() => { throw new Error("Missing JWT secret - set either JWT_SECRET or AUTH_JWT_SECRET"); })();
+  process.env.AUTH_JWT_SECRET ?? 
+  process.env.JWT_SECRET ?? 
+  process.env.JWT_SECRET_ALT ?? 
+  (() => { throw new Error("Missing JWT secret - set either AUTH_JWT_SECRET, JWT_SECRET, or JWT_SECRET_ALT"); })();
 
-const ISS = process.env.JWT_ISSUER || "stefna";
+const ISS = process.env.JWT_ISSUER ?? "stefna";
+const AUD = process.env.JWT_AUDIENCE ?? "stefna-app";
 
 console.log('🔐 JWT Auth initialized with:', {
   hasJwtSecret: !!process.env.JWT_SECRET,
   hasAuthJwtSecret: !!process.env.AUTH_JWT_SECRET,
-  issuer: ISS
+  hasJwtSecretAlt: !!process.env.JWT_SECRET_ALT,
+  issuer: ISS,
+  audience: AUD
 });
 
 export function signToken(payload: object) {
-  return jwt.sign(payload, SECRET, { algorithm: "HS256", issuer: ISS, expiresIn: "30d" });
+  return jwt.sign(payload, SECRET, { algorithm: "HS256", issuer: ISS, audience: AUD, expiresIn: "30d" });
 }
 
 export function requireAuth(authorization?: string) {
   if (!authorization?.startsWith("Bearer ")) throw httpErr(401, "MISSING_BEARER");
   const token = authorization.slice(7);
   try {
-    return jwt.verify(token, SECRET, { algorithms: ["HS256"], issuer: ISS }) as { userId: string };
+    return jwt.verify(token, SECRET, { algorithms: ["HS256"], issuer: ISS, audience: AUD }) as { userId: string };
   } catch {
     throw httpErr(401, "INVALID_JWT");
   }

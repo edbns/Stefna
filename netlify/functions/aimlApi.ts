@@ -41,6 +41,16 @@ export default async (event) => {
       });
     }
 
+    // Check if AIML API base is configured
+    const BASE = process.env.AIML_API_BASE ?? "https://api.aimlapi.com";
+    if (!BASE) {
+      console.error('AIML_API_BASE missing from environment');
+      return new Response(JSON.stringify({ error: 'server_missing_base_url' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // Parse request body
     const requestBody = JSON.parse(event.body || '{}');
     
@@ -97,112 +107,93 @@ export default async (event) => {
 
     // Build AIML API payload with variations support
     const aimlPayload = {
-      model: 'flux/dev/image-to-image',
-      prompt: String(requestBody.prompt).trim(),
+      model: requestBody.model ?? process.env.AIML_MODEL ?? 'flux/dev/image-to-image',
+      prompt: requestBody.prompt,
       image_url: requestBody.image_url,
-      strength: Number(requestBody.strength ?? 0.75),
-      num_inference_steps: Number(requestBody.num_inference_steps ?? requestBody.steps ?? 36),
-      guidance_scale: Number(requestBody.guidance_scale ?? 7.5),
-      seed: requestBody.seed || Date.now(),
-      // Add variations support
-      n: Number(requestBody.num_variations ?? 1) // Number of variations to generate
+      strength: requestBody.strength || 0.8,
+      num_variations: requestBody.num_variations || 1
     };
 
-    console.log('🚀 Calling upstream AIML API with payload:', {
-      ...logData,
+    console.log('🚀 Sending to AIML API:', {
+      base: BASE,
       model: aimlPayload.model,
-      steps: aimlPayload.num_inference_steps,
-      guidance: aimlPayload.guidance_scale,
-      variations: aimlPayload.n
+      hasImage: !!aimlPayload.image_url,
+      variations: aimlPayload.num_variations
     });
 
-    // Call upstream AIML API
-    const startTime = Date.now();
-    const response = await fetch('https://api.aimlapi.com/v1/images/generations', {
+    // Make request to AIML API
+    const response = await fetch(`${BASE}/v1/generate`, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${API_KEY}`,
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
+        'Accept': 'application/json'
       },
       body: JSON.stringify(aimlPayload)
     });
 
-    const duration = Date.now() - startTime;
-
+    const responseText = await response.text();
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Upstream AIML API error:', {
-        ...logData,
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-        duration
-      });
-      
+      console.error('❌ AIML API error:', response.status, responseText);
       return new Response(JSON.stringify({ 
-        error: `Upstream AIML API failed: ${response.status} ${response.statusText}`,
-        details: errorText,
-        runId: requestBody.runId
+        ok: false, 
+        provider_error: responseText,
+        status: response.status 
       }), {
         status: response.status,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    const result = await response.json();
-    
-    // Process multiple variations if they exist
-    let processedResult = result;
-    if (aimlPayload.n > 1 && result.data && Array.isArray(result.data)) {
-      // Multiple variations were generated
-      const variations = result.data.map((item: any, index: number) => ({
-        ...item,
-        variation_index: index,
-        variation_id: `${requestBody.runId || 'unknown'}-${index}`
-      }));
-      
-      processedResult = {
-        ...result,
-        data: variations,
-        variations_generated: variations.length,
-        result_urls: variations.map((v: any) => v.url).filter(Boolean)
-      };
-      
-      console.log('🎭 Multiple variations generated:', {
-        ...logData,
-        requested: aimlPayload.n,
-        generated: variations.length,
-        urls: processedResult.result_urls
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('❌ Failed to parse AIML API response:', responseText);
+      return new Response(JSON.stringify({ 
+        ok: false, 
+        error: 'INVALID_JSON_RESPONSE',
+        raw: responseText 
+      }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' }
       });
-    } else {
-      // Single result - add compatibility fields
-      processedResult = {
-        ...result,
-        variations_generated: 1,
-        result_urls: result.data?.[0]?.url ? [result.data[0].url] : []
-      };
     }
-    
-    console.log('✅ AIML API generation successful:', {
-      ...logData,
-      duration,
-      hasImages: !!result.images,
-      imageCount: result.images?.length || 0,
-      hasData: !!result.data,
-      variationsGenerated: processedResult.variations_generated,
-      resultUrls: processedResult.result_urls?.length || 0
-    });
 
-    return new Response(JSON.stringify(processedResult), {
+    // Extract URL from various possible response formats
+    const url = data.image_url ?? data.output?.[0]?.url ?? data.data?.[0]?.url ?? data.url ?? null;
+
+    if (!url) {
+      console.error('❌ No image URL in AIML response:', data);
+      return new Response(JSON.stringify({ 
+        ok: false, 
+        error: 'NO_URL_FROM_PROVIDER',
+        raw: data 
+      }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log('✅ AIML API success, URL extracted:', url);
+
+    return new Response(JSON.stringify({ 
+      ok: true, 
+      image_url: url,
+      model: aimlPayload.model,
+      prompt: aimlPayload.prompt
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error('💥 AIML API critical error:', error);
+    console.error('💥 AIML API function error:', error);
     return new Response(JSON.stringify({ 
-      error: String(error?.message || error),
-      runId: JSON.parse(event.body || '{}')?.runId || 'unknown'
+      ok: false, 
+      error: 'INTERNAL_ERROR',
+      message: error.message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

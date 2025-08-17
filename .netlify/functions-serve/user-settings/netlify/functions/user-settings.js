@@ -9132,13 +9132,13 @@ __export(auth_exports, {
   signToken: () => signToken
 });
 function signToken(payload) {
-  return import_jsonwebtoken.default.sign(payload, SECRET, { algorithm: "HS256", issuer: ISS, expiresIn: "30d" });
+  return import_jsonwebtoken.default.sign(payload, SECRET, { algorithm: "HS256", issuer: ISS, audience: AUD, expiresIn: "30d" });
 }
 function requireAuth(authorization) {
   if (!authorization?.startsWith("Bearer ")) throw httpErr(401, "MISSING_BEARER");
   const token = authorization.slice(7);
   try {
-    return import_jsonwebtoken.default.verify(token, SECRET, { algorithms: ["HS256"], issuer: ISS });
+    return import_jsonwebtoken.default.verify(token, SECRET, { algorithms: ["HS256"], issuer: ISS, audience: AUD });
   } catch {
     throw httpErr(401, "INVALID_JWT");
   }
@@ -9186,19 +9186,22 @@ function sanitizeDatabaseUrl(url) {
     throw new Error("Invalid database URL format");
   }
 }
-var import_jsonwebtoken, SECRET, ISS;
+var import_jsonwebtoken, SECRET, ISS, AUD;
 var init_auth = __esm({
   "netlify/functions/_auth.ts"() {
     "use strict";
     import_jsonwebtoken = __toESM(require_jsonwebtoken());
-    SECRET = process.env.JWT_SECRET || process.env.AUTH_JWT_SECRET || (() => {
-      throw new Error("Missing JWT secret - set either JWT_SECRET or AUTH_JWT_SECRET");
+    SECRET = process.env.AUTH_JWT_SECRET ?? process.env.JWT_SECRET ?? process.env.JWT_SECRET_ALT ?? (() => {
+      throw new Error("Missing JWT secret - set either AUTH_JWT_SECRET, JWT_SECRET, or JWT_SECRET_ALT");
     })();
-    ISS = process.env.JWT_ISSUER || "stefna";
+    ISS = process.env.JWT_ISSUER ?? "stefna";
+    AUD = process.env.JWT_AUDIENCE ?? "stefna-app";
     console.log("\u{1F510} JWT Auth initialized with:", {
       hasJwtSecret: !!process.env.JWT_SECRET,
       hasAuthJwtSecret: !!process.env.AUTH_JWT_SECRET,
-      issuer: ISS
+      hasJwtSecretAlt: !!process.env.JWT_SECRET_ALT,
+      issuer: ISS,
+      audience: AUD
     });
   }
 });

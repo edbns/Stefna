@@ -9106,14 +9106,17 @@ var export_types = ct.types;
 
 // netlify/functions/_auth.ts
 var import_jsonwebtoken = __toESM(require_jsonwebtoken());
-var SECRET = process.env.JWT_SECRET || process.env.AUTH_JWT_SECRET || (() => {
-  throw new Error("Missing JWT secret - set either JWT_SECRET or AUTH_JWT_SECRET");
+var SECRET = process.env.AUTH_JWT_SECRET ?? process.env.JWT_SECRET ?? process.env.JWT_SECRET_ALT ?? (() => {
+  throw new Error("Missing JWT secret - set either AUTH_JWT_SECRET, JWT_SECRET, or JWT_SECRET_ALT");
 })();
-var ISS = process.env.JWT_ISSUER || "stefna";
+var ISS = process.env.JWT_ISSUER ?? "stefna";
+var AUD = process.env.JWT_AUDIENCE ?? "stefna-app";
 console.log("\u{1F510} JWT Auth initialized with:", {
   hasJwtSecret: !!process.env.JWT_SECRET,
   hasAuthJwtSecret: !!process.env.AUTH_JWT_SECRET,
-  issuer: ISS
+  hasJwtSecretAlt: !!process.env.JWT_SECRET_ALT,
+  issuer: ISS,
+  audience: AUD
 });
 function resp(statusCode, body) {
   return {

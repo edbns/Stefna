@@ -9114,20 +9114,23 @@ var sql = cs(url);
 
 // netlify/functions/_auth.ts
 var import_jsonwebtoken = __toESM(require_jsonwebtoken());
-var SECRET = process.env.JWT_SECRET || process.env.AUTH_JWT_SECRET || (() => {
-  throw new Error("Missing JWT secret - set either JWT_SECRET or AUTH_JWT_SECRET");
+var SECRET = process.env.AUTH_JWT_SECRET ?? process.env.JWT_SECRET ?? process.env.JWT_SECRET_ALT ?? (() => {
+  throw new Error("Missing JWT secret - set either AUTH_JWT_SECRET, JWT_SECRET, or JWT_SECRET_ALT");
 })();
-var ISS = process.env.JWT_ISSUER || "stefna";
+var ISS = process.env.JWT_ISSUER ?? "stefna";
+var AUD = process.env.JWT_AUDIENCE ?? "stefna-app";
 console.log("\u{1F510} JWT Auth initialized with:", {
   hasJwtSecret: !!process.env.JWT_SECRET,
   hasAuthJwtSecret: !!process.env.AUTH_JWT_SECRET,
-  issuer: ISS
+  hasJwtSecretAlt: !!process.env.JWT_SECRET_ALT,
+  issuer: ISS,
+  audience: AUD
 });
 function requireAuth(authorization) {
   if (!authorization?.startsWith("Bearer ")) throw httpErr(401, "MISSING_BEARER");
   const token = authorization.slice(7);
   try {
-    return import_jsonwebtoken.default.verify(token, SECRET, { algorithms: ["HS256"], issuer: ISS });
+    return import_jsonwebtoken.default.verify(token, SECRET, { algorithms: ["HS256"], issuer: ISS, audience: AUD });
   } catch {
     throw httpErr(401, "INVALID_JWT");
   }
@@ -9165,11 +9168,15 @@ var handler = async (event) => {
       prompt,
       media_type = "image",
       meta = {},
-      // URL fields - prioritize AIML generated URL
+      // URL fields - prioritize AIML generated URL with fallback chain
       image_url,
       // AIML generated image URL (primary)
       url: url2,
       // Fallback field name for MoodMorph
+      secure_url,
+      // Additional fallback
+      final,
+      // Additional fallback
       // Optional fields
       cloudinary_public_id,
       source_public_id,
@@ -9184,17 +9191,17 @@ var handler = async (event) => {
       tags,
       extra
     } = body;
-    const finalUrl = image_url || url2;
+    const finalUrl = image_url || url2 || secure_url || final;
     if (!finalUrl) {
       console.error("\u274C MISSING_URL: No valid URL found in request");
-      throw httpErr(400, "MISSING_URL", "Request must include image_url or url field with AIML generated image URL");
+      throw httpErr(400, "MISSING_URL", "Request must include image_url, url, secure_url, or final field with AIML generated image URL");
     }
     console.log("\u{1F517} Using URL:", finalUrl);
     if (variations && Array.isArray(variations)) {
       console.log("\u{1F3AD} Processing MoodMorph variations:", variations.length);
       const savedItems = [];
       for (const variation of variations) {
-        const variationUrl = variation.url || variation.image_url;
+        const variationUrl = variation.image_url || variation.url || variation.secure_url || variation.final;
         if (!variationUrl) {
           console.warn("\u26A0\uFE0F Skipping variation without URL:", variation);
           continue;
@@ -9207,38 +9214,29 @@ var handler = async (event) => {
               media_type, 
               cloudinary_public_id, 
               source_public_id, 
+              prompt, 
+              meta, 
               preset_id, 
-              idempotency_key,
-              prompt,
-              meta,
-              run_id,
-              batch_id
-            )
-            VALUES (
+              run_id, 
+              batch_id, 
+              created_at
+            ) VALUES (
               ${userId}, 
               ${variationUrl}, 
-              ${variation.type || media_type}, 
-              ${variation.cloudinary_public_id || cloudinary_public_id}, 
-              ${variation.source_public_id || source_public_id}, 
-              ${variation.preset_id || preset_id || presetId}, 
-              ${idem + "-" + Math.random()}, 
-              ${variation.prompt || prompt}, 
-              ${JSON.stringify({ ...meta, ...variation.meta, ...variation.extra })}, 
-              ${variation.run_id || run_id || runId}, 
-              ${batch_id}
-            )
-            ON CONFLICT (idempotency_key) DO UPDATE SET 
-              updated_at = now()
-            RETURNING id, url, media_type, created_at
+              ${media_type}, 
+              ${cloudinary_public_id || null}, 
+              ${source_public_id || null}, 
+              ${prompt || null}, 
+              ${meta || {}}, 
+              ${preset_id || null}, 
+              ${run_id || null}, 
+              ${batch_id || null}, 
+              NOW()
+            ) RETURNING id, url, media_type, created_at
           `;
-          if (result && result[0]) {
-            savedItems.push({
-              id: result[0].id,
-              url: result[0].url,
-              media_type: result[0].media_type,
-              created_at: result[0].created_at
-            });
-            console.log("\u2705 Saved variation:", result[0].id);
+          if (result && result.length > 0) {
+            savedItems.push(result[0]);
+            console.log("\u2705 Variation saved:", result[0].id);
           }
         } catch (error) {
           console.error("\u274C Failed to save variation:", error);
@@ -9251,79 +9249,104 @@ var handler = async (event) => {
           "Access-Control-Allow-Origin": "*"
         },
         body: JSON.stringify({
-          ok: true,
+          success: true,
           message: `Saved ${savedItems.length} variations`,
           items: savedItems,
-          total: savedItems.length
+          total_requested: variations.length,
+          total_saved: savedItems.length
         })
       };
-    } else {
-      try {
-        const result = await sql`
-          INSERT INTO media (
-            user_id, 
-            url, 
-            media_type, 
-            cloudinary_public_id, 
-            source_public_id, 
-            preset_id, 
-            idempotency_key,
-            prompt,
-            meta,
-            run_id,
-            batch_id
-          )
-          VALUES (
-            ${userId}, 
-            ${finalUrl}, 
-            ${media_type}, 
-            ${cloudinary_public_id}, 
-            ${source_public_id}, 
-            ${preset_id || presetId}, 
-            ${idem}, 
-            ${prompt}, 
-            ${JSON.stringify(meta)}, 
-            ${run_id || runId}, 
-            ${batch_id}
-          )
-          ON CONFLICT (idempotency_key) DO UPDATE SET 
-            updated_at = now()
-          RETURNING id, url, media_type, created_at
-        `;
-        if (result && result[0]) {
-          console.log("\u2705 Saved single media item:", result[0].id);
-          return {
-            statusCode: 200,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
-            },
-            body: JSON.stringify({
-              ok: true,
-              media: result[0],
-              message: "Media saved successfully"
-            })
-          };
-        } else {
-          throw new Error("No result returned from database insert");
-        }
-      } catch (error) {
-        console.error("\u274C Database error:", error);
-        throw httpErr(500, "DATABASE_ERROR", error.message);
+    }
+    try {
+      const result = await sql`
+        INSERT INTO media (
+          user_id, 
+          url, 
+          media_type, 
+          cloudinary_public_id, 
+          source_public_id, 
+          prompt, 
+          meta, 
+          preset_id, 
+          run_id, 
+          batch_id, 
+          created_at
+        ) VALUES (
+          ${userId}, 
+          ${finalUrl}, 
+          ${media_type}, 
+          ${cloudinary_public_id || null}, 
+          ${source_public_id || null}, 
+          ${prompt || null}, 
+          ${meta || {}}, 
+          ${preset_id || null}, 
+          ${run_id || null}, 
+          ${batch_id || null}, 
+          NOW()
+        ) RETURNING id, url, media_type, created_at
+      `;
+      if (result && result.length > 0) {
+        const savedItem = result[0];
+        console.log("\u2705 Media saved successfully:", savedItem.id);
+        return {
+          statusCode: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          },
+          body: JSON.stringify({
+            success: true,
+            message: "Media saved successfully",
+            item: savedItem
+          })
+        };
+      } else {
+        throw new Error("No result returned from database insert");
       }
+    } catch (error) {
+      console.error("\u274C Database insert failed:", error);
+      throw httpErr(500, "DATABASE_ERROR", "Failed to save media to database");
     }
   } catch (error) {
-    console.error("\u274C Save media error:", error);
-    const status = error.statusCode || 500;
-    const code = error.code || "INTERNAL_ERROR";
-    const details = error.extra || error.message;
+    console.error("\u{1F4A5} Save media error:", error);
+    if (error.message === "INVALID_JWT" || error.message === "MISSING_BEARER") {
+      return {
+        statusCode: 401,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        },
+        body: JSON.stringify({
+          success: false,
+          error: "AUTHENTICATION_FAILED",
+          message: "Invalid or missing JWT token"
+        })
+      };
+    }
+    if (error.code === "MISSING_URL") {
+      return {
+        statusCode: 400,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        },
+        body: JSON.stringify({
+          success: false,
+          error: "VALIDATION_ERROR",
+          message: error.extra || "Missing required URL field"
+        })
+      };
+    }
     return {
-      statusCode: status,
-      headers: { "Access-Control-Allow-Origin": "*" },
+      statusCode: error.statusCode || 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      },
       body: JSON.stringify({
-        ok: false,
-        error: code,
-        details
+        success: false,
+        error: error.code || "INTERNAL_ERROR",
+        message: error.message || "An unexpected error occurred"
       })
     };
   }
