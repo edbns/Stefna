@@ -21,18 +21,30 @@ export const handler: Handler = async (event) => {
     const body = event.body ? JSON.parse(event.body) : {};
     console.log("📦 Request body parsed:", body);
     
-    // 🔧 Get dynamic configuration from app_config
+    // 🔧 Get dynamic configuration from app_config with proper validation
     let config;
     try {
       config = await getAppConfig(['image_cost', 'daily_cap']);
       console.log('💰 App config loaded:', config);
+      
+      // Validate config values as recommended by third party
+      if (!config.image_cost || isNaN(parseInt(config.image_cost))) {
+        console.error('❌ Invalid image_cost config:', config.image_cost);
+        config.image_cost = 2; // Fallback to default
+      }
+      
+      if (!config.daily_cap || isNaN(parseInt(config.daily_cap))) {
+        console.error('❌ Invalid daily_cap config:', config.daily_cap);
+        config.daily_cap = 30; // Fallback to default
+      }
+      
     } catch (configError) {
       console.error('💰 Failed to load app config:', configError);
       // Fallback to defaults if config fails
       config = { image_cost: 2, daily_cap: 30 };
     }
     
-    const cost = body.cost || body.amount || config.image_cost || 2; // Dynamic cost with fallback
+    const cost = body.cost || body.amount || parseInt(config.image_cost) || 2; // Dynamic cost with fallback
     const action = body.action || body.intent || "image.gen"; // Support both action and intent
     const request_id = body.request_id || body.requestId || randomUUID(); // Support both formats
 
@@ -50,9 +62,9 @@ export const handler: Handler = async (event) => {
       return json(400, { ok: false, error: 'Missing or invalid userId' });
     }
     
-    if (!cost || cost <= 0) {
+    if (!cost || cost <= 0 || isNaN(cost)) {
       console.error("❌ Invalid cost:", cost);
-      return json(400, { ok: false, error: 'Invalid cost - must be greater than 0' });
+      return json(400, { ok: false, error: `Invalid cost: ${cost} - must be a number greater than 0` });
     }
     
     if (!action) {
@@ -102,12 +114,20 @@ export const handler: Handler = async (event) => {
       message: "Credits reserved. Call credits-finalize to commit or refund."
     });
   } catch (e) {
-    console.error('💰 Credits deduction error:', {
+    console.error("❌ deduct-credits failed:", {
       error: e,
       message: e?.message,
       stack: e?.stack,
-      name: e?.name
+      name: e?.name,
+      userId: e?.userId,
+      cost: e?.cost
     });
-    return mapPgError(e);
+    
+    // Return proper error response as recommended by third party
+    return json(500, { 
+      ok: false, 
+      error: "Credits deduction failed",
+      details: e?.message || 'Unknown error'
+    });
   }
 };
