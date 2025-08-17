@@ -29,9 +29,37 @@ export const handler: Handler = async (event) => {
       return json(500, { error: 'Missing Cloudinary env (CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET)' });
     }
 
+    // Parse request body for additional parameters
+    let body = {};
+    try {
+      if (event.body) {
+        body = JSON.parse(event.body);
+      }
+    } catch (e) {
+      // Ignore parsing errors, use empty object
+    }
+
     const timestamp = Math.floor(Date.now() / 1000);
-    const toSign = `timestamp=${timestamp}${apiSecret}`;
+    
+    // Build signature string with all parameters
+    const params: Record<string, string> = {
+      timestamp: String(timestamp),
+      ...body
+    };
+    
+    // Sort parameters alphabetically and build signature string
+    const sortedParams = Object.keys(params).sort().map(key => `${key}=${params[key]}`);
+    const toSign = sortedParams.join('&') + apiSecret;
     const signature = crypto.createHash('sha1').update(toSign).digest('hex');
+    
+    // Debug logging
+    console.log('🔐 Cloudinary signature debug:', {
+      receivedBody: body,
+      params,
+      sortedParams,
+      toSign: toSign.replace(apiSecret, '[HIDDEN]'),
+      signature: signature.substring(0, 8) + '...'
+    });
 
     return json(200, { cloudName, apiKey, timestamp, signature });
   } catch (e: any) {

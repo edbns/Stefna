@@ -21,6 +21,9 @@ import { runsStore } from '../stores/runs'
 import { uploadSourceToCloudinary } from '../services/uploadSource'
 import { useGenerationMode } from '../stores/generationMode'
 import { runMoodMorph } from '../services/moodMorph'
+import { MoodMorphPicker } from './MoodMorphPicker'
+import { MOODMORPH_PRESETS } from '../presets/moodmorph'
+import { isMoodMorphPreset } from '../lib/moodmorph'
 
 import { getSourceFileOrThrow } from '../services/source'
 
@@ -125,12 +128,14 @@ const HomeNew: React.FC = () => {
   // Mode state
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null)
   
-  // Composer state with explicit mode
+  // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
     mode: 'custom' as 'preset' | 'moodmorph' | 'remix' | 'custom',
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
+    selectedMoodMorphPresetId: null as string | null, // Separate from regular presets
+    customPrompt: '', // Custom mode gets its own prompt
     status: 'idle' as 'idle' | 'precheck' | 'reserving' | 'uploading' | 'processing' | 'error' | 'success',
     error: null as string | null,
     runOnOpen: false
@@ -349,6 +354,7 @@ const HomeNew: React.FC = () => {
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
   const [selectedEra, setSelectedEra] = useState<string | null>(null)
   const [selectedOp, setSelectedOp] = useState<string | null>(null)
+  const [selectedMoodMorphPreset, setSelectedMoodMorphPreset] = useState<string | null>(null)
 
   // Enhanced dropdown management - close dropdowns automatically
   useEffect(() => {
@@ -1731,7 +1737,7 @@ const HomeNew: React.FC = () => {
 
   // Get Cloudinary signature with JWT auth
   const getCloudinarySignature = async (jwt: string) => {
-    const res = await fetch('/.netlify/functions/cloudinary-sign', {
+          const res = await signedFetch('/.netlify/functions/cloudinary-sign', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -1845,7 +1851,7 @@ const HomeNew: React.FC = () => {
       }
       
       // Test Cloudinary signer
-      const signRes = await fetch('/.netlify/functions/cloudinary-sign', {
+      const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${jwt}` }
       })
@@ -1863,7 +1869,10 @@ const HomeNew: React.FC = () => {
       
       // All checks passed - auto-generate with preset
       console.log('🚀 Auto-generating with preset:', presetName)
-      await startMoodMorph({ source: 'presetClick' })
+      await dispatchGenerate('preset', {
+        presetId: presetName,
+        presetData: PRESETS[presetName]
+      })
       
     } catch (error) {
       console.log('❌ Auto-run check failed:', error)
@@ -1881,7 +1890,8 @@ const HomeNew: React.FC = () => {
     setComposerState(s => ({
       ...s,
       mode: 'moodmorph',
-      selectedPresetId: presetName,
+      selectedPresetId: null, // Clear regular preset
+      selectedMoodMorphPresetId: presetName, // Set MoodMorph preset
       status: 'idle',
       error: null,
       runOnOpen: false
@@ -1912,7 +1922,7 @@ const HomeNew: React.FC = () => {
       }
       
       // Test Cloudinary signer
-      const signRes = await fetch('/.netlify/functions/cloudinary-sign', {
+      const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${jwt}` }
       })
@@ -1982,6 +1992,8 @@ const HomeNew: React.FC = () => {
       ...s,
       mode: 'preset',
       selectedPresetId: presetName,
+      selectedMoodMorphPresetId: null, // Clear MoodMorph preset
+      customPrompt: '', // Clear custom prompt
       status: 'idle',
       error: null,
       runOnOpen: false
@@ -1990,6 +2002,114 @@ const HomeNew: React.FC = () => {
     // Use the existing dispatchGenerate function with 'preset' kind
     // This ensures all the proper validation, error handling, and database saving happens
     await dispatchGenerate('preset');
+  }
+
+  // SEPARATE GENERATION FUNCTIONS FOR EACH MODE - NO MORE CROSS-CONTAMINATION
+  
+  // 1. CUSTOM MODE GENERATION - Only uses user's typed prompt
+  const generateCustom = async () => {
+    console.log('🎨 CUSTOM MODE: Generating with user prompt only')
+    
+    if (!prompt.trim()) {
+      notifyError({ title: 'Custom prompt required', message: 'Please enter a prompt to generate' })
+      return
+    }
+    
+    // Update composer state for custom mode
+    setComposerState(s => ({
+      ...s,
+      mode: 'custom',
+      selectedPresetId: null, // Clear preset
+      selectedMoodMorphPresetId: null, // Clear MoodMorph preset
+      customPrompt: prompt.trim(), // Store custom prompt
+      status: 'idle',
+      error: null
+    }))
+    
+    // Generate with ONLY the custom prompt - no preset contamination
+    await dispatchGenerate('custom', {
+      customPrompt: prompt.trim()
+    })
+  }
+  
+  // 2. PRESET MODE GENERATION - Only uses selected preset
+  const generatePreset = async () => {
+    console.log('🎯 PRESET MODE: Generating with preset only')
+    
+    if (!selectedPreset) {
+      notifyError({ title: 'Preset required', message: 'Please select a preset first' })
+      return
+    }
+    
+    // Update composer state for preset mode
+    setComposerState(s => ({
+      ...s,
+      mode: 'preset',
+      selectedPresetId: selectedPreset,
+      selectedMoodMorphPresetId: null, // Clear MoodMorph preset
+      customPrompt: '', // Clear custom prompt
+      status: 'idle',
+      error: null
+    }))
+    
+    // Generate with ONLY the preset - no custom prompt contamination
+    await dispatchGenerate('preset', {
+      presetId: selectedPreset,
+      presetData: PRESETS[selectedPreset]
+    })
+  }
+  
+  // 3. MOODMORPH MODE GENERATION - Only uses MoodMorph preset
+  const generateMoodMorph = async () => {
+    console.log('🎭 MOODMORPH MODE: Generating 3 mood variations')
+    
+    if (!selectedMoodMorphPreset) {
+      notifyError({ title: 'MoodMorph preset required', message: 'Please select a MoodMorph preset first' })
+      return
+    }
+    
+    // Update composer state for MoodMorph mode
+    setComposerState(s => ({
+      ...s,
+      mode: 'moodmorph',
+      selectedPresetId: null, // Clear regular preset
+      selectedMoodMorphPresetId: selectedMoodMorphPreset,
+      customPrompt: '', // Clear custom prompt
+      status: 'idle',
+      error: null
+    }))
+    
+    // Generate with ONLY the MoodMorph preset - no other contamination
+    await dispatchGenerate('moodmorph', {
+      moodMorphPresetId: selectedMoodMorphPreset
+    })
+  }
+  
+  // 4. REMIX MODE GENERATION - Only uses original media prompt
+  const generateRemix = async () => {
+    console.log('🔄 REMIX MODE: Generating with original media prompt')
+    
+    if (!composerState.sourceUrl) {
+      notifyError({ title: 'Source required', message: 'Please select media to remix' })
+      return
+    }
+    
+    // Update composer state for remix mode
+    setComposerState(s => ({
+      ...s,
+      mode: 'remix',
+      selectedPresetId: null, // Clear preset
+      selectedMoodMorphPresetId: null, // Clear MoodMorph preset
+      customPrompt: '', // Clear custom prompt
+      status: 'idle',
+      error: null
+    }))
+    
+    // Generate with ONLY the original media prompt - no contamination
+    await dispatchGenerate('remix', {
+      sourceUrl: composerState.sourceUrl,
+      originalPrompt: prompt || 'Transform this image'
+    })
   }
 
   // Mode handlers for one-click generation
@@ -2812,14 +2932,67 @@ const HomeNew: React.FC = () => {
                     )}
                   </div>
 
+                  {/* MoodMorph preset picker - show when in MoodMorph mode */}
+                  {mode === 'moodmorph' && (
+                    <div className="relative" data-moodmorph-dropdown>
+                      <button
+                        onClick={() => {
+                          if (!isAuthenticated) {
+                            navigate('/auth')
+                            return
+                          }
+                          setPresetsOpen((v) => !v)
+                        }}
+                        className={(() => {
+                          const baseClass = 'px-3 py-1.5 rounded-2xl text-xs border transition-colors';
+                          const activeClass = 'bg-white/10 text-white border-white/20 hover:bg-white/15';
+                          const disabledClass = 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed';
+                          return `${baseClass} ${isAuthenticated ? activeClass : disabledClass}`;
+                        })()}
+                        data-nav-button
+                        data-nav-type="moodmorph"
+                        title={isAuthenticated ? 'Choose MoodMorph style bundle' : 'Sign up to use MoodMorph'}
+                        disabled={!isAuthenticated}
+                      >
+                        {selectedMoodMorphPreset ? 
+                          MOODMORPH_PRESETS.find(p => p.id === selectedMoodMorphPreset)?.label || 'MoodMorph' 
+                          : 'MoodMorph'
+                        }
+                      </button>
+                      
+                      {/* MoodMorph presets dropdown */}
+                      {presetsOpen && (
+                        <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                          <MoodMorphPicker
+                            value={selectedMoodMorphPreset}
+                            onChange={(presetId) => {
+                              setSelectedMoodMorphPreset(presetId || null)
+                              setPresetsOpen(false)
+                            }}
+                            disabled={!isAuthenticated}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* MoodMorph™ button */}
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (!isAuthenticated) {
                         navigate('/auth')
                         return
                       }
-                      setMode(mode === 'moodmorph' ? 'presets' : 'moodmorph')
+                      
+                      if (mode === 'moodmorph') {
+                        // Already in MoodMorph mode - switch back to presets
+                        setMode('presets')
+                        setSelectedMoodMorphPreset(null)
+                      } else {
+                        // Switch to MoodMorph mode
+                        setMode('moodmorph')
+                        setSelectedMoodMorphPreset(null)
+                      }
                     }}
                     className={
                       !isAuthenticated
@@ -2867,27 +3040,38 @@ const HomeNew: React.FC = () => {
                       // Close composer immediately
                       window.dispatchEvent(new CustomEvent('close-composer'));
                       
-                      if (mode === 'moodmorph') {
-                        // MoodMorph mode selected - auto-run if ready
-                        console.log('🎭 MoodMorph mode selected - checking if ready to run')
-                        if (selectedFile && authService.getToken()) {
-                          console.log('🚀 Auto-running MoodMorph')
-                          startMoodMorph({ source: 'modeClick' }).catch(() => {})
-                        } else {
-                          console.log('ℹ️ MoodMorph mode selected but no auto-run - missing file or JWT')
-                        }
-                      } else if (selectedPreset) {
-                        // Run preset generation
-                        dispatchGenerate('preset', {
-                          presetId: selectedPreset,
-                          presetData: PRESETS[selectedPreset],
-                          promptOverride: prompt
-                        })
+                      // MODE-AWARE GENERATION - NO MORE CROSS-CONTAMINATION
+                      if (composerState.mode === 'moodmorph') {
+                        // MoodMorph mode - use MoodMorph generation
+                        console.log('🎭 MoodMorph mode - calling generateMoodMorph')
+                        await generateMoodMorph()
+                      } else if (composerState.mode === 'preset') {
+                        // Preset mode - use preset generation
+                        console.log('🎯 Preset mode - calling generatePreset')
+                        await generatePreset()
+                      } else if (composerState.mode === 'custom') {
+                        // Custom mode - use custom generation
+                        console.log('🎨 Custom mode - calling generateCustom')
+                        await generateCustom()
+                      } else if (composerState.mode === 'remix') {
+                        // Remix mode - use remix generation
+                        console.log('🔄 Remix mode - calling generateRemix')
+                        await generateRemix()
                       } else {
-                        // Run custom generation
-                        dispatchGenerate('custom', {
-                          promptOverride: prompt
-                        })
+                        // Fallback - determine mode and generate
+                        if (selectedPreset) {
+                          // Run preset generation
+                          dispatchGenerate('preset', {
+                            presetId: selectedPreset,
+                            presetData: PRESETS[selectedPreset],
+                            promptOverride: prompt
+                          })
+                        } else {
+                          // Run custom generation
+                          dispatchGenerate('custom', {
+                            promptOverride: prompt
+                          })
+                        }
                       }
                     }} 
                     disabled={!selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset) || navGenerating} 
