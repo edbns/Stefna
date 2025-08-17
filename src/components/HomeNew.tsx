@@ -198,6 +198,24 @@ const HomeNew: React.FC = () => {
     setSelectedMode(null)
   }
 
+  // Clear all options after generation (success or failure)
+  const clearAllOptionsAfterGeneration = () => {
+    console.log('🎭 Clearing all options after generation')
+    setSelectedMode(null)
+    setSelectedPreset(null)
+    setSelectedMoodMorphPreset(null)
+    setSelectedEmotionMaskPreset(null)
+    setPrompt('')
+    setComposerState(s => ({
+      ...s,
+      mode: 'custom',
+      selectedPresetId: null,
+      selectedMoodMorphPresetId: null,
+      selectedEmotionMaskPresetId: null,
+      customPrompt: ''
+    }))
+  }
+
   // Clear preset when user exits composer (debounced to avoid race)
   const clearPresetOnExit = () => {
     // Give time for success path to win first
@@ -1540,6 +1558,8 @@ const HomeNew: React.FC = () => {
           console.log('🎬 V2V job started:', body.job_id || 'unknown');
         } else if (body.status === 'completed') {
           notifyReady({ title: 'Your media is ready', message: 'Tap to open' });
+          // Clear all options after successful generation
+          clearAllOptionsAfterGeneration();
               // Refresh user media to show the new video
               // TODO: Implement user media refresh
         }
@@ -1561,6 +1581,8 @@ const HomeNew: React.FC = () => {
       if (e instanceof Error) {
         if (e.message.includes('cloud_name is disabled') || e.message.includes('cloud_name')) {
           errorMessage = 'Upload service temporarily unavailable';
+        } else if (e.message.includes('Invalid api_key') || e.message.includes('api_key')) {
+          errorMessage = 'Upload service temporarily unavailable';
         } else if (e.message.includes('timeout')) {
           errorMessage = 'Upload took too long, please try again';
         } else if (e.message.includes('unauthorized') || e.message.includes('401')) {
@@ -1573,7 +1595,7 @@ const HomeNew: React.FC = () => {
       } else if (typeof e === 'object' && e !== null && 'error' in e) {
         const errorObj = e as any;
         if (errorObj.error?.message) {
-          if (errorObj.error.message.includes('cloud_name is disabled')) {
+          if (errorObj.error.message.includes('cloud_name is disabled') || errorObj.error.message.includes('Invalid api_key')) {
             errorMessage = 'Upload service temporarily unavailable';
           } else if (errorObj.error.message.includes('unauthorized')) {
             errorMessage = 'Please sign in again';
@@ -1584,6 +1606,9 @@ const HomeNew: React.FC = () => {
       }
       
       notifyError({ title: 'Generation failed', message: errorMessage });
+      
+      // Clear all options after generation failure
+      clearAllOptionsAfterGeneration();
       
       endGeneration(genId);
       setNavGenerating(false);
@@ -1868,6 +1893,8 @@ const HomeNew: React.FC = () => {
     } catch (error) {
       console.log('❌ Auto-run check failed:', error)
       notifyError({ title: 'Generation failed', message: 'Please try again' })
+      // Clear all options after preset generation failure
+      clearAllOptionsAfterGeneration();
       // Don't proceed with generation if Cloudinary signer fails
       return
     }
@@ -1930,6 +1957,8 @@ const HomeNew: React.FC = () => {
     } catch (error) {
       console.log('❌ Auto-run check failed:', error)
       notifyError({ title: 'Generation failed', message: 'Please try again' })
+      // Clear all options after MoodMorph generation failure
+      clearAllOptionsAfterGeneration();
       // Don't proceed with generation if Cloudinary signer fails
       return
     }
