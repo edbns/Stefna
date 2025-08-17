@@ -15,3 +15,28 @@ export function getDb() {
   }
   return pool;
 }
+
+/**
+ * Get app configuration values from app_config table
+ * @param keys Optional array of specific keys to fetch
+ * @returns Object with key-value pairs
+ */
+export async function getAppConfig(keys?: string[]) {
+  const db = getDb();
+  
+  let query: string;
+  let params: any[] = [];
+  
+  if (keys && keys.length > 0) {
+    query = "SELECT key, value FROM app_config WHERE key = ANY($1)";
+    params = [keys];
+  } else {
+    query = "SELECT key, value FROM app_config";
+  }
+  
+  const { rows } = await db.query(query, params);
+  
+  return Object.fromEntries(
+    rows.map(({ key, value }) => [key, value])
+  );
+}

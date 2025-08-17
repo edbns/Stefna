@@ -1,5 +1,5 @@
 import type { Handler } from "@netlify/functions";
-import { getDb } from "./_lib/db";
+import { getDb, getAppConfig } from "./_lib/db";
 import { requireAuth } from "./_lib/auth";
 import { json, mapPgError } from "./_lib/http";
 import { randomUUID } from "crypto";
@@ -21,7 +21,18 @@ export const handler: Handler = async (event) => {
     const body = event.body ? JSON.parse(event.body) : {};
     console.log("📦 Request body parsed:", body);
     
-    const cost = body.cost || body.amount || 2; // Support both cost and amount
+    // 🔧 Get dynamic configuration from app_config
+    let config;
+    try {
+      config = await getAppConfig(['image_cost', 'daily_cap']);
+      console.log('💰 App config loaded:', config);
+    } catch (configError) {
+      console.error('💰 Failed to load app config:', configError);
+      // Fallback to defaults if config fails
+      config = { image_cost: 2, daily_cap: 30 };
+    }
+    
+    const cost = body.cost || body.amount || config.image_cost || 2; // Dynamic cost with fallback
     const action = body.action || body.intent || "image.gen"; // Support both action and intent
     const request_id = body.request_id || body.requestId || randomUUID(); // Support both formats
 
@@ -29,7 +40,8 @@ export const handler: Handler = async (event) => {
       userId,
       cost,
       action,
-      request_id
+      request_id,
+      config: { image_cost: config.image_cost, daily_cap: config.daily_cap }
     });
 
     // 🛡️ Validation as recommended by third party
@@ -57,8 +69,8 @@ export const handler: Handler = async (event) => {
       const { rows: testRows } = await db.query('SELECT NOW() as current_time');
       console.log('💰 Database connection test successful:', testRows[0]);
       
-      // Check daily cap
-      console.log('💰 Checking daily cap for user:', userId, 'cost:', cost);
+      // Check daily cap (using dynamic config)
+      console.log('💰 Checking daily cap for user:', userId, 'cost:', cost, 'daily_cap:', config.daily_cap);
       const { rows: capOk } = await db.query("SELECT app.allow_today_simple($1::uuid,$2::int) AS allowed", [userId, cost]);
       console.log('💰 Daily cap check result:', capOk[0]);
       if (!capOk[0]?.allowed) return json(429, { ok:false, error:"DAILY_CAP_REACHED" });
