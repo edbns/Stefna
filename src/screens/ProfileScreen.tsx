@@ -10,7 +10,7 @@ import FullScreenMediaViewer from '../components/FullScreenMediaViewer'
 import userMediaService, { UserMedia } from '../services/userMediaService'
 import authService from '../services/authService'
 import ConfirmModal from '../components/ConfirmModal'
-import tokenService, { UserTier } from '../services/tokenService'
+import tokenService from '../services/tokenService'
 import { authenticatedFetch } from '../utils/apiClient'
 import { useToasts } from '../components/ui/Toasts'
 
@@ -224,7 +224,7 @@ const ProfileScreen: React.FC = () => {
   const [viewerMedia, setViewerMedia] = useState<UserMedia[]>([])
   const [viewerStartIndex, setViewerStartIndex] = useState(0)
   const [confirm, setConfirm] = useState<{ open: boolean; media?: UserMedia }>({ open: false })
-  const [_userTier, setUserTier] = useState<UserTier>(UserTier.REGISTERED)
+  // Removed tier system - all users get same experience
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -430,14 +430,7 @@ const ProfileScreen: React.FC = () => {
       if (user) {
         setIsAuthenticated(true)
         // Map user tier from auth service
-        const tierMap: { [key: string]: UserTier } = {
-          'registered': UserTier.REGISTERED,
-          'pro': UserTier.VERIFIED,
-          'verified': UserTier.VERIFIED,
-          'contributor': UserTier.CONTRIBUTOR
-        }
-        const currentTier = tierMap[user.tier] || UserTier.REGISTERED
-        setUserTier(currentTier)
+            // Removed tier system - all users get same experience
         
         // Load referral stats for authenticated users
         try {
@@ -453,16 +446,16 @@ const ProfileScreen: React.FC = () => {
               })
             } else {
               // Fallback to client service
-              const stats = await tokenService.getReferralStats(userId)
+              const stats = await tokenService.getInstance().getReferralStats(userId)
               setReferralStats(stats)
             }
           } catch {
             // Fallback to client service
-            const stats = await tokenService.getReferralStats(userId)
+            const stats = await tokenService.getInstance().getReferralStats(userId)
             setReferralStats(stats)
           }
           
-          // Load token count - force refresh if tier changed
+          // Load token count - simplified for new credits system
           // Prefer server-side quota for accuracy
           try {
             const qRes = await authenticatedFetch('/.netlify/functions/getQuota', { method: 'GET' })
@@ -471,23 +464,21 @@ const ProfileScreen: React.FC = () => {
               setTokenCount((q.daily_limit || 0) - (q.daily_used || 0))
             } else {
               // Fallback to client service
-              const tokenUsage = await tokenService.getUserUsage(userId)
+              const tokenUsage = await tokenService.getInstance().getUserUsage(userId)
               setTokenCount(tokenUsage.dailyLimit - tokenUsage.dailyUsage)
             }
           } catch {
-            const tokenUsage = await tokenService.getUserUsage(userId)
+            const tokenUsage = await tokenService.getInstance().getUserUsage(userId)
             setTokenCount(tokenUsage.dailyLimit - tokenUsage.dailyUsage)
           }
         } catch (error) {
           console.error('Failed to load referral stats or token count:', error)
-          // Set default token count based on tier
-          const defaultLimit = currentTier === UserTier.CONTRIBUTOR ? 120 : 
-                             currentTier === UserTier.VERIFIED ? 60 : 30
-          setTokenCount(defaultLimit)
+          // Simplified: all users get same daily limit (30)
+          setTokenCount(30)
         }
       } else {
         setIsAuthenticated(false)
-        setUserTier(UserTier.REGISTERED) // Default to registered tier for unauthenticated users
+        // Removed tier system - all users get same experience
       }
 
       // Load all user media from database using new Netlify Function
@@ -554,14 +545,14 @@ const ProfileScreen: React.FC = () => {
             console.log('📊 Setting userMedia with', transformedMedia.length, 'items')
             setUserMedia(transformedMedia);
             
-            // Also derive remixes immediately from the fresh list (avoid stale state)
-            const remixesWithAvatar = transformedMedia
-              .filter(m => m.type === 'remix')
-              .map(remix => ({
-                ...remix,
-                userAvatar: typeof profileData.avatar === 'string' ? profileData.avatar : undefined,
-                userTier: _userTier
-              }));
+                    // Also derive remixes immediately from the fresh list (avoid stale state)
+        const remixesWithAvatar = transformedMedia
+          .filter(m => m.type === 'remix')
+          .map(remix => ({
+            ...remix,
+            userAvatar: typeof profileData.avatar === 'string' ? profileData.avatar : undefined
+            // Removed tier system - all users get same experience
+          }));
             console.log('🔄 Setting remixedMedia with', remixesWithAvatar.length, 'items (from transformed)')
             setRemixedMedia(remixesWithAvatar)
           } else {
@@ -592,8 +583,8 @@ const ProfileScreen: React.FC = () => {
         const remixesBootstrap = userMedia.filter(m => m.type === 'remix')
         const remixesBootstrapWithAvatar = remixesBootstrap.map(remix => ({
           ...remix,
-          userAvatar: typeof profileData.avatar === 'string' ? profileData.avatar : undefined,
-          userTier: _userTier
+          userAvatar: typeof profileData.avatar === 'string' ? profileData.avatar : undefined
+          // Removed tier system - all users get same experience
         }));
         console.log('🔄 Bootstrapping remixedMedia with', remixesBootstrapWithAvatar.length, 'items')
         setRemixedMedia(remixesBootstrapWithAvatar)
