@@ -50,11 +50,29 @@ export const handler: Handler = async (event) => {
 
     // Parse request body for additional parameters
     let body = {};
+    console.log('🔐 Body parsing debug:', {
+      hasBody: !!event.body,
+      bodyType: typeof event.body,
+      bodyLength: event.body?.length,
+      bodyRaw: event.body,
+      contentType: event.headers['content-type'],
+      isBase64: event.isBase64Encoded
+    });
+    
     try {
       if (event.body) {
-        body = JSON.parse(event.body);
+        // Handle base64 encoded body if needed
+        let bodyString = event.body;
+        if (event.isBase64Encoded) {
+          bodyString = Buffer.from(event.body, 'base64').toString('utf8');
+          console.log('🔐 Decoded base64 body:', bodyString);
+        }
+        
+        body = JSON.parse(bodyString);
+        console.log('🔐 Successfully parsed body:', body);
       }
     } catch (e) {
+      console.log('🔐 Body parsing error:', e);
       // Ignore parsing errors, use empty object
     }
 
