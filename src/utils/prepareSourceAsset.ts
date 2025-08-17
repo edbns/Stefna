@@ -20,7 +20,11 @@ export async function prepareSourceAsset(activeFileOrUrl: File | string) {
   }
 
   // Signed params
-  const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
+  const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', { 
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ folder: 'stefna/sources' })
+  });
   const { timestamp, signature, apiKey, cloudName, folder, upload_preset } = await signRes.json();
 
   const form = new FormData();

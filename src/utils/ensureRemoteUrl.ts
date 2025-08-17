@@ -8,7 +8,11 @@ export async function ensureRemoteUrl(asset: { remoteUrl?: string; file?: File|B
   // If we have a file/blob object, use it directly
   if (asset?.file) {
     // Upload the file to Cloudinary
-    const sigRes = await signedFetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
+    const sigRes = await signedFetch('/.netlify/functions/cloudinary-sign', { 
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ folder: 'stefna/sources' })
+    });
     const sig = await sigRes.json(); // { signature, timestamp, cloudName, apiKey, folder }
     if (!sig?.signature) throw new Error('Cloudinary sign failed');
 

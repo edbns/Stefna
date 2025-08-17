@@ -70,7 +70,11 @@ export async function ensureRemoteUrl(previewUrl?: string, file?: File | Blob): 
   if (!file) throw new Error('Invalid asset URL and no file to upload');
 
   // sign with proper error handling
-  const sigRes = await signedFetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
+  const sigRes = await signedFetch('/.netlify/functions/cloudinary-sign', { 
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ folder: 'stefna/sources' })
+  });
   if (!sigRes.ok) {
     const err = await sigRes.json().catch(() => ({}));
     throw new Error(`Cloudinary sign failed ${sigRes.status}: ${err?.error || 'unknown'}`);

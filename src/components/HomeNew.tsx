@@ -1759,7 +1759,7 @@ const HomeNew: React.FC = () => {
         'content-type': 'application/json',
         'authorization': `Bearer ${jwt}`,
       },
-      body: JSON.stringify({})
+      body: JSON.stringify({ folder: 'stefna/sources' })
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.error || 'cloudinary-sign failed');
@@ -1869,7 +1869,8 @@ const HomeNew: React.FC = () => {
       // Test Cloudinary signer
       const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${jwt}` }
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${jwt}` },
+        body: JSON.stringify({ folder: 'stefna/sources' })
       })
       
       if (!signRes.ok) {
@@ -1942,7 +1943,8 @@ const HomeNew: React.FC = () => {
       // Test Cloudinary signer
       const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${jwt}` }
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${jwt}` },
+        body: JSON.stringify({ folder: 'stefna/sources' })
       })
       
       if (!signRes.ok) {
