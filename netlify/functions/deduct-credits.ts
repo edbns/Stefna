@@ -27,20 +27,40 @@ export const handler: Handler = async (event) => {
     });
 
     const db = getDb();
+    console.log('💰 Database connection obtained:', !!db);
+    
+    // Test database connection
+    try {
+      const { rows: testRows } = await db.query('SELECT NOW() as current_time');
+      console.log('💰 Database connection test successful:', testRows[0]);
+    } catch (dbTestError) {
+      console.error('💰 Database connection test failed:', dbTestError);
+      return json(500, { ok: false, error: 'Database connection failed', details: dbTestError?.message });
+    }
 
     // Check daily cap
     console.log('💰 Checking daily cap for user:', userId, 'cost:', cost);
-    const { rows: capOk } = await db.query("SELECT app.allow_today_simple($1::uuid,$2::int) AS allowed", [userId, cost]);
-    console.log('💰 Daily cap check result:', capOk[0]);
-    if (!capOk[0]?.allowed) return json(429, { ok:false, error:"DAILY_CAP_REACHED" });
+    try {
+      const { rows: capOk } = await db.query("SELECT app.allow_today_simple($1::uuid,$2::int) AS allowed", [userId, cost]);
+      console.log('💰 Daily cap check result:', capOk[0]);
+      if (!capOk[0]?.allowed) return json(429, { ok:false, error:"DAILY_CAP_REACHED" });
+    } catch (capError) {
+      console.error('💰 Daily cap check failed:', capError);
+      return json(500, { ok: false, error: 'Daily cap check failed', details: capError?.message });
+    }
 
     // Reserve credits
     console.log('💰 Reserving credits for user:', userId, 'request:', request_id, 'action:', action, 'cost:', cost);
-    const { rows } = await db.query(
-      "SELECT * FROM app.reserve_credits($1::uuid,$2::uuid,$3::text,$4::int)",
-      [userId, request_id, action, cost]
-    );
-    console.log('💰 Credits reserved successfully:', rows[0]);
+    try {
+      const { rows } = await db.query(
+        "SELECT * FROM app.reserve_credits($1::uuid,$2::uuid,$3::text,$4::int)",
+        [userId, request_id, action, cost]
+      );
+      console.log('💰 Credits reserved successfully:', rows[0]);
+    } catch (reserveError) {
+      console.error('💰 Credits reservation failed:', reserveError);
+      return json(500, { ok: false, error: 'Credits reservation failed', details: reserveError?.message });
+    }
 
     return json(200, { 
       ok: true, 
