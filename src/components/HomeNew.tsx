@@ -1724,34 +1724,7 @@ const HomeNew: React.FC = () => {
     return null;
   }
 
-  const handlePresetClick = async (presetName: keyof typeof PRESETS) => {
-    console.log('🎯 handlePresetClick called with:', presetName)
-    
-    // Check authentication first
-    if (!isAuthenticated) {
-      console.log('❌ User not authenticated, redirecting to auth')
-      navigate('/auth')
-      return
-    }
-    
-    // Set UI state and clear any previous errors
-    setSelectedPreset(presetName)
-    console.log('✅ selectedPreset set to:', presetName)
-    
-    // Auto-run only when we have a file and auth
-    const hasFile = !!selectedFile;
-    const hasJWT = !!authService.getToken();
-    
-    if (hasFile && hasJWT) {
-      console.log('🚀 Auto-running MoodMorph with preset:', presetName)
-      startMoodMorph({ source: 'presetClick' }).catch(() => {})
-    } else {
-      console.log('ℹ️ Preset selected but no auto-run - missing file or JWT')
-      if (!hasFile) {
-        notifyError({ title: 'Add an image first', message: `Select an image to use ${presetName}` })
-      }
-    }
-  }
+
 
   // Get Cloudinary signature with JWT auth
   const getCloudinarySignature = async (jwt: string) => {
