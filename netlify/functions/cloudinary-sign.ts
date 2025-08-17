@@ -60,11 +60,19 @@ export const handler: Handler = async (event) => {
 
     const timestamp = Math.floor(Date.now() / 1000);
     
-    // Build signature string with all parameters
+    // Build signature string with only valid parameters (filter out undefined/null)
     const params: Record<string, string> = {
-      timestamp: String(timestamp),
-      ...body
+      timestamp: String(timestamp)
     };
+    
+    // Only add body parameters that have valid values
+    if (body && typeof body === 'object') {
+      Object.entries(body).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params[key] = String(value);
+        }
+      });
+    }
     
     // Sort parameters alphabetically and build signature string
     const sortedParams = Object.keys(params).sort().map(key => `${key}=${params[key]}`);
@@ -86,7 +94,8 @@ export const handler: Handler = async (event) => {
       cloud_name: cloudName,  // Add snake_case for compatibility
       api_key: apiKey,        // Add snake_case for compatibility
       timestamp, 
-      signature 
+      signature,
+      folder: body.folder || 'stefna/sources'  // Return folder for frontend convenience
     });
   } catch (e: any) {
     return json(401, { error: e?.message || 'Unauthorized' });
