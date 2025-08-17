@@ -85,7 +85,7 @@ exports.handler = async (event) => {
         `;
 
         const result = updated[0]
-        console.log(`✅ Updated settings for user ${userId}:`, result)
+        console.log(`✅ Updated settings for user ${user.userId}:`, result)
 
         return {
           statusCode: 200,
