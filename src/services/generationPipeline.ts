@@ -478,8 +478,55 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
         detail: { message: 'Preset applied!', resultUrl: result.resultUrl, timestamp: Date.now() } 
       }))
 
+      // 💰 Finalize credits (commit) after successful generation
+      try {
+        console.log('💰 Generation Pipeline: Finalizing credits (commit)...');
+        const finalizeResponse = await fetchWithAuth('/.netlify/functions/credits-finalize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            request_id: job.runId,
+            disposition: 'commit'
+          })
+        });
+        
+        if (finalizeResponse.ok) {
+          const finalizeResult = await finalizeResponse.json();
+          console.log('✅ Generation Pipeline: Credits finalized successfully:', finalizeResult);
+        } else {
+          console.error('❌ Generation Pipeline: Credits finalization failed:', finalizeResponse.status);
+          // Don't throw here - generation succeeded, just log the credit issue
+        }
+      } catch (finalizeError) {
+        console.error('❌ Generation Pipeline: Credits finalization error:', finalizeError);
+        // Don't throw here - generation succeeded, just log the credit issue
+      }
+
     } catch (error) {
       console.error('Failed to save generation result:', error);
+      
+      // 💰 Refund credits if generation save failed
+      try {
+        console.log('💰 Generation Pipeline: Refunding credits due to save failure...');
+        const refundResponse = await fetchWithAuth('/.netlify/functions/credits-finalize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            request_id: job.runId,
+            disposition: 'refund'
+          })
+        });
+        
+        if (refundResponse.ok) {
+          const refundResult = await refundResponse.json();
+          console.log('✅ Generation Pipeline: Credits refunded successfully:', refundResult);
+        } else {
+          console.error('❌ Generation Pipeline: Credits refund failed:', refundResponse.status);
+        }
+      } catch (refundError) {
+        console.error('❌ Generation Pipeline: Credits refund error:', refundError);
+      }
+      
       // Don't fail the generation if save fails
     }
 
