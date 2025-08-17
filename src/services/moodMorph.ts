@@ -206,6 +206,12 @@ export const runMoodMorph = async (
           detail: { count: batchResult.count, mode: 'moodmorph' } 
         }));
         
+        // Trigger page refresh after moodmorph completion
+        setTimeout(() => {
+          console.log('🔄 Refreshing page after MoodMorph completion...');
+          window.location.reload();
+        }, 2000); // 2 second delay to let user see the result
+        
         onComplete(allVariations);
       } else {
         throw new Error(`Batch save failed: ${batchResponse.status}`);
@@ -260,6 +266,13 @@ export const runMoodMorph = async (
           window.dispatchEvent(new CustomEvent('generation-success', { 
             detail: { count: savedCount, mode: 'moodmorph', fallback: true } 
           }));
+          
+          // Trigger page refresh after moodmorph fallback completion
+          setTimeout(() => {
+            console.log('🔄 Refreshing page after MoodMorph fallback completion...');
+            window.location.reload();
+          }, 2000); // 2 second delay to let user see the result
+          
           onComplete(allVariations.slice(0, savedCount));
         } else {
           throw new Error('All fallback saves failed');

@@ -547,6 +547,12 @@ const HomeNew: React.FC = () => {
       setViewerOpen(true)
       
       console.log('✅ UI updated successfully with new media:', newMedia)
+      
+      // Refresh the page after generation completes to show new content
+      setTimeout(() => {
+        console.log('🔄 Refreshing page after generation completion...')
+        window.location.reload()
+      }, 2000) // 2 second delay to let user see the result
     }
 
     const handleGenerationSuccess = (event: CustomEvent) => {
@@ -579,10 +585,27 @@ const HomeNew: React.FC = () => {
       setIsComposerOpen(false)
     }
 
+    const handleClearComposerState = () => {
+      console.log('🧹 Clearing composer state...')
+      // Clear all composer-related state
+      setSelectedFile(null)
+      setPreviewUrl(null)
+      setPrompt('')
+      setSelectedPreset(null)
+      setIsVideoPreview(false)
+      // Clear any file input
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+      if (fileInput) {
+        fileInput.value = ''
+      }
+      console.log('🧹 Composer state cleared')
+    }
+
     window.addEventListener('generation-complete', handleGenerationComplete as EventListener)
     window.addEventListener('generation-success', handleGenerationSuccess as EventListener)
     window.addEventListener('generation-error', handleGenerationError as EventListener)
     window.addEventListener('close-composer', handleCloseComposer as EventListener)
+    window.addEventListener('clear-composer-state', handleClearComposerState as EventListener)
     window.addEventListener('userMediaUpdated', handleUserMediaUpdated as EventListener)
     window.addEventListener('refreshUserMedia', handleRefreshUserMedia as EventListener)
 
@@ -591,6 +614,7 @@ const HomeNew: React.FC = () => {
       window.removeEventListener('generation-success', handleGenerationSuccess as EventListener)
       window.removeEventListener('generation-error', handleGenerationError as EventListener)
       window.removeEventListener('close-composer', handleCloseComposer as EventListener)
+      window.removeEventListener('clear-composer-state', handleClearComposerState as EventListener)
       window.removeEventListener('userMediaUpdated', handleUserMediaUpdated as EventListener)
       window.removeEventListener('refreshUserMedia', handleRefreshUserMedia as EventListener)
     }
@@ -1888,13 +1912,8 @@ const HomeNew: React.FC = () => {
     // Clear selectedPreset when remixing
       requestClearPreset('remix started');
     
-    // Auto-generate remix if we have the prompt
-    if (media.prompt) {
-      // Small delay to ensure state is set
-        setTimeout(() => dispatchGenerate('remix'), 100);
-      }
-      
-      notifyQueue({ title: 'Added to queue', message: 'Remix started' });
+    // Don't auto-generate remix - just open composer for user to choose
+    notifyQueue({ title: 'Composer opened', message: 'Choose your remix settings' });
     } catch (error) {
       console.error('Error creating remix:', error);
       notifyError({ title: 'Something went wrong', message: 'Failed to start remix' });
@@ -2628,17 +2647,15 @@ const HomeNew: React.FC = () => {
                     <FileText size={14} />
                   </button>
                   <button 
-                    onClick={() => {
+                    onClick={async () => {
                       // Show immediate feedback that button was clicked
                       setNavGenerating(true)
-                      // Close composer with 100ms delay
-                      setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent('close-composer'));
-                      }, 100)
-                                            // Small delay to show the loading state before starting generation
-                      setTimeout(async () => {
-                                              if (mode === 'moodmorph') {
-                        // Run MoodMorph™ with proper error handling
+                      
+                      // Close composer immediately
+                      window.dispatchEvent(new CustomEvent('close-composer'));
+                      
+                      if (mode === 'moodmorph') {
+                        // Run MoodMorph™ immediately with proper error handling
                         try {
                           console.log('🎭 MoodMorph: Starting generation...')
                           console.log('🎭 MoodMorph: selectedFile:', selectedFile)
@@ -2678,19 +2695,18 @@ const HomeNew: React.FC = () => {
                           setNavGenerating(false)
                         }
                       } else if (selectedPreset) {
-                          // Run preset generation
-                          dispatchGenerate('preset', {
-                            presetId: selectedPreset,
-                            presetData: PRESETS[selectedPreset],
-                            promptOverride: prompt
-                          })
-                        } else {
-                          // Run custom generation
-                          dispatchGenerate('custom', {
-                            promptOverride: prompt
-                          })
-                        }
-                      }, 100)
+                        // Run preset generation
+                        dispatchGenerate('preset', {
+                          presetId: selectedPreset,
+                          presetData: PRESETS[selectedPreset],
+                          promptOverride: prompt
+                        })
+                      } else {
+                        // Run custom generation
+                        dispatchGenerate('custom', {
+                          promptOverride: prompt
+                        })
+                      }
                     }} 
                     disabled={!selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset) || navGenerating} 
                     className={

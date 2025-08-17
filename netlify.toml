@@ -26,7 +26,10 @@
 # Function optimization
 [functions]
   node_bundler = "esbuild"
-  # Remove external_node_modules to force bundling of all dependencies
+  # Ensure all dependencies are bundled
+  external_node_modules = []
+
+# Function dependencies are handled by top-level package.json
 
 # Cache optimization
 [[headers]]

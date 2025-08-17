@@ -1,5 +1,9 @@
 export function json(status: number, body: unknown) {
-  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" }});
+  return {
+    statusCode: status,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body)
+  };
 }
 export function mapPgError(e: any) {
   if (String(e?.message).includes("INSUFFICIENT_CREDITS")) return json(402, { ok:false, error:"INSUFFICIENT_CREDITS" });

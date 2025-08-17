@@ -3,7 +3,7 @@ import { UserMedia } from '../services/userMediaService'
 import RemixIcon from './RemixIcon'
 import { MediaCard as SpinnerCard } from './ui/Toasts'
 import LazyImage from './LazyImage'
-import { getCardChips, formatRemixCount } from '../utils/mediaCardHelpers'
+import { formatRemixCount } from '../utils/mediaCardHelpers'
 
 interface MasonryMediaGridProps {
   media: UserMedia[]
@@ -197,32 +197,12 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   {/* Type indicator */}
                   {getTypeIcon(item.type)}
 
-                  {/* New chip-based overlay system */}
+                  {/* Simplified overlay system - only remix button */}
                   {(() => {
-                    const { modeChip, detailChip } = getCardChips(item)
                     const remixText = formatRemixCount(item.remixCount)
                     
                     return (
                       <>
-                        {/* Mode and Detail Chips - Top */}
-                        <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-1 opacity-100 transition-opacity duration-300">
-                          {/* Mode Chip */}
-                          <span 
-                            className="text-white/90 text-xs bg-black/60 px-2 py-1 rounded-full backdrop-blur-sm border border-white/20"
-                            aria-label={`Generation mode: ${modeChip}`}
-                          >
-                            {modeChip}
-                          </span>
-                          
-                          {/* Detail Chip */}
-                          <span 
-                            className="text-white/80 text-xs bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm border border-white/10"
-                            aria-label={`Style: ${detailChip}`}
-                            title={detailChip}
-                          >
-                            {detailChip.length > 15 ? `${detailChip.substring(0, 15)}...` : detailChip}
-                          </span>
-                        </div>
 
                         {/* Actions - Bottom */}
                         {showActions && (
@@ -251,17 +231,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                               </div>
                             )}
 
-                            {/* Remix Count - Bottom Left (Passive metric) */}
-                            {remixText && (
-                              <div className="absolute bottom-2 left-2 opacity-100 transition-opacity duration-300">
-                                <span 
-                                  className="text-white/70 text-xs bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm"
-                                  aria-label={remixText}
-                                >
-                                  {remixText}
-                                </span>
-                              </div>
-                            )}
+
 
                             {/* Additional actions (download, delete) - Top Right */}
                             {(onDownload || onDelete) && (
