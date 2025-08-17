@@ -1,23 +1,27 @@
-# Stefna - AI Photo Generation Platform
+# Stefna - AI Photo Editing Platform
 
-A modern, React-based AI photo generation platform with multiple creative modes, built for stability and scalability.
+A modern, React-based AI photo generation platform with **four distinct generation modes**, built for stability, scalability, and user experience.
 
 ## 🚀 **Features**
 
-### **Generation Modes**
+### **🎨 Generation Modes**
 
-1. **Presets Mode** - Traditional AI style presets with rotating weekly selection
-2. **MoodMorph™ Mode** - Generate 3 mood variations (Happy, Sad, Cinematic)
-3. **Style Clash Mode** - Create split images with two contrasting styles
+1. **Presets Mode** - 26 professional AI style presets with auto-generation
+2. **MoodMorph™ Mode** - Generate 3 mood variations with batch processing
+3. **Emotion Mask Mode** - 5 emotional variants with cinematic styling
+4. **Custom Prompt Mode** - Full creative control with manual generation
 
-### **Core Capabilities**
+### **💎 Core Capabilities**
 
+- **Smart Auto-Generation**: Presets, MoodMorph, and Emotion Mask auto-run when ready
+- **Manual Control**: Custom prompts require explicit user action
+- **Credit System**: Reserve → Generate → Finalize with automatic refunds
 - **File Upload**: Drag & drop or click to upload images
 - **AI Generation**: Powered by AIML API with multiple models
 - **Cloud Storage**: Cloudinary integration for media storage
-- **User Authentication**: JWT-based auth system
+- **User Authentication**: JWT-based auth system with Supabase
 - **Real-time Updates**: Live generation status and notifications
-- **Responsive Design**: Mobile-first, modern UI
+- **Responsive Design**: Mobile-first, modern UI with Tailwind CSS
 
 ## 🏗️ **Architecture Overview**
 
@@ -30,13 +34,14 @@ A modern, React-based AI photo generation platform with multiple creative modes,
 
 ### **Backend Services**
 - **Netlify Functions** for serverless API endpoints
-- **Supabase** for database and authentication
+- **Supabase Pro** for database and authentication (8GB storage, 250GB bandwidth)
 - **Cloudinary** for media storage and optimization
+- **AIML API** for AI generation
 
 ### **Key Design Principles**
-- **Sandboxed Modes**: Each generation mode is completely independent
-- **Centralized File Handling**: Consistent file processing across all modes
-- **NO_DB_MODE Support**: Development-friendly without database dependencies
+- **Mode Independence**: Each generation mode is completely separate
+- **Smart Automation**: Auto-run where helpful, manual control where needed
+- **Credit Safety**: Two-phase credit system (reserve → finalize)
 - **Error Resilience**: Comprehensive error handling and recovery
 
 ## 📁 **Project Structure**
@@ -46,22 +51,23 @@ src/
 ├── components/           # React components
 │   ├── HomeNew.tsx     # Main application component
 │   ├── MediaCard.tsx   # Media display component
-│   └── ...
+│   ├── Composer/       # Generation interface
+│   └── ui/             # UI components
 ├── services/            # Business logic and API calls
-│   ├── source.ts       # Centralized file handling
+│   ├── aiGenerationService.ts # Main generation orchestrator
 │   ├── aiml.ts         # AIML API client
-│   ├── styleClash.ts   # Style Clash generation
 │   ├── moodMorph.ts    # MoodMorph generation
-│   └── ...
+│   ├── presets.ts      # Preset system
+│   └── credits.ts      # Credit management
 ├── stores/              # Zustand state management
-│   ├── generationMode.ts # Mode selection (presets/moodmorph/styleclash)
-│   └── ...
+│   ├── generationMode.ts # Mode selection
+│   ├── selectedPreset.ts # Preset selection
+│   └── userMedia.ts    # User media management
 ├── features/            # Feature-specific components
-│   ├── styleclash/     # Style Clash feature
 │   ├── moodmorph/      # MoodMorph feature
-│   └── ...
+│   └── presets/        # Preset system
 └── app/                 # Application bootstrap
-    └── bootstrap.ts    # Global initialization and NO_DB_MODE handling
+    └── bootstrap.ts    # Global initialization
 ```
 
 ## 🔧 **Setup & Installation**
@@ -70,26 +76,28 @@ src/
 - Node.js 18+ 
 - npm or yarn
 - Netlify account (for deployment)
+- Supabase Pro account (for database)
 - Cloudinary account (for media storage)
+- AIML API account (for AI generation)
 
 ### **Environment Variables**
 
 Create a `.env` file in the root directory:
 
 ```bash
-# Development Mode
-VITE_NO_DB_MODE=true
-
-# Cloudinary Configuration
+# Frontend Variables (VITE_ prefix)
+VITE_AIML_API_KEY=your_aiml_api_key
+VITE_AIML_API_BASE=https://api.aimlapi.com
 VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
 VITE_CLOUDINARY_API_KEY=your_api_key
+VITE_FUNCTION_APP_KEY=your_app_key
 
-# AIML API Configuration
-VITE_AIML_API_KEY=your_aiml_api_key
-
-# Supabase (for production)
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Backend Variables (no VITE_ prefix)
+JWT_SECRET=your_jwt_secret
+DATABASE_URL=your_supabase_url
+AIML_API_KEY=your_aiml_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+RESEND_API_KEY=your_resend_key
 ```
 
 ### **Netlify Environment Variables**
@@ -97,16 +105,25 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 Set these in your Netlify dashboard under Functions:
 
 ```bash
-# AIML API
-AIML_API_KEY=your_aiml_api_key
+# Authentication
+JWT_SECRET=your_jwt_secret
 
-# Cloudinary
+# Database
+DATABASE_URL=your_supabase_url
+NETLIFY_DATABASE_URL=your_supabase_url
+
+# AI Services
+AIML_API_KEY=your_aiml_api_key
+AIML_API_BASE=https://api.aimlapi.com
+
+# Media Storage
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-# Development Mode
-NO_DB_MODE=1
+# Email & Notifications
+RESEND_API_KEY=your_resend_key
+SITE_URL=your_site_url
 ```
 
 ### **Installation Steps**
@@ -141,121 +158,102 @@ NO_DB_MODE=1
 ## 🎯 **Generation Modes Deep Dive**
 
 ### **1. Presets Mode**
-- **Purpose**: Traditional AI style presets with user prompts
-- **File Handling**: Uses `getSourceFileOrThrow()` for consistent file processing
-- **UI**: Prompt text box + preset dropdown + generate button
+- **Purpose**: Professional AI style presets with auto-generation
+- **Auto-Run**: ✅ Enabled when file uploaded + preset selected
+- **Credits**: 1 credit per generation
+- **UI**: Preset dropdown (26 options) + auto-generation
 - **Output**: Single generated image with preset styling
+- **Behavior**: Starts immediately after preset selection
 
 ### **2. MoodMorph™ Mode**
 - **Purpose**: Generate 3 mood variations from one image
-- **File Handling**: Centralized file processing via `getSourceFileOrThrow()`
-- **UI**: Clean interface, no prompt box
-- **Output**: 3 images (Happy, Sad, Cinematic) grouped together
+- **Auto-Run**: ✅ Enabled for batch generation
+- **Credits**: 3 credits (1 per variation)
+- **UI**: Mood bundle dropdown + 3-variation display
+- **Output**: 3 images grouped together
+- **Behavior**: Generates all 3 variations automatically
 
-### **3. Style Clash Mode**
-- **Purpose**: Create split images with two contrasting styles
-- **File Handling**: Same centralized approach as other modes
-- **UI**: Larger prompt bar (h-32) + styled pair picker dropdowns
-- **Output**: Single composite image with left/right style split
+### **3. Emotion Mask Mode**
+- **Purpose**: Emotional truth portraits with cinematic styling
+- **Auto-Run**: ✅ Enabled when triggered
+- **Credits**: 1 credit per generation
+- **UI**: 5 emotional variant options
+- **Output**: Single emotionally transformed image
+- **Behavior**: Starts immediately after variant selection
 
-## 🔄 **File Processing Pipeline**
+### **4. Custom Prompt Mode**
+- **Purpose**: Full creative control with user-written prompts
+- **Auto-Run**: ❌ Manual generation only
+- **Credits**: 1 credit per generation
+- **UI**: Text input + Magic Brush enhancement + Generate button
+- **Output**: Single image based on custom prompt
+- **Behavior**: Requires explicit user action
 
-### **Centralized Source Handling**
-All modes use the `getSourceFileOrThrow()` function from `src/services/source.ts`:
+## 💰 **Credit System**
 
-```typescript
-// Converts any input to a File object
-export async function fromAnyToFile(
-  input: File | Blob | string
-): Promise<File>
+### **Two-Phase Credit Flow**
+1. **Reserve Credits**: Deduct credits before generation starts
+2. **Generate Content**: Use reserved credits for AI processing
+3. **Finalize Credits**: Commit credits on successful generation
+4. **Refund Credits**: Return credits on failure
 
-// Gets source file from candidate or global state
-export async function getSourceFileOrThrow(
-  candidate?: File | Blob | string | null
-): Promise<File>
-```
+### **Credit Requirements by Mode**
+- **Custom Prompt**: 1 credit
+- **Presets**: 1 credit
+- **MoodMorph**: 3 credits (batch generation)
+- **Emotion Mask**: 1 credit
 
-### **Upload Flow**
-1. **File Selection**: User selects image file
-2. **Source Conversion**: `getSourceFileOrThrow()` ensures File object
-3. **Cloudinary Upload**: File uploaded to Cloudinary
-4. **AI Generation**: AIML API called with secure URL
-5. **Result Processing**: Generated image saved and displayed
+### **Daily Limits**
+- **Daily Cap**: 30 generations per day
+- **Credit Balance**: User-specific credit allocation
+- **Referral Bonuses**: Additional credits for referrals
 
-## 🛡️ **Error Handling & Resilience**
+## 🔄 **Generation Pipeline**
 
-### **File Validation**
-- **Type Checking**: Ensures only File objects reach the pipeline
-- **Fallback Handling**: Uses global state if candidate fails
-- **Blob URL Prevention**: Never sends blob/data URLs to backend
+### **Complete Flow**
+1. **File Upload**: User selects image file
+2. **Mode Selection**: User chooses generation mode
+3. **Credit Check**: Verify sufficient credits and daily limit
+4. **Credit Reservation**: Reserve credits for generation
+5. **Cloudinary Upload**: File uploaded to Cloudinary
+6. **AIML API Call**: AI generation with secure URL
+7. **Result Processing**: Generated image saved
+8. **Credit Finalization**: Commit reserved credits
+9. **UI Reset**: Clear all options for next generation
 
-### **API Error Handling**
-- **Authentication**: Proper auth headers based on mode
-- **Retry Logic**: Network error recovery
+### **Error Handling**
+- **Credit Refund**: Automatic refund on any failure
 - **User Feedback**: Clear error messages and status updates
+- **State Recovery**: Maintain user selections on retry
 
-### **State Recovery**
-- **File Input Reset**: Clears input after each generation
-- **Blob URL Cleanup**: Prevents memory leaks
-- **Mode Persistence**: Maintains user selections
+## 🛡️ **Authentication & Security**
 
-## 🚫 **NO_DB_MODE Development**
+### **JWT-Based Authentication**
+- **Token Management**: Secure JWT tokens with expiration
+- **User Verification**: Netlify identity service integration
+- **Profile Management**: Supabase user profiles and settings
 
-### **Purpose**
-Enable development without database dependencies or authentication requirements.
-
-### **How It Works**
-- **Environment Variable**: `VITE_NO_DB_MODE=true`
-- **Fetch Override**: Intercepts and blocks DB-related API calls
-- **Mock Responses**: Returns success responses for blocked endpoints
-- **XHR Blocking**: Also blocks XMLHttpRequest calls
-
-### **Blocked Endpoints**
-```typescript
-// These endpoints are blocked in NO_DB_MODE
-'get-notifications'
-'update-profile'
-'onboarding'
-'record-asset'
-'user-settings'
-'get-user-profile'
-'check-tier-promotion'
-```
-
-### **Benefits**
-- **Faster Development**: No network calls to DB
-- **Offline Work**: Works without internet connection
-- **Clean Logs**: No 500 errors from missing DB
-- **Quick Testing**: Instant feedback on UI changes
-
-## 🔐 **Authentication System**
-
-### **Production Mode**
-- **JWT Tokens**: Bearer token authentication
-- **Identity Verification**: Netlify identity service
-- **User Profiles**: Supabase user management
-
-### **Development Mode**
-- **No Auth Required**: Skip all authentication checks
-- **Mock User**: Returns demo user object
-- **Full Access**: All features available without login
+### **API Security**
+- **App Key Validation**: `x-app-key` header verification
+- **CORS Protection**: Proper cross-origin request handling
+- **Rate Limiting**: Daily generation caps and limits
 
 ## 📱 **UI/UX Features**
+
+### **Smart Automation**
+- **Auto-Generation**: Where it makes sense (presets, moodmorph, emotion)
+- **Manual Control**: Where user choice matters (custom prompts)
+- **Immediate Feedback**: Clear indication of what will happen
+
+### **Mode Separation**
+- **Distinct UI**: Each mode has its own interface elements
+- **Clear Labels**: No confusion between generation options
+- **Hover Descriptions**: Full context for each option
 
 ### **Responsive Design**
 - **Mobile First**: Optimized for mobile devices
 - **Touch Friendly**: Large touch targets and gestures
 - **Adaptive Layout**: Responsive grid and components
-
-### **Accessibility**
-- **ARIA Labels**: Proper screen reader support
-- **Keyboard Navigation**: Full keyboard accessibility
-- **Color Contrast**: WCAG compliant color schemes
-
-### **Performance**
-- **Lazy Loading**: Images load as needed
-- **Optimized Bundles**: Code splitting and tree shaking
-- **Efficient Rendering**: React optimization techniques
 
 ## 🧪 **Testing & Development**
 
@@ -275,16 +273,16 @@ npm run lint
 ```
 
 ### **Testing Checklist**
-1. **File Upload**: Test with various file types and sizes
-2. **Mode Switching**: Verify all three modes work correctly
-3. **Generation**: Test each mode's generation pipeline
-4. **Error Handling**: Test with invalid inputs and network issues
-5. **Responsiveness**: Test on different screen sizes
-6. **NO_DB_MODE**: Verify DB calls are properly blocked
+1. **Mode Separation**: Verify all four modes work independently
+2. **Auto-Generation**: Test preset/moodmorph/emotion auto-run
+3. **Manual Generation**: Test custom prompt manual flow
+4. **Credit System**: Test reservation, generation, and finalization
+5. **Error Handling**: Test with invalid inputs and network issues
+6. **UI Reset**: Verify options clear after generation
 
-### **Debugging**
+### **Debug Features**
 - **Console Logs**: Comprehensive logging for all operations
-- **Network Tab**: Monitor API calls and responses
+- **Debug Hook**: `window.debugIntent()` for development
 - **State Inspection**: Zustand dev tools for state debugging
 
 ## 🚀 **Deployment**
@@ -295,7 +293,7 @@ npm run lint
    - Build command: `npm run build`
    - Publish directory: `dist`
 3. **Environment Variables**: Set all required env vars
-4. **Functions**: Deploy Netlify functions
+4. **Functions**: Deploy Netlify functions (67 functions)
 
 ### **Production Considerations**
 - **Environment Variables**: Ensure all production keys are set
@@ -306,10 +304,10 @@ npm run lint
 ## 🔮 **Future Enhancements**
 
 ### **Planned Features**
-- **Batch Processing**: Generate multiple images simultaneously
+- **Advanced Presets**: Seasonal and trending style collections
+- **Custom Mood Bundles**: User-defined emotional themes
+- **Batch Operations**: Parallel generation for multiple images
 - **Style Transfer**: Advanced AI style manipulation
-- **Social Features**: Sharing and collaboration tools
-- **Advanced Editing**: Post-generation image editing
 
 ### **Technical Improvements**
 - **Performance**: Further optimization and caching
@@ -336,13 +334,14 @@ npm run lint
 ## 📞 **Support & Contact**
 
 ### **Documentation**
+- **Generation Options**: See `GENERATION_OPTIONS_ARCHITECTURE.md`
 - **API Docs**: Check Netlify Functions for endpoint details
 - **Component Library**: Browse `src/components/` for UI components
 - **State Management**: Review `src/stores/` for data flow
 
 ### **Issues & Bugs**
 - **GitHub Issues**: Report bugs and feature requests
-- **Debug Mode**: Enable `VITE_DEBUG_MODE=true` for detailed logs
+- **Debug Mode**: Enable debug logging for detailed information
 - **Console Logs**: Check browser console for error details
 
 ### **Getting Help**
@@ -352,7 +351,8 @@ npm run lint
 
 ---
 
-**Last Updated**: December 2024  
-**Version**: 2.0.0  
+**Last Updated**: August 17, 2025  
+**Version**: 3.0.0  
 **Maintainer**: Development Team  
-**License**: Proprietary
+**License**: Proprietary  
+**Status**: Production Ready ✅
