@@ -1743,7 +1743,7 @@ const HomeNew: React.FC = () => {
   }
 
   // Guarded MoodMorph runner with state preservation
-  const startMoodMorph = async ({ source }: { source: 'presetClick' | 'modeClick' | 'startButton' }) => {
+  const startMoodMorph = async ({ source }: { source: 'presetClick' | 'moodmorphClick' | 'modeClick' | 'startButton' }) => {
     try {
       console.log(`🎭 startMoodMorph called from: ${source}`)
       
@@ -1800,8 +1800,8 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  // Handle preset click - only selects preset, doesn't auto-run
-  const handlePresetClick = (presetName: keyof typeof PRESETS) => {
+  // Handle preset click - immediately generates with preset style (one-click)
+  const handlePresetClick = async (presetName: keyof typeof PRESETS) => {
     console.log('🎨 Preset clicked:', presetName)
     
     // Update composer state for preset mode
@@ -1817,11 +1817,55 @@ const HomeNew: React.FC = () => {
     // Set the selected preset in the store
     setSelectedPreset(presetName)
     
-    // Show small inline hint instead of toast
-    console.log(`🎨 Preset selected: ${PRESETS[presetName]?.name || presetName}`)
+    // Check if we can auto-generate
+    if (!selectedFile) {
+      console.log('❌ No file selected, cannot generate with preset')
+      notifyError({ title: 'Add an image first', message: `Select an image to use ${presetName}` })
+      return
+    }
+    
+    if (!isAuthenticated) {
+      console.log('❌ User not authenticated, redirecting to auth')
+      navigate('/auth')
+      return
+    }
+    
+    try {
+      // Check Cloudinary signer
+      const jwt = await authService.getToken()
+      if (!jwt) {
+        console.log('❌ Not authenticated, cannot generate with preset')
+        return
+      }
+      
+      // Test Cloudinary signer
+      const signRes = await fetch('/.netlify/functions/cloudinary-sign', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${jwt}` }
+      })
+      
+      if (!signRes.ok) {
+        console.log('❌ Cloudinary signer failed, cannot generate with preset')
+        return
+      }
+      
+      const sig = await signRes.json()
+      if (!sig.cloudName) {
+        console.log('❌ Cloudinary misconfigured, cannot generate with preset')
+        return
+      }
+      
+      // All checks passed - auto-generate with preset
+      console.log('🚀 Auto-generating with preset:', presetName)
+      await startMoodMorph({ source: 'presetClick' })
+      
+    } catch (error) {
+      console.log('❌ Auto-run check failed:', error)
+      notifyError({ title: 'Generation failed', message: 'Please try again' })
+    }
   }
 
-  // Handle MoodMorph click - auto-runs if file+auth+signer OK
+  // Handle MoodMorph click - immediately generates with MoodMorph processing (one-click)
   const handleMoodMorphClick = async (presetName: keyof typeof PRESETS) => {
     console.log('🎭 MoodMorph clicked:', presetName)
     
@@ -1838,14 +1882,21 @@ const HomeNew: React.FC = () => {
     // Set the selected preset in the store
     setSelectedPreset(presetName)
     
-    // Check if we have a file and can auto-run
+    // Check if we can auto-generate
     if (!selectedFile) {
       console.log('❌ No file selected, cannot auto-run MoodMorph')
+      notifyError({ title: 'Add an image first', message: `Select an image to use ${presetName}` })
+      return
+    }
+    
+    if (!isAuthenticated) {
+      console.log('❌ User not authenticated, redirecting to auth')
+      navigate('/auth')
       return
     }
     
     try {
-      // Check authentication and Cloudinary signer
+      // Check Cloudinary signer
       const jwt = await authService.getToken()
       if (!jwt) {
         console.log('❌ Not authenticated, cannot auto-run MoodMorph')
@@ -1863,19 +1914,13 @@ const HomeNew: React.FC = () => {
         return
       }
       
-      const sig = await signRes.json()
-      if (!sig.cloudName) {
-        console.log('❌ Cloudinary misconfigured, cannot auto-run MoodMorph')
-        return
-      }
-      
       // All checks passed - auto-run MoodMorph
       console.log('🚀 Auto-running MoodMorph with preset:', presetName)
-      await startMoodMorph()
+      await startMoodMorph({ source: 'moodmorphClick' })
       
     } catch (error) {
       console.log('❌ Auto-run check failed:', error)
-      // Don't auto-run, just show inline hint
+      notifyError({ title: 'Generation failed', message: 'Please try again' })
     }
   }
 
