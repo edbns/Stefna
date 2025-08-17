@@ -1,11 +1,28 @@
 export default async (event) => {
   try {
+    // 🔧 CRITICAL FIX: Allow POST requests for generation
+    console.log('🎯 aimlApi function called with method:', event.httpMethod);
+    console.log('🎯 Event details:', { 
+      method: event.httpMethod, 
+      hasBody: !!event.body,
+      bodyLength: event.body?.length || 0,
+      headers: Object.keys(event.headers || {})
+    });
+    
     if (event.httpMethod !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+      console.log('❌ Method not allowed:', event.httpMethod);
+      return new Response(JSON.stringify({ 
+        error: 'Method Not Allowed', 
+        message: 'This endpoint only accepts POST requests for image generation',
+        allowedMethods: ['POST'],
+        receivedMethod: event.httpMethod
+      }), {
         status: 405,
         headers: { 'Content-Type': 'application/json' }
       });
     }
+    
+    console.log('✅ POST method accepted, proceeding with generation...');
 
     // Handle header casing - Netlify lowercases header names
     const headers = event.headers || {};
