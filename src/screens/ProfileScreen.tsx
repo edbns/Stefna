@@ -440,8 +440,8 @@ const ProfileScreen: React.FC = () => {
             if (referralRes.ok) {
               const stats = await referralRes.json()
               setReferralStats({
-                invites: stats.totalInvites,
-                tokensEarned: stats.tokensEarned,
+                invites: stats.referred_count,
+                tokensEarned: stats.credits_from_referrals,
                 referralCode: '' // No codes needed for email-based referrals
               })
             } else {
@@ -1961,13 +1961,13 @@ const ProfileScreen: React.FC = () => {
                 {/* What you get */}
                  <div className="bg-white/5 rounded-lg p-4">
                   <h3 className="text-white font-semibold mb-2 text-sm">You get</h3>
-                  <p className="text-white/60 text-sm">+10 bonus tokens after your friend's first media creation</p>
+                  <p className="text-white/60 text-sm">+50 bonus credits after your friend's first media creation</p>
                 </div>
 
                 {/* What your friends get */}
                 <div className="bg-white/5 rounded-lg p-4">
                   <h3 className="text-white font-semibold mb-2 text-sm">Your friends get</h3>
-                  <p className="text-white/60 text-sm">+10 bonus tokens on signup with your invite</p>
+                  <p className="text-white/60 text-sm">+25 bonus credits on signup with your invite</p>
                 </div>
 
                 {/* Email Invite Form */}

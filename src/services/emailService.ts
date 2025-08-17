@@ -71,8 +71,8 @@ class EmailService {
         },
         body: JSON.stringify({
           to: referralData.friendEmail,
-          subject: `${referralData.referrerName || 'A friend'} invited you to Stefna! 🎨`,
-          html: this.generateReferralEmailHTML(referralData)
+          subject: `You've Been Invited to Stefna – 25 Free Credits Inside`,
+          text: this.generateReferralEmailText(referralData)
         })
       })
 
@@ -99,81 +99,25 @@ class EmailService {
     }
   }
 
-  // Generate referral email HTML
-  private generateReferralEmailHTML(data: ReferralEmailData): string {
-    const referrerName = data.referrerName || 'A friend'
+  // Generate referral email text
+  private generateReferralEmailText(data: ReferralEmailData): string {
     const signupUrl = data.referralCode 
       ? `https://stefna.xyz/auth?ref=${data.referralCode}`
       : 'https://stefna.xyz/auth'
 
-    return `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #000000; color: #ffffff;">
-        <div style="text-align: center; padding: 40px 20px;">
-          <!-- Logo -->
-          <img src="https://stefna.xyz/logo.png" alt="Stefna" style="width: 80px; height: 80px; margin-bottom: 30px;">
-          
-          <!-- Main content -->
-          <div style="background-color: #1a1a1a; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
-            <h1 style="color: #ffffff; font-size: 24px; margin-bottom: 10px;">You've been invited!</h1>
-            <p style="color: #cccccc; font-size: 16px; margin-bottom: 30px;">Join Stefna and start creating with AI</p>
-            
-            <p style="color: #cccccc; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
-              <strong>${referrerName}</strong> thinks you'd love Stefna - the AI-powered creative platform where you can transform photos and videos with just a prompt.
-            </p>
-            
-            <p style="color: #cccccc; font-size: 14px; line-height: 1.5; margin-bottom: 30px;">
-              Create stunning AI art, remix existing content, and explore endless creative possibilities.
-            </p>
-            
-            <div style="background-color: #1a1a1a; padding: 20px; border-radius: 10px; margin: 30px 0; border: 1px solid #333333;">
-              <p style="color: #888888; font-size: 12px; text-transform: uppercase; margin-bottom: 10px;">Special Bonus</p>
-              <p style="color: #ffffff; font-size: 14px; margin: 0;">
-                Sign up with this invite and get <strong>10 bonus tokens</strong> to start creating immediately!
-              </p>
-            </div>
-            
-            <a href="${signupUrl}" 
-               style="display: inline-block; background-color: #ffffff; color: #000000; text-decoration: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; font-size: 16px; margin: 20px 0;">
-              Join Stefna Now
-            </a>
-            
-            <p style="color: #888888; font-size: 14px; margin-top: 20px;">
-              No credit card required • Start creating in seconds
-            </p>
-          </div>
-          
-          <!-- Features -->
-          <div style="background-color: #1a1a1a; padding: 30px; border-radius: 15px; margin-bottom: 30px;">
-            <h2 style="color: #ffffff; font-size: 20px; margin-bottom: 20px;">What you can do with Stefna:</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left;">
-              <div>
-                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">AI Art Generation</h3>
-                <p style="color: #cccccc; font-size: 14px;">Create stunning images from text prompts</p>
-              </div>
-              <div>
-                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">Video Transformation</h3>
-                <p style="color: #cccccc; font-size: 14px;">Transform videos with AI-powered effects</p>
-              </div>
-              <div>
-                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">Content Remixing</h3>
-                <p style="color: #cccccc; font-size: 14px;">Remix and enhance existing media</p>
-              </div>
-              <div>
-                <h3 style="color: #ffffff; font-size: 16px; margin-bottom: 8px;">Instant Results</h3>
-                <p style="color: #cccccc; font-size: 14px;">Get results in seconds, not hours</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Footer -->
-        <div style="border-top: 1px solid #333333; padding: 30px 20px; text-align: center;">
-          <p style="color: #ffffff; font-size: 14px; margin-bottom: 5px;">Stefna - Turn Moments into Masterpieces—No Limits</p>
-          <p style="color: #888888; font-size: 12px; margin-bottom: 5px;">This email was sent to ${data.friendEmail}</p>
-          <p style="color: #888888; font-size: 12px;">If you have any questions, contact us at hello@stefna.xyz</p>
-        </div>
-      </div>
-    `
+    return `Someone invited you to try Stefna — a new way to generate high-quality AI images (and soon, videos).
+
+As a referred user, you get 25 bonus credits the moment you sign up.
+
+No subscriptions, no verification, just creative freedom with a daily 30 credit limit for everyone.
+
+Use your 25 extra credits however you like — on top of your daily allowance.
+
+Join now and start creating.
+
+${signupUrl}
+
+— The Stefna Team`
   }
 
   // Generate a random 6-digit OTP

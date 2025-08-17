@@ -160,7 +160,7 @@ exports.handler = async (event, context) => {
       if (referrerEmail) {
         console.log(`🎁 Processing referral for new user: ${referrerEmail} -> ${email}`);
         try {
-          const referralResponse = await fetch(`${event.headers.origin || 'https://stefna.xyz'}/.netlify/functions/process-referral`, {
+          const referralResponse = await fetch(`${event.headers.origin || 'https://stefna.xyz'}/.netlify/functions/process-referral-signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -172,7 +172,7 @@ exports.handler = async (event, context) => {
 
           if (referralResponse.ok) {
             const referralResult = await referralResponse.json();
-            console.log(`✅ Referral processed: ${referralResult.totalAwarded} total credits awarded`);
+            console.log(`✅ Referral processed successfully`);
           } else {
             console.log(`⚠️ Referral processing failed: ${referralResponse.status}`);
           }

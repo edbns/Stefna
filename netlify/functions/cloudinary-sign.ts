@@ -1,5 +1,6 @@
 import type { Handler } from '@netlify/functions';
 import crypto from 'crypto';
+import * as jose from 'jose';
 
 function json(status: number, body: unknown) {
   return {
@@ -9,39 +10,31 @@ function json(status: number, body: unknown) {
   };
 }
 
-function requireAuth(authHeader?: string) {
-  if (!authHeader?.startsWith('Bearer ')) return null;
-  const token = authHeader.slice('Bearer '.length);
-  // If you validate JWT signature/claims elsewhere, do it here.
-  // For now just require presence. You can add jose/jwt verify if needed.
-  return token.length > 10 ? token : null;
+async function verifyJWT(auth?: string) {
+  if (!auth?.startsWith('Bearer ')) throw new Error('No bearer token');
+  const token = auth.slice('Bearer '.length);
+  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+  await jose.jwtVerify(token, secret); // will throw if invalid/expired
+  return true;
 }
 
 export const handler: Handler = async (event) => {
-  const token = requireAuth(event.headers.authorization);
-  if (!token) return json(401, { error: 'Unauthorized' });
+  try {
+    await verifyJWT(event.headers.authorization);
 
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    if (!cloudName || !apiKey || !apiSecret) {
+      return json(500, { error: 'Missing Cloudinary env (CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET)' });
+    }
 
-  if (!cloudName || !apiKey || !apiSecret) {
-    return json(500, { error: 'Missing Cloudinary env (CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET)' });
+    const timestamp = Math.floor(Date.now() / 1000);
+    const toSign = `timestamp=${timestamp}${apiSecret}`;
+    const signature = crypto.createHash('sha1').update(toSign).digest('hex');
+
+    return json(200, { cloudName, apiKey, timestamp, signature });
+  } catch (e: any) {
+    return json(401, { error: e?.message || 'Unauthorized' });
   }
-
-  // You can accept public params (e.g., folder) from body if you like
-  const body = event.body ? JSON.parse(event.body) : {};
-  const timestamp = Math.floor(Date.now() / 1000);
-
-  // Build the string to sign per Cloudinary rules (sorted, ampersand-joined)
-  // Here we sign just the timestamp; add "folder", "public_id", etc. if you include them.
-  const toSign = `timestamp=${timestamp}${apiSecret}`;
-  const signature = crypto.createHash('sha1').update(toSign).digest('hex');
-
-  return json(200, {
-    cloudName: cloudName,
-    apiKey: apiKey,
-    timestamp,
-    signature,
-  });
 };

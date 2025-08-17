@@ -114,7 +114,7 @@ const AuthScreen: React.FC = () => {
             <div className="flex items-center space-x-2">
               <CheckCircle size={16} className="text-green-400" />
               <span className="text-sm font-medium text-white">
-                🎁 You're invited by {referrerEmail}! Get 5 bonus credits when you sign up
+                🎁 You're invited by {referrerEmail}! Get 25 bonus credits when you sign up
               </span>
             </div>
           </div>

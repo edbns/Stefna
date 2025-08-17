@@ -1686,12 +1686,97 @@ const HomeNew: React.FC = () => {
       return
     }
     
-    // Set UI state (selectedPreset is now UI-only) - NO AUTO-START
+    // Set UI state and clear any previous errors
     setSelectedPreset(presetName)
     console.log('✅ selectedPreset set to:', presetName)
     
-    // Keep composer open for user to choose when to start
-    // Don't auto-start generation - user must click Start button
+    // Auto-run only when we have a file and auth
+    const hasFile = !!selectedFile;
+    const hasJWT = !!authService.getToken();
+    
+    if (hasFile && hasJWT) {
+      console.log('🚀 Auto-running MoodMorph with preset:', presetName)
+      startMoodMorph({ source: 'presetClick' }).catch(() => {})
+    } else {
+      console.log('ℹ️ Preset selected but no auto-run - missing file or JWT')
+      if (!hasFile) {
+        notifyError({ title: 'Add an image first', message: `Select an image to use ${presetName}` })
+      }
+    }
+  }
+
+  // Get Cloudinary signature with JWT auth
+  const getCloudinarySignature = async (jwt: string) => {
+    const res = await fetch('/.netlify/functions/cloudinary-sign', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'authorization': `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({})
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.error || 'cloudinary-sign failed');
+    if (!data.cloudName) throw new Error('cloud_name missing from signer');
+    return data; // { cloudName, apiKey, timestamp, signature }
+  }
+
+  // Guarded MoodMorph runner with state preservation
+  const startMoodMorph = async ({ source }: { source: 'presetClick' | 'modeClick' | 'startButton' }) => {
+    try {
+      console.log(`🎭 startMoodMorph called from: ${source}`)
+      
+      // ====== PRECHECKS ======
+      if (!selectedFile) throw new Error('Pick an image first');
+      
+      const jwt = authService.getToken();
+      if (!jwt) throw new Error('Please sign in again');
+      
+      // Ping signer first; bail if it fails
+      const sig = await getCloudinarySignature(jwt);
+      if (!sig?.cloudName) throw new Error('Server misconfigured: Cloudinary cloud name missing');
+      
+      console.log('✅ Prechecks passed, starting generation...')
+      
+      // ====== UPLOAD ======
+      setNavGenerating(true);
+      const uploadRes = await uploadToCloudinary(selectedFile, 'stefna');
+      if (!uploadRes?.secure_url) throw new Error('Upload failed — no secure_url');
+      
+      console.log('✅ Upload successful:', uploadRes.secure_url);
+      
+      // ====== PROCESS ======
+      if (selectedPreset) {
+        // Run preset generation
+        await dispatchGenerate('preset', {
+          presetId: selectedPreset,
+          presetData: PRESETS[selectedPreset],
+          promptOverride: prompt
+        });
+      } else {
+        // Run MoodMorph
+        await runMoodMorph(
+          selectedFile,
+          (progress) => console.log(`🎭 MoodMorph: Progress ${progress}%`),
+          (variations) => console.log('✅ MoodMorph: Generation completed successfully', variations),
+          (error) => console.error('❌ MoodMorph generation failed:', error)
+        );
+      }
+      
+      console.log('✅ Generation completed successfully');
+      
+    } catch (err: any) {
+      const message = err?.message || 'Generation failed';
+      console.error('❌ MoodMorph generation failed:', err);
+      
+      // IMPORTANT: DO NOT clear file or preset
+      notifyError({ title: 'Generation failed', message });
+      
+      // Keep composer open and preserve state
+      setIsComposerOpen(true);
+    } finally {
+      setNavGenerating(false);
+    }
   }
 
   // Auto-generate with preset - simplified to use existing dispatchGenerate
@@ -1889,7 +1974,7 @@ const HomeNew: React.FC = () => {
       requestClearPreset('remix started');
     
     // Don't auto-generate remix - just open composer for user to choose
-    notifyQueue({ title: 'Composer opened', message: 'Choose your remix settings' });
+    // Toast removed - now using inline "Ready to remix" indicator in composer header
     } catch (error) {
       console.error('Error creating remix:', error);
       notifyError({ title: 'Something went wrong', message: 'Failed to start remix' });
@@ -2377,6 +2462,15 @@ const HomeNew: React.FC = () => {
             <X size={20} />
           </button>
           
+          {/* Ready to remix indicator */}
+          {selectedPreset && (
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none">
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 text-white/80 text-sm font-medium">
+                Ready to remix with {getPresetLabel(selectedPreset, PRESETS)}
+              </div>
+            </div>
+          )}
+          
           {/* Media preview area - centered above prompt */}
           <div className="absolute inset-0 flex items-center justify-center pb-32">
             <div className="relative w-full max-w-2xl px-6">
@@ -2600,9 +2694,14 @@ const HomeNew: React.FC = () => {
                       window.dispatchEvent(new CustomEvent('close-composer'));
                       
                       if (mode === 'moodmorph') {
-                        // MoodMorph mode selected - don't auto-start, just set the mode
-                        console.log('🎭 MoodMorph mode selected - ready to generate when user clicks Start')
-                        // Don't auto-start - user must click the Start button
+                        // MoodMorph mode selected - auto-run if ready
+                        console.log('🎭 MoodMorph mode selected - checking if ready to run')
+                        if (selectedFile && authService.getToken()) {
+                          console.log('🚀 Auto-running MoodMorph')
+                          startMoodMorph({ source: 'modeClick' }).catch(() => {})
+                        } else {
+                          console.log('ℹ️ MoodMorph mode selected but no auto-run - missing file or JWT')
+                        }
                       } else if (selectedPreset) {
                         // Run preset generation
                         dispatchGenerate('preset', {

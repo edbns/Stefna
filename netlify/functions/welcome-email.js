@@ -46,41 +46,16 @@ exports.handler = async (event, context) => {
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'Stefna <hello@stefna.xyz>',
       to: [email],
-      subject: 'Your Creative Playground Awaits 🖤',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #000000; color: #ffffff; min-height: 100vh;">
-          <div style="text-align: center; padding: 60px 20px;">
-            <!-- Logo centered in the middle -->
-            <img src="https://stefna.xyz/logo.png" alt="Stefna" style="width: 120px; height: 120px; margin-bottom: 40px;">
-            
-            <!-- Welcome content -->
-            <div style="background-color: #1a1a1a; padding: 40px; border-radius: 15px; margin-bottom: 30px;">
-              <h1 style="color: #ffffff; font-size: 28px; margin-bottom: 30px; font-weight: 300;">Hello,</h1>
-              
-              <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-                Welcome to Stefna, where creativity meets possibility. Here, AI is your brush—ready to help you remix, enhance, and reimagine photos and videos in ways only you can imagine.
-              </p>
-              
-              <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-                Start exploring, start experimenting, and don't be shy about sharing what you make. The world is waiting to see your vision.
-              </p>
-              
-              <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
-                Let's see what you can do with <span style="color: #ffffff; font-weight: bold;">#AIasabrush</span>.
-              </p>
-              
-              <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin-top: 40px;">Stefna</p>
-            </div>
-          </div>
-          
-          <!-- Footer -->
-          <div style="border-top: 1px solid #333333; padding: 30px 20px; text-align: center;">
-            <p style="color: #ffffff; font-size: 14px; margin-bottom: 5px;">Stefna - Turn Moments into Masterpieces—No Limits</p>
-            <p style="color: #888888; font-size: 12px; margin-bottom: 5px;">This email was sent to ${email}</p>
-            <p style="color: #888888; font-size: 12px;">If you have any questions, contact us at <span style="background-color: #ffff00; color: #000000; padding: 2px 4px;">hello@stefna.xyz</span></p>
-          </div>
-        </div>
-      `
+      subject: 'Welcome to Stefna – Your 30 Credits Are Ready',
+              text: `Welcome to Stefna.
+
+Your account is now active, and we've already added 30 credits to get you started. That's enough to generate up to 15 high-quality images today. Credits reset daily, so you'll get 30 more tomorrow.
+
+There are no tiers, no gimmicks, and no social media verification. Everyone gets the same creative power.
+
+Start generating now.
+
+— The Stefna Team`
     });
 
     if (emailError) {
