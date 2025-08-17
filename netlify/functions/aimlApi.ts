@@ -56,7 +56,7 @@ export default async (event) => {
     
     // Handle ping requests for testing
     if (requestBody.ping) {
-      console.log('AIML API ping received:', {
+      console.log('🎯 AIML API ping received:', {
         hasAuth: !!auth,
         hasAppKey: !!appKey,
         devBypass,
@@ -64,7 +64,7 @@ export default async (event) => {
       });
       return new Response(JSON.stringify({ 
         ok: true, 
-        message: 'AIML API is running',
+        message: 'AIML API is running and ready for POST requests',
         timestamp: new Date().toISOString(),
         devMode: !!devBypass
       }), {
