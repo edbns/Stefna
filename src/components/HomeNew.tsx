@@ -1871,6 +1871,15 @@ const HomeNew: React.FC = () => {
   }
 
   const handleRemix = async (media: UserMedia) => {
+    console.log('🎭 handleRemix called with media:', {
+      id: media.id,
+      url: media.url,
+      cloudinaryPublicId: media.cloudinaryPublicId,
+      mediaType: media.mediaType,
+      allowRemix: media.allowRemix,
+      prompt: media.prompt
+    });
+    
     if (media.allowRemix === false) return // allow when undefined
     if (!authService.getToken()) {
               // Sign up required - no notification needed
@@ -1879,28 +1888,12 @@ const HomeNew: React.FC = () => {
     }
     
     try {
-      // Use the stored cloudinary_public_id and media_type from the feed data
-      if (!media.cloudinaryPublicId || !media.mediaType) {
-        console.error('Missing cloudinary_public_id or media_type for remix');
-        notifyError({ title: 'Something went wrong', message: 'Failed to start remix' });
-        return;
-      }
-      
-      // Create new asset using the OUTPUT as next INPUT
-      const { ok, data, error } = await createAsset({
-        sourcePublicId: media.cloudinaryPublicId,
-        mediaType: media.mediaType,
-        presetKey: selectedPreset,
-        sourceAssetId: media.id, // Keep lineage
+      // Simplified remix flow - just open composer directly
+      console.log('🎭 Setting up composer for remix:', {
+        mediaUrl: media.url,
+        prompt: media.prompt,
+        willOpenComposer: true
       });
-      
-      if (!ok) {
-        console.error('Failed to create remix asset:', error);
-        notifyError({ title: 'Something went wrong', message: 'Failed to create remix' });
-        return;
-      }
-      
-      console.log('✅ Remix asset created:', data);
       
       // Set up the composer with the source media
       setPreviewUrl(media.url);
@@ -1908,6 +1901,12 @@ const HomeNew: React.FC = () => {
       setSelectedFile(null);
       setIsComposerOpen(true);
       setPrompt(media.prompt || '');
+      
+      console.log('🎭 Composer state after setup:', {
+        isComposerOpen: true,
+        previewUrl: media.url,
+        prompt: media.prompt || ''
+      });
     
     // Clear selectedPreset when remixing
       requestClearPreset('remix started');
