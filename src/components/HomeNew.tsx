@@ -1195,13 +1195,13 @@ const HomeNew: React.FC = () => {
       // Reserve credits before generation
       const creditsNeeded = generateTwo ? 2 : 1;
       console.log(`💰 Reserving ${creditsNeeded} credits before generation...`);
-      console.log('🔍 Credit reservation debug:', { mode, creditsNeeded, modeType: typeof mode });
+      console.log('🔍 Credit reservation debug:', { kind, mode, creditsNeeded, kindType: typeof kind, modeType: typeof mode });
       
       const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: mode,
+          action: kind,  // Use the kind parameter, not the store mode
           cost: creditsNeeded
         })
       });
