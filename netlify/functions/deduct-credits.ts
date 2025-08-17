@@ -101,11 +101,14 @@ export const handler: Handler = async (event) => {
         costType: typeof cost
       });
       
+      // Debug: Show the exact SQL query and parameters
+      const sqlQuery = "SELECT * FROM app.reserve_credits($1::uuid, $2::uuid, $3::text, $4::int)";
+      const params = [userId, request_id, action, cost];
+      console.log('💰 SQL Query:', sqlQuery);
+      console.log('💰 Parameters:', params);
+      
       try {
-        const result = await db.query(
-          "SELECT * FROM app.reserve_credits($1::uuid,$2::uuid,$3::text,$4::int)",
-          [userId, request_id, action, cost]
-        );
+        const result = await db.query(sqlQuery, params);
         rows = result.rows;
         console.log('💰 Credits reserved successfully:', rows[0]);
       } catch (dbError) {
