@@ -1,4 +1,4 @@
-export default async (event) => {
+export async function handler(event, context) {
   try {
     // 🔧 CRITICAL FIX: Allow POST requests for generation
     console.log('🎯 aimlApi function called with method:', event.httpMethod);
@@ -11,15 +11,15 @@ export default async (event) => {
     
     if (event.httpMethod !== 'POST') {
       console.log('❌ Method not allowed:', event.httpMethod);
-      return new Response(JSON.stringify({ 
-        error: 'Method Not Allowed', 
-        message: 'This endpoint only accepts POST requests for image generation',
-        allowedMethods: ['POST'],
-        receivedMethod: event.httpMethod
-      }), {
-        status: 405,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return {
+        statusCode: 405,
+        body: JSON.stringify({
+          error: 'Method Not Allowed',
+          message: 'This endpoint only accepts POST requests for image generation',
+          allowedMethods: ['POST'],
+          receivedMethod: event.httpMethod
+        })
+      };
     }
     
     console.log('✅ POST method accepted, proceeding with generation...');
@@ -34,38 +34,38 @@ export default async (event) => {
 
     if (!auth && !devBypass) {
       console.warn('aimlApi 401 — missing Authorization. Keys seen:', Object.keys(headers).slice(0, 12));
-      return new Response(JSON.stringify({ error: 'missing_auth_header' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ error: 'missing_auth_header' })
+      };
     }
     
     if (!appKey && !devBypass) {
       console.warn('aimlApi 401 — missing x-app-key');
-      return new Response(JSON.stringify({ error: 'missing_app_key' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ error: 'missing_app_key' })
+      };
     }
 
     // Check if AIML API key is configured
     const API_KEY = process.env.AIML_API_KEY;
     if (!API_KEY) {
       console.error('AIML_API_KEY missing from environment');
-      return new Response(JSON.stringify({ error: 'server_missing_upstream_key' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'server_missing_upstream_key' })
+      };
     }
 
     // Check if AIML API base is configured
     const BASE = process.env.AIML_API_BASE ?? "https://api.aimlapi.com";
     if (!BASE) {
       console.error('AIML_API_BASE missing from environment');
-      return new Response(JSON.stringify({ error: 'server_missing_base_url' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'server_missing_base_url' })
+      };
     }
 
     // Parse request body
@@ -79,15 +79,15 @@ export default async (event) => {
         devBypass,
         timestamp: new Date().toISOString()
       });
-      return new Response(JSON.stringify({ 
-        ok: true, 
-        message: 'AIML API is running and ready for POST requests',
-        timestamp: new Date().toISOString(),
-        devMode: !!devBypass
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ 
+          ok: true, 
+          message: 'AIML API is running and ready for POST requests',
+          timestamp: new Date().toISOString(),
+          devMode: !!devBypass
+        })
+      };
     }
 
     // Structured logging for generation requests
@@ -108,18 +108,18 @@ export default async (event) => {
     // Validate required fields for generation
     if (!requestBody.image_url) {
       console.error('Missing image_url in request');
-      return new Response(JSON.stringify({ error: 'missing_image_url' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'missing_image_url' })
+      };
     }
 
     if (!requestBody.prompt) {
       console.error('Missing prompt in request');
-      return new Response(JSON.stringify({ error: 'missing_prompt' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'missing_prompt' })
+      };
     }
 
     // Build AIML API payload with variations support
@@ -153,14 +153,14 @@ export default async (event) => {
     
     if (!response.ok) {
       console.error('❌ AIML API error:', response.status, responseText);
-      return new Response(JSON.stringify({ 
-        ok: false, 
-        provider_error: responseText,
-        status: response.status 
-      }), {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return {
+        statusCode: response.status,
+        body: JSON.stringify({ 
+          ok: false, 
+          provider_error: responseText,
+          status: response.status 
+        })
+      };
     }
 
     let data;
@@ -168,14 +168,14 @@ export default async (event) => {
       data = JSON.parse(responseText);
     } catch (e) {
       console.error('❌ Failed to parse AIML API response:', responseText);
-      return new Response(JSON.stringify({ 
-        ok: false, 
-        error: 'INVALID_JSON_RESPONSE',
-        raw: responseText 
-      }), {
-        status: 502,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return {
+        statusCode: 502,
+        body: JSON.stringify({ 
+          ok: false, 
+          error: 'INVALID_JSON_RESPONSE',
+          raw: responseText 
+        })
+      };
     }
 
     // Extract URL from various possible response formats
@@ -183,39 +183,39 @@ export default async (event) => {
 
     if (!url) {
       console.error('❌ No image URL in AIML response:', data);
-      return new Response(JSON.stringify({ 
-        ok: false, 
-        error: 'NO_URL_FROM_PROVIDER',
-        raw: data 
-      }), {
-        status: 502,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return {
+        statusCode: 502,
+        body: JSON.stringify({ 
+          ok: false, 
+          error: 'NO_URL_FROM_PROVIDER',
+          raw: data 
+        })
+      };
     }
 
     console.log('✅ AIML API success, URL extracted:', url);
 
-    return new Response(JSON.stringify({ 
-      ok: true, 
-      image_url: url,
-      model: aimlPayload.model,
-      prompt: aimlPayload.prompt
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ 
+        ok: true, 
+        image_url: url,
+        model: aimlPayload.model,
+        prompt: aimlPayload.prompt
+      })
+    };
 
   } catch (error) {
     console.error('💥 AIML API function error:', error);
-    return new Response(JSON.stringify({ 
-      ok: false, 
-      error: 'INTERNAL_ERROR',
-      message: error.message 
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ 
+        ok: false, 
+        error: 'INTERNAL_ERROR',
+        message: error.message 
+      })
+    };
   }
-};
+}
 
 
