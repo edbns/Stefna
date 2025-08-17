@@ -76,7 +76,6 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
 import { PRESETS, resolvePreset } from '../utils/presets/types'
 import presetRotationService from '../services/presetRotationService'
 import captionService from '../services/captionService'
-import { presetsStore } from '../stores/presetsStore'
 import { onPresetClick } from '../handlers/presetHandlers'
 
 
@@ -184,10 +183,10 @@ const HomeNew: React.FC = () => {
     setTimeout(() => requestClearPreset('composer exit'), 300)
   }
   
-  // Initialize presets store and validate mappings
+  // Initialize presets and validate mappings
   useEffect(() => {
     (async () => {
-      await presetsStore.getState().load()
+      // PRESETS are already loaded from import
       validateModeMappings()
     })()
   }, [])
@@ -709,8 +708,7 @@ const HomeNew: React.FC = () => {
           await loadUserProfileFromDatabase()
           console.log('✅ User profile synced from database')
           
-          // Check for tier promotions (surprise notifications!)
-          await checkTierPromotion()
+          // Tier promotions removed - simplified credit system
         } catch (error) {
           console.warn('⚠️ Failed to sync user data from database:', error)
         }
@@ -1688,33 +1686,12 @@ const HomeNew: React.FC = () => {
       return
     }
     
-    // Set UI state (selectedPreset is now UI-only)
+    // Set UI state (selectedPreset is now UI-only) - NO AUTO-START
     setSelectedPreset(presetName)
     console.log('✅ selectedPreset set to:', presetName)
     
-    // Close composer immediately and show progress on avatar
-    setIsComposerOpen(false)
-    setNavGenerating(true)
-    
-    // Check if we have a valid source using the resolver
-    const source = resolveSource()
-    if (!source) {
-      console.log('⚠️ No valid source found for preset generation')
-      notifyError({ title: 'Pick a photo/video first', message: 'Select media, then apply a preset.' })
-      setNavGenerating(false)
-      return
-    }
-    
-    console.log('🚀 Starting generation with preset:', presetName, 'source:', source.id)
-    try {
-      // Use selectedFile instead of blob URL to avoid fetch errors
-      await onPresetClick(presetName, selectedFile, undefined)
-    } catch (error) {
-      console.error('❌ Preset generation failed:', error)
-      notifyError({ title: 'Generation failed', message: 'Please try another preset.' })
-    } finally {
-      setNavGenerating(false)
-    }
+    // Keep composer open for user to choose when to start
+    // Don't auto-start generation - user must click Start button
   }
 
   // Auto-generate with preset - simplified to use existing dispatchGenerate
@@ -2125,38 +2102,7 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  // Check for tier promotions (surprise notifications!)
-  const checkTierPromotion = async () => {
-    try {
-      const token = authService.getToken()
-      if (!token) return
-
-      console.log('🎉 Checking for tier promotions...')
-      const response = await fetch('/.netlify/functions/check-tier-promotion', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        
-        if (result.promoted) {
-          console.log('🎉 User was promoted!', result)
-          
-          // Show surprise notification (unified toasts)
-          notifyReady({ title: result.message, message: `Upgraded to ${result.newTier}` })
-          
-          // Refresh user data to show new tier
-          await getUserProfileSettings()
-        }
-      }
-    } catch (error) {
-      console.error('❌ Failed to check tier promotion:', error)
-    }
-  }
+  // Tier promotions removed - simplified credit system
 
   // Update user settings and persist to database
   const updateUserSettings = async (newSettings: { shareToFeed?: boolean; allowRemix?: boolean }) => {
@@ -2654,45 +2600,9 @@ const HomeNew: React.FC = () => {
                       window.dispatchEvent(new CustomEvent('close-composer'));
                       
                       if (mode === 'moodmorph') {
-                        // Run MoodMorph™ immediately with proper error handling
-                        try {
-                          console.log('🎭 MoodMorph: Starting generation...')
-                          console.log('🎭 MoodMorph: selectedFile:', selectedFile)
-                          console.log('🎭 MoodMorph: previewUrl:', previewUrl)
-                          
-                          // Run MoodMorph with new callback-based API
-                          await runMoodMorph(
-                            selectedFile!,
-                            (progress) => {
-                              console.log(`🎭 MoodMorph: Progress ${progress}%`);
-                            },
-                            (variations) => {
-                              console.log('✅ MoodMorph: Generation completed successfully', variations);
-                              // Show success toast
-                              window.dispatchEvent(new CustomEvent('generation-success', { 
-                                detail: { message: `Generated ${variations.length} MoodMorph variations!`, timestamp: Date.now() } 
-                              }));
-                            },
-                            (error) => {
-                              console.error('❌ MoodMorph generation failed:', error);
-                              // Show error toast
-                              window.dispatchEvent(new CustomEvent('generation-error', { 
-                                detail: { message: `MoodMorph generation failed: ${error}`, timestamp: Date.now() } 
-                              }));
-                            }
-                          )
-                          
-                          console.log('✅ MoodMorph: Generation completed successfully')
-                        } catch (error) {
-                          console.error('❌ MoodMorph generation failed:', error)
-                          // Show error toast
-                          window.dispatchEvent(new CustomEvent('generation-error', { 
-                            detail: { message: `MoodMorph generation failed: ${error.message || 'Unknown error'}`, timestamp: Date.now() } 
-                          }))
-                        } finally {
-                          // Always clear the generating state
-                          setNavGenerating(false)
-                        }
+                        // MoodMorph mode selected - don't auto-start, just set the mode
+                        console.log('🎭 MoodMorph mode selected - ready to generate when user clicks Start')
+                        // Don't auto-start - user must click the Start button
                       } else if (selectedPreset) {
                         // Run preset generation
                         dispatchGenerate('preset', {
