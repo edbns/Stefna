@@ -931,6 +931,9 @@ const HomeNew: React.FC = () => {
     setCurrentRunId(runId);
     console.info('▶ dispatchGenerate', { kind, options, runId });
     
+    // Close composer immediately when generation starts
+    setIsComposerOpen(false);
+    
     // Assertions before calling aimlApi
     if (options?.presetId) {
       console.assert(PRESETS[options.presetId], `Preset ${options.presetId} must be valid before generate`);
@@ -1759,6 +1762,9 @@ const HomeNew: React.FC = () => {
       
       console.log('✅ Prechecks passed, starting generation...')
       
+      // Close composer immediately when generation starts
+      setIsComposerOpen(false);
+      
       // ====== UPLOAD ======
       setNavGenerating(true);
       const uploadRes = await uploadToCloudinary(selectedFile, 'stefna');
@@ -1953,40 +1959,12 @@ const HomeNew: React.FC = () => {
     // Clear selectedPreset when remixing
     requestClearPreset('remix started')
     
-    // Show mode-aware toast
-    notifyReady({ 
-      title: 'Remix ready', 
-      message: 'Adjust settings or press Generate' 
-    })
+
     
     console.log('🎭 Composer opened in remix mode')
   }
 
-  // Show mode-aware toasts based on composer state
-  const showModeAwareToast = (mode: string, action: string) => {
-    switch (mode) {
-      case 'remix':
-        notifyReady({ 
-          title: 'Remix ready', 
-          message: 'Adjust settings or press Generate' 
-        })
-        break
-      case 'preset':
-        // No toast for preset selection - just inline hint
-        console.log(`🎨 Preset selected: ${action}`)
-        break
-      case 'moodmorph':
-        // No toast for MoodMorph selection - just inline hint
-        console.log(`🎭 MoodMorph selected: ${action}`)
-        break
-      case 'custom':
-        // No toast for custom mode
-        break
-      default:
-        // Fallback for unknown modes
-        console.log(`Mode ${mode}: ${action}`)
-    }
-  }
+
 
   // Auto-generate with preset - simplified to use existing dispatchGenerate
   const handlePresetAutoGeneration = async (presetName: keyof typeof PRESETS) => {
@@ -2658,8 +2636,8 @@ const HomeNew: React.FC = () => {
             <X size={20} />
           </button>
           
-          {/* Ready to remix indicator */}
-          {selectedPreset && (
+          {/* Ready to remix indicator - only show in remix mode */}
+          {composerState.mode === 'remix' && selectedPreset && (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none">
               <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 text-white/80 text-sm font-medium">
                 Ready to remix with {getPresetLabel(selectedPreset, PRESETS)}
