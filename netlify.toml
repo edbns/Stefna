@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "npm install && npm run build"
   publish = "dist"
   functions = "netlify/functions"
 
@@ -7,20 +7,22 @@
   NODE_VERSION = "20"
   NPM_FLAGS = "--prefer-offline --no-audit --production"
   VITE_BUILD_OPTIMIZE = "true"
+  # Install function dependencies
+  NPM_CONFIG_PREFIX = "."
 
 # Production context
 [context.production]
-  command = "npm run build"
+  command = "npm install && npm run build"
   environment = { NODE_ENV = "production" }
 
 # Deploy preview context  
 [context.deploy-preview]
-  command = "npm run build"
+  command = "npm install && npm run build"
   environment = { NODE_ENV = "preview" }
 
 # Branch deploy context
 [context.branch-deploy]
-  command = "npm run build"
+  command = "npm install && npm run build"
   environment = { NODE_ENV = "development" }
 
 # Function optimization
