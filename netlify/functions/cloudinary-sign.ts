@@ -85,7 +85,11 @@ export const handler: Handler = async (event) => {
       params,
       sortedParams,
       toSign: toSign.replace(apiSecret, '[HIDDEN]'),
-      signature: signature.substring(0, 8) + '...'
+      signature: signature.substring(0, 8) + '...',
+      hasFolder: !!body.folder,
+      folderValue: body.folder,
+      bodyKeys: Object.keys(body),
+      bodyStringified: JSON.stringify(body)
     });
 
     return json(200, { 
