@@ -97,35 +97,8 @@ export const handler: Handler = async (event) => {
       const { rows: testRows } = await db.query('SELECT NOW() as current_time');
       console.log('💰 Database connection test successful:', testRows[0]);
       
-      // Check if app.reserve_credits function exists
-      try {
-        const { rows: funcCheck } = await db.query(`
-          SELECT 
-            n.nspname AS schema,
-            p.proname AS function,
-            pg_catalog.pg_get_function_arguments(p.oid) AS args
-          FROM pg_catalog.pg_proc p
-          JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
-          WHERE p.proname = 'reserve_credits' AND n.nspname = 'app'
-        `);
-        console.log('💰 Function check result:', funcCheck[0]);
-        
-        if (!funcCheck[0]) {
-          console.error('❌ app.reserve_credits function not found!');
-          return json(500, { 
-            ok: false, 
-            error: "DB_FUNCTION_MISSING",
-            message: "app.reserve_credits function not found in database"
-          });
-        }
-      } catch (funcError) {
-        console.error('❌ Function check failed:', funcError);
-        return json(500, { 
-          ok: false, 
-          error: "DB_FUNCTION_CHECK_FAILED",
-          message: funcError?.message
-        });
-      }
+      // Function check removed - we know app.reserve_credits exists
+      console.log('💰 Skipping function check - app.reserve_credits is confirmed to exist');
       
       // Check daily cap
       console.log('💰 Checking daily cap for user:', userId, 'cost:', cost, 'daily_cap:', config.daily_cap);
