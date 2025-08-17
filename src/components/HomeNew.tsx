@@ -998,10 +998,10 @@ const HomeNew: React.FC = () => {
       if (!moodMorphPresetId) {
         console.error('❌ Invalid MoodMorph preset:', moodMorphPresetId);
         notifyError({ title: 'Invalid MoodMorph preset', message: 'Please select a MoodMorph preset first' });
-        endGeneration(genId);
-        setNavGenerating(false);
-        return;
-      }
+      endGeneration(genId);
+      setNavGenerating(false);
+      return;
+    }
       // For now, use a base prompt - MoodMorph will generate 3 variations
       effectivePrompt = 'Transform this image with mood variations';
       generationMeta = { mode: 'moodmorph', moodMorphPresetId };
@@ -1020,7 +1020,7 @@ const HomeNew: React.FC = () => {
       generationMeta = { mode: 'emotionmask', concept: 'emotional_truth' };
       console.log('🎭 EMOTION MASK MODE: Using emotional layering concept:', effectivePrompt);
       
-    } else {
+      } else {
       console.error('❌ Unknown generation kind:', kind);
       notifyError({ title: 'Generation error', message: 'Unknown generation type' });
       endGeneration(genId);
@@ -1073,7 +1073,7 @@ const HomeNew: React.FC = () => {
       // Start generation with ID guard (already set at function start)
       // Just close the composer; keep using outer genId
       setIsComposerOpen(false);
-      
+
       // Enforce server-side quota and generate via aimlApi
       // Use new uploadSource service - pass File object, not blob URL
       const uploadResult = await uploadSourceToCloudinary({
@@ -1879,7 +1879,7 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  // Open composer from remix - no auto-run, just opens for user to choose
+  // Open composer from remix - just opens composer, no auto-generation
   const openComposerFromRemix = (media: UserMedia) => {
     console.log('🎭 Opening composer from remix:', media.id)
     
@@ -1904,9 +1904,7 @@ const HomeNew: React.FC = () => {
     // Clear selectedPreset when remixing
     requestClearPreset('remix started')
     
-
-    
-    console.log('🎭 Composer opened in remix mode')
+    console.log('🎭 Composer opened in remix mode - ready for user to choose generation type')
   }
 
 
@@ -2215,7 +2213,7 @@ const HomeNew: React.FC = () => {
     
     if (media.allowRemix === false) return // allow when undefined
     if (!authService.getToken()) {
-      // Sign up required - no notification needed
+              // Sign up required - no notification needed
       navigate('/auth')
       return
     }
@@ -2986,80 +2984,68 @@ const HomeNew: React.FC = () => {
                     )}
                   </div>
 
-                  {/* MoodMorph preset picker - show when in MoodMorph mode */}
-                  {composerState.mode === 'moodmorph' && (
-                    <div className="relative" data-moodmorph-dropdown>
-                      <button
-                        onClick={() => {
-                          if (!isAuthenticated) {
-                            navigate('/auth')
-                            return
-                          }
-                          setMoodMorphDropdownOpen((v) => !v)
-                        }}
-                        className={(() => {
-                          const baseClass = 'px-3 py-1.5 rounded-2xl text-xs border transition-colors';
-                          const activeClass = 'bg-white/10 text-white border-white/20 hover:bg-white/15';
-                          const inactiveClass = 'text-white/80 hover:text-white hover:bg-white/10';
-                          return `${baseClass} ${isAuthenticated ? activeClass : inactiveClass}`;
-                        })()}
-                        data-nav-button
-                        data-nav-type="moodmorph"
-                        title={isAuthenticated ? 'Choose MoodMorph style bundle' : 'Sign up to use MoodMorph'}
-                        disabled={!isAuthenticated}
-                      >
-                        {selectedMoodMorphPreset ? 
-                          MOODMORPH_PRESETS.find(p => p.id === selectedMoodMorphPreset)?.label || 'MoodMorph' 
-                          : 'MoodMorph'
+                  {/* MoodMorph™ button - SINGLE BUTTON with dropdown */}
+                  <div className="relative" data-moodmorph-dropdown>
+                    <button
+                      onClick={async () => {
+                        if (!isAuthenticated) {
+                          navigate('/auth')
+                          return
                         }
-                      </button>
-                      
-                      {/* MoodMorph presets dropdown */}
-                      {moodMorphDropdownOpen && (
+                        
+                        if (composerState.mode === 'moodmorph') {
+                          // Already in MoodMorph mode - toggle dropdown
+                          setMoodMorphDropdownOpen((v) => !v)
+                        } else {
+                          // Switch to MoodMorph mode AND show dropdown immediately
+                          setComposerState(s => ({ ...s, mode: 'moodmorph' }))
+                          setSelectedMoodMorphPreset(null)
+                          setMoodMorphDropdownOpen(true) // Show dropdown immediately
+                        }
+                      }}
+                      className={
+                        !isAuthenticated
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
+                          : composerState.mode === 'moodmorph'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white text-black'
+                          : 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15'
+                      }
+                      title={isAuthenticated ? 'Switch to MoodMorph™ mode' : 'Sign up to use MoodMorph™'}
+                      disabled={!isAuthenticated}
+                    >
+                      {selectedMoodMorphPreset ? 
+                        MOODMORPH_PRESETS.find(p => p.id === selectedMoodMorphPreset)?.label || 'MoodMorph™' 
+                        : 'MoodMorph™'
+                      }
+                    </button>
+                    
+                                          {/* MoodMorph presets dropdown - show when in MoodMorph mode */}
+                      {composerState.mode === 'moodmorph' && moodMorphDropdownOpen && (
                         <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
                           <MoodMorphPicker
                             value={selectedMoodMorphPreset}
-                            onChange={(presetId) => {
+                            onChange={async (presetId) => {
                               setSelectedMoodMorphPreset(presetId || null)
                               setMoodMorphDropdownOpen(false)
+                              
+                              // Auto-generate when MoodMorph preset is selected
+                              if (presetId && selectedFile && isAuthenticated) {
+                                console.log('🎭 Auto-generating MoodMorph with preset:', presetId)
+                                try {
+                                  await dispatchGenerate('moodmorph', {
+                                    moodMorphPresetId: presetId
+                                  })
+                                } catch (error) {
+                                  console.error('❌ MoodMorph auto-generation failed:', error)
+                                  notifyError({ title: 'Generation failed', message: 'Please try again' })
+                                }
+                              }
                             }}
                             disabled={!isAuthenticated}
                           />
                         </div>
                       )}
-                    </div>
-                  )}
-
-                  {/* MoodMorph™ button - SINGLE BUTTON */}
-                  <button
-                    onClick={async () => {
-                      if (!isAuthenticated) {
-                        navigate('/auth')
-                        return
-                      }
-                      
-                      if (composerState.mode === 'moodmorph') {
-                        // Already in MoodMorph mode - switch back to presets
-                        setComposerState(s => ({ ...s, mode: 'presets' }))
-                        setSelectedMoodMorphPreset(null)
-                      } else {
-                        // Switch to MoodMorph mode
-                        setComposerState(s => ({ ...s, mode: 'moodmorph' }))
-                        setSelectedMoodMorphPreset(null)
-                      }
-                    }}
-                    className={
-                      !isAuthenticated
-                        ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
-                        : composerState.mode === 'moodmorph'
-                        ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white text-black'
-                        : 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15'
-                    }
-                    title={isAuthenticated ? 'Switch to MoodMorph™ mode' : 'Sign up to use MoodMorph™'}
-                    disabled={!isAuthenticated}
-                  >
-                    MoodMorph™
-                  </button>
+                  </div>
 
                   {/* Emotion Mask™ button - NEW STANDALONE MODE */}
                   <button
@@ -3073,8 +3059,19 @@ const HomeNew: React.FC = () => {
                         // Already in Emotion Mask mode - switch back to presets
                         setComposerState(s => ({ ...s, mode: 'presets' }))
                       } else {
-                        // Switch to Emotion Mask mode
+                        // Switch to Emotion Mask mode AND auto-generate
                         setComposerState(s => ({ ...s, mode: 'emotionmask' }))
+                        
+                        // Auto-generate Emotion Mask if file is ready
+                        if (selectedFile && isAuthenticated) {
+                          console.log('🎭 Auto-generating Emotion Mask')
+                          try {
+                            await dispatchGenerate('emotionmask')
+                          } catch (error) {
+                            console.error('❌ Emotion Mask auto-generation failed:', error)
+                            notifyError({ title: 'Generation failed', message: 'Please try again' })
+                          }
+                        }
                       }
                     }}
                     className={
@@ -3144,20 +3141,20 @@ const HomeNew: React.FC = () => {
                         // Emotion Mask mode - use Emotion Mask generation
                         console.log('🎭 Emotion Mask mode - calling generateEmotionMask')
                         await generateEmotionMask()
-                      } else {
+                        } else {
                         // Fallback - determine mode and generate
                         if (selectedPreset) {
-                          // Run preset generation
-                          dispatchGenerate('preset', {
-                            presetId: selectedPreset,
-                            presetData: PRESETS[selectedPreset],
-                            promptOverride: prompt
-                          })
-                        } else {
-                          // Run custom generation
-                          dispatchGenerate('custom', {
-                            promptOverride: prompt
-                          })
+                        // Run preset generation
+                        dispatchGenerate('preset', {
+                          presetId: selectedPreset,
+                          presetData: PRESETS[selectedPreset],
+                          promptOverride: prompt
+                        })
+                      } else {
+                        // Run custom generation
+                        dispatchGenerate('custom', {
+                          promptOverride: prompt
+                        })
                         }
                       }
                     }} 
