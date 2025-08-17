@@ -80,7 +80,14 @@ export const handler: Handler = async (event) => {
       signature: signature.substring(0, 8) + '...'
     });
 
-    return json(200, { cloudName, apiKey, timestamp, signature });
+    return json(200, { 
+      cloudName, 
+      apiKey, 
+      cloud_name: cloudName,  // Add snake_case for compatibility
+      api_key: apiKey,        // Add snake_case for compatibility
+      timestamp, 
+      signature 
+    });
   } catch (e: any) {
     return json(401, { error: e?.message || 'Unauthorized' });
   }
