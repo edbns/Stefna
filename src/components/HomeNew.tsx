@@ -1862,6 +1862,8 @@ const HomeNew: React.FC = () => {
     } catch (error) {
       console.log('❌ Auto-run check failed:', error)
       notifyError({ title: 'Generation failed', message: 'Please try again' })
+      // Don't proceed with generation if Cloudinary signer fails
+      return
     }
   }
 
@@ -1921,6 +1923,8 @@ const HomeNew: React.FC = () => {
     } catch (error) {
       console.log('❌ Auto-run check failed:', error)
       notifyError({ title: 'Generation failed', message: 'Please try again' })
+      // Don't proceed with generation if Cloudinary signer fails
+      return
     }
   }
 
