@@ -54,6 +54,16 @@ export const handler: Handler = async (event) => {
       request_id,
       config: { image_cost: config.image_cost, daily_cap: config.daily_cap }
     });
+    
+    // 🔍 Debug: Log the exact action value and type
+    console.log('🔍 Action debug:', {
+      action,
+      actionType: typeof action,
+      actionLength: action?.length,
+      actionTrimmed: action?.trim?.(),
+      actionLower: action?.toLowerCase?.(),
+      isValidAction: allowedActions.includes(action)
+    });
 
     // Validation
     if (!userId) {

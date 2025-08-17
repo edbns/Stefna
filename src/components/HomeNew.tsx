@@ -1195,6 +1195,7 @@ const HomeNew: React.FC = () => {
       // Reserve credits before generation
       const creditsNeeded = generateTwo ? 2 : 1;
       console.log(`💰 Reserving ${creditsNeeded} credits before generation...`);
+      console.log('🔍 Credit reservation debug:', { mode, creditsNeeded, modeType: typeof mode });
       
       const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
         method: 'POST',
