@@ -9,29 +9,41 @@ type SelState = {
   setSelectedPreset: (id: PresetId | null) => void;
   ensureDefault: (actives: PresetId[]) => void;
   resetToDefault: () => void;
-  getDefaultPreset: () => PresetId;
+  getDefaultPreset: () => PresetId | null;
 };
 
-// Defensive default preset - never null
-const DEFAULT_PRESET: PresetId = 'cinematic_glow';
+// Default preset - null means "None" selected
+const DEFAULT_PRESET: PresetId | null = null;
 
 export const useSelectedPreset = create<SelState>((set, get) => ({
   // Make selectedPreset resilient to store reloads/preset refresh
   selectedPreset: (() => {
     const stored = localStorage.getItem('selectedPreset');
+    
+    // Clear old "cinematic_glow" default if it exists
+    if (stored === 'cinematic_glow') {
+      console.log('🎯 Clearing old cinematic_glow default, setting to None');
+      localStorage.setItem('selectedPreset', 'none');
+      return null;
+    }
+    
+    if (stored === 'none') {
+      console.log('🎯 Restored selectedPreset from localStorage: None');
+      return null;
+    }
     if (stored && stored in PRESETS) {
       console.log('🎯 Restored selectedPreset from localStorage:', stored);
       return stored as PresetId;
     }
-    console.log('🎯 Using boot default preset:', DEFAULT_PRESET);
+    console.log('🎯 Using boot default preset: None');
     return DEFAULT_PRESET;
   })(),
   
   setSelectedPreset: (id) => {
     if (id === null) {
-      console.log('🎯 Clearing selectedPreset to default');
+      console.log('🎯 Clearing selectedPreset to default (None)');
       set({ selectedPreset: DEFAULT_PRESET });
-      localStorage.setItem('selectedPreset', DEFAULT_PRESET);
+      localStorage.setItem('selectedPreset', 'none');
       return;
     }
     if (!id) {
@@ -50,23 +62,17 @@ export const useSelectedPreset = create<SelState>((set, get) => ({
     
     // Only set if it's currently null/undefined or not in active list
     if (!current || !actives.includes(current)) {
-      const first = actives[0];
-      if (first) {
-        console.log('🎯 Setting boot default preset to:', first);
-        set({ selectedPreset: first as PresetId });
-        localStorage.setItem('selectedPreset', first);
-      } else {
-        console.log('🎯 Setting fallback boot preset to:', DEFAULT_PRESET);
-        set({ selectedPreset: DEFAULT_PRESET });
-        localStorage.setItem('selectedPreset', DEFAULT_PRESET);
-      }
+      // Always start with "None" (null) as default, don't auto-select first preset
+      console.log('🎯 Setting boot default preset to: None (no auto-selection)');
+      set({ selectedPreset: DEFAULT_PRESET });
+      localStorage.setItem('selectedPreset', 'none');
     }
   },
 
   resetToDefault: () => {
-    console.log('🎯 Resetting to default preset:', DEFAULT_PRESET);
+    console.log('🎯 Resetting to default preset: None');
     set({ selectedPreset: DEFAULT_PRESET });
-    localStorage.setItem('selectedPreset', DEFAULT_PRESET);
+    localStorage.setItem('selectedPreset', 'none');
   },
 
   getDefaultPreset: () => DEFAULT_PRESET,
@@ -76,9 +82,8 @@ export const useSelectedPreset = create<SelState>((set, get) => ({
 if (typeof window !== 'undefined') {
   useSelectedPreset.subscribe((state) => {
     if (state.selectedPreset === null) {
-      console.warn('[selectedPreset] became null unexpectedly, resetting to default', new Error().stack);
-      // Auto-recover from null state
-      useSelectedPreset.getState().resetToDefault();
+      console.warn('[selectedPreset] became null unexpectedly - this is now the expected default state');
+      // Don't auto-recover since null is now our intended default
     }
   });
 }

@@ -24,6 +24,7 @@ import { runMoodMorph } from '../services/moodMorph'
 import { MoodMorphPicker } from './MoodMorphPicker'
 import { MOODMORPH_PRESETS } from '../presets/moodmorph'
 import { isMoodMorphPreset } from '../lib/moodmorph'
+import { signedFetch } from '../lib/auth'
 
 import { getSourceFileOrThrow } from '../services/source'
 
@@ -110,7 +111,7 @@ const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefin
 }
 
 const HomeNew: React.FC = () => {
-  const { notifyQueue, notifyReady, notifyError } = useToasts()
+  const { notifyQueue, notifyReady, notifyError, notifySuccess } = useToasts()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
   const location = useLocation() as any
@@ -123,6 +124,7 @@ const HomeNew: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isVideoPreview, setIsVideoPreview] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isEnhancing, setIsEnhancing] = useState(false)
   const [prompt, setPrompt] = useState('')
   
   // Mode state
@@ -130,7 +132,7 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: 'custom' as 'preset' | 'moodmorph' | 'remix' | 'custom',
+    mode: 'custom' as 'preset' | 'moodmorph' | 'remix' | 'custom' | 'emotionmask',
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
@@ -326,6 +328,7 @@ const HomeNew: React.FC = () => {
   const [creatorFilter, setCreatorFilter] = useState<string | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
+  const [moodMorphDropdownOpen, setMoodMorphDropdownOpen] = useState(false)
   const [expandedStorySection, setExpandedStorySection] = useState<string | null>(null)
   
   // Profile state from context
@@ -919,15 +922,16 @@ const HomeNew: React.FC = () => {
     closeAllDropdowns() // Close all dropdowns when composer closes
   }
 
-  // Centralized generation dispatcher with comprehensive logging
+  // NEW CLEAN GENERATION DISPATCHER - NO MORE MIXED LOGIC
   async function dispatchGenerate(
-    kind: 'preset' | 'custom' | 'remix' | 'mode',
+    kind: 'preset' | 'custom' | 'remix' | 'moodmorph' | 'emotionmask',
     options?: {
       presetId?: string;
       presetData?: any;
-      mode?: string;
-      modeOption?: string;
-      promptOverride?: string;
+      moodMorphPresetId?: string;
+      customPrompt?: string;
+      sourceUrl?: string;
+      originalPrompt?: string;
     }
   ) {
     const t0 = performance.now();
@@ -935,20 +939,10 @@ const HomeNew: React.FC = () => {
     // Generate run ID to avoid cross-talk
     const runId = crypto.randomUUID();
     setCurrentRunId(runId);
-    console.info('▶ dispatchGenerate', { kind, options, runId });
+    console.info('▶ NEW dispatchGenerate', { kind, options, runId });
     
     // Close composer immediately when generation starts
     setIsComposerOpen(false);
-    
-    // Assertions before calling aimlApi
-    if (options?.presetId) {
-      console.assert(PRESETS[options.presetId], `Preset ${options.presetId} must be valid before generate`);
-      if (!PRESETS[options.presetId]) {
-        console.error('❌ Invalid preset assertion failed:', options.presetId);
-        notifyError({ title: 'Invalid preset', message: 'Please select a valid style preset' });
-        return;
-      }
-    }
     
     // Start generation with ID guard
     const genId = startGeneration();
@@ -964,6 +958,7 @@ const HomeNew: React.FC = () => {
       promptLen: prompt?.length ?? 0,
       isGenerating,
       isAuthenticated,
+      composerMode: composerState.mode,
     });
 
     if (!previewUrl) {
@@ -973,132 +968,74 @@ const HomeNew: React.FC = () => {
       return;
     }
 
-    // Use preset prompt if no user prompt provided
+    // NEW CLEAN MODE-BASED LOGIC - NO MORE MIXING
     let effectivePrompt = '';
-    let modeMeta: any = null;
+    let generationMeta: any = null;
     
-    // Use passed preset data or fallback to global state
-    const currentPresetId = options?.presetId || selectedPreset;
-    const currentPrompt = options?.promptOverride || prompt;
-    
-    // Handle mode-based generation with new system
-    const currentMode = options?.mode || selectedMode;
-    // Safe fallbacks for undefined theme variables
-    const safeTheme = selectedTheme || null;
-    const safeEra = selectedEra || null;
-    const safeOp = selectedOp || null;
-    const currentModeOption = options?.modeOption || (safeTheme || safeEra || safeOp);
-    
-    if (kind === 'mode' && currentMode && currentModeOption) {
-      const resolvedPreset = resolvePresetForMode({
-        mode: currentMode,
-        option: currentModeOption as string,
-        activePresets: PRESETS
-      });
+    if (kind === 'custom') {
+      // CUSTOM MODE: Use ONLY the user's typed prompt
+      effectivePrompt = options?.customPrompt || prompt?.trim() || 'Transform this image';
+      generationMeta = { mode: 'custom', source: 'user_prompt' };
+      console.log('🎨 CUSTOM MODE: Using user prompt only:', effectivePrompt);
       
-      // Create mode metadata for tracking
-      modeMeta = {
-        mode: currentMode,
-        option: currentModeOption as string,
-        mapping_version: 'v2',
-      };
-      
-      // Get preset definition from active presets or master catalog
-      const presetDef = getPresetDef(resolvedPreset, PRESETS);
-      if (presetDef) {
-        // Determine detail level based on mode
-        const detailLevel: DetailLevel = selectedMode === 'story' ? 'medium' : 'hard';
-        
-        // Use the new prompt building system with subject locking
-        const { positives, negatives } = buildEffectivePrompt({
-          base: presetDef.prompt,
-          user: prompt.trim() || undefined,
-          detail: detailLevel,
-          lockSurfer: true, // Enable surfer subject lock for all modes
-          mode: selectedMode,
-          extraNeg: presetDef.negative_prompt
-        });
-        
-        effectivePrompt = positives;
-        console.log(`🎭 Using mode "${selectedMode}" → preset "${resolvedPreset}" (${detailLevel} detail):`, effectivePrompt);
-        if (negatives) {
-          console.log(`🚫 Negative prompt:`, negatives);
-        }
-      } else {
-        console.warn(`⚠️ Preset ${resolvedPreset} not found, using fallback`);
-        effectivePrompt = 'stylize, preserve subject and composition';
+    } else if (kind === 'preset') {
+      // PRESET MODE: Use ONLY the selected preset
+      const presetId = options?.presetId || selectedPreset;
+      if (!presetId || !PRESETS[presetId]) {
+        console.error('❌ Invalid preset:', presetId);
+        notifyError({ title: 'Invalid preset', message: 'Please select a valid style preset' });
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
       }
-    }
-
-    // Check if we have either a preset, mode, or user prompt
-    const hasPreset = Boolean(currentPresetId);
-    const hasPrompt = Boolean(prompt.trim());
-    const hasMode = Boolean(currentMode);
-    
-    if (!hasPreset && !hasPrompt && !hasMode) {
-      console.warn('No preset, mode, or user prompt selected; aborting.');
-      // Pick a preset or add a prompt - no notification needed
+      effectivePrompt = PRESETS[presetId].prompt;
+      generationMeta = { mode: 'preset', presetId, presetLabel: PRESETS[presetId].label };
+      console.log('🎯 PRESET MODE: Using preset only:', effectivePrompt);
+      
+    } else if (kind === 'moodmorph') {
+      // MOODMORPH MODE: Use ONLY the MoodMorph preset
+      const moodMorphPresetId = options?.moodMorphPresetId || selectedMoodMorphPreset;
+      if (!moodMorphPresetId) {
+        console.error('❌ Invalid MoodMorph preset:', moodMorphPresetId);
+        notifyError({ title: 'Invalid MoodMorph preset', message: 'Please select a MoodMorph preset first' });
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
+      }
+      // For now, use a base prompt - MoodMorph will generate 3 variations
+      effectivePrompt = 'Transform this image with mood variations';
+      generationMeta = { mode: 'moodmorph', moodMorphPresetId };
+      console.log('🎭 MOODMORPH MODE: Using MoodMorph preset:', moodMorphPresetId);
+      
+    } else if (kind === 'remix') {
+      // REMIX MODE: Use ONLY the original media prompt
+      const originalPrompt = options?.originalPrompt || prompt?.trim() || 'Transform this image';
+      effectivePrompt = originalPrompt;
+      generationMeta = { mode: 'remix', sourceUrl: options?.sourceUrl };
+      console.log('🔄 REMIX MODE: Using original prompt:', effectivePrompt);
+      
+    } else if (kind === 'emotionmask') {
+      // EMOTION MASK MODE: Use ONLY the Emotion Mask concept
+      effectivePrompt = 'dual-tone emotional lighting, one side warm soft light and the other cool harsh shadow, sharp eyes, expressive emotion layering, cinematic background blur, conflicting emotional tones, what people show on the outside vs what they feel underneath';
+      generationMeta = { mode: 'emotionmask', concept: 'emotional_truth' };
+      console.log('🎭 EMOTION MASK MODE: Using emotional layering concept:', effectivePrompt);
+      
+    } else {
+      console.error('❌ Unknown generation kind:', kind);
+      notifyError({ title: 'Generation error', message: 'Unknown generation type' });
       endGeneration(genId);
       setNavGenerating(false);
       return;
     }
     
-    console.log('🔍 Preset selection debug:', {
-      selectedPreset,
-      currentPresetId,
-      hasPreset: !!currentPresetId,
-      presetExists: currentPresetId ? !!PRESETS[currentPresetId] : false,
-      presetPrompt: currentPresetId ? PRESETS[currentPresetId]?.prompt : 'N/A'
-    });
-    
-    // Skip this logic if we already set effectivePrompt from mode
-    if (!effectivePrompt) {
-      if (currentPresetId && PRESETS[currentPresetId]) {
-        // If preset is selected, use ONLY the preset prompt (ignore user prompt field)
-        effectivePrompt = PRESETS[currentPresetId].prompt;
-        console.log(`🎨 Using preset "${currentPresetId}":`, effectivePrompt);
-      } else if (prompt.trim()) {
-        // If no preset but user typed a prompt, use that
-        effectivePrompt = prompt.trim();
-        console.log('✍️ Using user prompt:', effectivePrompt);
-      } else {
-        // Only use fallback if no preset and no user prompt
-        effectivePrompt = 'stylize, preserve subject and composition';
-        console.log('🔄 Using fallback prompt:', effectivePrompt);
-      }
-    }
+    console.log('✅ Final effective prompt:', effectivePrompt);
+    console.log('✅ Generation metadata:', generationMeta);
     
     // Add "Make it obvious" test option for debugging
-    const makeItObvious = prompt.toLowerCase().includes('make it obvious') || prompt.toLowerCase().includes('test');
+    const makeItObvious = prompt?.toLowerCase().includes('make it obvious') || prompt?.toLowerCase().includes('test');
     if (makeItObvious) {
       effectivePrompt = 'black-and-white line art, no color, heavy outlines, flat shading, cartoon style';
       console.log('🔎 Using "Make it obvious" test prompt:', effectivePrompt);
-    }
-    
-    // Use the new preset system for better prompt mapping
-    if (currentPresetId) {
-      const preset = PRESETS[currentPresetId as keyof typeof PRESETS];
-      if (preset?.prompt) {
-        effectivePrompt = preset.prompt;
-        console.log(`🎨 Using new preset system "${currentPresetId}" (${isVideoPreview ? 'V2V' : 'I2I'}):`, effectivePrompt);
-      }
-    }
-    
-    console.log('🎯 Final effective prompt:', effectivePrompt);
-    
-    // Log preset usage for debugging
-    if (currentPresetId && PRESETS[currentPresetId]) {
-      console.log('🎨 Preset used in generation:', {
-        presetName: currentPresetId,
-        presetLabel: getPresetLabel(currentPresetId, PRESETS),
-        presetPrompt: PRESETS[currentPresetId].prompt,
-        finalPrompt: effectivePrompt
-      });
-      
-      // Track preset usage for rotation analytics
-      presetRotationService.trackPresetUsage(currentPresetId);
-    } else if (currentPresetId && !PRESETS[currentPresetId]) {
-      console.warn('⚠️ Invalid preset selected:', currentPresetId);
     }
     
     if (!effectivePrompt) {
@@ -1129,7 +1066,7 @@ const HomeNew: React.FC = () => {
       console.log('🚀 Starting generation with:', {
         kind,
         effectivePrompt,
-        selectedPreset: currentPresetId,
+        generationMeta,
         isVideo: isVideoPreview
       });
       
@@ -1137,8 +1074,6 @@ const HomeNew: React.FC = () => {
       // Just close the composer; keep using outer genId
       setIsComposerOpen(false);
       
-      // Keep preset selected for user convenience (stateless generation doesn't need clearing)
-
       // Enforce server-side quota and generate via aimlApi
       // Use new uploadSource service - pass File object, not blob URL
       const uploadResult = await uploadSourceToCloudinary({
@@ -1154,7 +1089,7 @@ const HomeNew: React.FC = () => {
         isGenerating,
         isAuthenticated,
         sourceUrl,
-        selectedPreset,
+        generationMeta,
         effectivePrompt,
         promptFieldValue: prompt
       });
@@ -1177,8 +1112,8 @@ const HomeNew: React.FC = () => {
         source: kind,
         visibility: shareToFeed ? 'public' : 'private',
         allow_remix: shareToFeed ? allowRemix : false,
-        // Mode metadata for tracking and display
-        ...(modeMeta && { modeMeta }),
+        // Generation metadata for tracking and display
+        ...(generationMeta && { generationMeta }),
         num_variations: generateTwo ? 2 : 1,
         strength: 0.85,  // For I2I processing
         seed: Date.now(), // Prevent provider-side caching
@@ -2112,6 +2047,25 @@ const HomeNew: React.FC = () => {
     })
   }
 
+  // 5. EMOTION MASK MODE GENERATION - Only uses emotional layering concept
+  const generateEmotionMask = async () => {
+    console.log('🎭 EMOTION MASK MODE: Generating emotional truth portrait')
+    
+    // Update composer state for Emotion Mask mode
+    setComposerState(s => ({
+      ...s,
+      mode: 'emotionmask',
+      selectedPresetId: null, // Clear preset
+      selectedMoodMorphPresetId: null, // Clear MoodMorph preset
+      customPrompt: '', // Clear custom prompt
+      status: 'idle',
+      error: null
+    }))
+    
+    // Generate with ONLY the Emotion Mask concept - no other contamination
+    await dispatchGenerate('emotionmask');
+  }
+
   // Mode handlers for one-click generation
   const handleModeClick = async (mode: 'time_machine'|'story'|'restore', option: string) => {
     console.log('🎯 handleModeClick called with:', { mode, option })
@@ -2439,6 +2393,93 @@ const HomeNew: React.FC = () => {
       console.error('Failed to save draft:', error)
       notifyError({ title: 'Something went wrong', message: 'Could not save draft' })
     }
+  }
+
+  // Magic Wand Enhancement - Free AI prompt enhancement
+  const handleMagicWandEnhance = async () => {
+    if (!prompt.trim() || isEnhancing) return
+    
+    setIsEnhancing(true)
+    console.log('✨ Magic Wand enhancing prompt:', prompt)
+    
+    try {
+      // Call AIML API for prompt enhancement (free)
+      const enhancedPrompt = await enhancePromptWithAIML(prompt.trim())
+      
+      if (enhancedPrompt) {
+        setPrompt(enhancedPrompt)
+        console.log('✨ Prompt enhanced successfully:', enhancedPrompt)
+        // Show success feedback
+        notifySuccess({ title: 'Prompt enhanced!', message: 'Your prompt has been enhanced with AI' })
+      }
+    } catch (error) {
+      console.error('❌ Magic Wand enhancement failed:', error)
+      // Show error feedback but keep original prompt
+      notifyError({ title: 'Enhancement failed', message: 'Could not enhance prompt, keeping original' })
+    } finally {
+      setIsEnhancing(false)
+    }
+  }
+
+  // AIML API prompt enhancement function
+  const enhancePromptWithAIML = async (originalPrompt: string): Promise<string> => {
+    try {
+      const token = authService.getToken()
+      if (!token) {
+        throw new Error('Authentication required')
+      }
+
+      console.log('🚀 Calling AIML API for prompt enhancement...')
+      
+      // Call AIML API for text enhancement (free)
+      const response = await fetch('/.netlify/functions/aimlApi', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: 'enhance_prompt',
+          prompt: originalPrompt,
+          enhancement_type: 'artistic_photography'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`AIML API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.enhanced_prompt) {
+        return data.enhanced_prompt
+      } else {
+        // Fallback enhancement if AIML doesn't return expected format
+        return enhancePromptLocally(originalPrompt)
+      }
+    } catch (error) {
+      console.error('❌ AIML API enhancement failed, using local fallback:', error)
+      // Use local enhancement as fallback
+      return enhancePromptLocally(originalPrompt)
+    }
+  }
+
+  // Local prompt enhancement fallback (when AIML is unavailable)
+  const enhancePromptLocally = (originalPrompt: string): string => {
+    console.log('🔄 Using local prompt enhancement fallback')
+    
+    // Simple enhancement templates for common cases
+    const enhancements = [
+      ', professional photography style, high quality, sharp details, 8K resolution',
+      ', cinematic lighting, dramatic shadows, professional composition, studio quality',
+      ', artistic style, creative interpretation, enhanced colors, premium quality',
+      ', professional editing, enhanced contrast, vibrant colors, high resolution',
+      ', studio lighting, professional photography, enhanced details, premium finish'
+    ]
+    
+    // Pick a random enhancement and add it
+    const randomEnhancement = enhancements[Math.floor(Math.random() * enhancements.length)]
+    return originalPrompt + randomEnhancement
   }
 
   // Load user profile from database
@@ -2795,17 +2836,30 @@ const HomeNew: React.FC = () => {
             <div className="bg-black border border-[#333333] rounded-2xl px-4 py-3 shadow-2xl transition-all duration-300">
               
 
-              {/* Prompt Input - show for presets mode */}
-              {mode === 'presets' && (
+              {/* Prompt Input - show for custom mode with Magic Wand */}
+              {composerState.mode === 'custom' && (
                 <div className="mb-2">
                   <div className="relative">
                     <textarea
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="Describe your vision or leave blank to use preset style..."
-                      className="w-full px-3 py-2 bg-white/5 border border-[#333333] rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors h-20 text-sm"
+                      placeholder="Describe your vision... (click ✨ to enhance your prompt)"
+                      className="w-full px-3 py-2 pr-10 bg-white/5 border border-[#333333] rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors h-20 text-sm"
                       disabled={isGenerating}
                     />
+                    {/* Magic Wand Enhancement Button */}
+                    <button
+                      onClick={handleMagicWandEnhance}
+                      disabled={isGenerating || !prompt.trim()}
+                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
+                      title="Enhance prompt with AI (free)"
+                    >
+                      {isEnhancing ? (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <span className="text-lg">✨</span>
+                      )}
+                    </button>
                     <div className="absolute bottom-2 right-2 text-white/30 text-xs">
                       {prompt.length}/500
                     </div>
@@ -2933,7 +2987,7 @@ const HomeNew: React.FC = () => {
                   </div>
 
                   {/* MoodMorph preset picker - show when in MoodMorph mode */}
-                  {mode === 'moodmorph' && (
+                  {composerState.mode === 'moodmorph' && (
                     <div className="relative" data-moodmorph-dropdown>
                       <button
                         onClick={() => {
@@ -2941,13 +2995,13 @@ const HomeNew: React.FC = () => {
                             navigate('/auth')
                             return
                           }
-                          setPresetsOpen((v) => !v)
+                          setMoodMorphDropdownOpen((v) => !v)
                         }}
                         className={(() => {
                           const baseClass = 'px-3 py-1.5 rounded-2xl text-xs border transition-colors';
                           const activeClass = 'bg-white/10 text-white border-white/20 hover:bg-white/15';
-                          const disabledClass = 'bg-white/5 text-white/50 border-white/10 cursor-not-allowed';
-                          return `${baseClass} ${isAuthenticated ? activeClass : disabledClass}`;
+                          const inactiveClass = 'text-white/80 hover:text-white hover:bg-white/10';
+                          return `${baseClass} ${isAuthenticated ? activeClass : inactiveClass}`;
                         })()}
                         data-nav-button
                         data-nav-type="moodmorph"
@@ -2961,13 +3015,13 @@ const HomeNew: React.FC = () => {
                       </button>
                       
                       {/* MoodMorph presets dropdown */}
-                      {presetsOpen && (
+                      {moodMorphDropdownOpen && (
                         <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
                           <MoodMorphPicker
                             value={selectedMoodMorphPreset}
                             onChange={(presetId) => {
                               setSelectedMoodMorphPreset(presetId || null)
-                              setPresetsOpen(false)
+                              setMoodMorphDropdownOpen(false)
                             }}
                             disabled={!isAuthenticated}
                           />
@@ -2976,7 +3030,7 @@ const HomeNew: React.FC = () => {
                     </div>
                   )}
 
-                  {/* MoodMorph™ button */}
+                  {/* MoodMorph™ button - SINGLE BUTTON */}
                   <button
                     onClick={async () => {
                       if (!isAuthenticated) {
@@ -2984,20 +3038,20 @@ const HomeNew: React.FC = () => {
                         return
                       }
                       
-                      if (mode === 'moodmorph') {
+                      if (composerState.mode === 'moodmorph') {
                         // Already in MoodMorph mode - switch back to presets
-                        setMode('presets')
+                        setComposerState(s => ({ ...s, mode: 'presets' }))
                         setSelectedMoodMorphPreset(null)
                       } else {
                         // Switch to MoodMorph mode
-                        setMode('moodmorph')
+                        setComposerState(s => ({ ...s, mode: 'moodmorph' }))
                         setSelectedMoodMorphPreset(null)
                       }
                     }}
                     className={
                       !isAuthenticated
                         ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
-                        : mode === 'moodmorph'
+                        : composerState.mode === 'moodmorph'
                         ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white text-black'
                         : 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15'
                     }
@@ -3005,6 +3059,35 @@ const HomeNew: React.FC = () => {
                     disabled={!isAuthenticated}
                   >
                     MoodMorph™
+                  </button>
+
+                  {/* Emotion Mask™ button - NEW STANDALONE MODE */}
+                  <button
+                    onClick={async () => {
+                      if (!isAuthenticated) {
+                        navigate('/auth')
+                        return
+                      }
+                      
+                      if (composerState.mode === 'emotionmask') {
+                        // Already in Emotion Mask mode - switch back to presets
+                        setComposerState(s => ({ ...s, mode: 'presets' }))
+                      } else {
+                        // Switch to Emotion Mask mode
+                        setComposerState(s => ({ ...s, mode: 'emotionmask' }))
+                      }
+                    }}
+                    className={
+                      !isAuthenticated
+                        ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
+                        : composerState.mode === 'emotionmask'
+                        ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white text-black'
+                        : 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15'
+                    }
+                    title={isAuthenticated ? 'Switch to Emotion Mask™ mode' : 'Sign up to use Emotion Mask™'}
+                    disabled={!isAuthenticated}
+                  >
+                    Emotion Mask™
                   </button>
                 </div>
 
@@ -3057,6 +3140,10 @@ const HomeNew: React.FC = () => {
                         // Remix mode - use remix generation
                         console.log('🔄 Remix mode - calling generateRemix')
                         await generateRemix()
+                      } else if (composerState.mode === 'emotionmask') {
+                        // Emotion Mask mode - use Emotion Mask generation
+                        console.log('🎭 Emotion Mask mode - calling generateEmotionMask')
+                        await generateEmotionMask()
                       } else {
                         // Fallback - determine mode and generate
                         if (selectedPreset) {
