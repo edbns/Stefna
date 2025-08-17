@@ -1,14 +1,28 @@
 import type { Handler } from '@netlify/functions';
 
 export const handler: Handler = async () => {
-  // Debug: Log all AIML-related environment variables
-  console.log('🔍 AIML Environment Debug:', {
-    AIML_API_BASE: process.env.AIML_API_BASE,
-    AIML_API_KEY: process.env.AIML_API_KEY,
-    AIML_API_URL: process.env.AIML_API_URL,
-    VITE_AIML_API_BASE: process.env.VITE_AIML_API_BASE,
-    VITE_AIML_API_KEY: process.env.VITE_AIML_API_KEY,
-    VITE_AIML_API_URL: process.env.VITE_AIML_API_URL,
+  // Debug: Log all environment variables
+  console.log('🔍 FULL Environment Debug:', {
+    // Database
+    DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
+    NETLIFY_DATABASE_URL: process.env.NETLIFY_DATABASE_URL ? 'SET' : 'NOT SET',
+    
+    // AIML
+    AIML_API_BASE: process.env.AIML_API_BASE ? 'SET' : 'NOT SET',
+    AIML_API_KEY: process.env.AIML_API_KEY ? 'SET' : 'NOT SET',
+    AIML_API_URL: process.env.AIML_API_URL ? 'SET' : 'NOT SET',
+    
+    // JWT
+    JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
+    AUTH_JWT_SECRET: process.env.AUTH_JWT_SECRET ? 'SET' : 'NOT SET',
+    
+    // Context
+    CONTEXT: process.env.CONTEXT,
+    URL: process.env.URL,
+    NODE_ENV: process.env.NODE_ENV,
+    
+    // All env vars (first 20)
+    ALL_ENV_VARS: Object.keys(process.env).slice(0, 20)
   });
 
   return {

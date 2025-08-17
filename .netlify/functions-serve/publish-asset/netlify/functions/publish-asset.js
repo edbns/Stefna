@@ -24,20 +24,25 @@ __export(publish_asset_exports, {
 });
 module.exports = __toCommonJS(publish_asset_exports);
 
-// netlify/lib/supabaseAdmin.ts
-var import_supabase_js = require("@supabase/supabase-js");
-var supabaseAdmin = (0, import_supabase_js.createClient)(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
-);
+// netlify/lib/neonAdmin.ts
+var neonAdmin = {
+  from: (table) => {
+    console.warn(`neonAdmin.from('${table}') is deprecated. Use Neon sql directly instead.`);
+    return {
+      select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }),
+      insert: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }) }),
+      update: () => ({ eq: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }) }) }),
+      delete: () => ({ eq: () => ({ data: null, error: null }) })
+    };
+  }
+};
 
 // netlify/functions/publish-asset.ts
 var handler = async (event) => {
   try {
     const input = JSON.parse(event.body || "{}");
     if (!input.assetId) return resp({ ok: false, error: "assetId required" });
-    const { data, error } = await supabaseAdmin.from("assets").update({
+    const { data, error } = await neonAdmin.from("assets").update({
       is_public: input.isPublic,
       allow_remix: input.allowRemix
     }).eq("id", input.assetId).select("*").single();

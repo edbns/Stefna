@@ -24,13 +24,18 @@ __export(create_asset_exports, {
 });
 module.exports = __toCommonJS(create_asset_exports);
 
-// netlify/lib/supabaseAdmin.ts
-var import_supabase_js = require("@supabase/supabase-js");
-var supabaseAdmin = (0, import_supabase_js.createClient)(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
-);
+// netlify/lib/neonAdmin.ts
+var neonAdmin = {
+  from: (table) => {
+    console.warn(`neonAdmin.from('${table}') is deprecated. Use Neon sql directly instead.`);
+    return {
+      select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }),
+      insert: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }) }),
+      update: () => ({ eq: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }) }) }),
+      delete: () => ({ eq: () => ({ data: null, error: null }) })
+    };
+  }
+};
 
 // netlify/functions/create-asset.ts
 function getUserIdFromToken(auth) {
@@ -54,7 +59,7 @@ var handler = async (event) => {
     const userId = getUserIdFromToken(event.headers.authorization);
     if (!userId) return resp({ ok: false, error: "Unauthorized" });
     const mediaType = input.mediaType === "video" || input.mediaType === "image" ? input.mediaType : "image";
-    const { data, error } = await supabaseAdmin.from("assets").insert({
+    const { data, error } = await neonAdmin.from("assets").insert({
       user_id: userId,
       cloudinary_public_id: input.sourcePublicId ?? null,
       media_type: mediaType,

@@ -25,9 +25,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// netlify/functions/node_modules/react/cjs/react.production.min.js
+// node_modules/@react-email/render/node_modules/react/cjs/react.production.min.js
 var require_react_production_min = __commonJS({
-  "netlify/functions/node_modules/react/cjs/react.production.min.js"(exports2) {
+  "node_modules/@react-email/render/node_modules/react/cjs/react.production.min.js"(exports2) {
     "use strict";
     var l = Symbol.for("react.element");
     var n = Symbol.for("react.portal");
@@ -296,9 +296,9 @@ var require_react_production_min = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/react/cjs/react.development.js
+// node_modules/@react-email/render/node_modules/react/cjs/react.development.js
 var require_react_development = __commonJS({
-  "netlify/functions/node_modules/react/cjs/react.development.js"(exports2, module2) {
+  "node_modules/@react-email/render/node_modules/react/cjs/react.development.js"(exports2, module2) {
     "use strict";
     if (process.env.NODE_ENV !== "production") {
       (function() {
@@ -2169,9 +2169,9 @@ var require_react_development = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/react/index.js
+// node_modules/@react-email/render/node_modules/react/index.js
 var require_react = __commonJS({
-  "netlify/functions/node_modules/react/index.js"(exports2, module2) {
+  "node_modules/@react-email/render/node_modules/react/index.js"(exports2, module2) {
     "use strict";
     if (process.env.NODE_ENV === "production") {
       module2.exports = require_react_production_min();
@@ -2181,9 +2181,9 @@ var require_react = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/react-dom/cjs/react-dom-server-legacy.node.production.min.js
+// node_modules/@react-email/render/node_modules/react-dom/cjs/react-dom-server-legacy.node.production.min.js
 var require_react_dom_server_legacy_node_production_min = __commonJS({
-  "netlify/functions/node_modules/react-dom/cjs/react-dom-server-legacy.node.production.min.js"(exports2) {
+  "node_modules/@react-email/render/node_modules/react-dom/cjs/react-dom-server-legacy.node.production.min.js"(exports2) {
     "use strict";
     var ea = require_react();
     var fa = require("stream");
@@ -3737,9 +3737,9 @@ var require_react_dom_server_legacy_node_production_min = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/react-dom/cjs/react-dom-server.node.production.min.js
+// node_modules/@react-email/render/node_modules/react-dom/cjs/react-dom-server.node.production.min.js
 var require_react_dom_server_node_production_min = __commonJS({
-  "netlify/functions/node_modules/react-dom/cjs/react-dom-server.node.production.min.js"(exports2) {
+  "node_modules/@react-email/render/node_modules/react-dom/cjs/react-dom-server.node.production.min.js"(exports2) {
     "use strict";
     var aa = require("util");
     var ba = require_react();
@@ -5417,9 +5417,9 @@ var require_react_dom_server_node_production_min = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js
+// node_modules/@react-email/render/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js
 var require_react_dom_server_legacy_node_development = __commonJS({
-  "netlify/functions/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js"(exports2) {
+  "node_modules/@react-email/render/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js"(exports2) {
     "use strict";
     if (process.env.NODE_ENV !== "production") {
       (function() {
@@ -10852,9 +10852,9 @@ var require_react_dom_server_legacy_node_development = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/react-dom/cjs/react-dom-server.node.development.js
+// node_modules/@react-email/render/node_modules/react-dom/cjs/react-dom-server.node.development.js
 var require_react_dom_server_node_development = __commonJS({
-  "netlify/functions/node_modules/react-dom/cjs/react-dom-server.node.development.js"(exports2) {
+  "node_modules/@react-email/render/node_modules/react-dom/cjs/react-dom-server.node.development.js"(exports2) {
     "use strict";
     if (process.env.NODE_ENV !== "production") {
       (function() {
@@ -16274,9 +16274,9 @@ var require_react_dom_server_node_development = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/react-dom/server.node.js
+// node_modules/@react-email/render/node_modules/react-dom/server.node.js
 var require_server_node = __commonJS({
-  "netlify/functions/node_modules/react-dom/server.node.js"(exports2) {
+  "node_modules/@react-email/render/node_modules/react-dom/server.node.js"(exports2) {
     "use strict";
     var l;
     var s;
@@ -16296,9 +16296,9 @@ var require_server_node = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/domelementtype/lib/index.js
+// node_modules/domelementtype/lib/index.js
 var require_lib = __commonJS({
-  "netlify/functions/node_modules/domelementtype/lib/index.js"(exports2) {
+  "node_modules/domelementtype/lib/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.Doctype = exports2.CDATA = exports2.Tag = exports2.Style = exports2.Script = exports2.Comment = exports2.Directive = exports2.Text = exports2.Root = exports2.isTag = exports2.ElementType = void 0;
@@ -16330,9 +16330,9 @@ var require_lib = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/domhandler/lib/node.js
+// node_modules/domhandler/lib/node.js
 var require_node = __commonJS({
-  "netlify/functions/node_modules/domhandler/lib/node.js"(exports2) {
+  "node_modules/domhandler/lib/node.js"(exports2) {
     "use strict";
     var __extends = exports2 && exports2.__extends || /* @__PURE__ */ function() {
       var extendStatics = function(d, b) {
@@ -16764,9 +16764,9 @@ var require_node = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/domhandler/lib/index.js
+// node_modules/domhandler/lib/index.js
 var require_lib2 = __commonJS({
-  "netlify/functions/node_modules/domhandler/lib/index.js"(exports2) {
+  "node_modules/domhandler/lib/index.js"(exports2) {
     "use strict";
     var __createBinding = exports2 && exports2.__createBinding || (Object.create ? function(o, m, k, k2) {
       if (k2 === void 0) k2 = k;
@@ -16923,9 +16923,9 @@ var require_lib2 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/leac/lib/leac.cjs
+// node_modules/leac/lib/leac.cjs
 var require_leac = __commonJS({
-  "netlify/functions/node_modules/leac/lib/leac.cjs"(exports2) {
+  "node_modules/leac/lib/leac.cjs"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     var e = /\n/g;
@@ -16999,9 +16999,9 @@ var require_leac = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/peberminta/lib/util.cjs
+// node_modules/peberminta/lib/util.cjs
 var require_util = __commonJS({
-  "netlify/functions/node_modules/peberminta/lib/util.cjs"(exports2) {
+  "node_modules/peberminta/lib/util.cjs"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     function clamp(left, x, right) {
@@ -17015,9 +17015,9 @@ var require_util = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/peberminta/lib/core.cjs
+// node_modules/peberminta/lib/core.cjs
 var require_core = __commonJS({
-  "netlify/functions/node_modules/peberminta/lib/core.cjs"(exports2) {
+  "node_modules/peberminta/lib/core.cjs"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     var util = require_util();
@@ -17428,9 +17428,9 @@ ${parserPosition(data, result.position, formatToken)}`);
   }
 });
 
-// netlify/functions/node_modules/parseley/lib/parseley.cjs
+// node_modules/parseley/lib/parseley.cjs
 var require_parseley = __commonJS({
-  "netlify/functions/node_modules/parseley/lib/parseley.cjs"(exports2) {
+  "node_modules/parseley/lib/parseley.cjs"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     var leac = require_leac();
@@ -17732,9 +17732,9 @@ ${"".padEnd(offset)}${"^".repeat(len)}`;
   }
 });
 
-// netlify/functions/node_modules/selderee/lib/selderee.cjs
+// node_modules/selderee/lib/selderee.cjs
 var require_selderee = __commonJS({
-  "netlify/functions/node_modules/selderee/lib/selderee.cjs"(exports2) {
+  "node_modules/selderee/lib/selderee.cjs"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     var parseley = require_parseley();
@@ -18186,9 +18186,9 @@ ${treeifyArray(node.cont)}`;
   }
 });
 
-// netlify/functions/node_modules/@selderee/plugin-htmlparser2/lib/hp2-builder.cjs
+// node_modules/@selderee/plugin-htmlparser2/lib/hp2-builder.cjs
 var require_hp2_builder = __commonJS({
-  "netlify/functions/node_modules/@selderee/plugin-htmlparser2/lib/hp2-builder.cjs"(exports2) {
+  "node_modules/@selderee/plugin-htmlparser2/lib/hp2-builder.cjs"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     var domhandler = require_lib2();
@@ -18276,9 +18276,9 @@ var require_hp2_builder = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/entities/lib/generated/decode-data-html.js
+// node_modules/entities/lib/generated/decode-data-html.js
 var require_decode_data_html = __commonJS({
-  "netlify/functions/node_modules/entities/lib/generated/decode-data-html.js"(exports2) {
+  "node_modules/entities/lib/generated/decode-data-html.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.default = new Uint16Array(
@@ -18290,9 +18290,9 @@ var require_decode_data_html = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/entities/lib/generated/decode-data-xml.js
+// node_modules/entities/lib/generated/decode-data-xml.js
 var require_decode_data_xml = __commonJS({
-  "netlify/functions/node_modules/entities/lib/generated/decode-data-xml.js"(exports2) {
+  "node_modules/entities/lib/generated/decode-data-xml.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.default = new Uint16Array(
@@ -18304,9 +18304,9 @@ var require_decode_data_xml = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/entities/lib/decode_codepoint.js
+// node_modules/entities/lib/decode_codepoint.js
 var require_decode_codepoint = __commonJS({
-  "netlify/functions/node_modules/entities/lib/decode_codepoint.js"(exports2) {
+  "node_modules/entities/lib/decode_codepoint.js"(exports2) {
     "use strict";
     var _a;
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -18368,9 +18368,9 @@ var require_decode_codepoint = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/entities/lib/decode.js
+// node_modules/entities/lib/decode.js
 var require_decode = __commonJS({
-  "netlify/functions/node_modules/entities/lib/decode.js"(exports2) {
+  "node_modules/entities/lib/decode.js"(exports2) {
     "use strict";
     var __createBinding = exports2 && exports2.__createBinding || (Object.create ? function(o, m, k, k2) {
       if (k2 === void 0) k2 = k;
@@ -18727,9 +18727,9 @@ var require_decode = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/htmlparser2/lib/Tokenizer.js
+// node_modules/htmlparser2/lib/Tokenizer.js
 var require_Tokenizer = __commonJS({
-  "netlify/functions/node_modules/htmlparser2/lib/Tokenizer.js"(exports2) {
+  "node_modules/htmlparser2/lib/Tokenizer.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.QuoteType = void 0;
@@ -19500,9 +19500,9 @@ var require_Tokenizer = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/htmlparser2/lib/Parser.js
+// node_modules/htmlparser2/lib/Parser.js
 var require_Parser = __commonJS({
-  "netlify/functions/node_modules/htmlparser2/lib/Parser.js"(exports2) {
+  "node_modules/htmlparser2/lib/Parser.js"(exports2) {
     "use strict";
     var __createBinding = exports2 && exports2.__createBinding || (Object.create ? function(o, m, k, k2) {
       if (k2 === void 0) k2 = k;
@@ -19932,9 +19932,9 @@ var require_Parser = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/entities/lib/generated/encode-html.js
+// node_modules/entities/lib/generated/encode-html.js
 var require_encode_html = __commonJS({
-  "netlify/functions/node_modules/entities/lib/generated/encode-html.js"(exports2) {
+  "node_modules/entities/lib/generated/encode-html.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     function restoreDiff(arr) {
@@ -19947,9 +19947,9 @@ var require_encode_html = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/entities/lib/escape.js
+// node_modules/entities/lib/escape.js
 var require_escape = __commonJS({
-  "netlify/functions/node_modules/entities/lib/escape.js"(exports2) {
+  "node_modules/entities/lib/escape.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.escapeText = exports2.escapeAttribute = exports2.escapeUTF8 = exports2.escape = exports2.encodeXML = exports2.getCodePoint = exports2.xmlReplacer = void 0;
@@ -20020,9 +20020,9 @@ var require_escape = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/entities/lib/encode.js
+// node_modules/entities/lib/encode.js
 var require_encode = __commonJS({
-  "netlify/functions/node_modules/entities/lib/encode.js"(exports2) {
+  "node_modules/entities/lib/encode.js"(exports2) {
     "use strict";
     var __importDefault = exports2 && exports2.__importDefault || function(mod) {
       return mod && mod.__esModule ? mod : { "default": mod };
@@ -20075,9 +20075,9 @@ var require_encode = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/entities/lib/index.js
+// node_modules/entities/lib/index.js
 var require_lib3 = __commonJS({
-  "netlify/functions/node_modules/entities/lib/index.js"(exports2) {
+  "node_modules/entities/lib/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.decodeXMLStrict = exports2.decodeHTML5Strict = exports2.decodeHTML4Strict = exports2.decodeHTML5 = exports2.decodeHTML4 = exports2.decodeHTMLAttribute = exports2.decodeHTMLStrict = exports2.decodeHTML = exports2.decodeXML = exports2.DecodingMode = exports2.EntityDecoder = exports2.encodeHTML5 = exports2.encodeHTML4 = exports2.encodeNonAsciiHTML = exports2.encodeHTML = exports2.escapeText = exports2.escapeAttribute = exports2.escapeUTF8 = exports2.escape = exports2.encodeXML = exports2.encode = exports2.decodeStrict = exports2.decode = exports2.EncodingMode = exports2.EntityLevel = void 0;
@@ -20205,9 +20205,9 @@ var require_lib3 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/dom-serializer/lib/foreignNames.js
+// node_modules/dom-serializer/lib/foreignNames.js
 var require_foreignNames = __commonJS({
-  "netlify/functions/node_modules/dom-serializer/lib/foreignNames.js"(exports2) {
+  "node_modules/dom-serializer/lib/foreignNames.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.attributeNames = exports2.elementNames = void 0;
@@ -20318,9 +20318,9 @@ var require_foreignNames = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/dom-serializer/lib/index.js
+// node_modules/dom-serializer/lib/index.js
 var require_lib4 = __commonJS({
-  "netlify/functions/node_modules/dom-serializer/lib/index.js"(exports2) {
+  "node_modules/dom-serializer/lib/index.js"(exports2) {
     "use strict";
     var __assign = exports2 && exports2.__assign || function() {
       __assign = Object.assign || function(t) {
@@ -20518,9 +20518,9 @@ var require_lib4 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/domutils/lib/stringify.js
+// node_modules/domutils/lib/stringify.js
 var require_stringify = __commonJS({
-  "netlify/functions/node_modules/domutils/lib/stringify.js"(exports2) {
+  "node_modules/domutils/lib/stringify.js"(exports2) {
     "use strict";
     var __importDefault = exports2 && exports2.__importDefault || function(mod) {
       return mod && mod.__esModule ? mod : { "default": mod };
@@ -20576,9 +20576,9 @@ var require_stringify = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/domutils/lib/traversal.js
+// node_modules/domutils/lib/traversal.js
 var require_traversal = __commonJS({
-  "netlify/functions/node_modules/domutils/lib/traversal.js"(exports2) {
+  "node_modules/domutils/lib/traversal.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.getChildren = getChildren;
@@ -20640,9 +20640,9 @@ var require_traversal = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/domutils/lib/manipulation.js
+// node_modules/domutils/lib/manipulation.js
 var require_manipulation = __commonJS({
-  "netlify/functions/node_modules/domutils/lib/manipulation.js"(exports2) {
+  "node_modules/domutils/lib/manipulation.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.removeElement = removeElement;
@@ -20743,9 +20743,9 @@ var require_manipulation = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/domutils/lib/querying.js
+// node_modules/domutils/lib/querying.js
 var require_querying = __commonJS({
-  "netlify/functions/node_modules/domutils/lib/querying.js"(exports2) {
+  "node_modules/domutils/lib/querying.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.filter = filter;
@@ -20840,9 +20840,9 @@ var require_querying = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/domutils/lib/legacy.js
+// node_modules/domutils/lib/legacy.js
 var require_legacy = __commonJS({
-  "netlify/functions/node_modules/domutils/lib/legacy.js"(exports2) {
+  "node_modules/domutils/lib/legacy.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.testElement = testElement;
@@ -20958,9 +20958,9 @@ var require_legacy = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/domutils/lib/helpers.js
+// node_modules/domutils/lib/helpers.js
 var require_helpers = __commonJS({
-  "netlify/functions/node_modules/domutils/lib/helpers.js"(exports2) {
+  "node_modules/domutils/lib/helpers.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.DocumentPosition = void 0;
@@ -21050,9 +21050,9 @@ var require_helpers = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/domutils/lib/feeds.js
+// node_modules/domutils/lib/feeds.js
 var require_feeds = __commonJS({
-  "netlify/functions/node_modules/domutils/lib/feeds.js"(exports2) {
+  "node_modules/domutils/lib/feeds.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.getFeed = getFeed;
@@ -21190,9 +21190,9 @@ var require_feeds = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/domutils/lib/index.js
+// node_modules/domutils/lib/index.js
 var require_lib5 = __commonJS({
-  "netlify/functions/node_modules/domutils/lib/index.js"(exports2) {
+  "node_modules/domutils/lib/index.js"(exports2) {
     "use strict";
     var __createBinding = exports2 && exports2.__createBinding || (Object.create ? function(o, m, k, k2) {
       if (k2 === void 0) k2 = k;
@@ -21241,9 +21241,9 @@ var require_lib5 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/htmlparser2/lib/index.js
+// node_modules/htmlparser2/lib/index.js
 var require_lib6 = __commonJS({
-  "netlify/functions/node_modules/htmlparser2/lib/index.js"(exports2) {
+  "node_modules/htmlparser2/lib/index.js"(exports2) {
     "use strict";
     var __createBinding = exports2 && exports2.__createBinding || (Object.create ? function(o, m, k, k2) {
       if (k2 === void 0) k2 = k;
@@ -21327,9 +21327,9 @@ var require_lib6 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/deepmerge/dist/cjs.js
+// node_modules/deepmerge/dist/cjs.js
 var require_cjs = __commonJS({
-  "netlify/functions/node_modules/deepmerge/dist/cjs.js"(exports2, module2) {
+  "node_modules/deepmerge/dist/cjs.js"(exports2, module2) {
     "use strict";
     var isMergeableObject = function isMergeableObject2(value) {
       return isNonNullObject(value) && !isSpecial(value);
@@ -21430,9 +21430,9 @@ var require_cjs = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/html-to-text/lib/html-to-text.cjs
+// node_modules/html-to-text/lib/html-to-text.cjs
 var require_html_to_text = __commonJS({
-  "netlify/functions/node_modules/html-to-text/lib/html-to-text.cjs"(exports2) {
+  "node_modules/html-to-text/lib/html-to-text.cjs"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     var pluginHtmlparser2 = require_hp2_builder();
@@ -23009,9 +23009,9 @@ var require_html_to_text = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/core/output.js
+// node_modules/js-beautify/js/src/core/output.js
 var require_output = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/core/output.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/core/output.js"(exports2, module2) {
     "use strict";
     function OutputLine(parent) {
       this.__parent = parent;
@@ -23332,9 +23332,9 @@ var require_output = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/core/token.js
+// node_modules/js-beautify/js/src/core/token.js
 var require_token = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/core/token.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/core/token.js"(exports2, module2) {
     "use strict";
     function Token(type, text, newlines, whitespace_before) {
       this.type = type;
@@ -23353,9 +23353,9 @@ var require_token = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/javascript/acorn.js
+// node_modules/js-beautify/js/src/javascript/acorn.js
 var require_acorn = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/javascript/acorn.js"(exports2) {
+  "node_modules/js-beautify/js/src/javascript/acorn.js"(exports2) {
     "use strict";
     var baseASCIIidentifierStartChars = "\\x23\\x24\\x40\\x41-\\x5a\\x5f\\x61-\\x7a";
     var baseASCIIidentifierChars = "\\x24\\x30-\\x39\\x41-\\x5a\\x5f\\x61-\\x7a";
@@ -23373,9 +23373,9 @@ var require_acorn = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/core/options.js
+// node_modules/js-beautify/js/src/core/options.js
 var require_options = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/core/options.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/core/options.js"(exports2, module2) {
     "use strict";
     function Options(options, merge_child_field) {
       this.raw_options = _mergeOpts(options, merge_child_field);
@@ -23499,9 +23499,9 @@ var require_options = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/javascript/options.js
+// node_modules/js-beautify/js/src/javascript/options.js
 var require_options2 = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/javascript/options.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/javascript/options.js"(exports2, module2) {
     "use strict";
     var BaseOptions = require_options().Options;
     var validPositionValues = ["before-newline", "after-newline", "preserve-newline"];
@@ -23548,9 +23548,9 @@ var require_options2 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/core/inputscanner.js
+// node_modules/js-beautify/js/src/core/inputscanner.js
 var require_inputscanner = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/core/inputscanner.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/core/inputscanner.js"(exports2, module2) {
     "use strict";
     var regexp_has_sticky = RegExp.prototype.hasOwnProperty("sticky");
     function InputScanner(input_string) {
@@ -23683,9 +23683,9 @@ var require_inputscanner = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/core/tokenstream.js
+// node_modules/js-beautify/js/src/core/tokenstream.js
 var require_tokenstream = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/core/tokenstream.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/core/tokenstream.js"(exports2, module2) {
     "use strict";
     function TokenStream(parent_token) {
       this.__tokens = [];
@@ -23730,9 +23730,9 @@ var require_tokenstream = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/core/pattern.js
+// node_modules/js-beautify/js/src/core/pattern.js
 var require_pattern = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/core/pattern.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/core/pattern.js"(exports2, module2) {
     "use strict";
     function Pattern(input_scanner, parent) {
       this._input = input_scanner;
@@ -23792,9 +23792,9 @@ var require_pattern = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/core/whitespacepattern.js
+// node_modules/js-beautify/js/src/core/whitespacepattern.js
 var require_whitespacepattern = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/core/whitespacepattern.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/core/whitespacepattern.js"(exports2, module2) {
     "use strict";
     var Pattern = require_pattern().Pattern;
     function WhitespacePattern(input_scanner, parent) {
@@ -23862,9 +23862,9 @@ var require_whitespacepattern = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/core/tokenizer.js
+// node_modules/js-beautify/js/src/core/tokenizer.js
 var require_tokenizer = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/core/tokenizer.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/core/tokenizer.js"(exports2, module2) {
     "use strict";
     var InputScanner = require_inputscanner().InputScanner;
     var Token = require_token().Token;
@@ -23958,9 +23958,9 @@ var require_tokenizer = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/core/directives.js
+// node_modules/js-beautify/js/src/core/directives.js
 var require_directives = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/core/directives.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/core/directives.js"(exports2, module2) {
     "use strict";
     function Directives(start_block_pattern, end_block_pattern) {
       start_block_pattern = typeof start_block_pattern === "string" ? start_block_pattern : start_block_pattern.source;
@@ -23989,9 +23989,9 @@ var require_directives = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/core/templatablepattern.js
+// node_modules/js-beautify/js/src/core/templatablepattern.js
 var require_templatablepattern = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/core/templatablepattern.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/core/templatablepattern.js"(exports2, module2) {
     "use strict";
     var Pattern = require_pattern().Pattern;
     var template_names = {
@@ -24144,9 +24144,9 @@ var require_templatablepattern = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/javascript/tokenizer.js
+// node_modules/js-beautify/js/src/javascript/tokenizer.js
 var require_tokenizer2 = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/javascript/tokenizer.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/javascript/tokenizer.js"(exports2, module2) {
     "use strict";
     var InputScanner = require_inputscanner().InputScanner;
     var BaseTokenizer = require_tokenizer().Tokenizer;
@@ -24579,9 +24579,9 @@ var require_tokenizer2 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/javascript/beautifier.js
+// node_modules/js-beautify/js/src/javascript/beautifier.js
 var require_beautifier = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/javascript/beautifier.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/javascript/beautifier.js"(exports2, module2) {
     "use strict";
     var Output = require_output().Output;
     var Token = require_token().Token;
@@ -25653,9 +25653,9 @@ var require_beautifier = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/javascript/index.js
+// node_modules/js-beautify/js/src/javascript/index.js
 var require_javascript = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/javascript/index.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/javascript/index.js"(exports2, module2) {
     "use strict";
     var Beautifier = require_beautifier().Beautifier;
     var Options = require_options2().Options;
@@ -25670,9 +25670,9 @@ var require_javascript = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/css/options.js
+// node_modules/js-beautify/js/src/css/options.js
 var require_options3 = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/css/options.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/css/options.js"(exports2, module2) {
     "use strict";
     var BaseOptions = require_options().Options;
     function Options(options) {
@@ -25696,9 +25696,9 @@ var require_options3 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/css/beautifier.js
+// node_modules/js-beautify/js/src/css/beautifier.js
 var require_beautifier2 = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/css/beautifier.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/css/beautifier.js"(exports2, module2) {
     "use strict";
     var Options = require_options3().Options;
     var Output = require_output().Output;
@@ -26103,9 +26103,9 @@ var require_beautifier2 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/css/index.js
+// node_modules/js-beautify/js/src/css/index.js
 var require_css = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/css/index.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/css/index.js"(exports2, module2) {
     "use strict";
     var Beautifier = require_beautifier2().Beautifier;
     var Options = require_options3().Options;
@@ -26120,9 +26120,9 @@ var require_css = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/html/options.js
+// node_modules/js-beautify/js/src/html/options.js
 var require_options4 = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/html/options.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/html/options.js"(exports2, module2) {
     "use strict";
     var BaseOptions = require_options().Options;
     function Options(options) {
@@ -26246,9 +26246,9 @@ var require_options4 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/html/tokenizer.js
+// node_modules/js-beautify/js/src/html/tokenizer.js
 var require_tokenizer3 = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/html/tokenizer.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/html/tokenizer.js"(exports2, module2) {
     "use strict";
     var BaseTokenizer = require_tokenizer().Tokenizer;
     var BASETOKEN = require_tokenizer().TOKEN;
@@ -26541,9 +26541,9 @@ var require_tokenizer3 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/html/beautifier.js
+// node_modules/js-beautify/js/src/html/beautifier.js
 var require_beautifier3 = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/html/beautifier.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/html/beautifier.js"(exports2, module2) {
     "use strict";
     var Options = require_options4().Options;
     var Output = require_output().Output;
@@ -27179,9 +27179,9 @@ var require_beautifier3 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/html/index.js
+// node_modules/js-beautify/js/src/html/index.js
 var require_html = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/html/index.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/html/index.js"(exports2, module2) {
     "use strict";
     var Beautifier = require_beautifier3().Beautifier;
     var Options = require_options4().Options;
@@ -27196,9 +27196,9 @@ var require_html = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/src/index.js
+// node_modules/js-beautify/js/src/index.js
 var require_src = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/src/index.js"(exports2, module2) {
+  "node_modules/js-beautify/js/src/index.js"(exports2, module2) {
     "use strict";
     var js_beautify = require_javascript();
     var css_beautify = require_css();
@@ -27215,9 +27215,9 @@ var require_src = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/js-beautify/js/index.js
+// node_modules/js-beautify/js/index.js
 var require_js = __commonJS({
-  "netlify/functions/node_modules/js-beautify/js/index.js"(exports2, module2) {
+  "node_modules/js-beautify/js/index.js"(exports2, module2) {
     "use strict";
     function get_beautify(js_beautify, css_beautify, html_beautify) {
       var beautify = function(src, config) {
@@ -27251,9 +27251,9 @@ var require_js = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/is-whitespace/index.js
+// node_modules/is-whitespace/index.js
 var require_is_whitespace = __commonJS({
-  "netlify/functions/node_modules/is-whitespace/index.js"(exports2, module2) {
+  "node_modules/is-whitespace/index.js"(exports2, module2) {
     "use strict";
     var cache;
     module2.exports = function isWhitespace(str) {
@@ -27265,9 +27265,9 @@ var require_is_whitespace = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/is-extendable/index.js
+// node_modules/is-extendable/index.js
 var require_is_extendable = __commonJS({
-  "netlify/functions/node_modules/is-extendable/index.js"(exports2, module2) {
+  "node_modules/is-extendable/index.js"(exports2, module2) {
     "use strict";
     module2.exports = function isExtendable(val) {
       return typeof val !== "undefined" && val !== null && (typeof val === "object" || typeof val === "function");
@@ -27275,9 +27275,9 @@ var require_is_extendable = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/extend-shallow/index.js
+// node_modules/extend-shallow/index.js
 var require_extend_shallow = __commonJS({
-  "netlify/functions/node_modules/extend-shallow/index.js"(exports2, module2) {
+  "node_modules/extend-shallow/index.js"(exports2, module2) {
     "use strict";
     var isObject = require_is_extendable();
     module2.exports = function extend(o) {
@@ -27306,9 +27306,9 @@ var require_extend_shallow = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/is-buffer/index.js
+// node_modules/is-buffer/index.js
 var require_is_buffer = __commonJS({
-  "netlify/functions/node_modules/is-buffer/index.js"(exports2, module2) {
+  "node_modules/is-buffer/index.js"(exports2, module2) {
     module2.exports = function(obj) {
       return obj != null && (isBuffer(obj) || isSlowBuffer(obj) || !!obj._isBuffer);
     };
@@ -27321,9 +27321,9 @@ var require_is_buffer = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/kind-of/index.js
+// node_modules/kind-of/index.js
 var require_kind_of = __commonJS({
-  "netlify/functions/node_modules/kind-of/index.js"(exports2, module2) {
+  "node_modules/kind-of/index.js"(exports2, module2) {
     var isBuffer = require_is_buffer();
     var toString = Object.prototype.toString;
     module2.exports = function kindOf(val) {
@@ -27417,9 +27417,9 @@ var require_kind_of = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/condense-newlines/index.js
+// node_modules/condense-newlines/index.js
 var require_condense_newlines = __commonJS({
-  "netlify/functions/node_modules/condense-newlines/index.js"(exports2, module2) {
+  "node_modules/condense-newlines/index.js"(exports2, module2) {
     "use strict";
     var isWhitespace = require_is_whitespace();
     var extend = require_extend_shallow();
@@ -27467,9 +27467,9 @@ var require_condense_newlines = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/pretty/index.js
+// node_modules/pretty/index.js
 var require_pretty = __commonJS({
-  "netlify/functions/node_modules/pretty/index.js"(exports2, module2) {
+  "node_modules/pretty/index.js"(exports2, module2) {
     "use strict";
     var beautify = require_js();
     var condense = require_condense_newlines();
@@ -27496,9 +27496,9 @@ var require_pretty = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/@react-email/render/dist/index.js
+// node_modules/@react-email/render/dist/index.js
 var require_dist = __commonJS({
-  "netlify/functions/node_modules/@react-email/render/dist/index.js"(exports2, module2) {
+  "node_modules/@react-email/render/dist/index.js"(exports2, module2) {
     "use strict";
     var __create2 = Object.create;
     var __defProp2 = Object.defineProperty;
@@ -27613,9 +27613,9 @@ var require_dist = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/resend/dist/index.js
+// node_modules/resend/dist/index.js
 var require_dist2 = __commonJS({
-  "netlify/functions/node_modules/resend/dist/index.js"(exports2, module2) {
+  "node_modules/resend/dist/index.js"(exports2, module2) {
     "use strict";
     var __defProp2 = Object.defineProperty;
     var __getOwnPropDesc2 = Object.getOwnPropertyDescriptor;

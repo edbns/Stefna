@@ -1,7 +1,7 @@
 {
   "version": 3,
   "sources": ["../../../../../../Users/sennie/Desktop/Stefna-main/netlify/functions/models.ts"],
-  "sourceRoot": "/var/folders/3j/nmp5dkpd4tv8j0yq8f2ln8780000gn/T/tmp-42344-kNNutJc4ntm0",
+  "sourceRoot": "/var/folders/3j/nmp5dkpd4tv8j0yq8f2ln8780000gn/T/tmp-5584-7PCi6pvWrVR2",
   "sourcesContent": ["// models.ts - I2V-only models (Kling v1.6 supports image-to-video only)\nexport const MODELS = {\n  I2V_STD: 'kling-video/v1.6/standard/image-to-video',\n  I2V_PRO: 'kling-video/v1.6/pro/image-to-video',\n};\n\nexport function detectIsVideo(url?: string): boolean {\n  return !!url && /\\.(mp4|mov|m4v|webm)(\\?|$)/i.test(url);\n}\n\nexport function isVideoAsset(asset: any): boolean {\n  return asset?.resource_type === 'video'\n      || /\\.(mp4|mov|webm|m4v)(\\?|$)/i.test(asset?.secure_url || asset?.url || '');\n}\n\n// Convert Cloudinary video URL to a frame image URL\nexport function toCloudinaryFrame(url: string, second = 0, width = 1024): string {\n  if (!url?.includes('res.cloudinary.com')) return url;\n  \n  // Turn a Cloudinary video into a JPG frame URL\n  return url\n    .replace('/video/upload/', `/video/upload/so_${second},w_${width},f_jpg,q_auto/`)\n    .replace(/\\.(mp4|mov|m4v|webm)(\\?|$)/i, '.jpg$2');\n}\n"],
   "mappings": ";;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AACO,IAAM,SAAS;AAAA,EACpB,SAAS;AAAA,EACT,SAAS;AACX;AAEO,SAAS,cAAc,KAAuB;AACnD,SAAO,CAAC,CAAC,OAAO,8BAA8B,KAAK,GAAG;AACxD;AAEO,SAAS,aAAa,OAAqB;AAChD,SAAO,OAAO,kBAAkB,WACzB,8BAA8B,KAAK,OAAO,cAAc,OAAO,OAAO,EAAE;AACjF;AAGO,SAAS,kBAAkB,KAAa,SAAS,GAAG,QAAQ,MAAc;AAC/E,MAAI,CAAC,KAAK,SAAS,oBAAoB,EAAG,QAAO;AAGjD,SAAO,IACJ,QAAQ,kBAAkB,oBAAoB,MAAM,MAAM,KAAK,gBAAgB,EAC/E,QAAQ,+BAA+B,QAAQ;AACpD;",
   "names": []

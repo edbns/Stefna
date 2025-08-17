@@ -23,6 +23,21 @@ __export(notify_remix_exports, {
   handler: () => handler
 });
 module.exports = __toCommonJS(notify_remix_exports);
+
+// netlify/lib/neonAdmin.ts
+var neonAdmin = {
+  from: (table) => {
+    console.warn(`neonAdmin.from('${table}') is deprecated. Use Neon sql directly instead.`);
+    return {
+      select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }),
+      insert: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }) }),
+      update: () => ({ eq: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }) }) }),
+      delete: () => ({ eq: () => ({ data: null, error: null }) })
+    };
+  }
+};
+
+// netlify/functions/notify-remix.ts
 var handler = async (event) => {
   try {
     if (event.httpMethod !== "POST") {
@@ -38,7 +53,7 @@ var handler = async (event) => {
         body: JSON.stringify({ error: "parentId and childId are required" })
       };
     }
-    const { data: parentMedia, error: parentError } = await supabaseAdmin.from("media_assets").select("user_id, remix_count").eq("id", parentId).single();
+    const { data: parentMedia, error: parentError } = await neonAdmin.from("media_assets").select("user_id, remix_count").eq("id", parentId).single();
     if (parentError || !parentMedia) {
       console.error("Failed to find parent media:", parentError);
       return {
@@ -46,16 +61,16 @@ var handler = async (event) => {
         body: JSON.stringify({ error: "Parent media not found" })
       };
     }
-    const { error: updateError } = await supabaseAdmin.from("media_assets").update({ remix_count: (parentMedia.remix_count || 0) + 1 }).eq("id", parentId);
+    const { error: updateError } = await neonAdmin.from("media_assets").update({ remix_count: (parentMedia.remix_count || 0) + 1 }).eq("id", parentId);
     if (updateError) {
       console.warn("Failed to update remix count:", updateError);
     }
     const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-    const { data: existingNotifications } = await supabaseAdmin.from("notifications").select("id, metadata").eq("user_id", parentMedia.user_id).eq("kind", "remix").gte("created_at", `${today}T00:00:00.000Z`).lt("created_at", `${today}T23:59:59.999Z`);
+    const { data: existingNotifications } = await neonAdmin.from("notifications").select("id, metadata").eq("user_id", parentMedia.user_id).eq("kind", "remix").gte("created_at", `${today}T00:00:00.000Z`).lt("created_at", `${today}T23:59:59.999Z`);
     if (existingNotifications && existingNotifications.length > 0) {
       const existingNotification = existingNotifications[0];
       const currentCount = existingNotification.metadata?.count || 1;
-      const { error: updateNotificationError } = await supabaseAdmin.from("notifications").update({
+      const { error: updateNotificationError } = await neonAdmin.from("notifications").update({
         metadata: {
           ...existingNotification.metadata,
           count: currentCount + 1,
@@ -82,7 +97,7 @@ var handler = async (event) => {
           count: 1
         }
       };
-      const { error: insertError } = await supabaseAdmin.from("notifications").insert([notification]);
+      const { error: insertError } = await neonAdmin.from("notifications").insert([notification]);
       if (insertError) {
         console.error("Failed to create notification:", insertError);
         return {

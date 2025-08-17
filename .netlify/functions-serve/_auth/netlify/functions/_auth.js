@@ -1,12 +1,38 @@
 "use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// netlify/functions/node_modules/safe-buffer/index.js
+// node_modules/safe-buffer/index.js
 var require_safe_buffer = __commonJS({
-  "netlify/functions/node_modules/safe-buffer/index.js"(exports2, module2) {
+  "node_modules/safe-buffer/index.js"(exports2, module2) {
     var buffer = require("buffer");
     var Buffer2 = buffer.Buffer;
     function copyProps(src, dst) {
@@ -62,9 +88,9 @@ var require_safe_buffer = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jws/lib/data-stream.js
+// node_modules/jws/lib/data-stream.js
 var require_data_stream = __commonJS({
-  "netlify/functions/node_modules/jws/lib/data-stream.js"(exports2, module2) {
+  "node_modules/jws/lib/data-stream.js"(exports2, module2) {
     var Buffer2 = require_safe_buffer().Buffer;
     var Stream = require("stream");
     var util = require("util");
@@ -110,9 +136,9 @@ var require_data_stream = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/ecdsa-sig-formatter/src/param-bytes-for-alg.js
+// node_modules/ecdsa-sig-formatter/src/param-bytes-for-alg.js
 var require_param_bytes_for_alg = __commonJS({
-  "netlify/functions/node_modules/ecdsa-sig-formatter/src/param-bytes-for-alg.js"(exports2, module2) {
+  "node_modules/ecdsa-sig-formatter/src/param-bytes-for-alg.js"(exports2, module2) {
     "use strict";
     function getParamSize(keySize) {
       var result = (keySize / 8 | 0) + (keySize % 8 === 0 ? 0 : 1);
@@ -134,9 +160,9 @@ var require_param_bytes_for_alg = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/ecdsa-sig-formatter/src/ecdsa-sig-formatter.js
+// node_modules/ecdsa-sig-formatter/src/ecdsa-sig-formatter.js
 var require_ecdsa_sig_formatter = __commonJS({
-  "netlify/functions/node_modules/ecdsa-sig-formatter/src/ecdsa-sig-formatter.js"(exports2, module2) {
+  "node_modules/ecdsa-sig-formatter/src/ecdsa-sig-formatter.js"(exports2, module2) {
     "use strict";
     var Buffer2 = require_safe_buffer().Buffer;
     var getParamBytesForAlg = require_param_bytes_for_alg();
@@ -274,9 +300,9 @@ var require_ecdsa_sig_formatter = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/buffer-equal-constant-time/index.js
+// node_modules/buffer-equal-constant-time/index.js
 var require_buffer_equal_constant_time = __commonJS({
-  "netlify/functions/node_modules/buffer-equal-constant-time/index.js"(exports2, module2) {
+  "node_modules/buffer-equal-constant-time/index.js"(exports2, module2) {
     "use strict";
     var Buffer2 = require("buffer").Buffer;
     var SlowBuffer = require("buffer").SlowBuffer;
@@ -308,9 +334,9 @@ var require_buffer_equal_constant_time = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jwa/index.js
+// node_modules/jwa/index.js
 var require_jwa = __commonJS({
-  "netlify/functions/node_modules/jwa/index.js"(exports2, module2) {
+  "node_modules/jwa/index.js"(exports2, module2) {
     var Buffer2 = require_safe_buffer().Buffer;
     var crypto = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
@@ -532,9 +558,9 @@ var require_jwa = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jws/lib/tostring.js
+// node_modules/jws/lib/tostring.js
 var require_tostring = __commonJS({
-  "netlify/functions/node_modules/jws/lib/tostring.js"(exports2, module2) {
+  "node_modules/jws/lib/tostring.js"(exports2, module2) {
     var Buffer2 = require("buffer").Buffer;
     module2.exports = function toString(obj) {
       if (typeof obj === "string")
@@ -546,9 +572,9 @@ var require_tostring = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jws/lib/sign-stream.js
+// node_modules/jws/lib/sign-stream.js
 var require_sign_stream = __commonJS({
-  "netlify/functions/node_modules/jws/lib/sign-stream.js"(exports2, module2) {
+  "node_modules/jws/lib/sign-stream.js"(exports2, module2) {
     var Buffer2 = require_safe_buffer().Buffer;
     var DataStream = require_data_stream();
     var jwa = require_jwa();
@@ -616,9 +642,9 @@ var require_sign_stream = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jws/lib/verify-stream.js
+// node_modules/jws/lib/verify-stream.js
 var require_verify_stream = __commonJS({
-  "netlify/functions/node_modules/jws/lib/verify-stream.js"(exports2, module2) {
+  "node_modules/jws/lib/verify-stream.js"(exports2, module2) {
     var Buffer2 = require_safe_buffer().Buffer;
     var DataStream = require_data_stream();
     var jwa = require_jwa();
@@ -726,9 +752,9 @@ var require_verify_stream = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jws/index.js
+// node_modules/jws/index.js
 var require_jws = __commonJS({
-  "netlify/functions/node_modules/jws/index.js"(exports2) {
+  "node_modules/jws/index.js"(exports2) {
     var SignStream = require_sign_stream();
     var VerifyStream = require_verify_stream();
     var ALGORITHMS = [
@@ -759,9 +785,9 @@ var require_jws = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/decode.js
+// node_modules/jsonwebtoken/decode.js
 var require_decode = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/decode.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/decode.js"(exports2, module2) {
     var jws = require_jws();
     module2.exports = function(jwt2, options) {
       options = options || {};
@@ -791,9 +817,9 @@ var require_decode = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/lib/JsonWebTokenError.js
+// node_modules/jsonwebtoken/lib/JsonWebTokenError.js
 var require_JsonWebTokenError = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/lib/JsonWebTokenError.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/lib/JsonWebTokenError.js"(exports2, module2) {
     var JsonWebTokenError = function(message, error) {
       Error.call(this, message);
       if (Error.captureStackTrace) {
@@ -809,9 +835,9 @@ var require_JsonWebTokenError = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/lib/NotBeforeError.js
+// node_modules/jsonwebtoken/lib/NotBeforeError.js
 var require_NotBeforeError = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/lib/NotBeforeError.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/lib/NotBeforeError.js"(exports2, module2) {
     var JsonWebTokenError = require_JsonWebTokenError();
     var NotBeforeError = function(message, date) {
       JsonWebTokenError.call(this, message);
@@ -824,9 +850,9 @@ var require_NotBeforeError = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/lib/TokenExpiredError.js
+// node_modules/jsonwebtoken/lib/TokenExpiredError.js
 var require_TokenExpiredError = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/lib/TokenExpiredError.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/lib/TokenExpiredError.js"(exports2, module2) {
     var JsonWebTokenError = require_JsonWebTokenError();
     var TokenExpiredError = function(message, expiredAt) {
       JsonWebTokenError.call(this, message);
@@ -839,9 +865,9 @@ var require_TokenExpiredError = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/ms/index.js
+// node_modules/ms/index.js
 var require_ms = __commonJS({
-  "netlify/functions/node_modules/ms/index.js"(exports2, module2) {
+  "node_modules/ms/index.js"(exports2, module2) {
     var s = 1e3;
     var m = s * 60;
     var h = m * 60;
@@ -955,9 +981,9 @@ var require_ms = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/lib/timespan.js
+// node_modules/jsonwebtoken/lib/timespan.js
 var require_timespan = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/lib/timespan.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/lib/timespan.js"(exports2, module2) {
     var ms = require_ms();
     module2.exports = function(time, iat) {
       var timestamp = iat || Math.floor(Date.now() / 1e3);
@@ -976,9 +1002,9 @@ var require_timespan = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/internal/constants.js
+// node_modules/semver/internal/constants.js
 var require_constants = __commonJS({
-  "netlify/functions/node_modules/semver/internal/constants.js"(exports2, module2) {
+  "node_modules/semver/internal/constants.js"(exports2, module2) {
     "use strict";
     var SEMVER_SPEC_VERSION = "2.0.0";
     var MAX_LENGTH = 256;
@@ -1008,9 +1034,9 @@ var require_constants = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/internal/debug.js
+// node_modules/semver/internal/debug.js
 var require_debug = __commonJS({
-  "netlify/functions/node_modules/semver/internal/debug.js"(exports2, module2) {
+  "node_modules/semver/internal/debug.js"(exports2, module2) {
     "use strict";
     var debug = typeof process === "object" && process.env && process.env.NODE_DEBUG && /\bsemver\b/i.test(process.env.NODE_DEBUG) ? (...args) => console.error("SEMVER", ...args) : () => {
     };
@@ -1018,9 +1044,9 @@ var require_debug = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/internal/re.js
+// node_modules/semver/internal/re.js
 var require_re = __commonJS({
-  "netlify/functions/node_modules/semver/internal/re.js"(exports2, module2) {
+  "node_modules/semver/internal/re.js"(exports2, module2) {
     "use strict";
     var {
       MAX_SAFE_COMPONENT_LENGTH,
@@ -1106,9 +1132,9 @@ var require_re = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/internal/parse-options.js
+// node_modules/semver/internal/parse-options.js
 var require_parse_options = __commonJS({
-  "netlify/functions/node_modules/semver/internal/parse-options.js"(exports2, module2) {
+  "node_modules/semver/internal/parse-options.js"(exports2, module2) {
     "use strict";
     var looseOption = Object.freeze({ loose: true });
     var emptyOpts = Object.freeze({});
@@ -1125,9 +1151,9 @@ var require_parse_options = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/internal/identifiers.js
+// node_modules/semver/internal/identifiers.js
 var require_identifiers = __commonJS({
-  "netlify/functions/node_modules/semver/internal/identifiers.js"(exports2, module2) {
+  "node_modules/semver/internal/identifiers.js"(exports2, module2) {
     "use strict";
     var numeric = /^[0-9]+$/;
     var compareIdentifiers = (a, b) => {
@@ -1147,9 +1173,9 @@ var require_identifiers = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/classes/semver.js
+// node_modules/semver/classes/semver.js
 var require_semver = __commonJS({
-  "netlify/functions/node_modules/semver/classes/semver.js"(exports2, module2) {
+  "node_modules/semver/classes/semver.js"(exports2, module2) {
     "use strict";
     var debug = require_debug();
     var { MAX_LENGTH, MAX_SAFE_INTEGER } = require_constants();
@@ -1408,9 +1434,9 @@ var require_semver = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/parse.js
+// node_modules/semver/functions/parse.js
 var require_parse = __commonJS({
-  "netlify/functions/node_modules/semver/functions/parse.js"(exports2, module2) {
+  "node_modules/semver/functions/parse.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var parse = (version, options, throwErrors = false) => {
@@ -1430,9 +1456,9 @@ var require_parse = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/valid.js
+// node_modules/semver/functions/valid.js
 var require_valid = __commonJS({
-  "netlify/functions/node_modules/semver/functions/valid.js"(exports2, module2) {
+  "node_modules/semver/functions/valid.js"(exports2, module2) {
     "use strict";
     var parse = require_parse();
     var valid = (version, options) => {
@@ -1443,9 +1469,9 @@ var require_valid = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/clean.js
+// node_modules/semver/functions/clean.js
 var require_clean = __commonJS({
-  "netlify/functions/node_modules/semver/functions/clean.js"(exports2, module2) {
+  "node_modules/semver/functions/clean.js"(exports2, module2) {
     "use strict";
     var parse = require_parse();
     var clean = (version, options) => {
@@ -1456,9 +1482,9 @@ var require_clean = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/inc.js
+// node_modules/semver/functions/inc.js
 var require_inc = __commonJS({
-  "netlify/functions/node_modules/semver/functions/inc.js"(exports2, module2) {
+  "node_modules/semver/functions/inc.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var inc = (version, release, options, identifier, identifierBase) => {
@@ -1480,9 +1506,9 @@ var require_inc = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/diff.js
+// node_modules/semver/functions/diff.js
 var require_diff = __commonJS({
-  "netlify/functions/node_modules/semver/functions/diff.js"(exports2, module2) {
+  "node_modules/semver/functions/diff.js"(exports2, module2) {
     "use strict";
     var parse = require_parse();
     var diff = (version1, version2) => {
@@ -1524,9 +1550,9 @@ var require_diff = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/major.js
+// node_modules/semver/functions/major.js
 var require_major = __commonJS({
-  "netlify/functions/node_modules/semver/functions/major.js"(exports2, module2) {
+  "node_modules/semver/functions/major.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var major = (a, loose) => new SemVer(a, loose).major;
@@ -1534,9 +1560,9 @@ var require_major = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/minor.js
+// node_modules/semver/functions/minor.js
 var require_minor = __commonJS({
-  "netlify/functions/node_modules/semver/functions/minor.js"(exports2, module2) {
+  "node_modules/semver/functions/minor.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var minor = (a, loose) => new SemVer(a, loose).minor;
@@ -1544,9 +1570,9 @@ var require_minor = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/patch.js
+// node_modules/semver/functions/patch.js
 var require_patch = __commonJS({
-  "netlify/functions/node_modules/semver/functions/patch.js"(exports2, module2) {
+  "node_modules/semver/functions/patch.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var patch = (a, loose) => new SemVer(a, loose).patch;
@@ -1554,9 +1580,9 @@ var require_patch = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/prerelease.js
+// node_modules/semver/functions/prerelease.js
 var require_prerelease = __commonJS({
-  "netlify/functions/node_modules/semver/functions/prerelease.js"(exports2, module2) {
+  "node_modules/semver/functions/prerelease.js"(exports2, module2) {
     "use strict";
     var parse = require_parse();
     var prerelease = (version, options) => {
@@ -1567,9 +1593,9 @@ var require_prerelease = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/compare.js
+// node_modules/semver/functions/compare.js
 var require_compare = __commonJS({
-  "netlify/functions/node_modules/semver/functions/compare.js"(exports2, module2) {
+  "node_modules/semver/functions/compare.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var compare = (a, b, loose) => new SemVer(a, loose).compare(new SemVer(b, loose));
@@ -1577,9 +1603,9 @@ var require_compare = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/rcompare.js
+// node_modules/semver/functions/rcompare.js
 var require_rcompare = __commonJS({
-  "netlify/functions/node_modules/semver/functions/rcompare.js"(exports2, module2) {
+  "node_modules/semver/functions/rcompare.js"(exports2, module2) {
     "use strict";
     var compare = require_compare();
     var rcompare = (a, b, loose) => compare(b, a, loose);
@@ -1587,9 +1613,9 @@ var require_rcompare = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/compare-loose.js
+// node_modules/semver/functions/compare-loose.js
 var require_compare_loose = __commonJS({
-  "netlify/functions/node_modules/semver/functions/compare-loose.js"(exports2, module2) {
+  "node_modules/semver/functions/compare-loose.js"(exports2, module2) {
     "use strict";
     var compare = require_compare();
     var compareLoose = (a, b) => compare(a, b, true);
@@ -1597,9 +1623,9 @@ var require_compare_loose = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/compare-build.js
+// node_modules/semver/functions/compare-build.js
 var require_compare_build = __commonJS({
-  "netlify/functions/node_modules/semver/functions/compare-build.js"(exports2, module2) {
+  "node_modules/semver/functions/compare-build.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var compareBuild = (a, b, loose) => {
@@ -1611,9 +1637,9 @@ var require_compare_build = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/sort.js
+// node_modules/semver/functions/sort.js
 var require_sort = __commonJS({
-  "netlify/functions/node_modules/semver/functions/sort.js"(exports2, module2) {
+  "node_modules/semver/functions/sort.js"(exports2, module2) {
     "use strict";
     var compareBuild = require_compare_build();
     var sort = (list, loose) => list.sort((a, b) => compareBuild(a, b, loose));
@@ -1621,9 +1647,9 @@ var require_sort = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/rsort.js
+// node_modules/semver/functions/rsort.js
 var require_rsort = __commonJS({
-  "netlify/functions/node_modules/semver/functions/rsort.js"(exports2, module2) {
+  "node_modules/semver/functions/rsort.js"(exports2, module2) {
     "use strict";
     var compareBuild = require_compare_build();
     var rsort = (list, loose) => list.sort((a, b) => compareBuild(b, a, loose));
@@ -1631,9 +1657,9 @@ var require_rsort = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/gt.js
+// node_modules/semver/functions/gt.js
 var require_gt = __commonJS({
-  "netlify/functions/node_modules/semver/functions/gt.js"(exports2, module2) {
+  "node_modules/semver/functions/gt.js"(exports2, module2) {
     "use strict";
     var compare = require_compare();
     var gt = (a, b, loose) => compare(a, b, loose) > 0;
@@ -1641,9 +1667,9 @@ var require_gt = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/lt.js
+// node_modules/semver/functions/lt.js
 var require_lt = __commonJS({
-  "netlify/functions/node_modules/semver/functions/lt.js"(exports2, module2) {
+  "node_modules/semver/functions/lt.js"(exports2, module2) {
     "use strict";
     var compare = require_compare();
     var lt = (a, b, loose) => compare(a, b, loose) < 0;
@@ -1651,9 +1677,9 @@ var require_lt = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/eq.js
+// node_modules/semver/functions/eq.js
 var require_eq = __commonJS({
-  "netlify/functions/node_modules/semver/functions/eq.js"(exports2, module2) {
+  "node_modules/semver/functions/eq.js"(exports2, module2) {
     "use strict";
     var compare = require_compare();
     var eq = (a, b, loose) => compare(a, b, loose) === 0;
@@ -1661,9 +1687,9 @@ var require_eq = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/neq.js
+// node_modules/semver/functions/neq.js
 var require_neq = __commonJS({
-  "netlify/functions/node_modules/semver/functions/neq.js"(exports2, module2) {
+  "node_modules/semver/functions/neq.js"(exports2, module2) {
     "use strict";
     var compare = require_compare();
     var neq = (a, b, loose) => compare(a, b, loose) !== 0;
@@ -1671,9 +1697,9 @@ var require_neq = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/gte.js
+// node_modules/semver/functions/gte.js
 var require_gte = __commonJS({
-  "netlify/functions/node_modules/semver/functions/gte.js"(exports2, module2) {
+  "node_modules/semver/functions/gte.js"(exports2, module2) {
     "use strict";
     var compare = require_compare();
     var gte = (a, b, loose) => compare(a, b, loose) >= 0;
@@ -1681,9 +1707,9 @@ var require_gte = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/lte.js
+// node_modules/semver/functions/lte.js
 var require_lte = __commonJS({
-  "netlify/functions/node_modules/semver/functions/lte.js"(exports2, module2) {
+  "node_modules/semver/functions/lte.js"(exports2, module2) {
     "use strict";
     var compare = require_compare();
     var lte = (a, b, loose) => compare(a, b, loose) <= 0;
@@ -1691,9 +1717,9 @@ var require_lte = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/cmp.js
+// node_modules/semver/functions/cmp.js
 var require_cmp = __commonJS({
-  "netlify/functions/node_modules/semver/functions/cmp.js"(exports2, module2) {
+  "node_modules/semver/functions/cmp.js"(exports2, module2) {
     "use strict";
     var eq = require_eq();
     var neq = require_neq();
@@ -1741,9 +1767,9 @@ var require_cmp = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/coerce.js
+// node_modules/semver/functions/coerce.js
 var require_coerce = __commonJS({
-  "netlify/functions/node_modules/semver/functions/coerce.js"(exports2, module2) {
+  "node_modules/semver/functions/coerce.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var parse = require_parse();
@@ -1787,9 +1813,9 @@ var require_coerce = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/internal/lrucache.js
+// node_modules/semver/internal/lrucache.js
 var require_lrucache = __commonJS({
-  "netlify/functions/node_modules/semver/internal/lrucache.js"(exports2, module2) {
+  "node_modules/semver/internal/lrucache.js"(exports2, module2) {
     "use strict";
     var LRUCache = class {
       constructor() {
@@ -1825,9 +1851,9 @@ var require_lrucache = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/classes/range.js
+// node_modules/semver/classes/range.js
 var require_range = __commonJS({
-  "netlify/functions/node_modules/semver/classes/range.js"(exports2, module2) {
+  "node_modules/semver/classes/range.js"(exports2, module2) {
     "use strict";
     var SPACE_CHARACTERS = /\s+/g;
     var Range = class _Range {
@@ -2201,9 +2227,9 @@ var require_range = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/classes/comparator.js
+// node_modules/semver/classes/comparator.js
 var require_comparator = __commonJS({
-  "netlify/functions/node_modules/semver/classes/comparator.js"(exports2, module2) {
+  "node_modules/semver/classes/comparator.js"(exports2, module2) {
     "use strict";
     var ANY = Symbol("SemVer ANY");
     var Comparator = class _Comparator {
@@ -2314,9 +2340,9 @@ var require_comparator = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/functions/satisfies.js
+// node_modules/semver/functions/satisfies.js
 var require_satisfies = __commonJS({
-  "netlify/functions/node_modules/semver/functions/satisfies.js"(exports2, module2) {
+  "node_modules/semver/functions/satisfies.js"(exports2, module2) {
     "use strict";
     var Range = require_range();
     var satisfies = (version, range, options) => {
@@ -2331,9 +2357,9 @@ var require_satisfies = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/ranges/to-comparators.js
+// node_modules/semver/ranges/to-comparators.js
 var require_to_comparators = __commonJS({
-  "netlify/functions/node_modules/semver/ranges/to-comparators.js"(exports2, module2) {
+  "node_modules/semver/ranges/to-comparators.js"(exports2, module2) {
     "use strict";
     var Range = require_range();
     var toComparators = (range, options) => new Range(range, options).set.map((comp) => comp.map((c) => c.value).join(" ").trim().split(" "));
@@ -2341,9 +2367,9 @@ var require_to_comparators = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/ranges/max-satisfying.js
+// node_modules/semver/ranges/max-satisfying.js
 var require_max_satisfying = __commonJS({
-  "netlify/functions/node_modules/semver/ranges/max-satisfying.js"(exports2, module2) {
+  "node_modules/semver/ranges/max-satisfying.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var Range = require_range();
@@ -2370,9 +2396,9 @@ var require_max_satisfying = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/ranges/min-satisfying.js
+// node_modules/semver/ranges/min-satisfying.js
 var require_min_satisfying = __commonJS({
-  "netlify/functions/node_modules/semver/ranges/min-satisfying.js"(exports2, module2) {
+  "node_modules/semver/ranges/min-satisfying.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var Range = require_range();
@@ -2399,9 +2425,9 @@ var require_min_satisfying = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/ranges/min-version.js
+// node_modules/semver/ranges/min-version.js
 var require_min_version = __commonJS({
-  "netlify/functions/node_modules/semver/ranges/min-version.js"(exports2, module2) {
+  "node_modules/semver/ranges/min-version.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var Range = require_range();
@@ -2458,9 +2484,9 @@ var require_min_version = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/ranges/valid.js
+// node_modules/semver/ranges/valid.js
 var require_valid2 = __commonJS({
-  "netlify/functions/node_modules/semver/ranges/valid.js"(exports2, module2) {
+  "node_modules/semver/ranges/valid.js"(exports2, module2) {
     "use strict";
     var Range = require_range();
     var validRange = (range, options) => {
@@ -2474,9 +2500,9 @@ var require_valid2 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/ranges/outside.js
+// node_modules/semver/ranges/outside.js
 var require_outside = __commonJS({
-  "netlify/functions/node_modules/semver/ranges/outside.js"(exports2, module2) {
+  "node_modules/semver/ranges/outside.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
     var Comparator = require_comparator();
@@ -2543,9 +2569,9 @@ var require_outside = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/ranges/gtr.js
+// node_modules/semver/ranges/gtr.js
 var require_gtr = __commonJS({
-  "netlify/functions/node_modules/semver/ranges/gtr.js"(exports2, module2) {
+  "node_modules/semver/ranges/gtr.js"(exports2, module2) {
     "use strict";
     var outside = require_outside();
     var gtr = (version, range, options) => outside(version, range, ">", options);
@@ -2553,9 +2579,9 @@ var require_gtr = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/ranges/ltr.js
+// node_modules/semver/ranges/ltr.js
 var require_ltr = __commonJS({
-  "netlify/functions/node_modules/semver/ranges/ltr.js"(exports2, module2) {
+  "node_modules/semver/ranges/ltr.js"(exports2, module2) {
     "use strict";
     var outside = require_outside();
     var ltr = (version, range, options) => outside(version, range, "<", options);
@@ -2563,9 +2589,9 @@ var require_ltr = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/ranges/intersects.js
+// node_modules/semver/ranges/intersects.js
 var require_intersects = __commonJS({
-  "netlify/functions/node_modules/semver/ranges/intersects.js"(exports2, module2) {
+  "node_modules/semver/ranges/intersects.js"(exports2, module2) {
     "use strict";
     var Range = require_range();
     var intersects = (r1, r2, options) => {
@@ -2577,9 +2603,9 @@ var require_intersects = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/ranges/simplify.js
+// node_modules/semver/ranges/simplify.js
 var require_simplify = __commonJS({
-  "netlify/functions/node_modules/semver/ranges/simplify.js"(exports2, module2) {
+  "node_modules/semver/ranges/simplify.js"(exports2, module2) {
     "use strict";
     var satisfies = require_satisfies();
     var compare = require_compare();
@@ -2627,9 +2653,9 @@ var require_simplify = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/ranges/subset.js
+// node_modules/semver/ranges/subset.js
 var require_subset = __commonJS({
-  "netlify/functions/node_modules/semver/ranges/subset.js"(exports2, module2) {
+  "node_modules/semver/ranges/subset.js"(exports2, module2) {
     "use strict";
     var Range = require_range();
     var Comparator = require_comparator();
@@ -2789,9 +2815,9 @@ var require_subset = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/semver/index.js
+// node_modules/semver/index.js
 var require_semver2 = __commonJS({
-  "netlify/functions/node_modules/semver/index.js"(exports2, module2) {
+  "node_modules/semver/index.js"(exports2, module2) {
     "use strict";
     var internalRe = require_re();
     var constants = require_constants();
@@ -2884,25 +2910,25 @@ var require_semver2 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/lib/asymmetricKeyDetailsSupported.js
+// node_modules/jsonwebtoken/lib/asymmetricKeyDetailsSupported.js
 var require_asymmetricKeyDetailsSupported = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/lib/asymmetricKeyDetailsSupported.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/lib/asymmetricKeyDetailsSupported.js"(exports2, module2) {
     var semver = require_semver2();
     module2.exports = semver.satisfies(process.version, ">=15.7.0");
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/lib/rsaPssKeyDetailsSupported.js
+// node_modules/jsonwebtoken/lib/rsaPssKeyDetailsSupported.js
 var require_rsaPssKeyDetailsSupported = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/lib/rsaPssKeyDetailsSupported.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/lib/rsaPssKeyDetailsSupported.js"(exports2, module2) {
     var semver = require_semver2();
     module2.exports = semver.satisfies(process.version, ">=16.9.0");
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/lib/validateAsymmetricKey.js
+// node_modules/jsonwebtoken/lib/validateAsymmetricKey.js
 var require_validateAsymmetricKey = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/lib/validateAsymmetricKey.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/lib/validateAsymmetricKey.js"(exports2, module2) {
     var ASYMMETRIC_KEY_DETAILS_SUPPORTED = require_asymmetricKeyDetailsSupported();
     var RSA_PSS_KEY_DETAILS_SUPPORTED = require_rsaPssKeyDetailsSupported();
     var allowedAlgorithmsForKeys = {
@@ -2953,17 +2979,17 @@ var require_validateAsymmetricKey = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/lib/psSupported.js
+// node_modules/jsonwebtoken/lib/psSupported.js
 var require_psSupported = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/lib/psSupported.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/lib/psSupported.js"(exports2, module2) {
     var semver = require_semver2();
     module2.exports = semver.satisfies(process.version, "^6.12.0 || >=8.0.0");
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/verify.js
+// node_modules/jsonwebtoken/verify.js
 var require_verify = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/verify.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/verify.js"(exports2, module2) {
     var JsonWebTokenError = require_JsonWebTokenError();
     var NotBeforeError = require_NotBeforeError();
     var TokenExpiredError = require_TokenExpiredError();
@@ -3176,9 +3202,9 @@ var require_verify = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/lodash.includes/index.js
+// node_modules/lodash.includes/index.js
 var require_lodash = __commonJS({
-  "netlify/functions/node_modules/lodash.includes/index.js"(exports2, module2) {
+  "node_modules/lodash.includes/index.js"(exports2, module2) {
     var INFINITY = 1 / 0;
     var MAX_SAFE_INTEGER = 9007199254740991;
     var MAX_INTEGER = 17976931348623157e292;
@@ -3360,9 +3386,9 @@ var require_lodash = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/lodash.isboolean/index.js
+// node_modules/lodash.isboolean/index.js
 var require_lodash2 = __commonJS({
-  "netlify/functions/node_modules/lodash.isboolean/index.js"(exports2, module2) {
+  "node_modules/lodash.isboolean/index.js"(exports2, module2) {
     var boolTag = "[object Boolean]";
     var objectProto = Object.prototype;
     var objectToString = objectProto.toString;
@@ -3376,9 +3402,9 @@ var require_lodash2 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/lodash.isinteger/index.js
+// node_modules/lodash.isinteger/index.js
 var require_lodash3 = __commonJS({
-  "netlify/functions/node_modules/lodash.isinteger/index.js"(exports2, module2) {
+  "node_modules/lodash.isinteger/index.js"(exports2, module2) {
     var INFINITY = 1 / 0;
     var MAX_INTEGER = 17976931348623157e292;
     var NAN = 0 / 0;
@@ -3440,9 +3466,9 @@ var require_lodash3 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/lodash.isnumber/index.js
+// node_modules/lodash.isnumber/index.js
 var require_lodash4 = __commonJS({
-  "netlify/functions/node_modules/lodash.isnumber/index.js"(exports2, module2) {
+  "node_modules/lodash.isnumber/index.js"(exports2, module2) {
     var numberTag = "[object Number]";
     var objectProto = Object.prototype;
     var objectToString = objectProto.toString;
@@ -3456,9 +3482,9 @@ var require_lodash4 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/lodash.isplainobject/index.js
+// node_modules/lodash.isplainobject/index.js
 var require_lodash5 = __commonJS({
-  "netlify/functions/node_modules/lodash.isplainobject/index.js"(exports2, module2) {
+  "node_modules/lodash.isplainobject/index.js"(exports2, module2) {
     var objectTag = "[object Object]";
     function isHostObject(value) {
       var result = false;
@@ -3500,9 +3526,9 @@ var require_lodash5 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/lodash.isstring/index.js
+// node_modules/lodash.isstring/index.js
 var require_lodash6 = __commonJS({
-  "netlify/functions/node_modules/lodash.isstring/index.js"(exports2, module2) {
+  "node_modules/lodash.isstring/index.js"(exports2, module2) {
     var stringTag = "[object String]";
     var objectProto = Object.prototype;
     var objectToString = objectProto.toString;
@@ -3517,9 +3543,9 @@ var require_lodash6 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/lodash.once/index.js
+// node_modules/lodash.once/index.js
 var require_lodash7 = __commonJS({
-  "netlify/functions/node_modules/lodash.once/index.js"(exports2, module2) {
+  "node_modules/lodash.once/index.js"(exports2, module2) {
     var FUNC_ERROR_TEXT = "Expected a function";
     var INFINITY = 1 / 0;
     var MAX_INTEGER = 17976931348623157e292;
@@ -3598,9 +3624,9 @@ var require_lodash7 = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/sign.js
+// node_modules/jsonwebtoken/sign.js
 var require_sign = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/sign.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/sign.js"(exports2, module2) {
     var timespan = require_timespan();
     var PS_SUPPORTED = require_psSupported();
     var validateAsymmetricKey = require_validateAsymmetricKey();
@@ -3823,9 +3849,9 @@ var require_sign = __commonJS({
   }
 });
 
-// netlify/functions/node_modules/jsonwebtoken/index.js
+// node_modules/jsonwebtoken/index.js
 var require_jsonwebtoken = __commonJS({
-  "netlify/functions/node_modules/jsonwebtoken/index.js"(exports2, module2) {
+  "node_modules/jsonwebtoken/index.js"(exports2, module2) {
     module2.exports = {
       decode: require_decode(),
       verify: require_verify(),
@@ -3837,31 +3863,91 @@ var require_jsonwebtoken = __commonJS({
   }
 });
 
-// netlify/functions/_auth.js
-var jwt = require_jsonwebtoken();
-function getUserId(claims) {
-  return claims.sub || claims.user_id || claims.uid || claims.id || claims.userId || null;
+// netlify/functions/_auth.ts
+var auth_exports = {};
+__export(auth_exports, {
+  handleCORS: () => handleCORS,
+  httpErr: () => httpErr,
+  requireAuth: () => requireAuth,
+  resp: () => resp,
+  sanitizeDatabaseUrl: () => sanitizeDatabaseUrl,
+  signToken: () => signToken
+});
+module.exports = __toCommonJS(auth_exports);
+var import_jsonwebtoken = __toESM(require_jsonwebtoken());
+var SECRET = process.env.JWT_SECRET || process.env.AUTH_JWT_SECRET || (() => {
+  throw new Error("Missing JWT secret - set either JWT_SECRET or AUTH_JWT_SECRET");
+})();
+var ISS = process.env.JWT_ISSUER || "stefna";
+console.log("\u{1F510} JWT Auth initialized with:", {
+  hasJwtSecret: !!process.env.JWT_SECRET,
+  hasAuthJwtSecret: !!process.env.AUTH_JWT_SECRET,
+  issuer: ISS
+});
+function signToken(payload) {
+  return import_jsonwebtoken.default.sign(payload, SECRET, { algorithm: "HS256", issuer: ISS, expiresIn: "30d" });
 }
-function verifyAuth(event) {
-  const auth = event.headers.authorization || "";
-  const token = auth.replace(/^Bearer\s+/i, "");
-  const GUEST_MODE_ENABLED = process.env.GUEST_MODE_ENABLED === "true";
-  if (!token) {
-    if (GUEST_MODE_ENABLED) {
-      return {
-        claims: {},
-        userId: `guest-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        token: null
-      };
-    }
-    throw new Error("no_bearer");
+function requireAuth(authorization) {
+  if (!authorization?.startsWith("Bearer ")) throw httpErr(401, "MISSING_BEARER");
+  const token = authorization.slice(7);
+  try {
+    return import_jsonwebtoken.default.verify(token, SECRET, { algorithms: ["HS256"], issuer: ISS });
+  } catch {
+    throw httpErr(401, "INVALID_JWT");
   }
-  const claims = jwt.verify(token, process.env.JWT_SECRET, { clockTolerance: 5 });
-  const userId = getUserId(claims);
-  if (!userId) throw new Error("no_user_id_claim");
-  return { claims, userId, token };
 }
-module.exports = { verifyAuth };
+function httpErr(status, code, extra = {}) {
+  const err = new Error(code);
+  err.statusCode = status;
+  err.code = code;
+  err.extra = extra;
+  return err;
+}
+function resp(statusCode, body) {
+  return {
+    statusCode,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    },
+    body: JSON.stringify(body)
+  };
+}
+function handleCORS(event) {
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+      },
+      body: ""
+    };
+  }
+  return null;
+}
+function sanitizeDatabaseUrl(url) {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "postgresql:") {
+      throw new Error("Invalid database protocol");
+    }
+    return url;
+  } catch {
+    throw new Error("Invalid database URL format");
+  }
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  handleCORS,
+  httpErr,
+  requireAuth,
+  resp,
+  sanitizeDatabaseUrl,
+  signToken
+});
 /*! Bundled license information:
 
 safe-buffer/index.js:

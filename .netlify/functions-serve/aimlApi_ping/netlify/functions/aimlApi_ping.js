@@ -32,9 +32,9 @@ var handler = async (event) => {
         ok: true,
         have: {
           AIML_API_KEY: !!process.env.AIML_API_KEY,
-          SUPABASE_URL: !!process.env.SUPABASE_URL,
-          SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
-          SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+          DATABASE_URL: !!process.env.DATABASE_URL,
+          NEON_DATABASE_URL: !!process.env.NEON_DATABASE_URL,
+          AUTH_JWT_SECRET: !!process.env.AUTH_JWT_SECRET,
           NODE_VERSION: process.version
         },
         bodyKeys: body ? Object.keys(body) : []
