@@ -2,7 +2,7 @@ import { signedFetch } from './auth'
 
 export async function uploadToCloudinary(fileOrDataUrl: File | string, folder: string) {
   const startTime = Date.now();
-  const uploadTimeout = 20000; // 20s upload timeout
+  const uploadTimeout = 60000; // 60s upload timeout for larger files
   
   try {
     // Convert data URL -> Blob -> File if needed
@@ -36,7 +36,7 @@ export async function uploadToCloudinary(fileOrDataUrl: File | string, folder: s
     
     const fd = new FormData();
     fd.append("file", file);
-    fd.append("api_key", sig.api_key);
+    fd.append("api_key", sig.apiKey);
     fd.append("timestamp", String(sig.timestamp));
     fd.append("signature", sig.signature);
     fd.append("folder", folder);
@@ -76,8 +76,8 @@ export async function uploadToCloudinary(fileOrDataUrl: File | string, folder: s
     const duration = Date.now() - startTime;
     
     if (error.name === 'AbortError') {
-      console.error('⏰ Cloudinary upload timed out after 20s:', { folder, duration });
-      throw new Error(`Upload timed out after ${uploadTimeout}ms. Please try again.`);
+      console.error(`⏰ Cloudinary upload timed out after ${uploadTimeout/1000}s:`, { folder, duration });
+      throw new Error(`Upload timed out after ${uploadTimeout/1000}s. Please try again with a smaller file or check your connection.`);
     }
     
     console.error('❌ Cloudinary upload failed:', { 
@@ -110,7 +110,7 @@ export async function uploadAvatarToCloudinary(file: File, userId: string): Prom
   // Prepare form data
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("api_key", sig.api_key);
+  formData.append("api_key", sig.apiKey);
   formData.append("timestamp", String(sig.timestamp));
   formData.append("signature", sig.signature);
   formData.append("folder", folder);

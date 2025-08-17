@@ -1,4 +1,6 @@
 // utils/ensureRemoteUrl.ts
+import { signedFetch } from '../lib/auth';
+
 export async function ensureRemoteUrl(asset: { remoteUrl?: string; file?: File|Blob; url?: string; blobUrl?: string }) {
   const direct = asset?.remoteUrl || asset?.url || asset?.blobUrl;
   if (direct?.startsWith('https://')) return direct;
@@ -6,7 +8,7 @@ export async function ensureRemoteUrl(asset: { remoteUrl?: string; file?: File|B
   // If we have a file/blob object, use it directly
   if (asset?.file) {
     // Upload the file to Cloudinary
-    const sigRes = await fetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
+    const sigRes = await signedFetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
     const sig = await sigRes.json(); // { signature, timestamp, cloudName, apiKey, folder }
     if (!sig?.signature) throw new Error('Cloudinary sign failed');
 

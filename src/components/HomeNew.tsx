@@ -1767,7 +1767,7 @@ const HomeNew: React.FC = () => {
       
       // ====== UPLOAD ======
       setNavGenerating(true);
-      const uploadRes = await uploadToCloudinary(selectedFile, 'stefna');
+      const uploadRes = await uploadToCloudinary(selectedFile, 'stefna/sources');
       if (!uploadRes?.secure_url) throw new Error('Upload failed — no secure_url');
       
       console.log('✅ Upload successful:', uploadRes.secure_url);

@@ -1,4 +1,4 @@
-import authService from '../services/authService';
+import { signedFetch } from '../lib/auth';
 
 export async function prepareSourceAsset(activeFileOrUrl: File | string) {
   // If it's already a public http(s) URL, skip upload.
@@ -20,14 +20,14 @@ export async function prepareSourceAsset(activeFileOrUrl: File | string) {
   }
 
   // Signed params
-  const signRes = await fetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
-  const { timestamp, signature, api_key, cloudName, folder, upload_preset } = await signRes.json();
+  const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
+  const { timestamp, signature, apiKey, cloudName, folder, upload_preset } = await signRes.json();
 
   const form = new FormData();
   form.append('file', file); // <-- real File now
   form.append('timestamp', String(timestamp));
   form.append('signature', signature);
-  form.append('api_key', api_key);
+  form.append('api_key', apiKey);
   if (folder) form.append('folder', folder);
   if (upload_preset) form.append('upload_preset', upload_preset);
 

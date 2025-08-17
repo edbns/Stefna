@@ -1,7 +1,9 @@
 // src/services/uploadBlobToCloudinary.ts
+import { signedFetch } from '../lib/auth';
+
 export async function uploadBlobToCloudinary(opts: { blob: Blob, folder?: string }) {
   // reuse your existing signing endpoint
-  const sign = await fetch('/.netlify/functions/cloudinary-sign', { method: 'POST' })
+  const sign = await signedFetch('/.netlify/functions/cloudinary-sign', { method: 'POST' })
     .then(r => r.json());
   
   const fd = new FormData();

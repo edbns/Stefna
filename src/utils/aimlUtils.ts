@@ -1,4 +1,5 @@
 // AIML API utility functions for building payloads and parsing results
+import { signedFetch } from '../lib/auth';
 
 type ResourceType = 'image' | 'video';
 
@@ -69,7 +70,7 @@ export async function ensureRemoteUrl(previewUrl?: string, file?: File | Blob): 
   if (!file) throw new Error('Invalid asset URL and no file to upload');
 
   // sign with proper error handling
-  const sigRes = await fetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
+  const sigRes = await signedFetch('/.netlify/functions/cloudinary-sign', { method: 'POST' });
   if (!sigRes.ok) {
     const err = await sigRes.json().catch(() => ({}));
     throw new Error(`Cloudinary sign failed ${sigRes.status}: ${err?.error || 'unknown'}`);
