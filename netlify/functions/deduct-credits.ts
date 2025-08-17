@@ -5,12 +5,13 @@ import { json, mapPgError } from "./_lib/http";
 import { randomUUID } from "crypto";
 
 export const handler: Handler = async (event) => {
+  // 🔧 Top-level try/catch as recommended by third party to catch ALL errors
   try {
     // 🔐 Defensive logging as recommended by third party
     console.log("🔐 Incoming request:", {
       headers: event.headers,
       body: event.body,
-      method: event.method,
+      method: event.httpMethod,
       hasAuth: !!event.headers.authorization,
       authHeader: event.headers.authorization?.substring(0, 20) + '...'
     });
@@ -76,6 +77,7 @@ export const handler: Handler = async (event) => {
     console.log('💰 Database connection obtained:', !!db);
     
     // 🗄️ Comprehensive DB logic with try/catch as recommended by third party
+    let rows: any[] = [];
     try {
       // Test database connection
       const { rows: testRows } = await db.query('SELECT NOW() as current_time');
@@ -89,10 +91,11 @@ export const handler: Handler = async (event) => {
       
       // Reserve credits
       console.log('💰 Reserving credits for user:', userId, 'request:', request_id, 'action:', action, 'cost:', cost);
-      const { rows } = await db.query(
+      const result = await db.query(
         "SELECT * FROM app.reserve_credits($1::uuid,$2::uuid,$3::text,$4::int)",
         [userId, request_id, action, cost]
       );
+      rows = result.rows;
       console.log('💰 Credits reserved successfully:', rows[0]);
       
     } catch (dbError) {
@@ -113,21 +116,14 @@ export const handler: Handler = async (event) => {
       balance: rows[0]?.balance ?? null,
       message: "Credits reserved. Call credits-finalize to commit or refund."
     });
-  } catch (e) {
-    console.error("❌ deduct-credits failed:", {
-      error: e,
-      message: e?.message,
-      stack: e?.stack,
-      name: e?.name,
-      userId: e?.userId,
-      cost: e?.cost
-    });
     
-    // Return proper error response as recommended by third party
+  } catch (error) {
+    // 🔧 Top-level error logging as recommended by third party
+    console.error("❌ deduct-credits failed:", error);
     return json(500, { 
       ok: false, 
       error: "Credits deduction failed",
-      details: e?.message || 'Unknown error'
+      details: error?.message || 'Unknown error'
     });
   }
 };
