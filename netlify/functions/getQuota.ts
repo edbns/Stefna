@@ -1,10 +1,11 @@
+import type { Handler } from "@netlify/functions";
 import { verifyAuth } from './_auth.js';
 import { neon } from '@neondatabase/serverless';
 
 // ---- Database connection ----
 const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
-export const handler = async (event) => {
+export const handler: Handler = async (event) => {
   try {
     if (event.httpMethod === 'OPTIONS') {
       return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' }, body: '' }

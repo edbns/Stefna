@@ -1,10 +1,11 @@
+import type { Handler } from "@netlify/functions";
 import { neon } from '@neondatabase/serverless';
 import { requireJWTUser, resp, handleCORS } from './_auth.js';
 
 // ---- Database connection ----
 const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
-export const handler = async (event) => {
+export const handler: Handler = async (event) => {
   // Handle CORS preflight
   const corsResponse = handleCORS(event);
   if (corsResponse) return corsResponse;
