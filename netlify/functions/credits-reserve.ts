@@ -62,7 +62,7 @@ export const handler: Handler = async (event) => {
       actionLength: action?.length,
       actionTrimmed: action?.trim?.(),
       actionLower: action?.toLowerCase?.(),
-      isValidAction: allowedActions.includes(action)
+      isValidAction: false // Will validate after allowedActions is declared
     });
 
     // Validation
