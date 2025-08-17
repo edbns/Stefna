@@ -4,11 +4,9 @@
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "20.19.4"
   NPM_FLAGS = "--prefer-offline --no-audit --production"
   VITE_BUILD_OPTIMIZE = "true"
-  # Install function dependencies
-  NPM_CONFIG_PREFIX = "."
 
 # Production context
 [context.production]
