@@ -7,7 +7,9 @@ import { randomUUID } from "crypto";
 export const handler: Handler = async (event) => {
   // 🔧 Top-level try/catch as recommended by third party to catch ALL errors
   try {
-    // 🔐 Defensive logging as recommended by third party
+    // 🔐 Comprehensive logging as recommended by third party
+    console.log("💰 [deduct-credits] event.body:", event.body);
+    console.log("💰 [deduct-credits] event.headers:", event.headers);
     console.log("🔐 Incoming request:", {
       headers: event.headers,
       body: event.body,
@@ -49,6 +51,7 @@ export const handler: Handler = async (event) => {
     const action = body.action || body.intent || "image.gen"; // Support both action and intent
     const request_id = body.request_id || body.requestId || randomUUID(); // Support both formats
 
+    console.log("💰 [deduct-credits] Parsed:", { userId, request_id, action, cost });
     console.log('💰 Credits deduction params:', {
       userId,
       cost,
@@ -139,15 +142,29 @@ export const handler: Handler = async (event) => {
       });
       
       // Debug: Show the exact SQL query and parameters
+      // 🔍 NOTE: SQL function returns TABLE (balance int), not (remaining_credits, already_reserved)
       const sqlQuery = "SELECT * FROM app.reserve_credits($1::uuid, $2::uuid, $3::text, $4::int)";
       const params = [userId, request_id, action, cost];
       console.log('💰 SQL Query:', sqlQuery);
       console.log('💰 Parameters:', params);
+      console.log('💰 Expected return: TABLE (balance int)');
       
       try {
         const result = await db.query(sqlQuery, params);
         rows = result.rows;
         console.log('💰 Credits reserved successfully:', rows[0]);
+        
+        // ✅ Validate the return structure matches our SQL function
+        if (!rows[0] || typeof rows[0].balance !== 'number') {
+          console.error('❌ Unexpected return structure:', rows[0]);
+          return json(500, {
+            ok: false,
+            error: "DB_UNEXPECTED_RETURN_STRUCTURE",
+            message: `Expected {balance: number}, got: ${JSON.stringify(rows[0])}`,
+          });
+        }
+        
+        console.log('💰 Balance after reservation:', rows[0].balance);
       } catch (dbError) {
         console.error("❌ reserve_credits() call failed:", dbError);
         return json(500, {
