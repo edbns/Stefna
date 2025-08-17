@@ -1192,30 +1192,35 @@ const HomeNew: React.FC = () => {
 
       console.info('aimlApi payload', payload);
 
-      // Deduct credits before generation
+      // Reserve credits before generation
       const creditsNeeded = generateTwo ? 2 : 1;
-      console.log(`💰 Deducting ${creditsNeeded} credits before generation...`);
+      console.log(`💰 Reserving ${creditsNeeded} credits before generation...`);
       
-      const creditsResponse = await authenticatedFetch('/.netlify/functions/deduct-credits', {
+      const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: creditsNeeded,
-          reason: `preset_generation_${creditsNeeded}_variations`,
-          requestId: payload.request_id
+          action: mode,
+          cost: creditsNeeded
         })
       });
 
       if (!creditsResponse.ok) {
-        if (creditsResponse.status === 402) {
+        if (creditsResponse.status === 429) {
           const errorData = await creditsResponse.json();
-          throw new Error(`Insufficient credits: ${errorData.currentCredits} available, ${creditsNeeded} needed`);
+          throw new Error(`Daily cap reached: ${errorData.error}`);
         }
-        throw new Error(`Credits deduction failed: ${creditsResponse.status}`);
+        throw new Error(`Credits reservation failed: ${creditsResponse.status}`);
       }
 
       const creditsResult = await creditsResponse.json();
-      console.log(`✅ Credits deducted successfully. New balance: ${creditsResult.newBalance}`);
+      console.log(`✅ Credits reserved successfully. New balance: ${creditsResult.balance}`);
+      
+      // Store the request_id for finalization
+      const requestId = creditsResult.request_id;
+      if (!requestId) {
+        throw new Error('No request_id returned from credits reservation');
+      }
 
       // Video pathway → use start-v2v + poll-v2v
       if (isVideoPreview) {

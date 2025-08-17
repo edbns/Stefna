@@ -85,6 +85,9 @@ export const runMoodMorph = async (
   onComplete: (variations: MoodVariation[]) => void,
   onError: (error: string) => void
 ): Promise<void> => {
+  // Declare requestId at function scope for error handling
+  let requestId: string | null = null;
+  
   try {
     console.log('🚀 MoodMorph: Starting generation...');
     
@@ -151,31 +154,36 @@ export const runMoodMorph = async (
     onProgress(100);
     console.log(`🎉 MoodMorph: Generated ${allVariations.length} variations`);
 
-    // Step 3: Deduct credits first
+    // Step 3: Reserve credits first
     const runId = `moodmorph_${Date.now()}`;
     const creditsNeeded = allVariations.length;
     
-    console.log(`💰 MoodMorph: Deducting ${creditsNeeded} credits...`);
-    const creditsResponse = await fetchWithAuth('/.netlify/functions/deduct-credits', {
+    console.log(`💰 MoodMorph: Reserving ${creditsNeeded} credits...`);
+    const creditsResponse = await fetchWithAuth('/.netlify/functions/credits-reserve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        amount: creditsNeeded,
-        reason: `moodmorph_generation_${creditsNeeded}_variations`,
-        requestId: runId
+        action: 'moodmorph',
+        cost: creditsNeeded
       })
     });
 
     if (!creditsResponse.ok) {
-      if (creditsResponse.status === 402) {
+      if (creditsResponse.status === 429) {
         const errorData = await creditsResponse.json();
-        throw new Error(`Insufficient credits: ${errorData.currentCredits} available, ${creditsNeeded} needed`);
+        throw new Error(`Daily cap reached: ${errorData.error}`);
       }
-      throw new Error(`Credits deduction failed: ${creditsResponse.status}`);
+      throw new Error(`Credits reservation failed: ${creditsResponse.status}`);
     }
 
     const creditsResult = await creditsResponse.json();
-    console.log(`✅ MoodMorph: Credits deducted successfully. New balance: ${creditsResult.newBalance}`);
+    console.log(`✅ MoodMorph: Credits reserved successfully. New balance: ${creditsResult.balance}`);
+    
+    // Store the request_id for finalization
+    requestId = creditsResult.request_id;
+    if (!requestId) {
+      throw new Error('No request_id returned from credits reservation');
+    }
 
     // Step 4: Save media using batch endpoint
     try {
@@ -199,6 +207,30 @@ export const runMoodMorph = async (
       if (batchResponse.ok) {
         const batchResult = await batchResponse.json();
         console.log(`✅ MoodMorph: Batch save successful! Saved ${batchResult.count} variations`);
+        
+        // 💰 Finalize credits (commit) after successful generation
+        try {
+          console.log('💰 MoodMorph: Finalizing credits (commit)...');
+          const finalizeResponse = await fetchWithAuth('/.netlify/functions/credits-finalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              request_id: requestId,
+              disposition: 'commit'
+            })
+          });
+          
+          if (finalizeResponse.ok) {
+            const finalizeResult = await finalizeResponse.json();
+            console.log('✅ MoodMorph: Credits finalized successfully:', finalizeResult);
+          } else {
+            console.error('❌ MoodMorph: Credits finalization failed:', finalizeResponse.status);
+            // Don't throw here - generation succeeded, just log the credit issue
+          }
+        } catch (finalizeError) {
+          console.error('❌ MoodMorph: Credits finalization error:', finalizeError);
+          // Don't throw here - generation succeeded, just log the credit issue
+        }
         
         // Trigger UI updates
         window.dispatchEvent(new CustomEvent('userMediaUpdated'));
@@ -262,6 +294,31 @@ export const runMoodMorph = async (
         
         if (savedCount > 0) {
           console.log(`✅ MoodMorph: Fallback saved ${savedCount}/${allVariations.length} variations`);
+          
+          // 💰 Finalize credits (commit) after successful fallback generation
+          try {
+            console.log('💰 MoodMorph: Finalizing credits (commit) after fallback...');
+            const finalizeResponse = await fetchWithAuth('/.netlify/functions/credits-finalize', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                request_id: requestId,
+                disposition: 'commit'
+              })
+            });
+            
+            if (finalizeResponse.ok) {
+              const finalizeResult = await finalizeResponse.json();
+              console.log('✅ MoodMorph: Credits finalized successfully after fallback:', finalizeResult);
+            } else {
+              console.error('❌ MoodMorph: Credits finalization failed after fallback:', finalizeResponse.status);
+              // Don't throw here - generation succeeded, just log the credit issue
+            }
+          } catch (finalizeError) {
+            console.error('❌ MoodMorph: Credits finalization error after fallback:', finalizeError);
+            // Don't throw here - generation succeeded, just log the credit issue
+          }
+          
           window.dispatchEvent(new CustomEvent('userMediaUpdated'));
           window.dispatchEvent(new CustomEvent('generation-success', { 
             detail: { count: savedCount, mode: 'moodmorph', fallback: true } 
@@ -285,6 +342,31 @@ export const runMoodMorph = async (
 
   } catch (error: any) {
     console.error('❌ MoodMorph: Generation failed:', error);
+    
+    // 💰 Refund credits if generation failed
+    if (requestId) {
+      try {
+        console.log('💰 MoodMorph: Refunding credits due to generation failure...');
+        const refundResponse = await fetchWithAuth('/.netlify/functions/credits-finalize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            request_id: requestId,
+            disposition: 'refund'
+          })
+        });
+        
+        if (refundResponse.ok) {
+          const refundResult = await refundResponse.json();
+          console.log('✅ MoodMorph: Credits refunded successfully:', refundResult);
+        } else {
+          console.error('❌ MoodMorph: Credits refund failed:', refundResponse.status);
+        }
+      } catch (refundError) {
+        console.error('❌ MoodMorph: Credits refund error:', refundError);
+      }
+    }
+    
     onError(error.message || 'MoodMorph generation failed');
   } finally {
     // Always clear composer state
