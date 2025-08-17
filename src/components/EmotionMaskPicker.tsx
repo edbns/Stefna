@@ -44,10 +44,7 @@ export function EmotionMaskPicker({
             return `${baseClass} ${value === preset.id ? activeClass : inactiveClass}`;
           })()}
         >
-          <div className="text-left">
-            <div className="font-medium">{preset.label}</div>
-            <div className="text-xs text-white/60">{preset.description}</div>
-          </div>
+          <span>{preset.label}</span>
           {value === preset.id ? (
             <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
           ) : (

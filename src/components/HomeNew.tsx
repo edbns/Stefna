@@ -1553,6 +1553,38 @@ const HomeNew: React.FC = () => {
 
     } catch (e) {
       console.error('dispatchGenerate error', e);
+      
+      // Show user-friendly error message
+      let errorMessage = 'Please try again';
+      
+      // Map technical errors to user-friendly messages
+      if (e instanceof Error) {
+        if (e.message.includes('cloud_name is disabled') || e.message.includes('cloud_name')) {
+          errorMessage = 'Upload service temporarily unavailable';
+        } else if (e.message.includes('timeout')) {
+          errorMessage = 'Upload took too long, please try again';
+        } else if (e.message.includes('unauthorized') || e.message.includes('401')) {
+          errorMessage = 'Please sign in again';
+        } else if (e.message.includes('quota') || e.message.includes('credits')) {
+          errorMessage = 'You\'ve reached your daily limit';
+        } else {
+          errorMessage = 'Something went wrong, please try again';
+        }
+      } else if (typeof e === 'object' && e !== null && 'error' in e) {
+        const errorObj = e as any;
+        if (errorObj.error?.message) {
+          if (errorObj.error.message.includes('cloud_name is disabled')) {
+            errorMessage = 'Upload service temporarily unavailable';
+          } else if (errorObj.error.message.includes('unauthorized')) {
+            errorMessage = 'Please sign in again';
+          } else {
+            errorMessage = 'Something went wrong, please try again';
+          }
+        }
+      }
+      
+      notifyError({ title: 'Generation failed', message: errorMessage });
+      
       endGeneration(genId);
       setNavGenerating(false);
     } finally {

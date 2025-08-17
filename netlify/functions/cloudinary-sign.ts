@@ -11,15 +11,34 @@ function json(status: number, body: unknown) {
 }
 
 async function verifyJWT(auth?: string) {
+  console.log('🔐 JWT verification:', {
+    hasAuth: !!auth,
+    startsWithBearer: auth?.startsWith('Bearer '),
+    tokenLength: auth?.slice('Bearer '.length)?.length || 0,
+    hasJWTSecret: !!process.env.JWT_SECRET
+  });
+  
   if (!auth?.startsWith('Bearer ')) throw new Error('No bearer token');
   const token = auth.slice('Bearer '.length);
   const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+  
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable not set');
+  }
+  
   await jose.jwtVerify(token, secret); // will throw if invalid/expired
   return true;
 }
 
 export const handler: Handler = async (event) => {
   try {
+    console.log('🔐 Cloudinary sign request:', {
+      hasAuth: !!event.headers.authorization,
+      authHeader: event.headers.authorization?.substring(0, 20) + '...',
+      method: event.method,
+      body: event.body
+    });
+    
     await verifyJWT(event.headers.authorization);
 
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;

@@ -18,7 +18,8 @@ export async function uploadSourceToCloudinary(src: Source) {
   }
 
   // 2) get a fresh signature
-  const sign = await fetch('/.netlify/functions/cloudinary-sign', {
+  const { signedFetch } = await import('../lib/auth')
+  const sign = await signedFetch('/.netlify/functions/cloudinary-sign', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ folder: 'stefna/sources' }),
