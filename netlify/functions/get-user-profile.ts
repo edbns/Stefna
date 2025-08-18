@@ -1,16 +1,16 @@
 import type { Handler } from "@netlify/functions";
 import { neon } from '@neondatabase/serverless';
-import { requireAuth } from "./_lib/auth";
+import { requireAuth } from "./_auth";
 import { json } from "./_lib/http";
 
 export const handler: Handler = async (event) => {
   try {
-    const { userId, email } = requireAuth(event.headers.authorization);
+    const { sub: userId, email } = requireAuth(event.headers.authorization);
     const sql = neon(process.env.NETLIFY_DATABASE_URL!);
 
     // Make sure user exists
     await sql`
-      INSERT INTO users (id, email) VALUES (${userId}, ${email ?? null}) 
+      INSERT INTO users (id, email, external_id) VALUES (${userId}, ${email ?? null}, ${userId}) 
       ON CONFLICT (id) DO NOTHING
     `;
 

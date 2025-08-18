@@ -1,6 +1,7 @@
 import type { Handler } from "@netlify/functions";
 import { neon } from '@neondatabase/serverless';
-import { requireJWTUser, resp, handleCORS } from './_auth.js';
+import { requireAuth } from './_lib/auth';
+import { resp, handleCORS } from './_auth';
 
 // ---- Database connection ----
 const sql = neon(process.env.NETLIFY_DATABASE_URL!);
@@ -16,20 +17,20 @@ export const handler: Handler = async (event) => {
     }
 
     // Auth check using JWT
-    const user = requireJWTUser(event)
-    if (!user) {
+    const { userId } = requireAuth(event.headers.authorization)
+    if (!userId) {
       return resp(401, { error: 'Unauthorized - Invalid or missing JWT token' })
     }
 
     if (event.httpMethod === 'GET') {
       // Get user settings
-      console.log(`📥 Getting settings for user: ${user.userId}`)
+      console.log(`📥 Getting settings for user: ${userId}`)
       
       try {
         const settings = await sql`
           SELECT share_to_feed, allow_remix, updated_at
           FROM user_settings
-          WHERE user_id = ${user.userId}
+          WHERE user_id = ${userId}
         `;
 
         // Return default settings if none exist
@@ -40,7 +41,7 @@ export const handler: Handler = async (event) => {
         }
 
         const result = settings.length > 0 ? settings[0] : defaultSettings
-        console.log(`✅ Retrieved settings for user ${user.userId}:`, result)
+        console.log(`✅ Retrieved settings for user ${userId}:`, result)
 
         return resp(200, {
           shareToFeed: result.share_to_feed,
@@ -67,13 +68,13 @@ export const handler: Handler = async (event) => {
         return resp(400, { error: 'shareToFeed and allowRemix must be boolean' })
       }
 
-      console.log(`📝 Updating settings for user ${user.userId}:`, { shareToFeed, allowRemix })
+      console.log(`📝 Updating settings for user ${userId}:`, { shareToFeed, allowRemix })
 
       try {
         // Upsert settings (create if doesn't exist, update if it does)
         const updated = await sql`
           INSERT INTO user_settings (user_id, share_to_feed, allow_remix, updated_at)
-          VALUES (${user.userId}, ${shareToFeed}, ${allowRemix}, NOW())
+          VALUES (${userId}, ${shareToFeed}, ${allowRemix}, NOW())
           ON CONFLICT (user_id) DO UPDATE SET 
             share_to_feed = EXCLUDED.share_to_feed,
             allow_remix = EXCLUDED.allow_remix,
@@ -82,7 +83,7 @@ export const handler: Handler = async (event) => {
         `;
 
         const result = updated[0]
-        console.log(`✅ Updated settings for user ${user.userId}:`, result)
+        console.log(`✅ Updated settings for user ${userId}:`, result)
 
         return resp(200, {
           shareToFeed: result.share_to_feed,
