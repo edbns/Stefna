@@ -990,6 +990,7 @@ const ProfileScreen: React.FC = () => {
 
   const sidebarItems = [
     { id: 'tokens', label: 'Tokens', icon: Coins },
+    { id: 'invite-friends', label: 'Invite Friends', icon: Users },
     
     { id: 'divider_prefs', type: 'divider', label: ' ' },
     { id: 'pref_share', label: 'Share to Feed', type: 'toggle', setting: 'autoShareToFeed' },
@@ -1464,7 +1465,99 @@ const ProfileScreen: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'invite-friends' && (
+          <div className="flex-1 p-6">
+            <div className="max-w-4xl mx-auto">
+              {/* Invite Friends Header */}
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-white mb-2">Invite Friends</h2>
+                <p className="text-white/60 text-sm">Share Stefna with friends and earn bonus credits together</p>
+              </div>
 
+              {/* Invite Friends Content */}
+              <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-8">
+                {isAuthenticated && referralStats ? (
+                  <div className="space-y-6">
+                    {/* Benefits Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-white/5 rounded-lg p-4 text-center">
+                        <div className="text-white font-semibold mb-2 text-lg">You Get</div>
+                        <div className="text-white/60">+50 credits after friend's first media</div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-4 text-center">
+                        <div className="text-white font-semibold mb-2 text-lg">Friend Gets</div>
+                        <div className="text-white/60">+25 credits on signup</div>
+                      </div>
+                    </div>
+
+                    {/* Email Form */}
+                    <form onSubmit={handleSendInvite} className="space-y-4">
+                      <div>
+                        <label className="block text-white/80 text-sm font-medium mb-2">Friend's Email</label>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="email"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            className="flex-1 bg-[#2a2a2a] border border-[#444444] rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
+                            placeholder="Enter friend's email address"
+                            disabled={isSendingInvite}
+                            required
+                          />
+                          <button
+                            type="submit"
+                            disabled={isSendingInvite || !inviteEmail.trim()}
+                            className="bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isSendingInvite ? 'Sending...' : 'Send Invite'}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {inviteError && (
+                        <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3">
+                          <p className="text-red-400 text-sm">{inviteError}</p>
+                        </div>
+                      )}
+                      
+                      {inviteSuccess && (
+                        <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                          <p className="text-white text-sm">{inviteSuccess}</p>
+                        </div>
+                      )}
+                    </form>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                      <div className="bg-white/5 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-white">{referralStats.invites}</div>
+                        <div className="text-white/60 text-sm">Friends Invited</div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-white">{referralStats.tokensEarned}</div>
+                        <div className="text-white/60 text-sm">Credits Earned</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6 mx-auto">
+                      <Users size={48} className="text-white/40" />
+                    </div>
+                    <p className="text-white/60 text-lg mb-4">Sign up to unlock the invite system!</p>
+                    <p className="text-white/40 text-sm mb-6">Invite friends and earn bonus credits together</p>
+                    <button
+                      onClick={() => navigate('/auth')}
+                      className="bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-white/90 transition-all duration-300"
+                    >
+                      Sign Up Now
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeTab === 'account' && (
           <div className="flex-1 p-6">
@@ -1580,88 +1673,6 @@ const ProfileScreen: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Invite Friends */}
-                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
-                      <Users size={20} className="mr-2" />
-                      Invite Friends
-                    </h3>
-                    
-                    {isAuthenticated && referralStats ? (
-                      <div className="space-y-4">
-                        {/* Benefits Info */}
-                        <div className="grid grid-cols-2 gap-3 text-xs">
-                          <div className="bg-white/5 rounded-lg p-3 text-center">
-                            <div className="text-white font-semibold mb-1">You Get</div>
-                            <div className="text-white/60">+50 credits after friend's first media</div>
-                          </div>
-                          <div className="bg-white/5 rounded-lg p-3 text-center">
-                            <div className="text-white font-semibold mb-1">Friend Gets</div>
-                            <div className="text-white/60">+25 credits on signup</div>
-                          </div>
-                        </div>
-
-                        {/* Email Form */}
-                        <form onSubmit={handleSendInvite} className="space-y-3">
-                          <div>
-                            <label className="block text-white/80 text-sm font-medium mb-2">Friend's Email</label>
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="email"
-                                value={inviteEmail}
-                                onChange={(e) => setInviteEmail(e.target.value)}
-                                className="flex-1 bg-[#2a2a2a] border border-[#444444] rounded-lg px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
-                                placeholder="Enter friend's email"
-                                disabled={isSendingInvite}
-                                required
-                              />
-                              <button
-                                type="submit"
-                                disabled={isSendingInvite || !inviteEmail.trim()}
-                                className="bg-white text-black font-semibold py-2 px-4 rounded-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                              >
-                                {isSendingInvite ? 'Sending...' : 'Send'}
-                              </button>
-                            </div>
-                          </div>
-                          
-                          {inviteError && (
-                            <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-2">
-                              <p className="text-red-400 text-xs">{inviteError}</p>
-                            </div>
-                          )}
-                          
-                          {inviteSuccess && (
-                            <div className="bg-white/10 border border-white/20 rounded-lg p-2 text-center">
-                              <p className="text-white text-xs">{inviteSuccess}</p>
-                            </div>
-                          )}
-                        </form>
-
-                        {/* Stats */}
-                        <div className="grid grid-cols-2 gap-3 pt-2">
-                          <div className="bg-white/5 rounded-lg p-3 text-center">
-                            <div className="text-lg font-bold text-white">{referralStats.invites}</div>
-                            <div className="text-white/60 text-xs">Friends Invited</div>
-                          </div>
-                          <div className="bg-white/5 rounded-lg p-3 text-center">
-                            <div className="text-lg font-bold text-white">{referralStats.tokensEarned}</div>
-                            <div className="text-white/60 text-xs">Credits Earned</div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="text-white/60 text-sm mb-3">Sign up to unlock the invite system!</p>
-                        <button
-                          onClick={() => navigate('/auth')}
-                          className="bg-white text-black font-semibold py-2 px-4 rounded-lg hover:bg-white/90 transition-all duration-300 text-sm"
-                        >
-                          Sign Up Now
-                        </button>
-                      </div>
-                    )}
-                  </div>
                 </div>
 
                 {/* Right Column - Security & Actions */}

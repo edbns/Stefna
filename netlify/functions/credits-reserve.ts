@@ -1,5 +1,5 @@
 import type { Handler } from "@netlify/functions";
-import { getDb, getAppConfig } from "./_lib/db";
+import { neon } from '@neondatabase/serverless';
 import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
 import { randomUUID } from "crypto";
@@ -23,7 +23,9 @@ export const handler: Handler = async (event) => {
     // Get dynamic configuration from app_config
     let config;
     try {
-      config = await getAppConfig(['image_cost', 'daily_cap']);
+      const sql = neon(process.env.NETLIFY_DATABASE_URL!);
+      const configRows = await sql`SELECT key, value FROM app_config WHERE key IN (${['image_cost', 'daily_cap']})`;
+      config = Object.fromEntries(configRows.map(({ key, value }) => [key, value]));
       console.log('💰 App config loaded:', config);
       
       // Validate config values
@@ -88,13 +90,13 @@ export const handler: Handler = async (event) => {
       return json(400, { ok: false, error: `Invalid action: ${action}. Allowed: ${allowedActions.join(', ')}` });
     }
 
-    const db = getDb();
-    console.log('💰 Database connection obtained:', !!db);
+    const sql = neon(process.env.NETLIFY_DATABASE_URL!);
+    console.log('💰 Neon database connection obtained');
     
     let rows: any[] = [];
     try {
       // Test database connection
-      const { rows: testRows } = await db.query('SELECT NOW() as current_time');
+      const testRows = await sql`SELECT NOW() as current_time`;
       console.log('💰 Database connection test successful:', testRows[0]);
       
       // Function check removed - we know app.reserve_credits exists
@@ -102,7 +104,7 @@ export const handler: Handler = async (event) => {
       
       // Check daily cap
       console.log('💰 Checking daily cap for user:', userId, 'cost:', cost, 'daily_cap:', config.daily_cap);
-      const { rows: capOk } = await db.query("SELECT app.allow_today_simple($1::uuid,$2::int) AS allowed", [userId, cost]);
+      const capOk = await sql`SELECT app.allow_today_simple(${userId}::uuid,${cost}::int) AS allowed`;
       console.log('💰 Daily cap check result:', capOk[0]);
       if (!capOk[0]?.allowed) {
         return json(429, { ok: false, error: "DAILY_CAP_REACHED" });
@@ -120,15 +122,11 @@ export const handler: Handler = async (event) => {
         costType: typeof cost
       });
       
-      const sqlQuery = "SELECT * FROM app.reserve_credits($1::uuid, $2::uuid, $3::text, $4::int)";
-      const params = [userId, request_id, action, cost];
-      console.log('💰 SQL Query:', sqlQuery);
-      console.log('💰 Parameters:', params);
-      console.log('💰 Expected return: TABLE (balance int)');
+      console.log('💰 Calling app.reserve_credits with Neon tagged template');
       
       try {
-        const result = await db.query(sqlQuery, params);
-        rows = result.rows;
+        const result = await sql`SELECT * FROM app.reserve_credits(${userId}::uuid, ${request_id}::uuid, ${action}::text, ${cost}::int)`;
+        rows = result;
         console.log('💰 Credits reserved successfully:', rows[0]);
         
         // Validate the return structure matches our SQL function
