@@ -72,7 +72,6 @@ export const handler: Handler = async (event) => {
           user_id, 
           cloudinary_public_id, 
           media_type, 
-          resource_type, 
           preset_key, 
           prompt, 
           source_asset_id, 
@@ -82,7 +81,6 @@ export const handler: Handler = async (event) => {
         ) VALUES (
           ${userId}, 
           ${input.sourcePublicId ?? null}, 
-          ${mediaType}, 
           ${mediaType}, 
           ${input.presetKey ?? null}, 
           ${input.prompt ?? null}, 
