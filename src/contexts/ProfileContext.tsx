@@ -51,7 +51,14 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
   const loadProfile = async () => {
     setIsLoading(true)
     try {
-      if (authService.isAuthenticated()) {
+      // Check if we have a valid token before making API calls
+      const token = authService.getToken()
+      if (authService.isAuthenticated() && token) {
+        console.log('🔐 Loading profile from database with token:', { 
+          hasToken: !!token, 
+          tokenPreview: token ? `${token.substring(0, 20)}...` : 'none' 
+        })
+        
         // Try to load from database first
         const response = await authenticatedFetch('/.netlify/functions/get-user-profile', {
           method: 'GET'
@@ -78,7 +85,11 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
           // Also update localStorage for consistency and offline access
           localStorage.setItem('userProfile', JSON.stringify(profileData))
           return
+        } else {
+          console.warn('⚠️ Database profile load failed:', response.status, response.statusText)
         }
+      } else {
+        console.log('🔐 Skipping database profile load - no valid token or not authenticated')
       }
       
       // Fallback to localStorage
@@ -126,7 +137,12 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
 
   // Load profile on mount and when auth state changes
   useEffect(() => {
-    loadProfile()
+    // Add a small delay to ensure auth state is fully loaded
+    const timer = setTimeout(() => {
+      loadProfile()
+    }, 100)
+    
+    return () => clearTimeout(timer)
   }, [])
 
   // Listen for auth state changes

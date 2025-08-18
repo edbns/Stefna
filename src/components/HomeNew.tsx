@@ -2597,7 +2597,10 @@ const HomeNew: React.FC = () => {
         return
       }
 
-      console.log('🔄 Loading user profile from database...')
+      console.log('🔄 Loading user profile from database...', { 
+        hasToken: !!token, 
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'none' 
+      })
       const response = await fetch('/.netlify/functions/get-user-profile', {
         method: 'GET',
         headers: {
