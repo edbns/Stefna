@@ -22,6 +22,13 @@ const I2IV2VInterface: React.FC<I2IV2VInterfaceProps> = ({
   className = ''
 }) => {
   const [mode, setMode] = useState<'i2i' | 'v2v'>('i2i')
+  
+  // Force i2i mode since v2v is disabled
+  useEffect(() => {
+    if (mode === 'v2v') {
+      setMode('i2i')
+    }
+  }, [mode])
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileUrl, setFileUrl] = useState<string | null>(null)
   const [prompt, setPrompt] = useState('')
@@ -156,15 +163,12 @@ const I2IV2VInterface: React.FC<I2IV2VInterfaceProps> = ({
           <span>Image-to-Image</span>
         </button>
         <button
-          onClick={() => setMode('v2v')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-            mode === 'v2v'
-              ? 'bg-black text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          disabled
+          className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"
+          title="Video-to-Video is currently disabled - AIML API doesn't support it"
         >
           <Video size={16} />
-          <span>Video-to-Video</span>
+          <span>Video-to-Video (Disabled)</span>
         </button>
       </div>
 
