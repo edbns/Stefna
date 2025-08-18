@@ -140,11 +140,17 @@ export const handler: Handler = async (event) => {
             throw new Error('user_credits table does not exist in database');
           }
           
-          // Insert starter credits
+          // Insert starter credits (or update if exists with 0 balance)
           const insertResult = await sql`
             INSERT INTO user_credits(user_id, balance) 
             VALUES (${userId}, ${STARTER_GRANT})
-            ON CONFLICT (user_id) DO NOTHING
+            ON CONFLICT (user_id) DO UPDATE SET 
+              balance = CASE 
+                WHEN user_credits.balance IS NULL OR user_credits.balance = 0 
+                THEN ${STARTER_GRANT} 
+                ELSE user_credits.balance 
+              END,
+              updated_at = now()
             RETURNING user_id, balance
           `;
           console.log('🔍 INSERT result:', insertResult);
