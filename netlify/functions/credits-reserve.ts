@@ -118,7 +118,7 @@ export const handler: Handler = async (event) => {
       console.log('🔍 Current credit balance:', balanceCheck[0]?.balance || 'No balance record found');
       
       // 💰 AUTO-INITIALIZE: Create user credits if they don't exist
-      if (balanceCheck.length === 0) {
+      if (balanceCheck.length === 0 || !balanceCheck[0]?.balance) {
         console.log('💰 No credit balance found - initializing new user with starter credits...');
         
         try {
