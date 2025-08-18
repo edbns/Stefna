@@ -101,4 +101,3 @@ export const handler: Handler = async (event) => {
     return resp(500, { error: 'Internal server error' })
   }
 }
-}
