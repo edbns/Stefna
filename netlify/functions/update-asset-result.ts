@@ -20,6 +20,11 @@ export const handler: Handler = async (event) => {
   }
 
   try {
+    // Debug: Log all headers to see what we're receiving
+    console.log('[update-asset-result] All headers:', event.headers);
+    console.log('[update-asset-result] Authorization header:', event.headers?.authorization);
+    console.log('[update-asset-result] Authorization header type:', typeof event.headers?.authorization);
+    
     // Authenticate user
     const { sub: userId } = requireAuth(event.headers.authorization);
     console.log('[update-asset-result] User:', userId);
