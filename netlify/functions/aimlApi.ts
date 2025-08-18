@@ -2,6 +2,7 @@ import type { Handler } from "@netlify/functions";
 import { json } from "./_lib/http";
 
 export const handler: Handler = async (event) => {
+  // Force redeploy - v3
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
