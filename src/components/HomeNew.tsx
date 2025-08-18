@@ -1484,7 +1484,7 @@ const HomeNew: React.FC = () => {
             }
           }));
 
-          // Only call save-media-batch for MoodMorph, not for Emotion Mask
+          // Handle different generation modes
           if (composerState.mode === 'moodmorph') {
             console.log('🎭 MoodMorph mode - calling save-media-batch for variations');
             
@@ -1515,8 +1515,49 @@ const HomeNew: React.FC = () => {
               console.error(`❌ Save failed:`, saveRes.status, saveBody || saveText);
               notifyError({ title: 'Save failed', message: saveBody?.error || 'Failed to save media' });
             }
+          } else if (composerState.mode === 'emotionmask') {
+            console.log('🎭 Emotion Mask mode - updating asset with final result');
+            
+            // For Emotion Mask, we need to update the asset with the final generated image
+            if (allResultUrls.length > 0 && assetId) {
+              const updateRes = await authenticatedFetch('/.netlify/functions/update-asset-result', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  assetId: assetId, // Use the asset ID from create-asset
+                  finalUrl: allResultUrls[0], // The generated image URL from AIML API
+                  status: 'ready', // Mark as ready
+                  prompt: effectivePrompt,
+                  meta: {
+                    mode: 'emotionmask',
+                    presetId: selectedPreset,
+                    runId: genId
+                  }
+                })
+              });
+              
+              const updateText = await updateRes.text();
+              let updateBody: any = {};
+              try { updateBody = JSON.parse(updateText); } catch {}
+              
+              if (updateRes.ok && updateBody?.ok) {
+                console.log('✅ Emotion Mask asset updated successfully:', updateBody);
+                
+                // Refresh user media to show the new image
+                setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                  detail: { count: 1, runId: genId } 
+                })), 800);
+              } else {
+                console.error(`❌ Emotion Mask asset update failed:`, updateRes.status, updateBody || updateText);
+                notifyError({ title: 'Update failed', message: updateBody?.error || 'Failed to update Emotion Mask asset' });
+              }
+            } else {
+              console.warn('⚠️ Cannot update Emotion Mask asset: missing result URL or asset ID');
+            }
           } else {
-            console.log(`🎭 ${composerState.mode} mode - skipping save-media-batch (not needed)`);
+            console.log(`🎭 ${composerState.mode} mode - no additional save needed`);
           }
         } catch (error) {
           console.error(`❌ Save error:`, error);
