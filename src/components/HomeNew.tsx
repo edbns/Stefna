@@ -779,9 +779,14 @@ const HomeNew: React.FC = () => {
           await getUserProfileSettings()
           console.log('✅ User settings synced from database')
           
-          // Also load user profile data from database
-          await loadUserProfileFromDatabase()
-          console.log('✅ User profile synced from database')
+          // Only load user profile if we have a valid token
+          const token = authService.getToken()
+          if (token) {
+            await loadUserProfileFromDatabase()
+            console.log('✅ User profile synced from database')
+          } else {
+            console.warn('⚠️ Skipping profile load: no valid token')
+          }
           
           // Tier promotions removed - simplified credit system
         } catch (error) {
@@ -2580,7 +2585,10 @@ const HomeNew: React.FC = () => {
   const loadUserProfileFromDatabase = async () => {
     try {
       const token = authService.getToken()
-      if (!token) return
+      if (!token) {
+        console.warn('⚠️ Cannot load profile: no authentication token')
+        return
+      }
 
       console.log('🔄 Loading user profile from database...')
       const response = await fetch('/.netlify/functions/get-user-profile', {
