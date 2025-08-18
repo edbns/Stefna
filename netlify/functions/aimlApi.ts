@@ -147,8 +147,8 @@ export const handler: Handler = async (event) => {
       variations: aimlPayload.num_variations
     });
 
-    // Make request to AIML API
-    const response = await fetch(`${BASE}/v1/generate`, {
+    // Make request to AIML API - use correct endpoint for image generation
+    const response = await fetch(`${BASE}/v1/images/generations`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
