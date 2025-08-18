@@ -1,6 +1,7 @@
-import { Handler } from '@netlify/functions';
+import type { Handler } from '@netlify/functions';
 import { neonAdmin } from '../lib/neonAdmin';
 import type { CreateAssetInput, ApiResult, Asset } from '../lib/types';
+import { json } from './_lib/http';
 
 function getUserIdFromToken(auth?: string): string | null {
   try {
@@ -15,10 +16,22 @@ function getUserIdFromToken(auth?: string): string | null {
 }
 
 export const handler: Handler = async (event) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
+
   // NO-DB mode: never touch the database; return a fake id so UI can proceed
   if (process.env.NO_DB_MODE === 'true') {
     const fakeId = 'cld-' + ((globalThis as any).crypto?.randomUUID?.() ?? Date.now().toString(36));
-    return { statusCode: 200, body: JSON.stringify({ ok: true, data: { id: fakeId } }) };
+    return json({ ok: true, data: { id: fakeId } });
   }
 
   try {
@@ -26,7 +39,7 @@ export const handler: Handler = async (event) => {
 
     // Resolve authenticated user
     const userId = getUserIdFromToken(event.headers.authorization);
-    if (!userId) return resp({ ok: false, error: 'Unauthorized' });
+    if (!userId) return json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
     const mediaType = (input.mediaType === 'video' || input.mediaType === 'image') ? input.mediaType : 'image';
 
@@ -48,14 +61,12 @@ export const handler: Handler = async (event) => {
       .select('*')
       .single();
 
-    if (error) return resp({ ok: false, error: error.message });
+    if (error) return json({ ok: false, error: error.message }, { status: 500 });
 
-    return resp({ ok: true, data: data as Asset });
+    return json({ ok: true, data: data as Asset });
   } catch (e: any) {
-    return resp({ ok: false, error: e.message || 'create-asset error' });
+    return json({ ok: false, error: e.message || 'create-asset error' }, { status: 500 });
   }
 };
 
-function resp(body: ApiResult<any>) {
-  return { statusCode: body.ok ? 200 : 400, body: JSON.stringify(body) };
-}
+

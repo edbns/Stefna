@@ -1,7 +1,8 @@
-import { Handler } from '@netlify/functions';
+import type { Handler } from '@netlify/functions';
 import { neonAdmin } from '../lib/neonAdmin';
 import { cloudinary } from '../lib/cloudinary';
 import type { ProcessAssetPayload, ApiResult } from '../lib/types';
+import { json } from './_lib/http';
 
 // pretend AI call
 async function runAIMLTransform(input: ProcessAssetPayload): Promise<{ tempLocalPath?: string; finalBuffer?: Buffer; error?: string }> {
@@ -11,10 +12,22 @@ async function runAIMLTransform(input: ProcessAssetPayload): Promise<{ tempLocal
 }
 
 export const handler: Handler = async (event) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
+
   try {
     const payload = JSON.parse(event.body || '{}') as ProcessAssetPayload;
     if (!payload.assetId || !payload.sourcePublicId || !payload.mediaType) {
-      return resp({ ok: false, error: 'assetId, sourcePublicId, mediaType required' });
+      return json({ ok: false, error: 'assetId, sourcePublicId, mediaType required' }, { status: 400 });
     }
 
     // Mark processing (optional)
@@ -26,7 +39,7 @@ export const handler: Handler = async (event) => {
     const result = await runAIMLTransform(payload);
     if (result.error) {
       await neonAdmin.from('assets').update({ status: 'failed' }).eq('id', payload.assetId);
-      return resp({ ok: false, error: result.error });
+      return json({ ok: false, error: result.error }, { status: 400 });
     }
 
     // Upload to Cloudinary
@@ -66,17 +79,15 @@ export const handler: Handler = async (event) => {
 
     if (updErr) {
       console.error(`[process-asset] DB update failed:`, updErr);
-      return resp({ ok: false, error: updErr.message });
+      return json({ ok: false, error: updErr.message }, { status: 500 });
     }
 
     console.log(`[process-asset] Asset ${payload.assetId} successfully updated to ready status`);
 
-    return resp({ ok: true, data: { assetId: payload.assetId, finalPublicId } });
+    return json({ ok: true, data: { assetId: payload.assetId, finalPublicId } });
   } catch (e: any) {
-    return resp({ ok: false, error: e.message || 'process-asset error' });
+    return json({ ok: false, error: e.message || 'process-asset error' }, { status: 500 });
   }
 };
 
-function resp(body: ApiResult<any>) {
-  return { statusCode: body.ok ? 200 : 400, body: JSON.stringify(body) };
-}
+

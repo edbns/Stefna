@@ -9,22 +9,17 @@ const sql = neon(process.env.NETLIFY_DATABASE_URL!);
 export const handler: Handler = async (event) => {
   try {
     if (event.httpMethod === 'OPTIONS') {
-      return { 
-        statusCode: 200, 
-        headers: { 
-          'Access-Control-Allow-Origin': '*', 
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
-        }, 
-        body: '' 
-      }
+      return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        }
+      };
     }
     if (event.httpMethod !== 'GET') {
-      return { 
-        statusCode: 405, 
-        headers: { 'Access-Control-Allow-Origin': '*' }, 
-        body: 'Method Not Allowed' 
-      }
+      return json({ error: 'Method Not Allowed' }, { status: 405 });
     }
 
     const { userId } = requireAuth(event.headers.authorization)
@@ -92,6 +87,6 @@ export const handler: Handler = async (event) => {
     const body = status === 200
       ? { daily_used: 0, daily_limit: 30, weekly_used: 0, weekly_limit: 150 }
       : { error: e.message || 'Unauthorized' };
-    return status === 200 ? json(200, body) : json(status, body);
+    return status === 200 ? json(body) : json(body, { status });
   }
 }

@@ -1,14 +1,7 @@
 import type { Handler } from '@netlify/functions';
 import crypto from 'crypto';
 import * as jose from 'jose';
-
-function json(status: number, body: unknown) {
-  return {
-    statusCode: status,
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  };
-}
+import { json } from './_lib/http';
 
 async function verifyJWT(auth?: string) {
   console.log('🔐 JWT verification:', {
@@ -31,6 +24,18 @@ async function verifyJWT(auth?: string) {
 }
 
 export const handler: Handler = async (event) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
+
   try {
     console.log('🔐 Cloudinary sign request:', {
       hasAuth: !!event.headers.authorization,
@@ -45,7 +50,7 @@ export const handler: Handler = async (event) => {
     const apiKey = process.env.CLOUDINARY_API_KEY;
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
     if (!cloudName || !apiKey || !apiSecret) {
-      return json(500, { error: 'Missing Cloudinary env (CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET)' });
+      return json({ error: 'Missing Cloudinary env (CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET)' }, { status: 500 });
     }
 
     // Parse request body for additional parameters
@@ -110,7 +115,7 @@ export const handler: Handler = async (event) => {
       bodyStringified: JSON.stringify(body)
     });
 
-    return json(200, { 
+    return json({ 
       cloudName, 
       apiKey, 
       cloud_name: cloudName,  // Add snake_case for compatibility
@@ -120,6 +125,6 @@ export const handler: Handler = async (event) => {
       folder: body.folder || 'stefna/sources'  // Return folder for frontend convenience
     });
   } catch (e: any) {
-    return json(401, { error: e?.message || 'Unauthorized' });
+    return json({ error: e?.message || 'Unauthorized' }, { status: 401 });
   }
 };

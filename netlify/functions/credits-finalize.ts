@@ -4,13 +4,25 @@ import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
 
 export const handler: Handler = async (event) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
+
   console.log('💰 [credits-finalize] Starting credits finalization...');
   console.log('💰 [credits-finalize] event.body:', event.body);
   console.log('💰 [credits-finalize] event.headers:', event.headers);
   
   try {
     if (event.httpMethod !== 'POST') {
-      return json(405, { ok: false, error: 'Method not allowed' });
+      return json({ ok: false, error: 'Method not allowed' }, { status: 405 });
     }
 
     const { userId } = requireAuth(event.headers.authorization);
@@ -26,17 +38,17 @@ export const handler: Handler = async (event) => {
     // Validation
     if (!userId) {
       console.error("❌ userId is missing or undefined");
-      return json(400, { ok: false, error: 'Missing or invalid userId' });
+      return json({ ok: false, error: 'Missing or invalid userId' }, { status: 400 });
     }
     
     if (!request_id) {
       console.error("❌ request_id is missing");
-      return json(400, { ok: false, error: 'Missing request_id' });
+      return json({ ok: false, error: 'Missing request_id' }, { status: 400 });
     }
     
     if (!disposition || !['commit', 'refund'].includes(disposition)) {
       console.error("❌ Invalid disposition:", disposition);
-      return json(400, { ok: false, error: 'Invalid disposition - must be "commit" or "refund"' });
+      return json({ ok: false, error: 'Invalid disposition - must be "commit" or "refund"' }, { status: 400 });
     }
 
     const db = getDb();

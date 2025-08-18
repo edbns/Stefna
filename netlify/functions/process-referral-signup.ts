@@ -3,12 +3,24 @@ import { getDb } from "./_lib/db";
 import { json, mapPgError } from "./_lib/http";
 
 export const handler: Handler = async (event) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
+
   try {
     const body = event.body ? JSON.parse(event.body) : {};
     const { referrerEmail, newUserId, newUserEmail } = body;
     
     if (!referrerEmail || !newUserId || !newUserEmail) {
-      return json(400, { ok: false, error: "MISSING_PARAMS" });
+      return json({ ok: false, error: "MISSING_PARAMS" }, { status: 400 });
     }
 
     const db = getDb();
@@ -16,7 +28,7 @@ export const handler: Handler = async (event) => {
     // Find referrer by email
     const { rows: ref } = await db.query("SELECT id FROM users WHERE lower(email)=lower($1) LIMIT 1", [referrerEmail]);
     if (!ref.length) {
-      return json(404, { ok: false, error: "REFERRER_NOT_FOUND" });
+      return json({ ok: false, error: "REFERRER_NOT_FOUND" }, { status: 404 });
     }
     const referrerId = ref[0].id;
 
@@ -59,7 +71,7 @@ export const handler: Handler = async (event) => {
       console.log(`ℹ️ Referral already processed for user ${newUserId}`);
     }
 
-    return json(200, { ok: true });
+    return json({ ok: true });
   } catch (e) {
     console.error('❌ Referral processing error:', e);
     return mapPgError(e);

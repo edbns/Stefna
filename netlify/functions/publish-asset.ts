@@ -1,11 +1,24 @@
-import { Handler } from '@netlify/functions';
+import type { Handler } from '@netlify/functions';
 import { neonAdmin } from '../lib/neonAdmin';
 import type { PublishAssetInput, ApiResult } from '../lib/types';
+import { json } from './_lib/http';
 
 export const handler: Handler = async (event) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
+
   try {
     const input = JSON.parse(event.body || '{}') as PublishAssetInput;
-    if (!input.assetId) return resp({ ok: false, error: 'assetId required' });
+    if (!input.assetId) return json({ ok: false, error: 'assetId required' }, { status: 400 });
 
     const { data, error } = await neonAdmin
       .from('assets')
@@ -17,15 +30,13 @@ export const handler: Handler = async (event) => {
       .select('*')
       .single();
 
-    if (error) return resp({ ok: false, error: error.message });
+    if (error) return json({ ok: false, error: error.message }, { status: 500 });
 
     // DB trigger sets published_at when public+ready.
-    return resp({ ok: true, data });
+    return json({ ok: true, data });
   } catch (e: any) {
-    return resp({ ok: false, error: e.message || 'publish-asset error' });
+    return json({ ok: false, error: e.message || 'publish-asset error' }, { status: 500 });
   }
 };
 
-function resp(body: ApiResult<any>) {
-  return { statusCode: body.ok ? 200 : 400, body: JSON.stringify(body) };
-}
+

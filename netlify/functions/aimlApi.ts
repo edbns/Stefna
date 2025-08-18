@@ -1,4 +1,18 @@
-export async function handler(event, context) {
+import type { Handler } from "@netlify/functions";
+import { json } from "./_lib/http";
+
+export const handler: Handler = async (event) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-App-Key',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
   try {
     // 🔧 CRITICAL FIX: Allow POST requests for generation
     console.log('🎯 aimlApi function called with method:', event.httpMethod);
@@ -11,15 +25,12 @@ export async function handler(event, context) {
     
     if (event.httpMethod !== 'POST') {
       console.log('❌ Method not allowed:', event.httpMethod);
-      return {
-        statusCode: 405,
-        body: JSON.stringify({
-          error: 'Method Not Allowed',
-          message: 'This endpoint only accepts POST requests for image generation',
-          allowedMethods: ['POST'],
-          receivedMethod: event.httpMethod
-        })
-      };
+      return json({
+        error: 'Method Not Allowed',
+        message: 'This endpoint only accepts POST requests for image generation',
+        allowedMethods: ['POST'],
+        receivedMethod: event.httpMethod
+      }, { status: 405 });
     }
     
     console.log('✅ POST method accepted, proceeding with generation...');
@@ -34,10 +45,7 @@ export async function handler(event, context) {
 
     if (!auth && !devBypass) {
       console.warn('aimlApi 401 — missing Authorization. Keys seen:', Object.keys(headers).slice(0, 12));
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'missing_auth_header' })
-      };
+      return json({ error: 'missing_auth_header' }, { status: 401 });
     }
     
     if (!appKey && !devBypass) {

@@ -4,17 +4,29 @@ import { requireAuth } from "./_lib/auth";
 import { json, mapPgError } from "./_lib/http";
 
 export const handler: Handler = async (event) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
+
   try {
     const { userId: newUserId, email: newUserEmail } = requireAuth(event.headers.authorization);
     const body = event.body ? JSON.parse(event.body) : {};
     const referrerEmail: string = body.referrerEmail;
-    if (!referrerEmail) return json(400, { ok:false, error:"MISSING_REFERRER_EMAIL" });
+    if (!referrerEmail) return json({ ok:false, error:"MISSING_REFERRER_EMAIL" }, { status: 400 });
 
     const db = getDb();
 
     // Find referrer by email
     const { rows: ref } = await db.query("SELECT id FROM users WHERE lower(email)=lower($1) LIMIT 1", [referrerEmail]);
-    if (!ref.length) return json(404, { ok:false, error:"REFERRER_NOT_FOUND" });
+    if (!ref.length) return json({ ok:false, error:"REFERRER_NOT_FOUND" }, { status: 404 });
     const referrerId = ref[0].id;
 
     // Upsert referral row — unique on new_user_id prevents double awards
@@ -50,7 +62,7 @@ export const handler: Handler = async (event) => {
       );
     }
 
-    return json(200, { ok:true });
+    return json({ ok:true });
   } catch (e) {
     return mapPgError(e);
   }

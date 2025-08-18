@@ -4,11 +4,23 @@ import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
 
 export const handler: Handler = async (event) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
+
   console.log('🧪 [test-credits] Testing credit system...');
   
   try {
     if (event.httpMethod !== 'GET') {
-      return json(405, { ok: false, error: 'Method not allowed' });
+      return json({ ok: false, error: 'Method not allowed' }, { status: 405 });
     }
 
     const { userId } = requireAuth(event.headers.authorization);
@@ -62,7 +74,7 @@ export const handler: Handler = async (event) => {
     
     const dailyAllowed = dailyRows[0]?.allowed || false;
     
-    return json(200, {
+    return json({
       ok: true,
       tests: {
         function_check: {
@@ -86,7 +98,7 @@ export const handler: Handler = async (event) => {
     
   } catch (error: any) {
     console.error("💥 Test failed:", error);
-    return json(500, {
+    return json({
       ok: false,
       error: "Test failed",
       details: error?.message,
