@@ -1,4 +1,5 @@
 // netlify/functions/getPublicFeed.ts
+// Force redeploy - v2 (fix table references)
 import { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
 
@@ -10,25 +11,24 @@ export const handler: Handler = async (event) => {
     const url = new URL(event.rawUrl);
     const limit = Number(url.searchParams.get('limit') ?? 50);
 
-    // Get public media from database using compatibility views
+    // Get public media from database using assets table
     const media = await sql`
       SELECT 
-        ma.id,
-        ma.user_id,
-        u.name AS user_name,
-        u.avatar_url AS user_avatar,
-        u.tier AS user_tier,
-        ma.url,
-        ma.public_id AS cloudinary_public_id,
-        ma.type AS resource_type,
-        ma.prompt,
-        ma.created_at AS published_at,
-        ma.is_public AS visibility,
-        ma.allow_remix
-      FROM app_media ma
-      LEFT JOIN app_users u ON ma.user_id = u.id
-      WHERE ma.is_public = true
-      ORDER BY ma.created_at DESC
+        a.id,
+        a.user_id,
+        'User' AS user_name,
+        null AS user_avatar,
+        'free' AS user_tier,
+        a.final_url AS url,
+        a.cloudinary_public_id,
+        a.media_type AS resource_type,
+        a.prompt,
+        a.created_at AS published_at,
+        a.is_public AS visibility,
+        a.allow_remix
+      FROM assets a
+      WHERE a.is_public = true AND a.status = 'ready'
+      ORDER BY a.created_at DESC
       LIMIT ${limit}
     `;
 

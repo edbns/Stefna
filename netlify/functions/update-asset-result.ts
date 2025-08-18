@@ -1,6 +1,6 @@
 // netlify/functions/update-asset-result.ts
 // Updates asset with final generation result (URL, status, etc.)
-// Force redeploy - v4 (fix requireAuth call)
+// Force redeploy - v5 (make assets public and fix feed)
 
 import type { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
@@ -63,9 +63,10 @@ export const handler: Handler = async (event) => {
         status = ${status},
         prompt = COALESCE(${prompt}, prompt),
         meta = COALESCE(${meta}, meta),
+        is_public = true,
         updated_at = NOW()
       WHERE id = ${assetId} AND user_id = ${userId}
-      RETURNING id, final_url, status, updated_at
+      RETURNING id, final_url, status, is_public, updated_at
     `;
 
     if (result && result.length > 0) {
