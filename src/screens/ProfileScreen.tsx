@@ -72,7 +72,7 @@ const ProfileScreen: React.FC = () => {
   // Handle invite modal opening from ProfileTokenDisplay
   useEffect(() => {
     const handleOpenInviteModal = () => {
-      setShowInviteFriendsModal(true)
+  
     }
 
     window.addEventListener('openInviteModal', handleOpenInviteModal)
@@ -226,9 +226,8 @@ const ProfileScreen: React.FC = () => {
   const [confirm, setConfirm] = useState<{ open: boolean; media?: UserMedia }>({ open: false })
   // Removed tier system - all users get same experience
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false)
+
   const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteMessage, setInviteMessage] = useState('')
   const [isInviting, setIsInviting] = useState(false)
   const [inviteSuccess, setInviteSuccess] = useState<string>('')
   const [isSendingInvite, setIsSendingInvite] = useState(false)
@@ -991,7 +990,7 @@ const ProfileScreen: React.FC = () => {
 
   const sidebarItems = [
     { id: 'tokens', label: 'Tokens', icon: Coins },
-    { id: 'invite', label: 'Invite Friends', icon: Users },
+    
     { id: 'divider_prefs', type: 'divider', label: ' ' },
     { id: 'pref_share', label: 'Share to Feed', type: 'toggle', setting: 'autoShareToFeed' },
     { id: 'pref_remix', label: 'Allow Remix', type: 'toggle', setting: 'allowRemixByDefault' },
@@ -1075,18 +1074,7 @@ const ProfileScreen: React.FC = () => {
                 )
               }
 
-              if (item.id === 'invite') {
-                return (
-            <button
-                    key={item.id}
-              onClick={() => setShowInviteFriendsModal(true)}
-              className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-2 text-white/60 hover:text-white hover:bg-white/10"
-            >
-              <Users size={16} className="text-white/60" />
-                    <span className="text-xs font-medium">{item.label}</span>
-            </button>
-                )
-              }
+
               
               // Handle toggle items
               if (item.type === 'toggle') {
@@ -1591,6 +1579,89 @@ const ProfileScreen: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Invite Friends */}
+                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+                      <Users size={20} className="mr-2" />
+                      Invite Friends
+                    </h3>
+                    
+                    {isAuthenticated && referralStats ? (
+                      <div className="space-y-4">
+                        {/* Benefits Info */}
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div className="bg-white/5 rounded-lg p-3 text-center">
+                            <div className="text-white font-semibold mb-1">You Get</div>
+                            <div className="text-white/60">+50 credits after friend's first media</div>
+                          </div>
+                          <div className="bg-white/5 rounded-lg p-3 text-center">
+                            <div className="text-white font-semibold mb-1">Friend Gets</div>
+                            <div className="text-white/60">+25 credits on signup</div>
+                          </div>
+                        </div>
+
+                        {/* Email Form */}
+                        <form onSubmit={handleSendInvite} className="space-y-3">
+                          <div>
+                            <label className="block text-white/80 text-sm font-medium mb-2">Friend's Email</label>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="email"
+                                value={inviteEmail}
+                                onChange={(e) => setInviteEmail(e.target.value)}
+                                className="flex-1 bg-[#2a2a2a] border border-[#444444] rounded-lg px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
+                                placeholder="Enter friend's email"
+                                disabled={isSendingInvite}
+                                required
+                              />
+                              <button
+                                type="submit"
+                                disabled={isSendingInvite || !inviteEmail.trim()}
+                                className="bg-white text-black font-semibold py-2 px-4 rounded-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                              >
+                                {isSendingInvite ? 'Sending...' : 'Send'}
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {inviteError && (
+                            <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-2">
+                              <p className="text-red-400 text-xs">{inviteError}</p>
+                            </div>
+                          )}
+                          
+                          {inviteSuccess && (
+                            <div className="bg-white/10 border border-white/20 rounded-lg p-2 text-center">
+                              <p className="text-white text-xs">{inviteSuccess}</p>
+                            </div>
+                          )}
+                        </form>
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                          <div className="bg-white/5 rounded-lg p-3 text-center">
+                            <div className="text-lg font-bold text-white">{referralStats.invites}</div>
+                            <div className="text-white/60 text-xs">Friends Invited</div>
+                          </div>
+                          <div className="bg-white/5 rounded-lg p-3 text-center">
+                            <div className="text-lg font-bold text-white">{referralStats.tokensEarned}</div>
+                            <div className="text-white/60 text-xs">Credits Earned</div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-white/60 text-sm mb-3">Sign up to unlock the invite system!</p>
+                        <button
+                          onClick={() => navigate('/auth')}
+                          className="bg-white text-black font-semibold py-2 px-4 rounded-lg hover:bg-white/90 transition-all duration-300 text-sm"
+                        >
+                          Sign Up Now
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Right Column - Security & Actions */}
@@ -1937,105 +2008,7 @@ const ProfileScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Invite Friends Modal */}
-      {showInviteFriendsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowInviteFriendsModal(false)} />
-          <div className="relative bg-[#222222] border border-white/20 rounded-2xl max-w-lg w-full p-8 shadow-2xl">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowInviteFriendsModal(false)}
-              className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
-            >
-              <X size={24} />
-            </button>
 
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-white text-xl font-bold mb-3">Invite Friends</h2>
-              <p className="text-white/60 text-sm">Share Stefna with your friends via email</p>
-            </div>
-
-            {isAuthenticated && referralStats ? (
-              <div className="space-y-6">
-                {/* What you get */}
-                 <div className="bg-white/5 rounded-lg p-4">
-                  <h3 className="text-white font-semibold mb-2 text-sm">You get</h3>
-                  <p className="text-white/60 text-sm">+50 bonus credits after your friend's first media creation</p>
-                </div>
-
-                {/* What your friends get */}
-                <div className="bg-white/5 rounded-lg p-4">
-                  <h3 className="text-white font-semibold mb-2 text-sm">Your friends get</h3>
-                  <p className="text-white/60 text-sm">+25 bonus credits on signup with your invite</p>
-                </div>
-
-                {/* Email Invite Form */}
-                <form onSubmit={handleSendInvite} className="space-y-4">
-                  <div className="bg-white/5 rounded-lg p-4">
-                    <label className="text-white/60 text-sm mb-3 block">Friend's Email</label>
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        className="flex-1 bg-transparent text-white placeholder-white/40 focus:outline-none border-b border-white/20 focus:border-white/40 pb-2"
-                        placeholder="Enter friend's email address"
-                        disabled={isSendingInvite}
-                        required
-                      />
-                      <button
-                        type="submit"
-                        disabled={isSendingInvite || !inviteEmail.trim()}
-                        className="bg-white text-black font-semibold py-2 px-5 rounded-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isSendingInvite ? 'Sending...' : 'Send'}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {inviteError && (
-                    <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3">
-                      <p className="text-red-400 text-sm">{inviteError}</p>
-                    </div>
-                  )}
-                  
-                  {inviteSuccess && (
-                    <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
-                      <p className="text-white text-sm">{inviteSuccess}</p>
-                    </div>
-                  )}
-                </form>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mt-6">
-                  <div className="bg-white/5 rounded-lg p-4 text-center">
-                    <div className="text-xl font-bold text-white">{referralStats.invites}</div>
-                    <div className="text-white/60 text-xs mt-1">Friends Invited</div>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-4 text-center">
-                    <div className="text-xl font-bold text-white">{referralStats.tokensEarned}</div>
-                    <div className="text-white/60 text-xs mt-1">Tokens Earned</div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <p className="text-white/60 mb-4">Sign up to unlock the invite system!</p>
-                <button
-                  onClick={() => {
-                    setShowInviteFriendsModal(false)
-                    navigate('/auth')
-                  }}
-                  className="bg-white text-black font-semibold py-2 px-6 rounded-xl hover:bg-white/90 transition-all duration-300"
-                >
-                  Sign Up Now
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       
 
