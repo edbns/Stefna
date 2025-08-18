@@ -1,6 +1,6 @@
 // netlify/functions/update-asset-result.ts
 // Updates asset with final generation result (URL, status, etc.)
-// Force redeploy - v3 (direct import)
+// Force redeploy - v4 (fix requireAuth call)
 
 import type { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
@@ -31,7 +31,7 @@ export const handler: Handler = async (event) => {
     console.log('[update-asset-result] requireAuth function:', typeof requireAuth);
     console.log('[update-asset-result] requireAuth.toString():', requireAuth.toString().substring(0, 200));
     
-    const { sub: userId } = requireAuth(event.headers.authorization);
+    const { sub: userId } = requireAuth(event);
     console.log('[update-asset-result] User:', userId);
 
     const body = JSON.parse(event.body || '{}');
