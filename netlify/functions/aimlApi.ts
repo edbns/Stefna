@@ -187,6 +187,21 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    // 🧠 DEBUG: Log the complete AIML API response
+    console.log("📡 AIML raw result:", JSON.stringify(data, null, 2));
+    console.log("📡 AIML response keys:", Object.keys(data));
+
+    // 🧪 TEMPORARY TEST: Uncomment this to test frontend flow
+    // return {
+    //   statusCode: 200,
+    //   body: JSON.stringify({ 
+    //     ok: true, 
+    //     image_url: "https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/test/fake-generated-image.jpg",
+    //     model: aimlPayload.model,
+    //     prompt: aimlPayload.prompt
+    //   })
+    // };
+
     // Log the full response structure for debugging
     console.log('🔍 AIML API response structure:', {
       keys: Object.keys(data),
