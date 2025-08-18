@@ -43,6 +43,10 @@ export const handler: Handler = async (event) => {
 
     const mediaType = (input.mediaType === 'video' || input.mediaType === 'image') ? input.mediaType : 'image';
 
+    console.log('🔍 Creating asset with input:', input);
+    console.log('🔍 User ID:', userId);
+    console.log('🔍 Media type:', mediaType);
+    
     const { data, error } = await neonAdmin
       .from('assets')
       .insert({
@@ -61,8 +65,19 @@ export const handler: Handler = async (event) => {
       .select('*')
       .single();
 
-    if (error) return json({ ok: false, error: error.message }, { status: 500 });
+    console.log('🔍 Database insert result:', { data, error });
 
+    if (error) {
+      console.error('❌ Database insert error:', error);
+      return json({ ok: false, error: error.message }, { status: 500 });
+    }
+
+    if (!data) {
+      console.error('❌ No data returned from database insert');
+      return json({ ok: false, error: 'No data returned from database insert' }, { status: 500 });
+    }
+
+    console.log('✅ Asset created successfully:', data);
     return json({ ok: true, data: data as Asset });
   } catch (e: any) {
     return json({ ok: false, error: e.message || 'create-asset error' }, { status: 500 });
