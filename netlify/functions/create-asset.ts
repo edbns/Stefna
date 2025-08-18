@@ -1,6 +1,6 @@
 import { Handler } from '@netlify/functions';
 import { neonAdmin } from '../lib/neonAdmin';
-import type { CreateAssetInput, ApiResult, Asset } from '../../src/lib/types';
+import type { CreateAssetInput, ApiResult, Asset } from '../lib/types';
 
 function getUserIdFromToken(auth?: string): string | null {
   try {

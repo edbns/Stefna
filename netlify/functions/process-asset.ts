@@ -1,7 +1,7 @@
 import { Handler } from '@netlify/functions';
 import { neonAdmin } from '../lib/neonAdmin';
 import { cloudinary } from '../lib/cloudinary';
-import type { ProcessAssetPayload, ApiResult } from '../../src/lib/types';
+import type { ProcessAssetPayload, ApiResult } from '../lib/types';
 
 // pretend AI call
 async function runAIMLTransform(input: ProcessAssetPayload): Promise<{ tempLocalPath?: string; finalBuffer?: Buffer; error?: string }> {
