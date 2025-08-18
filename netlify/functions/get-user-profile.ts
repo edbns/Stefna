@@ -17,6 +17,9 @@ export const handler: Handler = async (event) => {
   }
 
   try {
+    if (!event.headers?.authorization && !event.headers?.Authorization) {
+      return json({ ok: false, error: 'NO_BEARER' }, { status: 401 });
+    }
     const { sub: userId, email } = requireAuth(event.headers.authorization);
     console.log('[get-user-profile] User:', userId, 'Email:', email);
     const sql = neon(process.env.NETLIFY_DATABASE_URL!);
@@ -58,18 +61,16 @@ export const handler: Handler = async (event) => {
       daily_cap: capRows[0]?.v ?? 30,
       credits: { balance: bal[0]?.balance ?? 0 },
     });
-  } catch (e) {
+  } catch (e: any) {
+    const status = typeof e?.statusCode === 'number' ? e.statusCode : 500;
+    const code = e?.code || (status === 401 ? 'UNAUTHORIZED' : 'SERVER_ERROR');
     console.error('❌ get-user-profile failed:', e);
     console.error('❌ Error details:', {
       message: e instanceof Error ? e.message : 'Unknown error',
       stack: e instanceof Error ? e.stack : 'No stack trace',
       error: e
     });
-    return json({ 
-      ok: false, 
-      error: 'Internal server error',
-      details: e instanceof Error ? e.message : 'Unknown error'
-    }, { status: 500 });
+    return json({ ok: false, error: code, details: e?.message || 'Unknown error' }, { status });
   }
 }
 

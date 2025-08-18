@@ -36,23 +36,20 @@ export const handler: Handler = async (event) => {
     let config;
     try {
       const sql = neon(process.env.NETLIFY_DATABASE_URL!);
-      const configRows = await sql`SELECT key, value FROM app_config WHERE key IN (${['image_cost', 'daily_cap']})`;
-      config = Object.fromEntries(configRows.map(({ key, value }) => [key, value]));
-      console.log('💰 App config loaded:', config);
-      
-      // Validate config values
-      if (!config.image_cost || isNaN(parseInt(config.image_cost))) {
-        console.error('❌ Invalid image_cost config:', config.image_cost);
-        config.image_cost = 2; // Fallback to default
-      }
-      
-      if (!config.daily_cap || isNaN(parseInt(config.daily_cap))) {
-        console.error('❌ Invalid daily_cap config:', config.daily_cap);
-        config.daily_cap = 30; // Fallback to default
-      }
-      
+      // Read values individually to avoid array/IN binding issues
+      const imageCostRows = await sql`SELECT (value::text)::int AS v FROM app_config WHERE key='image_cost'`;
+      const dailyCapRows  = await sql`SELECT (value::text)::int AS v FROM app_config WHERE key='daily_cap'`;
+
+      const image_cost = imageCostRows?.[0]?.v;
+      const daily_cap  = dailyCapRows?.[0]?.v;
+
+      config = {
+        image_cost: typeof image_cost === 'number' && !Number.isNaN(image_cost) ? image_cost : 2,
+        daily_cap: typeof daily_cap === 'number' && !Number.isNaN(daily_cap) ? daily_cap : 30,
+      };
+      console.log('💰 App config resolved:', config);
     } catch (configError) {
-      console.error('💰 Failed to load app config:', configError);
+      console.error('💰 Failed to load app config, using defaults:', configError);
       config = { image_cost: 2, daily_cap: 30 };
     }
     
