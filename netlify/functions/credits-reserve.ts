@@ -222,4 +222,4 @@ export const handler: Handler = async (event) => {
       stack: error?.stack
     });
   }
-};
+}
