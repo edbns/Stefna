@@ -3,6 +3,7 @@
 // - Accepts generated media variations (from AIML)
 // - Records them in Neon database with proper schema
 // - Returns canonical items used by feed + UI
+// Force redeploy - v2 (fix table references to use assets instead of media)
 
 import type { Handler } from '@netlify/functions';
 import { sql } from './_db';
@@ -150,53 +151,60 @@ export const handler: Handler = async (event) => {
 
     // Single media item
     try {
-      const result = await sql`
-        INSERT INTO media (
-          user_id, 
-          url, 
-          media_type, 
-          cloudinary_public_id, 
-          source_public_id, 
-          prompt, 
-          meta, 
-          preset_id, 
-          run_id, 
-          batch_id, 
-          created_at
-        ) VALUES (
-          ${userId}, 
-          ${finalUrl}, 
-          ${media_type}, 
-          ${cloudinary_public_id || null}, 
-          ${source_public_id || null}, 
-          ${prompt || null}, 
-          ${meta || {}}, 
-          ${preset_id || null}, 
-          ${run_id || null}, 
-          ${batch_id || null}, 
-          NOW()
-        ) RETURNING id, url, media_type, created_at
-      `;
+              const result = await sql`
+          INSERT INTO assets (
+            user_id, 
+            cloudinary_public_id, 
+            media_type, 
+            preset_key, 
+            prompt, 
+            source_asset_id, 
+            status, 
+            is_public, 
+            allow_remix,
+            final_url,
+            meta,
+            created_at
+          ) VALUES (
+            ${userId}, 
+            ${cloudinary_public_id || null}, 
+            ${media_type}, 
+            ${preset_id || null}, 
+            ${prompt || null}, 
+            ${source_public_id || null}, 
+            'ready', 
+            true, 
+            false,
+            ${finalUrl},
+            ${meta || {}},
+            NOW()
+          ) RETURNING id, final_url, media_type, created_at
+        `;
       
-      if (result && result.length > 0) {
-        const savedItem = result[0];
-        console.log('✅ Media saved successfully:', savedItem.id);
-        
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            success: true,
-            message: 'Media saved successfully',
-            item: savedItem
-          })
-        };
-      } else {
-        throw new Error('No result returned from database insert');
-      }
+              if (result && result.length > 0) {
+          const savedItem = result[0];
+          console.log('✅ Media saved successfully:', savedItem.id);
+          
+          return {
+            statusCode: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+              success: true,
+              message: 'Media saved successfully',
+              item: {
+                id: savedItem.id,
+                url: savedItem.final_url,
+                media_type: savedItem.media_type,
+                created_at: savedItem.created_at
+              }
+            })
+          };
+        } else {
+          throw new Error('No result returned from database insert');
+        }
     } catch (error) {
       console.error('❌ Database insert failed:', error);
       throw httpErr(500, 'DATABASE_ERROR', 'Failed to save media to database');
