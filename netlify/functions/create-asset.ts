@@ -16,6 +16,10 @@ function getUserIdFromToken(auth?: string): string | null {
 }
 
 export const handler: Handler = async (event) => {
+  // 🧾 TEMPORARY DEBUG: Log the received request
+  console.log('🧾 Received body:', event.body);
+  console.log('🔐 Headers:', Object.keys(event.headers || {}));
+  
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -66,6 +70,14 @@ export const handler: Handler = async (event) => {
       .single();
 
     console.log('🔍 Database insert result:', { data, error });
+    console.log('🧪 Insert result details:', {
+      hasData: !!data,
+      dataType: typeof data,
+      dataKeys: data ? Object.keys(data) : 'N/A',
+      dataLength: Array.isArray(data) ? data.length : 'N/A',
+      errorType: typeof error,
+      errorMessage: error?.message || 'N/A'
+    });
 
     if (error) {
       console.error('❌ Database insert error:', error);
