@@ -1,4 +1,4 @@
-import { requireAuth, verifyBearer } from "../lib/auth";
+import { requireAuth, verifyBearer } from "./lib/auth";
 
 // Re-export the unified auth functions
 export { requireAuth, verifyBearer };

@@ -1,5 +1,6 @@
 // netlify/functions/update-asset-result.ts
 // Updates asset with final generation result (URL, status, etc.)
+// Force redeploy - v2
 
 import type { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
