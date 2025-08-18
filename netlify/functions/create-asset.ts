@@ -66,6 +66,8 @@ export const handler: Handler = async (event) => {
     
     console.log('🔍 About to execute SQL insert...');
     
+    let data, error;
+    
     try {
       const result = await sql`
         INSERT INTO assets (
@@ -92,8 +94,8 @@ export const handler: Handler = async (event) => {
       `;
       
       console.log('🔍 SQL execution completed, result:', result);
-      const data = result[0] || null;
-      const error = null; // SQL errors will throw exceptions
+      data = result[0] || null;
+      error = null; // SQL errors will throw exceptions
     } catch (sqlError) {
       console.error('❌ SQL execution failed:', sqlError);
       return json({ ok: false, error: `Database insert failed: ${sqlError.message}` }, { status: 500 });
