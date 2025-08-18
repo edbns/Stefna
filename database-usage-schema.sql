@@ -20,7 +20,7 @@ ON CONFLICT (key) DO NOTHING;
 
 -- Current balance
 CREATE TABLE IF NOT EXISTS user_credits (
-  user_id    uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id    uuid PRIMARY KEY,
   balance    int NOT NULL DEFAULT 0,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS user_credits (
 -- Ledger (idempotent, auditable)
 CREATE TABLE IF NOT EXISTS credits_ledger (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id     uuid NOT NULL,
   request_id  uuid NOT NULL,            -- idempotency key for a generation/job
   action      text NOT NULL,            -- 'image.gen'|'video.gen'|'grant'|'referral.*' etc.
   amount      int  NOT NULL,            -- negative=spend, positive=grant/refund
@@ -46,8 +46,8 @@ CREATE INDEX IF NOT EXISTS ix_ledger_user_created
 -- Referrals (one row per new user so rewards are idempotent)
 CREATE TABLE IF NOT EXISTS referral_signups (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  referrer_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  new_user_id      uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  referrer_user_id uuid NOT NULL,
+  new_user_id      uuid NOT NULL,
   referrer_email   text,
   new_user_email   text,
   created_at       timestamptz NOT NULL DEFAULT now(),

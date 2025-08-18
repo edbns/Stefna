@@ -1,8 +1,19 @@
 import { create } from 'zustand'
-import { PRESETS } from '../utils/presets/types'
 
-export type PresetKey = keyof typeof PRESETS
-export type Preset = typeof PRESETS[PresetKey]
+export type PresetKey = string
+export type Preset = {
+  id: string; 
+  label: string; 
+  description?: string;
+  prompt: string; 
+  negative_prompt?: string;
+  strength?: number; 
+  model?: 'eagle'|'flux'|'other';
+  mode: 'i2i'|'txt2img'; 
+  input: 'image'|'video'; 
+  requiresSource?: boolean;
+  post?: { upscale?: 'x2'|'x4'; sharpen?: boolean };
+}
 
 type Status = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -27,7 +38,8 @@ export const presetsStore = create<PresetsState>((set, get) => ({
     set({ status: 'loading' })
     
     try {
-      // Load presets (currently from static config, could be from API)
+      // Load presets dynamically to avoid circular dependencies
+      const { PRESETS } = await import('../utils/presets/types')
       const presetEntries = Object.entries(PRESETS)
       const byId: Record<string, Preset> = {}
       
