@@ -53,5 +53,5 @@ export const handler: Handler = async (event) => {
       details: e instanceof Error ? e.message : 'Unknown error'
     });
   }
-};
+}
 

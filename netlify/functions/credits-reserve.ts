@@ -115,6 +115,44 @@ export const handler: Handler = async (event) => {
       const balanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
       console.log('🔍 Current credit balance:', balanceCheck[0]?.balance || 'No balance record found');
       
+      // 💰 AUTO-INITIALIZE: Create user credits if they don't exist
+      if (balanceCheck.length === 0) {
+        console.log('💰 No credit balance found - initializing new user with starter credits...');
+        
+        try {
+          // Get starter grant amount from app_config
+          const starterRows = await sql`SELECT (value::text)::int AS v FROM app_config WHERE key='starter_grant'`;
+          const STARTER_GRANT = starterRows[0]?.v ?? 30;
+          
+          console.log(`💰 Creating user_credits row with ${STARTER_GRANT} starter credits...`);
+          
+          // Insert starter credits
+          await sql`
+            INSERT INTO user_credits(user_id, balance) 
+            VALUES (${userId}, ${STARTER_GRANT})
+            ON CONFLICT (user_id) DO NOTHING
+          `;
+          
+          // Create ledger entry for starter grant
+          await sql`
+            INSERT INTO credits_ledger(user_id, request_id, action, amount, status, meta)
+            VALUES (${userId}, gen_random_uuid(), 'grant', ${STARTER_GRANT}, 'granted', jsonb_build_object('reason','starter'))
+            ON CONFLICT DO NOTHING
+          `;
+          
+          console.log(`✅ Successfully initialized user with ${STARTER_GRANT} starter credits`);
+          
+        } catch (initError) {
+          console.error('❌ Failed to initialize user credits:', initError);
+          return json(500, {
+            ok: false,
+            error: "USER_CREDITS_INIT_FAILED",
+            message: "Failed to initialize user credits",
+            details: initError?.message
+          });
+        }
+      }
+      
       // Reserve credits using the new system
       console.log('💰 reserve_credits inputs:', {
         userId,
