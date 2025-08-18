@@ -110,6 +110,11 @@ export const handler: Handler = async (event) => {
         return json(429, { ok: false, error: "DAILY_CAP_REACHED" });
       }
       
+      // 🔍 DEBUG: Check user's current credit balance before reservation
+      console.log('🔍 Checking user credit balance before reservation...');
+      const balanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
+      console.log('🔍 Current credit balance:', balanceCheck[0]?.balance || 'No balance record found');
+      
       // Reserve credits using the new system
       console.log('💰 reserve_credits inputs:', {
         userId,
