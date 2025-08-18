@@ -1,8 +1,7 @@
-import type { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
-import { Resend } from 'resend';
+const { neon } = require('@neondatabase/serverless');
+const { Resend } = require('resend');
 
-export const handler: Handler = async (event) => {
+exports.handler = async (event, context) => {
   console.log('=== OTP REQUEST FUNCTION STARTED ===');
   console.log('Event method:', event.httpMethod);
   console.log('Event body:', event.body);
@@ -15,7 +14,8 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      }
+      },
+      body: ''
     };
   }
 
@@ -31,7 +31,7 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const { email } = JSON.parse(event.body || '{}');
+    const { email } = JSON.parse(event.body);
     console.log('Parsed email:', email);
 
     if (!email || !email.includes('@')) {
@@ -143,20 +143,14 @@ export const handler: Handler = async (event) => {
         subject: `Your Stefna Login Code: ${otp}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #000000; color: #ffffff;">
-
             <div style="text-align: center; padding: 40px 20px;">
               <h1 style="color: #ffffff; font-size: 24px; margin-bottom: 10px;">Login Code</h1>
               <p style="color: #cccccc; font-size: 16px; margin-bottom: 40px;">Enter this code to access your Stefna dashboard</p>
-
               
               <div style="background-color: #1a1a1a; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
-
                 <p style="color: #888888; font-size: 12px; text-transform: uppercase; margin-bottom: 15px;">Your Login Code</p>
-
                 <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; margin-bottom: 15px;">${otp}</div>
-
                 <p style="color: #888888; font-size: 12px; text-transform: uppercase;">Valid for 10 minutes</p>
-
               </div>
             </div>
           </div>
@@ -194,7 +188,7 @@ export const handler: Handler = async (event) => {
         })
       };
 
-    } catch (emailError: any) {
+    } catch (emailError) {
       console.error('Email sending error:', emailError);
       return {
         statusCode: 500,
@@ -204,12 +198,12 @@ export const handler: Handler = async (event) => {
         },
         body: JSON.stringify({ 
           error: 'Failed to send email',
-          details: emailError.message || 'Unknown error'
+          details: emailError.message || 'Unknown email error'
         })
       };
     }
 
-  } catch (err: any) {
+  } catch (err) {
     console.error('=== FUNCTION ERROR ===');
     console.error('Function error:', err);
     console.error('Error stack:', err.stack);
@@ -226,4 +220,4 @@ export const handler: Handler = async (event) => {
       })
     };
   }
-};
+}; 
