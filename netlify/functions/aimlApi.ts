@@ -187,17 +187,59 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Extract URL from various possible response formats
-    const url = data.image_url ?? data.output?.[0]?.url ?? data.data?.[0]?.url ?? data.url ?? null;
+    // Log the full response structure for debugging
+    console.log('🔍 AIML API response structure:', {
+      keys: Object.keys(data),
+      hasImageUrl: !!data.image_url,
+      hasOutput: !!data.output,
+      hasData: !!data.data,
+      hasUrl: !!data.url,
+      outputType: typeof data.output,
+      dataType: typeof data.data
+    });
+
+    // Extract URL from various possible response formats with more fallbacks
+    let url = null;
+    
+    // Try multiple extraction strategies
+    if (data.image_url) {
+      url = data.image_url;
+      console.log('✅ Found URL in image_url:', url);
+    } else if (data.output && Array.isArray(data.output) && data.output[0]?.url) {
+      url = data.output[0].url;
+      console.log('✅ Found URL in output[0].url:', url);
+    } else if (data.output && typeof data.output === 'object' && data.output.url) {
+      url = data.output.url;
+      console.log('✅ Found URL in output.url:', url);
+    } else if (data.data && Array.isArray(data.data) && data.data[0]?.url) {
+      url = data.data[0].url;
+      console.log('✅ Found URL in data[0].url:', url);
+    } else if (data.data && typeof data.data === 'object' && data.data.url) {
+      url = data.data.url;
+      console.log('✅ Found URL in data.url:', url);
+    } else if (data.url) {
+      url = data.url;
+      console.log('✅ Found URL in url:', url);
+    } else if (data.result_url) {
+      url = data.result_url;
+      console.log('✅ Found URL in result_url:', url);
+    } else if (data.generated_image) {
+      url = data.generated_image;
+      console.log('✅ Found URL in generated_image:', url);
+    } else if (data.image) {
+      url = data.image;
+      console.log('✅ Found URL in image:', url);
+    }
 
     if (!url) {
-      console.error('❌ No image URL in AIML response:', data);
+      console.error('❌ No image URL found in AIML response. Full response:', JSON.stringify(data, null, 2));
       return {
         statusCode: 502,
         body: JSON.stringify({ 
           ok: false, 
           error: 'NO_URL_FROM_PROVIDER',
-          raw: data 
+          raw: data,
+          attempted_keys: ['image_url', 'output.url', 'output[0].url', 'data.url', 'data[0].url', 'url', 'result_url', 'generated_image', 'image']
         })
       };
     }
