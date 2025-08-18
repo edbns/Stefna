@@ -114,14 +114,6 @@ export const handler: Handler = async (event) => {
       // Function check removed - we know app.reserve_credits exists
       console.log('💰 Skipping function check - app.reserve_credits is confirmed to exist');
       
-      // Check daily cap
-      console.log('💰 Checking daily cap for user:', userId, 'cost:', cost, 'daily_cap:', config.daily_cap);
-      const capOk = await sql`SELECT app.allow_today_simple(${userId}::uuid,${cost}::int) AS allowed`;
-      console.log('💰 Daily cap check result:', capOk[0]);
-      if (!capOk[0]?.allowed) {
-        return json({ ok: false, error: "DAILY_CAP_REACHED" }, { status: 429 });
-      }
-      
       // 🔍 DEBUG: Check user's current credit balance before reservation
       console.log('🔍 Checking user credit balance before reservation...');
       const balanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
@@ -163,6 +155,14 @@ export const handler: Handler = async (event) => {
         details: initError?.message
       }, { status: 500 });
         }
+      }
+      
+      // Check daily cap AFTER ensuring user has credits
+      console.log('💰 Checking daily cap for user:', userId, 'cost:', cost, 'daily_cap:', config.daily_cap);
+      const capOk = await sql`SELECT app.allow_today_simple(${userId}::uuid,${cost}::int) AS allowed`;
+      console.log('💰 Daily cap check result:', capOk[0]);
+      if (!capOk[0]?.allowed) {
+        return json({ ok: false, error: "DAILY_CAP_REACHED" }, { status: 429 });
       }
       
       // Reserve credits using the new system

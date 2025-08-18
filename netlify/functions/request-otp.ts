@@ -141,27 +141,13 @@ export const handler: Handler = async (event) => {
         from: 'Stefna <hello@stefna.xyz>',
         to: [email],
         subject: `Your Stefna Login Code`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-            <h2 style="color: #333; margin-bottom: 20px;">Your Stefna Login Code</h2>
-            
-            <p style="color: #666; font-size: 16px; margin-bottom: 30px;">
-              Here's your one-time login code:
-            </p>
-            
-            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">
-              <div style="font-size: 32px; font-weight: bold; letter-spacing: 4px; color: #333;">${otp}</div>
-            </div>
-            
-            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
-              It expires in 10 minutes. If you didn't request this code, you can ignore this email.
-            </p>
-            
-            <p style="color: #999; font-size: 14px; margin-top: 40px;">
-              — The Stefna Team
-            </p>
-          </div>
-        `
+        text: `Here's your one-time login code:
+
+${otp}
+
+It expires in 10 minutes. If you didn't request this code, you can ignore this email.
+
+— The Stefna Team`
       });
 
       if (emailError) {

@@ -59,7 +59,12 @@ export const handler: Handler = async (event) => {
       credits: { balance: bal[0]?.balance ?? 0 },
     });
   } catch (e) {
-    console.error('get-user-profile error:', e);
+    console.error('❌ get-user-profile failed:', e);
+    console.error('❌ Error details:', {
+      message: e instanceof Error ? e.message : 'Unknown error',
+      stack: e instanceof Error ? e.stack : 'No stack trace',
+      error: e
+    });
     return json({ 
       ok: false, 
       error: 'Internal server error',
