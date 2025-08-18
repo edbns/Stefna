@@ -1,5 +1,5 @@
 import type { Handler } from '@netlify/functions';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import * as jose from 'jose';
 import { json } from './_lib/http';
 

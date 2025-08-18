@@ -140,25 +140,26 @@ export const handler: Handler = async (event) => {
       const { data: emailData, error: emailError } = await resend.emails.send({
         from: 'Stefna <hello@stefna.xyz>',
         to: [email],
-        subject: `Your Stefna Login Code: ${otp}`,
+        subject: `Your Stefna Login Code`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #000000; color: #ffffff;">
-
-            <div style="text-align: center; padding: 40px 20px;">
-              <h1 style="color: #ffffff; font-size: 24px; margin-bottom: 10px;">Login Code</h1>
-              <p style="color: #cccccc; font-size: 16px; margin-bottom: 40px;">Enter this code to access your Stefna dashboard</p>
-
-              
-              <div style="background-color: #1a1a1a; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
-
-                <p style="color: #888888; font-size: 12px; text-transform: uppercase; margin-bottom: 15px;">Your Login Code</p>
-
-                <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; margin-bottom: 15px;">${otp}</div>
-
-                <p style="color: #888888; font-size: 12px; text-transform: uppercase;">Valid for 10 minutes</p>
-
-              </div>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+            <h2 style="color: #333; margin-bottom: 20px;">Your Stefna Login Code</h2>
+            
+            <p style="color: #666; font-size: 16px; margin-bottom: 30px;">
+              Here's your one-time login code:
+            </p>
+            
+            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">
+              <div style="font-size: 32px; font-weight: bold; letter-spacing: 4px; color: #333;">${otp}</div>
             </div>
+            
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+              It expires in 10 minutes. If you didn't request this code, you can ignore this email.
+            </p>
+            
+            <p style="color: #999; font-size: 14px; margin-top: 40px;">
+              — The Stefna Team
+            </p>
           </div>
         `
       });

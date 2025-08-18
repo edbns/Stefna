@@ -3,7 +3,7 @@
 
 import { Handler } from '@netlify/functions';
 import { neonAdmin } from '../lib/neonAdmin';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 
 function getUserIdFromToken(auth?: string): string | null {
   if (!auth?.startsWith('Bearer ')) return null;

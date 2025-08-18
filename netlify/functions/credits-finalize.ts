@@ -74,19 +74,19 @@ export const handler: Handler = async (event) => {
         
         if (!funcCheck[0]) {
           console.error('❌ app.finalize_credits function not found!');
-          return json(500, { 
+          return json({ 
             ok: false, 
             error: "DB_FUNCTION_MISSING",
             message: "app.finalize_credits function not found in database"
-          });
+          }, { status: 500 });
         }
       } catch (funcError) {
         console.error('❌ Function check failed:', funcError);
-        return json(500, { 
+        return json({ 
           ok: false, 
           error: "DB_FUNCTION_CHECK_FAILED",
           message: funcError?.message
-        });
+        }, { status: 500 });
       }
       
       // Finalize credits using the new system
@@ -121,41 +121,41 @@ export const handler: Handler = async (event) => {
         console.log('💰 Current balance after finalization:', currentBalance);
         
         // Return success
-        return json(200, {
+        return json({
           ok: true,
           request_id: request_id,
           disposition: disposition,
           status: status,
           balance: currentBalance
-        });
+        }, { status: 200 });
         
       } catch (dbError) {
         console.error("❌ finalize_credits() call failed:", dbError);
-        return json(500, {
+        return json({
           ok: false,
           error: "DB_FINALIZE_CREDITS_FAILED",
           message: dbError?.message,
           stack: dbError?.stack,
-        });
+        }, { status: 500 });
       }
       
     } catch (dbError) {
       console.error("💥 DB finalization failed:", dbError);
-      return json(500, { 
+      return json({ 
         ok: false, 
         error: "Failed to finalize credits", 
         details: dbError?.message,
         stack: dbError?.stack 
-      });
+      }, { status: 500 });
     }
     
   } catch (error) {
     console.error("💥 Top-level error in credits-finalize:", error);
-    return json(500, {
+    return json({
       ok: false,
       error: "Internal server error",
       details: error?.message,
       stack: error?.stack
-    });
+    }, { status: 500 });
   }
 };

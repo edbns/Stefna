@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, X, ArrowUp, Filter, FileText, ChevronDown } from 'lucide-react'
+import { Plus, X, ArrowUp, Filter, FileText } from 'lucide-react'
 import { authenticatedFetch } from '../utils/apiClient'
 import authService from '../services/authService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
@@ -14,21 +14,15 @@ import { useProfile } from '../contexts/ProfileContext'
 import { usePresetRunner } from '../hooks/usePresetRunner'
 import { useSelectedPreset } from '../stores/selectedPreset'
 import { HiddenUploader } from './HiddenUploader'
-import { useIntentQueue } from '../state/intentQueue'
-import { getHttpsSource, storeSelectedFile } from '../services/mediaSource'
-import { postAuthed } from '../utils/fetchAuthed'
-import { runsStore } from '../stores/runs'
+
 import { uploadSourceToCloudinary } from '../services/uploadSource'
 import { useGenerationMode } from '../stores/generationMode'
 import { runMoodMorph } from '../services/moodMorph'
 import { MoodMorphPicker } from './MoodMorphPicker'
 import { EmotionMaskPicker } from './EmotionMaskPicker'
 import { MOODMORPH_PRESETS } from '../presets/moodmorph'
-import { isMoodMorphPreset } from '../lib/moodmorph'
 import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
-import { signedFetch } from '../lib/auth'
 
-import { getSourceFileOrThrow } from '../services/source'
 
 
 

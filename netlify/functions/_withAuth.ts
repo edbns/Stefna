@@ -1,7 +1,7 @@
 import type { Handler } from "@netlify/functions";
 import { requireAuth } from "../lib/auth";
 
-export function withAuth(fn: (e: any, u: any) => Promise<Response> | Response): Handler {
+export function withAuth(fn: (e: any, u: any) => Promise<any> | any): Handler {
   return async (event) => {
     try {
       const user = requireAuth(event);
@@ -12,10 +12,11 @@ export function withAuth(fn: (e: any, u: any) => Promise<Response> | Response): 
         /NO_BEARER|jwt malformed|invalid signature|jwt expired|audience|issuer/i.test(err?.message)
           ? 401
           : 500;
-      return new Response(JSON.stringify({ ok: false, error: err?.message || "AUTH_ERROR" }), {
-        status: code,
+      return {
+        statusCode: code,
         headers: { "content-type": "application/json" },
-      });
+        body: JSON.stringify({ ok: false, error: err?.message || "AUTH_ERROR" })
+      };
     }
   };
 }

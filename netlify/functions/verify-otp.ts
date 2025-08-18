@@ -1,7 +1,7 @@
 import type { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
 import { v4 as uuidv4 } from 'uuid';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
 
 export const handler: Handler = async (event) => {

@@ -4,7 +4,7 @@ A modern, React-based AI photo generation platform with **four distinct generati
 
 ## 🚀 **Features**
 
-### **🎨 Generation Modes**
+### **🎨 Editing Modes**
 
 1. **Presets Mode** - 26 professional AI style presets with auto-generation
 2. **MoodMorph™ Mode** - Generate 3 mood variations with batch processing
@@ -19,7 +19,7 @@ A modern, React-based AI photo generation platform with **four distinct generati
 - **File Upload**: Drag & drop or click to upload images
 - **AI Generation**: Powered by AIML API with multiple models
 - **Cloud Storage**: Cloudinary integration for media storage
-- **User Authentication**: JWT-based auth system with Supabase
+- **User Authentication**: JWT-based auth system with Neon Database
 - **Real-time Updates**: Live generation status and notifications
 - **Responsive Design**: Mobile-first, modern UI with Tailwind CSS
 
@@ -34,7 +34,7 @@ A modern, React-based AI photo generation platform with **four distinct generati
 
 ### **Backend Services**
 - **Netlify Functions** for serverless API endpoints
-- **Supabase Pro** for database and authentication (8GB storage, 250GB bandwidth)
+- **Neon Database** for PostgreSQL database (serverless-optimized)
 - **Cloudinary** for media storage and optimization
 - **AIML API** for AI generation
 
@@ -76,7 +76,7 @@ src/
 - Node.js 18+ 
 - npm or yarn
 - Netlify account (for deployment)
-- Supabase Pro account (for database)
+- Neon Database account (for PostgreSQL database)
 - Cloudinary account (for media storage)
 - AIML API account (for AI generation)
 
@@ -94,7 +94,7 @@ VITE_FUNCTION_APP_KEY=your_app_key
 
 # Backend Variables (no VITE_ prefix)
 JWT_SECRET=your_jwt_secret
-DATABASE_URL=your_supabase_url
+DATABASE_URL=your_neon_database_url
 AIML_API_KEY=your_aiml_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 RESEND_API_KEY=your_resend_key
@@ -108,9 +108,9 @@ Set these in your Netlify dashboard under Functions:
 # Authentication
 JWT_SECRET=your_jwt_secret
 
-# Database
-DATABASE_URL=your_supabase_url
-NETLIFY_DATABASE_URL=your_supabase_url
+# Database (Neon PostgreSQL)
+DATABASE_URL=postgresql://USER:PASSWORD@ep-xxx-pooler.neon.tech/neondb?sslmode=require
+NETLIFY_DATABASE_URL=postgresql://USER:PASSWORD@ep-xxx-pooler.neon.tech/neondb?sslmode=require
 
 # AI Services
 AIML_API_KEY=your_aiml_api_key
@@ -230,8 +230,8 @@ SITE_URL=your_site_url
 
 ### **JWT-Based Authentication**
 - **Token Management**: Secure JWT tokens with expiration
-- **User Verification**: Netlify identity service integration
-- **Profile Management**: Supabase user profiles and settings
+- **User Verification**: Custom JWT verification with secret key
+- **Profile Management**: Neon Database user profiles and settings
 
 ### **API Security**
 - **App Key Validation**: `x-app-key` header verification
@@ -297,7 +297,7 @@ npm run lint
 
 ### **Production Considerations**
 - **Environment Variables**: Ensure all production keys are set
-- **Database**: Verify Supabase connection and tables
+- **Database**: Verify Neon Database connection and tables
 - **CDN**: Cloudinary optimization settings
 - **Monitoring**: Set up error tracking and analytics
 
@@ -355,4 +355,4 @@ npm run lint
 **Version**: 3.0.0  
 **Maintainer**: Development Team  
 **License**: Proprietary  
-**Status**: Production Ready ✅# Force Netlify rebuild - Mon Aug 18 08:15:06 WITA 2025
+**Status**: Production Ready ✅
