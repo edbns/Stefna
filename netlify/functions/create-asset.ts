@@ -1,7 +1,10 @@
 import type { Handler } from '@netlify/functions';
-import { neonAdmin } from '../lib/neonAdmin';
+import { neon } from '@neondatabase/serverless';
 import type { CreateAssetInput, ApiResult, Asset } from '../lib/types';
 import { json } from './_lib/http';
+
+// Initialize Neon connection
+const sql = neon(process.env.NETLIFY_DATABASE_URL!);
 
 function getUserIdFromToken(auth?: string): string | null {
   try {
@@ -51,23 +54,38 @@ export const handler: Handler = async (event) => {
     console.log('🔍 User ID:', userId);
     console.log('🔍 Media type:', mediaType);
     
-    const { data, error } = await neonAdmin
-      .from('assets')
-      .insert({
-        user_id: userId,
-        cloudinary_public_id: input.sourcePublicId ?? null,
-        media_type: mediaType,
-        // compatibility with legacy schemas that still require resource_type
-        resource_type: mediaType,
-        preset_key: input.presetKey ?? null,
-        prompt: input.prompt ?? null,
-        source_asset_id: input.sourceAssetId ?? null,
-        status: 'queued',
-        is_public: false,
-        allow_remix: false,
-      })
-      .select('*')
-      .single();
+    // Use direct SQL instead of deprecated neonAdmin
+    const insertQuery = sql`
+      INSERT INTO assets (
+        user_id, 
+        cloudinary_public_id, 
+        media_type, 
+        resource_type, 
+        preset_key, 
+        prompt, 
+        source_asset_id, 
+        status, 
+        is_public, 
+        allow_remix
+      ) VALUES (
+        ${userId}, 
+        ${input.sourcePublicId ?? null}, 
+        ${mediaType}, 
+        ${mediaType}, 
+        ${input.presetKey ?? null}, 
+        ${input.prompt ?? null}, 
+        ${input.sourceAssetId ?? null}, 
+        'queued', 
+        false, 
+        false
+      ) RETURNING *
+    `;
+    
+    console.log('🔍 Executing SQL query:', insertQuery.sql);
+    
+    const result = await sql`${insertQuery}`;
+    const data = result[0] || null;
+    const error = null; // SQL errors will throw exceptions
 
     console.log('🔍 Database insert result:', { data, error });
     console.log('🧪 Insert result details:', {

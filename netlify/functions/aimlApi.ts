@@ -114,7 +114,37 @@ export const handler: Handler = async (event) => {
     
     console.log('🎯 AIML API generation request:', logData);
 
-    // Validate required fields for generation
+    // Check if this is a prompt enhancement request (magic wand)
+    if (requestBody.action === 'enhance_prompt') {
+      console.log('🎯 Magic Wand prompt enhancement request:', {
+        prompt: requestBody.prompt,
+        enhancementType: requestBody.enhancement_type
+      });
+      
+      // For prompt enhancement, we don't need image_url
+      if (!requestBody.prompt) {
+        console.error('Missing prompt for enhancement');
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'missing_prompt' })
+        };
+      }
+      
+      // Return enhanced prompt (simplified for now)
+      const enhancedPrompt = requestBody.prompt + ', professional photography style, high quality, sharp details, 8K resolution, enhanced contrast, vibrant colors';
+      
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ 
+          ok: true, 
+          enhanced_prompt: enhancedPrompt,
+          original_prompt: requestBody.prompt,
+          enhancement_type: requestBody.enhancement_type
+        })
+      };
+    }
+
+    // Validate required fields for image generation
     if (!requestBody.image_url) {
       console.error('Missing image_url in request');
       return {
