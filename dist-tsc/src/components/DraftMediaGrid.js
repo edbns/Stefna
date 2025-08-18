@@ -1,0 +1,17 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useState, useRef } from 'react';
+import { Trash2, Pencil, Share2 } from 'lucide-react';
+const DraftMediaGrid = ({ media, columns = 3, onMediaClick, onEdit, onDelete, onShare, showActions = true, className = '' }) => {
+    const [hoveredMedia, setHoveredMedia] = useState(null);
+    const gridRef = useRef(null);
+    // CSS columns will handle the masonry layout automatically
+    const handleAction = (action, event) => {
+        event.stopPropagation();
+        action();
+    };
+    if (media.length === 0) {
+        return (_jsxs("div", { className: "flex flex-col items-center justify-center h-full", children: [_jsx("div", { className: "w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6", children: _jsx(Pencil, { size: 48, className: "text-white/40" }) }), _jsx("p", { className: "text-white/60 text-lg text-center", children: "No drafts found" }), _jsx("p", { className: "text-white/40 text-sm text-center mt-2", children: "Your draft media will appear here" })] }));
+    }
+    return (_jsx("div", { className: `${className}`, ref: gridRef, children: _jsx("div", { className: "columns-3 gap-1 mx-auto", style: { maxWidth: '1200px' }, children: media.map((item) => (_jsx("div", { className: "break-inside-avoid mb-1 relative group cursor-pointer bg-white/5 rounded-lg overflow-hidden", onMouseEnter: () => setHoveredMedia(item.id), onMouseLeave: () => setHoveredMedia(null), onClick: () => onMediaClick?.(item), children: _jsxs("div", { className: "relative w-full overflow-hidden rounded-lg", style: { aspectRatio: item.aspectRatio || 1 }, children: [item.type === 'video' ? (_jsx("video", { src: item.url, className: "w-full h-full object-cover", muted: true, loop: true, onMouseEnter: (e) => e.currentTarget.play(), onMouseLeave: (e) => e.currentTarget.pause() })) : (_jsx("img", { src: item.url, alt: item.prompt, className: "w-full h-full object-cover", loading: "lazy" })), _jsx("div", { className: "absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1", children: _jsx("span", { className: "text-white text-xs font-medium", children: "Draft" }) }), _jsx("div", { className: `absolute inset-0 bg-black/20 transition-opacity duration-300 ${hoveredMedia === item.id ? 'opacity-100' : 'opacity-0'}` }), showActions && hoveredMedia === item.id && (_jsx("div", { className: "absolute inset-0 flex items-center justify-center", children: _jsxs("div", { className: "flex space-x-2", children: [onShare && (_jsx("button", { onClick: (e) => handleAction(() => onShare(item), e), className: "w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized", title: "Share", children: _jsx(Share2, { size: 16 }) })), _jsx("button", { onClick: (e) => handleAction(() => onEdit?.(item), e), className: "w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized", title: "Edit", children: _jsx(Pencil, { size: 16 }) }), _jsx("button", { onClick: (e) => handleAction(() => onDelete?.(item), e), className: "w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized", title: "Delete", children: _jsx(Trash2, { size: 16 }) })] }) }))] }) }, item.id))) }) }));
+};
+export default DraftMediaGrid;

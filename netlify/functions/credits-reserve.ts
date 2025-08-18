@@ -5,17 +5,29 @@ import { json } from "./_lib/http";
 import { randomUUID } from "crypto";
 
 export const handler: Handler = async (event) => {
-  console.log('💰 [credits-reserve] Starting credits reservation...');
-  console.log('💰 [credits-reserve] event.body:', event.body);
-  console.log('💰 [credits-reserve] event.headers:', event.headers);
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
+
+  console.log('[credits-reserve] Starting credits reservation...');
+  console.log('[credits-reserve] Method:', event.httpMethod);
+  console.log('[credits-reserve] Headers:', event.headers);
   
   try {
     if (event.httpMethod !== 'POST') {
-      return json(405, { ok: false, error: 'Method not allowed' });
+      return json({ ok: false, error: 'Method not allowed' }, { status: 405 });
     }
 
     const { userId } = requireAuth(event.headers.authorization);
-    console.log("👤 userId resolved:", userId);
+    console.log("[credits-reserve] User:", userId);
     
     const body = event.body ? JSON.parse(event.body) : {};
     console.log("📦 Request body parsed:", body);
@@ -48,8 +60,8 @@ export const handler: Handler = async (event) => {
     const action = body.action || body.intent || "image.gen";
     const request_id = body.request_id || body.requestId || randomUUID();
 
-    console.log("💰 [credits-reserve] Parsed:", { userId, request_id, action, cost });
-    console.log('💰 Credits reservation params:', {
+    console.log("[credits-reserve] Parsed:", { userId, request_id, action, cost });
+    console.log('[credits-reserve] Credits reservation params:', {
       userId,
       cost,
       action,
@@ -70,24 +82,24 @@ export const handler: Handler = async (event) => {
     // Validation
     if (!userId) {
       console.error("❌ userId is missing or undefined");
-      return json(400, { ok: false, error: 'Missing or invalid userId' });
+      return json({ ok: false, error: 'Missing or invalid userId' }, { status: 400 });
     }
     
     if (!cost || cost <= 0 || isNaN(cost)) {
       console.error("❌ Invalid cost:", cost);
-      return json(400, { ok: false, error: `Invalid cost: ${cost} - must be a number greater than 0` });
+      return json({ ok: false, error: `Invalid cost: ${cost} - must be a number greater than 0` }, { status: 400 });
     }
     
     if (!action) {
       console.error("❌ Missing action/intent");
-      return json(400, { ok: false, error: 'Missing action or intent' });
+      return json({ ok: false, error: 'Missing action or intent' }, { status: 400 });
     }
     
     // Validate action values
     const allowedActions = ['image.gen', 'video.gen', 'mask.gen', 'emotionmask', 'preset', 'presets', 'moodmorph', 'custom'];
     if (!allowedActions.includes(action)) {
       console.error("❌ Invalid action:", action, "Allowed:", allowedActions);
-      return json(400, { ok: false, error: `Invalid action: ${action}. Allowed: ${allowedActions.join(', ')}` });
+      return json({ ok: false, error: `Invalid action: ${action}. Allowed: ${allowedActions.join(', ')}` }, { status: 400 });
     }
 
     const sql = neon(process.env.NETLIFY_DATABASE_URL!);
@@ -107,7 +119,7 @@ export const handler: Handler = async (event) => {
       const capOk = await sql`SELECT app.allow_today_simple(${userId}::uuid,${cost}::int) AS allowed`;
       console.log('💰 Daily cap check result:', capOk[0]);
       if (!capOk[0]?.allowed) {
-        return json(429, { ok: false, error: "DAILY_CAP_REACHED" });
+        return json({ ok: false, error: "DAILY_CAP_REACHED" }, { status: 429 });
       }
       
       // 🔍 DEBUG: Check user's current credit balance before reservation
@@ -144,12 +156,12 @@ export const handler: Handler = async (event) => {
           
         } catch (initError) {
           console.error('❌ Failed to initialize user credits:', initError);
-          return json(500, {
-            ok: false,
-            error: "USER_CREDITS_INIT_FAILED",
-            message: "Failed to initialize user credits",
-            details: initError?.message
-          });
+                return json({
+        ok: false,
+        error: "USER_CREDITS_INIT_FAILED",
+        message: "Failed to initialize user credits",
+        details: initError?.message
+      }, { status: 500 });
         }
       }
       
@@ -175,51 +187,51 @@ export const handler: Handler = async (event) => {
         // Validate the return structure matches our SQL function
         if (!rows[0] || typeof rows[0].balance !== 'number') {
           console.error('❌ Unexpected return structure:', rows[0]);
-          return json(500, {
-            ok: false,
-            error: "DB_UNEXPECTED_RETURN_STRUCTURE",
-            message: `Expected {balance: number}, got: ${JSON.stringify(rows[0])}`,
-          });
+                  return json({
+          ok: false,
+          error: "DB_UNEXPECTED_RETURN_STRUCTURE",
+          message: `Expected {balance: number}, got: ${JSON.stringify(rows[0])}`,
+        }, { status: 500 });
         }
         
         console.log('💰 Balance after reservation:', rows[0].balance);
         
         // Return success with request_id for finalization
-        return json(200, {
+        return json({
           ok: true,
           request_id: request_id,
           balance: rows[0].balance,
           cost: cost,
           action: action
-        });
+        }, { status: 200 });
         
       } catch (dbError) {
         console.error("❌ reserve_credits() call failed:", dbError);
-        return json(500, {
+        return json({
           ok: false,
           error: "DB_RESERVE_CREDITS_FAILED",
           message: dbError?.message,
           stack: dbError?.stack,
-        });
+        }, { status: 500 });
       }
       
     } catch (dbError) {
       console.error("💥 DB reservation failed:", dbError);
-      return json(500, { 
+      return json({ 
         ok: false, 
         error: "Failed to reserve credits", 
         details: dbError?.message,
         stack: dbError?.stack 
-      });
+      }, { status: 500 });
     }
     
   } catch (error) {
     console.error("💥 Top-level error in credits-reserve:", error);
-    return json(500, {
+    return json({
       ok: false,
       error: "Internal server error",
       details: error?.message,
       stack: error?.stack
-    });
+    }, { status: 500 });
   }
 }

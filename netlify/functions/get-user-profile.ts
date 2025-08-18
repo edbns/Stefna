@@ -4,8 +4,21 @@ import { requireAuth } from "./_auth";
 import { json } from "./_lib/http";
 
 export const handler: Handler = async (event) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
+
   try {
     const { sub: userId, email } = requireAuth(event.headers.authorization);
+    console.log('[get-user-profile] User:', userId, 'Email:', email);
     const sql = neon(process.env.NETLIFY_DATABASE_URL!);
 
     // Make sure user exists
@@ -39,7 +52,7 @@ export const handler: Handler = async (event) => {
     ]);
     const capRows = await sql`SELECT (value::text)::int AS v FROM app_config WHERE key='daily_cap'`;
 
-    return json(200, {
+    return json({
       ok: true,
       user: { id: userId, email },
       daily_cap: capRows[0]?.v ?? 30,
@@ -47,11 +60,11 @@ export const handler: Handler = async (event) => {
     });
   } catch (e) {
     console.error('get-user-profile error:', e);
-    return json(500, { 
+    return json({ 
       ok: false, 
       error: 'Internal server error',
       details: e instanceof Error ? e.message : 'Unknown error'
-    });
+    }, { status: 500 });
   }
 }
 

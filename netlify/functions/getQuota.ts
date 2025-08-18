@@ -32,7 +32,7 @@ export const handler: Handler = async (event) => {
     // Validate UUID; if not a UUID (e.g., custom/legacy id), return safe defaults
     const isUuid = (v: string) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
     if (!isUuid(userId)) {
-      return json(200, { daily_used: 0, daily_limit: 30, weekly_used: 0, weekly_limit: 150 })
+      return json({ daily_used: 0, daily_limit: 30, weekly_used: 0, weekly_limit: 150 })
     }
 
     // Auto-detect environment to match aimlApi
@@ -74,7 +74,7 @@ export const handler: Handler = async (event) => {
 
       console.log(`📊 Quota for user ${userId} (${APP_ENV}): daily ${daily_used}/${daily_limit}, weekly ${weekly_used}/${weekly_limit}`);
 
-      return json(200, {
+      return json({
         daily_used,
         daily_limit,
         weekly_used,
@@ -84,7 +84,7 @@ export const handler: Handler = async (event) => {
     } catch (dbError) {
       console.error('getQuota database error:', dbError);
       // Fallback to safe defaults
-      return json(200, { daily_used: 0, daily_limit: 30, weekly_used: 0, weekly_limit: 150 })
+      return json({ daily_used: 0, daily_limit: 30, weekly_used: 0, weekly_limit: 150 })
     }
   } catch (e: any) {
     // Fallback to safe defaults instead of hard 500s

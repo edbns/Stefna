@@ -1,7 +1,13 @@
-export function json(status: number, body: unknown) {
+export function json<T = unknown>(body: T, options?: { status?: number; headers?: Record<string, string> }) {
+  const status = options?.status ?? 200;
+  const headers = {
+    "content-type": "application/json",
+    ...options?.headers
+  };
+  
   return {
     statusCode: status,
-    headers: { "content-type": "application/json" },
+    headers,
     body: JSON.stringify(body)
   };
 }
