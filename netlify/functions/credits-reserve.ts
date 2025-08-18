@@ -5,6 +5,7 @@ import { json } from "./_lib/http";
 import { randomUUID } from "crypto";
 
 export const handler: Handler = async (event) => {
+  // Force redeploy - v2
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -145,12 +146,12 @@ export const handler: Handler = async (event) => {
           
         } catch (initError) {
           console.error('❌ Failed to initialize user credits:', initError);
-                return json({
-        ok: false,
-        error: "USER_CREDITS_INIT_FAILED",
-        message: "Failed to initialize user credits",
-        details: initError?.message
-      }, { status: 500 });
+                        return json({
+          ok: false,
+          error: "USER_CREDITS_INIT_FAILED",
+          message: "Failed to initialize user credits",
+          details: initError instanceof Error ? initError.message : String(initError)
+        }, { status: "500" });
         }
       }
       
@@ -207,8 +208,8 @@ export const handler: Handler = async (event) => {
         return json({
           ok: false,
           error: "DB_RESERVE_CREDITS_FAILED",
-          message: dbError?.message,
-          stack: dbError?.stack,
+          message: dbError instanceof Error ? dbError.message : String(dbError),
+          stack: dbError instanceof Error ? dbError.stack : undefined,
         }, { status: 500 });
       }
       
@@ -217,8 +218,8 @@ export const handler: Handler = async (event) => {
       return json({ 
         ok: false, 
         error: "Failed to reserve credits", 
-        details: dbError?.message,
-        stack: dbError?.stack 
+        details: dbError instanceof Error ? dbError.message : String(dbError),
+        stack: dbError instanceof Error ? dbError.stack : undefined
       }, { status: 500 });
     }
     
@@ -227,8 +228,8 @@ export const handler: Handler = async (event) => {
     return json({
       ok: false,
       error: "Internal server error",
-      details: error?.message,
-      stack: error?.stack
+      details: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   }
 }
