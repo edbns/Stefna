@@ -64,34 +64,42 @@ export const handler: Handler = async (event) => {
       sourceAssetId: input.sourceAssetId ?? null
     });
     
-    const result = await sql`
-      INSERT INTO assets (
-        user_id, 
-        cloudinary_public_id, 
-        media_type, 
-        resource_type, 
-        preset_key, 
-        prompt, 
-        source_asset_id, 
-        status, 
-        is_public, 
-        allow_remix
-      ) VALUES (
-        ${userId}, 
-        ${input.sourcePublicId ?? null}, 
-        ${mediaType}, 
-        ${mediaType}, 
-        ${input.presetKey ?? null}, 
-        ${input.prompt ?? null}, 
-        ${input.sourceAssetId ?? null}, 
-        'queued', 
-        false, 
-        false
-      ) RETURNING *
-    `;
+    console.log('🔍 About to execute SQL insert...');
     
-    const data = result[0] || null;
-    const error = null; // SQL errors will throw exceptions
+    try {
+      const result = await sql`
+        INSERT INTO assets (
+          user_id, 
+          cloudinary_public_id, 
+          media_type, 
+          resource_type, 
+          preset_key, 
+          prompt, 
+          source_asset_id, 
+          status, 
+          is_public, 
+          allow_remix
+        ) VALUES (
+          ${userId}, 
+          ${input.sourcePublicId ?? null}, 
+          ${mediaType}, 
+          ${mediaType}, 
+          ${input.presetKey ?? null}, 
+          ${input.prompt ?? null}, 
+          ${input.sourceAssetId ?? null}, 
+          'queued', 
+          false, 
+          false
+        ) RETURNING *
+      `;
+      
+      console.log('🔍 SQL execution completed, result:', result);
+      const data = result[0] || null;
+      const error = null; // SQL errors will throw exceptions
+    } catch (sqlError) {
+      console.error('❌ SQL execution failed:', sqlError);
+      return json({ ok: false, error: `Database insert failed: ${sqlError.message}` }, { status: 500 });
+    }
 
     console.log('🔍 Database insert result:', { data, error });
     console.log('🧪 Insert result details:', {
