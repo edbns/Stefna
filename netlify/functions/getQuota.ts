@@ -40,19 +40,21 @@ export const handler: Handler = async (event) => {
       startUTC.setUTCHours(0, 0, 0, 0);
       
       // Get today's credit usage from credits_ledger
+      // Only count negative amounts (spending), not positive amounts (grants)
       const creditRows = await sql`
         SELECT amount
         FROM credits_ledger
         WHERE user_id = ${userId}
           AND created_at >= ${startUTC.toISOString()}
+          AND amount < 0
       `;
 
-      // Calculate used credits for today
-      const daily_used = (creditRows || []).reduce((sum: number, row: any) => sum + (row.amount || 0), 0);
+      // Calculate used credits for today (only negative amounts)
+      const daily_used = Math.abs((creditRows || []).reduce((sum: number, row: any) => sum + (row.amount || 0), 0));
       
       // For now, use hardcoded limits (you can make this dynamic later)
-      const daily_limit = 50; // Default daily limit
-      const weekly_limit = 250; // Default weekly limit
+      const daily_limit = 30; // Default daily limit (matches starter grant)
+      const weekly_limit = 210; // Default weekly limit (7 * 30)
       
       // Calculate weekly usage (last 7 days)
       const weekAgo = new Date();
@@ -63,9 +65,10 @@ export const handler: Handler = async (event) => {
         FROM credits_ledger
         WHERE user_id = ${userId}
           AND created_at >= ${weekAgo.toISOString()}
+          AND amount < 0
       `;
 
-      const weekly_used = (weeklyRows || []).reduce((sum: number, row: any) => sum + (row.amount || 0), 0);
+      const weekly_used = Math.abs((weeklyRows || []).reduce((sum: number, row: any) => sum + (row.amount || 0), 0));
 
       console.log(`📊 Quota for user ${userId} (${APP_ENV}): daily ${daily_used}/${daily_limit}, weekly ${weekly_used}/${weekly_limit}`);
 
