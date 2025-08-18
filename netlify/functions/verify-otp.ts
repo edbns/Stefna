@@ -218,7 +218,11 @@ export const handler: Handler = async (event) => {
         iat: Math.floor(Date.now() / 1000)
       },
       jwtSecret,
-      { expiresIn: '7d' }
+      { 
+        expiresIn: '7d',
+        audience: 'stefna-app',
+        issuer: 'stefna'
+      }
     );
     
     console.log('JWT token generated successfully');
