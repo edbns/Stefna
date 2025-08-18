@@ -1,5 +1,5 @@
 // netlify/functions/getPublicFeed.ts
-// Force redeploy - v2 (fix table references)
+// Force redeploy - v3 (fix feed query and restore functionality)
 import { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
 
@@ -19,13 +19,13 @@ export const handler: Handler = async (event) => {
         'User' AS user_name,
         null AS user_avatar,
         'free' AS user_tier,
-        a.final_url AS url,
+        COALESCE(a.final_url, a.cloudinary_public_id) AS url,
         a.cloudinary_public_id,
         a.media_type AS resource_type,
         a.prompt,
         a.created_at AS published_at,
         a.is_public AS visibility,
-        a.allow_remix
+        COALESCE(a.allow_remix, false) AS allow_remix
       FROM assets a
       WHERE a.is_public = true AND a.status = 'ready'
       ORDER BY a.created_at DESC
