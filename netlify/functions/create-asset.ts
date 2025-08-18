@@ -55,7 +55,16 @@ export const handler: Handler = async (event) => {
     console.log('🔍 Media type:', mediaType);
     
     // Use direct SQL instead of deprecated neonAdmin
-    const insertQuery = sql`
+    console.log('🔍 Executing SQL query with parameters:', {
+      userId,
+      sourcePublicId: input.sourcePublicId ?? null,
+      mediaType,
+      presetKey: input.presetKey ?? null,
+      prompt: input.prompt ?? null,
+      sourceAssetId: input.sourceAssetId ?? null
+    });
+    
+    const result = await sql`
       INSERT INTO assets (
         user_id, 
         cloudinary_public_id, 
@@ -81,9 +90,6 @@ export const handler: Handler = async (event) => {
       ) RETURNING *
     `;
     
-    console.log('🔍 Executing SQL query:', insertQuery.sql);
-    
-    const result = await sql`${insertQuery}`;
     const data = result[0] || null;
     const error = null; // SQL errors will throw exceptions
 
