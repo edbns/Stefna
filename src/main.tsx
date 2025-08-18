@@ -21,10 +21,12 @@ for (const [key, preset] of Object.entries(PRESETS)) {
 }
 
 // Load presets store first, then validate
-presetsStore.getState().load().then(() => {
-  // Now validate UI configuration when presets are ready
-  validateUIConfigurationWhenReady();
-}).catch(console.error);
+setTimeout(() => {
+  presetsStore.getState().load().then(() => {
+    // Now validate UI configuration when presets are ready
+    validateUIConfigurationWhenReady();
+  }).catch(console.error);
+}, 0);
 
 // Validate preset system on startup (sync for immediate feedback)
 validateAllSync()
