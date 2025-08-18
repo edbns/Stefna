@@ -35,7 +35,7 @@ DROP POLICY IF EXISTS public_read_assets ON public.assets;
 CREATE POLICY public_read_assets
 ON public.assets
 FOR SELECT
-TO anon, authenticated
+TO authenticated
 USING (is_public = true AND status = 'ready');
 
 -- Users can read their own assets
