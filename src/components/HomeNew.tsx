@@ -1484,32 +1484,39 @@ const HomeNew: React.FC = () => {
             }
           }));
 
-          const saveRes = await authenticatedFetch('/.netlify/functions/save-media-batch', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'X-Idempotency-Key': genId // prevents double-saves on retries
-            },
-            body: JSON.stringify({
-              runId: genId,
-              variations
-            })
-          });
-          
-          const saveText = await saveRes.text();
-          let saveBody: any = {};
-          try { saveBody = JSON.parse(saveText); } catch {}
-          
-          if (saveRes.ok && saveBody?.ok && saveBody.count > 0) {
-            console.log(`✅ All ${saveBody.count} variations saved successfully:`, saveBody);
+          // Only call save-media-batch for MoodMorph, not for Emotion Mask
+          if (composerState.mode === 'moodmorph') {
+            console.log('🎭 MoodMorph mode - calling save-media-batch for variations');
             
-            // Only refresh when we actually saved something
-            setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-              detail: { count: saveBody.count, runId: genId } 
-            })), 800);
+            const saveRes = await authenticatedFetch('/.netlify/functions/save-media-batch', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'X-Idempotency-Key': genId // prevents double-saves on retries
+              },
+              body: JSON.stringify({
+                runId: genId,
+                variations
+              })
+            });
+            
+            const saveText = await saveRes.text();
+            let saveBody: any = {};
+            try { saveBody = JSON.parse(saveText); } catch {}
+            
+            if (saveRes.ok && saveBody?.ok && saveBody.count > 0) {
+              console.log(`✅ All ${saveBody.count} variations saved successfully:`, saveBody);
+              
+              // Only refresh when we actually saved something
+              setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                detail: { count: saveBody.count, runId: genId } 
+              })), 800);
+            } else {
+              console.error(`❌ Save failed:`, saveRes.status, saveBody || saveText);
+              notifyError({ title: 'Save failed', message: saveBody?.error || 'Failed to save media' });
+            }
           } else {
-            console.error(`❌ Save failed:`, saveRes.status, saveBody || saveText);
-            notifyError({ title: 'Save failed', message: saveBody?.error || 'Failed to save media' });
+            console.log(`🎭 ${composerState.mode} mode - skipping save-media-batch (not needed)`);
           }
         } catch (error) {
           console.error(`❌ Save error:`, error);
