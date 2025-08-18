@@ -217,7 +217,11 @@ export const handler: Handler = async (event) => {
     let url = null;
     
     // Try multiple extraction strategies
-    if (data.image_url) {
+    if (data.images && Array.isArray(data.images) && data.images[0]?.url) {
+      // 🎯 AIML API format: { "images": [{ "url": "...", "width": 1024, "height": 1024 }] }
+      url = data.images[0].url;
+      console.log('✅ Found URL in images[0].url:', url);
+    } else if (data.image_url) {
       url = data.image_url;
       console.log('✅ Found URL in image_url:', url);
     } else if (data.output && Array.isArray(data.output) && data.output[0]?.url) {
@@ -254,7 +258,7 @@ export const handler: Handler = async (event) => {
           ok: false, 
           error: 'NO_URL_FROM_PROVIDER',
           raw: data,
-          attempted_keys: ['image_url', 'output.url', 'output[0].url', 'data.url', 'data[0].url', 'url', 'result_url', 'generated_image', 'image']
+          attempted_keys: ['images[0].url', 'image_url', 'output.url', 'output[0].url', 'data.url', 'data[0].url', 'url', 'result_url', 'generated_image', 'image']
         })
       };
     }
