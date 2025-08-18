@@ -3,7 +3,7 @@ import { verifyAuth } from './_auth.js';
 import { neon } from '@neondatabase/serverless';
 
 // ---- Database connection ----
-const sql = neon(process.env.NETLIFY_DATABASE_URL);
+const sql = neon(process.env.NETLIFY_DATABASE_URL!);
 
 export const handler: Handler = async (event) => {
   try {

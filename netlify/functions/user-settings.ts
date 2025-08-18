@@ -3,7 +3,7 @@ import { neon } from '@neondatabase/serverless';
 import { requireJWTUser, resp, handleCORS } from './_auth.js';
 
 // ---- Database connection ----
-const sql = neon(process.env.NETLIFY_DATABASE_URL);
+const sql = neon(process.env.NETLIFY_DATABASE_URL!);
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
