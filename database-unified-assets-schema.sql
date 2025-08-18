@@ -26,50 +26,8 @@ CREATE INDEX IF NOT EXISTS idx_assets_published_at ON public.assets(published_at
 CREATE INDEX IF NOT EXISTS idx_assets_media_type ON public.assets(media_type);
 CREATE INDEX IF NOT EXISTS idx_assets_preset_key ON public.assets(preset_key);
 
--- Enable RLS
-ALTER TABLE public.assets ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies
--- Public read access for published assets
-DROP POLICY IF EXISTS public_read_assets ON public.assets;
-CREATE POLICY public_read_assets
-ON public.assets
-FOR SELECT
-TO authenticated
-USING (is_public = true AND status = 'ready');
-
--- Users can read their own assets
-DROP POLICY IF EXISTS user_read_own_assets ON public.assets;
-CREATE POLICY user_read_own_assets
-ON public.assets
-FOR SELECT
-TO authenticated
-USING (true); -- Allow authenticated users to read all assets for now
-
--- Users can insert their own assets
-DROP POLICY IF EXISTS user_insert_own_assets ON public.assets;
-CREATE POLICY user_insert_own_assets
-ON public.assets
-FOR INSERT
-TO authenticated
-WITH CHECK (true); -- Allow authenticated users to insert assets for now
-
--- Users can update their own assets
-DROP POLICY IF EXISTS user_update_own_assets ON public.assets;
-CREATE POLICY user_update_own_assets
-ON public.assets
-FOR UPDATE
-TO authenticated
-USING (true) -- Allow authenticated users to update all assets for now
-WITH CHECK (true); -- Allow authenticated users to update all assets for now
-
--- Users can delete their own assets
-DROP POLICY IF EXISTS user_delete_own_assets ON public.assets;
-CREATE POLICY user_delete_own_assets
-ON public.assets
-FOR DELETE
-TO authenticated
-USING (true); -- Allow authenticated users to delete all assets for now
+-- Note: RLS policies removed - not compatible with Neon database roles
+-- Table will use standard database permissions instead
 
 -- Trigger to set published_at when asset becomes public and ready
 CREATE OR REPLACE FUNCTION public.set_published_at()
