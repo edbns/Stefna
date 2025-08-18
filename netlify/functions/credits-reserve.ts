@@ -128,19 +128,35 @@ export const handler: Handler = async (event) => {
           
           console.log(`💰 Creating user_credits row with ${STARTER_GRANT} starter credits...`);
           
+          // Check if user_credits table exists first
+          const tableCheck = await sql`SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'user_credits'
+          )`;
+          console.log('🔍 user_credits table exists:', tableCheck[0]?.exists);
+          
+          if (!tableCheck[0]?.exists) {
+            throw new Error('user_credits table does not exist in database');
+          }
+          
           // Insert starter credits
-          await sql`
+          const insertResult = await sql`
             INSERT INTO user_credits(user_id, balance) 
             VALUES (${userId}, ${STARTER_GRANT})
             ON CONFLICT (user_id) DO NOTHING
+            RETURNING user_id, balance
           `;
+          console.log('🔍 INSERT result:', insertResult);
           
           // Create ledger entry for starter grant
-          await sql`
+          const ledgerResult = await sql`
             INSERT INTO credits_ledger(user_id, request_id, action, amount, status, meta)
             VALUES (${userId}, gen_random_uuid(), 'grant', ${STARTER_GRANT}, 'granted', jsonb_build_object('reason','starter'))
             ON CONFLICT DO NOTHING
+            RETURNING id, user_id, amount
           `;
+          console.log('🔍 Ledger INSERT result:', ledgerResult);
           
           console.log(`✅ Successfully initialized user with ${STARTER_GRANT} starter credits`);
           
