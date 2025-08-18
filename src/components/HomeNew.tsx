@@ -16,6 +16,7 @@ import { useSelectedPreset } from '../stores/selectedPreset'
 import { HiddenUploader } from './HiddenUploader'
 
 import { uploadSourceToCloudinary } from '../services/uploadSource'
+import { storeSelectedFile } from '../services/mediaSource'
 import { useGenerationMode } from '../stores/generationMode'
 import { runMoodMorph } from '../services/moodMorph'
 import { MoodMorphPicker } from './MoodMorphPicker'
