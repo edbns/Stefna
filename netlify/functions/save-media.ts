@@ -96,35 +96,42 @@ export const handler: Handler = async (event) => {
 
         try {
           const result = await sql`
-            INSERT INTO media (
+            INSERT INTO assets (
               user_id, 
-              url, 
-              media_type, 
               cloudinary_public_id, 
-              source_public_id, 
+              media_type, 
+              preset_key, 
               prompt, 
-              meta, 
-              preset_id, 
-              run_id, 
-              batch_id, 
+              source_asset_id, 
+              status, 
+              is_public, 
+              allow_remix,
+              final_url,
+              meta,
               created_at
             ) VALUES (
               ${userId}, 
-              ${variationUrl}, 
-              ${media_type}, 
               ${cloudinary_public_id || null}, 
-              ${source_public_id || null}, 
-              ${prompt || null}, 
-              ${meta || {}}, 
+              ${media_type}, 
               ${preset_id || null}, 
-              ${run_id || null}, 
-              ${batch_id || null}, 
+              ${prompt || null}, 
+              ${source_public_id || null}, 
+              'ready', 
+              true, 
+              false,
+              ${variationUrl},
+              ${meta || {}},
               NOW()
-            ) RETURNING id, url, media_type, created_at
+            ) RETURNING id, final_url, media_type, created_at
           `;
           
           if (result && result.length > 0) {
-            savedItems.push(result[0]);
+            savedItems.push({
+              id: result[0].id,
+              url: result[0].final_url,
+              media_type: result[0].media_type,
+              created_at: result[0].created_at
+            });
             console.log('✅ Variation saved:', result[0].id);
           }
         } catch (error) {

@@ -52,9 +52,9 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
     // Check if we've already processed this request
     if (idempotencyKey) {
       const prev = await sql`
-        SELECT m.*
-        FROM media m
-        JOIN media_batches b ON b.batch_id = m.batch_id
+        SELECT a.*
+        FROM assets a
+        JOIN media_batches b ON b.batch_id = a.meta->>'batch_id'
         WHERE b.user_id = ${user.id} AND b.idempotency_key = ${idempotencyKey}
       `;
       if (prev.length) {
@@ -69,7 +69,7 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
     // Filter duplicates we might already have for the same runId+url
     const urls = variations.map(v => v.image_url);
     const dup = await sql`
-      SELECT final_url FROM media WHERE user_id = ${user.id} AND run_id = ${runId} AND final_url = ANY(${urls})
+      SELECT final_url FROM assets WHERE user_id = ${user.id} AND meta->>'run_id' = ${runId} AND final_url = ANY(${urls})
     `;
     const dupSet = new Set(dup.map((d: any) => d.final_url));
     const toInsert = variations.filter(v => !dupSet.has(v.image_url));
@@ -99,12 +99,11 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
         const itemIdempotencyKey = `${runId}:${v.meta?.mood || v.meta?.variation_index || Math.random().toString(36).substr(2, 9)}`;
         
         const row = await sql`
-          INSERT INTO media (id, batch_id, user_id, run_id, url, idempotency_key,
-                             media_type, cloudinary_public_id, final_url,
-                             prompt, is_public, source_public_id, meta, created_at)
-          VALUES (${id}, ${batchId}, ${user.id}, ${runId}, ${v.image_url}, ${itemIdempotencyKey},
-                  ${mediaType}, ${v.cloudinary_public_id || null}, ${v.image_url},
-                  ${v.prompt || null}, true, ${v.source_public_id || null}, ${v.meta || {}}, NOW())
+          INSERT INTO assets (id, user_id, cloudinary_public_id, media_type, preset_key, prompt, 
+                             source_asset_id, status, is_public, allow_remix, final_url, meta, created_at)
+          VALUES (${id}, ${user.id}, ${v.cloudinary_public_id || null}, ${mediaType}, ${v.preset_id || null}, ${v.prompt || null},
+                  ${v.source_public_id || null}, 'ready', true, false, ${v.image_url}, 
+                  ${JSON.stringify({...v.meta, batch_id: batchId, run_id: runId, idempotency_key: itemIdempotencyKey})}, NOW())
           RETURNING *
         `;
         items.push(row[0]);
