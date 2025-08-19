@@ -3424,7 +3424,7 @@ const HomeNew: React.FC = () => {
                                 })
                                 // Clear composer after successful generation
                                 setTimeout(() => {
-                                  handleClearComposerState()
+                                  clearAllOptionsAfterGeneration()
                                 }, 500)
                               } catch (error) {
                                 console.error('❌ Ghibli Reaction auto-generation failed:', error)
@@ -3491,7 +3491,7 @@ const HomeNew: React.FC = () => {
                                 })
                                 // Clear composer after successful generation
                                 setTimeout(() => {
-                                  handleClearComposerState()
+                                  clearAllOptionsAfterGeneration()
                                 }, 500)
                               } catch (error) {
                                 console.error('❌ Neo Tokyo Glitch auto-generation failed:', error)
