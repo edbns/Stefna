@@ -227,7 +227,7 @@ export const runMoodMorph = async (
           variations: allVariations.map(v => ({
             ...v,
             image_url: v.url, // Map url to image_url for save-media-batch
-            source_public_id: sourceAssetId, // Use the UUID from the source asset
+            source_asset_id: sourceAssetId, // Use the UUID from the source asset
             runId,
             media_type: 'image'
           })),
