@@ -1317,6 +1317,12 @@ const HomeNew: React.FC = () => {
         ...(generationMeta && { generationMeta }),
         // Include model from preset for new modes
         ...(generationMeta?.model && { model: generationMeta.model }),
+        
+        // 🧠 Bonus Guard: Warn about missing models to prevent silent failure
+        ...(generationMeta?.model ? {} : (() => {
+          console.warn(`[GENERATION WARNING] Missing model for mode: ${kind}. Falling back to default.`);
+          return {};
+        })()),
         num_variations: 1, // Single generation only
         strength: 0.85,  // For I2I processing
         seed: Date.now(), // Prevent provider-side caching

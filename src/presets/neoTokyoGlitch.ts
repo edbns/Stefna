@@ -11,59 +11,70 @@ export type NeoTokyoGlitchPreset = {
   requiresSource: boolean
   source: string
   features?: string[]
+  guidance_scale?: number
+  num_inference_steps?: number
 }
 
 export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
-    prompt: 'Transform this image into a cyberpunk anime character. Use cel-shaded style, sharp neon outlines, and glitch effects. Background should look like a digital city with flickering lights or corrupted data.',
-    negative_prompt: 'low quality, blurry, distorted, realistic, photorealistic, 3d render',
-    strength: 0.8,
+    prompt: 'portrait of a female cyberpunk anime character, cel-shaded, neon glow, glitch effects, cybernetic implants, glowing eyes, futuristic city background, pink and yellow light, sharp outline, dramatic lighting, synthwave color palette, retro scanlines',
+    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features',
+    strength: 0.65,
     model: 'stable-diffusion-v35-large',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
-    source: 'neo_tokyo_glitch'
+    source: 'neo_tokyo_glitch',
+    features: ['base_cyberpunk', 'cel_shaded', 'neon_glow', 'glitch_effects'],
+    guidance_scale: 8.5,
+    num_inference_steps: 28
   },
   {
     id: 'neo_tokyo_visor',
     label: 'Glitch Visor',
-    prompt: 'Transform this image into a cyberpunk anime character. Use cel-shaded style, sharp neon outlines, and glitch effects. Background should look like a digital city with flickering lights or corrupted data. Add a transparent glitch visor over one eye.',
-    negative_prompt: 'low quality, blurry, distorted, realistic, photorealistic, 3d render',
-    strength: 0.8,
+    prompt: 'portrait of a female cyberpunk anime character, cel-shaded, neon glow, glitch effects, cybernetic implants, glowing eyes, futuristic city background, pink and yellow light, sharp outline, dramatic lighting, synthwave color palette, retro scanlines, cybernetic visor, glitching UI overlay, holographic displays',
+    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features',
+    strength: 0.65,
     model: 'stable-diffusion-v35-large',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
-    features: ['glitch_visor']
+    features: ['glitch_visor', 'holographic_ui', 'cel_shaded', 'neon_glow'],
+    guidance_scale: 8.5,
+    num_inference_steps: 28
   },
   {
     id: 'neo_tokyo_tattoos',
     label: 'Tech Tattoos',
-    prompt: 'Transform this image into a cyberpunk anime character. Use cel-shaded style, sharp neon outlines, and glitch effects. Background should look like a digital city with flickering lights or corrupted data. Include glowing tech tattoos on the face or neck.',
-    negative_prompt: 'low quality, blurry, distorted, realistic, photorealistic, 3d render',
-    strength: 0.8,
+    prompt: 'portrait of a female cyberpunk anime character, cel-shaded, neon glow, glitch effects, cybernetic implants, glowing eyes, futuristic city background, pink and yellow light, sharp outline, dramatic lighting, synthwave color palette, retro scanlines, detailed tech tattoos, luminous skin implants, glowing circuitry patterns',
+    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features',
+    strength: 0.65,
     model: 'stable-diffusion-v35-large',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
-    features: ['tech_tattoos']
+    features: ['enhanced_tech_tattoos', 'luminous_implants', 'cel_shaded', 'neon_glow'],
+    guidance_scale: 8.5,
+    num_inference_steps: 28
   },
   {
     id: 'neo_tokyo_scanlines',
     label: 'Scanline FX',
-    prompt: 'Transform this image into a cyberpunk anime character. Use cel-shaded style, sharp neon outlines, and glitch effects. Background should look like a digital city with flickering lights or corrupted data. Overlay subtle scanlines for a retro digital effect.',
-    negative_prompt: 'low quality, blurry, distorted, realistic, photorealistic, 3d render',
-    strength: 0.8,
+    prompt: 'portrait of a female cyberpunk anime character, cel-shaded, neon glow, glitch effects, cybernetic implants, glowing eyes, futuristic city background, pink and yellow light, sharp outline, dramatic lighting, synthwave color palette, retro scanlines, scanline texture overlay, VHS noise, visual distortion effects',
+    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features',
+    strength: 0.65,
     model: 'stable-diffusion-v35-large',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
-    features: ['scanlines']
+    features: ['scanline_overlay', 'vhs_noise', 'visual_distortion', 'cel_shaded'],
+    guidance_scale: 8.5,
+    num_inference_steps: 28
   }
 ]
 
