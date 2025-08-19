@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { UserMedia } from '../services/userMediaService'
-import RemixIcon from './RemixIcon'
+// RemixIcon import removed - no more remix functionality
 import authService from '../services/authService'
 import { useProfile } from '../contexts/ProfileContext'
 
@@ -10,7 +10,7 @@ interface FullScreenMediaViewerProps {
   media: UserMedia[]
   startIndex?: number
   onClose: () => void
-  onRemix?: (media: UserMedia) => void
+  // onRemix prop removed - no more remix functionality
   onShowAuth?: () => void
 }
 
@@ -19,7 +19,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
   media,
   startIndex = 0,
   onClose,
-  onRemix,
+  // onRemix parameter removed
   onShowAuth
 }) => {
   const { profileData } = useProfile()
@@ -44,24 +44,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
     setCurrentIndex(startIndex)
   }, [startIndex])
 
-
-
-  const handleRemix = () => {
-    // Check if user is authenticated
-    if (!authService.isAuthenticated()) {
-      if (onShowAuth) {
-        onShowAuth()
-      } else {
-        // Fallback: redirect to auth page
-        window.location.href = '/auth'
-      }
-      return
-    }
-    
-    if (!onRemix) return
-    
-    onRemix(current)
-  }
+  // handleRemix function removed - no more remix functionality
 
   useEffect(() => {
     if (!isOpen) return
@@ -79,13 +62,31 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
   const handlePrev = () => setCurrentIndex((i) => (i - 1 + media.length) % media.length)
   const handleNext = () => setCurrentIndex((i) => (i + 1) % media.length)
 
-  const formattedTime = new Date(current.timestamp).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  })
+  // Function to determine how the media was created
+  const getCreationMethod = (media: UserMedia): string => {
+    if (media.metadata?.presetId) {
+      // Map preset IDs to readable names
+      const presetNames: Record<string, string> = {
+        'ghibli_tears': 'Ghibli Tears',
+        'ghibli_shock': 'Ghibli Shock', 
+        'ghibli_sparkle': 'Ghibli Sparkle',
+        'neotokyo_glitch': 'Neo Tokyo Glitch',
+        'neotokyo_neon': 'Neo Tokyo Neon',
+        'neotokyo_cyberpunk': 'Neo Tokyo Cyberpunk'
+      }
+      return presetNames[media.metadata.presetId] || 'Preset'
+    }
+    
+    if (media.metadata?.mode === 'i2i') return 'Image to Image'
+    if (media.metadata?.mode === 'txt2img') return 'Text to Image'
+    if (media.metadata?.mode === 'restore') return 'Restore'
+    if (media.metadata?.mode === 'story') return 'Story Mode'
+    
+    // Fallback based on prompt
+    if (media.prompt && media.prompt.length > 0) return 'Custom Prompt'
+    
+    return 'AI Generated'
+  }
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm">
@@ -101,11 +102,13 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
       {/* Layout */}
       <div className="h-full w-full flex flex-col">
-        {/* Top Bar */}
+        {/* Top Bar - Simplified with creation method tag */}
         <div className="bg-black/80 backdrop-blur-sm p-4">
           <div className="flex items-center justify-center h-full">
             <div className="flex items-center space-x-2 pt-2">
-              <span className="text-white text-sm">{formattedTime}</span>
+              <span className="text-white/80 text-sm bg-white/10 px-3 py-1 rounded-full border border-white/20">
+                {getCreationMethod(current)}
+              </span>
             </div>
           </div>
         </div>
@@ -145,19 +148,14 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
             </button>
           )}
 
-          {/* Actions - Simplified */}
+          {/* Actions - Removed remix button, simplified layout */}
           <div className="mt-6 text-center max-w-4xl px-4">
-            {/* Remix Button - Centered */}
-            <div className="flex items-center justify-center">
-              <button
-                onClick={handleRemix}
-                className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/80 transition-all duration-300 hover:scale-105"
-                title="Remix this creation"
-                aria-label="Remix this media"
-              >
-                <RemixIcon size={20} className="text-white" />
-              </button>
-            </div>
+            {/* Simple prompt display if available */}
+            {current.prompt && (
+              <div className="text-white/60 text-sm max-w-2xl mx-auto">
+                "{current.prompt}"
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -202,7 +202,6 @@ const HomeNew: React.FC = () => {
     console.log('🎭 Clearing all options after generation')
     setSelectedMode(null)
     setSelectedPreset(null)
-    setSelectedMoodMorphPreset(null)
     setSelectedEmotionMaskPreset(null)
     setSelectedGhibliReactionPreset(null)
     setSelectedNeoTokyoGlitchPreset(null)
@@ -213,7 +212,6 @@ const HomeNew: React.FC = () => {
       ...s,
       mode: 'custom',
       selectedPresetId: null,
-      selectedMoodMorphPresetId: null,
       selectedEmotionMaskPresetId: null,
       selectedGhibliReactionPresetId: null,
       selectedNeoTokyoGlitchPresetId: null,
@@ -357,7 +355,7 @@ const HomeNew: React.FC = () => {
   const [creatorFilter, setCreatorFilter] = useState<string | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
-  const [moodMorphDropdownOpen, setMoodMorphDropdownOpen] = useState(false)
+
 
   
   // Profile state from context
@@ -722,7 +720,6 @@ const HomeNew: React.FC = () => {
       setPreviewUrl(null)
       setPrompt('')
       setSelectedPreset(null)
-      setSelectedMoodMorphPreset(null)
       setSelectedEmotionMaskPreset(null)
       setSelectedGhibliReactionPreset(null)
       setSelectedNeoTokyoGlitchPreset(null)
@@ -735,7 +732,6 @@ const HomeNew: React.FC = () => {
         file: null,
         sourceUrl: null,
         selectedPresetId: null,
-        selectedMoodMorphPresetId: null,
         selectedEmotionMaskPresetId: null,
         selectedGhibliReactionPresetId: null,
         selectedNeoTokyoGlitchPresetId: null,
@@ -1340,7 +1336,6 @@ const HomeNew: React.FC = () => {
         kind, 
         mode, 
         creditsNeeded, 
-        generateTwo, 
         kindType: typeof kind, 
         modeType: typeof mode 
       });
@@ -2150,84 +2145,7 @@ const HomeNew: React.FC = () => {
     return data; // { cloudName, apiKey, timestamp, signature }
   }
 
-  // Guarded MoodMorph runner with state preservation
-  const startMoodMorph = async ({ source }: { source: 'presetClick' | 'moodmorphClick' | 'modeClick' | 'startButton' }) => {
-    try {
-      console.log(`🎭 startMoodMorph called from: ${source}`)
-      
-      // ====== PRECHECKS ======
-      if (!selectedFile) throw new Error('Pick an image first');
-      
-      const jwt = authService.getToken();
-      if (!jwt) throw new Error('Please sign in again');
-      
-      // Ping signer first; bail if it fails
-      const sig = await getCloudinarySignature(jwt);
-      if (!sig?.cloudName) throw new Error('Server misconfigured: Cloudinary cloud name missing');
-      
-      console.log('✅ Prechecks passed, starting generation...')
-      
-      // Close composer immediately when generation starts
-      setIsComposerOpen(false);
-      
-      // ====== UPLOAD ======
-      setNavGenerating(true);
-      const uploadRes = await uploadToCloudinary(selectedFile, 'stefna/sources');
-      if (!uploadRes?.secure_url) throw new Error('Upload failed — no secure_url');
-      
-      console.log('✅ Upload successful:', uploadRes.secure_url);
-      
-      // ====== PROCESS ======
-      if (selectedPreset) {
-        // Run preset generation
-        await dispatchGenerate('preset', {
-          presetId: selectedPreset,
-          presetData: PRESETS[selectedPreset],
-          promptOverride: prompt
-        });
-      } else {
-        // Run MoodMorph
-        await runMoodMorph(
-          selectedFile,
-          (progress) => console.log(`🎭 MoodMorph: Progress ${progress}%`),
-          (variations) => {
-            console.log('✅ MoodMorph: Generation completed successfully', variations);
-            // Reset mode selection to "None" and refresh UI after successful completion
-            setSelectedPreset(null);
-            setSelectedMoodMorphPreset(null);
-            setSelectedEmotionMaskPreset(null);
-            
-            // Dispatch proper events for composer clearing
-            window.dispatchEvent(new CustomEvent('generation-success', { 
-              detail: { message: 'MoodMorph completed', count: variations.length, mode: 'moodmorph' } 
-            }));
-            window.dispatchEvent(new CustomEvent('userMediaUpdated'));
-          },
-          (error) => {
-            console.error('❌ MoodMorph generation failed:', error);
-            // Reset mode selection on error too
-            setSelectedPreset(null);
-            setSelectedMoodMorphPreset(null);
-            setSelectedEmotionMaskPreset(null);
-          }
-        );
-      }
-      
-      console.log('✅ Generation completed successfully');
-      
-    } catch (err: any) {
-      const message = err?.message || 'Generation failed';
-      console.error('❌ MoodMorph generation failed:', err);
-      
-      // IMPORTANT: DO NOT clear file or preset
-      notifyError({ title: 'Generation failed', message });
-      
-      // Keep composer open and preserve state
-      setIsComposerOpen(true);
-    } finally {
-      setNavGenerating(false);
-    }
-  }
+
 
   // Handle preset click - immediately generates with preset style (one-click)
   const handlePresetClick = async (presetName: keyof typeof PRESETS) => {
@@ -2304,70 +2222,7 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  // Handle MoodMorph click - immediately generates with MoodMorph processing (one-click)
-  const handleMoodMorphClick = async (presetName: keyof typeof PRESETS) => {
-    console.log('🎭 MoodMorph clicked:', presetName)
-    
-    // Update composer state for moodmorph mode
-    setComposerState(s => ({
-      ...s,
-      mode: 'moodmorph',
-      selectedPresetId: null, // Clear regular preset
-      selectedMoodMorphPresetId: presetName, // Set MoodMorph preset
-      status: 'idle',
-      error: null,
-      runOnOpen: false
-    }))
-    
-    // Set the selected preset in the store
-    setSelectedPreset(presetName)
-    
-    // Check if we can auto-generate
-    if (!selectedFile) {
-      console.log('❌ No file selected, cannot auto-run MoodMorph')
-      notifyError({ title: 'Add an image first', message: `Select an image to use ${presetName}` })
-      return
-    }
-    
-    if (!isAuthenticated) {
-      console.log('❌ User not authenticated, redirecting to auth')
-      navigate('/auth')
-      return
-    }
-    
-    try {
-      // Check Cloudinary signer
-      const jwt = await authService.getToken()
-      if (!jwt) {
-        console.log('❌ Not authenticated, cannot auto-run MoodMorph')
-        return
-      }
-      
-      // Test Cloudinary signer
-      const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${jwt}` },
-        body: JSON.stringify({ folder: 'stefna/sources' })
-      })
-      
-      if (!signRes.ok) {
-        console.log('❌ Cloudinary signer failed, cannot auto-run MoodMorph')
-        return
-      }
-      
-      // All checks passed - auto-run MoodMorph
-      console.log('🚀 Auto-running MoodMorph with preset:', presetName)
-      await startMoodMorph({ source: 'moodmorphClick' })
-      
-    } catch (error) {
-      console.log('❌ Auto-run check failed:', error)
-      notifyError({ title: 'Media failed', message: 'Try again' })
-      // Clear all options after MoodMorph generation failure
-      clearAllOptionsAfterGeneration();
-      // Don't proceed with generation if Cloudinary signer fails
-      return
-    }
-  }
+
 
   // openComposerFromRemix function removed - no more remix functionality
 
@@ -2389,7 +2244,6 @@ const HomeNew: React.FC = () => {
       ...s,
       mode: 'preset',
       selectedPresetId: presetName,
-      selectedMoodMorphPresetId: null, // Clear MoodMorph preset
       customPrompt: '', // Clear custom prompt
       status: 'idle',
       error: null,
@@ -2417,7 +2271,6 @@ const HomeNew: React.FC = () => {
       ...s,
       mode: 'custom',
       selectedPresetId: null, // Clear preset
-      selectedMoodMorphPresetId: null, // Clear MoodMorph preset
       customPrompt: prompt.trim(), // Store custom prompt
       status: 'idle',
       error: null
@@ -2443,7 +2296,6 @@ const HomeNew: React.FC = () => {
       ...s,
       mode: 'preset',
       selectedPresetId: selectedPreset,
-      selectedMoodMorphPresetId: null, // Clear MoodMorph preset
       customPrompt: '', // Clear custom prompt
       status: 'idle',
       error: null
@@ -2456,31 +2308,7 @@ const HomeNew: React.FC = () => {
     })
   }
   
-  // 3. MOODMORPH MODE GENERATION - Only uses MoodMorph preset
-  const generateMoodMorph = async () => {
-    console.log('🎭 MOODMORPH MODE: Generating 3 mood variations')
-    
-    if (!selectedMoodMorphPreset) {
-      notifyError({ title: 'MoodMorph preset required', message: 'Please select a MoodMorph preset first' })
-      return
-    }
-    
-    // Update composer state for MoodMorph mode
-    setComposerState(s => ({
-      ...s,
-      mode: 'moodmorph',
-      selectedPresetId: null, // Clear regular preset
-      selectedMoodMorphPresetId: selectedMoodMorphPreset,
-      customPrompt: '', // Clear custom prompt
-      status: 'idle',
-      error: null
-    }))
-    
-    // Generate with ONLY the MoodMorph preset - no other contamination
-    await dispatchGenerate('moodmorph', {
-      moodMorphPresetId: selectedMoodMorphPreset
-    })
-  }
+
   
   // generateRemix function removed - no more remix functionality
 
@@ -2498,7 +2326,7 @@ const HomeNew: React.FC = () => {
       ...s,
       mode: 'emotionmask',
       selectedPresetId: null, // Clear preset
-      selectedMoodMorphPresetId: null, // Clear MoodMorph preset
+      
       selectedEmotionMaskPresetId: selectedEmotionMaskPreset, // Set selected emotional variant
       customPrompt: '', // Clear custom prompt
       status: 'idle',
@@ -3599,11 +3427,7 @@ const HomeNew: React.FC = () => {
                       window.dispatchEvent(new CustomEvent('close-composer'));
                       
                       // MODE-AWARE GENERATION - NO MORE CROSS-CONTAMINATION
-                      if (composerState.mode === 'moodmorph') {
-                        // MoodMorph mode - use MoodMorph generation
-                        console.log('🎭 MoodMorph mode - calling generateMoodMorph')
-                        await generateMoodMorph()
-                      } else if (composerState.mode === 'preset') {
+                      if (composerState.mode === 'preset') {
                         // Preset mode - use preset generation
                         console.log('🎯 Preset mode - calling generatePreset')
                         await generatePreset()
@@ -3639,11 +3463,11 @@ const HomeNew: React.FC = () => {
                         ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
                         : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
                     }
-                    aria-label={mode === 'moodmorph' ? 'Generate moods' : 'Generate'}
+                    aria-label="Generate"
                     title={(() => {
                       if (!isAuthenticated) return 'Sign up to generate AI content';
                       if (!previewUrl) return 'Upload media first';
-                      if (mode === 'moodmorph') return 'Generate 3 mood variations';
+
                       if (mode === 'presets' && !prompt.trim() && !selectedPreset) return 'Enter a prompt or select a preset first';
                       if (selectedPreset) return `Generate with ${getPresetLabel(selectedPreset, PRESETS)} preset`;
                       return 'Generate AI content';
