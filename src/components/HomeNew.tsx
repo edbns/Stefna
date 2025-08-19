@@ -1037,10 +1037,10 @@ const HomeNew: React.FC = () => {
       if (!moodMorphPresetId) {
         console.error('❌ Invalid MoodMorph preset:', moodMorphPresetId);
         notifyError({ title: 'Invalid MoodMorph preset', message: 'Please select a MoodMorph preset first' });
-      endGeneration(genId);
-      setNavGenerating(false);
-      return;
-    }
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
+      }
       // For now, use a base prompt - MoodMorph will generate 3 variations
       effectivePrompt = 'Transform this image with mood variations';
       generationMeta = { mode: 'moodmorph', moodMorphPresetId };
@@ -1111,12 +1111,14 @@ const HomeNew: React.FC = () => {
     }
 
     // Apply user intent guard
+    console.log('🛡️ Checking user intent guard:', { userInitiated: true, source: kind });
     if (requireUserIntent({ userInitiated: true, source: kind })) {
       console.warn('⛔ Generation blocked by guard');
       endGeneration(genId);
       setNavGenerating(false);
       return;
     }
+    console.log('✅ User intent guard passed');
 
     try {
       // Log the final generation parameters
@@ -1900,6 +1902,7 @@ const HomeNew: React.FC = () => {
   // Handle preset click - immediately generates with preset style (one-click)
   const handlePresetClick = async (presetName: keyof typeof PRESETS) => {
     console.log('🎨 Preset clicked:', presetName)
+    console.log('🔍 Current state:', { selectedFile: !!selectedFile, isAuthenticated, selectedPreset: selectedPreset })
     
     // Update composer state for preset mode
     setComposerState(s => ({
@@ -1913,6 +1916,7 @@ const HomeNew: React.FC = () => {
     
     // Set the selected preset in the store
     setSelectedPreset(presetName)
+    console.log('✅ Preset set in store:', presetName)
     
     // Check if we can auto-generate
     if (!selectedFile) {
