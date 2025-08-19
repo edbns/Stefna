@@ -2984,9 +2984,9 @@ const HomeNew: React.FC = () => {
       {/* Hidden file uploader for intent-based uploads */}
       <HiddenUploader />
 
-      {/* Floating top nav - only for logged in users */}
-      {isAuthenticated && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-3">
+
+        {/* Navigation bar removed - moved to floating menu */}
+        {/* <div className="fixed top-4 right-4 z-50 flex items-center gap-3"> */}
           {/* Filter */}
           <div className="relative" data-filter-dropdown>
             <button
@@ -3059,14 +3059,14 @@ const HomeNew: React.FC = () => {
             )}
           </div>
         </div>
-      )}
+      )} */}
 
 
 
       {/* Main content area - 4 columns, full screen height */}
       <div className="w-full min-h-screen">
-        {/* Feed content - positioned under floating nav with proper padding */}
-        <div className="px-6 pt-24 pb-8">
+        {/* Feed content - full screen, no padding */}
+        <div className="pt-24">
           {isLoadingFeed ? (
             <div className="space-y-6">
               {/* Media loading skeleton - no text, just image placeholders */}
@@ -3154,19 +3154,49 @@ const HomeNew: React.FC = () => {
               {/* Logged User Actions */}
               {isAuthenticated && (
                 <>
-                  {/* Profile Icon */}
+                  {/* Filter Button */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setFilterOpen(prev => !prev)}
+                      className="w-12 h-12 text-gray-800 hover:text-gray-600 transition-all duration-300 flex items-center justify-center group"
+                      aria-label="Filter"
+                    >
+                      <Filter size={22} className="group-hover:scale-110 transition-transform duration-200" />
+                    </button>
+                    
+                    {/* Filter Dropdown */}
+                    {filterOpen && (
+                      <div className="absolute left-1/2 -translate-x-1/2 mt-2 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
+                        <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={(() => {
+                          const baseClass = 'w-full text-left px-3 py-2 rounded-lg transition-colors';
+                          const activeClass = 'bg-white/10 text-white';
+                          const inactiveClass = 'text-white/70 hover:text-white hover:bg-white/5';
+                          return `${baseClass} ${currentFilter === 'all' ? activeClass : inactiveClass}`;
+                        })()}>All</button>
+                        <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={(() => {
+                          const baseClass = 'w-full text-left px-3 py-2 rounded-lg transition-colors';
+                          const activeClass = 'bg-white/10 text-white';
+                          const inactiveClass = 'text-white/70 hover:text-white hover:bg-white/5';
+                          return `${baseClass} ${currentFilter === 'images' ? activeClass : inactiveClass}`;
+                        })()}>Images</button>
+                        <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={(() => {
+                          const baseClass = 'w-full text-left px-3 py-2 rounded-lg transition-colors';
+                          const activeClass = 'bg-white/10 text-white';
+                          const inactiveClass = 'text-white/70 hover:text-white hover:bg-white/5';
+                          return `${baseClass} ${currentFilter === 'videos' ? activeClass : inactiveClass}`;
+                        })()}>Videos</button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Profile Icon - Direct navigation to profile */}
                   <button
-                    onClick={() => setUserMenu(prev => !prev)}
+                    onClick={() => navigate('/profile')}
                     className="w-12 h-12 text-gray-800 hover:text-gray-600 transition-all duration-300 flex items-center justify-center group"
                     aria-label="Profile"
                   >
                     <ProfileIcon size={22} className="group-hover:scale-110 transition-transform duration-200" />
                   </button>
-                  
-                  {/* Notification Bell */}
-                  <div className="w-12 h-12 text-gray-800 flex items-center justify-center">
-                    <NotificationBell userId={authService.getCurrentUser()?.id || ''} />
-                  </div>
                 </>
               )}
             </div>
