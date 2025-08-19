@@ -117,6 +117,14 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
           cloudinaryPublicId = v.cloudinary_public_id || null;
         }
         
+        // Log the source_public_id to help debug UUID vs URL issues
+        console.log(`🔍 Inserting asset with source_public_id:`, {
+          value: v.source_public_id,
+          type: typeof v.source_public_id,
+          isUUID: v.source_public_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.source_public_id),
+          isURL: v.source_public_id && v.source_public_id.startsWith('http')
+        });
+        
         const row = await sql`
           INSERT INTO assets (id, user_id, cloudinary_public_id, media_type, preset_key, prompt, 
                              source_asset_id, status, is_public, allow_remix, final_url, meta, created_at)

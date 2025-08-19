@@ -95,6 +95,35 @@ export const runMoodMorph = async (
     const sourcePublicId = await uploadSourceToCloudinary({ file: sourceFile });
     console.log('📤 MoodMorph: Source uploaded:', sourcePublicId);
     
+    // Step 1.5: Create asset record for source image
+    let sourceAssetId: string | null = null;
+    try {
+      const createAssetResponse = await fetchWithAuth('/.netlify/functions/create-asset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourcePublicId,
+          mediaType: 'image',
+          prompt: 'Source image for MoodMorph transformation',
+          meta: {
+            source: 'moodmorph',
+            originalFile: sourceFile.name
+          }
+        })
+      });
+      
+      if (createAssetResponse.ok) {
+        const assetResult = await createAssetResponse.json();
+        sourceAssetId = assetResult.asset?.id || null;
+        console.log('📝 MoodMorph: Source asset created with ID:', sourceAssetId);
+      } else {
+        console.warn('⚠️ MoodMorph: Could not create source asset, continuing without source tracking');
+      }
+    } catch (error) {
+      console.warn('⚠️ MoodMorph: Error creating source asset:', error);
+      // Continue without source tracking
+    }
+    
     // Step 2: Generate variations via AIML
     const allVariations: MoodVariation[] = [];
     
@@ -197,6 +226,8 @@ export const runMoodMorph = async (
         body: JSON.stringify({
           variations: allVariations.map(v => ({
             ...v,
+            image_url: v.url, // Map url to image_url for save-media-batch
+            source_public_id: sourceAssetId, // Use the UUID from the source asset
             runId,
             media_type: 'image'
           })),
