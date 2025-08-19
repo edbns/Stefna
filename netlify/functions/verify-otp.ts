@@ -134,8 +134,8 @@ export const handler: Handler = async (event) => {
       `;
       
       await sql`
-        INSERT INTO credits_ledger (user_id, amount, reason, status, meta, created_at)
-        VALUES (${userId}, ${starterAmount}, 'starter', 'granted', '{"reason": "starter"}', ${now})
+        INSERT INTO credits_ledger (user_id, request_id, action, amount, status, meta, created_at)
+        VALUES (${userId}, ${uuidv4()}, 'starter_grant', ${starterAmount}, 'granted', '{"reason": "starter"}', ${now})
       `;
       
       console.log(`New user created with ${starterAmount} starter credits`);
@@ -169,14 +169,14 @@ export const handler: Handler = async (event) => {
             
             // Award referrer
             await sql`
-              INSERT INTO credits_ledger (user_id, amount, reason, status, meta, created_at)
-              VALUES (${referrerId}, ${refBonus}, 'referral_referrer', 'granted', '{"reason": "referral_referrer", "new_user_id": ${userId}}', ${now})
+              INSERT INTO credits_ledger (user_id, request_id, action, amount, status, meta, created_at)
+              VALUES (${referrerId}, ${uuidv4()}, 'referral_referrer', ${refBonus}, 'granted', '{"reason": "referral_referrer", "new_user_id": ${userId}}', ${now})
             `;
             
             // Award new user
             await sql`
-              INSERT INTO credits_ledger (user_id, amount, reason, status, meta, created_at)
-              VALUES (${userId}, ${newBonus}, 'referral_new', 'granted', '{"reason": "referral_new", "referrer_user_id": ${referrerId}}', ${now})
+              INSERT INTO credits_ledger (user_id, request_id, action, amount, status, meta, created_at)
+              VALUES (${userId}, ${uuidv4()}, 'referral_new', ${newBonus}, 'granted', '{"reason": "referral_new", "referrer_user_id": ${referrerId}}', ${now})
             `;
             
             // Update balances

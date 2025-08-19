@@ -11,12 +11,12 @@ export const handler: Handler = async (event) => {
     const limit = Number(url.searchParams.get('limit') ?? 50);
 
     // Get public media from database using our new working view
+    // Note: We removed tier system, so users table only has basic fields
     const media = await sql`
       SELECT 
         pf.id,
         pf.user_id,
-        u.name AS user_name,
-        u.avatar_url AS user_avatar,
+        u.email AS user_email, -- Use email instead of name since we removed tier system
         pf.url,
         pf.cloudinary_public_id,
         pf.media_type AS resource_type,
@@ -38,7 +38,8 @@ export const handler: Handler = async (event) => {
       preset_key: null, // Can be added later if needed
       source_public_id: null, // Can be added later if needed
       user_id: item.user_id,
-      user_avatar: item.user_avatar,
+      user_name: item.user_email?.split('@')[0] || 'User', // Generate display name from email
+      user_avatar: null, // No avatar system in simplified structure
       prompt: item.prompt,
       url: item.url,
       allow_remix: item.allow_remix
@@ -49,30 +50,33 @@ export const handler: Handler = async (event) => {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
       },
       body: JSON.stringify({ 
         ok: true, 
-        source: 'database', 
         data,
-        count: data.length
-      }) 
+        count: data.length,
+        limit 
+      })
     };
-  } catch (e: any) {
-    const msg = e?.message || e?.error?.message || e?.error || 'unknown error';
-    const code = e?.code || 'UNKNOWN';
-    console.error('[getPublicFeed] error', { code, msg, raw: e });
-    return { 
-      statusCode: 500, 
+
+  } catch (error) {
+    console.error('❌ getPublicFeed error:', error);
+    
+    return {
+      statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
       },
       body: JSON.stringify({ 
         ok: false, 
-        error: `${code}: ${msg}` 
-      }) 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      })
     };
   }
 };
