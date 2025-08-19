@@ -1,8 +1,8 @@
 {
-  "id": "emotion_mask_sad",
-  "name": "Sad (Cinematic)",
+  "id": "emotion_mask_joy_sadness",
+  "name": "Joy + Sadness",
+  "prompt": "Portrait capturing bittersweet emotions, smiling through tears, hopeful eyes with a melancholic undertone. Soft lighting and delicate emotional tension.",
+  "negative_prompt": "flat emotion, robotic expression, blurry, extra limbs",
   "model": "flux-image-to-image-v1",
-  "prompt": "A cinematic portrait showing deep sadness. Soft lighting, teary eyes, and emotional expression.",
-  "negative_prompt": "blurry, distorted, cartoonish, low detail",
   "face_fix": true
 }

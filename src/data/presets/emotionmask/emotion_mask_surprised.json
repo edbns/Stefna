@@ -1,8 +1,8 @@
 {
-  "id": "emotion_mask_surprised",
-  "name": "Surprised (Shocked)",
+  "id": "emotion_mask_peace_fear",
+  "name": "Peace + Fear",
+  "prompt": "Emotive portrait with calm expression under tense atmosphere. Soft smile with flickers of anxiety in the eyes, dual-toned lighting (cool and warm).",
+  "negative_prompt": "expressionless, poorly lit, chaotic background",
   "model": "flux-image-to-image-v1",
-  "prompt": "Portrait expressing surprise or shock. Wide eyes, open mouth, dramatic lighting or freeze-frame moment.",
-  "negative_prompt": "blurry, bored, flat lighting, distorted face",
   "face_fix": true
 }

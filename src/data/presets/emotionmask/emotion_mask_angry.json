@@ -1,8 +1,8 @@
 {
-  "id": "emotion_mask_angry",
-  "name": "Angry (Intense)",
+  "id": "emotion_mask_strength_vuln",
+  "name": "Strength + Vulnerability",
+  "prompt": "A cinematic portrait showing inner strength with a subtle vulnerability. Intense eyes, guarded posture, but soft facial micro-expressions.",
+  "negative_prompt": "cartoonish, distorted anatomy, flat lighting",
   "model": "flux-image-to-image-v1",
-  "prompt": "Portrait showing anger or rage. Intense shadows, strong facial expression, red-toned lighting.",
-  "negative_prompt": "blurry, calm expression, distorted",
   "face_fix": true
 }

@@ -1169,11 +1169,25 @@ const HomeNew: React.FC = () => {
       }
       
       // Check if this is a curated emotion or dynamic
-      const curatedEmotions = ["sad", "angry", "love", "surprised"];
-      const isCurated = curatedEmotions.some(emotion => 
-        emotionMaskPreset.label.toLowerCase().includes(emotion) || 
-        emotionMaskPreset.id.toLowerCase().includes(emotion)
-      );
+      const curatedEmotions = [
+        "joy_sadness",
+        "strength_vuln", 
+        "nostalgia_distance",
+        "peace_fear",
+        "conf_loneliness"
+      ];
+      
+      // Map display names to internal IDs
+      const emotionMap: Record<string, string> = {
+        "Joy + Sadness": "joy_sadness",
+        "Strength + Vulnerability": "strength_vuln",
+        "Nostalgia + Distance": "nostalgia_distance",
+        "Peace + Fear": "peace_fear",
+        "Confidence + Loneliness": "conf_loneliness"
+      };
+      
+      const internalEmotionId = emotionMap[emotionMaskPreset.label] || emotionMaskPreset.id.toLowerCase();
+      const isCurated = curatedEmotions.includes(internalEmotionId);
       
       if (isCurated) {
         // Use curated preset with optimized parameters
@@ -1195,7 +1209,7 @@ const HomeNew: React.FC = () => {
         console.log('🎭 EMOTION MASK MODE: Using curated preset:', emotionMaskPreset.label, effectivePrompt, 'Model:', emotionMaskPreset.model);
       } else {
         // Use dynamic prompt for rare/experimental emotions
-        const emotion = emotionMaskPreset.label.toLowerCase();
+        const emotion = internalEmotionId;
         effectivePrompt = `Cinematic portrait that expresses "${emotion}" clearly, with emotional lighting and subtle mood-enhancing visual cues. Stylized glowing face patterns, symbolic ${emotion} overlay, cinematic lighting, focused facial emotion, clear mask-like markings around eyes and cheeks.`;
         generationMeta = { 
           mode: 'emotionmask', 
