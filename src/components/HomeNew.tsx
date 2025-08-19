@@ -1175,8 +1175,8 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = ghibliReactionPreset.prompt;
-      generationMeta = { mode: 'ghiblireact', ghibliReactionPresetId, ghibliReactionLabel: ghibliReactionPreset.label };
-      console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt);
+      generationMeta = { mode: 'ghiblireact', ghibliReactionPresetId, ghibliReactionLabel: ghibliReactionPreset.label, model: ghibliReactionPreset.model };
+      console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model:', ghibliReactionPreset.model);
       
     } else if (kind === 'neotokyoglitch') {
       // NEO TOKYO GLITCH MODE: Use the selected Neo Tokyo Glitch preset
@@ -1199,8 +1199,8 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = neoTokyoGlitchPreset.prompt;
-      generationMeta = { mode: 'neotokyoglitch', neoTokyoGlitchPresetId, neoTokyoGlitchLabel: neoTokyoGlitchPreset.label, features: neoTokyoGlitchPreset.features };
-      console.log('🎭 NEO TOKYO GLITCH MODE: Using Neo Tokyo Glitch preset:', neoTokyoGlitchPreset.label, effectivePrompt);
+      generationMeta = { mode: 'neotokyoglitch', neoTokyoGlitchPresetId, neoTokyoGlitchLabel: neoTokyoGlitchPreset.label, model: neoTokyoGlitchPreset.model, features: neoTokyoGlitchPreset.features };
+      console.log('🎭 NEO TOKYO GLITCH MODE: Using Neo Tokyo Glitch preset:', neoTokyoGlitchPreset.label, effectivePrompt, 'Model:', neoTokyoGlitchPreset.model);
       
     } else {
       console.error('❌ Unknown generation kind:', kind);
@@ -1298,6 +1298,8 @@ const HomeNew: React.FC = () => {
         allow_remix: false, // Remix functionality removed - focus on personal creativity
         // Generation metadata for tracking and display
         ...(generationMeta && { generationMeta }),
+        // Include model from preset for new modes
+        ...(generationMeta?.model && { model: generationMeta.model }),
         num_variations: 1, // Single generation only
         strength: 0.85,  // For I2I processing
         seed: Date.now(), // Prevent provider-side caching
