@@ -54,8 +54,7 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
       const prev = await sql`
         SELECT a.*
         FROM assets a
-        JOIN media_batches b ON b.batch_id = a.meta->>'batch_id'
-        WHERE b.user_id = ${user.id} AND b.idempotency_key = ${idempotencyKey}
+        WHERE a.user_id = ${user.id} AND a.meta->>'idempotency_key' = ${idempotencyKey}
       `;
       if (prev.length) {
         return { 
