@@ -45,7 +45,7 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    const { asset_id, shareToFeed, allowRemix } = body;
+    const { asset_id, shareToFeed } = body; // allowRemix removed
     if (!asset_id) {
       return { 
         statusCode: 400, 
@@ -58,7 +58,7 @@ export const handler: Handler = async (event) => {
     }
 
     const is_public = !!shareToFeed;
-    const allow_remix = !!shareToFeed && !!allowRemix;
+    // allow_remix removed - no more remix functionality
 
     try {
       // Update media asset in database
@@ -66,10 +66,9 @@ export const handler: Handler = async (event) => {
         UPDATE media_assets 
         SET 
           visibility = ${is_public ? 'public' : 'private'},
-          allow_remix = ${allow_remix},
           updated_at = NOW()
         WHERE id = ${asset_id} AND user_id = ${userId}
-        RETURNING id, visibility, allow_remix, updated_at
+        RETURNING id, visibility, updated_at
       `;
 
       if (result.length === 0) {

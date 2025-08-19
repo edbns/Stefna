@@ -24,7 +24,7 @@ export const handler: Handler = async (event) => {
       .from('assets')
       .update({
         is_public: input.isPublic,
-        allow_remix: input.allowRemix,
+        // allow_remix removed
       })
       .eq('id', input.assetId)
       .select('*')

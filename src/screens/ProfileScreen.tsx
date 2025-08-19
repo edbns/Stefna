@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, ChevronRight, Coins, Users } from 'lucide-react'
 import { InstagramIcon, XIcon, FacebookIcon, TikTokIcon, ThreadsIcon, YouTubeIcon } from '../components/SocialIcons'
-import RemixIcon from '../components/RemixIcon'
+// RemixIcon import removed - no more remix functionality
 import MasonryMediaGrid from '../components/MasonryMediaGrid'
 import DraftMediaGrid from '../components/DraftMediaGrid'
 import { navigateToEditor } from '../utils/editorNavigation'
@@ -47,8 +47,7 @@ const ProfileScreen: React.FC = () => {
   const [editingProfileData, setEditingProfileData] = useState({
     name: profileData.name,
     avatar: profileData.avatar,
-    shareToFeed: profileData.shareToFeed,
-    allowRemix: profileData.allowRemix
+    shareToFeed: profileData.shareToFeed
   })
   
   // Sync editing state when profile context changes
@@ -56,8 +55,7 @@ const ProfileScreen: React.FC = () => {
     setEditingProfileData({
       name: profileData.name,
       avatar: profileData.avatar,
-      shareToFeed: profileData.shareToFeed,
-      allowRemix: profileData.allowRemix
+      shareToFeed: profileData.shareToFeed
     })
   }, [profileData])
 
@@ -215,8 +213,6 @@ const ProfileScreen: React.FC = () => {
 
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null)
   const [userMedia, setUserMedia] = useState<UserMedia[]>([])
-  const [remixedMedia, setRemixedMedia] = useState<UserMedia[]>([])
-
   const [draftMedia, setDraftMedia] = useState<UserMedia[]>([])
   const [currentUserId, setCurrentUserId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
@@ -249,7 +245,7 @@ const ProfileScreen: React.FC = () => {
         }
       });
       
-      // Load persisted user settings (shareToFeed, allowRemix)
+      // Load persisted user settings (shareToFeed)
       ;(async () => {
         try {
           const token = authService.getToken()
@@ -257,7 +253,7 @@ const ProfileScreen: React.FC = () => {
           const r = await authenticatedFetch('/.netlify/functions/user-settings', { method: 'GET' })
           if (r.ok) {
             const s = await r.json()
-            updateProfile({ shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix })
+            updateProfile({ shareToFeed: !!s.shareToFeed })
           }
         } catch (e) {
           // ignore, fallback to defaults/localStorage
@@ -531,7 +527,6 @@ const ProfileScreen: React.FC = () => {
                 likes: 0, // Will be updated when we implement likes
                 remixCount: 0, // Will be updated when we implement remix counts
                 isPublic: item.visibility === 'public',
-                allowRemix: item.allow_remix || false,
                 tags: [],
                 metadata: {
                   quality: 'high',
@@ -544,16 +539,7 @@ const ProfileScreen: React.FC = () => {
             console.log('📊 Setting userMedia with', transformedMedia.length, 'items')
             setUserMedia(transformedMedia);
             
-                    // Also derive remixes immediately from the fresh list (avoid stale state)
-        const remixesWithAvatar = transformedMedia
-          .filter(m => m.type === 'remix')
-          .map(remix => ({
-            ...remix,
-            userAvatar: typeof profileData.avatar === 'string' ? profileData.avatar : undefined
-            // Removed tier system - all users get same experience
-          }));
-            console.log('🔄 Setting remixedMedia with', remixesWithAvatar.length, 'items (from transformed)')
-            setRemixedMedia(remixesWithAvatar)
+                    // Remix functionality removed - no more remix processing
           } else {
             console.error('Failed to load user media from database:', response.statusText);
             // Fallback to local service if database fails
@@ -577,16 +563,7 @@ const ProfileScreen: React.FC = () => {
         setIsLoading(false);
       }
 
-      // Load remixed media (for now, filter from user media)
-        // Derive remixes from current userMedia state on first load
-        const remixesBootstrap = userMedia.filter(m => m.type === 'remix')
-        const remixesBootstrapWithAvatar = remixesBootstrap.map(remix => ({
-          ...remix,
-          userAvatar: typeof profileData.avatar === 'string' ? profileData.avatar : undefined
-          // Removed tier system - all users get same experience
-        }));
-        console.log('🔄 Bootstrapping remixedMedia with', remixesBootstrapWithAvatar.length, 'items')
-        setRemixedMedia(remixesBootstrapWithAvatar)
+      // Remix functionality removed - no more remix processing
       
       // Ensure we have the latest userMedia for filtering
         console.log('🔄 Current userMedia for filtering (state):', userMedia.length, 'items')
@@ -615,8 +592,7 @@ const ProfileScreen: React.FC = () => {
       // Debug: Log final state
       console.log('🎯 Final media state:', {
         userMedia: userMedia.length,
-        remixedMedia: remixedMedia.length,
-        totalItems: userMedia.length + remixedMedia.length
+        totalItems: userMedia.length
       })
 
       setIsLoading(false)
@@ -673,10 +649,9 @@ const ProfileScreen: React.FC = () => {
     console.log('🔄 Active tab changed to:', activeTab)
     console.log('📊 Current media state:', {
       userMedia: userMedia.length,
-      remixedMedia: remixedMedia.length,
       isLoading
     })
-  }, [activeTab, userMedia.length, remixedMedia.length, isLoading])
+  }, [activeTab, userMedia.length, isLoading])
 
 
 
@@ -717,7 +692,7 @@ const ProfileScreen: React.FC = () => {
         username: profileDataToSave.name, // Map name to username for now
         avatar_url: avatarUrl,
         share_to_feed: profileDataToSave.shareToFeed,
-        allow_remix: profileDataToSave.allowRemix
+
       })
 
       // Update the profile context - this will trigger updates across all components
@@ -767,7 +742,7 @@ const ProfileScreen: React.FC = () => {
       return
     }
     
-    const active = activeTab === 'remixed' ? remixedMedia : activeTab === 'draft' ? draftMedia : userMedia
+    const active = activeTab === 'draft' ? draftMedia : userMedia
     const index = active.findIndex(m => m.id === media.id)
     setViewerMedia(active)
     setViewerStartIndex(Math.max(0, index))
@@ -810,8 +785,7 @@ const ProfileScreen: React.FC = () => {
         },
         body: JSON.stringify({
           asset_id: media.id,
-          shareToFeed: true,
-          allowRemix: media.allowRemix
+          shareToFeed: true
         })
       })
 
@@ -825,7 +799,6 @@ const ProfileScreen: React.FC = () => {
             ? { 
                 ...item, 
                 visibility: result.asset.visibility,
-                allowRemix: result.asset.allow_remix,
                 env: result.asset.env
               }
             : item
@@ -860,8 +833,7 @@ const ProfileScreen: React.FC = () => {
         },
         body: JSON.stringify({
           asset_id: media.id,
-          shareToFeed: false,
-          allowRemix: false
+          shareToFeed: false
         })
       })
 
@@ -875,7 +847,6 @@ const ProfileScreen: React.FC = () => {
             ? { 
                 ...item, 
                 visibility: result.asset.visibility,
-                allowRemix: result.asset.allow_remix,
                 env: result.asset.env
               }
             : item
@@ -906,18 +877,7 @@ const ProfileScreen: React.FC = () => {
 
 
 
-  const handleRemix = (media: UserMedia) => {
-    // Check if user is authenticated
-    if (!authService.isAuthenticated()) {
-      addNotification('Login Required', 'Please sign in to remix media', 'warning')
-      navigate('/auth')
-      return
-    }
-    
-    // Close viewer if open, then navigate to home with remix payload
-    setViewerOpen(false)
-    navigate('/', { state: { remixUrl: media.url, remixPrompt: media.prompt || '', source: 'profile' } })
-  }
+
 
   // Deletion handled in specific grid handlers
   const handleDeleteMedia = (media: UserMedia) => {
@@ -994,27 +954,27 @@ const ProfileScreen: React.FC = () => {
     
     { id: 'divider_prefs', type: 'divider', label: ' ' },
     { id: 'pref_share', label: 'Share to Feed', type: 'toggle', setting: 'autoShareToFeed' },
-    { id: 'pref_remix', label: 'Allow Remix', type: 'toggle', setting: 'allowRemixByDefault' },
+    // Remix preference removed - focus on personal creativity
     { id: 'divider_media', type: 'divider', label: ' ' },
     { id: 'all-media', label: 'All Media', icon: Image },
-    { id: 'remixed', label: 'Remixes', icon: RemixIcon },
+    // Remixes tab removed - no more remix functionality
     { id: 'draft', label: 'Drafts', icon: FileText },
     { id: 'account', label: 'Account', icon: Settings }
   ]
 
   // Persist user settings helper
-  const updateUserSettings = async (shareToFeed: boolean, allowRemix: boolean) => {
+  const updateUserSettings = async (shareToFeed: boolean) => {
     const token = authService.getToken()
     if (!token) return
     try {
       const r = await authenticatedFetch('/.netlify/functions/user-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shareToFeed, allowRemix })
+        body: JSON.stringify({ shareToFeed })
       })
       if (r.ok) {
         const s = await r.json()
-        updateProfile({ shareToFeed: !!s.shareToFeed, allowRemix: !!s.allowRemix })
+        updateProfile({ shareToFeed: !!s.shareToFeed })
       }
     } catch (e) {
       // keep local state; will retry next time
@@ -1079,15 +1039,11 @@ const ProfileScreen: React.FC = () => {
               
               // Handle toggle items
               if (item.type === 'toggle') {
-                const settingValue = item.setting === 'autoShareToFeed' ? profileData.shareToFeed : profileData.allowRemix
+                const settingValue = item.setting === 'autoShareToFeed' ? profileData.shareToFeed : false
                 return (
                   <div key={item.id} className="flex items-center justify-between py-1.5 px-3">
                 <div className="flex items-center space-x-2">
-                      {item.setting === 'autoShareToFeed' ? (
-                  <Globe size={16} className="text-white/60" />
-                      ) : (
-                        <RemixIcon size={16} className="text-white/60" />
-                      )}
+                      <Globe size={16} className="text-white/60" />
                       <span className="text-xs font-medium text-white/60">{item.label}</span>
                 </div>
                 <button
@@ -1095,11 +1051,9 @@ const ProfileScreen: React.FC = () => {
                         const newValue = !settingValue
                         if (item.setting === 'autoShareToFeed') {
                           updateProfile({ shareToFeed: newValue })
-                          updateUserSettings(newValue, profileData.allowRemix)
-                        } else {
-                          updateProfile({ allowRemix: newValue })
-                          updateUserSettings(profileData.shareToFeed, newValue)
+                          updateUserSettings(newValue)
                         }
+                        // Only shareToFeed toggle is supported now
                   }}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
                         settingValue ? 'bg-white' : 'bg-white/20'
@@ -1348,7 +1302,7 @@ const ProfileScreen: React.FC = () => {
                   <Image size={48} className="text-white/40" />
                 </div>
                 <p className="text-white/60 text-lg text-center">Create your first piece</p>
-                <p className="text-white/40 text-sm text-center mt-2">Your edits will appear here. Defaults: auto-share {profileData.shareToFeed ? 'ON' : 'OFF'}, allow remix {profileData.allowRemix ? 'ON' : 'OFF'}</p>
+                <p className="text-white/40 text-sm text-center mt-2">Your edits will appear here. Defaults: auto-share {profileData.shareToFeed ? 'ON' : 'OFF'}</p>
                 <button 
                   onClick={() => navigate('/')}
                   className="mt-4 px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
@@ -1369,7 +1323,7 @@ const ProfileScreen: React.FC = () => {
                 onDownload={handleDownload}
                 onShare={handleShare}
                 onUnshare={handleUnshare}
-                onRemix={handleRemix}
+
                 onDelete={handleDeleteMedia}
                 showActions={true}
                 className="pb-20"
@@ -1386,49 +1340,7 @@ const ProfileScreen: React.FC = () => {
 
 
 
-        {activeTab === 'remixed' && (
-          <div className="flex-1 overflow-y-auto p-6">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                  <RemixIcon size={48} className="text-white/40" />
-                </div>
-                <p className="text-white/60 text-lg text-center">Loading your remixes...</p>
-              </div>
-            ) : (() => {
-              console.log('🔍 Rendering remixed tab:', { remixedMediaLength: remixedMedia.length, remixedMedia: remixedMedia, isLoading })
-              return !isLoading && remixedMedia.length === 0
-            })() ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
-                  <RemixIcon size={48} className="text-white/40" />
-                </div>
-                <p className="text-white/60 text-lg text-center">No remixes yet</p>
-                <p className="text-white/40 text-sm text-center mt-2">Your remixed media will appear here</p>
-              </div>
-            ) : (
-              <MasonryMediaGrid
-                media={remixedMedia.map(m => ({
-                  ...m,
-                  aspectRatio: m.width && m.height ? m.width / Math.max(1, m.height) : (m.aspectRatio || 4/3),
-                  width: m.width || 800,
-                  height: m.height || Math.round((m.width || 800) / ((m.aspectRatio || 4/3)))
-                }))}
-                columns={3}
-                onMediaClick={handleMediaClick}
-                onDownload={handleDownload}
-                onShare={handleShare}
-                onUnshare={handleUnshare}
-                onRemix={handleRemix}
-                onDelete={handleDeleteMedia}
-                showActions={true}
-                className="pb-20"
-                hideRemixCount={true}
-                hideUserAvatars={true}
-              />
-            )}
-          </div>
-        )}
+
 
         {activeTab === 'draft' && (
           <div className="flex-1 overflow-y-auto p-6">
@@ -1633,24 +1545,7 @@ const ProfileScreen: React.FC = () => {
                         </button>
                       </div>
                       
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-white font-medium text-sm">Allow Remixes</div>
-                          <div className="text-white/60 text-xs">Let other users remix your AI creations</div>
-                        </div>
-                        <button
-                          onClick={() => updateProfile({ allowRemix: !profileData.allowRemix })}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                            profileData.allowRemix ? 'bg-white' : 'bg-white/20'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform duration-200 ${
-                              profileData.allowRemix ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
-                        </button>
-                      </div>
+                      {/* Allow Remixes toggle removed - focus on personal creativity */}
                     </div>
                   </div>
 
@@ -1775,7 +1670,7 @@ const ProfileScreen: React.FC = () => {
           startIndex={viewerStartIndex}
           onClose={() => setViewerOpen(false)}
 
-          onRemix={(m) => handleRemix(m)}
+
           onShowAuth={() => navigate('/auth')}
         />
       </div>
@@ -1828,8 +1723,7 @@ const ProfileScreen: React.FC = () => {
                 // Remove from user media immediately
                 setUserMedia(prev => prev.filter(item => item.id !== mediaToDelete.id))
                 
-                // Also remove from remixed media if it exists there
-                setRemixedMedia(prev => prev.filter(item => item.id !== mediaToDelete.id))
+                // Remix functionality removed - no more remix processing
                 
                 // Update local storage as backup
                 try {
@@ -1925,23 +1819,7 @@ const ProfileScreen: React.FC = () => {
                   </button>
                 </div>
 
-                {editingProfileData.shareToFeed && (
-                  <div className="flex items-center justify-between flex-1">
-                    <label className="text-sm font-medium text-white">Allow Remix</label>
-                    <button
-                      onClick={() => setEditingProfileData(prev => ({ ...prev, allowRemix: !prev.allowRemix }))}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        editingProfileData.allowRemix ? 'bg-white' : 'bg-white/20'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${
-                          editingProfileData.allowRemix ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                )}
+
               </div>
             </div>
 

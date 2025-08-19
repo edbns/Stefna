@@ -49,7 +49,7 @@ export async function saveMedia(params: {
   userId: string;
   presetKey?: string | null;
   sourcePublicId?: string | null;
-  allowRemix?: boolean;
+  // allowRemix removed
   shareNow?: boolean;
   mediaTypeHint?: 'image' | 'video';
 }) {
@@ -65,7 +65,7 @@ export async function saveMedia(params: {
       meta: {
         presetKey: params.presetKey,
         userId: params.userId,
-        allowRemix: params.allowRemix,
+        // allowRemix removed
         shareNow: params.shareNow,
         source: 'database'
       }

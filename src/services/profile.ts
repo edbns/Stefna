@@ -127,10 +127,9 @@ export async function completeOnboarding(profileData: Omit<ProfileData, 'onboard
 /**
  * Update sharing preferences
  */
-export async function updateSharingPreferences(shareToFeed: boolean, allowRemix: boolean): Promise<Profile> {
+export async function updateSharingPreferences(shareToFeed: boolean): Promise<Profile> {
   return ensureAndUpdateProfile({
-    share_to_feed: shareToFeed,
-    allow_remix: shareToFeed ? allowRemix : false // Can't allow remix if not sharing
+    share_to_feed: shareToFeed
   });
 }
 

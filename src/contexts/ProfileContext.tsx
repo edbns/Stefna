@@ -8,7 +8,7 @@ interface ProfileData {
   username?: string
   avatar: string | File | null
   shareToFeed: boolean
-  allowRemix: boolean
+  // allowRemix removed
   onboarding_completed?: boolean
   tier?: string
   createdAt?: string
@@ -26,7 +26,7 @@ const defaultProfileData: ProfileData = {
   name: 'User Name',
   avatar: null,
   shareToFeed: false,
-  allowRemix: false
+  // allowRemix removed
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined)
@@ -74,7 +74,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
             username: userData.username || '',
             avatar: userData.avatar || userData.avatar_url || '',
             shareToFeed: userData.shareToFeed || false,
-            allowRemix: userData.allowRemix || false,
+            // allowRemix removed
             onboarding_completed: userData.onboarding_completed || false,
             tier: userData.tier || 'registered',
             createdAt: userData.createdAt

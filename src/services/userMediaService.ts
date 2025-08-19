@@ -21,9 +21,9 @@ export interface UserMedia {
   originalMediaId?: string // For remixes, reference to original (parentId)
   tokensUsed: number
   likes: number
-  remixCount: number
+  // remixCount removed
   isPublic: boolean
-  allowRemix: boolean
+  // allowRemix removed
   visibility?: 'public' | 'private' // New: explicit visibility field
   tags: string[]
   metadata: {
@@ -72,16 +72,16 @@ class UserMediaService {
   }
 
   // Save generated media to user profile
-  async saveMedia(media: Omit<UserMedia, 'id' | 'timestamp' | 'likes' | 'remixCount'>, userSettings?: { shareToFeed: boolean; allowRemix: boolean }): Promise<UserMedia> {
+  async saveMedia(media: Omit<UserMedia, 'id' | 'timestamp' | 'likes' | 'remixCount'>, userSettings?: { shareToFeed: boolean }): Promise<UserMedia> { // allowRemix removed
     const newMedia: UserMedia = {
       ...media,
       id: this.generateId(),
       timestamp: new Date().toISOString(),
       likes: 0,
-      remixCount: 0,
+      // remixCount removed
       // Apply user settings if provided
       isPublic: userSettings?.shareToFeed ?? media.isPublic,
-      allowRemix: userSettings?.allowRemix ?? media.allowRemix,
+      // allowRemix removed
       // Assign TTL for guest media (48 hours)
       expiresAt: media.userId.startsWith('guest-') ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() : undefined
     }
@@ -94,51 +94,7 @@ class UserMediaService {
     return newMedia
   }
 
-  // Save remix to user profile
-  async saveRemix(
-    userId: string,
-    originalMediaId: string,
-    remixUrl: string,
-    remixPrompt: string,
-    aspectRatio: number,
-    width: number,
-    height: number,
-    tokensUsed: number,
-    style?: string
-  ): Promise<UserMedia> {
-    const originalMedia = await this.getMediaById(originalMediaId)
-    
-    const remix: Omit<UserMedia, 'id' | 'timestamp' | 'likes' | 'remixCount'> = {
-      userId,
-      type: 'remix',
-      url: remixUrl,
-      prompt: remixPrompt,
-      style,
-      aspectRatio,
-      width,
-      height,
-      originalMediaId,
-      tokensUsed,
-      isPublic: true,
-      allowRemix: true,
-      tags: originalMedia?.tags || [],
-      metadata: {
-        quality: 'high',
-        generationTime: 2000, // 2 seconds average
-        modelVersion: 'v2.0'
-      },
-      expiresAt: userId.startsWith('guest-') ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() : undefined
-    }
-
-    const savedRemix = await this.saveMedia(remix)
-    
-    // Increment remix count on original media
-    if (originalMedia) {
-      await this.incrementRemixCount(originalMediaId)
-    }
-    
-    return savedRemix
-  }
+  // saveRemix function removed - no more remix functionality
 
   // Remove expired guest media across all users
   async cleanupExpiredGuestMedia(): Promise<void> {
@@ -165,32 +121,7 @@ class UserMediaService {
     return users.includes(userId)
   }
 
-  // Increment remix count for a media
-  async incrementRemixCount(mediaId: string): Promise<number> {
-    // Update count across ALL instances
-    let newCount = 0
-    for (const [userId, userMedia] of this.mediaStorage.entries()) {
-      const mediaIndex = userMedia.findIndex(m => m.id === mediaId)
-      if (mediaIndex !== -1) {
-        userMedia[mediaIndex].remixCount = (userMedia[mediaIndex].remixCount || 0) + 1
-        newCount = userMedia[mediaIndex].remixCount
-      }
-    }
-
-    await this.saveToStorage()
-    return newCount
-  }
-
-  // Get current remix count for a media
-  async getRemixCount(mediaId: string): Promise<number> {
-    for (const userMedia of this.mediaStorage.values()) {
-      const media = userMedia.find(m => m.id === mediaId)
-      if (media) {
-        return media.remixCount || 0
-      }
-    }
-    return 0
-  }
+  // Remix count functionality removed - no more remix tracking
 
   // Get guest media that are not expired
   async getActiveGuestMedia(userId: string): Promise<UserMedia[]> {
@@ -212,7 +143,7 @@ class UserMediaService {
   }
 
   // Get user's media by type
-  async getUserMedia(userId: string, type?: 'photo' | 'video' | 'remix'): Promise<UserMedia[]> {
+  async getUserMedia(userId: string, type?: 'photo' | 'video'): Promise<UserMedia[]> { // remix type removed
     const userMedia = this.mediaStorage.get(userId) || []
     
     if (type) {
@@ -461,8 +392,8 @@ class UserMediaService {
     // Sort by engagement (likes + remixes) and recency
     return allMedia
       .sort((a, b) => {
-        const aScore = (a.likes + a.remixCount) * this.getRecencyScore(a.timestamp)
-        const bScore = (b.likes + b.remixCount) * this.getRecencyScore(b.timestamp)
+        const aScore = a.likes * this.getRecencyScore(a.timestamp)
+        const bScore = b.likes * this.getRecencyScore(b.timestamp)
         return bScore - aScore
       })
       .slice(0, limit)

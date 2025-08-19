@@ -18,11 +18,13 @@ import { HiddenUploader } from './HiddenUploader'
 import { uploadSourceToCloudinary } from '../services/uploadSource'
 import { storeSelectedFile } from '../services/mediaSource'
 import { useGenerationMode } from '../stores/generationMode'
-import { runMoodMorph } from '../services/moodMorph'
-import { MoodMorphPicker } from './MoodMorphPicker'
+// MoodMorph removed - replaced with Anime Filters
 import { EmotionMaskPicker } from './EmotionMaskPicker'
-import { MOODMORPH_PRESETS } from '../presets/moodmorph'
 import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
+import { GhibliReactionPicker } from './GhibliReactionPicker'
+import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
+import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
+import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
 
 
 
@@ -31,13 +33,13 @@ import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
 interface SafeMasonryGridProps {
   feed: UserMedia[]
   handleMediaClick: (media: UserMedia) => void
-  handleRemix: (media: UserMedia) => void
+  // handleRemix removed - no more remix functionality
 }
 
 const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   feed,
   handleMediaClick,
-  handleRemix
+  // handleRemix removed
 }) => {
   try {
     return (
@@ -45,7 +47,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         media={feed}
         columns={3}
         onMediaClick={handleMediaClick}
-        onRemix={(media) => handleRemix(media)}
+        // onRemix removed - no more remix functionality
         showActions={true}
         className="pb-24"
       />
@@ -129,12 +131,14 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: 'custom' as 'preset' | 'moodmorph' | 'remix' | 'custom' | 'emotionmask',
+    mode: 'custom' as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch', // remix mode removed
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
-    selectedMoodMorphPresetId: null as string | null, // Separate from regular presets
+    // MoodMorph removed - replaced with Anime Filters
     selectedEmotionMaskPresetId: null as string | null, // Separate from other presets
+    selectedGhibliReactionPresetId: null as string | null, // Ghibli Reaction presets
+    selectedNeoTokyoGlitchPresetId: null as string | null, // Neo Tokyo Glitch presets
     customPrompt: '', // Custom mode gets its own prompt
     status: 'idle' as 'idle' | 'precheck' | 'reserving' | 'uploading' | 'processing' | 'error' | 'success',
     error: null as string | null,
@@ -200,6 +204,8 @@ const HomeNew: React.FC = () => {
     setSelectedPreset(null)
     setSelectedMoodMorphPreset(null)
     setSelectedEmotionMaskPreset(null)
+    setSelectedGhibliReactionPreset(null)
+    setSelectedNeoTokyoGlitchPreset(null)
     setPrompt('')
     setSelectedFile(null)
     setPreviewUrl(null)
@@ -209,9 +215,12 @@ const HomeNew: React.FC = () => {
       selectedPresetId: null,
       selectedMoodMorphPresetId: null,
       selectedEmotionMaskPresetId: null,
+      selectedGhibliReactionPresetId: null,
+      selectedNeoTokyoGlitchPresetId: null,
       customPrompt: '',
-      file: null,
-      sourceUrl: null
+      status: 'idle',
+      error: null,
+      runOnOpen: false
     }))
   }
 
@@ -355,7 +364,7 @@ const HomeNew: React.FC = () => {
   const { profileData } = useProfile()
   const [currentFilter, setCurrentFilter] = useState<'all' | 'images' | 'videos'>('all')
   const [navGenerating, setNavGenerating] = useState(false)
-  const [generateTwo, setGenerateTwo] = useState(false)
+  // generateTwo removed - single generation only
   const [userMenu, setUserMenu] = useState(false)
   
   // Media viewer state
@@ -377,9 +386,13 @@ const HomeNew: React.FC = () => {
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
   const [selectedEra, setSelectedEra] = useState<string | null>(null)
   const [selectedOp, setSelectedOp] = useState<string | null>(null)
-  const [selectedMoodMorphPreset, setSelectedMoodMorphPreset] = useState<string | null>(null)
+  // MoodMorph removed - replaced with Anime Filters
   const [selectedEmotionMaskPreset, setSelectedEmotionMaskPreset] = useState<string | null>(null)
   const [emotionMaskDropdownOpen, setEmotionMaskDropdownOpen] = useState(false)
+  const [selectedGhibliReactionPreset, setSelectedGhibliReactionPreset] = useState<string | null>(null)
+  const [ghibliReactionDropdownOpen, setGhibliReactionDropdownOpen] = useState(false)
+  const [selectedNeoTokyoGlitchPreset, setSelectedNeoTokyoGlitchPreset] = useState<string | null>(null)
+  const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(false)
 
   // Enhanced dropdown management - close dropdowns automatically
   useEffect(() => {
@@ -538,7 +551,7 @@ const HomeNew: React.FC = () => {
       // Update composer state for remix mode
       setComposerState(s => ({
         ...s,
-        mode: 'remix',
+        mode: 'custom', // remix mode removed
         file: null,
         sourceUrl: url,
         status: 'idle',
@@ -711,6 +724,8 @@ const HomeNew: React.FC = () => {
       setSelectedPreset(null)
       setSelectedMoodMorphPreset(null)
       setSelectedEmotionMaskPreset(null)
+      setSelectedGhibliReactionPreset(null)
+      setSelectedNeoTokyoGlitchPreset(null)
       setSelectedMode(null)
       setIsVideoPreview(false)
       
@@ -722,6 +737,8 @@ const HomeNew: React.FC = () => {
         selectedPresetId: null,
         selectedMoodMorphPresetId: null,
         selectedEmotionMaskPresetId: null,
+        selectedGhibliReactionPresetId: null,
+        selectedNeoTokyoGlitchPresetId: null,
         customPrompt: '',
         status: 'idle',
         error: null,
@@ -803,40 +820,40 @@ const HomeNew: React.FC = () => {
               return null;
             }
             
-            console.log(`🔗 URL mapping for item ${item.id}:`, {
-              cloudinary_public_id: item.cloudinary_public_id,
-              media_type: item.media_type,
+          console.log(`🔗 URL mapping for item ${item.id}:`, {
+            cloudinary_public_id: item.cloudinary_public_id,
+            media_type: item.media_type,
               final: mediaUrl,
               source: item.url ? 'backend_url' : 'constructed_url'
-            })
-            
-            return ({
-              id: item.id,
-              userId: item.user_id || '', // Use actual user ID or empty string to hide tooltip
-              userAvatar: item.user_avatar || undefined, // Use actual user avatar if available
-              userTier: item.user_tier || undefined, // Use actual user tier if available
-              type: item.media_type === 'video' ? 'video' : 'photo',
-              url: mediaUrl,
-              thumbnailUrl: mediaUrl, // Use same URL for thumbnail
-              prompt: item.prompt || 'AI Generated Content', // Use actual prompt or fallback
-              style: undefined,
-              aspectRatio: 4/3, // Default aspect ratio
-              width: 800, // Default width
-              height: 600, // Default height
-              timestamp: item.published_at,
-              originalMediaId: item.source_asset_id || undefined,
-              tokensUsed: item.media_type === 'video' ? 5 : 2,
-              likes: 0, // Not exposed in public_feed_v2
-              remixCount: 0, // Not exposed in public_feed_v2
-              isPublic: true,
-              allowRemix: true,
-              tags: [],
-              metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
-              // Store additional fields needed for remix functionality
-              cloudinaryPublicId: item.cloudinary_public_id,
-              mediaType: item.media_type,
-            })
           })
+          
+          return ({
+            id: item.id,
+            userId: item.user_id || '', // Use actual user ID or empty string to hide tooltip
+            userAvatar: item.user_avatar || undefined, // Use actual user avatar if available
+            userTier: item.user_tier || undefined, // Use actual user tier if available
+            type: item.media_type === 'video' ? 'video' : 'photo',
+            url: mediaUrl,
+            thumbnailUrl: mediaUrl, // Use same URL for thumbnail
+            prompt: item.prompt || 'AI Generated Content', // Use actual prompt or fallback
+            style: undefined,
+            aspectRatio: 4/3, // Default aspect ratio
+            width: 800, // Default width
+            height: 600, // Default height
+            timestamp: item.published_at,
+            originalMediaId: item.source_asset_id || undefined,
+            tokensUsed: item.media_type === 'video' ? 5 : 2,
+            likes: 0, // Not exposed in public_feed_v2
+            remixCount: 0, // Not exposed in public_feed_v2
+            isPublic: true,
+            // allowRemix removed
+            tags: [],
+            metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
+            // Store additional fields needed for remix functionality
+            cloudinaryPublicId: item.cloudinary_public_id,
+            mediaType: item.media_type,
+          })
+        })
           .filter((item): item is UserMedia => item !== null) // Filter out null items
         
         console.log('🎯 Mapped feed items:', mapped.length)
@@ -1011,7 +1028,7 @@ const HomeNew: React.FC = () => {
         const profile = JSON.parse(savedProfile)
         return {
           shareToFeed: profile.shareToFeed || false,
-          allowRemix: profile.allowRemix || false
+          // allowRemix removed
         }
       }
     } catch (error) {
@@ -1019,7 +1036,7 @@ const HomeNew: React.FC = () => {
     }
     
     // Default settings
-    return { shareToFeed: true, allowRemix: true }
+    return { shareToFeed: true } // allowRemix removed
   }
 
   const closeComposer = () => {
@@ -1033,15 +1050,16 @@ const HomeNew: React.FC = () => {
 
   // NEW CLEAN GENERATION DISPATCHER - NO MORE MIXED LOGIC
   async function dispatchGenerate(
-    kind: 'preset' | 'custom' | 'remix' | 'moodmorph' | 'emotionmask',
+    kind: 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch', // remix removed
     options?: {
       presetId?: string;
       presetData?: any;
-      moodMorphPresetId?: string;
+      // MoodMorph removed - replaced with Anime Filters
       emotionMaskPresetId?: string;
+      ghibliReactionPresetId?: string;
+      neoTokyoGlitchPresetId?: string;
       customPrompt?: string;
-      sourceUrl?: string;
-      originalPrompt?: string;
+      // sourceUrl and originalPrompt removed - no more remix functionality
     }
   ) {
     const t0 = performance.now();
@@ -1059,8 +1077,8 @@ const HomeNew: React.FC = () => {
     setNavGenerating(true);
 
     // Get current profile settings
-    const { shareToFeed, allowRemix } = await getUserProfileSettings()
-    console.log('🔧 Using profile settings:', { shareToFeed, allowRemix })
+    const { shareToFeed } = await getUserProfileSettings() // allowRemix removed
+    console.log('🔧 Using profile settings:', { shareToFeed }) // allowRemix removed
 
     // Sanity check - log current state
     console.table({
@@ -1102,27 +1120,7 @@ const HomeNew: React.FC = () => {
       generationMeta = { mode: 'preset', presetId, presetLabel: PRESETS[presetId].label };
       console.log('🎯 PRESET MODE: Using preset only:', effectivePrompt);
       
-    } else if (kind === 'moodmorph') {
-      // MOODMORPH MODE: Use ONLY the MoodMorph preset
-      const moodMorphPresetId = options?.moodMorphPresetId || selectedMoodMorphPreset;
-      if (!moodMorphPresetId) {
-        console.error('❌ Invalid MoodMorph preset:', moodMorphPresetId);
-        notifyError({ title: 'Invalid MoodMorph preset', message: 'Please select a MoodMorph preset first' });
-        endGeneration(genId);
-        setNavGenerating(false);
-        return;
-      }
-      // For now, use a base prompt - MoodMorph will generate 3 variations
-      effectivePrompt = 'Transform this image with mood variations';
-      generationMeta = { mode: 'moodmorph', moodMorphPresetId };
-      console.log('🎭 MOODMORPH MODE: Using MoodMorph preset:', moodMorphPresetId);
-      
-    } else if (kind === 'remix') {
-      // REMIX MODE: Use ONLY the original media prompt
-      const originalPrompt = options?.originalPrompt || prompt?.trim() || 'Transform this image';
-      effectivePrompt = originalPrompt;
-      generationMeta = { mode: 'remix', sourceUrl: options?.sourceUrl };
-      console.log('🔄 REMIX MODE: Using original prompt:', effectivePrompt);
+    // Remix mode removed - focus on personal creativity
       
     } else if (kind === 'emotionmask') {
       // EMOTION MASK MODE: Use the selected emotional variant
@@ -1147,6 +1145,54 @@ const HomeNew: React.FC = () => {
       effectivePrompt = emotionMaskPreset.prompt;
       generationMeta = { mode: 'emotionmask', emotionMaskPresetId, emotionMaskLabel: emotionMaskPreset.label, vibe: emotionMaskPreset.vibe };
       console.log('🎭 EMOTION MASK MODE: Using emotional variant:', emotionMaskPreset.label, effectivePrompt);
+      
+    } else if (kind === 'ghiblireact') {
+      // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
+      const ghibliReactionPresetId = options?.ghibliReactionPresetId || selectedGhibliReactionPreset;
+      if (!ghibliReactionPresetId) {
+        console.error('❌ Invalid Ghibli Reaction preset:', ghibliReactionPresetId);
+        notifyError({ title: 'Invalid Ghibli Reaction preset', message: 'Please select a Ghibli reaction preset first' });
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
+      }
+      
+      const ghibliReactionPreset = GHIBLI_REACTION_PRESETS.find(p => p.id === ghibliReactionPresetId);
+      if (!ghibliReactionPreset) {
+        console.error('❌ Ghibli Reaction preset not found:', ghibliReactionPresetId);
+        notifyError({ title: 'Ghibli Reaction preset not found', message: 'Please select a valid Ghibli reaction preset' });
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
+      }
+      
+      effectivePrompt = ghibliReactionPreset.prompt;
+      generationMeta = { mode: 'ghiblireact', ghibliReactionPresetId, ghibliReactionLabel: ghibliReactionPreset.label };
+      console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt);
+      
+    } else if (kind === 'neotokyoglitch') {
+      // NEO TOKYO GLITCH MODE: Use the selected Neo Tokyo Glitch preset
+      const neoTokyoGlitchPresetId = options?.neoTokyoGlitchPresetId || selectedNeoTokyoGlitchPreset;
+      if (!neoTokyoGlitchPresetId) {
+        console.error('❌ Invalid Neo Tokyo Glitch preset:', neoTokyoGlitchPresetId);
+        notifyError({ title: 'Invalid Neo Tokyo Glitch preset', message: 'Please select a Neo Tokyo Glitch preset first' });
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
+      }
+      
+      const neoTokyoGlitchPreset = NEO_TOKYO_GLITCH_PRESETS.find(p => p.id === neoTokyoGlitchPresetId);
+      if (!neoTokyoGlitchPreset) {
+        console.error('❌ Neo Tokyo Glitch preset not found:', neoTokyoGlitchPresetId);
+        notifyError({ title: 'Neo Tokyo Glitch preset not found', message: 'Please select a valid Neo Tokyo Glitch preset' });
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
+      }
+      
+      effectivePrompt = neoTokyoGlitchPreset.prompt;
+      generationMeta = { mode: 'neotokyoglitch', neoTokyoGlitchPresetId, neoTokyoGlitchLabel: neoTokyoGlitchPreset.label, features: neoTokyoGlitchPreset.features };
+      console.log('🎭 NEO TOKYO GLITCH MODE: Using Neo Tokyo Glitch preset:', neoTokyoGlitchPreset.label, effectivePrompt);
       
     } else {
       console.error('❌ Unknown generation kind:', kind);
@@ -1241,10 +1287,10 @@ const HomeNew: React.FC = () => {
         // Internal fields for our system (not sent to vendor)
         source: kind,
         visibility: shareToFeed ? 'public' : 'private',
-        allow_remix: shareToFeed ? allowRemix : false,
+        allow_remix: false, // Remix functionality removed - focus on personal creativity
         // Generation metadata for tracking and display
         ...(generationMeta && { generationMeta }),
-        num_variations: generateTwo ? 2 : 1,
+        num_variations: 1, // Single generation only
         strength: 0.85,  // For I2I processing
         seed: Date.now(), // Prevent provider-side caching
         request_id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, // Idempotency key for credit charging
@@ -1283,10 +1329,8 @@ const HomeNew: React.FC = () => {
       // Reserve credits before generation - dynamically calculate based on variations
       let creditsNeeded = 1; // Default for single generation
       
-      if (kind === 'moodmorph') {
-        creditsNeeded = 3; // MoodMorph always generates 3 variations
-      } else if (generateTwo) {
-        creditsNeeded = 2; // Custom prompt with 2 variations
+      if (kind === 'ghiblireact' || kind === 'neotokyoglitch') {
+        creditsNeeded = 1; // Single generation for new modes
       } else {
         creditsNeeded = 1; // Single generation (preset, custom single, emotionmask, remix)
       }
@@ -1378,7 +1422,7 @@ const HomeNew: React.FC = () => {
                 likes: 0,
                 remixCount: 0,
                 isPublic: shareToFeed,
-                allowRemix: allowRemix,
+                allowRemix: false,
                 tags: [],
                 metadata: { quality: 'high', generationTime: 0, modelVersion: 'pending' }
               }
@@ -1407,7 +1451,7 @@ const HomeNew: React.FC = () => {
 
       // Handle video job creation (status 202)
       if (res.status === 202 && body.job_id && isVideoPreview) {
-        notifyQueue({ title: 'Add to queue', message: 'Processing will begin shortly.' })
+          notifyQueue({ title: 'Add to queue', message: 'Processing will begin shortly.' })
         setCurrentVideoJob({ id: body.job_id, status: 'queued' })
         startVideoJobPolling(body.job_id, body.model, effectivePrompt)
         endGeneration(genId)
@@ -1507,7 +1551,7 @@ const HomeNew: React.FC = () => {
                 likes: 0,
                 remixCount: 0,
                 isPublic: shareToFeed,
-                allowRemix: allowRemix,
+                allowRemix: false,
                 tags: [],
                 metadata: { quality: 'high', generationTime: 0, modelVersion: 'pending' }
               }
@@ -1520,7 +1564,7 @@ const HomeNew: React.FC = () => {
               userId,
               presetKey: selectedPreset ?? null,
               sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : null,
-              allowRemix: allowRemix,
+              allowRemix: false,
               shareNow: !!shareToFeed,
               mediaTypeHint: 'image',
             })
@@ -1585,40 +1629,51 @@ const HomeNew: React.FC = () => {
           }));
 
           // Handle different generation modes
-          if (composerState.mode === 'moodmorph') {
-            console.log('🎭 MoodMorph mode - calling save-media-batch for variations');
-            
-            const saveRes = await authenticatedFetch('/.netlify/functions/save-media-batch', {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'X-Idempotency-Key': genId // prevents double-saves on retries
-              },
-              body: JSON.stringify({
-                runId: genId,
-                variations
-              })
-            });
-            
-            const saveText = await saveRes.text();
-            let saveBody: any = {};
-            try { saveBody = JSON.parse(saveText); } catch {}
-            
-            if (saveRes.ok && saveBody?.ok && saveBody.count > 0) {
-              console.log(`✅ All ${saveBody.count} variations saved successfully:`, saveBody);
-              
-              // Only refresh when we actually saved something
-              setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                detail: { count: saveBody.count, runId: genId } 
-              })), 800);
-            } else {
-              console.error(`❌ Save failed:`, saveRes.status, saveBody || saveText);
-              notifyError({ title: 'Save failed', message: saveBody?.error || 'Failed to save media' });
-            }
-          } else if (composerState.mode === 'emotionmask') {
+          if (composerState.mode === 'emotionmask') {
             console.log('🎭 Emotion Mask mode - updating asset with final result');
             
             // For Emotion Mask, we need to update the asset with the final generated image
+            if (allResultUrls.length > 0 && assetId) {
+              const updateRes = await authenticatedFetch('/.netlify/functions/update-asset-result', {
+              method: 'POST',
+              headers: { 
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  assetId: assetId, // Use the asset ID from create-asset
+                  finalUrl: allResultUrls[0], // The generated image URL from AIML API
+                  status: 'ready', // Mark as ready
+                  prompt: effectivePrompt,
+                  meta: {
+                    mode: 'emotionmask',
+                    presetId: selectedPreset,
+                    runId: genId
+                  }
+              })
+            });
+            
+              const updateText = await updateRes.text();
+              let updateBody: any = {};
+              try { updateBody = JSON.parse(updateText); } catch {}
+              
+              if (updateRes.ok && updateBody?.ok) {
+                console.log('✅ Emotion Mask asset updated successfully:', updateBody);
+                
+                // Refresh user media to show the new image
+              setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                  detail: { count: 1, runId: genId } 
+              })), 800);
+            } else {
+                console.error(`❌ Emotion Mask asset update failed:`, updateRes.status, updateBody || updateText);
+                notifyError({ title: 'Update failed', message: updateBody?.error || 'Failed to update Emotion Mask asset' });
+              }
+            } else {
+              console.warn('⚠️ Cannot update Emotion Mask asset: missing result URL or asset ID');
+            }
+          } else if (composerState.mode === 'ghiblireact' || composerState.mode === 'neotokyoglitch') {
+            console.log(`🎭 ${composerState.mode} mode - updating asset with final result`);
+            
+            // For Ghibli Reaction and Neo Tokyo Glitch, update the asset with the final generated image
             if (allResultUrls.length > 0 && assetId) {
               const updateRes = await authenticatedFetch('/.netlify/functions/update-asset-result', {
                 method: 'POST',
@@ -1631,7 +1686,7 @@ const HomeNew: React.FC = () => {
                   status: 'ready', // Mark as ready
                   prompt: effectivePrompt,
                   meta: {
-                    mode: 'emotionmask',
+                    mode: composerState.mode,
                     presetId: selectedPreset,
                     runId: genId
                   }
@@ -1643,18 +1698,18 @@ const HomeNew: React.FC = () => {
               try { updateBody = JSON.parse(updateText); } catch {}
               
               if (updateRes.ok && updateBody?.ok) {
-                console.log('✅ Emotion Mask asset updated successfully:', updateBody);
+                console.log(`✅ ${composerState.mode} asset updated successfully:`, updateBody);
                 
                 // Refresh user media to show the new image
                 setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
                   detail: { count: 1, runId: genId } 
                 })), 800);
               } else {
-                console.error(`❌ Emotion Mask asset update failed:`, updateRes.status, updateBody || updateText);
-                notifyError({ title: 'Update failed', message: updateBody?.error || 'Failed to update Emotion Mask asset' });
+                console.error(`❌ ${composerState.mode} asset update failed:`, updateRes.status, updateBody || updateText);
+                notifyError({ title: 'Update failed', message: updateBody?.error || `Failed to update ${composerState.mode} asset` });
               }
             } else {
-              console.warn('⚠️ Cannot update Emotion Mask asset: missing result URL or asset ID');
+              console.warn(`⚠️ Cannot update ${composerState.mode} asset: missing result URL or asset ID`);
             }
           } else if (composerState.mode === 'preset' || composerState.mode === 'custom') {
             console.log(`🎭 ${composerState.mode} mode - checking variation count: ${allResultUrls.length}`);
@@ -1902,7 +1957,7 @@ const HomeNew: React.FC = () => {
     setNavGenerating(true)
     try {
       // Get current profile settings
-      const { shareToFeed, allowRemix } = await getUserProfileSettings()
+      const { shareToFeed } = await getUserProfileSettings() // allowRemix removed
       
       // Enforce server-side quota and generate via aimlApi
       // Use new uploadSource service - never fetch blob URLs
@@ -1921,8 +1976,8 @@ const HomeNew: React.FC = () => {
         resource_type: shouldBeVideo ? 'video' : 'image',
         source: 'custom',
         visibility: shareToFeed ? 'public' : 'private',
-        allow_remix: shareToFeed ? allowRemix : false,
-        num_variations: generateTwo ? 2 : 1,
+        allow_remix: false, // Remix functionality removed - focus on personal creativity
+        num_variations: 1, // Single generation only
       }
       
 
@@ -1935,11 +1990,10 @@ const HomeNew: React.FC = () => {
       }
       
       // Reserve credits before generation for this path
-      const creditsNeeded = generateTwo ? 2 : 1;
+      const creditsNeeded = 1; // Single generation only
       console.log(`💰 Alt path: Reserving ${creditsNeeded} credits before generation...`);
       console.log('🔍 Alt path credit debug:', { 
         selectedMode, 
-        generateTwo, 
         creditsNeeded 
       });
       
@@ -2315,33 +2369,7 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  // Open composer from remix - just opens composer, no auto-generation
-  const openComposerFromRemix = (media: UserMedia) => {
-    console.log('🎭 Opening composer from remix:', media.id)
-    
-    // Update composer state for remix mode
-    setComposerState(s => ({
-      ...s,
-      mode: 'remix',
-      file: null,
-      sourceUrl: media.url,
-      status: 'idle',
-      error: null,
-      runOnOpen: false
-    }))
-    
-    // Set up the composer with the source media
-    setPreviewUrl(media.url)
-    setIsVideoPreview(false) // Always treat as image for now
-    setSelectedFile(null)
-    setIsComposerOpen(true)
-    setPrompt(media.prompt || '')
-    
-    // Clear selectedPreset when remixing
-    requestClearPreset('remix started')
-    
-    console.log('🎭 Composer opened in remix mode - ready for user to choose generation type')
-  }
+  // openComposerFromRemix function removed - no more remix functionality
 
 
 
@@ -2454,32 +2482,7 @@ const HomeNew: React.FC = () => {
     })
   }
   
-  // 4. REMIX MODE GENERATION - Only uses original media prompt
-  const generateRemix = async () => {
-    console.log('🔄 REMIX MODE: Generating with original media prompt')
-    
-    if (!composerState.sourceUrl) {
-      notifyError({ title: 'Source required', message: 'Please select media to remix' })
-      return
-    }
-    
-    // Update composer state for remix mode
-    setComposerState(s => ({
-      ...s,
-      mode: 'remix',
-      selectedPresetId: null, // Clear preset
-      selectedMoodMorphPresetId: null, // Clear MoodMorph preset
-      customPrompt: '', // Clear custom prompt
-      status: 'idle',
-      error: null
-    }))
-    
-    // Generate with ONLY the original media prompt - no contamination
-    await dispatchGenerate('remix', {
-      sourceUrl: composerState.sourceUrl,
-      originalPrompt: prompt || 'Transform this image'
-    })
-  }
+  // generateRemix function removed - no more remix functionality
 
   // 5. EMOTION MASK MODE GENERATION - Uses selected emotional variant
   const generateEmotionMask = async () => {
@@ -2643,31 +2646,7 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  const handleRemix = async (media: UserMedia) => {
-    console.log('🎭 handleRemix called with media:', {
-      id: media.id,
-      url: media.url,
-      cloudinaryPublicId: media.cloudinaryPublicId,
-      mediaType: media.mediaType,
-      allowRemix: media.allowRemix,
-      prompt: media.prompt
-    });
-    
-    if (media.allowRemix === false) return // allow when undefined
-    if (!authService.getToken()) {
-              // Sign up required - no notification needed
-      navigate('/auth')
-      return
-    }
-    
-    try {
-      // Use the new function for consistent behavior
-      openComposerFromRemix(media)
-    } catch (error) {
-      console.error('Error creating remix:', error);
-      notifyError({ title: 'Something went wrong', message: 'Failed to start remix' });
-    }
-  }
+  // handleRemix function removed - no more remix functionality
 
 
 
@@ -2851,14 +2830,14 @@ const HomeNew: React.FC = () => {
         console.log('✨ Prompt enhanced successfully:', enhancedPrompt)
         // Show success feedback - with safety check
         if (typeof notifySuccess === 'function') {
-          notifySuccess({ title: 'Prompt enhanced!', message: 'Your prompt has been enhanced with AI' })
+        notifySuccess({ title: 'Prompt enhanced!', message: 'Your prompt has been enhanced with AI' })
         }
       }
     } catch (error) {
       console.error('❌ Magic Wand enhancement failed:', error)
       // Show error feedback but keep original prompt - with safety check
       if (typeof notifyError === 'function') {
-        notifyError({ title: 'Enhancement failed', message: 'Could not enhance prompt, keeping original' })
+      notifyError({ title: 'Enhancement failed', message: 'Could not enhance prompt, keeping original' })
       }
     } finally {
       setIsEnhancing(false)
@@ -2974,7 +2953,7 @@ const HomeNew: React.FC = () => {
   // Tier promotions removed - simplified credit system
 
   // Update user settings and persist to database
-  const updateUserSettings = async (newSettings: { shareToFeed?: boolean; allowRemix?: boolean }) => {
+  const updateUserSettings = async (newSettings: { shareToFeed?: boolean }) => { // allowRemix removed
     if (!isAuthenticated || !authService.getToken()) {
       console.warn('⚠️ Cannot update settings: user not authenticated')
       return false
@@ -3175,7 +3154,7 @@ const HomeNew: React.FC = () => {
             <SafeMasonryGrid 
               feed={feed}
               handleMediaClick={handleMediaClick}
-              handleRemix={handleRemix}
+              // handleRemix removed
             />
           ) : (
             <div className="text-center py-12">
@@ -3229,7 +3208,7 @@ const HomeNew: React.FC = () => {
         startIndex={viewerStartIndex}
         onClose={() => setViewerOpen(false)}
 
-        onRemix={handleRemix}
+        // onRemix removed - no more remix functionality
         onShowAuth={() => navigate('/auth')}
       />
 
@@ -3241,14 +3220,7 @@ const HomeNew: React.FC = () => {
             <X size={20} />
           </button>
           
-          {/* Ready to remix indicator - only show in remix mode */}
-          {composerState.mode === 'remix' && selectedPreset && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none">
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 text-white/80 text-sm font-medium">
-                Ready to remix with {getPresetLabel(selectedPreset, PRESETS)}
-              </div>
-            </div>
-          )}
+          {/* Remix mode UI removed - focus on personal creativity */}
           
           {/* Media preview area - centered above prompt */}
           <div className="absolute inset-0 flex items-center justify-center pb-32">
@@ -3315,43 +3287,7 @@ const HomeNew: React.FC = () => {
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 {/* Left: Variations toggle + Presets + MoodMorph */}
                 <div className="flex items-center gap-2">
-                  {/* Variations selector */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setGenerateTwo(false)}
-                        className={(() => {
-                          const baseClass = 'w-6 h-6 rounded text-xs font-medium transition-colors relative group';
-                          const activeClass = 'bg-white text-black';
-                          const inactiveClass = 'bg-white/10 text-white hover:bg-white/20';
-                          return `${baseClass} ${!generateTwo ? activeClass : inactiveClass}`;
-                        })()}
-                        title="1 variation"
-                      >
-                        1
-                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-black/80 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                          1 variation
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGenerateTwo(true)}
-                        className={(() => {
-                          const baseClass = 'w-6 h-6 rounded text-xs font-medium transition-colors relative group';
-                          const activeClass = 'bg-white text-black';
-                          const inactiveClass = 'bg-white/10 text-white hover:bg-white/20';
-                          return `${baseClass} ${generateTwo ? activeClass : inactiveClass}`;
-                        })()}
-                        title="2 variations"
-                      >
-                        2
-                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-black/80 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                          2 variations
-                        </span>
-                      </button>
-                    </div>
-                  </div>
+                  {/* Variations selector removed - single generation only */}
 
                   {/* Presets dropdown button */}
                   <div className="relative" data-presets-dropdown>
@@ -3430,68 +3366,7 @@ const HomeNew: React.FC = () => {
                     )}
                   </div>
 
-                  {/* MoodMorph™ button - SINGLE BUTTON with dropdown */}
-                  <div className="relative" data-moodmorph-dropdown>
-                    <button
-                      onClick={async () => {
-                        if (!isAuthenticated) {
-                          navigate('/auth')
-                          return
-                        }
-                        
-                        if (composerState.mode === 'moodmorph') {
-                          // Already in MoodMorph mode - toggle dropdown
-                          setMoodMorphDropdownOpen((v) => !v)
-                        } else {
-                          // Switch to MoodMorph mode AND show dropdown immediately
-                          setComposerState(s => ({ ...s, mode: 'moodmorph' }))
-                          setSelectedMoodMorphPreset(null)
-                          setMoodMorphDropdownOpen(true) // Show dropdown immediately
-                        }
-                      }}
-                      className={
-                        !isAuthenticated
-                          ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
-                          : composerState.mode === 'moodmorph'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15'
-                      }
-                      title={isAuthenticated ? 'Switch to MoodMorph™ mode' : 'Sign up to use MoodMorph™'}
-                      disabled={!isAuthenticated}
-                    >
-                      {selectedMoodMorphPreset ? 
-                        MOODMORPH_PRESETS.find(p => p.id === selectedMoodMorphPreset)?.label || 'MoodMorph™' 
-                        : 'MoodMorph™'
-                      }
-                    </button>
-                    
-                                          {/* MoodMorph presets dropdown - show when in MoodMorph mode */}
-                      {composerState.mode === 'moodmorph' && moodMorphDropdownOpen && (
-                        <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
-                          <MoodMorphPicker
-                            value={selectedMoodMorphPreset}
-                            onChange={async (presetId) => {
-                              setSelectedMoodMorphPreset(presetId || null)
-                              setMoodMorphDropdownOpen(false)
-                              
-                              // Auto-generate when MoodMorph preset is selected
-                              if (presetId && selectedFile && isAuthenticated) {
-                                console.log('🎭 Auto-generating MoodMorph with preset:', presetId)
-                                try {
-                                  await dispatchGenerate('moodmorph', {
-                                    moodMorphPresetId: presetId
-                                  })
-                                } catch (error) {
-                                  console.error('❌ MoodMorph auto-generation failed:', error)
-                                  notifyError({ title: 'Media failed', message: 'Try again' })
-                                }
-                              }
-                            }}
-                            disabled={!isAuthenticated}
-                          />
-                        </div>
-                      )}
-                  </div>
+                  {/* MoodMorph removed - replaced with Anime Filters */}
 
                   {/* Emotion Mask™ button - SINGLE BUTTON with dropdown */}
                   <div className="relative" data-emotionmask-dropdown>
@@ -3530,24 +3405,158 @@ const HomeNew: React.FC = () => {
                     
                     {/* Emotion Mask presets dropdown - show when in Emotion Mask mode */}
                     {composerState.mode === 'emotionmask' && emotionMaskDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                        <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
                         <EmotionMaskPicker
                           value={selectedEmotionMaskPreset}
-                          onChange={async (presetId) => {
+                            onChange={async (presetId) => {
                             setSelectedEmotionMaskPreset(presetId || null)
                             setEmotionMaskDropdownOpen(false)
-                            
+                              
                             // Auto-generate when Emotion Mask preset is selected
-                            if (presetId && selectedFile && isAuthenticated) {
+                              if (presetId && selectedFile && isAuthenticated) {
                               console.log('🎭 Auto-generating Emotion Mask with preset:', presetId)
-                              try {
+                                try {
                                 await dispatchGenerate('emotionmask', {
                                   emotionMaskPresetId: presetId
-                                })
-                                                              } catch (error) {
+                                  })
+                                } catch (error) {
                                   console.error('❌ Emotion Mask auto-generation failed:', error)
                                   notifyError({ title: 'Media failed', message: 'Try again' })
                                 }
+                              }
+                            }}
+                            disabled={!isAuthenticated}
+                          />
+                        </div>
+                      )}
+                  </div>
+
+                  {/* Studio Ghibli Reaction™ button - SINGLE BUTTON with dropdown */}
+                  <div className="relative" data-ghiblireact-dropdown>
+                    <button
+                      onClick={async () => {
+                        if (!isAuthenticated) {
+                          navigate('/auth')
+                          return
+                        }
+                        
+                        if (composerState.mode === 'ghiblireact') {
+                          // Already in Ghibli Reaction mode - toggle dropdown
+                          setGhibliReactionDropdownOpen((v) => !v)
+                        } else {
+                          // Switch to Ghibli Reaction mode AND show dropdown immediately
+                          setComposerState(s => ({ ...s, mode: 'ghiblireact' }))
+                          setSelectedGhibliReactionPreset(null)
+                          setGhibliReactionDropdownOpen(true) // Show dropdown immediately
+                        }
+                      }}
+                      className={
+                        !isAuthenticated
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
+                          : composerState.mode === 'ghiblireact'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white text-black'
+                          : 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15'
+                      }
+                      title={isAuthenticated ? 'Switch to Studio Ghibli Reaction mode' : 'Sign up to use Studio Ghibli Reaction'}
+                      disabled={!isAuthenticated}
+                    >
+                      {selectedGhibliReactionPreset ? 
+                        GHIBLI_REACTION_PRESETS.find(p => p.id === selectedGhibliReactionPreset)?.label || 'Studio Ghibli Reaction' 
+                        : 'Studio Ghibli Reaction'
+                      }
+                    </button>
+                    
+                    {/* Ghibli Reaction presets dropdown - show when in Ghibli Reaction mode */}
+                    {composerState.mode === 'ghiblireact' && ghibliReactionDropdownOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                        <GhibliReactionPicker
+                                                      value={selectedGhibliReactionPreset || undefined}
+                          onChange={async (presetId) => {
+                            setSelectedGhibliReactionPreset(presetId || null)
+                            setGhibliReactionDropdownOpen(false)
+                            
+                            // Auto-generate when Ghibli Reaction preset is selected
+                            if (presetId && selectedFile && isAuthenticated) {
+                              console.log('🎭 Auto-generating Ghibli Reaction with preset:', presetId)
+                              try {
+                                await dispatchGenerate('ghiblireact', {
+                                  ghibliReactionPresetId: presetId
+                                })
+                                // Clear composer after successful generation
+                                setTimeout(() => {
+                                  handleClearComposerState()
+                                }, 500)
+                              } catch (error) {
+                                console.error('❌ Ghibli Reaction auto-generation failed:', error)
+                                notifyError({ title: 'Media failed', message: 'Try again' })
+                              }
+                            }
+                          }}
+                          disabled={!isAuthenticated}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Neo Tokyo Glitch™ button - SINGLE BUTTON with dropdown */}
+                  <div className="relative" data-neotokyoglitch-dropdown>
+                    <button
+                      onClick={async () => {
+                        if (!isAuthenticated) {
+                          navigate('/auth')
+                          return
+                        }
+                        
+                        if (composerState.mode === 'neotokyoglitch') {
+                          // Already in Neo Tokyo Glitch mode - toggle dropdown
+                          setNeoTokyoGlitchDropdownOpen((v) => !v)
+                        } else {
+                          // Switch to Neo Tokyo Glitch mode AND show dropdown immediately
+                          setComposerState(s => ({ ...s, mode: 'neotokyoglitch' }))
+                          setSelectedNeoTokyoGlitchPreset(null)
+                          setNeoTokyoGlitchDropdownOpen(true) // Show dropdown immediately
+                        }
+                      }}
+                      className={
+                        !isAuthenticated
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/5 text-white/50 border-white/10 cursor-not-allowed'
+                          : composerState.mode === 'neotokyoglitch'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white text-black'
+                          : 'px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15'
+                      }
+                      title={isAuthenticated ? 'Switch to Neo Tokyo Glitch mode' : 'Sign up to use Neo Tokyo Glitch'}
+                      disabled={!isAuthenticated}
+                    >
+                      {selectedNeoTokyoGlitchPreset ? 
+                        NEO_TOKYO_GLITCH_PRESETS.find(p => p.id === selectedNeoTokyoGlitchPreset)?.label || 'Neo Tokyo Glitch' 
+                        : 'Neo Tokyo Glitch'
+                      }
+                    </button>
+                    
+                    {/* Neo Tokyo Glitch presets dropdown - show when in Neo Tokyo Glitch mode */}
+                    {composerState.mode === 'neotokyoglitch' && neoTokyoGlitchDropdownOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                        <NeoTokyoGlitchPicker
+                                                      value={selectedNeoTokyoGlitchPreset || undefined}
+                          onChange={async (presetId) => {
+                            setSelectedNeoTokyoGlitchPreset(presetId || null)
+                            setNeoTokyoGlitchDropdownOpen(false)
+                            
+                            // Auto-generate when Neo Tokyo Glitch preset is selected
+                            if (presetId && selectedFile && isAuthenticated) {
+                              console.log('🎭 Auto-generating Neo Tokyo Glitch with preset:', presetId)
+                              try {
+                                await dispatchGenerate('neotokyoglitch', {
+                                  neoTokyoGlitchPresetId: presetId
+                                })
+                                // Clear composer after successful generation
+                                setTimeout(() => {
+                                  handleClearComposerState()
+                                }, 500)
+                              } catch (error) {
+                                console.error('❌ Neo Tokyo Glitch auto-generation failed:', error)
+                                notifyError({ title: 'Media failed', message: 'Try again' })
+                              }
                             }
                           }}
                           disabled={!isAuthenticated}
@@ -3602,10 +3611,7 @@ const HomeNew: React.FC = () => {
                         // Custom mode - use custom generation
                         console.log('🎨 Custom mode - calling generateCustom')
                         await generateCustom()
-                      } else if (composerState.mode === 'remix') {
-                        // Remix mode - use remix generation
-                        console.log('🔄 Remix mode - calling generateRemix')
-                        await generateRemix()
+                                                     // Remix mode removed - focus on personal creativity
                       } else if (composerState.mode === 'emotionmask') {
                         // Emotion Mask mode - use Emotion Mask generation
                         console.log('🎭 Emotion Mask mode - calling generateEmotionMask')

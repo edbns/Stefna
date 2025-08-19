@@ -36,7 +36,7 @@ export const handler: Handler = async (event) => {
       
       try {
         const settings = await sql`
-          SELECT share_to_feed, allow_remix, updated_at
+          SELECT share_to_feed, updated_at
           FROM user_settings
           WHERE user_id = ${userId}
         `;
@@ -44,7 +44,6 @@ export const handler: Handler = async (event) => {
         // Return default settings if none exist
         const defaultSettings = {
           share_to_feed: true,  // Default to sharing
-          allow_remix: true,    // Default to allowing remix
           updated_at: null
         }
 
@@ -53,7 +52,6 @@ export const handler: Handler = async (event) => {
 
         return json({
           shareToFeed: result.share_to_feed,
-          allowRemix: result.allow_remix,
           updatedAt: result.updated_at
         })
       } catch (dbError) {
@@ -61,7 +59,6 @@ export const handler: Handler = async (event) => {
         // Return default settings on error
         return json({
           shareToFeed: true,
-          allowRemix: true,
           updatedAt: null
         })
       }
@@ -70,24 +67,23 @@ export const handler: Handler = async (event) => {
     if (event.httpMethod === 'POST') {
       // Update user settings
       const body = JSON.parse(event.body || '{}')
-      const { shareToFeed, allowRemix } = body
+      const { shareToFeed } = body
 
-      if (typeof shareToFeed !== 'boolean' || typeof allowRemix !== 'boolean') {
-        return json({ error: 'shareToFeed and allowRemix must be boolean' }, { status: 400 })
+      if (typeof shareToFeed !== 'boolean') {
+        return json({ error: 'shareToFeed must be boolean' }, { status: 400 })
       }
 
-      console.log(`📝 Updating settings for user ${userId}:`, { shareToFeed, allowRemix })
+      console.log(`📝 Updating settings for user ${userId}:`, { shareToFeed })
 
       try {
         // Upsert settings (create if doesn't exist, update if it does)
         const updated = await sql`
-          INSERT INTO user_settings (user_id, share_to_feed, allow_remix, updated_at)
-          VALUES (${userId}, ${shareToFeed}, ${allowRemix}, NOW())
+          INSERT INTO user_settings (user_id, share_to_feed, updated_at)
+          VALUES (${userId}, ${shareToFeed}, NOW())
           ON CONFLICT (user_id) DO UPDATE SET 
             share_to_feed = EXCLUDED.share_to_feed,
-            allow_remix = EXCLUDED.allow_remix,
             updated_at = NOW()
-          RETURNING share_to_feed, allow_remix, updated_at
+          RETURNING share_to_feed, updated_at
         `;
 
         const result = updated[0]
@@ -95,7 +91,6 @@ export const handler: Handler = async (event) => {
 
         return json({
           shareToFeed: result.share_to_feed,
-          allowRemix: result.allow_remix,
           updatedAt: result.updated_at
         })
       } catch (dbError) {

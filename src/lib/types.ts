@@ -6,7 +6,7 @@ export type MediaRecord = {
   ownerUserId: string;
   parentId?: string;               // if this is a remix, points to original media
   createdAt: string;
-  remixCount?: number;             // optional denormalized count
+  // remixCount removed - no more remix functionality
   meta: {
     presetId: string;              // Preset['id']
     mode: Mode;                    // 'i2i' | 'txt2img' | 'restore' | 'story'
@@ -24,7 +24,7 @@ export type Asset = {
   media_type: MediaType | null;
   status: 'queued' | 'processing' | 'ready' | 'failed';
   is_public: boolean;
-  allow_remix: boolean;
+  // allow_remix removed
   published_at: string | null;
   source_asset_id: string | null;
   preset_key: string | null;
@@ -51,7 +51,7 @@ export type ProcessAssetPayload = {
 export type PublishAssetInput = {
   assetId: string;
   isPublic: boolean;
-  allowRemix: boolean;
+  // allowRemix removed
 };
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };

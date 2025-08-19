@@ -1,16 +1,16 @@
 import React, { useRef, useMemo } from 'react'
 import { UserMedia } from '../services/userMediaService'
-import RemixIcon from './RemixIcon'
+// RemixIcon removed - no more remix functionality
 import { MediaCard as SpinnerCard } from './ui/Toasts'
 // LazyImage removed - using simple img tags for better performance
-import { formatRemixCount } from '../utils/mediaCardHelpers'
+// formatRemixCount removed - no more remix functionality
 
 interface MasonryMediaGridProps {
   media: UserMedia[]
   columns?: number
   onMediaClick?: (media: UserMedia) => void
   onDownload?: (media: UserMedia) => void
-  onRemix?: (media: UserMedia) => void
+  // onRemix removed - no more remix functionality
   onDelete?: (media: UserMedia) => void
   onGenerateCaption?: (media: UserMedia) => void
   showActions?: boolean
@@ -28,7 +28,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   media,
   onMediaClick,
   onDownload,
-  onRemix,
+  // onRemix removed
   onDelete,
   showActions = true,
   className = '',
@@ -191,10 +191,8 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   {/* Type indicator */}
                   {getTypeIcon(item.type)}
 
-                  {/* Simplified overlay system - only remix button */}
+                  {/* Simplified overlay system - remix removed for cleaner focus */}
                   {(() => {
-                    const remixText = formatRemixCount(item.remixCount)
-                    
                     return (
                       <>
 
@@ -204,26 +202,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             {/* Edit Button - Bottom Right (Primary CTA) */}
                             {/* Removed onEdit prop, so this block is removed */}
 
-                            {/* Remix Button - Bottom Right (Secondary CTA) */}
-                            {onRemix && (
-                              <div className="absolute bottom-2 right-2 opacity-100 transition-opacity duration-300">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    if (!isLoggedIn) {
-                                      onShowAuth?.()
-                                      return
-                                    }
-                                    onRemix(item)
-                                  }}
-                                  className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/80 transition-all duration-300 hover:scale-105"
-                                  title="Remix this creation"
-                                  aria-label="Remix this media"
-                                >
-                                  <RemixIcon size={15} className="text-white" />
-                                </button>
-                              </div>
-                            )}
+                            {/* Remix functionality removed - focus on personal creativity */}
 
 
 
