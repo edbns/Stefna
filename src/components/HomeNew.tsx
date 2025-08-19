@@ -630,6 +630,16 @@ const HomeNew: React.FC = () => {
       console.log('🧹 Clearing composer state immediately after generation completion')
       handleClearComposerState()
       
+      // Force immediate UI refresh
+      setTimeout(() => {
+        console.log('🔄 Forcing immediate UI refresh...')
+        // Force a re-render by updating state
+        setSelectedFile(null)
+        setPreviewUrl(null)
+        setPrompt('')
+        setIsComposerOpen(false)
+      }, 100) // Very fast refresh
+      
       // Refresh the feed and user media after generation completes
       setTimeout(() => {
         console.log('🔄 Refreshing feed and user media after generation completion...')
@@ -646,6 +656,10 @@ const HomeNew: React.FC = () => {
       const { message } = event.detail
       console.log('✅ Generation success:', message)
       // The toast is already handled by the generation pipeline
+      
+      // Clear composer state immediately after successful generation
+      console.log('🧹 Clearing composer state after generation success')
+      handleClearComposerState()
     }
 
     const handleGenerationError = (event: CustomEvent) => {
@@ -660,6 +674,10 @@ const HomeNew: React.FC = () => {
       loadFeed()
       // Dispatch event to refresh user profile if it's mounted
       window.dispatchEvent(new CustomEvent('refreshUserProfile'))
+      
+      // Clear composer state after user media update (for MoodMorph and other modes)
+      console.log('🧹 Clearing composer state after user media update')
+      handleClearComposerState()
     }
 
     const handleRefreshUserMedia = () => {
@@ -679,13 +697,37 @@ const HomeNew: React.FC = () => {
       setPreviewUrl(null)
       setPrompt('')
       setSelectedPreset(null)
+      setSelectedMoodMorphPreset(null)
+      setSelectedEmotionMaskPreset(null)
+      setSelectedMode(null)
       setIsVideoPreview(false)
+      
+      // Clear composer state completely
+      setComposerState({
+        mode: 'custom',
+        file: null,
+        sourceUrl: null,
+        selectedPresetId: null,
+        selectedMoodMorphPresetId: null,
+        selectedEmotionMaskPresetId: null,
+        customPrompt: '',
+        status: 'idle',
+        error: null,
+        runOnOpen: false
+      })
+      
       // Clear any file input
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
       if (fileInput) {
         fileInput.value = ''
+        // Force remount if needed
+        fileInput.setAttribute('key', String(Date.now()))
       }
-      console.log('🧹 Composer state cleared')
+      
+      // Clear composer open state
+      setIsComposerOpen(false)
+      
+      console.log('🧹 Composer state completely cleared')
     }
 
     window.addEventListener('generation-complete', handleGenerationComplete as EventListener)
