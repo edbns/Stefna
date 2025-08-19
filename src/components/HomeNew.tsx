@@ -3462,20 +3462,32 @@ const HomeNew: React.FC = () => {
                         // Emotion Mask mode - use Emotion Mask generation
                         console.log('🎭 Emotion Mask mode - calling generateEmotionMask')
                         await generateEmotionMask()
-                        } else {
-                        // Fallback - determine mode and generate
-                        if (selectedPreset) {
-                        // Run preset generation
-                        dispatchGenerate('preset', {
-                          presetId: selectedPreset,
-                          presetData: PRESETS[selectedPreset],
-                          promptOverride: prompt
+                      } else if (composerState.mode === 'ghiblireact') {
+                        // Ghibli Reaction mode - use dispatchGenerate directly
+                        console.log('🎭 Ghibli Reaction mode - calling dispatchGenerate')
+                        await dispatchGenerate('ghiblireact', {
+                          ghibliReactionPresetId: selectedGhibliReactionPreset
+                        })
+                      } else if (composerState.mode === 'neotokyoglitch') {
+                        // Neo Tokyo Glitch mode - use dispatchGenerate directly
+                        console.log('🎭 Neo Tokyo Glitch mode - calling dispatchGenerate')
+                        await dispatchGenerate('neotokyoglitch', {
+                          neoTokyoGlitchPresetId: selectedNeoTokyoGlitchPreset
                         })
                       } else {
-                        // Run custom generation
-                        dispatchGenerate('custom', {
-                          promptOverride: prompt
-                        })
+                        // Fallback - determine mode and generate
+                        if (selectedPreset) {
+                          // Run preset generation
+                          dispatchGenerate('preset', {
+                            presetId: selectedPreset,
+                            presetData: PRESETS[selectedPreset],
+                            promptOverride: prompt
+                          })
+                        } else {
+                          // Run custom generation
+                          dispatchGenerate('custom', {
+                            promptOverride: prompt
+                          })
                         }
                       }
                     }} 
