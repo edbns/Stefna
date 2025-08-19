@@ -14,7 +14,13 @@ async function getUserMedia(ownerId: string) {
     const media = await sql`
       SELECT 
         id, user_id, is_public, allow_remix, created_at, prompt,
-        COALESCE(final_url, CASE WHEN (cloudinary_public_id ~~ 'stefna/%'::text) THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id) ELSE NULL::text END) AS url,
+        COALESCE(final_url, 
+          CASE 
+            WHEN cloudinary_public_id ~~ 'stefna/%'::text THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id)
+            WHEN cloudinary_public_id IS NOT NULL THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/stefna/'::text || cloudinary_public_id)
+            ELSE NULL::text 
+          END
+        ) AS url,
         cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
       FROM assets 
       WHERE user_id = ${ownerId}::uuid
@@ -56,7 +62,13 @@ export const handler: Handler = async (event) => {
     const media = await sql`
       SELECT 
         id, user_id, is_public, allow_remix, created_at, prompt,
-        COALESCE(final_url, CASE WHEN (cloudinary_public_id ~~ 'stefna/%'::text) THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id) ELSE NULL::text END) AS url,
+        COALESCE(final_url, 
+          CASE 
+            WHEN cloudinary_public_id ~~ 'stefna/%'::text THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id)
+            WHEN cloudinary_public_id IS NOT NULL THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/stefna/'::text || cloudinary_public_id)
+            ELSE NULL::text 
+          END
+        ) AS url,
         cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
       FROM assets 
       WHERE user_id = ${ownerId}::uuid
@@ -75,7 +87,9 @@ export const handler: Handler = async (event) => {
       prompt: m.prompt ?? null,
       is_public: m.is_public,
       created_at: m.created_at,
-      meta: m.meta
+      meta: m.meta,
+      // Add result_url for backward compatibility with ProfileScreen
+      result_url: m.url
     }));
 
     // Ensure user exists in users table
