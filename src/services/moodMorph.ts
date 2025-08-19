@@ -114,7 +114,8 @@ export const runMoodMorph = async (
       
       if (createAssetResponse.ok) {
         const assetResult = await createAssetResponse.json();
-        sourceAssetId = assetResult.asset?.id || null;
+        console.log('📝 MoodMorph: create-asset response:', assetResult);
+        sourceAssetId = assetResult.data?.id || null;
         console.log('📝 MoodMorph: Source asset created with ID:', sourceAssetId);
       } else {
         console.warn('⚠️ MoodMorph: Could not create source asset, continuing without source tracking');
@@ -217,23 +218,28 @@ export const runMoodMorph = async (
     // Step 4: Save media using batch endpoint
     try {
       console.log(`💾 MoodMorph: Saving ${allVariations.length} variations...`);
+      const batchPayload = {
+        variations: allVariations.map(v => ({
+          ...v,
+          image_url: v.url, // Map url to image_url for save-media-batch
+          source_asset_id: sourceAssetId, // Use the UUID from the source asset
+          runId,
+          media_type: 'image'
+        })),
+        runId,
+        credits_used: creditsNeeded // Add credit metadata for consistency
+      };
+      
+      console.log('📤 MoodMorph: Batch save payload:', batchPayload);
+      console.log('🔍 MoodMorph: source_asset_id being sent:', sourceAssetId);
+      
       const batchResponse = await fetchWithAuth('/.netlify/functions/save-media-batch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Idempotency-Key': runId
         },
-        body: JSON.stringify({
-          variations: allVariations.map(v => ({
-            ...v,
-            image_url: v.url, // Map url to image_url for save-media-batch
-            source_asset_id: sourceAssetId, // Use the UUID from the source asset
-            runId,
-            media_type: 'image'
-          })),
-          runId,
-          credits_used: creditsNeeded // Add credit metadata for consistency
-        })
+        body: JSON.stringify(batchPayload)
       });
 
       if (batchResponse.ok) {
