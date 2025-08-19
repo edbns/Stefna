@@ -1093,9 +1093,12 @@ const HomeNew: React.FC = () => {
     // Close composer immediately when generation starts
     setIsComposerOpen(false);
     
-    // Start generation with ID guard
-    const genId = startGeneration();
-    setNavGenerating(true);
+          // Start generation with ID guard
+      const genId = startGeneration();
+      setNavGenerating(true);
+      
+      // Show "Add to queue" notification for all generation modes
+      notifyQueue({ title: 'Add to queue', message: 'We will start processing shortly.' });
 
     // Get current profile settings
     const { shareToFeed } = await getUserProfileSettings() // allowRemix removed
