@@ -3,6 +3,11 @@ import type { Handler } from '@netlify/functions';
 import { sql } from '../lib/db';
 import { getAuthedUser } from '../lib/auth';
 
+// Helper function to validate UUID format
+function isValidUUID(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 // Get user media from new database
 async function getUserMedia(ownerId: string) {
   try {
@@ -12,7 +17,7 @@ async function getUserMedia(ownerId: string) {
         COALESCE(final_url, CASE WHEN (cloudinary_public_id ~~ 'stefna/%'::text) THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id) ELSE NULL::text END) AS url,
         cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
       FROM assets 
-      WHERE user_id = ${ownerId}
+      WHERE user_id = ${ownerId}::uuid
       ORDER BY created_at DESC
     `;
     
@@ -39,6 +44,12 @@ export const handler: Handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ ok: false, message: 'ownerId required' }) };
     }
 
+    // Validate UUID format before database query
+    if (!isValidUUID(ownerId)) {
+      console.error('❌ Invalid UUID format:', ownerId);
+      return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Invalid user ID format' }) };
+    }
+
     const isSelf = user?.id === ownerId;
 
     // Get user media with visibility filtering
@@ -48,7 +59,7 @@ export const handler: Handler = async (event) => {
         COALESCE(final_url, CASE WHEN (cloudinary_public_id ~~ 'stefna/%'::text) THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id) ELSE NULL::text END) AS url,
         cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
       FROM assets 
-      WHERE user_id = ${ownerId}
+      WHERE user_id = ${ownerId}::uuid
       ${isSelf ? sql`` : sql`AND is_public = true`}
       ORDER BY created_at DESC
       LIMIT ${limit}

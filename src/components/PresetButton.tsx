@@ -18,10 +18,10 @@ export function PresetButton({ presetId, children, className = '' }: PresetButto
     // Keep UI in sync
     setSelectedPreset(presetId);
     
-    // Close composer with 100ms delay
+    // Close composer with 50ms delay
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('close-composer'));
-    }, 100);
+    }, 50);
     
     // Use single orchestration point - no direct runs
     await ensureSourceThenRun({ kind: 'preset', presetId: presetId as string });
@@ -48,10 +48,10 @@ export function TimeMachineButton({ optionKey, children, className = '' }: TimeM
   async function onClick() {
     console.info('🕰️ Time Machine button clicked:', optionKey);
     
-    // Close composer with 100ms delay
+    // Close composer with 50ms delay
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('close-composer'));
-    }, 100);
+    }, 50);
     
     await ensureSourceThenRun({ kind: 'time_machine', key: optionKey });
   }
@@ -77,10 +77,10 @@ export function RestoreButton({ optionKey, children, className = '' }: RestoreBu
   async function onClick() {
     console.info('🔧 Restore button clicked:', optionKey);
     
-    // Close composer with 100ms delay
+    // Close composer with 50ms delay
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('close-composer'));
-    }, 100);
+    }, 50);
     
     await ensureSourceThenRun({ kind: 'restore', key: optionKey });
   }

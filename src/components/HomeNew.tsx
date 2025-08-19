@@ -218,7 +218,7 @@ const HomeNew: React.FC = () => {
   // Clear preset when user exits composer (debounced to avoid race)
   const clearPresetOnExit = () => {
     // Give time for success path to win first
-    setTimeout(() => requestClearPreset('composer exit'), 300)
+    setTimeout(() => requestClearPreset('composer exit'), 100)
   }
   
   // Initialize presets and validate mappings
