@@ -124,7 +124,38 @@ export const runMoodMorph = async (
       // Continue without source tracking
     }
     
-    // Step 2: Generate variations via AIML
+    // Step 2: Reserve credits BEFORE generation (3 credits for 3 variations)
+    const runId = `moodmorph_${Date.now()}`;
+    const creditsNeeded = MOODS.length; // Always 3 for MoodMorph
+    
+    console.log(`💰 MoodMorph: Reserving ${creditsNeeded} credits BEFORE generation...`);
+    const creditsResponse = await fetchWithAuth('/.netlify/functions/credits-reserve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'moodmorph',
+        cost: creditsNeeded
+      })
+    });
+
+    if (!creditsResponse.ok) {
+      if (creditsResponse.status === 429) {
+        const errorData = await creditsResponse.json();
+        throw new Error(`Daily cap reached: ${errorData.error}`);
+      }
+      throw new Error(`Credits reservation failed: ${creditsResponse.status}`);
+    }
+
+    const creditsResult = await creditsResponse.json();
+    console.log(`✅ MoodMorph: Credits reserved successfully. New balance: ${creditsResult.balance}`);
+    
+    // Store the request_id for finalization
+    requestId = creditsResult.request_id;
+    if (!requestId) {
+      throw new Error('No request_id returned from credits reservation');
+    }
+
+    // Step 3: Generate variations via AIML (after credits reserved)
     const allVariations: MoodVariation[] = [];
     
     for (let i = 0; i < MOODS.length; i++) {
@@ -160,7 +191,7 @@ export const runMoodMorph = async (
             seed: mood.seed || 1000 + i,
             meta: {
               mood: mood.id,
-              runId: `moodmorph_${Date.now()}`,
+              runId: runId, // Use the same runId from credit reservation
               presetId: 'moodmorph',
               group: `moodmorph_${Date.now()}`,
               variation_index: i,
@@ -183,37 +214,6 @@ export const runMoodMorph = async (
     onProgress(100);
     console.log(`🎉 MoodMorph: Generated ${allVariations.length} variations`);
 
-    // Step 3: Reserve credits first
-    const runId = `moodmorph_${Date.now()}`;
-    const creditsNeeded = allVariations.length;
-    
-    console.log(`💰 MoodMorph: Reserving ${creditsNeeded} credits...`);
-    const creditsResponse = await fetchWithAuth('/.netlify/functions/credits-reserve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'moodmorph',
-        cost: creditsNeeded
-      })
-    });
-
-    if (!creditsResponse.ok) {
-      if (creditsResponse.status === 429) {
-        const errorData = await creditsResponse.json();
-        throw new Error(`Daily cap reached: ${errorData.error}`);
-      }
-      throw new Error(`Credits reservation failed: ${creditsResponse.status}`);
-    }
-
-    const creditsResult = await creditsResponse.json();
-    console.log(`✅ MoodMorph: Credits reserved successfully. New balance: ${creditsResult.balance}`);
-    
-    // Store the request_id for finalization
-    requestId = creditsResult.request_id;
-    if (!requestId) {
-      throw new Error('No request_id returned from credits reservation');
-    }
-
     // Step 4: Save media using batch endpoint
     try {
       console.log(`💾 MoodMorph: Saving ${allVariations.length} variations...`);
@@ -231,7 +231,8 @@ export const runMoodMorph = async (
             runId,
             media_type: 'image'
           })),
-          runId
+          runId,
+          credits_used: creditsNeeded // Add credit metadata for consistency
         })
       });
 
@@ -269,11 +270,14 @@ export const runMoodMorph = async (
           detail: { count: batchResult.count, mode: 'moodmorph' } 
         }));
         
-        // Trigger page refresh after moodmorph completion
+        // Refresh feed and user media after MoodMorph completion
         setTimeout(() => {
-          console.log('🔄 Refreshing page after MoodMorph completion...');
-          window.location.reload();
-        }, 2000); // 2 second delay to let user see the result
+          console.log('🔄 Refreshing feed and user media after MoodMorph completion...');
+          // Dispatch event to refresh user media
+          window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+            detail: { count: batchResult.count, runId: runId } 
+          }));
+        }, 1000); // 1 second delay to let user see the result
         
         onComplete(allVariations);
       } else {
@@ -355,11 +359,14 @@ export const runMoodMorph = async (
             detail: { count: savedCount, mode: 'moodmorph', fallback: true } 
           }));
           
-          // Trigger page refresh after moodmorph fallback completion
+          // Refresh feed and user media after MoodMorph fallback completion
           setTimeout(() => {
-            console.log('🔄 Refreshing page after MoodMorph fallback completion...');
-            window.location.reload();
-          }, 2000); // 2 second delay to let user see the result
+            console.log('🔄 Refreshing feed and user media after MoodMorph fallback completion...');
+            // Dispatch event to refresh user media
+            window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+              detail: { count: savedCount, runId: runId } 
+            }));
+          }, 1000); // 1 second delay to let user see the result
           
           onComplete(allVariations.slice(0, savedCount));
         } else {
