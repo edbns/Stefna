@@ -75,13 +75,12 @@ export const handler: Handler = async (event, context) => {
     // This prevents the "User ID not found in users table" error
     try {
       await sql`
-        INSERT INTO users (id, email, external_id, name, created_at, updated_at)
-        VALUES (${uid}, ${email || `user-${uid}@placeholder.com`}, ${email || `user-${uid}@placeholder.com`}, ${body.username || `User ${uid}`}, NOW(), NOW())
+        INSERT INTO users (id, email, external_id, created_at, updated_at)
+        VALUES (${uid}, ${email || `user-${uid}@placeholder.com`}, ${email || `user-${uid}@placeholder.com`}, now(), now())
         ON CONFLICT (id) DO UPDATE SET 
           email = EXCLUDED.email,
           external_id = EXCLUDED.external_id,
-          name = EXCLUDED.name,
-          updated_at = NOW()
+          updated_at = now()
       `;
       
       console.log('✅ User upserted successfully');
@@ -93,21 +92,18 @@ export const handler: Handler = async (event, context) => {
       });
     }
 
-    // SECOND: Update user settings
+    // SECOND: Initialize user credits if they don't exist
     try {
       await sql`
-        INSERT INTO user_settings (id, user_id, share_to_feed, allow_remix, updated_at)
-        VALUES (${crypto.randomUUID()}, ${uid}, ${body.share_to_feed ?? true}, ${body.allow_remix ?? true}, NOW())
-        ON CONFLICT (user_id) DO UPDATE SET
-          share_to_feed = ${body.share_to_feed ?? true},
-          allow_remix = ${body.allow_remix ?? true},
-          updated_at = NOW()
+        INSERT INTO user_credits (user_id, balance, updated_at)
+        VALUES (${uid}, 30, now())
+        ON CONFLICT (user_id) DO NOTHING
       `;
       
-      console.log('✅ User settings upserted successfully');
-    } catch (settingsUpsertError) {
-      console.error('Failed to upsert user settings:', settingsUpsertError);
-      // Don't fail the request for settings upsert errors
+      console.log('✅ User credits initialized successfully');
+    } catch (creditsError) {
+      console.error('Failed to initialize user credits:', creditsError);
+      // Don't fail the request for credits errors
     }
 
     // Return success response
