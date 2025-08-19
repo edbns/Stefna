@@ -26,7 +26,7 @@ export const handler: Handler = async (event) => {
         pf.is_public AS visibility,
         pf.allow_remix
       FROM public_feed_working pf
-      LEFT JOIN app_users u ON pf.user_id = u.id
+      LEFT JOIN app_users u ON pf.user_id::text = u.id
       ORDER BY pf.created_at DESC
       LIMIT ${limit}
     `;
