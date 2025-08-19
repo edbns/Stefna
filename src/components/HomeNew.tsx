@@ -1217,24 +1217,24 @@ const HomeNew: React.FC = () => {
         };
         console.log('🎭 EMOTION MASK MODE: Using curated preset:', emotionMaskPreset.label, effectivePrompt, 'Model:', emotionMaskPreset.model);
       } else {
-        // Use dynamic prompt for rare/experimental emotions
+        // Use dynamic prompt for rare/experimental emotions - photorealistic approach
         const emotion = internalEmotionId;
-        effectivePrompt = `Cinematic portrait that expresses "${emotion}" clearly, with emotional lighting and subtle mood-enhancing visual cues. Stylized glowing face patterns, symbolic ${emotion} overlay, cinematic lighting, focused facial emotion, clear mask-like markings around eyes and cheeks.`;
+        effectivePrompt = `portrait of a woman expressing "${emotion}" naturally, soft natural lighting, authentic human emotion, photo-realistic skin texture, emotional depth, natural beauty, human vulnerability, cinematic composition, emotional authenticity`;
         generationMeta = { 
           mode: 'emotionmask', 
           emotionMaskPresetId, 
           emotionMaskLabel: emotionMaskPreset.label, 
           vibe: emotionMaskPreset.vibe,
-          model: "flux-image-to-image-v1", // Fallback model for dynamic emotions
-          strength: 0.55,
-          guidance_scale: 9.5,
+          model: "RealVisXL_V4.0", // Photorealistic model for emotional authenticity
+          strength: 0.45,
+          guidance_scale: 7.5,
           face_fix: true,
           face_method: "ipadapter",
-          postprocessing: ["emotion_glow_overlay", "face_highlight_mask", "background_blur"],
-          features: [`${emotion}_emotion`, "dynamic_mask", "cinematic_lighting"],
+          postprocessing: ["soft_light_blend", "face_restoration", "natural_color_enhancement"],
+          features: [`${emotion}_emotion`, "human_authenticity", "natural_lighting", "emotional_realism"],
           generation_type: "dynamic"
         };
-        console.log('🎭 EMOTION MASK MODE: Using dynamic prompt for:', emotionMaskPreset.label, effectivePrompt);
+        console.log('🎭 EMOTION MASK MODE: Using dynamic photorealistic prompt for:', emotionMaskPreset.label, effectivePrompt);
       }
       
     } else if (kind === 'ghiblireact') {
