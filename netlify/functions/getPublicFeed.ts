@@ -10,25 +10,24 @@ export const handler: Handler = async (event) => {
     const url = new URL(event.rawUrl);
     const limit = Number(url.searchParams.get('limit') ?? 50);
 
-    // Get public media from database using compatibility views
+    // Get public media from database using our new working view
     const media = await sql`
       SELECT 
-        ma.id,
-        ma.user_id,
+        pf.id,
+        pf.user_id,
         u.name AS user_name,
         u.avatar_url AS user_avatar,
         u.tier AS user_tier,
-        ma.url,
-        ma.public_id AS cloudinary_public_id,
-        ma.type AS resource_type,
-        ma.prompt,
-        ma.created_at AS published_at,
-        ma.is_public AS visibility,
-        ma.allow_remix
-      FROM app_media ma
-      LEFT JOIN app_users u ON ma.user_id = u.id
-      WHERE ma.is_public = true
-      ORDER BY ma.created_at DESC
+        pf.url,
+        pf.cloudinary_public_id,
+        pf.media_type AS resource_type,
+        pf.prompt,
+        pf.created_at AS published_at,
+        pf.is_public AS visibility,
+        pf.allow_remix
+      FROM public_feed_working pf
+      LEFT JOIN app_users u ON pf.user_id = u.id
+      ORDER BY pf.created_at DESC
       LIMIT ${limit}
     `;
 
