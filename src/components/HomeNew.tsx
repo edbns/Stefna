@@ -145,7 +145,7 @@ const HomeNew: React.FC = () => {
 
   
   // New preset runner system - MUST be declared before use
-  const { queuePreset, queueOption, queueStory, onSourceReady, clearQueue, busy: presetRunnerBusy } = usePresetRunner()
+        const { queuePreset, queueOption, onSourceReady, clearQueue, busy: presetRunnerBusy } = usePresetRunner()
   const { selectedPreset: stickySelectedPreset, setSelectedPreset: setStickySelectedPreset, ensureDefault } = useSelectedPreset()
   
   // Selected preset using sticky store instead of local state
@@ -345,7 +345,7 @@ const HomeNew: React.FC = () => {
   const [filterOpen, setFilterOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
   const [moodMorphDropdownOpen, setMoodMorphDropdownOpen] = useState(false)
-  const [expandedStorySection, setExpandedStorySection] = useState<string | null>(null)
+
   
   // Profile state from context
   const { profileData } = useProfile()
@@ -1339,13 +1339,9 @@ const HomeNew: React.FC = () => {
       const body = await res.json().catch(() => ({}));
       console.info('aimlApi body', body);
 
-      // Handle video job creation (status 202) - includes Story Mode
-      if (res.status === 202 && body.job_id && (isVideoPreview || body.kind === 'story')) {
-        if (body.kind === 'story') {
-          notifyQueue({ title: 'Your Story is ready', message: 'Creating your 4-shot story video...' })
-        } else {
-          notifyQueue({ title: 'Add to queue', message: 'Processing will begin shortly.' })
-        }
+      // Handle video job creation (status 202)
+      if (res.status === 202 && body.job_id && isVideoPreview) {
+        notifyQueue({ title: 'Add to queue', message: 'Processing will begin shortly.' })
         setCurrentVideoJob({ id: body.job_id, status: 'queued' })
         startVideoJobPolling(body.job_id, body.model, effectivePrompt)
         endGeneration(genId)
@@ -1824,9 +1820,8 @@ const HomeNew: React.FC = () => {
       })
       const sourceUrl = uploadResult.secureUrl
       
-      // Determine if this should be a video job (Story Mode creates MP4s)
-      const isStoryMode = selectedMode === 'story';
-      const shouldBeVideo = isVideoPreview || isStoryMode;
+      // Determine if this should be a video job
+      const shouldBeVideo = isVideoPreview;
       
       const body: Record<string, any> = {
         prompt: (promptOverride ?? prompt).trim(),
@@ -1835,17 +1830,10 @@ const HomeNew: React.FC = () => {
         source: 'custom',
         visibility: shareToFeed ? 'public' : 'private',
         allow_remix: shareToFeed ? allowRemix : false,
-        num_variations: isStoryMode ? 4 : (generateTwo ? 2 : 1), // Story Mode needs 4 frames
+        num_variations: generateTwo ? 2 : 1,
       }
       
-      // Add Story Mode specific parameters
-      if (isStoryMode) {
-        body.fps = 30;
-        body.width = 1080;
-        body.height = 1920;
-        body.duration_ms = 7000;
-        body.model = 'kling-1.6-standard-image-to-video'; // or preferred i2v model
-      }
+
       // If a preset is selected, include its negative prompt and strength
       if (selectedPreset && PRESETS[selectedPreset]) {
         const preset = PRESETS[selectedPreset]
@@ -2361,7 +2349,7 @@ const HomeNew: React.FC = () => {
   }
 
   // Mode handlers for one-click generation
-  const handleModeClick = async (mode: 'time_machine'|'story'|'restore', option: string) => {
+          const handleModeClick = async (mode: 'time_machine'|'restore', option: string) => {
     console.log('🎯 handleModeClick called with:', { mode, option })
     
     // Check authentication first
@@ -2394,7 +2382,7 @@ const HomeNew: React.FC = () => {
       const source = selectedFile;
       const { url: remoteUrl, resource_type } = await prepareSourceAsset(source)
       if (resource_type !== 'image') { 
-        notifyError({ title: 'Photo required', message: 'Story / Time Machine / Restore need a photo' })
+        notifyError({ title: 'Photo required', message: 'Time Machine / Restore need a photo' })
         setNavGenerating(false)
         return
       }
@@ -2403,9 +2391,7 @@ const HomeNew: React.FC = () => {
       setSelectedMode(mode)
       
       // Use bulletproof handlers
-      if (mode === 'story') {
-        await runStory(remoteUrl, prompt)
-      } else if (mode === 'time_machine') {
+      if (mode === 'time_machine') {
         await onTimeMachineClick(option, remoteUrl)
       } else if (mode === 'restore') {
         // For restore, we can use time machine handler with restore mapping

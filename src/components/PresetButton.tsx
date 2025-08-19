@@ -95,31 +95,4 @@ export function RestoreButton({ optionKey, children, className = '' }: RestoreBu
   );
 }
 
-// Story Button
-interface StoryButtonProps {
-  theme: string;
-  children: React.ReactNode;
-  className?: string;
-}
 
-export function StoryButton({ theme, children, className = '' }: StoryButtonProps) {
-  async function onClick() {
-    console.info('📖 Story button clicked:', theme);
-    
-    // Close composer with 100ms delay
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('close-composer'));
-    }, 100);
-    
-    await ensureSourceThenRun({ kind: 'story', theme });
-  }
-
-  return (
-    <button 
-      onClick={onClick}
-      className={`story-button ${className}`}
-    >
-      {children}
-    </button>
-  );
-}
