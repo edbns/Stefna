@@ -215,10 +215,10 @@ const HomeNew: React.FC = () => {
     }))
   }
 
-  // Clear preset when user exits composer (debounced to avoid race)
+  // Clear preset when user exits composer (immediate to avoid race)
   const clearPresetOnExit = () => {
-    // Give time for success path to win first
-    setTimeout(() => requestClearPreset('composer exit'), 100)
+    // Immediate clear for faster response
+    requestClearPreset('composer exit')
   }
   
   // Initialize presets and validate mappings
@@ -626,6 +626,10 @@ const HomeNew: React.FC = () => {
       
       console.log('✅ UI updated successfully with new media:', newMedia)
       
+      // Clear composer state immediately after generation completes
+      console.log('🧹 Clearing composer state immediately after generation completion')
+      handleClearComposerState()
+      
       // Refresh the feed and user media after generation completes
       setTimeout(() => {
         console.log('🔄 Refreshing feed and user media after generation completion...')
@@ -635,7 +639,7 @@ const HomeNew: React.FC = () => {
         window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
           detail: { count: 1, runId: record.meta?.runId || 'unknown' } 
         }))
-      }, 1000) // 1 second delay to let user see the result
+      }, 500) // Reduced from 1000ms to 500ms for faster feedback
     }
 
     const handleGenerationSuccess = (event: CustomEvent) => {
@@ -647,7 +651,7 @@ const HomeNew: React.FC = () => {
     const handleGenerationError = (event: CustomEvent) => {
       const { message } = event.detail
       console.log('❌ Generation error:', message)
-      notifyError({ title: 'Generation failed', message })
+              notifyError({ title: 'Media failed', message: 'Try again' })
     }
 
     const handleUserMediaUpdated = () => {
@@ -2175,7 +2179,7 @@ const HomeNew: React.FC = () => {
       
     } catch (error) {
       console.log('❌ Auto-run check failed:', error)
-      notifyError({ title: 'Generation failed', message: 'Please try again' })
+      notifyError({ title: 'Media failed', message: 'Try again' })
       // Clear all options after preset generation failure
       clearAllOptionsAfterGeneration();
       // Don't proceed with generation if Cloudinary signer fails
@@ -2240,7 +2244,7 @@ const HomeNew: React.FC = () => {
       
     } catch (error) {
       console.log('❌ Auto-run check failed:', error)
-      notifyError({ title: 'Generation failed', message: 'Please try again' })
+      notifyError({ title: 'Media failed', message: 'Try again' })
       // Clear all options after MoodMorph generation failure
       clearAllOptionsAfterGeneration();
       // Don't proceed with generation if Cloudinary signer fails
@@ -3421,7 +3425,7 @@ const HomeNew: React.FC = () => {
                                   })
                                 } catch (error) {
                                   console.error('❌ MoodMorph auto-generation failed:', error)
-                                  notifyError({ title: 'Generation failed', message: 'Please try again' })
+                                  notifyError({ title: 'Media failed', message: 'Try again' })
                                 }
                               }
                             }}
@@ -3482,10 +3486,10 @@ const HomeNew: React.FC = () => {
                                 await dispatchGenerate('emotionmask', {
                                   emotionMaskPresetId: presetId
                                 })
-                              } catch (error) {
-                                console.error('❌ Emotion Mask auto-generation failed:', error)
-                                notifyError({ title: 'Generation failed', message: 'Please try again' })
-                              }
+                                                              } catch (error) {
+                                  console.error('❌ Emotion Mask auto-generation failed:', error)
+                                  notifyError({ title: 'Media failed', message: 'Try again' })
+                                }
                             }
                           }}
                           disabled={!isAuthenticated}
