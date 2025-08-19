@@ -164,8 +164,11 @@ export const runMoodMorph = async (
     // Step 3: Generate variations via AIML (after credits reserved)
     const allVariations: MoodVariation[] = [];
     
+    console.log(`🎭 MoodMorph: Starting generation for ${MOODS.length} moods:`, MOODS.map(m => m.id));
+    
     for (let i = 0; i < MOODS.length; i++) {
       const mood = MOODS[i];
+      console.log(`🎭 MoodMorph: Processing mood ${i + 1}/${MOODS.length}: ${mood.id}`);
       onProgress((i / MOODS.length) * 100);
       
       try {
@@ -217,10 +220,13 @@ export const runMoodMorph = async (
           console.warn(`⚠️ MoodMorph: No valid response for ${mood.id}:`, result);
         }
       } catch (error) {
-        console.error(`❌ MoodMorph: Failed to generate variation ${i + 1}:`, error);
+        console.error(`❌ MoodMorph: Failed to generate variation ${i + 1} (${mood.id}):`, error);
         // Continue with other variations
       }
     }
+    
+    console.log(`🎭 MoodMorph: Loop completed. Total variations generated: ${allVariations.length}`);
+    console.log(`🎭 MoodMorph: Variations:`, allVariations.map(v => ({ mood: v.mood, url: v.url })));
 
     if (allVariations.length === 0) {
       throw new Error('No variations were generated successfully');
