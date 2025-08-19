@@ -1168,8 +1168,20 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = emotionMaskPreset.prompt;
-      generationMeta = { mode: 'emotionmask', emotionMaskPresetId, emotionMaskLabel: emotionMaskPreset.label, vibe: emotionMaskPreset.vibe };
-      console.log('🎭 EMOTION MASK MODE: Using emotional variant:', emotionMaskPreset.label, effectivePrompt);
+      generationMeta = { 
+        mode: 'emotionmask', 
+        emotionMaskPresetId, 
+        emotionMaskLabel: emotionMaskPreset.label, 
+        vibe: emotionMaskPreset.vibe,
+        model: emotionMaskPreset.model,
+        strength: emotionMaskPreset.strength,
+        guidance_scale: emotionMaskPreset.guidance_scale,
+        face_fix: emotionMaskPreset.face_fix,
+        face_method: emotionMaskPreset.face_method,
+        postprocessing: emotionMaskPreset.postprocessing,
+        features: emotionMaskPreset.features
+      };
+      console.log('🎭 EMOTION MASK MODE: Using emotional variant:', emotionMaskPreset.label, effectivePrompt, 'Model:', emotionMaskPreset.model);
       
     } else if (kind === 'ghiblireact') {
       // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
@@ -1318,13 +1330,23 @@ const HomeNew: React.FC = () => {
         // Include model from preset for new modes
         ...(generationMeta?.model && { model: generationMeta.model }),
         
+        // Include guidance scale from preset if available
+        ...(generationMeta?.guidance_scale && { guidance_scale: generationMeta.guidance_scale }),
+        
+        // Include inference steps from preset if available
+        ...(generationMeta?.num_inference_steps && { num_inference_steps: generationMeta.num_inference_steps }),
+        
+        // Include face fix parameters if available
+        ...(generationMeta?.face_fix && { face_fix: generationMeta.face_fix }),
+        ...(generationMeta?.face_method && { face_method: generationMeta.face_method }),
+        
         // 🧠 Bonus Guard: Warn about missing models to prevent silent failure
         ...(generationMeta?.model ? {} : (() => {
           console.warn(`[GENERATION WARNING] Missing model for mode: ${kind}. Falling back to default.`);
           return {};
         })()),
         num_variations: 1, // Single generation only
-        strength: 0.85,  // For I2I processing
+        strength: generationMeta?.strength || 0.85,  // Use preset strength or default
         seed: Date.now(), // Prevent provider-side caching
         request_id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, // Idempotency key for credit charging
       };
