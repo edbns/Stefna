@@ -622,11 +622,16 @@ const HomeNew: React.FC = () => {
       
       console.log('✅ UI updated successfully with new media:', newMedia)
       
-      // Refresh the page after generation completes to show new content
+      // Refresh the feed and user media after generation completes
       setTimeout(() => {
-        console.log('🔄 Refreshing page after generation completion...')
-        window.location.reload()
-      }, 2000) // 2 second delay to let user see the result
+        console.log('🔄 Refreshing feed and user media after generation completion...')
+        // Refresh the public feed
+        loadFeed()
+        // Dispatch event to refresh user media
+        window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+          detail: { count: 1, runId: record.meta?.runId || 'unknown' } 
+        }))
+      }, 1000) // 1 second delay to let user see the result
     }
 
     const handleGenerationSuccess = (event: CustomEvent) => {
