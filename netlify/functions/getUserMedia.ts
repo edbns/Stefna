@@ -13,7 +13,7 @@ async function getUserMedia(ownerId: string) {
   try {
     const media = await sql`
       SELECT 
-        id, user_id, is_public, allow_remix, created_at, prompt, model, mode,
+        id, user_id, is_public, allow_remix, created_at, prompt,
         COALESCE(final_url, CASE WHEN (cloudinary_public_id ~~ 'stefna/%'::text) THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id) ELSE NULL::text END) AS url,
         cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
       FROM assets 
@@ -55,7 +55,7 @@ export const handler: Handler = async (event) => {
     // Get user media with visibility filtering
     const media = await sql`
       SELECT 
-        id, user_id, is_public, allow_remix, created_at, prompt, model, mode,
+        id, user_id, is_public, allow_remix, created_at, prompt,
         COALESCE(final_url, CASE WHEN (cloudinary_public_id ~~ 'stefna/%'::text) THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id) ELSE NULL::text END) AS url,
         cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
       FROM assets 
@@ -75,9 +75,7 @@ export const handler: Handler = async (event) => {
       prompt: m.prompt ?? null,
       is_public: m.is_public,
       created_at: m.created_at,
-      meta: m.meta,
-      model: m.model,
-      mode: m.mode
+      meta: m.meta
     }));
 
     // Ensure user exists in users table
