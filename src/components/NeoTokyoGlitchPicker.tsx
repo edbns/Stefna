@@ -16,7 +16,7 @@ export function NeoTokyoGlitchPicker({
   className = ''
 }: NeoTokyoGlitchPickerProps) {
   return (
-    <div className={`absolute top-full left-0 mt-2 bg-black/90 backdrop-blur-sm border border-white/20 rounded-xl p-3 shadow-2xl z-50 min-w-[280px] ${className}`}>
+    <div className={`bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 ${className}`}>
       <div className="space-y-1">
         {/* None option - matches presets exactly */}
         <button

@@ -3296,7 +3296,7 @@ const HomeNew: React.FC = () => {
                     
                     {/* Ghibli Reaction presets dropdown - show when in Ghibli Reaction mode */}
                     {composerState.mode === 'ghiblireact' && ghibliReactionDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                      <div className="absolute bottom-full left-0 mb-2 z-50">
                         <GhibliReactionPicker
                                                       value={selectedGhibliReactionPreset || undefined}
                           onChange={async (presetId) => {
@@ -3363,7 +3363,7 @@ const HomeNew: React.FC = () => {
                     
                     {/* Neo Tokyo Glitch presets dropdown - show when in Neo Tokyo Glitch mode */}
                     {composerState.mode === 'neotokyoglitch' && neoTokyoGlitchDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                      <div className="absolute bottom-full left-0 mb-2 z-50">
                         <NeoTokyoGlitchPicker
                                                       value={selectedNeoTokyoGlitchPreset || undefined}
                           onChange={async (presetId) => {
