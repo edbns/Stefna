@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import { sql } from '@vercel/postgres';
+import { sql } from '../lib/db';
 
 export const handler: Handler = async (event) => {
   // Only allow POST requests
