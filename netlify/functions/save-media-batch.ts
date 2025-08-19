@@ -151,7 +151,7 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
       console.log(`🔍 Inserting asset with source_asset_id:`, {
         value: v.source_asset_id,
         type: typeof v.source_asset_id,
-        isUUID: v.source_asset_id && /^[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.source_asset_id),
+        isUUID: v.source_asset_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.source_asset_id),
         isURL: v.source_asset_id && v.source_asset_id.startsWith('http')
       });
       
