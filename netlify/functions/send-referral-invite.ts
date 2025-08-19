@@ -66,7 +66,11 @@ No subscriptions, no verification, just creative freedom with a daily 30 credit 
 
 Use your 25 extra credits however you like — on top of your daily allowance.
 
-Join now and start creating.
+Join now and start creating:
+
+Click Here: https://stefna.xyz/auth
+
+When you sign up, make sure to mention that ${referrerEmail} invited you to get your bonus credits.
 
 — The Stefna Team`
     });

@@ -102,47 +102,69 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
         VALUES (${batchId}, ${user.id}, ${runId}, ${idempotencyKey || null}, NOW())
       `;
 
-      // Insert all media rows with defensive defaults and per-item idempotency
-      const items: any[] = [];
-      for (const v of toInsert) {
-        const id = randomUUID();
-        const mediaType = v.media_type || 'image'; // defensive default
-        const itemIdempotencyKey = `${runId}:${v.meta?.mood || v.meta?.variation_index || Math.random().toString(36).substr(2, 9)}`;
-        
-        // Extract Cloudinary public ID from the image URL or handle non-Cloudinary URLs
-        let cloudinaryPublicId: string | null = null;
-        try {
-          const extracted = extractPublicId(v.image_url);
-          cloudinaryPublicId = extracted.cloudinaryPublicId;
-          console.log(`🔗 URL analysis for ${v.image_url}:`, {
-            isCloudinary: extracted.isCloudinary,
-            cloudinaryPublicId: extracted.cloudinaryPublicId,
-            url: v.image_url
-          });
-        } catch (error) {
-          console.warn(`⚠️ Could not analyze URL: ${v.image_url}`, error);
-          // Fall back to existing cloudinary_public_id if available
-          cloudinaryPublicId = v.cloudinary_public_id || null;
-        }
-        
-        // Log the source_asset_id to help debug UUID vs URL issues
-        console.log(`🔍 Inserting asset with source_asset_id:`, {
-          value: v.source_asset_id,
+          // Insert all media rows with defensive defaults and per-item idempotency
+    const items: any[] = [];
+    
+    // Pre-validate all variations to catch issues early
+    const validVariations = toInsert.filter(v => {
+      const isValid = v.source_asset_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.source_asset_id);
+      if (!isValid) {
+        console.warn(`⚠️ Skipping variation with invalid source_asset_id:`, {
+          source_asset_id: v.source_asset_id,
           type: typeof v.source_asset_id,
-          isUUID: v.source_asset_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.source_asset_id),
-          isURL: v.source_asset_id && v.source_asset_id.startsWith('http')
+          url: v.image_url
         });
-        
-        const row = await sql`
-          INSERT INTO assets (id, user_id, cloudinary_public_id, media_type, preset_key, prompt, 
-                             source_asset_id, status, is_public, allow_remix, final_url, meta, created_at)
-          VALUES (${id}, ${user.id}, ${cloudinaryPublicId}, ${mediaType}, ${v.preset_id || null}, ${v.prompt || null},
-                  ${v.source_asset_id || null}, 'ready', true, false, ${v.image_url}, 
-                  ${JSON.stringify({...v.meta, batch_id: batchId, run_id: runId, idempotency_key: itemIdempotencyKey})}, NOW())
-          RETURNING *
-        `;
-        items.push(row[0]);
       }
+      return isValid;
+    });
+    
+    if (validVariations.length !== toInsert.length) {
+      console.warn(`⚠️ Filtered out ${toInsert.length - validVariations.length} variations with invalid source_asset_id`);
+    }
+    
+    if (validVariations.length === 0) {
+      throw new Error('No valid variations to insert - all had invalid source_asset_id');
+    }
+    
+    for (const v of validVariations) {
+      const id = randomUUID();
+      const mediaType = v.media_type || 'image'; // defensive default
+      const itemIdempotencyKey = `${runId}:${v.meta?.mood || v.meta?.variation_index || Math.random().toString(36).substr(2, 9)}`;
+      
+      // Extract Cloudinary public ID from the image URL or handle non-Cloudinary URLs
+      let cloudinaryPublicId: string | null = null;
+      try {
+        const extracted = extractPublicId(v.image_url);
+        cloudinaryPublicId = extracted.cloudinaryPublicId;
+        console.log(`🔗 URL analysis for ${v.image_url}:`, {
+          isCloudinary: extracted.isCloudinary,
+          cloudinaryPublicId: extracted.cloudinaryPublicId,
+          url: v.image_url
+        });
+      } catch (error) {
+        console.warn(`⚠️ Could not analyze URL: ${v.image_url}`, error);
+        // Fall back to existing cloudinary_public_id if available
+        cloudinaryPublicId = v.cloudinary_public_id || null;
+      }
+      
+      // Log the source_asset_id to help debug UUID vs URL issues
+      console.log(`🔍 Inserting asset with source_asset_id:`, {
+        value: v.source_asset_id,
+        type: typeof v.source_asset_id,
+        isUUID: v.source_asset_id && /^[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.source_asset_id),
+        isURL: v.source_asset_id && v.source_asset_id.startsWith('http')
+      });
+      
+      const row = await sql`
+        INSERT INTO assets (id, user_id, cloudinary_public_id, media_type, preset_key, prompt, 
+                           source_asset_id, status, is_public, allow_remix, final_url, meta, created_at)
+        VALUES (${id}, ${user.id}, ${cloudinaryPublicId}, ${mediaType}, ${v.preset_id || null}, ${v.prompt || null},
+                ${v.source_asset_id}, 'ready', true, false, ${v.image_url}, 
+                ${JSON.stringify({...v.meta, batch_id: batchId, run_id: runId, idempotency_key: itemIdempotencyKey})}, NOW())
+        RETURNING *
+      `;
+      items.push(row[0]);
+    }
       
       const results = { batchId, items };
       console.log(`✅ Batch save completed: ${results.items.length} variations for user ${user.id}, run ${runId}`);

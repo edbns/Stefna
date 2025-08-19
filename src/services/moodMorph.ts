@@ -117,12 +117,17 @@ export const runMoodMorph = async (
         console.log('📝 MoodMorph: create-asset response:', assetResult);
         sourceAssetId = assetResult.data?.id || null;
         console.log('📝 MoodMorph: Source asset created with ID:', sourceAssetId);
+        
+        if (!sourceAssetId) {
+          throw new Error('create-asset returned no ID');
+        }
       } else {
-        console.warn('⚠️ MoodMorph: Could not create source asset, continuing without source tracking');
+        const errorData = await createAssetResponse.json().catch(() => ({}));
+        throw new Error(`create-asset failed: ${createAssetResponse.status} - ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.warn('⚠️ MoodMorph: Error creating source asset:', error);
-      // Continue without source tracking
+      console.error('❌ MoodMorph: Failed to create source asset:', error);
+      throw new Error(`Cannot proceed without source asset: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     
     // Step 2: Reserve credits BEFORE generation (3 credits for 3 variations)
@@ -232,6 +237,17 @@ export const runMoodMorph = async (
       
       console.log('📤 MoodMorph: Batch save payload:', batchPayload);
       console.log('🔍 MoodMorph: source_asset_id being sent:', sourceAssetId);
+      
+      // Log each variation to ensure source_asset_id is properly set
+      batchPayload.variations.forEach((v, idx) => {
+        console.log(`🧱 MoodMorph: Variation #${idx + 1}`, {
+          source_asset_id: v.source_asset_id,
+          isValidUUID: v.source_asset_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.source_asset_id),
+          url: v.image_url,
+          prompt: v.prompt,
+          mood: v.meta?.mood
+        });
+      });
       
       const batchResponse = await fetchWithAuth('/.netlify/functions/save-media-batch', {
         method: 'POST',
