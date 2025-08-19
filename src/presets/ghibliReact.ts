@@ -19,47 +19,47 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_tears',
     label: 'Tears',
-    prompt: 'Close-up portrait of a real person with a strong emotional Ghibli-style reaction. Keep facial features realistic and human. Add expressive details: large glassy eyes with reflections, slight blush, light tears, subtle manga-style stress lines or sweat drop. Emotion: crying with glassy tears streaming down face. Lighting is warm and soft. Skin is smooth and luminous. The emotion should be exaggerated but believable, like a moment from a Studio Ghibli film. Stylized but not fully anime.',
-    negative_prompt: 'full anime style, chibi, 3d, distorted face, cartoon, overly saturated colors, harsh outlines, surreal features, unrealistic proportions',
-    strength: 0.35,
+    prompt: 'Keep the original photo completely natural. Only enhance the facial expression with subtle Ghibli-style emotional details: very gentle teary eyes with soft reflections, slight blush on cheeks, maybe a single tear drop. Keep the face structure, hair, clothing, background, and lighting exactly as they are. The effect should be barely noticeable - just a gentle emotional enhancement on the face.',
+    negative_prompt: 'anime style, cartoon, distorted face, changed background, altered clothing, different hair, dramatic lighting changes, full face transformation, unrealistic features',
+    strength: 0.2,
     model: 'stable-diffusion-v35-large',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'ghibli_reaction',
-    guidance_scale: 9,
-    num_inference_steps: 28,
-    features: ['ghibli_style', 'emotional_reaction', 'tears', 'soft_lighting']
+    guidance_scale: 7,
+    num_inference_steps: 20,
+    features: ['subtle_ghibli_enhancement', 'facial_expression_only', 'natural_preservation', 'gentle_emotion']
   },
   {
     id: 'ghibli_shock',
     label: 'Shock',
-    prompt: 'Close-up portrait of a real person with a strong emotional Ghibli-style reaction. Keep facial features realistic and human. Add expressive details: large glassy eyes with reflections, slight blush, light tears, subtle manga-style stress lines or sweat drop. Emotion: shocked with wide eyes and open mouth, surprise expression. Lighting is warm and soft. Skin is smooth and luminous. The emotion should be exaggerated but believable, like a moment from a Studio Ghibli film. Stylized but not fully anime.',
-    negative_prompt: 'full anime style, chibi, 3d, distorted face, cartoon, overly saturated colors, harsh outlines, surreal features, unrealistic proportions',
-    strength: 0.35,
+    prompt: 'Keep the original photo completely natural. Only enhance the facial expression with subtle Ghibli-style emotional details: very gentle wide eyes with soft reflections, slight blush on cheeks, maybe a subtle surprised expression. Keep the face structure, hair, clothing, background, and lighting exactly as they are. The effect should be barely noticeable - just a gentle emotional enhancement on the face.',
+    negative_prompt: 'anime style, cartoon, distorted face, changed background, altered clothing, different hair, dramatic lighting changes, full face transformation, unrealistic features',
+    strength: 0.2,
     model: 'stable-diffusion-v35-large',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'ghibli_reaction',
-    guidance_scale: 9,
-    num_inference_steps: 28,
-    features: ['ghibli_style', 'emotional_reaction', 'shock', 'soft_lighting']
+    guidance_scale: 7,
+    num_inference_steps: 20,
+    features: ['subtle_ghibli_enhancement', 'facial_expression_only', 'natural_preservation', 'gentle_emotion']
   },
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: 'Close-up portrait of a real person with a strong emotional Ghibli-style reaction. Keep facial features realistic and human. Add expressive details: large glassy eyes with reflections, slight blush, light tears, subtle manga-style stress lines or sweat drop. Emotion: overjoyed with sparkles around face and bright anime blush, happy expression. Lighting is warm and soft. Skin is smooth and luminous. The emotion should be exaggerated but believable, like a moment from a Studio Ghibli film. Stylized but not fully anime.',
-    negative_prompt: 'full anime style, chibi, 3d, distorted face, cartoon, overly saturated colors, harsh outlines, surreal features, unrealistic proportions',
-    strength: 0.35,
+    prompt: 'Keep the original photo completely natural. Only enhance the facial expression with subtle Ghibli-style emotional details: very gentle sparkle in the eyes, slight blush on cheeks, maybe a subtle happy expression. Keep the face structure, hair, clothing, background, and lighting exactly as they are. The effect should be barely noticeable - just a gentle emotional enhancement on the face.',
+    negative_prompt: 'anime style, cartoon, distorted face, changed background, altered clothing, different hair, dramatic lighting changes, full face transformation, unrealistic features',
+    strength: 0.2,
     model: 'stable-diffusion-v35-large',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'ghibli_reaction',
-    guidance_scale: 9,
-    num_inference_steps: 28,
-    features: ['ghibli_style', 'emotional_reaction', 'sparkles', 'soft_lighting']
+    guidance_scale: 7,
+    num_inference_steps: 20,
+    features: ['subtle_ghibli_enhancement', 'facial_expression_only', 'natural_preservation', 'gentle_emotion']
   }
 ]
 

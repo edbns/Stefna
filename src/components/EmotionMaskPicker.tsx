@@ -15,43 +15,45 @@ export function EmotionMaskPicker({
   disabled = false,
 }: EmotionMaskPickerProps) {
   return (
-    <div className="space-y-1">
-      {/* None option - gentle pastel styling */}
-      <button
-        onClick={() => onChange?.('')}
-        className={(() => {
-          const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-300 text-sm';
-          const activeClass = 'bg-rose-100/20 text-rose-200 border border-rose-200/30 shadow-sm';
-          const inactiveClass = 'text-rose-100/80 hover:text-rose-200 hover:bg-rose-100/10 border border-transparent hover:border-rose-200/20';
-          return `${baseClass} ${!value ? activeClass : inactiveClass}`;
-        })()}
-      >
-        <span className="font-medium">None</span>
-        {!value && (
-          <div className="w-4 h-4 rounded-full bg-rose-200 border-2 border-rose-300/50 shadow-sm"></div>
-        )}
-      </button>
-      
-      {/* Emotion Mask preset options - gentle pastel styling */}
-      {presets.map((preset) => (
+    <div className="bg-white border border-gray-200 rounded-xl shadow-2xl p-3 w-80">
+      <div className="space-y-1">
+        {/* None option - white background with black text */}
         <button
-          key={preset.id}
-          onClick={() => onChange?.(preset.id)}
+          onClick={() => onChange?.('')}
           className={(() => {
-            const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-300 text-sm';
-            const activeClass = 'bg-rose-100/20 text-rose-200 border border-rose-200/30 shadow-sm';
-            const inactiveClass = 'text-rose-100/80 hover:text-rose-200 hover:bg-rose-100/10 border border-transparent hover:border-rose-200/20';
-            return `${baseClass} ${value === preset.id ? activeClass : inactiveClass}`;
+            const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm';
+            const activeClass = 'bg-gray-100 text-gray-900';
+            const inactiveClass = 'text-gray-700 hover:text-gray-900 hover:bg-gray-50';
+            return `${baseClass} ${!value ? activeClass : inactiveClass}`;
           })()}
         >
-          <span className="font-medium">{preset.label}</span>
-          {value === preset.id ? (
-            <div className="w-4 h-4 rounded-full bg-rose-200 border-2 border-rose-300/50 shadow-sm"></div>
-          ) : (
-            <div className="w-4 h-4 rounded-full border-2 border-rose-200/30"></div>
+          <span className="font-medium">None</span>
+          {!value && (
+            <div className="w-4 h-4 rounded-full bg-gray-400 border-2 border-gray-300"></div>
           )}
         </button>
-      ))}
+        
+        {/* Emotion Mask preset options - white background with black text */}
+        {presets.map((preset) => (
+          <button
+            key={preset.id}
+            onClick={() => onChange?.(preset.id)}
+            className={(() => {
+              const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm';
+              const activeClass = 'bg-gray-100 text-gray-900';
+              const inactiveClass = 'text-gray-700 hover:text-gray-900 hover:bg-gray-50';
+              return `${baseClass} ${value === preset.id ? activeClass : inactiveClass}`;
+            })()}
+          >
+            <span className="font-medium">{preset.label}</span>
+            {value === preset.id ? (
+              <div className="w-4 h-4 rounded-full bg-gray-400 border-2 border-gray-300"></div>
+            ) : (
+              <div className="w-4 h-4 rounded-full border-2 border-gray-300"></div>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
