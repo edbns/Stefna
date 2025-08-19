@@ -1,5 +1,5 @@
 // src/components/HiddenUploader.tsx
-import { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { handleUploadSelectedFile } from '../lib/upload';
 import { useToasts } from './ui/Toasts';
 import { useIntentQueue } from '../state/intentQueue';
@@ -9,6 +9,20 @@ export function HiddenUploader() {
   const ref = useRef<HTMLInputElement>(null);
   const { addToast } = useToasts();
   const { setSourceUrl } = useIntentQueue();
+
+  // Listen for reset events from composer
+  useEffect(() => {
+    const handleReset = () => {
+      console.log('🔄 HiddenUploader: Reset event received, incrementing key')
+      setKey((k) => k + 1)
+      if (ref.current) {
+        ref.current.value = ''
+      }
+    }
+
+    window.addEventListener('reset-hidden-uploader', handleReset)
+    return () => window.removeEventListener('reset-hidden-uploader', handleReset)
+  }, [])
 
   async function onChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

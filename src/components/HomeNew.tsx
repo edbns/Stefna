@@ -211,6 +211,8 @@ const HomeNew: React.FC = () => {
     setComposerState(s => ({
       ...s,
       mode: 'custom',
+      file: null,
+      sourceUrl: null,
       selectedPresetId: null,
       selectedEmotionMaskPresetId: null,
       selectedGhibliReactionPresetId: null,
@@ -220,6 +222,21 @@ const HomeNew: React.FC = () => {
       error: null,
       runOnOpen: false
     }))
+    
+    // Reset HiddenUploader component by dispatching a custom event
+    window.dispatchEvent(new CustomEvent('reset-hidden-uploader'))
+    
+    // Clear any file input elements
+    const fileInputs = document.querySelectorAll('input[type="file"]')
+    fileInputs.forEach((input) => {
+      if (input instanceof HTMLInputElement) {
+        input.value = ''
+        // Force remount by updating key attribute
+        input.setAttribute('key', String(Date.now()))
+      }
+    })
+    
+    console.log('🎭 All options cleared, HiddenUploader reset triggered')
   }
 
   // Clear preset when user exits composer (immediate to avoid race)
