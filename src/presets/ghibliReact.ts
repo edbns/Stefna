@@ -19,8 +19,8 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_tears',
     label: 'Tears',
-    prompt: 'Portrait with a dramatic Studio Ghibli-style reaction. Human face kept realistic with cel-shading, sparkling eyes, small anime-style effects (teardrop, blushing, stress lines). Expression must be exaggerated: crying with big glassy tears. Natural background blur or light sketchy shading. Cute and expressive, not fully anime.',
-    negative_prompt: 'full anime face, 3d render, bad anatomy, distorted face, unrealistic, photo artifacts, harsh lighting',
+    prompt: 'Close-up portrait of a real person with a strong emotional Ghibli-style reaction. Keep facial features realistic and human. Add expressive details: large glassy eyes with reflections, slight blush, light tears, subtle manga-style stress lines or sweat drop. Emotion: crying with glassy tears streaming down face. Lighting is warm and soft. Skin is smooth and luminous. The emotion should be exaggerated but believable, like a moment from a Studio Ghibli film. Stylized but not fully anime.',
+    negative_prompt: 'full anime style, chibi, 3d, distorted face, cartoon, overly saturated colors, harsh outlines, surreal features, unrealistic proportions',
     strength: 0.35,
     model: 'stable-diffusion-v35-large',
     mode: 'i2i',
@@ -34,8 +34,8 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_shock',
     label: 'Shock',
-    prompt: 'Portrait with a dramatic Studio Ghibli-style reaction. Human face kept realistic with cel-shading, sparkling eyes, small anime-style effects (teardrop, blushing, stress lines). Expression must be exaggerated: shocked with wide eyes and open mouth. Natural background blur or light sketchy shading. Cute and expressive, not fully anime.',
-    negative_prompt: 'full anime face, 3d render, bad anatomy, distorted face, unrealistic, photo artifacts, harsh lighting',
+    prompt: 'Close-up portrait of a real person with a strong emotional Ghibli-style reaction. Keep facial features realistic and human. Add expressive details: large glassy eyes with reflections, slight blush, light tears, subtle manga-style stress lines or sweat drop. Emotion: shocked with wide eyes and open mouth, surprise expression. Lighting is warm and soft. Skin is smooth and luminous. The emotion should be exaggerated but believable, like a moment from a Studio Ghibli film. Stylized but not fully anime.',
+    negative_prompt: 'full anime style, chibi, 3d, distorted face, cartoon, overly saturated colors, harsh outlines, surreal features, unrealistic proportions',
     strength: 0.35,
     model: 'stable-diffusion-v35-large',
     mode: 'i2i',
@@ -49,8 +49,8 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: 'Portrait with a dramatic Studio Ghibli-style reaction. Human face kept realistic with cel-shading, sparkling eyes, small anime-style effects (teardrop, blushing, stress lines). Expression must be exaggerated: overjoyed with sparkles around face and big anime blush. Natural background blur or light sketchy shading. Cute and expressive, not fully anime.',
-    negative_prompt: 'full anime face, 3d render, bad anatomy, distorted face, unrealistic, photo artifacts, harsh lighting',
+    prompt: 'Close-up portrait of a real person with a strong emotional Ghibli-style reaction. Keep facial features realistic and human. Add expressive details: large glassy eyes with reflections, slight blush, light tears, subtle manga-style stress lines or sweat drop. Emotion: overjoyed with sparkles around face and bright anime blush, happy expression. Lighting is warm and soft. Skin is smooth and luminous. The emotion should be exaggerated but believable, like a moment from a Studio Ghibli film. Stylized but not fully anime.',
+    negative_prompt: 'full anime style, chibi, 3d, distorted face, cartoon, overly saturated colors, harsh outlines, surreal features, unrealistic proportions',
     strength: 0.35,
     model: 'stable-diffusion-v35-large',
     mode: 'i2i',
