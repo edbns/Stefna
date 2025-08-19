@@ -1096,6 +1096,25 @@ const HomeNew: React.FC = () => {
       return;
     }
     
+    // 🛡️ Model Validation Guard - Ensure only supported models are used
+    const ALLOWED_MODELS = [
+      "stable-diffusion-v35-large",
+      "flux-pro/v1.1-ultra",
+      "flux-realism",
+      "dall-e-2",
+      "dall-e-3"
+    ];
+    
+    // Helper function to validate model
+    const validateModel = (model: string) => {
+      if (!ALLOWED_MODELS.includes(model)) {
+        console.error("🚫 Invalid model:", model);
+        notifyError({ title: 'Model Error', message: `Model '${model}' is not supported. Using fallback.` });
+        return "stable-diffusion-v35-large"; // Fallback to known working model
+      }
+      return model;
+    };
+    
     // Close composer immediately when generation starts
     setIsComposerOpen(false);
     
@@ -1206,7 +1225,7 @@ const HomeNew: React.FC = () => {
           emotionMaskPresetId, 
           emotionMaskLabel: emotionMaskPreset.label, 
           vibe: emotionMaskPreset.vibe,
-          model: emotionMaskPreset.model,
+          model: validateModel(emotionMaskPreset.model),
           strength: emotionMaskPreset.strength,
           guidance_scale: emotionMaskPreset.guidance_scale,
           face_fix: emotionMaskPreset.face_fix,
@@ -1225,7 +1244,7 @@ const HomeNew: React.FC = () => {
           emotionMaskPresetId, 
           emotionMaskLabel: emotionMaskPreset.label, 
           vibe: emotionMaskPreset.vibe,
-          model: "RealVisXL_V4.0", // Photorealistic model for emotional authenticity
+          model: "stable-diffusion-v35-large", // Supported model for emotional authenticity
           strength: 0.45,
           guidance_scale: 7.5,
           face_fix: true,
@@ -1258,7 +1277,7 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = ghibliReactionPreset.prompt;
-      generationMeta = { mode: 'ghiblireact', ghibliReactionPresetId, ghibliReactionLabel: ghibliReactionPreset.label, model: ghibliReactionPreset.model };
+      generationMeta = { mode: 'ghiblireact', ghibliReactionPresetId, ghibliReactionLabel: ghibliReactionPreset.label, model: validateModel(ghibliReactionPreset.model) };
       console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model:', ghibliReactionPreset.model);
       
     } else if (kind === 'neotokyoglitch') {
@@ -1282,7 +1301,7 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = neoTokyoGlitchPreset.prompt;
-      generationMeta = { mode: 'neotokyoglitch', neoTokyoGlitchPresetId, neoTokyoGlitchLabel: neoTokyoGlitchPreset.label, model: neoTokyoGlitchPreset.model, features: neoTokyoGlitchPreset.features };
+      generationMeta = { mode: 'neotokyoglitch', neoTokyoGlitchPresetId, neoTokyoGlitchLabel: neoTokyoGlitchPreset.label, model: validateModel(neoTokyoGlitchPreset.model), features: neoTokyoGlitchPreset.features };
       console.log('🎭 NEO TOKYO GLITCH MODE: Using Neo Tokyo Glitch preset:', neoTokyoGlitchPreset.label, effectivePrompt, 'Model:', neoTokyoGlitchPreset.model);
       
     } else {
