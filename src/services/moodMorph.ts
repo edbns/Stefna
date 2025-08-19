@@ -187,6 +187,13 @@ export const runMoodMorph = async (
         }
 
         const result = await response.json();
+        console.log(`🎭 MoodMorph: AIML API response for ${mood.id}:`, {
+          ok: result.ok,
+          imagesCount: result.images?.length || 0,
+          variations_generated: result.variations_generated,
+          status: result.status
+        });
+        
         if (result.ok && result.images && result.images.length > 0) {
           allVariations.push({
             url: result.images[0],
@@ -206,6 +213,8 @@ export const runMoodMorph = async (
             }
           });
           console.log(`✅ MoodMorph: Generated variation ${i + 1} (${mood.id})`);
+        } else {
+          console.warn(`⚠️ MoodMorph: No valid response for ${mood.id}:`, result);
         }
       } catch (error) {
         console.error(`❌ MoodMorph: Failed to generate variation ${i + 1}:`, error);
@@ -223,14 +232,39 @@ export const runMoodMorph = async (
     // Step 4: Save media using batch endpoint
     try {
       console.log(`💾 MoodMorph: Saving ${allVariations.length} variations...`);
+      // Ensure proper asset-variation pairing
+      const variationsWithAssets = allVariations.map(v => ({
+        ...v,
+        image_url: v.url, // Map url to image_url for save-media-batch
+        source_asset_id: sourceAssetId, // Use the UUID from the source asset
+        runId,
+        media_type: 'image'
+      }));
+      
+      // Validate all variations have proper source_asset_id before sending
+      const validVariations = variationsWithAssets.filter(v => {
+        const isValid = v.source_asset_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.source_asset_id);
+        if (!isValid) {
+          console.warn(`⚠️ MoodMorph: Variation with invalid source_asset_id:`, {
+            source_asset_id: v.source_asset_id,
+            type: typeof v.source_asset_id,
+            url: v.image_url,
+            mood: v.meta?.mood
+          });
+        }
+        return isValid;
+      });
+      
+      if (validVariations.length !== allVariations.length) {
+        console.warn(`⚠️ MoodMorph: ${allVariations.length - validVariations.length} variations filtered out due to invalid source_asset_id`);
+      }
+      
+      if (validVariations.length === 0) {
+        throw new Error('No valid variations to save - all had invalid source_asset_id');
+      }
+      
       const batchPayload = {
-        variations: allVariations.map(v => ({
-          ...v,
-          image_url: v.url, // Map url to image_url for save-media-batch
-          source_asset_id: sourceAssetId, // Use the UUID from the source asset
-          runId,
-          media_type: 'image'
-        })),
+        variations: validVariations,
         runId,
         credits_used: creditsNeeded // Add credit metadata for consistency
       };
@@ -247,6 +281,16 @@ export const runMoodMorph = async (
           prompt: v.prompt,
           mood: v.meta?.mood
         });
+      });
+      
+      // Final validation logging as suggested
+      console.log("📦 Final variations payload:", JSON.stringify(batchPayload.variations, null, 2));
+      console.log("🔍 Validation summary:", {
+        totalVariations: allVariations.length,
+        validVariations: validVariations.length,
+        sourceAssetId: sourceAssetId,
+        sourceAssetIdType: typeof sourceAssetId,
+        sourceAssetIdValid: sourceAssetId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sourceAssetId)
       });
       
       const batchResponse = await fetchWithAuth('/.netlify/functions/save-media-batch', {

@@ -653,13 +653,19 @@ const HomeNew: React.FC = () => {
     }
 
     const handleGenerationSuccess = (event: CustomEvent) => {
-      const { message } = event.detail
-      console.log('✅ Generation success:', message)
+      const { message, mode } = event.detail
+      console.log('✅ Generation success:', message, 'Mode:', mode)
       // The toast is already handled by the generation pipeline
       
       // Clear composer state immediately after successful generation
       console.log('🧹 Clearing composer state after generation success')
       handleClearComposerState()
+      
+      // Force additional clearing for stubborn cases
+      setTimeout(() => {
+        console.log('🧹 Force clearing composer after generation success (delayed)');
+        handleClearComposerState();
+      }, 300);
     }
 
     const handleGenerationError = (event: CustomEvent) => {
@@ -678,6 +684,12 @@ const HomeNew: React.FC = () => {
       // Clear composer state after user media update (for MoodMorph and other modes)
       console.log('🧹 Clearing composer state after user media update')
       handleClearComposerState()
+      
+      // Force additional composer clearing for stubborn cases
+      setTimeout(() => {
+        console.log('🧹 Force clearing composer after user media update (delayed)');
+        handleClearComposerState();
+      }, 300);
     }
 
     const handleRefreshUserMedia = () => {
@@ -737,6 +749,8 @@ const HomeNew: React.FC = () => {
     window.addEventListener('clear-composer-state', handleClearComposerState as EventListener)
     window.addEventListener('userMediaUpdated', handleUserMediaUpdated as EventListener)
     window.addEventListener('refreshUserMedia', handleRefreshUserMedia as EventListener)
+    
+
 
     return () => {
       window.removeEventListener('generation-complete', handleGenerationComplete as EventListener)
@@ -746,6 +760,8 @@ const HomeNew: React.FC = () => {
       window.removeEventListener('clear-composer-state', handleClearComposerState as EventListener)
       window.removeEventListener('userMediaUpdated', handleUserMediaUpdated as EventListener)
       window.removeEventListener('refreshUserMedia', handleRefreshUserMedia as EventListener)
+      
+
     }
   }, [])
 
@@ -2126,6 +2142,11 @@ const HomeNew: React.FC = () => {
             setSelectedPreset(null);
             setSelectedMoodMorphPreset(null);
             setSelectedEmotionMaskPreset(null);
+            
+            // Dispatch proper events for composer clearing
+            window.dispatchEvent(new CustomEvent('generation-success', { 
+              detail: { message: 'MoodMorph completed', count: variations.length, mode: 'moodmorph' } 
+            }));
             window.dispatchEvent(new CustomEvent('userMediaUpdated'));
           },
           (error) => {
@@ -3140,17 +3161,12 @@ const HomeNew: React.FC = () => {
         <div className="px-6 pt-24 pb-8">
           {isLoadingFeed ? (
             <div className="space-y-6">
-              {/* Subtle loading skeleton */}
+              {/* Media loading skeleton - no text, just image placeholders */}
               <div className="grid grid-cols-3 gap-6">
                 {[...Array(12)].map((_, index) => (
                   <div key={index} className="space-y-3">
-                    {/* Image placeholder */}
+                    {/* Image placeholder only - no text needed for media */}
                     <div className="aspect-[4/3] bg-gradient-to-br from-white/5 to-white/10 rounded-xl animate-pulse"></div>
-                    {/* Text placeholders */}
-                    <div className="space-y-2">
-                      <div className="h-3 bg-white/5 rounded-full w-3/4 animate-pulse"></div>
-                      <div className="h-3 bg-white/5 rounded-full w-1/2 animate-pulse"></div>
-                    </div>
                   </div>
                 ))}
               </div>

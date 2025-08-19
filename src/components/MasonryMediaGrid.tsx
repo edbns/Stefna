@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react'
 import { UserMedia } from '../services/userMediaService'
 import RemixIcon from './RemixIcon'
 import { MediaCard as SpinnerCard } from './ui/Toasts'
-import LazyImage from './LazyImage'
+// LazyImage removed - using simple img tags for better performance
 import { formatRemixCount } from '../utils/mediaCardHelpers'
 
 interface MasonryMediaGridProps {
@@ -161,12 +161,10 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                       {item.type === 'video' ? (
                         <video src={item.url} className="w-full h-auto object-cover opacity-50" muted />
                       ) : (
-                        <LazyImage 
+                        <img 
                           src={item.url} 
                           alt={item.prompt} 
-                          className="w-full h-auto opacity-50"
-                          quality={60} // Lower quality for generating state
-                          format="auto"
+                          className="w-full h-auto opacity-50 object-cover"
                         />
                       )}
                       <div className="absolute inset-0 grid place-items-center">
@@ -183,13 +181,9 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         onMouseLeave={(e) => e.currentTarget.pause()}
                       />
                   ) : (
-                      <LazyImage
+                      <img
                         src={item.url}
                         alt={item.prompt}
-                        priority={media.findIndex(m => m.id === item.id) < 6} // First 6 images load immediately
-                        quality={85} // High quality for main images
-                        format="auto"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="w-full h-auto object-cover"
                       />
                   )}
