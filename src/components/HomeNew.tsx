@@ -1352,11 +1352,19 @@ const HomeNew: React.FC = () => {
         modeType: typeof mode 
       });
       
+      // Map generation modes to valid credit reservation actions
+      let creditAction = kind;
+      if (kind === 'ghiblireact' || kind === 'neotokyoglitch') {
+        creditAction = 'image.gen'; // Map new modes to standard image generation
+      }
+      
+      console.log(`💰 Credit reservation: mapping ${kind} → ${creditAction}`);
+      
       const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: kind,  // Use the kind parameter, not the store mode
+          action: creditAction,  // Use mapped action for credit reservation
           cost: creditsNeeded
         })
       });
