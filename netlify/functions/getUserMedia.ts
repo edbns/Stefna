@@ -8,10 +8,11 @@ async function getUserMedia(ownerId: string) {
   try {
     const media = await sql`
       SELECT 
-        id, owner_id, visibility, allow_remix, created_at, env, prompt, model, mode,
-        url, public_id, resource_type, folder, bytes, width, height, meta
-      FROM media_assets 
-      WHERE owner_id = ${ownerId}
+        id, user_id, is_public, allow_remix, created_at, prompt, model, mode,
+        COALESCE(final_url, CASE WHEN (cloudinary_public_id ~~ 'stefna/%'::text) THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id) ELSE NULL::text END) AS url,
+        cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
+      FROM assets 
+      WHERE user_id = ${ownerId}
       ORDER BY created_at DESC
     `;
     
@@ -43,11 +44,12 @@ export const handler: Handler = async (event) => {
     // Get user media with visibility filtering
     const media = await sql`
       SELECT 
-        id, owner_id, visibility, allow_remix, created_at, env, prompt, model, mode,
-        url, public_id, resource_type, folder, bytes, width, height, meta
-      FROM media_assets 
-      WHERE owner_id = ${ownerId}
-      ${isSelf ? sql`` : sql`AND visibility = 'public'`}
+        id, user_id, is_public, allow_remix, created_at, prompt, model, mode,
+        COALESCE(final_url, CASE WHEN (cloudinary_public_id ~~ 'stefna/%'::text) THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id) ELSE NULL::text END) AS url,
+        cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
+      FROM assets 
+      WHERE user_id = ${ownerId}
+      ${isSelf ? sql`` : sql`AND is_public = true`}
       ORDER BY created_at DESC
       LIMIT ${limit}
     `;
@@ -55,12 +57,12 @@ export const handler: Handler = async (event) => {
     // Transform to match frontend expectations
     const items = (media ?? []).map((m: any) => ({
       id: m.id,
-      userId: m.owner_id,
-      type: m.resource_type === 'video' ? 'video' : 'photo',
-      cloudinary_public_id: m.public_id,
+      userId: m.user_id,
+      type: m.media_type === 'video' ? 'video' : 'photo',
+      cloudinary_public_id: m.cloudinary_public_id,
       url: m.url,
       prompt: m.prompt ?? null,
-      is_public: m.visibility === 'public',
+      is_public: m.is_public,
       created_at: m.created_at,
       meta: m.meta,
       model: m.model,
