@@ -3,13 +3,16 @@ import { randomUUID } from 'crypto';
 import { sql } from '../lib/db';
 import { requireUser } from '../lib/auth';
 
-// Helper function to extract Cloudinary public ID from URL
-function extractPublicId(url: string): string {
-  const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)\.(jpg|jpeg|png|webp|mp4|mov|avi)/);
-  if (!match || !match[1]) {
-    throw new Error(`Invalid Cloudinary URL: ${url}`);
+// Helper function to extract Cloudinary public ID from URL or handle non-Cloudinary URLs
+function extractPublicId(url: string): { cloudinaryPublicId: string | null; isCloudinary: boolean } {
+  // Check if it's a Cloudinary URL
+  const cloudinaryMatch = url.match(/\/upload\/(?:v\d+\/)?(.+?)\.(jpg|jpeg|png|webp|mp4|mov|avi)/);
+  if (cloudinaryMatch && cloudinaryMatch[1]) {
+    return { cloudinaryPublicId: cloudinaryMatch[1], isCloudinary: true };
   }
-  return match[1];
+  
+  // Not a Cloudinary URL (e.g., AIML API URL)
+  return { cloudinaryPublicId: null, isCloudinary: false };
 }
 
 export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResponse> => {
@@ -106,13 +109,18 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
         const mediaType = v.media_type || 'image'; // defensive default
         const itemIdempotencyKey = `${runId}:${v.meta?.mood || v.meta?.variation_index || Math.random().toString(36).substr(2, 9)}`;
         
-        // Extract Cloudinary public ID from the image URL
+        // Extract Cloudinary public ID from the image URL or handle non-Cloudinary URLs
         let cloudinaryPublicId: string | null = null;
         try {
-          cloudinaryPublicId = extractPublicId(v.image_url);
-          console.log(`🔗 Extracted public ID for ${v.image_url}: ${cloudinaryPublicId}`);
+          const extracted = extractPublicId(v.image_url);
+          cloudinaryPublicId = extracted.cloudinaryPublicId;
+          console.log(`🔗 URL analysis for ${v.image_url}:`, {
+            isCloudinary: extracted.isCloudinary,
+            cloudinaryPublicId: extracted.cloudinaryPublicId,
+            url: v.image_url
+          });
         } catch (error) {
-          console.warn(`⚠️ Could not extract public ID from URL: ${v.image_url}`, error);
+          console.warn(`⚠️ Could not analyze URL: ${v.image_url}`, error);
           // Fall back to existing cloudinary_public_id if available
           cloudinaryPublicId = v.cloudinary_public_id || null;
         }
