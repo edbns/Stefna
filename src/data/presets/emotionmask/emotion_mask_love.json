@@ -1,0 +1,8 @@
+{
+  "id": "emotion_mask_love",
+  "name": "Love (Romantic)",
+  "model": "flux-image-to-image-v1",
+  "prompt": "Romantic portrait showing love and affection. Warm soft lighting, gentle facial expression, cinematic framing.",
+  "negative_prompt": "blurry, angry, chaotic, cartoonish",
+  "face_fix": true
+}

@@ -1,0 +1,8 @@
+{
+  "id": "emotion_mask_surprised",
+  "name": "Surprised (Shocked)",
+  "model": "flux-image-to-image-v1",
+  "prompt": "Portrait expressing surprise or shock. Wide eyes, open mouth, dramatic lighting or freeze-frame moment.",
+  "negative_prompt": "blurry, bored, flat lighting, distorted face",
+  "face_fix": true
+}

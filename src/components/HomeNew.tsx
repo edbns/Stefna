@@ -1148,8 +1148,9 @@ const HomeNew: React.FC = () => {
     // Remix mode removed - focus on personal creativity
       
     } else if (kind === 'emotionmask') {
-      // EMOTION MASK MODE: Use the selected emotional variant
+      // HYBRID EMOTION MASK MODE: Use curated presets or dynamic prompts
       const emotionMaskPresetId = options?.emotionMaskPresetId || selectedEmotionMaskPreset;
+      
       if (!emotionMaskPresetId) {
         console.error('❌ Invalid Emotion Mask preset:', emotionMaskPresetId);
         notifyError({ title: 'Invalid Emotion Mask preset', message: 'Please select an emotional variant first' });
@@ -1167,21 +1168,51 @@ const HomeNew: React.FC = () => {
         return;
       }
       
-      effectivePrompt = emotionMaskPreset.prompt;
-      generationMeta = { 
-        mode: 'emotionmask', 
-        emotionMaskPresetId, 
-        emotionMaskLabel: emotionMaskPreset.label, 
-        vibe: emotionMaskPreset.vibe,
-        model: emotionMaskPreset.model,
-        strength: emotionMaskPreset.strength,
-        guidance_scale: emotionMaskPreset.guidance_scale,
-        face_fix: emotionMaskPreset.face_fix,
-        face_method: emotionMaskPreset.face_method,
-        postprocessing: emotionMaskPreset.postprocessing,
-        features: emotionMaskPreset.features
-      };
-      console.log('🎭 EMOTION MASK MODE: Using emotional variant:', emotionMaskPreset.label, effectivePrompt, 'Model:', emotionMaskPreset.model);
+      // Check if this is a curated emotion or dynamic
+      const curatedEmotions = ["sad", "angry", "love", "surprised"];
+      const isCurated = curatedEmotions.some(emotion => 
+        emotionMaskPreset.label.toLowerCase().includes(emotion) || 
+        emotionMaskPreset.id.toLowerCase().includes(emotion)
+      );
+      
+      if (isCurated) {
+        // Use curated preset with optimized parameters
+        effectivePrompt = emotionMaskPreset.prompt;
+        generationMeta = { 
+          mode: 'emotionmask', 
+          emotionMaskPresetId, 
+          emotionMaskLabel: emotionMaskPreset.label, 
+          vibe: emotionMaskPreset.vibe,
+          model: emotionMaskPreset.model,
+          strength: emotionMaskPreset.strength,
+          guidance_scale: emotionMaskPreset.guidance_scale,
+          face_fix: emotionMaskPreset.face_fix,
+          face_method: emotionMaskPreset.face_method,
+          postprocessing: emotionMaskPreset.postprocessing,
+          features: emotionMaskPreset.features,
+          generation_type: "preset"
+        };
+        console.log('🎭 EMOTION MASK MODE: Using curated preset:', emotionMaskPreset.label, effectivePrompt, 'Model:', emotionMaskPreset.model);
+      } else {
+        // Use dynamic prompt for rare/experimental emotions
+        const emotion = emotionMaskPreset.label.toLowerCase();
+        effectivePrompt = `Cinematic portrait that expresses "${emotion}" clearly, with emotional lighting and subtle mood-enhancing visual cues. Stylized glowing face patterns, symbolic ${emotion} overlay, cinematic lighting, focused facial emotion, clear mask-like markings around eyes and cheeks.`;
+        generationMeta = { 
+          mode: 'emotionmask', 
+          emotionMaskPresetId, 
+          emotionMaskLabel: emotionMaskPreset.label, 
+          vibe: emotionMaskPreset.vibe,
+          model: "flux-image-to-image-v1", // Fallback model for dynamic emotions
+          strength: 0.55,
+          guidance_scale: 9.5,
+          face_fix: true,
+          face_method: "ipadapter",
+          postprocessing: ["emotion_glow_overlay", "face_highlight_mask", "background_blur"],
+          features: [`${emotion}_emotion`, "dynamic_mask", "cinematic_lighting"],
+          generation_type: "dynamic"
+        };
+        console.log('🎭 EMOTION MASK MODE: Using dynamic prompt for:', emotionMaskPreset.label, effectivePrompt);
+      }
       
     } else if (kind === 'ghiblireact') {
       // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
