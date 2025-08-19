@@ -1574,45 +1574,81 @@ const HomeNew: React.FC = () => {
               console.warn('⚠️ Cannot update Emotion Mask asset: missing result URL or asset ID');
             }
           } else if (composerState.mode === 'preset' || composerState.mode === 'custom') {
-            console.log(`🎭 ${composerState.mode} mode - calling save-media for single result`);
+            console.log(`🎭 ${composerState.mode} mode - checking variation count: ${allResultUrls.length}`);
             
-            // For preset and custom modes, save the single result
-            if (allResultUrls.length > 0 && assetId) {
-              const updateRes = await authenticatedFetch('/.netlify/functions/update-asset-result', {
+            if (allResultUrls.length === 1) {
+              // Single variation - update the asset directly
+              console.log(`🎭 ${composerState.mode} mode - single variation, updating asset`);
+              if (allResultUrls.length > 0 && assetId) {
+                const updateRes = await authenticatedFetch('/.netlify/functions/update-asset-result', {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    assetId: assetId, // Use the asset ID from create-asset
+                    finalUrl: allResultUrls[0], // The generated image URL from AIML API
+                    status: 'ready', // Mark as ready
+                    prompt: effectivePrompt,
+                    meta: {
+                      mode: composerState.mode,
+                      presetId: selectedPreset,
+                      runId: genId
+                    }
+                  })
+                });
+                
+                const updateText = await updateRes.text();
+                let updateBody: any = {};
+                try { updateBody = JSON.parse(updateText); } catch {}
+                
+                if (updateRes.ok && updateBody?.ok) {
+                  console.log(`✅ ${composerState.mode} asset updated successfully:`, updateBody);
+                  
+                  // Refresh user media to show the new image
+                  setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                    detail: { count: 1, runId: genId } 
+                  })), 800);
+                } else {
+                  console.error(`❌ ${composerState.mode} asset update failed:`, updateRes.status, updateBody || updateText);
+                  notifyError({ title: 'Update failed', message: updateBody?.error || `Failed to update ${composerState.mode} asset` });
+                }
+              } else {
+                console.warn(`⚠️ Cannot update ${composerState.mode} asset: missing result URL or asset ID`);
+              }
+            } else if (allResultUrls.length > 1) {
+              // Multiple variations - use save-media-batch
+              console.log(`🎭 ${composerState.mode} mode - multiple variations (${allResultUrls.length}), using save-media-batch`);
+              
+              const saveRes = await authenticatedFetch('/.netlify/functions/save-media-batch', {
                 method: 'POST',
                 headers: { 
-                  'Content-Type': 'application/json'
+                  'Content-Type': 'application/json',
+                  'X-Idempotency-Key': genId // prevents double-saves on retries
                 },
                 body: JSON.stringify({
-                  assetId: assetId, // Use the asset ID from create-asset
-                  finalUrl: allResultUrls[0], // The generated image URL from AIML API
-                  status: 'ready', // Mark as ready
-                  prompt: effectivePrompt,
-                  meta: {
-                    mode: composerState.mode,
-                    presetId: selectedPreset,
-                    runId: genId
-                  }
+                  runId: genId,
+                  variations
                 })
               });
               
-              const updateText = await updateRes.text();
-              let updateBody: any = {};
-              try { updateBody = JSON.parse(updateText); } catch {}
+              const saveText = await saveRes.text();
+              let saveBody: any = {};
+              try { saveBody = JSON.parse(saveText); } catch {}
               
-              if (updateRes.ok && updateBody?.ok) {
-                console.log(`✅ ${composerState.mode} asset updated successfully:`, updateBody);
+              if (saveRes.ok && saveBody?.ok && saveBody.count > 0) {
+                console.log(`✅ All ${saveBody.count} ${composerState.mode} variations saved successfully:`, saveBody);
                 
-                // Refresh user media to show the new image
+                // Only refresh when we actually saved something
                 setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                  detail: { count: 1, runId: genId } 
+                  detail: { count: saveBody.count, runId: genId } 
                 })), 800);
               } else {
-                console.error(`❌ ${composerState.mode} asset update failed:`, updateRes.status, updateBody || updateText);
-                notifyError({ title: 'Update failed', message: updateBody?.error || `Failed to update ${composerState.mode} asset` });
+                console.error(`❌ ${composerState.mode} save failed:`, saveRes.status, saveBody || saveText);
+                notifyError({ title: 'Save failed', message: saveBody?.error || 'Failed to save media' });
               }
             } else {
-              console.warn(`⚠️ Cannot update ${composerState.mode} asset: missing result URL or asset ID`);
+              console.warn(`⚠️ ${composerState.mode} mode - no result URLs to save`);
             }
           } else {
             console.log(`🎭 ${composerState.mode} mode - no additional save needed`);
