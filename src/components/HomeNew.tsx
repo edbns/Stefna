@@ -201,13 +201,17 @@ const HomeNew: React.FC = () => {
     setSelectedMoodMorphPreset(null)
     setSelectedEmotionMaskPreset(null)
     setPrompt('')
+    setSelectedFile(null)
+    setPreviewUrl(null)
     setComposerState(s => ({
       ...s,
       mode: 'custom',
       selectedPresetId: null,
       selectedMoodMorphPresetId: null,
       selectedEmotionMaskPresetId: null,
-      customPrompt: ''
+      customPrompt: '',
+      file: null,
+      sourceUrl: null
     }))
   }
 
