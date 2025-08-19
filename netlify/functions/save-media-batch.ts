@@ -3,6 +3,15 @@ import { randomUUID } from 'crypto';
 import { sql } from '../lib/db';
 import { requireUser } from '../lib/auth';
 
+// Helper function to extract Cloudinary public ID from URL
+function extractPublicId(url: string): string {
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)\.(jpg|jpeg|png|webp|mp4|mov|avi)/);
+  if (!match || !match[1]) {
+    throw new Error(`Invalid Cloudinary URL: ${url}`);
+  }
+  return match[1];
+}
+
 export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResponse> => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
@@ -97,10 +106,21 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
         const mediaType = v.media_type || 'image'; // defensive default
         const itemIdempotencyKey = `${runId}:${v.meta?.mood || v.meta?.variation_index || Math.random().toString(36).substr(2, 9)}`;
         
+        // Extract Cloudinary public ID from the image URL
+        let cloudinaryPublicId: string | null = null;
+        try {
+          cloudinaryPublicId = extractPublicId(v.image_url);
+          console.log(`🔗 Extracted public ID for ${v.image_url}: ${cloudinaryPublicId}`);
+        } catch (error) {
+          console.warn(`⚠️ Could not extract public ID from URL: ${v.image_url}`, error);
+          // Fall back to existing cloudinary_public_id if available
+          cloudinaryPublicId = v.cloudinary_public_id || null;
+        }
+        
         const row = await sql`
           INSERT INTO assets (id, user_id, cloudinary_public_id, media_type, preset_key, prompt, 
                              source_asset_id, status, is_public, allow_remix, final_url, meta, created_at)
-          VALUES (${id}, ${user.id}, ${v.cloudinary_public_id || null}, ${mediaType}, ${v.preset_id || null}, ${v.prompt || null},
+          VALUES (${id}, ${user.id}, ${cloudinaryPublicId}, ${mediaType}, ${v.preset_id || null}, ${v.prompt || null},
                   ${v.source_public_id || null}, 'ready', true, false, ${v.image_url}, 
                   ${JSON.stringify({...v.meta, batch_id: batchId, run_id: runId, idempotency_key: itemIdempotencyKey})}, NOW())
           RETURNING *
