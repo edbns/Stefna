@@ -75,8 +75,8 @@ export const handler: Handler = async (event, context) => {
     // This prevents the "User ID not found in users table" error
     try {
       await sql`
-        INSERT INTO users (id, email, external_id, name, tier, created_at, updated_at)
-        VALUES (${uid}, ${email || `user-${uid}@placeholder.com`}, ${email || `user-${uid}@placeholder.com`}, ${body.username || `User ${uid}`}, 'registered', NOW(), NOW())
+        INSERT INTO users (id, email, external_id, name, created_at, updated_at)
+        VALUES (${uid}, ${email || `user-${uid}@placeholder.com`}, ${email || `user-${uid}@placeholder.com`}, ${body.username || `User ${uid}`}, NOW(), NOW())
         ON CONFLICT (id) DO UPDATE SET 
           email = EXCLUDED.email,
           external_id = EXCLUDED.external_id,
@@ -117,8 +117,7 @@ export const handler: Handler = async (event, context) => {
       user: {
         id: uid,
         email,
-        username: body.username || `User ${uid}`,
-        tier: 'registered'
+        username: body.username || `User ${uid}`
       }
     });
 

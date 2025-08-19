@@ -17,7 +17,6 @@ export const handler: Handler = async (event) => {
         pf.user_id,
         u.name AS user_name,
         u.avatar_url AS user_avatar,
-        u.tier AS user_tier,
         pf.url,
         pf.cloudinary_public_id,
         pf.media_type AS resource_type,
@@ -40,7 +39,6 @@ export const handler: Handler = async (event) => {
       source_public_id: null, // Can be added later if needed
       user_id: item.user_id,
       user_avatar: item.user_avatar,
-      user_tier: item.user_tier,
       prompt: item.prompt,
       url: item.url,
       allow_remix: item.allow_remix

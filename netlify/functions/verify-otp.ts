@@ -118,8 +118,8 @@ export const handler: Handler = async (event) => {
       console.log('Creating new user with ID:', userId);
       
       await sql`
-        INSERT INTO users (id, email, external_id, tier, created_at)
-        VALUES (${userId}, ${email.toLowerCase()}, ${email.toLowerCase()}, 'registered', ${now})
+        INSERT INTO users (id, email, external_id, created_at)
+        VALUES (${userId}, ${email.toLowerCase()}, ${email.toLowerCase()}, ${now})
       `;
       
       // Initialize user credits
