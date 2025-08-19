@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Sparkles, CheckCircle, AlertCircle, Download, Share2 } from 'lucide-react'
 import { GenerationStatus, GenerationResult } from '../services/aiGenerationService'
-import RemixIcon from './RemixIcon'
+// RemixIcon import removed
 
 interface GenerationProgressProps {
   isVisible: boolean
@@ -10,7 +10,7 @@ interface GenerationProgressProps {
   onComplete?: () => void
   onError?: () => void
   onShareToFeed?: (result: GenerationResult) => void
-  onAllowRemix?: (result: GenerationResult) => void
+  // onAllowRemix removed
   onSave?: (result: GenerationResult) => void
   onShareSocial?: (result: GenerationResult) => void
 }
@@ -22,14 +22,14 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
   onComplete,
   onError,
   onShareToFeed,
-  onAllowRemix,
+  // onAllowRemix removed
   onSave,
   onShareSocial
 }) => {
 
   const [isImageEnlarged, setIsImageEnlarged] = useState(false)
   const [shareToFeed, setShareToFeed] = useState(false)
-  const [allowRemix, setAllowRemix] = useState(false)
+  // allowRemix state removed
 
   // Load user's saved settings on mount
   useEffect(() => {
@@ -39,13 +39,13 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
         if (savedProfile) {
           const profile = JSON.parse(savedProfile)
           setShareToFeed(profile.shareToFeed ?? true)  // Default to true
-          setAllowRemix(profile.allowRemix ?? true)    // Default to true
+          // allowRemix removed
         }
       } catch (error) {
         console.warn('Failed to load user settings:', error)
         // Use defaults
         setShareToFeed(true)
-        setAllowRemix(true)
+        // allowRemix removed
       }
     }
     
@@ -141,50 +141,13 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
                   </span>
                 </button>
                 
-                <button
-                  onClick={async () => {
-                    const newValue = !allowRemix
-                    setAllowRemix(newValue)
-                    
-                    // Persist to localStorage and database
-                    try {
-                      const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
-                      const updatedProfile = { ...currentProfile, allowRemix: newValue }
-                      localStorage.setItem('userProfile', JSON.stringify(updatedProfile))
-                      
-                      // Try to update in database if authenticated
-                      const token = localStorage.getItem('auth_token')
-                      if (token) {
-                        await fetch('/.netlify/functions/user-settings', {
-                          method: 'POST',
-                          headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                          },
-                          body: JSON.stringify({ shareToFeed, allowRemix: newValue })
-                        })
-                      }
-                    } catch (error) {
-                      console.warn('Failed to persist remix setting:', error)
-                    }
-                  }}
-                  className={`flex items-center justify-center space-x-2 py-3 px-4 rounded-lg border transition-all duration-300 ${
-                    allowRemix 
-                      ? 'bg-green-500/20 border-green-500/40 text-green-400' 
-                      : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
-                  }`}
-                >
-                  <RemixIcon size={16} />
-                  <span className="text-sm font-medium">
-                    {allowRemix ? '✓ Allow Remix' : 'Allow Remix'}
-                  </span>
-                </button>
+                {/* Allow Remix button removed - no more remix functionality */}
                 
                 <button
                   onClick={() => {
                     // Apply the selected options when saving
                     if (shareToFeed) onShareToFeed?.(result)
-                    if (allowRemix) onAllowRemix?.(result)
+                    // allowRemix removed
                     onSave?.(result)
                   }}
                   className="flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white py-3 px-4 rounded-lg border border-white/20 transition-all duration-300"
