@@ -118,7 +118,7 @@ export const handler: Handler = async (event) => {
       console.log('Creating new user with ID:', userId);
       
       await sql`
-        INSERT INTO users (id, email, external_id, status, created_at)
+        INSERT INTO users (id, email, external_id, tier, created_at)
         VALUES (${userId}, ${email.toLowerCase()}, ${email.toLowerCase()}, 'registered', ${now})
       `;
       
