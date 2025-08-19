@@ -1214,10 +1214,28 @@ const HomeNew: React.FC = () => {
 
       console.info('aimlApi payload', payload);
 
-      // Reserve credits before generation
-      const creditsNeeded = generateTwo ? 2 : 1;
+      // Reserve credits before generation - dynamically calculate based on variations
+      let creditsNeeded = 1; // Default for single generation
+      
+      if (kind === 'moodmorph') {
+        creditsNeeded = 3; // MoodMorph always generates 3 variations
+      } else if (kind === 'story') {
+        creditsNeeded = 4; // Story Mode generates 4 frames
+      } else if (generateTwo) {
+        creditsNeeded = 2; // Custom prompt with 2 variations
+      } else {
+        creditsNeeded = 1; // Single generation (preset, custom single, etc.)
+      }
+      
       console.log(`💰 Reserving ${creditsNeeded} credits before generation...`);
-      console.log('🔍 Credit reservation debug:', { kind, mode, creditsNeeded, kindType: typeof kind, modeType: typeof mode });
+      console.log('🔍 Credit reservation debug:', { 
+        kind, 
+        mode, 
+        creditsNeeded, 
+        generateTwo, 
+        kindType: typeof kind, 
+        modeType: typeof mode 
+      });
       
       const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
         method: 'POST',
@@ -1837,6 +1855,37 @@ const HomeNew: React.FC = () => {
         if (typeof preset.strength === 'number') body.strength = preset.strength
         body.presetName = selectedPreset
       }
+      
+      // Reserve credits before generation for this path
+      const creditsNeeded = isStoryMode ? 4 : (generateTwo ? 2 : 1);
+      console.log(`💰 Alt path: Reserving ${creditsNeeded} credits before generation...`);
+      console.log('🔍 Alt path credit debug:', { 
+        selectedMode, 
+        isStoryMode, 
+        generateTwo, 
+        creditsNeeded 
+      });
+      
+      const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: selectedMode || 'custom',
+          cost: creditsNeeded
+        })
+      });
+
+      if (!creditsResponse.ok) {
+        if (creditsResponse.status === 429) {
+          const errorData = await creditsResponse.json();
+          throw new Error(`Daily cap reached: ${errorData.error}`);
+        }
+        throw new Error(`Credits reservation failed: ${creditsResponse.status}`);
+      }
+
+      const creditsResult = await creditsResponse.json();
+      console.log(`✅ Alt path: Credits reserved successfully. New balance: ${creditsResult.balance}`);
+      
       const res = await authenticatedFetch('/.netlify/functions/aimlApi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
