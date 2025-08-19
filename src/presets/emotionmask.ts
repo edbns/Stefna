@@ -24,12 +24,12 @@ export type EmotionMaskPreset = {
 
 export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
   {
-    id: "joy_sadness",
-    label: "Joy + Sadness",
-    description: "I'm smiling but I'm sad inside",
-    prompt: "portrait of a person with a bittersweet smile, eyes slightly teary, warm golden hour lighting, photo-realistic skin, subtle facial expression, cinematic emotion, emotional storytelling",
-    negative_prompt: "anime, cartoon, cyberpunk, glitch, fantasy, over-stylized, neon, distortion",
-    vibe: "I'm smiling, but I'm breaking inside.",
+    id: "sad",
+    label: "Sad",
+    description: "Deep emotional sadness with teary eyes",
+    prompt: "Emotional portrait of a person looking deeply sad. Teary eyes, slightly trembling lips, furrowed brows. Lighting is moody and cinematic. Photorealistic style, realistic facial expression.",
+    negative_prompt: "cartoon, anime, ugly face, poorly drawn, overexaggerated",
+    vibe: "I'm feeling deeply sad and emotional.",
     strength: 0.45,
     model: "stable-diffusion-v35-large",
     guidance_scale: 7.5,
@@ -42,16 +42,16 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
     meta: {
       source: "emotion_mask",
-      variant: "joy_sadness"
+      variant: "sad"
     }
   },
   {
-    id: "strength_vulnerability",
-    label: "Strength + Vulnerability", 
-    description: "I look composed but I'm holding it together",
-    prompt: "close-up portrait of a strong person showing a hint of vulnerability, intense gaze with softened edges, natural light, expressive face, realistic texture, dramatic atmosphere",
-    negative_prompt: "anime, fantasy, tech, neon, manga, glitch, distorted",
-    vibe: "I look composed, but I'm holding it together.",
+    id: "angry",
+    label: "Angry",
+    description: "Intense anger with dramatic expression",
+    prompt: "Close-up portrait showing intense anger. Eyebrows tightly pulled down, clenched jaw, flaring nostrils, strong eye focus. Dramatic lighting with warm tones. Cinematic realism.",
+    negative_prompt: "cartoon, anime, deformed face, smiling",
+    vibe: "I'm feeling intense anger and frustration.",
     strength: 0.45,
     model: "stable-diffusion-v35-large",
     guidance_scale: 7.5,
@@ -64,16 +64,16 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
     meta: {
       source: "emotion_mask",
-      variant: "strength_vulnerability"
+      variant: "angry"
     }
   },
   {
-    id: "nostalgia_distance",
-    label: "Nostalgia + Distance",
-    description: "I'm remembering but it's already far away", 
-    prompt: "emotional portrait of a person gazing into the distance, soft ambient light, cinematic tone, expressive eyes, photo-realistic skin texture, emotional depth",
-    negative_prompt: "cartoon, anime, fantasy, overly stylized, neon, sci-fi, robotic elements",
-    vibe: "I'm remembering, but it's already far away.",
+    id: "love",
+    label: "Love",
+    description: "Affection and caring expression",
+    prompt: "Portrait of a person showing affection and love. Soft eyes, slight smile, glowing skin, warm lighting, gentle expression. Looks caring and emotionally open.",
+    negative_prompt: "sad, crying, anime style, overly dramatic",
+    vibe: "I'm feeling love and affection.",
     strength: 0.45,
     model: "stable-diffusion-v35-large",
     guidance_scale: 7.5,
@@ -86,16 +86,16 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
     meta: {
       source: "emotion_mask",
-      variant: "nostalgia_distance"
+      variant: "love"
     }
   },
   {
-    id: "peace_fear",
-    label: "Peace + Fear",
-    description: "I appear calm but I'm scared inside",
-    prompt: "portrait of a calm face with a subtle expression of fear in the eyes, soft focus, moody natural lighting, intimate realism, emotionally rich, delicate skin details",
-    negative_prompt: "cyberpunk, anime, techwear, bright neon, glitch, fantasy, illustration",
-    vibe: "I appear calm, but I'm scared inside.",
+    id: "surprised",
+    label: "Surprised",
+    description: "Natural surprise expression",
+    prompt: "Photorealistic portrait of a person looking surprised. Raised eyebrows, wide-open eyes, slightly opened mouth. Lighting is even and soft, expression is natural.",
+    negative_prompt: "cartoon, fake, unnatural lighting, unrealistic face",
+    vibe: "I'm feeling surprised and amazed.",
     strength: 0.45,
     model: "stable-diffusion-v35-large",
     guidance_scale: 7.5,
@@ -108,31 +108,10 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
     meta: {
       source: "emotion_mask",
-      variant: "peace_fear"
+      variant: "surprised"
     }
   },
-  {
-    id: "confidence_loneliness",
-    label: "Confidence + Loneliness",
-    description: "I look strong but I feel alone",
-    prompt: "realistic portrait of a confident expression masking subtle loneliness, reflective ambient light, eye contact with emotion, raw and poetic, soft shadows",
-    negative_prompt: "cartoon, anime, glowing effects, over-exaggeration, comic, neon outlines",
-    vibe: "I look strong, but I feel alone.",
-    strength: 0.45,
-    model: "stable-diffusion-v35-large",
-    guidance_scale: 7.5,
-    num_inference_steps: 30,
-    face_fix: true,
-    face_method: "ipadapter",
-    ipadapter_strength: 0.35,
-    ipadapter_noise: 0.05,
-    postprocessing: ["soft_light_blend", "face_restoration", "natural_color_enhancement"],
-    features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
-    meta: {
-      source: "emotion_mask",
-      variant: "confidence_loneliness"
-    }
-  }
+
 ];
 
 export function getEmotionMaskPreset(presetId: string) {

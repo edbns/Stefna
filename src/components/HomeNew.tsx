@@ -1198,20 +1198,18 @@ const HomeNew: React.FC = () => {
       
       // Check if this is a curated emotion or dynamic
       const curatedEmotions = [
-        "joy_sadness",
-        "strength_vuln", 
-        "nostalgia_distance",
-        "peace_fear",
-        "conf_loneliness"
+        "sad",
+        "angry", 
+        "love",
+        "surprised"
       ];
       
       // Map display names to internal IDs
       const emotionMap: Record<string, string> = {
-        "Joy + Sadness": "joy_sadness",
-        "Strength + Vulnerability": "strength_vuln",
-        "Nostalgia + Distance": "nostalgia_distance",
-        "Peace + Fear": "peace_fear",
-        "Confidence + Loneliness": "conf_loneliness"
+        "Sad": "sad",
+        "Angry": "angry",
+        "Love": "love",
+        "Surprised": "surprised"
       };
       
       const internalEmotionId = emotionMap[emotionMaskPreset.label] || emotionMaskPreset.id.toLowerCase();
@@ -1238,7 +1236,7 @@ const HomeNew: React.FC = () => {
       } else {
         // Use dynamic prompt for rare/experimental emotions - photorealistic approach
         const emotion = internalEmotionId;
-        effectivePrompt = `portrait of a woman expressing "${emotion}" naturally, soft natural lighting, authentic human emotion, photo-realistic skin texture, emotional depth, natural beauty, human vulnerability, cinematic composition, emotional authenticity`;
+        effectivePrompt = `Enhance this face with strong ${emotion} expression. Keep identity and realism. Modify only facial muscles, eyebrows, and eyes. Add subtle lighting or tension to match emotion. Style must be cinematic portrait, natural lighting, shallow depth of field.`;
         generationMeta = { 
           mode: 'emotionmask', 
           emotionMaskPresetId, 
@@ -3004,8 +3002,8 @@ const HomeNew: React.FC = () => {
       <HiddenUploader />
 
 
-        {/* Navigation bar removed - moved to floating menu */}
-        {/* <div className="fixed top-4 right-4 z-50 flex items-center gap-3"> */}
+
+
           {/* Filter */}
           <div className="relative" data-filter-dropdown>
             <button
@@ -3076,10 +3074,6 @@ const HomeNew: React.FC = () => {
                 <button onClick={() => { setUserMenu(false); authService.logout(); navigate('/') }} className="w-full text-left px-3 py-2 text-white/90 hover:bg-white/5 rounded-lg transition-colors">Sign out</button>
               </div>
             )}
-          </div>
-        </div>
-      )} */}
-
 
 
       {/* Main content area - 4 columns, full screen height */}
