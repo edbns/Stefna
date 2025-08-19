@@ -183,16 +183,17 @@ export const handler: Handler = async (event) => {
       
       // Final balance verification before proceeding
       const finalBalanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
-      if (!finalBalanceCheck[0]?.balance || finalBalanceCheck[0].balance < cost) {
-        console.error('❌ User still has insufficient credits after initialization:', finalBalanceCheck[0]?.balance || 'No balance');
+      if (!finalBalanceCheck[0]?.balance) {
+        console.error('❌ User still has no credits after initialization');
         return json({ 
           ok: false, 
-          error: "INSUFFICIENT_CREDITS_AFTER_INIT", 
+          error: "USER_CREDITS_INIT_FAILED", 
           message: "Failed to initialize user credits properly" 
         }, { status: 500 });
       }
       
       console.log('💰 Final balance verification successful:', finalBalanceCheck[0].balance);
+      console.log('💰 User has', finalBalanceCheck[0].balance, 'credits, requesting', cost, 'credits');
       
       // Check daily cap AFTER ensuring user has credits
       console.log('💰 Checking daily cap for user:', userId, 'cost:', cost, 'daily_cap:', config.daily_cap);
