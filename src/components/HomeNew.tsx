@@ -49,14 +49,14 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         onMediaClick={handleMediaClick}
         // onRemix removed - no more remix functionality
         showActions={true}
-        className="pb-24"
+        className="pb-24 w-full"
       />
     )
   } catch (error) {
     console.error('🚨 MasonryMediaGrid failed, using fallback:', error)
     // Safe fallback - simple grid without fancy components
     return (
-      <div className="grid grid-cols-4 gap-1 pb-24">
+      <div className="grid grid-cols-4 gap-1 pb-24 w-full">
         {feed.slice(0, 16).map((item, index) => (
           <div key={item.id} className="aspect-square bg-gray-200 rounded overflow-hidden">
             <img 
@@ -2997,23 +2997,20 @@ const HomeNew: React.FC = () => {
   const { mode, setMode } = useGenerationMode()
   
   return (
-    <div className="flex min-h-screen bg-black relative overflow-hidden">
+    <div className="flex min-h-screen bg-black relative overflow-hidden w-full">
       {/* Hidden file uploader for intent-based uploads */}
       <HiddenUploader />
 
       {/* Main content area - 4 columns, full screen height */}
       <div className="w-full min-h-screen">
         {/* Feed content - full screen, no padding */}
-        <div className="pt-24">
+        <div className="pt-20">
           {isLoadingFeed ? (
-            <div className="space-y-6">
+            <div className="w-full">
               {/* Media loading skeleton - no text, just image placeholders */}
-              <div className="grid grid-cols-4 gap-1">
+              <div className="grid grid-cols-4 gap-1 w-full">
                 {[...Array(16)].map((_, index) => (
-                  <div key={index} className="space-y-3">
-                    {/* Image placeholder only - no text needed for media */}
-                    <div className="aspect-[4/3] bg-gradient-to-br from-white/5 to-white/10 rounded-xl animate-pulse"></div>
-                  </div>
+                  <div key={index} className="aspect-[4/3] bg-gradient-to-br from-white/5 to-white/10 rounded-xl animate-pulse"></div>
                 ))}
               </div>
             </div>

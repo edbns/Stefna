@@ -91,8 +91,8 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   return (
     <div className={`${className}`} ref={gridRef}>
       <div 
-        className="flex gap-1 mx-auto" 
-        style={{ maxWidth: '1200px' }}
+        className="flex gap-1 w-full" 
+        style={{ maxWidth: '100%' }}
       >
         {masonryColumns.map((column, columnIndex) => (
           <div key={columnIndex} className="flex-1 flex flex-col gap-1 min-w-0">
