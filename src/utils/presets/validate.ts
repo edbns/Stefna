@@ -85,22 +85,33 @@ export function validateUIConfiguration(): string[] {
 
 // New function that only validates when presets are ready
 export function validateUIConfigurationWhenReady(): string[] {
-  const { status, byId } = presetsStore.getState();
-  
-  // Don't validate until presets are loaded
-  if (status !== 'ready') {
-    console.log(`⏳ Skipping UI validation - presets status: ${status}`);
+  // Safety check: ensure presetsStore is available
+  if (!presetsStore || typeof presetsStore.getState !== 'function') {
+    console.warn('⚠️ presetsStore not available for UI validation');
     return [];
   }
   
-  // Check that presets group has configured options
-  const configuredOptions = Object.keys(byId);
-  if (configuredOptions.length === 0) {
-    return ['Presets group has no configured options'];
+  try {
+    const { status, byId } = presetsStore.getState();
+    
+    // Don't validate until presets are loaded
+    if (status !== 'ready') {
+      console.log(`⏳ Skipping UI validation - presets status: ${status}`);
+      return [];
+    }
+    
+    // Check that presets group has configured options
+    const configuredOptions = Object.keys(byId);
+    if (configuredOptions.length === 0) {
+      return ['Presets group has no configured options'];
+    }
+    
+    console.info('✅ validateUIConfigurationWhenReady: OK');
+    return [];
+  } catch (error) {
+    console.warn('⚠️ Error during UI validation:', error);
+    return [];
   }
-  
-  console.info('✅ validateUIConfigurationWhenReady: OK');
-  return [];
 }
 
 // Call once on startup

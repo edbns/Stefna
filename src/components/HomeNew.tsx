@@ -2571,13 +2571,17 @@ const HomeNew: React.FC = () => {
       if (enhancedPrompt) {
         setPrompt(enhancedPrompt)
         console.log('✨ Prompt enhanced successfully:', enhancedPrompt)
-        // Show success feedback
-        notifySuccess({ title: 'Prompt enhanced!', message: 'Your prompt has been enhanced with AI' })
+        // Show success feedback - with safety check
+        if (typeof notifySuccess === 'function') {
+          notifySuccess({ title: 'Prompt enhanced!', message: 'Your prompt has been enhanced with AI' })
+        }
       }
     } catch (error) {
       console.error('❌ Magic Wand enhancement failed:', error)
-      // Show error feedback but keep original prompt
-      notifyError({ title: 'Enhancement failed', message: 'Could not enhance prompt, keeping original' })
+      // Show error feedback but keep original prompt - with safety check
+      if (typeof notifyError === 'function') {
+        notifyError({ title: 'Enhancement failed', message: 'Could not enhance prompt, keeping original' })
+      }
     } finally {
       setIsEnhancing(false)
     }
@@ -2594,11 +2598,10 @@ const HomeNew: React.FC = () => {
       console.log('🚀 Calling AIML API for prompt enhancement...')
       
       // Call AIML API for text enhancement (free)
-      const response = await fetch('/.netlify/functions/aimlApi', {
+      const response = await authenticatedFetch('/.netlify/functions/aimlApi', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           action: 'enhance_prompt',
