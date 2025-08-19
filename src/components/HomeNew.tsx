@@ -3004,8 +3004,7 @@ const HomeNew: React.FC = () => {
 
 
 
-          {/* Filter */}
-          <div className="relative" data-filter-dropdown>
+
             <button
               onClick={() => {
                 setFilterOpen((v) => !v)
