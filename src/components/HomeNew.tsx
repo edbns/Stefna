@@ -1674,6 +1674,31 @@ const HomeNew: React.FC = () => {
           console.error(`❌ Save error:`, error);
           notifyError({ title: 'Save failed', message: error instanceof Error ? error.message : 'Unknown error' });
         }
+
+        // 💰 Finalize credits (commit) after successful generation
+        try {
+          console.log('💰 Finalizing credits (commit)...');
+          const finalizeResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              request_id: requestId,
+              disposition: 'commit'
+            })
+          });
+          
+          if (finalizeResponse.ok) {
+            const finalizeResult = await finalizeResponse.json();
+            console.log('✅ Credits finalized successfully:', finalizeResult);
+          } else {
+            console.error('❌ Credits finalization failed:', finalizeResponse.status);
+            // Don't throw here - generation succeeded, just log the credit issue
+          }
+        } catch (finalizeError) {
+          console.error('❌ Credits finalization error:', finalizeError);
+          // Don't throw here - generation succeeded, just log the credit issue
+        }
+
         endGeneration(genId);
         setNavGenerating(false);
         return
@@ -1916,6 +1941,30 @@ const HomeNew: React.FC = () => {
         clearModeAfterGeneration();
       }
       
+      // 💰 Finalize credits (commit) after successful generation
+      try {
+        console.log('💰 Alt path: Finalizing credits (commit)...');
+        const finalizeResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            request_id: creditsResult.request_id,
+            disposition: 'commit'
+          })
+        });
+        
+        if (finalizeResponse.ok) {
+          const finalizeResult = await finalizeResponse.json();
+          console.log('✅ Alt path: Credits finalized successfully:', finalizeResult);
+        } else {
+          console.error('❌ Alt path: Credits finalization failed:', finalizeResponse.status);
+          // Don't throw here - generation succeeded, just log the credit issue
+        }
+      } catch (finalizeError) {
+        console.error('❌ Alt path: Credits finalization error:', finalizeError);
+        // Don't throw here - generation succeeded, just log the credit issue
+      }
+      
       // Optionally refresh quota
       try {
         const qRes = await authenticatedFetch('/.netlify/functions/getQuota')
@@ -1923,6 +1972,31 @@ const HomeNew: React.FC = () => {
       } catch {}
     } catch (e) {
       console.error('Generate error', e)
+      
+      // 💰 Refund credits if generation failed
+      if (creditsResult?.request_id) {
+        try {
+          console.log('💰 Alt path: Refunding credits due to generation failure...');
+          const refundResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              request_id: creditsResult.request_id,
+              disposition: 'refund'
+            })
+          });
+          
+          if (refundResponse.ok) {
+            const refundResult = await refundResponse.json();
+            console.log('✅ Alt path: Credits refunded successfully:', refundResult);
+          } else {
+            console.error('❌ Alt path: Credits refund failed:', refundResponse.status);
+          }
+        } catch (refundError) {
+          console.error('❌ Alt path: Credits refund error:', refundError);
+        }
+      }
+      
       endGeneration(genId)
       setNavGenerating(false)
     }
@@ -1994,8 +2068,17 @@ const HomeNew: React.FC = () => {
         await runMoodMorph(
           selectedFile,
           (progress) => console.log(`🎭 MoodMorph: Progress ${progress}%`),
-          (variations) => console.log('✅ MoodMorph: Generation completed successfully', variations),
-          (error) => console.error('❌ MoodMorph generation failed:', error)
+          (variations) => {
+            console.log('✅ MoodMorph: Generation completed successfully', variations);
+            // Clear composer state and refresh UI after successful completion
+            window.dispatchEvent(new CustomEvent('clear-composer-state'));
+            window.dispatchEvent(new CustomEvent('userMediaUpdated'));
+          },
+          (error) => {
+            console.error('❌ MoodMorph generation failed:', error);
+            // Clear composer state on error too
+            window.dispatchEvent(new CustomEvent('clear-composer-state'));
+          }
         );
       }
       
