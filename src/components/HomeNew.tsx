@@ -1737,7 +1737,8 @@ const HomeNew: React.FC = () => {
           console.warn('⚠️ Analytics tracking failed:', error);
         }
         
-        clearModeAfterGeneration();
+        // Clear all mode selections after successful generation (per architecture)
+        clearAllOptionsAfterGeneration();
       }
       
       // Handle V2V processing status
@@ -1938,7 +1939,8 @@ const HomeNew: React.FC = () => {
           console.warn('⚠️ Analytics tracking failed:', error);
         }
         
-        clearModeAfterGeneration();
+        // Clear all mode selections after successful generation (per architecture)
+        clearAllOptionsAfterGeneration();
       }
       
       // 💰 Finalize credits (commit) after successful generation
@@ -2070,14 +2072,18 @@ const HomeNew: React.FC = () => {
           (progress) => console.log(`🎭 MoodMorph: Progress ${progress}%`),
           (variations) => {
             console.log('✅ MoodMorph: Generation completed successfully', variations);
-            // Clear composer state and refresh UI after successful completion
-            window.dispatchEvent(new CustomEvent('clear-composer-state'));
+            // Reset mode selection to "None" and refresh UI after successful completion
+            setSelectedPreset(null);
+            setSelectedMoodMorphPreset(null);
+            setSelectedEmotionMaskPreset(null);
             window.dispatchEvent(new CustomEvent('userMediaUpdated'));
           },
           (error) => {
             console.error('❌ MoodMorph generation failed:', error);
-            // Clear composer state on error too
-            window.dispatchEvent(new CustomEvent('clear-composer-state'));
+            // Reset mode selection on error too
+            setSelectedPreset(null);
+            setSelectedMoodMorphPreset(null);
+            setSelectedEmotionMaskPreset(null);
           }
         );
       }
