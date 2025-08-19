@@ -1065,6 +1065,14 @@ const HomeNew: React.FC = () => {
     setCurrentRunId(runId);
     console.info('▶ NEW dispatchGenerate', { kind, options, runId });
     
+    // 🛡️ Defensive Runtime Guard - Check for unknown modes
+    const KNOWN_MODES = ['preset', 'custom', 'emotionmask', 'ghiblireact', 'neotokyoglitch'];
+    if (!KNOWN_MODES.includes(kind)) {
+      console.warn("⚠️ Unknown mode encountered:", kind);
+      notifyError({ title: 'Unsupported generation type', message: `Mode '${kind}' is not supported` });
+      return;
+    }
+    
     // Close composer immediately when generation starts
     setIsComposerOpen(false);
     
@@ -1095,6 +1103,10 @@ const HomeNew: React.FC = () => {
     // NEW CLEAN MODE-BASED LOGIC - NO MORE MIXING
     let effectivePrompt = '';
     let generationMeta: any = null;
+    
+    // 🧠 Debug logging for generation dispatch
+    console.log("🧠 Dispatching generation with mode:", kind);
+    console.log("🎯 Options:", options);
     
     if (kind === 'custom') {
       // CUSTOM MODE: Use ONLY the user's typed prompt

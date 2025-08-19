@@ -32,6 +32,13 @@ export const handler: Handler = async (event) => {
     
     const body = event.body ? JSON.parse(event.body) : {};
     console.log("📦 Request body parsed:", body);
+    console.log("🔍 reserve_credits payload:", { 
+      user_id: body.userId || body.user_id, 
+      mode: body.action || body.mode, 
+      asset_id: body.assetId || body.asset_id,
+      cost: body.cost,
+      request_id: body.request_id || body.requestId
+    });
     
     // Get dynamic configuration from app_config
     let config;
@@ -94,7 +101,7 @@ export const handler: Handler = async (event) => {
     }
     
     // Validate action values
-    const allowedActions = ['image.gen', 'video.gen', 'mask.gen', 'emotionmask', 'preset', 'presets', 'moodmorph', 'custom'];
+    const allowedActions = ['image.gen', 'video.gen', 'mask.gen', 'emotionmask', 'preset', 'presets', 'moodmorph', 'custom', 'ghiblireact', 'neotokyoglitch'];
     if (!allowedActions.includes(action)) {
       console.error("❌ Invalid action:", action, "Allowed:", allowedActions);
       return json({ ok: false, error: `Invalid action: ${action}. Allowed: ${allowedActions.join(', ')}` }, { status: 400 });
