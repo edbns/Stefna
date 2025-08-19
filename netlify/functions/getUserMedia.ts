@@ -17,7 +17,7 @@ async function getUserMedia(ownerId: string) {
         COALESCE(final_url, 
           CASE 
             WHEN cloudinary_public_id ~~ 'stefna/%'::text THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id)
-            WHEN cloudinary_public_id IS NOT NULL THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/stefna/'::text || cloudinary_public_id)
+            WHEN cloudinary_public_id IS NOT NULL AND cloudinary_public_id !~ '^stefna/' THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/stefna/'::text || cloudinary_public_id)
             ELSE NULL::text 
           END
         ) AS url,
@@ -65,7 +65,7 @@ export const handler: Handler = async (event) => {
         COALESCE(final_url, 
           CASE 
             WHEN cloudinary_public_id ~~ 'stefna/%'::text THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id)
-            WHEN cloudinary_public_id IS NOT NULL THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/stefna/'::text || cloudinary_public_id)
+            WHEN cloudinary_public_id IS NOT NULL AND cloudinary_public_id !~ '^stefna/' THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/stefna/'::text || cloudinary_public_id)
             ELSE NULL::text 
           END
         ) AS url,

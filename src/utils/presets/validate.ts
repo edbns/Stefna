@@ -1,6 +1,7 @@
 // utils/presets/validate.ts
 import type { Preset } from './types';
 import { PRESETS, OPTION_GROUPS } from './types';
+import { presetsStore } from '../../stores/presetsStore';
 
 const ALLOWED: Record<Preset['mode'], { input: Preset['input'][]; requiresSource: boolean }> = {
   i2i:     { input: ['image','video'], requiresSource: true },
