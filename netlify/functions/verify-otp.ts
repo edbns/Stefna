@@ -236,22 +236,16 @@ export const handler: Handler = async (event) => {
           await resend.emails.send({
             from: 'Stefna <hello@stefna.xyz>',
             to: [email],
-            subject: 'Welcome to Stefna! 🎉',
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #000000; color: #ffffff;">
-                <div style="text-align: center; padding: 40px 20px;">
-                  <h1 style="color: #ffffff; font-size: 24px; margin-bottom: 10px;">Welcome to Stefna!</h1>
-                  <p style="color: #cccccc; font-size: 16px; margin-bottom: 20px;">Your account has been created successfully.</p>
-                  <p style="color: #cccccc; font-size: 16px; margin-bottom: 40px;">You now have access to AI-powered image generation and editing tools.</p>
-                  
-                  <div style="background-color: #1a1a1a; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
-                    <p style="color: #888888; font-size: 12px; text-transform: uppercase; margin-bottom: 15px;">Your Account</p>
-                    <p style="color: #ffffff; font-size: 16px; margin-bottom: 10px;">Email: ${email}</p>
-                    <p style="color: #ffffff; font-size: 16px; margin-bottom: 10px;">Status: Active</p>
-                  </div>
-                </div>
-              </div>
-            `
+            subject: 'Welcome to Stefna – Your 30 Credits Are Ready',
+            text: `Welcome to Stefna.
+
+Your account is now active, and we've already added 30 credits to get you started. That's enough to generate up to 15 high-quality images today. Credits reset daily, so you'll get 30 more tomorrow.
+
+There are no tiers, no gimmicks, and no social media verification. Everyone gets the same creative power.
+
+Start generating now.
+
+— The Stefna Team`
           });
           console.log('Welcome email sent successfully');
         }

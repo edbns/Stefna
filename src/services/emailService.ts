@@ -72,7 +72,17 @@ class EmailService {
         body: JSON.stringify({
           to: referralData.friendEmail,
           subject: `You've Been Invited to Stefna – 25 Free Credits Inside`,
-          text: this.generateReferralEmailText(referralData)
+          text: `Someone invited you to try Stefna — a new way to generate high-quality AI images (and soon, videos).
+
+As a referred user, you get 25 bonus credits the moment you sign up.
+
+No subscriptions, no verification, just creative freedom with a daily 30 credit limit for everyone.
+
+Use your 25 extra credits however you like — on top of your daily allowance.
+
+Join now and start creating.
+
+— The Stefna Team`
         })
       })
 
@@ -99,26 +109,7 @@ class EmailService {
     }
   }
 
-  // Generate referral email text
-  private generateReferralEmailText(data: ReferralEmailData): string {
-    const signupUrl = data.referralCode 
-      ? `https://stefna.xyz/auth?ref=${data.referralCode}`
-      : 'https://stefna.xyz/auth'
 
-    return `Someone invited you to try Stefna — a new way to generate high-quality AI images (and soon, videos).
-
-As a referred user, you get 25 bonus credits the moment you sign up.
-
-No subscriptions, no verification, just creative freedom with a daily 30 credit limit for everyone.
-
-Use your 25 extra credits however you like — on top of your daily allowance.
-
-Join now and start creating.
-
-${signupUrl}
-
-— The Stefna Team`
-  }
 
   // Generate a random 6-digit OTP
   generateOTP(): string {
