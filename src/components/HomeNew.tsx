@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Plus, X, ArrowUp, Filter, FileText } from 'lucide-react'
-import { authenticatedFetch } from '../utils/apiClient'
+import { authenticatedFetch, signedFetch } from '../utils/apiClient'
 import authService from '../services/authService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import MasonryMediaGrid from './MasonryMediaGrid'

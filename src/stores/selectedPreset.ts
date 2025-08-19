@@ -23,12 +23,13 @@ export const useSelectedPreset = create<SelState>((set, get) => ({
     // Clear old "cinematic_glow" default if it exists
     if (stored === 'cinematic_glow') {
       console.log('🎯 Clearing old cinematic_glow default, setting to None');
-      localStorage.setItem('selectedPreset', 'none');
+      localStorage.removeItem('selectedPreset');
       return null;
     }
     
     if (stored === 'none') {
       console.log('🎯 Restored selectedPreset from localStorage: None');
+      localStorage.removeItem('selectedPreset');
       return null;
     }
     if (stored && stored in PRESETS) {
@@ -43,7 +44,7 @@ export const useSelectedPreset = create<SelState>((set, get) => ({
     if (id === null) {
       console.log('🎯 Clearing selectedPreset to default (None)');
       set({ selectedPreset: DEFAULT_PRESET });
-      localStorage.setItem('selectedPreset', 'none');
+      localStorage.removeItem('selectedPreset');
       return;
     }
     if (!id) {
@@ -65,14 +66,14 @@ export const useSelectedPreset = create<SelState>((set, get) => ({
       // Always start with "None" (null) as default, don't auto-select first preset
       console.log('🎯 Setting boot default preset to: None (no auto-selection)');
       set({ selectedPreset: DEFAULT_PRESET });
-      localStorage.setItem('selectedPreset', 'none');
+      localStorage.removeItem('selectedPreset');
     }
   },
 
   resetToDefault: () => {
     console.log('🎯 Resetting to default preset: None');
     set({ selectedPreset: DEFAULT_PRESET });
-    localStorage.setItem('selectedPreset', 'none');
+    localStorage.removeItem('selectedPreset');
   },
 
   getDefaultPreset: () => DEFAULT_PRESET,
