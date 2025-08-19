@@ -17,7 +17,7 @@ export function GhibliReactionPicker({
 }: GhibliReactionPickerProps) {
   return (
     <div className={`absolute top-full left-0 mt-2 bg-black/90 backdrop-blur-sm border border-white/20 rounded-xl p-3 shadow-2xl z-50 min-w-[280px] ${className}`}>
-      <div className="text-white/80 text-xs font-medium mb-3 px-2">Choose Your Ghibli Reaction</div>
+
       
       {/* Ghibli Reaction preset options - matches presets exactly */}
       <div className="space-y-2">
