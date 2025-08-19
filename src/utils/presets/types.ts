@@ -119,17 +119,7 @@ export const PRESETS = {
     input: 'image',
     requiresSource: true,
   },
-  emotion_mask: {
-    id: 'emotion_mask',
-    label: 'Emotion Mask',
-    prompt: 'dual-tone emotional lighting, one side warm soft light and the other cool harsh shadow, sharp eyes, expressive emotion layering, cinematic background blur, conflicting emotional tones',
-    negative_prompt: 'flat lighting, single emotion, uniform tone, simple background',
-    strength: 0.85,
-    model: 'eagle',
-    mode: 'i2i',
-    input: 'image',
-    requiresSource: true,
-  },
+
   high_fashion_editorial: {
     id: 'high_fashion_editorial',
     label: 'High Fashion Editorial',
