@@ -46,8 +46,8 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   const masonryColumns = useMemo(() => {
     if (media.length === 0) return []
     
-    // Always use exactly 3 columns for consistent layout
-    const numColumns = 3
+    // Use the columns prop or default to 4
+    const numColumns = 4
     const columnArrays: UserMedia[][] = Array.from({ length: numColumns }, () => [])
     
     // Simple distribution: put each item in the shortest column
@@ -70,26 +70,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
     action()
   }
 
-  const getTypeIcon = (type: 'photo' | 'video' | 'remix') => {
-    switch (type) {
-      case 'video':
-        return (
-          <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          </div>
-        )
-      case 'remix':
-        return (
-          <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
-            <RemixIcon size={12} className="text-white" />
-          </div>
-        )
-      default:
-        return null
-    }
-  }
+
 
   if (media.length === 0) {
     return (
@@ -110,11 +91,11 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   return (
     <div className={`${className}`} ref={gridRef}>
       <div 
-        className="flex gap-2 mx-auto" 
+        className="flex gap-1 mx-auto" 
         style={{ maxWidth: '1200px' }}
       >
         {masonryColumns.map((column, columnIndex) => (
-          <div key={columnIndex} className="flex-1 flex flex-col gap-2 min-w-0">
+          <div key={columnIndex} className="flex-1 flex flex-col gap-1 min-w-0">
             {column.map((item) => (
               <div
                 key={item.id}
@@ -188,8 +169,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                       />
                   )}
 
-                  {/* Type indicator */}
-                  {getTypeIcon(item.type)}
+
 
                   {/* Simplified overlay system - remix removed for cleaner focus */}
                   {(() => {

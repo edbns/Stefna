@@ -45,7 +45,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
     return (
       <MasonryMediaGrid
         media={feed}
-        columns={3}
+        columns={4}
         onMediaClick={handleMediaClick}
         // onRemix removed - no more remix functionality
         showActions={true}
@@ -56,8 +56,8 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
     console.error('🚨 MasonryMediaGrid failed, using fallback:', error)
     // Safe fallback - simple grid without fancy components
     return (
-      <div className="grid grid-cols-3 gap-2 pb-24">
-        {feed.slice(0, 12).map((item, index) => (
+      <div className="grid grid-cols-4 gap-1 pb-24">
+        {feed.slice(0, 16).map((item, index) => (
           <div key={item.id} className="aspect-square bg-gray-200 rounded overflow-hidden">
             <img 
               src={item.url} 
@@ -381,6 +381,7 @@ const HomeNew: React.FC = () => {
   const [navGenerating, setNavGenerating] = useState(false)
   // generateTwo removed - single generation only
   const [userMenu, setUserMenu] = useState(false)
+  const [fabMenuOpen, setFabMenuOpen] = useState(false)
   
   // Media viewer state
   const [viewerOpen, setViewerOpen] = useState(false)
@@ -422,6 +423,11 @@ const HomeNew: React.FC = () => {
       // Close user menu dropdown
       if (userMenu && !target.closest('[data-user-menu]')) {
         setUserMenu(false)
+      }
+      
+      // Close FAB menu dropdown
+      if (fabMenuOpen && !target.closest('[data-fab-menu]')) {
+        setFabMenuOpen(false)
       }
       
       // Close presets dropdown
@@ -2027,7 +2033,7 @@ const HomeNew: React.FC = () => {
         }
       }
       
-      notifyError({ title: 'Generation failed', message: errorMessage });
+      notifyError({ title: 'Error! Please try again', message: errorMessage });
       
       // Clear all options after generation failure
       clearAllOptionsAfterGeneration();
@@ -3040,52 +3046,17 @@ const HomeNew: React.FC = () => {
         </div>
       )}
 
-      {/* Login button for non-authenticated users */}
-      {!isAuthenticated && (
-        <div className="fixed top-4 right-4 z-50">
-          <button
-            onClick={() => navigate('/auth')}
-            className="px-6 py-2.5 rounded-full bg-white text-black text-sm font-medium hover:bg-white/90 transition-colors shadow-lg"
-          >
-            Login
-          </button>
-        </div>
-      )}
 
-      {/* Left sidebar with upload button - 15% width */}
-      <div className="hidden md:flex w-[15%] sticky top-0 h-screen items-center justify-center">
-        <div className="relative">
-          {/* Animated white dot orbiting around the button border */}
-          <div className="absolute inset-0 w-16 h-16">
-            <div className="absolute w-1 h-1 bg-white rounded-full animate-spin" style={{ 
-              animationDuration: '3s',
-              transformOrigin: '8px 8px',
-              left: '50%',
-              top: '0',
-              marginLeft: '-2px',
-              marginTop: '-2px'
-            }}></div>
-          </div>
-          
-          <button
-            onClick={handleUploadClick}
-            className="w-16 h-16 rounded-full bg-black border-2 border-white/30 text-white shadow-2xl hover:bg-white/10 hover:border-white/50 btn-optimized relative z-10 flex items-center justify-center"
-            aria-label="Upload"
-          >
-            <Plus size={24} />
-          </button>
-        </div>
-      </div>
 
-      {/* Main content area - 85% width, full screen height */}
-      <div className="w-[85%] min-h-screen">
+      {/* Main content area - 4 columns, full screen height */}
+      <div className="w-full min-h-screen">
         {/* Feed content - positioned under floating nav with proper padding */}
         <div className="px-6 pt-24 pb-8">
           {isLoadingFeed ? (
             <div className="space-y-6">
               {/* Media loading skeleton - no text, just image placeholders */}
-              <div className="grid grid-cols-3 gap-6">
-                {[...Array(12)].map((_, index) => (
+              <div className="grid grid-cols-4 gap-1">
+                {[...Array(16)].map((_, index) => (
                   <div key={index} className="space-y-3">
                     {/* Image placeholder only - no text needed for media */}
                     <div className="aspect-[4/3] bg-gradient-to-br from-white/5 to-white/10 rounded-xl animate-pulse"></div>
@@ -3117,6 +3088,76 @@ const HomeNew: React.FC = () => {
       {/* Guest gate overlay removed - existing system in place */}
 
       {/* Unified toasts handle notifications globally */}
+
+      {/* Top-left Floating Menu - Desktop */}
+      <div className="hidden md:flex fixed top-4 left-4 z-40" data-fab-menu>
+        <div className="relative">
+          {/* Menu Icon Button */}
+          <button
+            onClick={() => setFabMenuOpen(prev => !prev)}
+            className="w-16 h-16 text-white hover:text-white/80 transition-all duration-300 flex items-center justify-center group"
+            aria-label="Menu"
+          >
+            <div className="relative">
+              {/* Clean three vertical dots */}
+              <div className="flex flex-col items-center space-y-1">
+                <div className="w-1.5 h-1.5 bg-white rounded-full transition-all duration-300 group-hover:scale-125"></div>
+                <div className="w-1.5 h-1.5 bg-white rounded-full transition-all duration-300 group-hover:scale-125" style={{ transitionDelay: '0.05s' }}></div>
+                <div className="w-1.5 h-1.5 bg-white rounded-full transition-all duration-300 group-hover:scale-125" style={{ transitionDelay: '0.1s' }}></div>
+              </div>
+              
+              {/* Subtle hover glow */}
+              <div className="absolute inset-0 rounded-full bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none scale-150"></div>
+            </div>
+          </button>
+          
+          {/* Floating Menu Content */}
+          {fabMenuOpen && (
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 space-y-0 animate-in slide-in-from-top-2 duration-300 ease-out bg-white/90 backdrop-blur-sm rounded-lg p-1 shadow-lg border border-white/20">
+              {/* Upload Button */}
+              <button
+                onClick={handleUploadClick}
+                className="w-12 h-12 text-gray-800 hover:text-gray-600 transition-all duration-300 flex items-center justify-center group"
+                aria-label="Upload"
+              >
+                <Plus size={22} className="group-hover:scale-110 transition-transform duration-200" />
+              </button>
+              
+              {/* Login Button (non-authenticated only) */}
+              {!isAuthenticated && (
+                <button
+                  onClick={() => navigate('/auth')}
+                  className="w-12 h-12 text-gray-800 hover:text-gray-600 transition-all duration-300 flex items-center justify-center group"
+                  aria-label="Login"
+                >
+                  <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              )}
+              
+              {/* Logged User Actions */}
+              {isAuthenticated && (
+                <>
+                  {/* Profile Icon */}
+                  <button
+                    onClick={() => setUserMenu(prev => !prev)}
+                    className="w-12 h-12 text-gray-800 hover:text-gray-600 transition-all duration-300 flex items-center justify-center group"
+                    aria-label="Profile"
+                  >
+                    <ProfileIcon size={22} className="group-hover:scale-110 transition-transform duration-200" />
+                  </button>
+                  
+                  {/* Notification Bell */}
+                  <div className="w-12 h-12 text-gray-800 flex items-center justify-center">
+                    <NotificationBell userId={authService.getCurrentUser()?.id || ''} />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Mobile FAB */}
       <div className="md:hidden fixed bottom-6 right-6 relative navbar-stable">
