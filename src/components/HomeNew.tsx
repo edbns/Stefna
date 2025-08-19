@@ -1219,12 +1219,10 @@ const HomeNew: React.FC = () => {
       
       if (kind === 'moodmorph') {
         creditsNeeded = 3; // MoodMorph always generates 3 variations
-      } else if (kind === 'story') {
-        creditsNeeded = 4; // Story Mode generates 4 frames
       } else if (generateTwo) {
         creditsNeeded = 2; // Custom prompt with 2 variations
       } else {
-        creditsNeeded = 1; // Single generation (preset, custom single, etc.)
+        creditsNeeded = 1; // Single generation (preset, custom single, emotionmask, remix)
       }
       
       console.log(`💰 Reserving ${creditsNeeded} credits before generation...`);
@@ -1857,11 +1855,10 @@ const HomeNew: React.FC = () => {
       }
       
       // Reserve credits before generation for this path
-      const creditsNeeded = isStoryMode ? 4 : (generateTwo ? 2 : 1);
+      const creditsNeeded = generateTwo ? 2 : 1;
       console.log(`💰 Alt path: Reserving ${creditsNeeded} credits before generation...`);
       console.log('🔍 Alt path credit debug:', { 
         selectedMode, 
-        isStoryMode, 
         generateTwo, 
         creditsNeeded 
       });
