@@ -2401,6 +2401,11 @@ const HomeNew: React.FC = () => {
     await dispatchGenerate('custom', {
       customPrompt: prompt.trim()
     })
+    
+    // Clear composer after successful generation
+    setTimeout(() => {
+      clearAllOptionsAfterGeneration()
+    }, 500)
   }
   
   // 2. PRESET MODE GENERATION - Only uses selected preset
@@ -2427,6 +2432,11 @@ const HomeNew: React.FC = () => {
       presetId: selectedPreset,
       presetData: PRESETS[selectedPreset]
     })
+    
+    // Clear composer after successful generation
+    setTimeout(() => {
+      clearAllOptionsAfterGeneration()
+    }, 500)
   }
   
 
@@ -2458,6 +2468,11 @@ const HomeNew: React.FC = () => {
     await dispatchGenerate('emotionmask', {
       emotionMaskPresetId: selectedEmotionMaskPreset
     });
+    
+    // Clear composer after successful generation
+    setTimeout(() => {
+      clearAllOptionsAfterGeneration()
+    }, 500)
   }
 
   // Mode handlers for one-click generation
@@ -3612,16 +3627,24 @@ const HomeNew: React.FC = () => {
                         // Fallback - determine mode and generate
                         if (selectedPreset) {
                           // Run preset generation
-                          dispatchGenerate('preset', {
+                          await dispatchGenerate('preset', {
                             presetId: selectedPreset,
                             presetData: PRESETS[selectedPreset],
                             promptOverride: prompt
                           })
+                          // Clear composer after successful generation
+                          setTimeout(() => {
+                            clearAllOptionsAfterGeneration()
+                          }, 500)
                         } else {
                           // Run custom generation
-                          dispatchGenerate('custom', {
+                          await dispatchGenerate('custom', {
                             promptOverride: prompt
                           })
+                          // Clear composer after successful generation
+                          setTimeout(() => {
+                            clearAllOptionsAfterGeneration()
+                          }, 500)
                         }
                       }
                     }} 
