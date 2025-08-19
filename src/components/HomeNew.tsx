@@ -2139,9 +2139,9 @@ const HomeNew: React.FC = () => {
       }
       
       // Test Cloudinary signer
-      const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', {
+      const signRes = await authenticatedFetch('/.netlify/functions/cloudinary-sign', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${jwt}` },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ folder: 'stefna/sources' })
       })
       

@@ -243,45 +243,49 @@ export const handler: Handler = async (event) => {
       dataType: typeof data.data
     });
 
-    // Extract URL from various possible response formats with more fallbacks
-    let url = null;
+    // Extract URLs from various possible response formats with support for multiple variations
+    let urls = [];
+    let variationsGenerated = 1;
     
-    // Try multiple extraction strategies
-    if (data.images && Array.isArray(data.images) && data.images[0]?.url) {
+    // Try multiple extraction strategies for multiple variations
+    if (data.images && Array.isArray(data.images)) {
       // 🎯 AIML API format: { "images": [{ "url": "...", "width": 1024, "height": 1024 }] }
-      url = data.images[0].url;
-      console.log('✅ Found URL in images[0].url:', url);
+      urls = data.images.map(img => img.url).filter(Boolean);
+      variationsGenerated = urls.length;
+      console.log(`✅ Found ${variationsGenerated} URLs in images array:`, urls);
     } else if (data.image_url) {
-      url = data.image_url;
-      console.log('✅ Found URL in image_url:', url);
-    } else if (data.output && Array.isArray(data.output) && data.output[0]?.url) {
-      url = data.output[0].url;
-      console.log('✅ Found URL in output[0].url:', url);
+      urls = [data.image_url];
+      console.log('✅ Found URL in image_url:', urls[0]);
+    } else if (data.output && Array.isArray(data.output)) {
+      urls = data.output.map(out => out.url).filter(Boolean);
+      variationsGenerated = urls.length;
+      console.log(`✅ Found ${variationsGenerated} URLs in output array:`, urls);
     } else if (data.output && typeof data.output === 'object' && data.output.url) {
-      url = data.output.url;
-      console.log('✅ Found URL in output.url:', url);
-    } else if (data.data && Array.isArray(data.data) && data.data[0]?.url) {
-      url = data.data[0].url;
-      console.log('✅ Found URL in data[0].url:', url);
+      urls = [data.output.url];
+      console.log('✅ Found URL in output.url:', urls[0]);
+    } else if (data.data && Array.isArray(data.data)) {
+      urls = data.data.map(d => d.url).filter(Boolean);
+      variationsGenerated = urls.length;
+      console.log(`✅ Found ${variationsGenerated} URLs in data array:`, urls);
     } else if (data.data && typeof data.data === 'object' && data.data.url) {
-      url = data.data.url;
-      console.log('✅ Found URL in data.url:', url);
+      urls = [data.data.url];
+      console.log('✅ Found URL in data.url:', urls[0]);
     } else if (data.url) {
-      url = data.url;
-      console.log('✅ Found URL in url:', url);
+      urls = [data.url];
+      console.log('✅ Found URL in url:', urls[0]);
     } else if (data.result_url) {
-      url = data.result_url;
-      console.log('✅ Found URL in result_url:', url);
+      urls = [data.result_url];
+      console.log('✅ Found URL in result_url:', urls[0]);
     } else if (data.generated_image) {
-      url = data.generated_image;
-      console.log('✅ Found URL in generated_image:', url);
+      urls = [data.generated_image];
+      console.log('✅ Found URL in generated_image:', urls[0]);
     } else if (data.image) {
-      url = data.image;
-      console.log('✅ Found URL in image:', url);
+      urls = [data.image];
+      console.log('✅ Found URL in image:', urls[0]);
     }
 
-    if (!url) {
-      console.error('❌ No image URL found in AIML response. Full response:', JSON.stringify(data, null, 2));
+    if (urls.length === 0) {
+      console.error('❌ No image URLs found in AIML response. Full response:', JSON.stringify(data, null, 2));
       return {
         statusCode: 502,
         body: JSON.stringify({ 
@@ -293,16 +297,27 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    console.log('✅ AIML API success, URL extracted:', url);
+    console.log(`✅ AIML API success, ${variationsGenerated} URL(s) extracted:`, urls);
+
+    // Return response with support for multiple variations
+    const responseBody: any = {
+      ok: true,
+      model: aimlPayload.model,
+      prompt: aimlPayload.prompt,
+      variations_generated: variationsGenerated
+    };
+
+    // For backward compatibility, always include image_url (first variation)
+    responseBody.image_url = urls[0];
+    
+    // If multiple variations, include result_urls array
+    if (urls.length > 1) {
+      responseBody.result_urls = urls;
+    }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ 
-        ok: true, 
-        image_url: url,
-        model: aimlPayload.model,
-        prompt: aimlPayload.prompt
-      })
+      body: JSON.stringify(responseBody)
     };
 
   } catch (error) {
