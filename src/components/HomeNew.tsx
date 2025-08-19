@@ -716,42 +716,57 @@ const HomeNew: React.FC = () => {
         console.log('📊 Raw feed data:', media)
         console.log('📊 Feed length:', media?.length || 0)
         
-        const mapped: UserMedia[] = (media || []).map((item: any): UserMedia => {
-          // Construct Cloudinary URL including videos for feed
-          const mediaUrl = cloudinaryUrlFromEnv(item.cloudinary_public_id, item.media_type)
-          console.log(`🔗 URL mapping for item ${item.id}:`, {
-            cloudinary_public_id: item.cloudinary_public_id,
-            media_type: item.media_type,
-            final: mediaUrl
+        const mapped: UserMedia[] = (media || [])
+          .map((item: any): UserMedia | null => {
+            // Use the URL from the backend if available, otherwise construct from cloudinary_public_id
+            let mediaUrl: string;
+            if (item.url && item.url.startsWith('http')) {
+              // Use the URL provided by the backend (this should be the correct one)
+              mediaUrl = item.url;
+            } else if (item.cloudinary_public_id && item.cloudinary_public_id.startsWith('stefna/')) {
+              // Only construct URL if cloudinary_public_id has the correct prefix
+              mediaUrl = cloudinaryUrlFromEnv(item.cloudinary_public_id, item.media_type);
+            } else {
+              // Skip items with invalid cloudinary_public_id
+              console.warn(`⚠️ Skipping item ${item.id}: invalid cloudinary_public_id: ${item.cloudinary_public_id}`);
+              return null;
+            }
+            
+            console.log(`🔗 URL mapping for item ${item.id}:`, {
+              cloudinary_public_id: item.cloudinary_public_id,
+              media_type: item.media_type,
+              final: mediaUrl,
+              source: item.url ? 'backend_url' : 'constructed_url'
+            })
+            
+            return ({
+              id: item.id,
+              userId: item.user_id || '', // Use actual user ID or empty string to hide tooltip
+              userAvatar: item.user_avatar || undefined, // Use actual user avatar if available
+              userTier: item.user_tier || undefined, // Use actual user tier if available
+              type: item.media_type === 'video' ? 'video' : 'photo',
+              url: mediaUrl,
+              thumbnailUrl: mediaUrl, // Use same URL for thumbnail
+              prompt: item.prompt || 'AI Generated Content', // Use actual prompt or fallback
+              style: undefined,
+              aspectRatio: 4/3, // Default aspect ratio
+              width: 800, // Default width
+              height: 600, // Default height
+              timestamp: item.published_at,
+              originalMediaId: item.source_asset_id || undefined,
+              tokensUsed: item.media_type === 'video' ? 5 : 2,
+              likes: 0, // Not exposed in public_feed_v2
+              remixCount: 0, // Not exposed in public_feed_v2
+              isPublic: true,
+              allowRemix: true,
+              tags: [],
+              metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
+              // Store additional fields needed for remix functionality
+              cloudinaryPublicId: item.cloudinary_public_id,
+              mediaType: item.media_type,
+            })
           })
-          
-          return ({
-            id: item.id,
-            userId: item.user_id || '', // Use actual user ID or empty string to hide tooltip
-            userAvatar: item.user_avatar || undefined, // Use actual user avatar if available
-            userTier: item.user_tier || undefined, // Use actual user tier if available
-            type: item.media_type === 'video' ? 'video' : 'photo',
-            url: mediaUrl,
-            thumbnailUrl: mediaUrl, // Use same URL for thumbnail
-            prompt: item.prompt || 'AI Generated Content', // Use actual prompt or fallback
-            style: undefined,
-            aspectRatio: 4/3, // Default aspect ratio
-            width: 800, // Default width
-            height: 600, // Default height
-            timestamp: item.published_at,
-            originalMediaId: item.source_asset_id || undefined,
-            tokensUsed: item.media_type === 'video' ? 5 : 2,
-            likes: 0, // Not exposed in public_feed_v2
-            remixCount: 0, // Not exposed in public_feed_v2
-            isPublic: true,
-            allowRemix: true,
-            tags: [],
-            metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
-            // Store additional fields needed for remix functionality
-            cloudinaryPublicId: item.cloudinary_public_id,
-            mediaType: item.media_type,
-          })
-        })
+          .filter((item): item is UserMedia => item !== null) // Filter out null items
         
         console.log('🎯 Mapped feed items:', mapped.length)
         console.log('🎯 Setting feed with items:', mapped.length, 'first item ID:', mapped[0]?.id)

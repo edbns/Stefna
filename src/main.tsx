@@ -6,6 +6,11 @@ import { validateAllSync, validateAll, validateUIConfigurationWhenReady } from '
 import { PRESETS } from './utils/presets/types'
 import { presetsStore } from './stores/presetsStore'
 
+// Safety check: ensure presetsStore is properly imported
+if (!presetsStore) {
+  console.error('❌ presetsStore import failed');
+}
+
 // Extend Window interface for development helpers
 declare global {
   interface Window {
@@ -21,11 +26,27 @@ for (const [key, preset] of Object.entries(PRESETS)) {
 }
 
 // Load presets store first, then validate
-setTimeout(() => {
-  presetsStore.getState().load().then(() => {
-    // Now validate UI configuration when presets are ready
-    validateUIConfigurationWhenReady();
-  }).catch(console.error);
+setTimeout(async () => {
+  try {
+    // Ensure store is initialized before accessing
+    if (presetsStore && typeof presetsStore.getState === 'function') {
+      await presetsStore.getState().load();
+      // Now validate UI configuration when presets are ready
+      validateUIConfigurationWhenReady();
+    } else {
+      console.warn('⚠️ presetsStore not ready yet, retrying...');
+      // Retry after a short delay
+      setTimeout(() => {
+        if (presetsStore && typeof presetsStore.getState === 'function') {
+          presetsStore.getState().load().then(() => {
+            validateUIConfigurationWhenReady();
+          }).catch(console.error);
+        }
+      }, 100);
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize presets store:', error);
+  }
 }, 0);
 
 // Validate preset system on startup (sync for immediate feedback)
