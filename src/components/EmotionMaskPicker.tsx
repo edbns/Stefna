@@ -17,7 +17,7 @@ export function EmotionMaskPicker({
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-2xl p-3 w-80">
       <div className="space-y-1">
-        {/* None option - white background with black text */}
+        {/* None option - matches other dropdowns exactly */}
         <button
           onClick={() => onChange?.('')}
           className={(() => {
@@ -27,13 +27,13 @@ export function EmotionMaskPicker({
             return `${baseClass} ${!value ? activeClass : inactiveClass}`;
           })()}
         >
-          <span className="font-medium">None</span>
+          <span>None</span>
           {!value && (
             <div className="w-4 h-4 rounded-full bg-gray-400 border-2 border-gray-300"></div>
           )}
         </button>
         
-        {/* Emotion Mask preset options - white background with black text */}
+        {/* Emotion Mask preset options - matches other dropdowns exactly */}
         {presets.map((preset) => (
           <button
             key={preset.id}
@@ -45,7 +45,7 @@ export function EmotionMaskPicker({
               return `${baseClass} ${value === preset.id ? activeClass : inactiveClass}`;
             })()}
           >
-            <span className="font-medium">{preset.label}</span>
+            <span>{preset.label}</span>
             {value === preset.id ? (
               <div className="w-4 h-4 rounded-full bg-gray-400 border-2 border-gray-300"></div>
             ) : (

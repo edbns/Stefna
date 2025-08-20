@@ -1118,9 +1118,9 @@ const HomeNew: React.FC = () => {
     // Close composer immediately when generation starts
     setIsComposerOpen(false);
     
-          // Start generation with ID guard
-      const genId = startGeneration();
-      setNavGenerating(true);
+    // Start generation with ID guard
+    const genId = startGeneration();
+    setNavGenerating(true);
       
       // Show "Add to queue" notification for all generation modes
       notifyQueue({ title: 'Add to queue', message: 'We will start processing shortly.' });
@@ -1217,7 +1217,7 @@ const HomeNew: React.FC = () => {
       
       if (isCurated) {
         // Use curated preset with optimized parameters
-        effectivePrompt = emotionMaskPreset.prompt;
+      effectivePrompt = emotionMaskPreset.prompt;
         generationMeta = { 
           mode: 'emotionmask', 
           emotionMaskPresetId, 
@@ -3001,15 +3001,83 @@ const HomeNew: React.FC = () => {
       {/* Hidden file uploader for intent-based uploads */}
       <HiddenUploader />
 
-      {/* Main content area - 4 columns, full screen height */}
-      <div className="w-full min-h-screen">
-        {/* Feed content - full screen, no padding */}
+      {/* Left Sidebar - 5% width */}
+      <div className="w-[5%] min-h-screen bg-black/95 backdrop-blur-sm">
+                <div className="flex flex-col items-center justify-between h-screen py-6">
+          {/* Top Section - Login/Profile */}
+          <div className="flex flex-col items-center space-y-4">
+            {!isAuthenticated ? (
+              <button
+                onClick={() => navigate('/auth')}
+                className="w-14 h-14 bg-white/5 text-white rounded-full border border-white/20 transition-all duration-300 flex items-center justify-center group"
+                aria-label="Login"
+              >
+                <svg className="w-6 h-6 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            ) : (
+              <div className="relative">
+                <button
+                  onClick={() => setProfileDropdownOpen(prev => !prev)}
+                  className="w-14 h-14 bg-white/5 text-white rounded-full border border-white/20 transition-all duration-300 flex items-center justify-center group"
+                  aria-label="Profile"
+                >
+                  <ProfileIcon size={24} className="transition-transform duration-200" />
+                </button>
+                
+                {/* Profile Dropdown */}
+                {profileDropdownOpen && (
+                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm rounded-lg p-1 shadow-lg border border-white/20 min-w-[120px]">
+                    <button
+                      onClick={() => navigate('/profile')}
+                      className="w-full text-left px-3 py-2 text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
+                    >
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        authService.logout()
+                        setProfileDropdownOpen(false)
+                        navigate('/')
+                      }}
+                      className="w-full text-left px-3 py-2 text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Middle Section - Upload Button */}
+          <div className="flex flex-col items-center space-y-4">
+            <button
+              onClick={handleUploadClick}
+              className="w-14 h-14 bg-white/5 text-white rounded-full border border-white/20 transition-all duration-300 flex items-center justify-center group"
+              aria-label="Upload"
+            >
+              <Plus size={24} className="transition-transform duration-200" />
+            </button>
+          </div>
+
+          {/* Bottom Section - Logo */}
+          <div className="flex flex-col items-center">
+            <img src="/logo.png" alt="Stefna Logo" className="w-12 h-12 object-contain" />
+          </div>
+        </div>
+      </div>
+
+      {/* Main content area - 95% width, 3 columns */}
+      <div className="w-[95%] min-h-screen">
+        {/* Feed content - 3 columns */}
         <div className="pt-20">
           {isLoadingFeed ? (
             <div className="w-full">
-              {/* Media loading skeleton - no text, just image placeholders */}
-              <div className="grid grid-cols-4 gap-1 w-full">
-                {[...Array(16)].map((_, index) => (
+              {/* Media loading skeleton - 3 columns */}
+              <div className="grid grid-cols-3 gap-1 w-full">
+                {[...Array(12)].map((_, index) => (
                   <div key={index} className="aspect-[4/3] bg-gradient-to-br from-white/5 to-white/10 rounded-xl animate-pulse"></div>
                 ))}
               </div>
@@ -3039,128 +3107,9 @@ const HomeNew: React.FC = () => {
 
       {/* Unified toasts handle notifications globally */}
 
-      {/* Top-left Floating Menu - Desktop */}
-      <div className="hidden md:flex fixed top-4 left-4 z-40" data-fab-menu>
-        <div className="relative">
-          {/* Menu Icon Button */}
-          <button
-            onClick={() => setFabMenuOpen(prev => !prev)}
-            className="w-16 h-16 text-white hover:text-white/80 transition-all duration-300 flex items-center justify-center group"
-            aria-label="Menu"
-          >
-            <div className="relative">
-              {/* Clean three vertical dots */}
-              <div className="flex flex-col items-center space-y-1">
-                <div className="w-1.5 h-1.5 bg-white rounded-full transition-all duration-300 group-hover:scale-125"></div>
-                <div className="w-1.5 h-1.5 bg-white rounded-full transition-all duration-300 group-hover:scale-125" style={{ transitionDelay: '0.05s' }}></div>
-                <div className="w-1.5 h-1.5 bg-white rounded-full transition-all duration-300 group-hover:scale-125" style={{ transitionDelay: '0.1s' }}></div>
-              </div>
-              
-              {/* Subtle hover glow */}
-              <div className="absolute inset-0 rounded-full bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none scale-150"></div>
-            </div>
-          </button>
-          
-          {/* Floating Menu Content */}
-          {fabMenuOpen && (
-            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 space-y-0 animate-in slide-in-from-top-2 duration-300 ease-out bg-white/90 backdrop-blur-sm rounded-lg p-1 shadow-lg border border-white/20">
-              {/* Upload Button */}
-              <button
-                onClick={handleUploadClick}
-                className="w-12 h-12 text-gray-800 hover:text-gray-600 transition-all duration-300 flex items-center justify-center group"
-                aria-label="Upload"
-              >
-                <Plus size={22} className="group-hover:scale-110 transition-transform duration-200" />
-              </button>
-              
-              {/* Login Button (non-authenticated only) */}
-              {!isAuthenticated && (
-                <button
-                  onClick={() => navigate('/auth')}
-                  className="w-12 h-12 text-gray-800 hover:text-gray-600 transition-all duration-300 flex items-center justify-center group"
-                  aria-label="Login"
-                >
-                  <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                  </svg>
-                </button>
-              )}
-              
-              {/* Logged User Actions */}
-              {isAuthenticated && (
-                <>
-                  {/* Filter Button */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setFilterOpen(prev => !prev)}
-                      className="w-12 h-12 text-gray-800 hover:text-gray-600 transition-all duration-300 flex items-center justify-center group"
-                      aria-label="Filter"
-                    >
-                      <Filter size={22} className="group-hover:scale-110 transition-transform duration-200" />
-                    </button>
-                    
-                    {/* Filter Dropdown */}
-                    {filterOpen && (
-                      <div className="absolute left-1/2 -translate-x-1/2 mt-2 bg-[#333333] border border-white/20 rounded-2xl shadow-2xl p-2 w-40 z-50">
-                        <button onClick={() => { setCurrentFilter('all'); setFilterOpen(false) }} className={(() => {
-                          const baseClass = 'w-full text-left px-3 py-2 rounded-lg transition-colors';
-                          const activeClass = 'bg-white/10 text-white';
-                          const inactiveClass = 'text-white/70 hover:text-white hover:bg-white/5';
-                          return `${baseClass} ${currentFilter === 'all' ? activeClass : inactiveClass}`;
-                        })()}>All</button>
-                        <button onClick={() => { setCurrentFilter('images'); setFilterOpen(false) }} className={(() => {
-                          const baseClass = 'w-full text-left px-3 py-2 rounded-lg transition-colors';
-                          const activeClass = 'bg-white/10 text-white';
-                          const inactiveClass = 'text-white/70 hover:text-white hover:bg-white/5';
-                          return `${baseClass} ${currentFilter === 'images' ? activeClass : inactiveClass}`;
-                        })()}>Images</button>
-                        <button onClick={() => { setCurrentFilter('videos'); setFilterOpen(false) }} className={(() => {
-                          const baseClass = 'w-full text-left px-3 py-2 rounded-lg transition-colors';
-                          const activeClass = 'bg-white/10 text-white';
-                          const inactiveClass = 'text-white/70 hover:text-white hover:bg-white/5';
-                          return `${baseClass} ${currentFilter === 'videos' ? activeClass : inactiveClass}`;
-                        })()}>Videos</button>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Profile Icon - Direct navigation to profile */}
-                  <button
-                    onClick={() => navigate('/profile')}
-                    className="w-12 h-12 text-gray-800 hover:text-gray-600 transition-all duration-300 flex items-center justify-center group"
-                    aria-label="Profile"
-                  >
-                    <ProfileIcon size={22} className="group-hover:scale-110 transition-transform duration-200" />
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Mobile FAB */}
-      <div className="md:hidden fixed bottom-6 right-6 relative navbar-stable">
-        {/* Animated white dot orbiting around the button border */}
-        <div className="absolute inset-0 w-16 h-16">
-          <div className="absolute w-1 h-1 bg-white rounded-full animate-spin" style={{ 
-            animationDuration: '3s',
-            transformOrigin: '8px 8px',
-            left: '50%',
-            top: '0',
-            marginLeft: '-2px',
-            marginTop: '-2px'
-          }}></div>
-        </div>
-        
-        <button
-          onClick={handleUploadClick}
-          className="w-16 h-16 rounded-full bg-black border-2 border-white/30 text-white shadow-2xl hover:bg-white/10 hover:border-white/50 btn-optimized relative z-10 flex items-center justify-center"
-          aria-label="Upload"
-        >
-          <Plus size={24} />
-        </button>
-      </div>
+
+
 
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
@@ -3588,24 +3537,24 @@ const HomeNew: React.FC = () => {
                         await dispatchGenerate('neotokyoglitch', {
                           neoTokyoGlitchPresetId: selectedNeoTokyoGlitchPreset
                         })
-                      } else {
+                        } else {
                         // Fallback - determine mode and generate
                         if (selectedPreset) {
-                          // Run preset generation
+                        // Run preset generation
                           await dispatchGenerate('preset', {
-                            presetId: selectedPreset,
-                            presetData: PRESETS[selectedPreset],
-                            promptOverride: prompt
-                          })
+                          presetId: selectedPreset,
+                          presetData: PRESETS[selectedPreset],
+                          promptOverride: prompt
+                        })
                           // Clear composer after successful generation
                           setTimeout(() => {
                             clearAllOptionsAfterGeneration()
                           }, 500)
-                        } else {
-                          // Run custom generation
+                      } else {
+                        // Run custom generation
                           await dispatchGenerate('custom', {
-                            promptOverride: prompt
-                          })
+                          promptOverride: prompt
+                        })
                           // Clear composer after successful generation
                           setTimeout(() => {
                             clearAllOptionsAfterGeneration()
