@@ -10,6 +10,7 @@ import FullScreenMediaViewer from '../components/FullScreenMediaViewer'
 import userMediaService, { UserMedia } from '../services/userMediaService'
 import authService from '../services/authService'
 import ConfirmModal from '../components/ConfirmModal'
+import ShareModal from '../components/ShareModal'
 import tokenService from '../services/tokenService'
 import { authenticatedFetch } from '../utils/apiClient'
 import { useToasts } from '../components/ui/Toasts'
@@ -39,6 +40,8 @@ const ProfileScreen: React.FC = () => {
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
   const [bulkDeleteConfirmed, setBulkDeleteConfirmed] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareMedia, setShareMedia] = useState<UserMedia | null>(null)
 
   // Use profile context
   const { profileData, updateProfile, refreshProfile } = useProfile()
@@ -767,51 +770,23 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
-  // Updated share function that updates database visibility
+  // Updated share function that opens ShareModal for social media sharing
   const handleShare = async (media: UserMedia) => {
     try {
-      // Auth guard: require JWT before attempting to change visibility
+      // Auth guard: require JWT before attempting to share
       if (!authService.getToken()) {
-        addNotification('Login Required', 'Please sign in to change visibility', 'warning')
+        addNotification('Login Required', 'Please sign in to share media', 'warning')
         navigate('/auth')
         return
       }
 
-      // Update media visibility in database using recordShare
-      const response = await authenticatedFetch('/.netlify/functions/recordShare', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          asset_id: media.id,
-          shareToFeed: true
-        })
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        console.log('✅ Share successful:', result)
-        
-        // Update local state with server response
-        setUserMedia(prev => prev.map(item => 
-          item.id === media.id 
-            ? { 
-                ...item, 
-                visibility: result.asset.visibility,
-                env: result.asset.env
-              }
-            : item
-        ))
-        
-        addNotification('Media Shared', 'Your media is now public!', 'success')
-      } else {
-        const error = await response.json()
-        addNotification('Share Failed', error.error || 'Failed to share media', 'error')
-      }
+      // Open ShareModal for social media sharing
+      setShareMedia(media)
+      setShowShareModal(true)
+      
     } catch (error) {
-      console.error('Failed to share media:', error)
-      addNotification('Share Failed', 'Failed to share media. Please try again.', 'error')
+      console.error('Failed to open share modal:', error)
+      addNotification('Share Failed', 'Failed to open share options. Please try again.', 'error')
     }
   }
 
@@ -1322,13 +1297,9 @@ const ProfileScreen: React.FC = () => {
                 onMediaClick={handleMediaClick}
                 onDownload={handleDownload}
                 onShare={handleShare}
-                onUnshare={handleUnshare}
-
                 onDelete={handleDeleteMedia}
                 showActions={true}
                 className="pb-20"
-                hideRemixCount={true}
-                hideUserAvatars={true}
                 // Selection props
                 isSelectionMode={isSelectionMode}
                 selectedMediaIds={selectedMediaIds}
@@ -1473,190 +1444,63 @@ const ProfileScreen: React.FC = () => {
 
         {activeTab === 'account' && (
           <div className="flex-1 p-6">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-2xl mx-auto">
               {/* Account Header */}
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-white mb-2">Account Settings</h2>
-                <p className="text-white/60 text-sm">Manage your AI media preferences and account security</p>
+                <p className="text-white/60 text-sm">Manage your account information and security</p>
               </div>
 
-              {/* Two Column Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
                 
-                {/* Left Column - Account & Preferences */}
-                <div className="space-y-6">
+                {/* Account Information */}
+                <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+                    <User size={20} className="mr-2" />
+                    Account Information
+                  </h3>
                   
-                  {/* Email & Account Info */}
-                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
-                      <User size={20} className="mr-2" />
-                      Account Information
-                    </h3>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-white/80 text-sm font-medium mb-2">Email Address</label>
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="email"
-                            value={authService.getCurrentUser()?.email || 'user@example.com'}
-                            disabled
-                            className="flex-1 bg-[#2a2a2a] border border-[#444444] rounded-lg px-4 py-3 text-white/60 cursor-not-allowed"
-                          />
-                          <button 
-                            onClick={() => {
-                              // Redirect to auth page for email change
-                              navigate('/auth')
-                            }}
-                            className="bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 transition-colors whitespace-nowrap"
-                          >
-                            Change
-                          </button>
-                        </div>
-
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* AI Media Preferences */}
-                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
-                      <Image size={20} className="mr-2" />
-                      AI Media Preferences
-                    </h3>
-                    
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-white font-medium text-sm">Auto-share to Feed</div>
-                          <div className="text-white/60 text-xs">Automatically share your AI media to the public feed</div>
-                        </div>
-                        <button
-                          onClick={() => updateProfile({ shareToFeed: !profileData.shareToFeed })}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                            profileData.shareToFeed ? 'bg-white' : 'bg-white/20'
-                          }`}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-white/80 text-sm font-medium mb-2">Email Address</label>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="email"
+                          value={authService.getCurrentUser()?.email || 'user@example.com'}
+                          disabled
+                          className="flex-1 bg-[#2a2a2a] border border-[#444444] rounded-lg px-4 py-3 text-white/60 cursor-not-allowed"
+                        />
+                        <button 
+                          onClick={() => {
+                            // Redirect to auth page for email change
+                            navigate('/auth')
+                          }}
+                          className="bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 transition-colors whitespace-nowrap"
                         >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform duration-200 ${
-                              profileData.shareToFeed ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
+                          Change
                         </button>
                       </div>
-                      
-                      {/* Allow Remixes toggle removed - focus on personal creativity */}
                     </div>
                   </div>
-
-                  {/* Media Statistics */}
-                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
-                      <Coins size={20} className="mr-2" />
-                      Media Statistics
-                    </h3>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-white">{userMedia.length}</div>
-                        <div className="text-white/60 text-xs">Total Media</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-white">{tokenCount}</div>
-                        <div className="text-white/60 text-xs">Tokens Available</div>
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
 
-                {/* Right Column - Security & Actions */}
-                <div className="space-y-6">
+                {/* Danger Zone */}
+                <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <Shield size={20} className="mr-2" />
+                    Danger Zone
+                  </h3>
                   
-                  {/* Account Security */}
-                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
-                      <Shield size={20} className="mr-2" />
-                      Account Security
-                    </h3>
-                    
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-white font-medium text-sm">Two-Factor Authentication</div>
-                          <div className="text-white/60 text-xs">Secure your account with OTP verification</div>
-                        </div>
-                        <div className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">
-                          Enabled
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-white font-medium text-sm">Session Management</div>
-                          <div className="text-white/60 text-xs">Manage active login sessions</div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            authService.logout()
-                            navigate('/')
-                          }}
-                          className="bg-white/10 text-white text-sm px-3 py-1 rounded-lg hover:bg-white/20 transition-colors"
-                        >
-                          Logout
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Data Management */}
-                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
-                      <FileText size={20} className="mr-2" />
-                      Data Management
-                    </h3>
-                    
-                    <div className="space-y-4">
-                      <button 
-                        onClick={() => {
-                          // TODO: Implement data export
-                          notifyError({ title: 'Coming Soon', message: 'Data export will be available soon' })
-                        }}
-                        className="w-full bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white font-medium py-3 px-4 rounded-lg border border-[#444444] hover:border-[#555555] transition-colors"
-                      >
-                        Export My Media
-                      </button>
-                      
-                      <button 
-                        onClick={() => {
-                          // TODO: Implement data deletion
-                          notifyError({ title: 'Coming Soon', message: 'Data deletion will be available soon' })
-                        }}
-                        className="w-full bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white font-medium py-3 px-4 rounded-lg border border-[#444444] hover:border-[#555555] transition-colors"
-                      >
-                        Delete My Data
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Danger Zone */}
-                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                      <Shield size={20} className="mr-2" />
-                      Danger Zone
-                    </h3>
-                    
-                    <p className="text-white/60 text-sm mb-4">
-                      These actions cannot be undone. Your account and all AI media will be permanently deleted.
-                    </p>
-                    
-                    <button 
-                      onClick={() => setShowDeleteAccountModal(true)}
-                      className="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      Delete Account
-                    </button>
-                  </div>
+                  <p className="text-white/60 text-sm mb-4">
+                    These actions cannot be undone. Your account and all AI media will be permanently deleted.
+                  </p>
+                  
+                  <button 
+                    onClick={() => setShowDeleteAccountModal(true)}
+                    className="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Delete Account
+                  </button>
                 </div>
               </div>
             </div>
@@ -1897,12 +1741,17 @@ const ProfileScreen: React.FC = () => {
         </div>
       )}
 
-
-
-      
-
-
-
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => {
+          setShowShareModal(false)
+          setShareMedia(null)
+        }}
+        mediaUrl={shareMedia?.url}
+        caption={shareMedia?.prompt}
+        title="Share Your Creation"
+      />
 
     </div>
   )

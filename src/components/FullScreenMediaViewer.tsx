@@ -62,28 +62,53 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
   const handlePrev = () => setCurrentIndex((i) => (i - 1 + media.length) % media.length)
   const handleNext = () => setCurrentIndex((i) => (i + 1) % media.length)
 
-  // Function to determine how the media was created
+  // Function to determine how the media was created with clear titles
   const getCreationMethod = (media: UserMedia): string => {
+    // Check for specific preset types first
     if (media.metadata?.presetId) {
-      // Map preset IDs to readable names
+      // Map preset IDs to clear, user-friendly names
       const presetNames: Record<string, string> = {
-        'ghibli_tears': 'Ghibli Tears',
-        'ghibli_shock': 'Ghibli Shock', 
-        'ghibli_sparkle': 'Ghibli Sparkle',
-        'neotokyo_glitch': 'Neo Tokyo Glitch',
-        'neotokyo_neon': 'Neo Tokyo Neon',
-        'neotokyo_cyberpunk': 'Neo Tokyo Cyberpunk'
+        // Emotion Mask presets
+        'emotion_mask_sad': 'Emotion Mask™',
+        'emotion_mask_angry': 'Emotion Mask™',
+        'emotion_mask_love': 'Emotion Mask™',
+        'emotion_mask_surprised': 'Emotion Mask™',
+        'emotion_mask_conf_loneliness': 'Emotion Mask™',
+        
+        // Ghibli Reaction presets
+        'ghibli_tears': 'Studio Ghibli Reaction™',
+        'ghibli_shock': 'Studio Ghibli Reaction™',
+        'ghibli_sparkle': 'Studio Ghibli Reaction™',
+        'ghibli_love': 'Studio Ghibli Reaction™',
+        'ghibli_sad': 'Studio Ghibli Reaction™',
+        
+        // Neo Tokyo Glitch presets
+        'neotokyo_glitch': 'Neo Tokyo Glitch™',
+        'neotokyo_neon': 'Neo Tokyo Glitch™',
+        'neotokyo_cyberpunk': 'Neo Tokyo Glitch™',
+        'neotokyo_retro': 'Neo Tokyo Glitch™',
+        
+        // Standard presets
+        'cinematic_glow': 'Cinematic Glow',
+        'bright_airy': 'Bright & Airy',
+        'vivid_pop': 'Vivid Pop',
+        'vintage_film_35mm': 'Vintage Film',
+        'tropical_boost': 'Tropical Boost',
+        'urban_grit': 'Urban Grit'
       }
-      return presetNames[media.metadata.presetId] || 'Preset'
+      return presetNames[media.metadata.presetId] || 'AI Style'
     }
     
+    // Check for generation modes
     if (media.metadata?.mode === 'i2i') return 'Image to Image'
     if (media.metadata?.mode === 'txt2img') return 'Text to Image'
     if (media.metadata?.mode === 'restore') return 'Restore'
     if (media.metadata?.mode === 'story') return 'Story Mode'
     
+
+    
     // Fallback based on prompt
-    if (media.prompt && media.prompt.length > 0) return 'Custom Prompt'
+    if (media.prompt && media.prompt.length > 0) return 'Custom Creation'
     
     return 'AI Generated'
   }
@@ -148,12 +173,40 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
             </button>
           )}
 
-          {/* Actions - Removed remix button, simplified layout */}
+          {/* Actions - Simplified layout with copy functionality */}
           <div className="mt-6 text-center max-w-4xl px-4">
-            {/* Simple prompt display if available */}
+            {/* Prompt display with copy icon - one line only */}
             {current.prompt && (
-              <div className="text-white/60 text-sm max-w-2xl mx-auto">
-                "{current.prompt}"
+              <div className="flex items-center justify-center gap-3 max-w-2xl mx-auto">
+                <div className="text-white/60 text-sm truncate max-w-md">
+                  "{current.prompt.length > 60 ? current.prompt.substring(0, 60) + '...' : current.prompt}"
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(current.prompt)
+                      .then(() => {
+                        // Optional: Show a brief success indicator
+                        const button = document.activeElement as HTMLButtonElement
+                        if (button) {
+                          const originalText = button.innerHTML
+                          button.innerHTML = '✓'
+                          button.className = 'text-green-400 text-xs px-2 py-1 rounded bg-white/10 border border-white/20 transition-all duration-200'
+                          setTimeout(() => {
+                            button.innerHTML = originalText
+                            button.className = 'text-white/60 text-xs px-2 py-1 rounded bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200'
+                          }, 1000)
+                        }
+                      })
+                      .catch(err => console.error('Failed to copy prompt:', err))
+                  }}
+                  className="text-white/60 text-xs px-2 py-1 rounded bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 flex items-center gap-1"
+                  title="Copy prompt to clipboard"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy
+                </button>
               </div>
             )}
           </div>

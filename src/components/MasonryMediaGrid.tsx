@@ -10,6 +10,7 @@ interface MasonryMediaGridProps {
   columns?: number
   onMediaClick?: (media: UserMedia) => void
   onDownload?: (media: UserMedia) => void
+  onShare?: (media: UserMedia) => void
   // onRemix removed - no more remix functionality
   onDelete?: (media: UserMedia) => void
   onGenerateCaption?: (media: UserMedia) => void
@@ -28,6 +29,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   media,
   onMediaClick,
   onDownload,
+  onShare,
   // onRemix removed
   onDelete,
   showActions = true,
@@ -46,8 +48,8 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   const masonryColumns = useMemo(() => {
     if (media.length === 0) return []
     
-    // Use the columns prop or default to 4
-    const numColumns = 4
+    // Use the columns prop or default to 3
+    const numColumns = 3
     const columnArrays: UserMedia[][] = Array.from({ length: numColumns }, () => [])
     
     // Simple distribution: put each item in the shortest column
@@ -186,9 +188,20 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
 
 
 
-                            {/* Additional actions (download, delete) - Top Right */}
-                            {(onDownload || onDelete) && (
+                            {/* Additional actions (share, download, delete) - Top Right */}
+                            {(onShare || onDownload || onDelete) && (
                               <div className="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                {onShare && (
+                                  <button
+                                    onClick={(e) => handleAction(() => onShare(item), e)}
+                                    className="w-7 h-7 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
+                                    title="Share to social media"
+                                  >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
+                                      <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"/>
+                                    </svg>
+                                  </button>
+                                )}
                                 {onDownload && (
                                   <button
                                     onClick={(e) => handleAction(() => onDownload(item), e)}
@@ -210,7 +223,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                                   >
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
                                       <polyline points="3,6 5,6 21,6"/>
-                                      <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                                      <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 2,2v2"/>
                                     </svg>
                                   </button>
                                 )}

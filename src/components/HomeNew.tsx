@@ -3002,76 +3002,87 @@ const HomeNew: React.FC = () => {
       {/* Hidden file uploader for intent-based uploads */}
       <HiddenUploader />
 
-      {/* Left Sidebar - 8% width */}
-      <div className="w-[8%] min-h-screen bg-black/95 backdrop-blur-sm">
-                <div className="flex flex-col items-center justify-between h-screen py-6">
-          {/* Top Section - Login/Profile */}
-          <div className="flex flex-col items-center space-y-4">
-            {!isAuthenticated ? (
-              <button
-                onClick={() => navigate('/auth')}
-                className="w-14 h-14 bg-white/5 text-white rounded-full border border-white/20 transition-all duration-300 flex items-center justify-center group"
-                aria-label="Login"
-              >
-                <svg className="w-6 h-6 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                </svg>
-              </button>
-            ) : (
-              <div className="relative">
+      {/* Floating Logo - Top Left */}
+      <div className="fixed top-6 left-6 z-50">
+        <img 
+          src="/logo.png" 
+          alt="Stefna Logo" 
+          className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform duration-200" 
+        />
+      </div>
+
+      {/* Floating Controls - Top Right */}
+      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
+        {/* Generation Loading Spinner - Only show when generating */}
+        {navGenerating && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-white/10 text-white rounded-full border border-white/20 backdrop-blur-sm">
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <span className="text-sm font-medium">Generating...</span>
+          </div>
+        )}
+        
+        {/* Upload Button */}
+        <button
+          onClick={handleUploadClick}
+          className="w-12 h-12 bg-white text-black rounded-full border border-white transition-all duration-300 flex items-center justify-center hover:bg-white/90 hover:scale-105 relative group"
+          aria-label="Upload"
+          title="Upload"
+        >
+          <Plus size={24} className="transition-transform duration-200" />
+          
+          {/* Hover Tooltip */}
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+            Upload
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-black/80"></div>
+          </div>
+        </button>
+
+        {/* Login/Profile Button */}
+        {!isAuthenticated ? (
+          <button
+            onClick={() => navigate('/auth')}
+            className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-white/90 hover:scale-105"
+            aria-label="Login"
+          >
+            <span className="text-sm font-medium">Login</span>
+          </button>
+        ) : (
+          <div className="relative">
+            <button
+              onClick={() => setProfileDropdownOpen(prev => !prev)}
+              className="w-12 h-12 bg-white/10 text-white rounded-full border border-white/20 transition-all duration-300 flex items-center justify-center hover:bg-white/20 hover:scale-105"
+              aria-label="Profile"
+            >
+              <ProfileIcon size={24} className="transition-transform duration-200" />
+            </button>
+            
+            {/* Profile Dropdown */}
+            {profileDropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 bg-white/90 backdrop-blur-sm rounded-lg p-1 shadow-lg border border-white/20 min-w-[120px]">
                 <button
-                  onClick={() => setProfileDropdownOpen(prev => !prev)}
-                  className="w-14 h-14 bg-white/5 text-white rounded-full border border-white/20 transition-all duration-300 flex items-center justify-center group"
-                  aria-label="Profile"
+                  onClick={() => navigate('/profile')}
+                  className="w-full text-left px-3 py-2 text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
                 >
-                  <ProfileIcon size={24} className="transition-transform duration-200" />
+                  Profile
                 </button>
-                
-                {/* Profile Dropdown */}
-                {profileDropdownOpen && (
-                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm rounded-lg p-1 shadow-lg border border-white/20 min-w-[120px]">
-                    <button
-                      onClick={() => navigate('/profile')}
-                      className="w-full text-left px-3 py-2 text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
-                    >
-                      Profile
-                    </button>
-                    <button
-                      onClick={() => {
-                        authService.logout()
-                        setProfileDropdownOpen(false)
-                        navigate('/')
-                      }}
-                      className="w-full text-left px-3 py-2 text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
+                <button
+                  onClick={() => {
+                    authService.logout()
+                    setProfileDropdownOpen(false)
+                    navigate('/')
+                  }}
+                  className="w-full text-left px-3 py-2 text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
+                >
+                  Logout
+                </button>
               </div>
             )}
           </div>
-
-          {/* Middle Section - Upload Button */}
-          <div className="flex flex-col items-center space-y-4">
-            <button
-              onClick={handleUploadClick}
-              className="w-14 h-14 bg-white/5 text-white rounded-full border border-white/20 transition-all duration-300 flex items-center justify-center group"
-              aria-label="Upload"
-            >
-              <Plus size={24} className="transition-transform duration-200" />
-            </button>
-          </div>
-
-          {/* Bottom Section - Logo */}
-          <div className="flex flex-col items-center">
-            <img src="/logo.png" alt="Stefna Logo" className="w-12 h-12 object-contain" />
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Main content area - 92% width, 3 columns */}
-      <div className="w-[92%] min-h-screen">
+      {/* Main content area - Full width with top padding for floating components */}
+      <div className="w-full min-h-screen pt-24">
         {/* Feed content - 3 columns */}
         <div className="pt-0">
           {isLoadingFeed ? (

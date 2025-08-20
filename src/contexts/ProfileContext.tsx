@@ -68,12 +68,28 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
           const userData = await response.json()
           console.log('✅ Loaded profile from database:', userData)
           
+          // Also load user settings to get the latest shareToFeed preference
+          let shareToFeed = true // default value
+          try {
+            const settingsResponse = await authenticatedFetch('/.netlify/functions/user-settings', {
+              method: 'GET'
+            })
+            if (settingsResponse.ok) {
+              const settings = await settingsResponse.json()
+              shareToFeed = settings.shareToFeed
+              console.log('✅ Loaded user settings:', settings)
+            }
+          } catch (settingsError) {
+            console.warn('⚠️ Failed to load user settings, using profile data:', settingsError)
+            shareToFeed = userData.share_to_feed !== undefined ? userData.share_to_feed : true
+          }
+          
           const profileData = {
             id: userData.id,
             name: userData.name || userData.username || '',
             username: userData.username || '',
             avatar: userData.avatar || userData.avatar_url || '',
-            shareToFeed: userData.shareToFeed || false,
+            shareToFeed: shareToFeed,
             // allowRemix removed
             onboarding_completed: userData.onboarding_completed || false,
             tier: userData.tier || 'registered',
@@ -126,6 +142,14 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
       localStorage.setItem('userProfile', JSON.stringify(updated))
       
       console.log('🔄 Profile updated:', updates)
+      
+      // If shareToFeed is being updated, ensure it's also saved to the database
+      if (updates.shareToFeed !== undefined) {
+        console.log('💾 shareToFeed updated, ensuring database persistence...')
+        // Don't reload profile immediately to avoid race conditions
+        // The ProfileScreen will handle the database update via updateUserSettings
+      }
+      
       return updated
     })
   }

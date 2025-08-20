@@ -24,7 +24,6 @@ const ShareModal: React.FC<ShareModalProps> = ({
   caption = 'Check out my amazing AI creation! #AIasABrush #Stefna',
   title = 'Share Your Creation'
 }) => {
-  const [selectedCaptionStyle, setSelectedCaptionStyle] = useState('casual')
   const [customCaption, setCustomCaption] = useState(caption)
   const [isDownloading, setIsDownloading] = useState(false)
   const [isCopying, setIsCopying] = useState(false)
@@ -67,12 +66,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
     }
   ]
 
-  const captionStyles = [
-    { id: 'casual', name: 'Casual', example: 'Just created this with AI! 🔥' },
-    { id: 'professional', name: 'Professional', example: 'AI-powered creative transformation using Stefna.' },
-    { id: 'trendy', name: 'Trendy', example: 'This AI magic is everything! ✨ #Viral' },
-    { id: 'artistic', name: 'Artistic', example: 'Exploring the boundaries of AI creativity 🎨' }
-  ]
+
 
   const handleShare = (platformId: string) => {
     const shareUrl = `https://stefna.app/share/${Date.now()}`
@@ -118,13 +112,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
     }, 1000)
   }
 
-  const handleCaptionStyleChange = (styleId: string) => {
-    setSelectedCaptionStyle(styleId)
-    const style = captionStyles.find(s => s.id === styleId)
-    if (style) {
-      setCustomCaption(style.example)
-    }
-  }
+
 
   if (!isOpen) return null
 
@@ -166,28 +154,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
             </div>
           </div>
 
-          {/* Caption Style Selection */}
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Caption Style
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {captionStyles.map((style) => (
-                <button
-                  key={style.id}
-                  onClick={() => handleCaptionStyleChange(style.id)}
-                  className={`p-3 rounded-lg text-left transition-all duration-300 border ${
-                    selectedCaptionStyle === style.id 
-                      ? 'border-white/40 bg-white/20 text-white' 
-                      : 'border-white/20 bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <div className="text-sm font-medium">{style.name}</div>
-                  <div className="text-xs mt-1 opacity-80">{style.example}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           {/* Custom Caption */}
           <div>
