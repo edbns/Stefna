@@ -6,6 +6,7 @@ export type EmotionMaskPreset = {
   prompt: string;
   negative_prompt: string;
   strength: number;
+  model: string; // Best available AIML models
 };
 
 export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
@@ -15,41 +16,47 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     prompt: '',
     negative_prompt: '',
     strength: 0.0,
+    model: 'flux/dev/image-to-image', // Default AIML model
   },
   {
     id: 'joy_sadness',
     label: 'Joy + Sadness',
-    prompt: "On the **single subject in the photo**, subtly enhance expression to show joy mixed with sadness. **The output must contain only one person.** Preserve **photographic facial identity**, skin tone, and structure. Only adjust emotional cues in the eyes, eyebrows, and mouth. **Use natural, ambient lighting.** Cinematic realism with emotional depth.",
-    negative_prompt: "two faces, multiple people, duplicate, twins, cartoon face, new character, different race, altered identity, gender change, anime character, fake face, distortion, full transformation",
-    strength: 0.3,
+    prompt: "Outer smile with inner sadness in the eyes. Show the mask of happiness hiding true sorrow. Preserve exact facial identity.",
+    negative_prompt: "cartoon, anime, distorted face, different person, skin change",
+    strength: 0.25,
+    model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'strength_vulnerability',
     label: 'Strength + Vulnerability',
-    prompt: "On the **single subject in the photo**, subtly enhance expression to reflect strength with hidden vulnerability. **The output must contain only one person.** Do not alter facial identity, skin tone, or features. Adjust only emotional areas (eyes, brow tension, lips). Avoid artistic distortions. **Use soft, true-to-life lighting**.",
-    negative_prompt: "two faces, multiple people, duplicate, twins, cartoon face, new character, different race, altered identity, gender change, anime character, fake face, distortion, full transformation",
-    strength: 0.3,
+    prompt: "Confident exterior with hidden vulnerability in the eyes. Show the warrior who carries hidden wounds. Preserve exact facial identity.",
+    negative_prompt: "cartoon, anime, distorted face, different person, skin change",
+    strength: 0.25,
+    model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'nostalgia_distance',
     label: 'Nostalgia + Distance',
-    prompt: "On the **single subject in the photo**, modify emotional features to convey nostalgic longing and quiet detachment. **The output must contain only one person.** Do not change hair, ethnicity, or facial structure. Identity must remain fully intact. **Use soft, natural light and a slightly faded color palette**.",
-    negative_prompt: "two faces, multiple people, duplicate, twins, cartoon face, new character, different race, altered identity, gender change, anime character, fake face, distortion, full transformation",
-    strength: 0.3,
+    prompt: "Warm memories in the eyes but emotional distance in expression. Show longing for what's lost. Preserve exact facial identity.",
+    negative_prompt: "cartoon, anime, distorted face, different person, skin change",
+    strength: 0.25,
+    model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'peace_fear',
     label: 'Peace + Fear',
-    prompt: "On the **single subject in the photo**, express inner calm layered with subtle fear. **The output must contain only one person.** Keep facial integrity, lighting, and tone unchanged. Modify expression minimally with realistic tension in key areas (eyes, lips). **Ensure realistic skin textures and fine details are retained.**",
-    negative_prompt: "two faces, multiple people, duplicate, twins, cartoon face, new character, different race, altered identity, gender change, anime character, fake face, distortion, full transformation",
-    strength: 0.3,
+    prompt: "Calm exterior with subtle fear in the eyes. Show the peace that masks inner anxiety. Preserve exact facial identity.",
+    negative_prompt: "cartoon, anime, distorted face, different person, skin change",
+    strength: 0.25,
+    model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'confidence_loneliness',
     label: 'Confidence + Loneliness',
-    prompt: "On the **single subject in the photo**, reveal hidden loneliness beneath a confident exterior. **The output must contain only one person.** Change only micro-expressions (eyebrows, lips, eyes). Preserve full face structure, skin tone, ethnicity, and identity. Use **high-fidelity, natural lighting** and cinematic mood.",
-    negative_prompt: "two faces, multiple people, duplicate, twins, cartoon face, new character, different race, altered identity, gender change, anime character, fake face, distortion, full transformation",
-    strength: 0.3,
+    prompt: "Strong, confident pose with hidden loneliness in the eyes. Show the leader who feels alone. Preserve exact facial identity.",
+    negative_prompt: "cartoon, anime, distorted face, different person, skin change",
+    strength: 0.25,
+    model: 'realistic-vision', // Best for facial detail and identity preservation
   },
 ];
 
