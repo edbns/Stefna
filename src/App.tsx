@@ -90,9 +90,8 @@ const AppContent: React.FC = () => {
   }, []);
 
   // Check if we're on the live domain
-  // Allow Netlify preview deployments (containing '--') but block main production domain
-  const isLiveDomain = window.location.hostname === 'stefna.xyz' || 
-                       (window.location.hostname === 'stefna.netlify.app' && !window.location.hostname.includes('--'))
+  // Only show Coming Soon on the main custom domain, allow testing on Netlify subdomain
+  const isLiveDomain = window.location.hostname === 'stefna.xyz'
   
   // 🔍 DEBUG: Log domain detection
   console.log('🔍 App loading on domain:', {
@@ -100,7 +99,8 @@ const AppContent: React.FC = () => {
     href: window.location.href,
     isLiveDomain,
     isDev: import.meta.env.DEV,
-    isNetlifyPreview: window.location.hostname.includes('--')
+    isNetlifyPreview: window.location.hostname.includes('--'),
+    isNetlifySubdomain: window.location.hostname === 'stefna.netlify.app'
   });
   
   // If on live domain, show coming soon page
