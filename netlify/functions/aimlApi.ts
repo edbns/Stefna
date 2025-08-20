@@ -1,6 +1,52 @@
 import type { Handler } from "@netlify/functions";
 import { json } from "./_lib/http";
 
+// 🎨 Smart prompt enhancement for custom mode
+function enhanceCustomPrompt(prompt: string): string {
+  const lowerPrompt = prompt.toLowerCase();
+  let enhanced = prompt;
+  
+  // Ghibli/Anime style enhancements
+  if (lowerPrompt.includes('ghibli') || lowerPrompt.includes('anime') || lowerPrompt.includes('cartoon')) {
+    enhanced += ', Studio Ghibli anime aesthetic, large expressive eyes, soft cel-shading, dreamy atmosphere, anime-inspired lighting, stylized features';
+  }
+  
+  // Cyberpunk/Sci-fi enhancements
+  if (lowerPrompt.includes('cyberpunk') || lowerPrompt.includes('sci-fi') || lowerPrompt.includes('futuristic')) {
+    enhanced += ', neon lighting, futuristic aesthetic, sci-fi atmosphere, glowing elements, high-tech ambiance';
+  }
+  
+  // Artistic/Painting enhancements
+  if (lowerPrompt.includes('painting') || lowerPrompt.includes('artistic') || lowerPrompt.includes('oil painting')) {
+    enhanced += ', artistic style, painterly texture, brush strokes, artistic composition, creative interpretation';
+  }
+  
+  // Vintage/Retro enhancements
+  if (lowerPrompt.includes('vintage') || lowerPrompt.includes('retro') || lowerPrompt.includes('80s') || lowerPrompt.includes('90s')) {
+    enhanced += ', vintage aesthetic, retro styling, nostalgic atmosphere, period-appropriate lighting';
+  }
+  
+  // Fantasy/Magical enhancements
+  if (lowerPrompt.includes('fantasy') || lowerPrompt.includes('magical') || lowerPrompt.includes('wizard') || lowerPrompt.includes('fairy')) {
+    enhanced += ', fantasy atmosphere, magical lighting, ethereal glow, mystical elements, enchanted ambiance';
+  }
+  
+  // Horror/Dark enhancements
+  if (lowerPrompt.includes('horror') || lowerPrompt.includes('dark') || lowerPrompt.includes('scary') || lowerPrompt.includes('gothic')) {
+    enhanced += ', dark atmosphere, dramatic lighting, moody shadows, gothic aesthetic, atmospheric horror';
+  }
+  
+  // Professional/Photography enhancements
+  if (lowerPrompt.includes('professional') || lowerPrompt.includes('photography') || lowerPrompt.includes('studio')) {
+    enhanced += ', professional photography, studio lighting, high quality, sharp details, professional composition';
+  }
+  
+  // Add general quality enhancements for all custom prompts
+  enhanced += ', high quality, detailed, well-lit, professional result';
+  
+  return enhanced;
+}
+
 export const handler: Handler = async (event) => {
   // Force redeploy - v4
   // Handle CORS preflight
@@ -161,10 +207,22 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    // 🎨 SMART PROMPT ENHANCEMENT: Enhance custom prompts with style keywords
+    let enhancedPrompt = requestBody.prompt;
+    
+    // Only enhance custom mode prompts to avoid interfering with presets
+    if (requestBody.mode === 'custom') {
+      enhancedPrompt = enhanceCustomPrompt(requestBody.prompt);
+      console.log('🎨 Custom prompt enhanced:', {
+        original: requestBody.prompt,
+        enhanced: enhancedPrompt
+      });
+    }
+    
     // Build AIML API payload with variations support
     const aimlPayload = {
       model: requestBody.model ?? process.env.AIML_MODEL ?? 'flux/dev/image-to-image',
-      prompt: requestBody.prompt,
+      prompt: enhancedPrompt,
       image_url: requestBody.image_url,
       strength: requestBody.strength || 0.8,
       num_variations: requestBody.num_variations || 1
