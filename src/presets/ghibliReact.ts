@@ -1,32 +1,33 @@
 // src/presets/ghibliReaction.ts
+
 export type GhibliReactionPreset = {
-  id: string
-  label: string
-  prompt: string
-}
+  id: string;
+  label: string;
+  prompt: string;
+};
 
 export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
-    id: 'ghibli_reaction_subtle',
-    label: 'Subtle Reaction',
-    prompt: "Portrait with subtle Studio Ghibli-style exaggeration. Maintain realistic facial features. Add emotional touch: sparkle in the eyes, slight blush, soft teardrop. Expression must look human, not cartoon. Preserve ethnicity, skin tone, hairstyle, and proportions. No anime face replacement.",
+    id: 'ghibli_tears',
+    label: 'Tears',
+    prompt: "Add subtle Studio Ghibli-style tears and blush while preserving facial identity and realism. Keep original proportions, ethnicity, and hairstyle. Use cel-shading lightly on cheeks and around eyes. Maintain skin texture and structure. Avoid cartoon exaggeration.",
   },
   {
-    id: 'ghibli_tearful',
-    label: 'Tearful',
-    prompt: "Portrait with a realistic but emotionally exaggerated Ghibli-style reaction. Big glassy eyes with visible tears, slightly open mouth in shock or sadness. Identity, race, and facial shape must remain untouched. Use soft cel shading and sketch-like background. Expression should feel relatable, not overly stylized.",
+    id: 'ghibli_shock',
+    label: 'Shock',
+    prompt: "Apply a light Ghibli-style shock reaction: widen the eyes slightly, add sparkles or tension lines. Retain full facial identity, skin tone, and expression structure. Keep hair and features unchanged. Avoid full anime transformation.",
   },
   {
-    id: 'ghibli_wonder',
-    label: 'Wonder + Reaction',
-    prompt: "Portrait with Ghibli-style wonder and emotional exaggeration. Keep face structure identical to original. Add sparkle eyes, blush, and stress lines. Preserve skin tone and ethnicity. Expression should feel cinematic, not anime-styled. Avoid cartoon or full redraw.",
+    id: 'ghibli_sparkle',
+    label: 'Sparkle',
+    prompt: "Apply a subtle Ghibli-inspired sparkle effect. Keep facial structure and identity 100% intact. Add light blush, soft light overlays, and dreamy eye reflection. Do not alter ethnicity, facial shape, or realism. Use minimal cel shading and soft background blur.",
   }
-]
+];
 
 export function getGhibliReactionPreset(presetId: string): GhibliReactionPreset | undefined {
-  return GHIBLI_REACTION_PRESETS.find(p => p.id === presetId)
+  return GHIBLI_REACTION_PRESETS.find(p => p.id === presetId);
 }
 
 export function isGhibliReactionPreset(presetId: string): boolean {
-  return GHIBLI_REACTION_PRESETS.some(p => p.id === presetId)
+  return GHIBLI_REACTION_PRESETS.some(p => p.id === presetId);
 }
