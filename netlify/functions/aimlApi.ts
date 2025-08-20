@@ -129,7 +129,7 @@ export const handler: Handler = async (event) => {
     
     // Enforce strict whitelist - only these keys allowed
     const payload = {
-      model: String(requestBody.model || 'stable-diffusion-v35-large'),
+      model: String(requestBody.model || 'flux/dev/image-to-image'),
       prompt: String(requestBody.prompt || ''),
       image_url: String(requestBody.image_url || ''),
       strength: Math.max(0.06, Math.min(0.10, Number(requestBody.strength ?? 0.08))),
@@ -449,14 +449,14 @@ export const handler: Handler = async (event) => {
       }
     }
     
-    // 9) FALLBACK MODEL RULE: If repeated diptychs, try flux model
-    if (finalUrls.length > 1 && !usedFallbackModel && aimlPayload.model === 'stable-diffusion-v35-large') {
-      console.log('🔄 Multiple images detected, trying fallback model...');
+    // 9) FALLBACK MODEL RULE: If repeated diptychs, try flux-pro model
+    if (finalUrls.length > 1 && !usedFallbackModel && aimlPayload.model === 'flux/dev/image-to-image') {
+      console.log('🔄 Multiple images detected, trying premium flux-pro model...');
       
       try {
         const fallbackPayload = {
           ...aimlPayload,
-          model: 'flux/dev/image-to-image',
+          model: 'flux-pro/v1.1-ultra',
           strength: 0.08, // Conservative strength for fallback
           prompt: enhancedPrompt + '. Single image only, no grid or split.'
         };

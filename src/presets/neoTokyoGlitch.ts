@@ -24,7 +24,7 @@ export const NEO_TOKYO_GLITCH_PRESETS: MinimalPreset[] = [
       `${SINGLE_PANEL_GUARD} Cinematic city-night palette. Add faint neon rim light around hair edges and a soft neon ambience in the background bokeh. ` +
       `Do not recolor facial skin; no lines over facial skin.`,
     strength: 0.06,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
   {
@@ -34,7 +34,7 @@ export const NEO_TOKYO_GLITCH_PRESETS: MinimalPreset[] = [
       `${SINGLE_PANEL_GUARD} Add a translucent HUD visor above the eyes with bright neon UI glyphs and micro text. ` +
       `Eyebrows and eyelashes remain fully visible. Background neon bokeh becomes more saturated.`,
     strength: 0.06,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
   {
@@ -44,7 +44,7 @@ export const NEO_TOKYO_GLITCH_PRESETS: MinimalPreset[] = [
       `${SINGLE_PANEL_GUARD} Add ultra-faint silver micro-circuit lines along temples and cheekbones. Hair-thin, semi-transparent; ` +
       `no recolor of skin and no lines over the eye regions.`,
     strength: 0.06,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
   {
@@ -54,7 +54,7 @@ export const NEO_TOKYO_GLITCH_PRESETS: MinimalPreset[] = [
       `${SINGLE_PANEL_GUARD} Add subtle VHS scanlines and mild RGB split in the BACKGROUND only; never draw lines over facial skin. ` +
       `Boost city neon saturation behind the subject for a strong, colorful mood.`,
     strength: 0.05,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
 ];

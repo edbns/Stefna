@@ -28,7 +28,7 @@ export const GHIBLI_REACTION_PRESETS: MinimalPreset[] = [
       `Add a delicate glossy tear film along the lower eyelids and ONE thin transparent teardrop on ONE cheek (8–12 mm trail) ` +
       `with tiny sparkle highlights in a gentle anime-inspired finish on the face only. Keep body/background photoreal.`,
     strength: 0.06,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
   {
@@ -39,7 +39,7 @@ export const GHIBLI_REACTION_PRESETS: MinimalPreset[] = [
       `Subtle surprise: slightly raised brows, mild sclera visibility, micro-parted lips without teeth, brighter eye catchlights. ` +
       `Light anime influence limited to facial shading and catchlights; do not stylize neck, clothing, or background.`,
     strength: 0.06,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
   {
@@ -50,7 +50,7 @@ export const GHIBLI_REACTION_PRESETS: MinimalPreset[] = [
       `Add small starry catchlights near the irises and a few miniature sparkles on the cheeks (face only). ` +
       `Keep pores and natural skin texture visible; body and background remain realistic.`,
     strength: 0.06,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
 ];

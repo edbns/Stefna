@@ -22,7 +22,7 @@ export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
     label: 'None',
     prompt: '',
     strength: 0.0,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
   {
@@ -32,7 +32,7 @@ export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
       `${SINGLE_PANEL_GUARD} Modify only micro-expressions: gentle upward lip corners (no teeth) and eyes with subtle inner melancholy (slight inner-brow lift). ` +
       `No geometry changes to nose, jaw, cheeks, or head angle.`,
     strength: 0.07,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
   {
@@ -42,7 +42,7 @@ export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
       `${SINGLE_PANEL_GUARD} Micro-only: confident steady gaze; faint lower-lid softness and a tiny brow pinch to hint vulnerability. ` +
       `Do not alter facial structure, hairline, or crop.`,
     strength: 0.07,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
   {
@@ -51,7 +51,7 @@ export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
     prompt:
       `${SINGLE_PANEL_GUARD} Micro-only: softened gaze as if recalling a memory and a closed-mouth micro-smile; very slight pupil defocus to suggest distance.`,
     strength: 0.07,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
   {
@@ -60,7 +60,7 @@ export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
     prompt:
       `${SINGLE_PANEL_GUARD} Micro-only: relaxed cheeks and lips; slight brow raise with a touch more sclera visibility to imply quiet fear. Mouth closed.`,
     strength: 0.07,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
   {
@@ -69,7 +69,7 @@ export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
     prompt:
       `${SINGLE_PANEL_GUARD} Micro-only: confident eyes and steady mouth line; subtle inner-brow raise and minute down-turn at mouth corners to imply loneliness.`,
     strength: 0.07,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev/image-to-image',
     num_variations: 1,
   },
 ];

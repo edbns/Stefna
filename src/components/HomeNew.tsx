@@ -1140,7 +1140,7 @@ const HomeNew: React.FC = () => {
     
     // 🛡️ Model Validation Guard - Ensure only supported models are used
     const ALLOWED_MODELS = [
-      "stable-diffusion-v35-large",
+      "flux/dev/image-to-image",
       "flux-pro/v1.1-ultra",
       "flux-realism",
       "dall-e-2",
@@ -1152,7 +1152,7 @@ const HomeNew: React.FC = () => {
       if (!ALLOWED_MODELS.includes(model)) {
         console.error("🚫 Invalid model:", model);
         notifyError({ title: 'Model Error', message: `Model '${model}' is not supported. Using fallback.` });
-        return "stable-diffusion-v35-large"; // Fallback to known working model
+        return "flux/dev/image-to-image"; // Fallback to known working model
       }
       return model;
     };
@@ -1241,17 +1241,17 @@ const HomeNew: React.FC = () => {
       // 🎭 EMOTION MASK MODE: ALWAYS use the original, curated prompt
       // NO MORE SYNTHETIC PROMPT GENERATION - preserve emotional intent
       effectivePrompt = emotionMaskPreset.prompt;
-      generationMeta = { 
-        mode: 'emotionmask', 
-        emotionMaskPresetId, 
-        emotionMaskLabel: emotionMaskPreset.label,
-        model: "stable-diffusion-v35-large", // Use known working model
-        strength: 0.45, // Lower strength for better identity preservation
-        guidance_scale: 7.5, // Standard guidance for consistency
-        cfg_scale: 7.0, // Balanced creativity vs adherence
-        denoising_strength: 0.45, // Match strength for consistency
-        generation_type: "emotion_mask_identity_preserved" // Mark as identity-preserving
-      };
+              generationMeta = { 
+          mode: 'emotionmask', 
+          emotionMaskPresetId, 
+          emotionMaskLabel: emotionMaskPreset.label,
+          model: "flux/dev/image-to-image", // Use known working model
+          strength: 0.45, // Lower strength for better identity preservation
+          guidance_scale: 7.5, // Standard guidance for consistency
+          cfg_scale: 7.0, // Balanced creativity vs adherence
+          denoising_strength: 0.45, // Match strength for consistency
+          generation_type: "emotion_mask_identity_preserved" // Mark as identity-preserving
+        };
       console.log('🎭 EMOTION MASK MODE: Using ORIGINAL prompt:', emotionMaskPreset.label, effectivePrompt);
     } else if (kind === 'ghiblireact') {
       // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
@@ -1274,18 +1274,18 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = ghibliReactionPreset.prompt;
-      generationMeta = { 
-        mode: 'ghiblireact', 
-        ghibliReactionPresetId, 
-        ghibliReactionLabel: ghibliReactionPreset.label, 
-        model: "stable-diffusion-v35-large", // Use known working model for Ghibli style
-        strength: 0.55, // Balanced strength to prevent black images
-        guidance_scale: 7.5, // Standard guidance for consistency
-        cfg_scale: 7.0, // Balanced creativity vs adherence
-        denoising_strength: 0.55, // Match strength for consistency
-        generation_type: "ghibli_reaction_balanced" // Mark as balanced transformation
-      };
-      console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: stable-diffusion-v35-large');
+              generationMeta = { 
+          mode: 'ghiblireact', 
+          ghibliReactionPresetId, 
+          ghibliReactionLabel: ghibliReactionPreset.label, 
+          model: "flux/dev/image-to-image", // Use known working model for Ghibli style
+          strength: 0.55, // Balanced strength to prevent black images
+          guidance_scale: 7.5, // Standard guidance for consistency
+          cfg_scale: 7.0, // Balanced creativity vs adherence
+          denoising_strength: 0.55, // Match strength for consistency
+          generation_type: "ghibli_reaction_balanced" // Mark as balanced transformation
+        };
+              console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: flux/dev/image-to-image');
       
     } else if (kind === 'neotokyoglitch') {
       // NEO TOKYO GLITCH MODE: Use the selected Neo Tokyo Glitch preset
@@ -1308,18 +1308,18 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = neoTokyoGlitchPreset.prompt;
-      generationMeta = { 
-        mode: 'neotokyoglitch', 
-        neoTokyoGlitchPresetId, 
-        neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
-        model: "stable-diffusion-v35-large", // Use known working model for Neo Tokyo style
-        strength: 0.65, // Balanced strength for cyberpunk transformation
-        guidance_scale: 7.5, // Standard guidance for consistency
-        cfg_scale: 7.0, // Balanced creativity vs adherence
-        denoising_strength: 0.65, // Match strength for consistency
-        features: neoTokyoGlitchPreset.features,
-        generation_type: "neo_tokyo_cyberpunk" // Mark as cyberpunk transformation
-      };
+              generationMeta = { 
+          mode: 'neotokyoglitch', 
+          neoTokyoGlitchPresetId, 
+          neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
+          model: "flux/dev/image-to-image", // Use known working model for Neo Tokyo style
+          strength: 0.65, // Balanced strength for cyberpunk transformation
+          guidance_scale: 7.5, // Standard guidance for consistency
+          cfg_scale: 7.0, // Balanced creativity vs adherence
+          denoising_strength: 0.65, // Match strength for consistency
+          features: neoTokyoGlitchPreset.features,
+          generation_type: "neo_tokyo_cyberpunk" // Mark as cyberpunk transformation
+        };
       console.log('🎭 NEO TOKYO GLITCH MODE: Using ORIGINAL prompt:', neoTokyoGlitchPreset.label, effectivePrompt);
       
     } else {
