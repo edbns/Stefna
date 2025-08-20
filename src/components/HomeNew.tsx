@@ -438,46 +438,9 @@ const HomeNew: React.FC = () => {
   const [selectedNeoTokyoGlitchPreset, setSelectedNeoTokyoGlitchPreset] = useState<string | null>(null)
   const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(false)
   
-  // Track last generation data for "Recreate" functionality
-  const [lastGenerationData, setLastGenerationData] = useState<{
-    prompt: string;
-    strength: number;
-    model: string;
-    seed?: string;
-    presetId?: string;
-    imageUrl: string;
-  } | null>(null);
 
-  // 5) RECREATE FUNCTION: Recreate with same settings
-  const handleRecreate = async () => {
-    if (!lastGenerationData || isGenerating) return;
-    
-    console.log('🔄 Recreating with saved settings:', lastGenerationData);
-    
-    // Determine the generation kind based on presetId
-    let kind: 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' = 'custom';
-    
-    if (lastGenerationData.presetId) {
-      if (lastGenerationData.presetId.startsWith('emotion_')) {
-        kind = 'emotionmask';
-      } else if (lastGenerationData.presetId.startsWith('rx_')) {
-        kind = 'ghiblireact';
-      } else if (lastGenerationData.presetId.startsWith('neo_tokyo_')) {
-        kind = 'neotokyoglitch';
-      } else {
-        kind = 'preset';
-      }
-    }
-    
-    // Call dispatchGenerate with the saved data
-    await dispatchGenerate(kind, {
-      customPrompt: lastGenerationData.prompt,
-      presetId: lastGenerationData.presetId,
-      emotionMaskPresetId: kind === 'emotionmask' ? lastGenerationData.presetId : undefined,
-      ghibliReactionPresetId: kind === 'ghiblireact' ? lastGenerationData.presetId : undefined,
-      neoTokyoGlitchPresetId: kind === 'neotokyoglitch' ? lastGenerationData.presetId : undefined,
-    });
-  };
+
+
 
   // Enhanced dropdown management - close dropdowns automatically
   useEffect(() => {
@@ -1712,15 +1675,7 @@ const HomeNew: React.FC = () => {
 
       console.info(`Generated ${variationsGenerated} variation(s):`, allResultUrls);
 
-      // 5) DETERMINISM & RECREATE: Save generation data for recreation
-      setLastGenerationData({
-        prompt: effectivePrompt,
-        strength: payload.strength || 0.08,
-        model: payload.model || 'stable-diffusion-v35-large',
-        seed: body.seed || Date.now().toString(),
-        presetId: generationMeta?.presetId || generationMeta?.emotionMaskPresetId || generationMeta?.ghibliReactionPresetId || generationMeta?.neoTokyoGlitchPresetId,
-        imageUrl: resultUrl
-      });
+
 
       // Show the first generated result immediately with cache busting
       const cacheBustedResultUrl = `${resultUrl}${resultUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
@@ -3297,24 +3252,7 @@ const HomeNew: React.FC = () => {
                   />
                 )}
                 
-                {/* 5) RECREATE BUTTON - Show when we have generation data */}
-                {lastGenerationData && !isGenerating && (
-                  <div className="absolute top-4 right-4 flex flex-col gap-2">
-                    <button
-                      onClick={() => handleRecreate()}
-                      disabled={isGenerating}
-                      className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-xl border border-white/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Recreate with same settings"
-                    >
-                      🔄 Recreate
-                    </button>
-                    {lastGenerationData.seed && (
-                      <div className="text-xs text-white/60 bg-black/20 px-2 py-1 rounded text-center">
-                        Seed: {lastGenerationData.seed}
-                      </div>
-                    )}
-                  </div>
-                )}
+
               </div>
             </div>
           </div>
