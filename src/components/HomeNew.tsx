@@ -3001,8 +3001,8 @@ const HomeNew: React.FC = () => {
       {/* Hidden file uploader for intent-based uploads */}
       <HiddenUploader />
 
-      {/* Left Sidebar - 5% width */}
-      <div className="w-[5%] min-h-screen bg-black/95 backdrop-blur-sm">
+      {/* Left Sidebar - 8% width */}
+      <div className="w-[8%] min-h-screen bg-black/95 backdrop-blur-sm">
                 <div className="flex flex-col items-center justify-between h-screen py-6">
           {/* Top Section - Login/Profile */}
           <div className="flex flex-col items-center space-y-4">
@@ -3069,10 +3069,10 @@ const HomeNew: React.FC = () => {
         </div>
       </div>
 
-      {/* Main content area - 95% width, 3 columns */}
-      <div className="w-[95%] min-h-screen">
+      {/* Main content area - 92% width, 3 columns */}
+      <div className="w-[92%] min-h-screen">
         {/* Feed content - 3 columns */}
-        <div className="pt-20">
+        <div className="pt-0">
           {isLoadingFeed ? (
             <div className="w-full">
               {/* Media loading skeleton - 3 columns */}
