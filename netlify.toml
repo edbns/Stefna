@@ -29,6 +29,11 @@
   # Ensure all dependencies are bundled
   external_node_modules = []
 
+# Function-specific configurations
+[functions."aimlApi"]
+  timeout = 26   # Netlify max for normal functions
+  memory = 1024
+
 # Function dependencies are handled by top-level package.json
 
 # Cache optimization

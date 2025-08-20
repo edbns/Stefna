@@ -1601,15 +1601,34 @@ const HomeNew: React.FC = () => {
         full_payload: payload
       });
 
-      const res = await authenticatedFetch('/.netlify/functions/aimlApi', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      // Add timeout guard to prevent 504 errors
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.warn('⚠️ Request timeout approaching, aborting to prevent 504');
+        controller.abort();
+      }, 24000); // 24s cushion before Netlify's 26s limit
 
-      console.info('aimlApi status', res.status);
-      const body = await res.json().catch(() => ({}));
-      console.info('aimlApi body', body);
+      try {
+        const res = await authenticatedFetch('/.netlify/functions/aimlApi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId); // Clear timeout if request completes
+
+        console.info('aimlApi status', res.status);
+        const body = await res.json().catch(() => ({}));
+        console.info('aimlApi body', body);
+      } catch (error) {
+        clearTimeout(timeoutId); // Clear timeout on error
+        if (error.name === 'AbortError') {
+          console.warn('⚠️ Request aborted due to timeout');
+          throw new Error('Request timed out. Please try again with a smaller image or different prompt.');
+        }
+        throw error; // Re-throw other errors
+      }
 
       // Handle video job creation (status 202)
       if (res.status === 202 && body.job_id && isVideoPreview) {
