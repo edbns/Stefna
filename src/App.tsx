@@ -92,11 +92,21 @@ const AppContent: React.FC = () => {
   // Check if we're on the live domain
   const isLiveDomain = window.location.hostname === 'stefna.xyz' || window.location.hostname === 'stefna.netlify.app'
   
+  // 🔍 DEBUG: Log domain detection
+  console.log('🔍 App loading on domain:', {
+    hostname: window.location.hostname,
+    href: window.location.href,
+    isLiveDomain,
+    isDev: import.meta.env.DEV
+  });
+  
   // If on live domain, show coming soon page
   if (isLiveDomain) {
+    console.log('🚧 Showing Coming Soon page for live domain');
     return <ComingSoonPage />
   }
 
+  console.log('🚀 Loading full app for development/local');
   // For development, always show the full app
 
   return (

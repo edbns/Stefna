@@ -6,6 +6,15 @@ import { validateAllSync, validateAll, validateUIConfigurationWhenReady } from '
 import { PRESETS } from './utils/presets/types'
 import { presetsStore } from './stores/presetsStore'
 
+// 🔍 DEBUG: Immediate logging to verify script execution
+console.log('🚀 main.tsx starting...');
+console.log('🔍 Environment:', {
+  DEV: import.meta.env.DEV,
+  PROD: import.meta.env.PROD,
+  MODE: import.meta.env.MODE,
+  hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
+});
+
 // 📊 Performance monitoring with web-vitals
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals'
 
@@ -157,10 +166,14 @@ onINP(console.log);
 onLCP(console.log);
 onTTFB(console.log);
 
+console.log('🔍 About to render React app...');
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AppErrorBoundary>
       <App />
     </AppErrorBoundary>
   </React.StrictMode>,
-) 
+)
+
+console.log('✅ React app render call completed'); 
