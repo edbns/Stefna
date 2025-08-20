@@ -10,17 +10,17 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_tears',
     label: 'Tears',
-    prompt: "Add subtle Studio Ghibli-style tears and blush while preserving facial identity and realism. Keep original proportions, ethnicity, and hairstyle. Use cel-shading lightly on cheeks and around eyes. Maintain skin texture and structure. Avoid cartoon exaggeration.",
+    prompt: "Add subtle, **photorealistic tears welling in the eyes** and a gentle blush on the cheeks. Preserve original facial identity, proportions, and features. **Ensure tears are realistic water droplets with light refraction, not stylized lines or teardrops.** Avoid any form of cel-shading, cartoon exaggeration, or skin-smoothing. Focus on hyper-realistic skin texture and structure.",
   },
   {
     id: 'ghibli_shock',
     label: 'Shock',
-    prompt: "Apply a light Ghibli-style shock reaction: widen the eyes slightly, add sparkles or tension lines. Retain full facial identity, skin tone, and expression structure. Keep hair and features unchanged. Avoid full anime transformation.",
+    prompt: "Apply a light, **naturalistic shock reaction**. Widen the eyes slightly, add subtle tension lines around the mouth and brow, and ensure the expression is a fleeting micro-expression, not a fixed caricature. **Eliminate sparkles, tension lines, or any other stylized visual effects.** Retain full facial identity, skin tone, and photorealistic features. The change should be so subtle it feels like a genuine, momentary reaction.",
   },
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: "Apply a subtle Ghibli-inspired sparkle effect. Keep facial structure and identity 100% intact. Add light blush, soft light overlays, and dreamy eye reflection. Do not alter ethnicity, facial shape, or realism. Use minimal cel shading and soft background blur.",
+    prompt: "Apply a **subtle, naturalistic light effect** that suggests a 'sparkle.' **This should not be a literal sparkle effect.** Instead, add a gentle, warm blush and **enhance the catchlight and reflection in the eyes to create a dreamy, focused effect.** Use soft, ambient lighting and a shallow depth of field. Maintain 100% facial structure, identity, and photorealism. Avoid any stylized effects like cel shading or glitter.",
   }
 ];
 
