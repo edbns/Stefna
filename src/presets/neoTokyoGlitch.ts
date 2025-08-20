@@ -1,28 +1,21 @@
 // src/presets/neoTokyoGlitch.ts
-// Stefna Presets — AIML-Safe (Minimal Params)
-// Date: 2025-08-20
-// Only uses parameters AIML supports: model, prompt, image_url, strength, num_variations
-// No negative_prompt, no guidance/steps/sampler/adapters.
+// Stefna — AIML Minimal (No‑Grid, No‑Anime, Two‑Pass)
+// Only uses AIML-supported params: model, prompt, image_url, strength, num_variations
+// Purpose: eliminate "double face" and anime drift without adapters.
 
-export type NeoTokyoGlitchPreset = {
-  id: string;
-  label: string;
-  prompt: string;
-  strength: number;
-  model: string;
-  num_variations?: number;
-};
+import { MinimalPreset } from '../utils/presets/aimlUtils';
 
-const NEO_GUARD =
-  'Photorealistic single-subject portrait. Preserve the exact human face: same gender, skin tone, ethnicity, age, and facial proportions. Do not alter bone structure or features. Not anime, not cartoon. Do not duplicate faces or create reflections. Overlays must sit on top of the photo; skin detail remains intact.';
+// ================================================================
+// Neo Tokyo Glitch (unchanged identity, additive overlays)
+// ================================================================
 
-export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
+export const NEO_TOKYO_GLITCH_PRESETS: MinimalPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
     prompt:
-      `${NEO_GUARD} Add faint neon ambience (soft magenta/teal rim glow) around hair edges and background. Keep skin tone and face unchanged.`,
-    strength: 0.10,
+      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Add faint neon ambience (soft magenta/teal rim glow) around hair edges and background. Keep skin tone and face unchanged.',
+    strength: 0.08,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },
@@ -30,8 +23,8 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
     id: 'neo_tokyo_visor',
     label: 'Glitch Visor',
     prompt:
-      `${NEO_GUARD} Add a barely visible translucent HUD visor hovering above the eyes with ultra-thin UI lines and micro text. Eyebrows and eyelashes remain visible and unchanged.`,
-    strength: 0.10,
+      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Add a barely visible translucent HUD visor hovering above the eyes with ultra-thin UI lines and micro text. Eyebrows and eyelashes remain visible.',
+    strength: 0.08,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },
@@ -39,8 +32,8 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
     id: 'neo_tokyo_tattoos',
     label: 'Tech Tattoos',
     prompt:
-      `${NEO_GUARD} Add ultra-faint silver micro-circuit lines along temples and cheekbones. Lines must be hair-thin, semi-transparent, and should not recolor the skin.`,
-    strength: 0.10,
+      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Add ultra-faint silver micro-circuit lines along temples and cheekbones. Hair-thin, semi-transparent. No recolor of skin.',
+    strength: 0.08,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },
@@ -48,14 +41,14 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
     id: 'neo_tokyo_scanlines',
     label: 'Scanline FX',
     prompt:
-      `${NEO_GUARD} Add extremely subtle VHS scanlines in the background and mild chromatic aberration at image edges only. Never draw scanlines over facial skin.`,
-    strength: 0.08,
+      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Add extremely subtle VHS scanlines in the BACKGROUND only and mild chromatic aberration at image edges. Never put lines over facial skin.',
+    strength: 0.07,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },
 ];
 
-export function getNeoTokyoGlitchPreset(presetId: string): NeoTokyoGlitchPreset | undefined {
+export function getNeoTokyoGlitchPreset(presetId: string): MinimalPreset | undefined {
   return NEO_TOKYO_GLITCH_PRESETS.find((p) => p.id === presetId);
 }
 
