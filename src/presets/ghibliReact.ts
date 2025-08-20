@@ -11,17 +11,17 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_tears',
     label: 'Tears',
-    prompt: "Exaggerate the emotional expression in the human face using anime-inspired style. Retain natural facial structure and realistic hair/skin, but add visual elements like big glassy tears, wide glistening eyes, and subtle sparkles. Inspired by Studio Ghibli characters reacting with strong emotions.",
+    prompt: "Apply an anime reaction style inspired by Studio Ghibli. Emphasize large expressive eyes, sparkles, and stylized emotion. Preserve facial identity and hair style. Maintain skin texture and lighting realism. Add tears of joy with sparkle effects. Keep natural skin tone and facial features intact. Use balanced strength for realistic anime transformation.",
   },
   {
     id: 'ghibli_shock',
     label: 'Shock',
-    prompt: "Exaggerate the emotional expression in the human face using anime-inspired style. Retain natural facial structure and realistic hair/skin, but add visual elements like wide shocked eyes, raised eyebrows, and open mouth. Inspired by Studio Ghibli characters reacting with strong emotions.",
+    prompt: "Apply an anime reaction style inspired by Studio Ghibli. Emphasize large expressive eyes, sparkles, and stylized emotion. Preserve facial identity and hair style. Maintain skin texture and lighting realism. Add wide-eyed shock expression with wonder elements. Keep natural skin tone and facial features intact. Use balanced strength for realistic anime transformation.",
   },
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: "Exaggerate the emotional expression in the human face using anime-inspired style. Retain natural facial structure and realistic hair/skin, but add visual elements like sparkles around the face, big anime blush, and bright glistening eyes. Inspired by Studio Ghibli characters reacting with strong emotions.",
+    prompt: "Apply an anime reaction style inspired by Studio Ghibli. Emphasize large expressive eyes, sparkles, and stylized emotion. Preserve facial identity and hair style. Maintain skin texture and lighting realism. Add magical sparkles and wonder expression. Keep natural skin tone and facial features intact. Use balanced strength for realistic anime transformation.",
   }
 ]
 

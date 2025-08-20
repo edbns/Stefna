@@ -14,27 +14,27 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
   {
     id: 'joy_sadness',
     label: 'Joy + Sadness',
-    prompt: "I'm smiling, but my heart is heavy.",
+    prompt: "Enhance facial expression to show joy mixed with sadness. Strictly preserve identity, skin tone, and facial structure. Modify only expression-related features: eyes, eyebrows, mouth. Avoid changing hairstyle or face shape. Output must resemble input image. Natural cinematic lighting. Shallow depth of field.",
   },
   {
     id: 'strength_vulnerability',
     label: 'Strength + Vulnerability',
-    prompt: "I look strong, but I'm still healing.",
+    prompt: "Enhance facial expression to show strength mixed with vulnerability. Strictly preserve identity, skin tone, and facial structure. Modify only expression-related features: eyes, eyebrows, mouth. Avoid changing hairstyle or face shape. Output must resemble input image. Natural cinematic lighting. Shallow depth of field.",
   },
   {
     id: 'nostalgia_distance',
     label: 'Nostalgia + Distance',
-    prompt: "It feels like yesterday, but it's far away now.",
+    prompt: "Enhance facial expression to show nostalgia mixed with distance. Strictly preserve identity, skin tone, and facial structure. Modify only expression-related features: eyes, eyebrows, mouth. Avoid changing hairstyle or face shape. Output must resemble input image. Natural cinematic lighting. Shallow depth of field.",
   },
   {
     id: 'peace_fear',
     label: 'Peace + Fear',
-    prompt: "I look calm, but I'm bracing inside.",
+    prompt: "Enhance facial expression to show peace mixed with fear. Strictly preserve identity, skin tone, and facial structure. Modify only expression-related features: eyes, eyebrows, mouth. Avoid changing hairstyle or face shape. Output must resemble input image. Natural cinematic lighting. Shallow depth of field.",
   },
   {
     id: 'confidence_loneliness',
     label: 'Confidence + Loneliness',
-    prompt: "I look strong, but I feel alone.",
+    prompt: "Enhance facial expression to show confidence mixed with loneliness. Strictly preserve identity, skin tone, and facial structure. Modify only expression-related features: eyes, eyebrows, mouth. Avoid changing hairstyle or face shape. Output must resemble input image. Natural cinematic lighting. Shallow depth of field.",
   },
 ];
 

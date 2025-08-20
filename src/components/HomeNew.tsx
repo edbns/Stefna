@@ -1215,9 +1215,11 @@ const HomeNew: React.FC = () => {
         emotionMaskPresetId, 
         emotionMaskLabel: emotionMaskPreset.label,
         model: "stable-diffusion-v35-large", // Use known working model
-        strength: 0.75, // Balanced strength for emotional expression
+        strength: 0.45, // Lower strength for better identity preservation
         guidance_scale: 7.5, // Standard guidance for consistency
-        generation_type: "emotion_mask_original" // Mark as using original prompt
+        cfg_scale: 7.0, // Balanced creativity vs adherence
+        denoising_strength: 0.45, // Match strength for consistency
+        generation_type: "emotion_mask_identity_preserved" // Mark as identity-preserving
       };
       console.log('🎭 EMOTION MASK MODE: Using ORIGINAL prompt:', emotionMaskPreset.label, effectivePrompt);
     } else if (kind === 'ghiblireact') {
@@ -1245,7 +1247,12 @@ const HomeNew: React.FC = () => {
         mode: 'ghiblireact', 
         ghibliReactionPresetId, 
         ghibliReactionLabel: ghibliReactionPreset.label, 
-        model: "stable-diffusion-v35-large" // Use known working model for Ghibli style
+        model: "stable-diffusion-v35-large", // Use known working model for Ghibli style
+        strength: 0.55, // Balanced strength to prevent black images
+        guidance_scale: 7.5, // Standard guidance for consistency
+        cfg_scale: 7.0, // Balanced creativity vs adherence
+        denoising_strength: 0.55, // Match strength for consistency
+        generation_type: "ghibli_reaction_balanced" // Mark as balanced transformation
       };
       console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: stable-diffusion-v35-large');
       
@@ -1273,9 +1280,14 @@ const HomeNew: React.FC = () => {
       generationMeta = { 
         mode: 'neotokyoglitch', 
         neoTokyoGlitchPresetId, 
-        neoTokyoGlitchLabel: neoTokyoGlitchPreset.label, 
+        neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
         model: "stable-diffusion-v35-large", // Use known working model for Neo Tokyo style
-        features: neoTokyoGlitchPreset.features 
+        strength: 0.65, // Balanced strength for cyberpunk transformation
+        guidance_scale: 7.5, // Standard guidance for consistency
+        cfg_scale: 7.0, // Balanced creativity vs adherence
+        denoising_strength: 0.65, // Match strength for consistency
+        features: neoTokyoGlitchPreset.features,
+        generation_type: "neo_tokyo_cyberpunk" // Mark as cyberpunk transformation
       };
       console.log('🎭 NEO TOKYO GLITCH MODE: Using ORIGINAL prompt:', neoTokyoGlitchPreset.label, effectivePrompt);
       
@@ -1548,6 +1560,19 @@ const HomeNew: React.FC = () => {
         setNavGenerating(false);
         return;
       }
+
+      // 🧪 DEBUG: Log complete payload before API call
+      console.log('🧪 DEBUG: Complete aimlApi payload:', {
+        prompt: effectivePrompt,
+        image_url: payload.image_url || payload.init_image,
+        model: payload.model || 'default',
+        strength: payload.strength || 'default',
+        guidance_scale: payload.guidance_scale || 'default',
+        cfg_scale: payload.cfg_scale || 'default',
+        denoising_strength: payload.denoising_strength || 'default',
+        generation_meta: generationMeta,
+        full_payload: payload
+      });
 
       const res = await authenticatedFetch('/.netlify/functions/aimlApi', {
         method: 'POST',
@@ -2127,6 +2152,18 @@ const HomeNew: React.FC = () => {
       const creditsResult = await creditsResponse.json();
       console.log(`✅ Alt path: Credits reserved successfully. New balance: ${creditsResult.balance}`);
       
+      // 🧪 DEBUG: Log complete payload before second aimlApi call
+      console.log('🧪 DEBUG: Second aimlApi payload:', {
+        prompt: body.prompt || 'default',
+        image_url: body.image_url || body.init_image,
+        model: body.model || 'default',
+        strength: body.strength || 'default',
+        guidance_scale: body.guidance_scale || 'default',
+        cfg_scale: body.cfg_scale || 'default',
+        denoising_strength: body.denoising_strength || 'default',
+        full_payload: body
+      });
+
       const res = await authenticatedFetch('/.netlify/functions/aimlApi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2813,16 +2850,21 @@ const HomeNew: React.FC = () => {
       console.log('🚀 Calling AIML API for prompt enhancement...')
       
       // Call AIML API for text enhancement (free)
+      const enhancementPayload = {
+        action: 'enhance_prompt',
+        prompt: originalPrompt,
+        enhancement_type: 'artistic_photography'
+      };
+      
+      // 🧪 DEBUG: Log prompt enhancement payload
+      console.log('🧪 DEBUG: Prompt enhancement payload:', enhancementPayload);
+      
       const response = await authenticatedFetch('/.netlify/functions/aimlApi', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          action: 'enhance_prompt',
-          prompt: originalPrompt,
-          enhancement_type: 'artistic_photography'
-        })
+        body: JSON.stringify(enhancementPayload)
       })
 
       if (!response.ok) {

@@ -1471,7 +1471,8 @@ const ProfileScreen: React.FC = () => {
                     })
                     
                     if (!response.ok) {
-                      throw new Error(`Failed to delete media ${mediaId}`)
+                      const errorText = await response.text()
+                      throw new Error(`Failed to delete media ${mediaId}: ${response.status} ${errorText}`)
                     }
                     
                     return { success: true, mediaId }
@@ -1516,20 +1517,21 @@ const ProfileScreen: React.FC = () => {
                 
                 if (jwt) {
                   try {
-                    const r = await fetch('/.netlify/functions/delete-media', {
+                    const r = await authenticatedFetch('/.netlify/functions/delete-media', {
                       method: 'POST',
-                      headers: { 'Authorization': `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+                      headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ id: mediaToDelete.id })
                     })
                     
                     if (r.ok) {
                       serverDeleteSuccess = true
-                      console.log('✅ Server delete successful')
+                      console.log('Server delete successful')
                     } else {
-                      console.warn('⚠️ Server delete failed:', r.status, r.statusText)
+                      const errorText = await r.text()
+                      console.warn('Server delete failed:', r.status, r.statusText, errorText)
                     }
                   } catch (serverError) {
-                    console.error('❌ Server delete error:', serverError)
+                    console.error('Server delete error:', serverError)
                   }
                 }
 

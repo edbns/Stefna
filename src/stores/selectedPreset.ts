@@ -82,9 +82,7 @@ export const useSelectedPreset = create<SelState>((set, get) => ({
 // Defensive logging to catch unexpected resets
 if (typeof window !== 'undefined') {
   useSelectedPreset.subscribe((state) => {
-    if (state.selectedPreset === null) {
-      console.warn('[selectedPreset] became null unexpectedly - this is now the expected default state');
-      // Don't auto-recover since null is now our intended default
-    }
+    // selectedPreset becoming null is now the expected default state
+    // No need to log this as it's normal behavior
   });
 }
