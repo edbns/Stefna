@@ -20,62 +20,62 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
-    prompt: 'Keep the exact same face, only add very subtle neon lighting overlay, preserve identity 100%, same person, same features',
-    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot',
-    strength: 0.01, // Extremely subtle - barely visible effect
+    prompt: 'Keep the exact same face, only add barely visible neon lighting overlay, preserve identity 100%, same person, same features, minimal change',
+    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot, visible effect',
+    strength: 0.005, // Extremely subtle - barely visible effect
     model: 'flux/dev/image-to-image',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['neon_overlay', 'identity_lock'],
-    guidance_scale: 2, // Very low for minimal change
-    num_inference_steps: 5, // Minimal steps for subtle effect
+    guidance_scale: 1.5, // Very low for minimal change
+    num_inference_steps: 3, // Minimal steps for subtle effect
   },
   {
     id: 'neo_tokyo_visor',
     label: 'Glitch Visor',
-    prompt: 'Keep the exact same face, only add transparent digital visor overlay, preserve identity 100%, same person, same features',
-    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot',
-    strength: 0.01, // Extremely subtle - barely visible effect
+    prompt: 'Keep the exact same face, only add barely visible transparent digital visor overlay, preserve identity 100%, same person, same features, minimal change',
+    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot, visible effect',
+    strength: 0.005, // Extremely subtle - barely visible effect
     model: 'flux/dev/image-to-image',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['glitch_visor', 'identity_lock'],
-    guidance_scale: 2, // Very low for minimal change
-    num_inference_steps: 5, // Minimal steps for subtle effect
+    guidance_scale: 1.5, // Very low for minimal change
+    num_inference_steps: 3, // Minimal steps for subtle effect
   },
   {
     id: 'neo_tokyo_tattoos',
     label: 'Tech Tattoos',
-    prompt: 'Keep the exact same face, only add very subtle cybernetic tattoo patterns, preserve identity 100%, same person, same features',
-    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot',
-    strength: 0.01, // Extremely subtle - barely visible effect
+    prompt: 'Keep the exact same face, only add barely visible cybernetic tattoo patterns, preserve identity 100%, same person, same features, minimal change',
+    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot, visible effect',
+    strength: 0.005, // Extremely subtle - barely visible effect
     model: 'flux/dev/image-to-image',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['tech_tattoos', 'identity_lock'],
-    guidance_scale: 2, // Very low for minimal change
-    num_inference_steps: 5, // Minimal steps for subtle effect
+    guidance_scale: 1.5, // Very low for minimal change
+    num_inference_steps: 3, // Minimal steps for subtle effect
   },
   {
     id: 'neo_tokyo_scanlines',
     label: 'Scanline FX',
-    prompt: 'Keep the exact same face, only add very subtle VHS scanline effect overlay, preserve identity 100%, same person, same features',
-    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot',
-    strength: 0.01, // Extremely subtle - barely visible effect
+    prompt: 'Keep the exact same face, only add barely visible VHS scanline effect overlay, preserve identity 100%, same person, same features, minimal change',
+    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot, visible effect',
+    strength: 0.005, // Extremely subtle - barely visible effect
     model: 'flux/dev/image-to-image',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['vhs_scanline', 'identity_lock'],
-    guidance_scale: 2, // Very low for minimal change
-    num_inference_steps: 5, // Minimal steps for subtle effect
+    guidance_scale: 1.5, // Very low for minimal change
+    num_inference_steps: 3, // Minimal steps for subtle effect
   },
 ];
 

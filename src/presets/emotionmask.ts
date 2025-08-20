@@ -21,41 +21,41 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
   {
     id: 'joy_sadness',
     label: 'Joy + Sadness',
-    prompt: "Keep the exact same face, only modify expression to show outer smile with inner sadness in the eyes, preserve identity 100%, same person, same features",
-    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
-    strength: 0.02, // Extremely subtle for better identity preservation
+    prompt: "Keep the exact same face, only modify expression to show outer smile with inner sadness in the eyes, preserve identity 100%, same person, same features, minimal change",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic, dramatic effect",
+    strength: 0.01, // Much more subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'strength_vulnerability',
     label: 'Strength + Vulnerability',
-    prompt: "Keep the exact same face, only modify expression to show confident exterior with hidden vulnerability in the eyes, preserve identity 100%, same person, same features",
-    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
-    strength: 0.02, // Extremely subtle for better identity preservation
+    prompt: "Keep the exact same face, only modify expression to show confident exterior with hidden vulnerability in the eyes, preserve identity 100%, same person, same features, minimal change",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic, dramatic effect",
+    strength: 0.01, // Much more subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'nostalgia_distance',
     label: 'Nostalgia + Distance',
-    prompt: "Keep the exact same face, only modify expression to show warm memories in the eyes but emotional distance, preserve identity 100%, same person, same features",
-    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
-    strength: 0.02, // Extremely subtle for better identity preservation
+    prompt: "Keep the exact same face, only modify expression to show warm memories in the eyes but emotional distance, preserve identity 100%, same person, same features, minimal change",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic, dramatic effect",
+    strength: 0.01, // Much more subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'peace_fear',
     label: 'Peace + Fear',
-    prompt: "Keep the exact same face, only modify expression to show calm exterior with subtle fear in the eyes, preserve identity 100%, same person, same features",
-    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
-    strength: 0.02, // Extremely subtle for better identity preservation
+    prompt: "Keep the exact same face, only modify expression to show calm exterior with subtle fear in the eyes, preserve identity 100%, same person, same features, minimal change",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic, dramatic effect",
+    strength: 0.01, // Much more subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'confidence_loneliness',
     label: 'Confidence + Loneliness',
-    prompt: "Keep the exact same face, only modify expression to show strong confident pose with hidden loneliness in the eyes, preserve identity 100%, same person, same features",
-    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
-    strength: 0.02, // Extremely subtle for better identity preservation
+    prompt: "Keep the exact same face, only modify expression to show strong confident pose with hidden loneliness in the eyes, preserve identity 100%, same person, same features, minimal change",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic, dramatic effect",
+    strength: 0.01, // Much more subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
 ];
