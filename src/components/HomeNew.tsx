@@ -22,7 +22,7 @@ import { useGenerationMode } from '../stores/generationMode'
 import { EmotionMaskPicker } from './EmotionMaskPicker'
 import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
-import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
+import { REACTION_OVERLAY_PRESETS } from '../presets/ghibliReact'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
 import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
 
@@ -1260,7 +1260,7 @@ const HomeNew: React.FC = () => {
         return;
       }
       
-      const ghibliReactionPreset = GHIBLI_REACTION_PRESETS.find(p => p.id === ghibliReactionPresetId);
+      const ghibliReactionPreset = REACTION_OVERLAY_PRESETS.find(p => p.id === ghibliReactionPresetId);
       if (!ghibliReactionPreset) {
         console.error('❌ Ghibli Reaction preset not found:', ghibliReactionPresetId);
         notifyError({ title: 'Ghibli Reaction preset not found', message: 'Please select a valid Ghibli reaction preset' });
@@ -3446,8 +3446,8 @@ const HomeNew: React.FC = () => {
                       disabled={!isAuthenticated}
                     >
                       {selectedGhibliReactionPreset ? 
-                        GHIBLI_REACTION_PRESETS.find(p => p.id === selectedGhibliReactionPreset)?.label || 'Studio Ghibli Reaction' 
-                        : 'Studio Ghibli Reaction'
+                        REACTION_OVERLAY_PRESETS.find(p => p.id === selectedGhibliReactionPreset)?.label || 'Reaction Overlay' 
+                        : 'Reaction Overlay'
                       }
                     </button>
                     
