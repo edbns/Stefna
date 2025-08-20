@@ -1,7 +1,7 @@
 import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions';
 import { randomUUID } from 'crypto';
 import { sql } from '../lib/db';
-import { requireUser } from '../lib/auth';
+import { requireAuth } from './_lib/auth';
 
 // Helper function to extract Cloudinary public ID from URL or handle non-Cloudinary URLs
 function extractPublicId(url: string): { cloudinaryPublicId: string | null; isCloudinary: boolean } {
@@ -30,7 +30,7 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
 
   try {
     // Authenticate user
-    const user = await requireUser(event);
+    const { userId } = requireAuth(event.headers.authorization);
     
     // Parse request body
     const body = JSON.parse(event.body || '{}');
@@ -66,7 +66,7 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
       const prev = await sql`
         SELECT a.*
         FROM assets a
-        WHERE a.user_id = ${user.id} AND a.meta->>'idempotency_key' = ${idempotencyKey}
+        WHERE a.user_id = ${userId} AND a.meta->>'idempotency_key' = ${idempotencyKey}
       `;
       if (prev.length) {
         return { 
@@ -80,7 +80,7 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
     // Filter duplicates we might already have for the same runId+url
     const urls = variations.map(v => v.image_url);
     const dup = await sql`
-      SELECT final_url FROM assets WHERE user_id = ${user.id} AND meta->>'run_id' = ${runId} AND final_url = ANY(${urls})
+      SELECT final_url FROM assets WHERE user_id = ${userId} AND meta->>'run_id' = ${runId} AND final_url = ANY(${urls})
     `;
     const dupSet = new Set(dup.map((d: any) => d.final_url));
     const toInsert = variations.filter(v => !dupSet.has(v.image_url));
@@ -99,7 +99,7 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
       const batchId = randomUUID();
       await sql`
         INSERT INTO media_batches (batch_id, user_id, run_id, idempotency_key, created_at)
-        VALUES (${batchId}, ${user.id}, ${runId}, ${idempotencyKey || null}, NOW())
+        VALUES (${batchId}, ${userId}, ${runId}, ${idempotencyKey || null}, NOW())
       `;
 
           // Insert all media rows with defensive defaults and per-item idempotency
@@ -158,7 +158,7 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
       const row = await sql`
         INSERT INTO assets (id, user_id, cloudinary_public_id, media_type, preset_key, prompt, 
                            source_asset_id, status, is_public, allow_remix, final_url, meta, created_at)
-        VALUES (${id}, ${user.id}, ${cloudinaryPublicId}, ${mediaType}, ${v.preset_id || null}, ${v.prompt || null},
+        VALUES (${id}, ${userId}, ${cloudinaryPublicId}, ${mediaType}, ${v.preset_id || null}, ${v.prompt || null},
                 ${v.source_asset_id}, 'ready', true, false, ${v.image_url}, 
                 ${JSON.stringify({...v.meta, batch_id: batchId, run_id: runId, idempotency_key: itemIdempotencyKey})}, NOW())
         RETURNING *
@@ -167,7 +167,7 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
     }
       
       const results = { batchId, items };
-      console.log(`✅ Batch save completed: ${results.items.length} variations for user ${user.id}, run ${runId}`);
+      console.log(`✅ Batch save completed: ${results.items.length} variations for user ${userId}, run ${runId}`);
       
       return { 
         statusCode: 200, 

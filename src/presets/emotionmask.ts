@@ -1,4 +1,4 @@
-// Original Emotion Mask Setup (Working & Clean)
+// EmotionMask.ts
 export type EmotionMaskPreset = {
   id: string;
   label: string;
@@ -7,41 +7,41 @@ export type EmotionMaskPreset = {
 
 export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
   {
-    id: 'none',
+    id: 'em_none',
     label: 'None',
     prompt: '',
   },
   {
-    id: 'joy_sadness',
+    id: 'em_joy_sadness',
     label: 'Joy + Sadness',
-    prompt: "Enhance facial expression to show joy mixed with sadness. Strictly preserve identity, skin tone, and facial structure. Modify only expression-related features: eyes, eyebrows, mouth. Avoid changing hairstyle or face shape. Output must resemble input image. Natural cinematic lighting. Shallow depth of field.",
+    prompt: "Enhance expression to show joy mixed with sadness. Do not alter identity, skin tone, or facial structure. Only adjust emotional zones: eyes, brows, mouth. Subtle cinematic lighting and shallow depth of field.",
   },
   {
-    id: 'strength_vulnerability',
+    id: 'em_strength_vulnerability',
     label: 'Strength + Vulnerability',
-    prompt: "Enhance facial expression to show strength mixed with vulnerability. Strictly preserve identity, skin tone, and facial structure. Modify only expression-related features: eyes, eyebrows, mouth. Avoid changing hairstyle or face shape. Output must resemble input image. Natural cinematic lighting. Shallow depth of field.",
+    prompt: "Show strength blended with vulnerability in facial expression. Identity must be intact. Do not change hairstyle or face shape. Use natural lighting, focus on expression only.",
   },
   {
-    id: 'nostalgia_distance',
+    id: 'em_nostalgia_distance',
     label: 'Nostalgia + Distance',
-    prompt: "Enhance facial expression to show nostalgia mixed with distance. Strictly preserve identity, skin tone, and facial structure. Modify only expression-related features: eyes, eyebrows, mouth. Avoid changing hairstyle or face shape. Output must resemble input image. Natural cinematic lighting. Shallow depth of field.",
+    prompt: "Infuse the face with a distant nostalgic emotion. No change to identity, skin tone, or bone structure. Modify only eyes and micro-expression. Subtle light and soft focus.",
   },
   {
-    id: 'peace_fear',
+    id: 'em_peace_fear',
     label: 'Peace + Fear',
-    prompt: "Enhance facial expression to show peace mixed with fear. Strictly preserve identity, skin tone, and facial structure. Modify only expression-related features: eyes, eyebrows, mouth. Avoid changing hairstyle or face shape. Output must resemble input image. Natural cinematic lighting. Shallow depth of field.",
+    prompt: "Subtly blend peace and fear in the expression. Keep full identity preservation. No makeup, no glam. Only emotion-focused expression control.",
   },
   {
-    id: 'confidence_loneliness',
+    id: 'em_confidence_loneliness',
     label: 'Confidence + Loneliness',
-    prompt: "Enhance facial expression to show confidence mixed with loneliness. Strictly preserve identity, skin tone, and facial structure. Modify only expression-related features: eyes, eyebrows, mouth. Avoid changing hairstyle or face shape. Output must resemble input image. Natural cinematic lighting. Shallow depth of field.",
+    prompt: "Create a look of quiet confidence mixed with loneliness. Keep facial features unaltered. Adjust only emotional micro-expressions. Realistic tone and mood.",
   },
 ];
 
-export function getEmotionMaskPreset(presetId: string) {
+export function getEmotionMaskPreset(presetId: string): EmotionMaskPreset | undefined {
   return EMOTION_MASK_PRESETS.find(p => p.id === presetId);
 }
 
-export function isEmotionMaskPreset(presetId: string) {
+export function isEmotionMaskPreset(presetId: string): boolean {
   return presetId.startsWith('em_');
 }
