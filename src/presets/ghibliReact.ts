@@ -9,13 +9,25 @@ import { MinimalPreset } from '../utils/presets/aimlUtils';
 // Reaction Overlays (formerly "Ghibli Reaction" — no anime keywords)
 // ================================================================
 
+// Shared realism + single-panel guard (no negatives API needed)
+const REALISM_ANCHOR =
+  'Cinematic portrait photograph, natural skin pores, shallow depth of field, soft background bokeh.';
+
+const SINGLE_PANEL_GUARD_V2 =
+  'Use the INPUT PHOTO as a single, continuous frame. Show ONE instance of the same subject centered. ' +
+  'Do NOT compose a grid, collage, split-screen, diptych, mirrored panel, border, seam, gutter, or frame. ' +
+  'Do NOT duplicate, mirror, or repeat any part of the face. Keep the original background and framing unchanged. ' +
+  'Keep the person\'s gender, skin tone, ethnicity, age, and facial structure exactly the same. Not anime or cartoon.';
+
 export const REACTION_OVERLAY_PRESETS: MinimalPreset[] = [
   {
     id: 'rx_tears',
     label: 'Tears',
     prompt:
-      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Add a delicate glossy tear film on the lower eyelids and a single thin tear track on one cheek. Transparent and subtle. Do not alter geometry or skin tone.',
-    strength: 0.08,
+      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
+      'Add a delicate glossy tear film along the lower eyelids and ONE thin transparent teardrop on ONE cheek (8–12 mm trail) with a tiny specular highlight. ' +
+      'Do not change face shape or skin tone.',
+    strength: 0.06,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },
@@ -23,8 +35,10 @@ export const REACTION_OVERLAY_PRESETS: MinimalPreset[] = [
     id: 'rx_shock',
     label: 'Shock',
     prompt:
-      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Subtle surprise: slightly raised brows, mild sclera visibility, micro-parted lips without teeth. Optional tiny white highlight near the pupils.',
-    strength: 0.08,
+      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
+      'Subtle surprise: slightly raised brows, mild sclera visibility, micro-parted lips without teeth, tiny white eye highlight. ' +
+      'No changes to facial geometry, framing, or background.',
+    strength: 0.06,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },
@@ -32,8 +46,10 @@ export const REACTION_OVERLAY_PRESETS: MinimalPreset[] = [
     id: 'rx_sparkle',
     label: 'Sparkle',
     prompt:
-      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Add very small catchlight sparkles close to the irises and faint soft bokeh specks near the face edges. Keep skin tone and texture unchanged.',
-    strength: 0.08,
+      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
+      'Add a few very small catchlight sparkles close to the irises and faint soft bokeh specks near the cheeks. ' +
+      'No outlines; keep skin texture and tone realistic.',
+    strength: 0.06,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },

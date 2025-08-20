@@ -9,6 +9,16 @@ import { MinimalPreset } from '../utils/presets/aimlUtils';
 // Emotion Mask (micro-expression only)
 // ================================================================
 
+// Shared realism + single-panel guard (no negatives API needed)
+const REALISM_ANCHOR =
+  'Cinematic portrait photograph, natural skin pores, shallow depth of field, soft background bokeh.';
+
+const SINGLE_PANEL_GUARD_V2 =
+  'Use the INPUT PHOTO as a single, continuous frame. Show ONE instance of the same subject centered. ' +
+  'Do NOT compose a grid, collage, split-screen, diptych, mirrored panel, border, seam, gutter, or frame. ' +
+  'Do NOT duplicate, mirror, or repeat any part of the face. Keep the original background and framing unchanged. ' +
+  'Keep the person\'s gender, skin tone, ethnicity, age, and facial structure exactly the same. Not anime or cartoon.';
+
 export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
   {
     id: 'none',
@@ -22,8 +32,9 @@ export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
     id: 'joy_sadness',
     label: 'Joy + Sadness',
     prompt:
-      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Modify only micro-expressions: gentle upward lip corners for an outer smile; eyes convey subtle melancholy with a slight inner-brow lift. No teeth. Do not alter face shape, nose, jaw or cheeks.',
-    strength: 0.08,
+      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
+      'Modify only micro-expressions: gentle upward lip corners for an outer smile; eyes convey subtle melancholy with a slight inner-brow lift. No teeth. Do not alter face shape, nose, jaw or cheeks.',
+    strength: 0.07,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },
@@ -31,8 +42,9 @@ export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
     id: 'strength_vulnerability',
     label: 'Strength + Vulnerability',
     prompt:
-      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Micro-only: confident steady gaze with faint lower-lid softness and a tiny brow pinch. Keep chin and head angle identical.',
-    strength: 0.08,
+      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
+      'Micro-only: confident steady gaze with faint lower-lid softness and a tiny brow pinch. Keep chin and head angle identical.',
+    strength: 0.07,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },
@@ -40,8 +52,9 @@ export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
     id: 'nostalgia_distance',
     label: 'Nostalgia + Distance',
     prompt:
-      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Micro-only: softened gaze as if recalling a memory; closed-mouth micro-smile; tiny pupil defocus to suggest distance.',
-    strength: 0.08,
+      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
+      'Micro-only: softened gaze as if recalling a memory; closed-mouth micro-smile; tiny pupil defocus to suggest distance.',
+    strength: 0.07,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },
@@ -49,8 +62,9 @@ export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
     id: 'peace_fear',
     label: 'Peace + Fear',
     prompt:
-      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Micro-only: relaxed cheeks and lips; slight brow raise with a touch more sclera showing to imply quiet fear. Mouth closed, no teeth.',
-    strength: 0.09,
+      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
+      'Micro-only: relaxed cheeks and lips; slight brow raise with a touch more sclera showing to imply quiet fear. Mouth closed, no teeth.',
+    strength: 0.07,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },
@@ -58,8 +72,9 @@ export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
     id: 'confidence_loneliness',
     label: 'Confidence + Loneliness',
     prompt:
-      'Photorealistic single-subject portrait. Preserve the exact same person: gender, skin tone, ethnicity, age, bone structure, nose, eyes, jawline, hair texture, freckles, moles. Keep natural skin texture; do not smooth. Do not change makeup. SINGLE SUBJECT ONLY; do not add, mirror, split or duplicate a subject. No grid, no collage, no split-screen, no diptych, no reflection faces, no posters with faces, no double exposure, no extra eyes or mouth. Not anime, not cartoon, no cel shading, no outline lines, no vector/illustration look. Micro-only: confident eyes and steady mouth line; subtle inner-brow raise and minute down-turn at mouth corners to imply loneliness.',
-    strength: 0.08,
+      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
+      'Micro-only: confident eyes and steady mouth line; subtle inner-brow raise and minute down-turn at mouth corners to imply loneliness.',
+    strength: 0.07,
     model: 'stable-diffusion-3.5-large-i2i',
     num_variations: 1,
   },
