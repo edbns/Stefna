@@ -380,6 +380,7 @@ export const handler: Handler = async (event) => {
     // Return response with support for multiple variations
     const responseBody: any = {
       ok: true,
+      image_urls: urls, // Primary format - array of URLs
       model: aimlPayload.model,
       prompt: aimlPayload.prompt,
       variations_generated: variationsGenerated,
@@ -387,7 +388,7 @@ export const handler: Handler = async (event) => {
       strength_requested: rawStrength // Show what was requested
     };
 
-    // For backward compatibility, always include image_url (first variation)
+    // For backward compatibility, also include image_url (first variation)
     responseBody.image_url = urls[0];
     
     // If multiple variations, include result_urls array

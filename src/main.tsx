@@ -6,6 +6,11 @@ import { validateAllSync, validateAll, validateUIConfigurationWhenReady } from '
 import { PRESETS } from './utils/presets/types'
 import { presetsStore } from './stores/presetsStore'
 
+// 🔍 IMMEDIATE DEBUG: Verify bundle execution
+window.addEventListener('error', e => console.error('[window.onerror]', e.error || e.message));
+window.addEventListener('unhandledrejection', e => console.error('[unhandledrejection]', e.reason));
+console.info('[boot] main loaded', { mode: import.meta.env.MODE, href: location.href });
+
 // 🔍 DEBUG: Immediate logging to verify script execution
 console.log('🚀 main.tsx starting...');
 console.log('🔍 Environment:', {

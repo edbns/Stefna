@@ -52,6 +52,7 @@ export function buildEditPayload({
 export function pickResultUrl(body: any): string | null {
   if (!body || typeof body !== 'object') return null;
   return (
+    body.image_urls?.[0] || // Primary format - array of URLs
     body.result_url ||
     body.image_url ||
     body.url ||
