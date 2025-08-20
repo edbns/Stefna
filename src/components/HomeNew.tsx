@@ -1608,8 +1608,12 @@ const HomeNew: React.FC = () => {
         controller.abort();
       }, 24000); // 24s cushion before Netlify's 26s limit
 
+      // Declare variables outside try block so they can be used later
+      let res: Response;
+      let body: any;
+
       try {
-        const res = await authenticatedFetch('/.netlify/functions/aimlApi', {
+        res = await authenticatedFetch('/.netlify/functions/aimlApi', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -1619,7 +1623,7 @@ const HomeNew: React.FC = () => {
         clearTimeout(timeoutId); // Clear timeout if request completes
 
         console.info('aimlApi status', res.status);
-        const body = await res.json().catch(() => ({}));
+        body = await res.json().catch(() => ({}));
         console.info('aimlApi body', body);
       } catch (error) {
         clearTimeout(timeoutId); // Clear timeout on error
