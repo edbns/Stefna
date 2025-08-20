@@ -21,41 +21,41 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
   {
     id: 'joy_sadness',
     label: 'Joy + Sadness',
-    prompt: "Outer smile with inner sadness in the eyes. Show the mask of happiness hiding true sorrow. Preserve exact facial identity.",
-    negative_prompt: "cartoon, anime, distorted face, different person, skin change",
-    strength: 0.15, // More subtle for better identity preservation
+    prompt: "Keep the exact same face, only modify expression to show outer smile with inner sadness in the eyes, preserve identity 100%, same person, same features",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
+    strength: 0.02, // Extremely subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'strength_vulnerability',
     label: 'Strength + Vulnerability',
-    prompt: "Confident exterior with hidden vulnerability in the eyes. Show the warrior who carries hidden wounds. Preserve exact facial identity.",
-    negative_prompt: "cartoon, anime, distorted face, different person, skin change",
-    strength: 0.15, // More subtle for better identity preservation
+    prompt: "Keep the exact same face, only modify expression to show confident exterior with hidden vulnerability in the eyes, preserve identity 100%, same person, same features",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
+    strength: 0.02, // Extremely subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'nostalgia_distance',
     label: 'Nostalgia + Distance',
-    prompt: "Warm memories in the eyes but emotional distance in expression. Show longing for what's lost. Preserve exact facial identity.",
-    negative_prompt: "cartoon, anime, distorted face, different person, skin change",
-    strength: 0.15, // More subtle for better identity preservation
+    prompt: "Keep the exact same face, only modify expression to show warm memories in the eyes but emotional distance, preserve identity 100%, same person, same features",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
+    strength: 0.02, // Extremely subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'peace_fear',
     label: 'Peace + Fear',
-    prompt: "Calm exterior with subtle fear in the eyes. Show the peace that masks inner anxiety. Preserve exact facial identity.",
-    negative_prompt: "cartoon, anime, distorted face, different person, skin change",
-    strength: 0.15, // More subtle for better identity preservation
+    prompt: "Keep the exact same face, only modify expression to show calm exterior with subtle fear in the eyes, preserve identity 100%, same person, same features",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
+    strength: 0.02, // Extremely subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
     id: 'confidence_loneliness',
     label: 'Confidence + Loneliness',
-    prompt: "Strong, confident pose with hidden loneliness in the eyes. Show the leader who feels alone. Preserve exact facial identity.",
-    negative_prompt: "cartoon, anime, distorted face, different person, skin change",
-    strength: 0.15, // More subtle for better identity preservation
+    prompt: "Keep the exact same face, only modify expression to show strong confident pose with hidden loneliness in the eyes, preserve identity 100%, same person, same features",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
+    strength: 0.02, // Extremely subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
 ];

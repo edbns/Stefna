@@ -4,35 +4,35 @@ export type GhibliReactionPreset = {
   id: string;
   label: string;
   prompt: string;
-  negative_prompt: string; // Added
-  strength: number; // Added
-  model: string; // Added
+  negative_prompt: string;
+  strength: number;
+  model: string;
 };
 
 export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_tears',
     label: 'Tears',
-    prompt: "Subtle, realistic tears in the eyes. Preserve exact facial identity.",
-    negative_prompt: "cartoon, anime, distorted face, different person, fake tears",
-    strength: 0.1, // More subtle for better identity preservation
-    model: 'portraitplus', // Specialized for portrait quality
+    prompt: "Ghibli anime style, Studio Ghibli aesthetic, subtle tears in the eyes, keep the exact same face, only add tears, preserve identity 100%",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
+    strength: 0.03, // Extremely subtle
+    model: 'anything-v5', // Better for anime/ghibli style
   },
   {
     id: 'ghibli_shock',
     label: 'Shock',
-    prompt: "Slight widening of eyes, subtle surprise. Preserve exact facial identity.",
-    negative_prompt: "cartoon, anime, distorted face, different person, exaggerated",
-    strength: 0.1, // More subtle for better identity preservation
-    model: 'portraitplus', // Specialized for portrait quality
+    prompt: "Ghibli anime style, Studio Ghibli aesthetic, slight widening of eyes, subtle surprise, keep the exact same face, only modify expression, preserve identity 100%",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
+    strength: 0.03, // Extremely subtle
+    model: 'anything-v5', // Better for anime/ghibli style
   },
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: "Gentle light in the eyes, subtle glow. Preserve exact facial identity.",
-    negative_prompt: "cartoon, anime, distorted face, different person, glitter",
-    strength: 0.1, // More subtle for better identity preservation
-    model: 'portraitplus', // Specialized for portrait quality
+    prompt: "Ghibli anime style, Studio Ghibli aesthetic, gentle light in the eyes, subtle glow, keep the exact same face, only add sparkle effect, preserve identity 100%",
+    negative_prompt: "different person, new face, distorted features, skin change, identity loss, realistic, photorealistic",
+    strength: 0.03, // Extremely subtle
+    model: 'anything-v5', // Better for anime/ghibli style
   }
 ];
 
