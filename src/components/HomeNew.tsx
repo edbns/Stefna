@@ -160,6 +160,7 @@ const HomeNew: React.FC = () => {
   const selectedPresetRef = useRef<keyof typeof PRESETS | null>(null)
   const genIdRef = useRef(0) // increments per job to prevent race conditions
   const [currentRunId, setCurrentRunId] = useState<string | null>(null)
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   
   useEffect(() => { 
     selectedPresetRef.current = selectedPreset 
