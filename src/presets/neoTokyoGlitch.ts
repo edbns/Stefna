@@ -1,7 +1,7 @@
 // src/presets/neoTokyoGlitch.ts
-// Identity-Safe Presets for AIML API (image-to-image)
-// Focus: preserve identity, gender, skin tone, ethnicity, age, and facial structure
-// Only subtle cyberpunk overlays that sit ON TOP of the photo (additive)
+// Identity-Safe Presets (Emotion Mask, Ghibli Reaction, Neo Tokyo Glitch)
+// For AIML API (image-to-image). Focus: preserve identity, gender, skin tone,
+// ethnicity, age, and facial structure. Only subtle cyberpunk overlays that sit ON TOP of the photo (additive)
 
 export type NeoTokyoGlitchPreset = {
   id: string;
@@ -20,6 +20,9 @@ export type NeoTokyoGlitchPreset = {
   sampler?: string;
   ip_adapter?: 'faceid' | 'instantid' | 'none';
   ip_adapter_strength?: number;
+  mask_policy?: 'expression_only' | 'face_only' | 'none';
+  mask_hints?: string;
+  subject_count?: 1;
 };
 
 const NEO_IDENTITY_NEG = [
@@ -30,6 +33,16 @@ const NEO_IDENTITY_NEG = [
   'race change',
   'skin tone change',
   'age change',
+  'duplicate face',
+  'two faces',
+  'multiple faces',
+  'double exposure',
+  'twin face',
+  'second person',
+  'reflection face',
+  'poster face',
+  'extra eyes',
+  'extra mouth',
   'anime face',
   'cell shaded skin',
   'toon face',
@@ -61,7 +74,10 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
     num_inference_steps: 12,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
+    mask_policy: 'face_only',
+    mask_hints: 'face edges, hair highlights only',
+    subject_count: 1,
   },
   {
     id: 'neo_tokyo_visor',
@@ -80,7 +96,10 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
     num_inference_steps: 12,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
+    mask_policy: 'face_only',
+    mask_hints: 'visor area above eyes only',
+    subject_count: 1,
   },
   {
     id: 'neo_tokyo_tattoos',
@@ -99,7 +118,10 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
     num_inference_steps: 12,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
+    mask_policy: 'face_only',
+    mask_hints: 'temples, cheekbones only',
+    subject_count: 1,
   },
   {
     id: 'neo_tokyo_scanlines',
@@ -118,7 +140,10 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
     num_inference_steps: 10,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
+    mask_policy: 'none',
+    mask_hints: 'background and edges only',
+    subject_count: 1,
   },
 ];
 

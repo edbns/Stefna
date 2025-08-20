@@ -1,7 +1,7 @@
 // src/presets/emotionMask.ts
-// Identity-Safe Presets for AIML API (image-to-image)
-// Focus: preserve identity, gender, skin tone, ethnicity, age, and facial structure
-// Only micro-expression / light overlays
+// Identity-Safe Presets (Emotion Mask, Ghibli Reaction, Neo Tokyo Glitch)
+// For AIML API (image-to-image). Focus: preserve identity, gender, skin tone,
+// ethnicity, age, and facial structure. Only micro-expression / light overlays.
 
 export type EmotionMaskPreset = {
   id: string;
@@ -16,6 +16,8 @@ export type EmotionMaskPreset = {
   ip_adapter?: 'faceid' | 'instantid' | 'none'; // if supported by AIML
   ip_adapter_strength?: number; // 0.7–1.0 for face lock
   mask_policy?: 'expression_only' | 'face_only' | 'none'; // hint for UI/router
+  mask_hints?: string; // optional ROI guidance for your router
+  subject_count?: 1; // enforce single-subject behavior in your pipeline if possible
 };
 
 const EMOTION_IDENTITY_NEG = [
@@ -27,12 +29,25 @@ const EMOTION_IDENTITY_NEG = [
   'race change',
   'skin tone change',
   'age change',
+  'duplicate face',
+  'two faces',
+  'multiple faces',
+  'double exposure',
+  'twin face',
+  'second person',
+  'reflection face',
+  'poster face',
+  'extra eyes',
+  'extra mouth',
   'new nose',
   'reshaped jaw',
   'altered eye shape',
-  'toon face',
-  'anime face',
-  'caricature',
+  'anime',
+  'manga',
+  'cartoon',
+  'cel shading',
+  'lineart',
+  'vector art',
   '3d render',
   'plastic skin',
   'overprocessed',
@@ -58,6 +73,8 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     ip_adapter: 'none',
     ip_adapter_strength: 0.0,
     mask_policy: 'none',
+    mask_hints: '',
+    subject_count: 1,
   },
   {
     id: 'joy_sadness',
@@ -65,14 +82,16 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     prompt:
       `${EMOTION_COMMON} Expression: outer smile with gentle upward lip corners, dampened orbicularis oculi; eyes carry a hint of melancholy (slight inner brow raise). Subtle tear film sheen only; no visible droplets.`,
     negative_prompt: EMOTION_IDENTITY_NEG,
-    strength: 0.16,
+    strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.4,
-    num_inference_steps: 14,
+    guidance_scale: 1.2,
+    num_inference_steps: 10,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
     mask_policy: 'expression_only',
+    mask_hints: 'eyes, brows, mouth only',
+    subject_count: 1,
   },
   {
     id: 'strength_vulnerability',
@@ -80,14 +99,16 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     prompt:
       `${EMOTION_COMMON} Expression: firm jaw set and confident gaze; micro-tremble softness in the lower lids; slight brow pinch indicating vulnerability. Keep posture and chin angle unchanged.`,
     negative_prompt: EMOTION_IDENTITY_NEG,
-    strength: 0.15,
+    strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.3,
-    num_inference_steps: 12,
+    guidance_scale: 1.2,
+    num_inference_steps: 10,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
     mask_policy: 'expression_only',
+    mask_hints: 'eyes, brows, mouth only',
+    subject_count: 1,
   },
   {
     id: 'nostalgia_distance',
@@ -95,14 +116,16 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     prompt:
       `${EMOTION_COMMON} Expression: softened gaze as if recalling a memory; minimal crow's-feet engagement; micro-smile without teeth; a touch of emotional distance in the pupils (slight defocus).`,
     negative_prompt: EMOTION_IDENTITY_NEG,
-    strength: 0.15,
+    strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.3,
-    num_inference_steps: 12,
+    guidance_scale: 1.2,
+    num_inference_steps: 10,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
     mask_policy: 'expression_only',
+    mask_hints: 'eyes, brows, mouth only',
+    subject_count: 1,
   },
   {
     id: 'peace_fear',
@@ -110,14 +133,16 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     prompt:
       `${EMOTION_COMMON} Expression: relaxed mouth and cheeks; tiny brow lift and slight sclera exposure signaling quiet fear. No mouth opening; no teeth.`,
     negative_prompt: EMOTION_IDENTITY_NEG,
-    strength: 0.16,
+    strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.4,
-    num_inference_steps: 14,
+    guidance_scale: 1.2,
+    num_inference_steps: 10,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
     mask_policy: 'expression_only',
+    mask_hints: 'eyes, brows, mouth only',
+    subject_count: 1,
   },
   {
     id: 'confidence_loneliness',
@@ -125,14 +150,16 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     prompt:
       `${EMOTION_COMMON} Expression: confident eyes and stable mouth line; micro-sadness indicated by a faint inner-brow raise and minute down-turn at mouth corners.`,
     negative_prompt: EMOTION_IDENTITY_NEG,
-    strength: 0.15,
+    strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.3,
-    num_inference_steps: 12,
+    guidance_scale: 1.2,
+    num_inference_steps: 10,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
     mask_policy: 'expression_only',
+    mask_hints: 'eyes, brows, mouth only',
+    subject_count: 1,
   },
 ];
 

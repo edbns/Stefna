@@ -1,7 +1,7 @@
 // src/presets/ghibliReaction.ts
-// Identity-Safe Presets for AIML API (image-to-image)
-// Focus: preserve identity, gender, skin tone, ethnicity, age, and facial structure
-// Only micro-expression / light overlays inspired by Ghibli aesthetic
+// Identity-Safe Presets (Emotion Mask, Ghibli Reaction, Neo Tokyo Glitch)
+// For AIML API (image-to-image). Focus: preserve identity, gender, skin tone,
+// ethnicity, age, and facial structure. Only micro-expression / light overlays inspired by Ghibli aesthetic
 
 export type GhibliReactionPreset = {
   id: string;
@@ -16,6 +16,8 @@ export type GhibliReactionPreset = {
   ip_adapter?: 'faceid' | 'instantid' | 'none';
   ip_adapter_strength?: number;
   mask_policy?: 'expression_only' | 'face_only' | 'none';
+  mask_hints?: string;
+  subject_count?: 1;
 };
 
 const GHIBLI_NEG = [
@@ -29,6 +31,16 @@ const GHIBLI_NEG = [
   'ethnicity change',
   'skin tone change',
   'age change',
+  'duplicate face',
+  'two faces',
+  'multiple faces',
+  'double exposure',
+  'twin face',
+  'second person',
+  'reflection face',
+  'poster face',
+  'extra eyes',
+  'extra mouth',
   'deformed',
   'lowres',
   'overprocessed',
@@ -45,14 +57,16 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     prompt:
       `${GHIBLI_BASE} Add subtle glossy tear film at lower eyelids and a delicate single tear track on one cheek. Keep skin texture realistic; no cartoon outlines.`,
     negative_prompt: GHIBLI_NEG,
-    strength: 0.12,
+    strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.3,
-    num_inference_steps: 12,
+    guidance_scale: 1.2,
+    num_inference_steps: 10,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
     mask_policy: 'expression_only',
+    mask_hints: 'eyes, tear area only',
+    subject_count: 1,
   },
   {
     id: 'ghibli_shock',
@@ -60,14 +74,16 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     prompt:
       `${GHIBLI_BASE} Subtle surprise: slightly raised brows, mild sclera visibility, micro-parted lips without teeth. Optional tiny white sparkle highlight near pupils.`,
     negative_prompt: GHIBLI_NEG,
-    strength: 0.12,
+    strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.3,
-    num_inference_steps: 12,
+    guidance_scale: 1.2,
+    num_inference_steps: 10,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
     mask_policy: 'expression_only',
+    mask_hints: 'eyes, brows, mouth only',
+    subject_count: 1,
   },
   {
     id: 'ghibli_sparkle',
@@ -75,14 +91,16 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     prompt:
       `${GHIBLI_BASE} Add very small catchlight sparkles near the irises and faint soft bokeh specks around the face. No color cast on skin; keep pores and complexion realistic.`,
     negative_prompt: GHIBLI_NEG,
-    strength: 0.12,
+    strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.3,
-    num_inference_steps: 12,
+    guidance_scale: 1.2,
+    num_inference_steps: 10,
     sampler: 'DPM++ 2M Karras',
     ip_adapter: 'faceid',
-    ip_adapter_strength: 0.9,
+    ip_adapter_strength: 0.95,
     mask_policy: 'expression_only',
+    mask_hints: 'eyes, sparkle area only',
+    subject_count: 1,
   },
 ];
 
