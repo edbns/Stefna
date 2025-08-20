@@ -298,6 +298,33 @@ const HomeNew: React.FC = () => {
       }))
     })
   }, [PRESETS])
+
+  // Close emotion mask dropdown when clicking outside or when other modes are selected
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      const emotionMaskDropdown = document.querySelector('[data-emotionmask-dropdown]')
+      
+      if (emotionMaskDropdown && !emotionMaskDropdown.contains(target)) {
+        setEmotionMaskDropdownOpen(false)
+      }
+    }
+
+    const handleModeChange = () => {
+      if (composerState.mode !== 'emotionmask') {
+        setEmotionMaskDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    
+    // Close dropdown when mode changes
+    handleModeChange()
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [composerState.mode])
   
   // Debug when preset gets cleared (only in development)
   useEffect(() => {
@@ -3228,6 +3255,40 @@ const HomeNew: React.FC = () => {
                 </div>
               )}
 
+              {/* Prompt Input - ALWAYS VISIBLE for all modes */}
+              <div className="mb-2">
+                <div className="relative">
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder={composerState.mode === 'custom' 
+                      ? "Describe your vision... (click ✨ to enhance your prompt)"
+                      : "Custom prompt (optional) - will be combined with selected preset"
+                    }
+                    className="w-full px-3 py-2 pr-10 bg-white/5 border border-[#333333] rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors h-20 text-sm"
+                    disabled={isGenerating}
+                  />
+                  {/* Magic Wand Enhancement Button - only show for custom mode */}
+                  {composerState.mode === 'custom' && (
+                    <button
+                      onClick={handleMagicWandEnhance}
+                      disabled={isGenerating || !prompt.trim()}
+                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
+                      title="Enhance prompt with AI (free)"
+                    >
+                      {isEnhancing ? (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <span className="text-lg">✨</span>
+                      )}
+                    </button>
+                  )}
+                  <div className="absolute bottom-2 right-2 text-white/30 text-xs">
+                    {prompt.length}/500
+                  </div>
+                </div>
+              </div>
+
               {/* Single row with all controls */}
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 {/* Left: Variations toggle + Presets + MoodMorph */}
@@ -3237,14 +3298,16 @@ const HomeNew: React.FC = () => {
                   {/* Presets dropdown button */}
                   <div className="relative" data-presets-dropdown>
                     <button
-                      onClick={() => {
-                        if (!isAuthenticated) {
-                          // Sign up required - no notification needed
-                          navigate('/auth')
-                          return
-                        }
-                        setPresetsOpen((v) => !v)
-                      }}
+                                              onClick={() => {
+                          if (!isAuthenticated) {
+                            // Sign up required - no notification needed
+                            navigate('/auth')
+                            return
+                          }
+                          // Close emotion mask dropdown when presets are clicked
+                          setEmotionMaskDropdownOpen(false)
+                          setPresetsOpen((v) => !v)
+                        }}
                       className={(() => {
                         const baseClass = 'px-3 py-1.5 rounded-2xl text-xs border transition-colors';
                         const activeClass = 'bg-white/10 text-white border-white/20 hover:bg-white/15';
