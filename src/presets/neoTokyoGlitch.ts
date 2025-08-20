@@ -15,14 +15,6 @@ export type NeoTokyoGlitchPreset = {
   requiresSource: boolean;
   source: string;
   features?: string[];
-  guidance_scale?: number;
-  num_inference_steps?: number;
-  sampler?: string;
-  ip_adapter?: 'faceid' | 'instantid' | 'none';
-  ip_adapter_strength?: number;
-  mask_policy?: 'expression_only' | 'face_only' | 'none';
-  mask_hints?: string;
-  subject_count?: 1;
 };
 
 const NEO_IDENTITY_NEG = [
@@ -70,14 +62,6 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['neon_overlay', 'identity_lock'],
-    guidance_scale: 1.4,
-    num_inference_steps: 12,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'face_only',
-    mask_hints: 'face edges, hair highlights only',
-    subject_count: 1,
   },
   {
     id: 'neo_tokyo_visor',
@@ -92,14 +76,6 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['glitch_visor', 'identity_lock'],
-    guidance_scale: 1.4,
-    num_inference_steps: 12,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'face_only',
-    mask_hints: 'visor area above eyes only',
-    subject_count: 1,
   },
   {
     id: 'neo_tokyo_tattoos',
@@ -114,14 +90,6 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['tech_tattoos', 'identity_lock'],
-    guidance_scale: 1.4,
-    num_inference_steps: 12,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'face_only',
-    mask_hints: 'temples, cheekbones only',
-    subject_count: 1,
   },
   {
     id: 'neo_tokyo_scanlines',
@@ -136,14 +104,6 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['vhs_scanline', 'identity_lock'],
-    guidance_scale: 1.3,
-    num_inference_steps: 10,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'none',
-    mask_hints: 'background and edges only',
-    subject_count: 1,
   },
 ];
 

@@ -10,14 +10,6 @@ export type EmotionMaskPreset = {
   negative_prompt: string;
   strength: number; // i2i denoise: 0 = copy, 1 = full regenerate
   model: string; // AIML model slug
-  guidance_scale?: number; // 1.0–2.0 recommended for identity safety
-  num_inference_steps?: number; // 10–18 typical for subtle edits
-  sampler?: string; // optional sampler name
-  ip_adapter?: 'faceid' | 'instantid' | 'none'; // if supported by AIML
-  ip_adapter_strength?: number; // 0.7–1.0 for face lock
-  mask_policy?: 'expression_only' | 'face_only' | 'none'; // hint for UI/router
-  mask_hints?: string; // optional ROI guidance for your router
-  subject_count?: 1; // enforce single-subject behavior in your pipeline if possible
 };
 
 const EMOTION_IDENTITY_NEG = [
@@ -68,13 +60,6 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     negative_prompt: '',
     strength: 0.0,
     model: 'stable-diffusion-3.5-large-i2i', // safer default for identity
-    guidance_scale: 1.2,
-    num_inference_steps: 10,
-    ip_adapter: 'none',
-    ip_adapter_strength: 0.0,
-    mask_policy: 'none',
-    mask_hints: '',
-    subject_count: 1,
   },
   {
     id: 'joy_sadness',
@@ -84,14 +69,6 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     negative_prompt: EMOTION_IDENTITY_NEG,
     strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.2,
-    num_inference_steps: 10,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'expression_only',
-    mask_hints: 'eyes, brows, mouth only',
-    subject_count: 1,
   },
   {
     id: 'strength_vulnerability',
@@ -101,14 +78,6 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     negative_prompt: EMOTION_IDENTITY_NEG,
     strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.2,
-    num_inference_steps: 10,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'expression_only',
-    mask_hints: 'eyes, brows, mouth only',
-    subject_count: 1,
   },
   {
     id: 'nostalgia_distance',
@@ -118,14 +87,6 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     negative_prompt: EMOTION_IDENTITY_NEG,
     strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.2,
-    num_inference_steps: 10,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'expression_only',
-    mask_hints: 'eyes, brows, mouth only',
-    subject_count: 1,
   },
   {
     id: 'peace_fear',
@@ -135,14 +96,6 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     negative_prompt: EMOTION_IDENTITY_NEG,
     strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.2,
-    num_inference_steps: 10,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'expression_only',
-    mask_hints: 'eyes, brows, mouth only',
-    subject_count: 1,
   },
   {
     id: 'confidence_loneliness',
@@ -152,14 +105,6 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     negative_prompt: EMOTION_IDENTITY_NEG,
     strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.2,
-    num_inference_steps: 10,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'expression_only',
-    mask_hints: 'eyes, brows, mouth only',
-    subject_count: 1,
   },
 ];
 

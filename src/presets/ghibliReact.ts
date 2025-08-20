@@ -10,14 +10,6 @@ export type GhibliReactionPreset = {
   negative_prompt: string;
   strength: number;
   model: string;
-  guidance_scale?: number;
-  num_inference_steps?: number;
-  sampler?: string;
-  ip_adapter?: 'faceid' | 'instantid' | 'none';
-  ip_adapter_strength?: number;
-  mask_policy?: 'expression_only' | 'face_only' | 'none';
-  mask_hints?: string;
-  subject_count?: 1;
 };
 
 const GHIBLI_NEG = [
@@ -59,14 +51,6 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     negative_prompt: GHIBLI_NEG,
     strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.2,
-    num_inference_steps: 10,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'expression_only',
-    mask_hints: 'eyes, tear area only',
-    subject_count: 1,
   },
   {
     id: 'ghibli_shock',
@@ -76,14 +60,6 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     negative_prompt: GHIBLI_NEG,
     strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.2,
-    num_inference_steps: 10,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'expression_only',
-    mask_hints: 'eyes, brows, mouth only',
-    subject_count: 1,
   },
   {
     id: 'ghibli_sparkle',
@@ -93,14 +69,6 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     negative_prompt: GHIBLI_NEG,
     strength: 0.10,
     model: 'stable-diffusion-3.5-large-i2i',
-    guidance_scale: 1.2,
-    num_inference_steps: 10,
-    sampler: 'DPM++ 2M Karras',
-    ip_adapter: 'faceid',
-    ip_adapter_strength: 0.95,
-    mask_policy: 'expression_only',
-    mask_hints: 'eyes, sparkle area only',
-    subject_count: 1,
   },
 ];
 
