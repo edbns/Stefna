@@ -1,6 +1,6 @@
 import { Handler } from '@netlify/functions'
 import { withAuth } from './_withAuth'
-import { neonAdmin } from './_lib/neonAdmin'
+import { neon } from '@neondatabase/serverless'
 
 const handler: Handler = withAuth(async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -29,7 +29,7 @@ const handler: Handler = withAuth(async (event, context) => {
     }
 
     // Delete the media from the database
-    const result = await neonAdmin`
+    const result = await neon`
       DELETE FROM assets 
       WHERE id = ${id} AND user_id = ${user.id}
       RETURNING id
