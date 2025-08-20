@@ -6,6 +6,9 @@ import { validateAllSync, validateAll, validateUIConfigurationWhenReady } from '
 import { PRESETS } from './utils/presets/types'
 import { presetsStore } from './stores/presetsStore'
 
+// 📊 Performance monitoring with web-vitals
+import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals'
+
 // Safety check: ensure presetsStore is properly imported
 if (!presetsStore) {
   console.error('❌ presetsStore import failed');
@@ -146,6 +149,13 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
     }
   };
 })();
+
+// 📊 Performance monitoring - track Core Web Vitals
+onCLS(console.log);
+onFCP(console.log);
+onINP(console.log);
+onLCP(console.log);
+onTTFB(console.log);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
