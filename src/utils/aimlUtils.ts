@@ -26,7 +26,7 @@ export function buildEditPayload({
       endpoint: '/v1/images/generations',
       body: {
         ...common,
-        model: 'flux/dev/image-to-image',
+        model: 'stable-diffusion-v35-large',
         image_url: sourceUrl,
         strength: Math.min(Math.max(strength ?? 0.7, 0.4), 0.9),
       }

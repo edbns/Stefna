@@ -5,31 +5,23 @@ export type GhibliReactionPreset = {
   prompt: string
 }
 
-// Base prompt for Ghibli style facial emotion enhancement
-const GHIBLI_BASE_PROMPT = "Transform the human face to resemble an anime reaction shot in the style of Studio Ghibli. Keep realistic skin and hair texture. Emphasize exaggerated emotion with stylized features like large glistening eyes, sparkles, tears, or shocked expressions."
-
-// Emotion-specific additions
-const GHIBLI_MOOD_ADDONS = {
-  tears: "Add big glassy tears like Chihiro crying.",
-  shock: "Exaggerate shocked anime face like Sophie from Howl's Moving Castle.",
-  sparkle: "Add sparkles around face and big anime blush."
-}
-
+// Refined Studio Ghibli Reaction prompts - Natural language, identity-preserving
+// These were giving consistent viral/meme-worthy results without identity loss
 export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_tears',
     label: 'Tears',
-    prompt: `${GHIBLI_BASE_PROMPT} ${GHIBLI_MOOD_ADDONS.tears}`,
+    prompt: "Exaggerate the emotional expression in the human face using anime-inspired style. Retain natural facial structure and realistic hair/skin, but add visual elements like big glassy tears, wide glistening eyes, and subtle sparkles. Inspired by Studio Ghibli characters reacting with strong emotions.",
   },
   {
     id: 'ghibli_shock',
     label: 'Shock',
-    prompt: `${GHIBLI_BASE_PROMPT} ${GHIBLI_MOOD_ADDONS.shock}`,
+    prompt: "Exaggerate the emotional expression in the human face using anime-inspired style. Retain natural facial structure and realistic hair/skin, but add visual elements like wide shocked eyes, raised eyebrows, and open mouth. Inspired by Studio Ghibli characters reacting with strong emotions.",
   },
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: `${GHIBLI_BASE_PROMPT} ${GHIBLI_MOOD_ADDONS.sparkle}`,
+    prompt: "Exaggerate the emotional expression in the human face using anime-inspired style. Retain natural facial structure and realistic hair/skin, but add visual elements like sparkles around the face, big anime blush, and bright glistening eyes. Inspired by Studio Ghibli characters reacting with strong emotions.",
   }
 ]
 

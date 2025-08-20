@@ -10,7 +10,6 @@ import FullScreenMediaViewer from '../components/FullScreenMediaViewer'
 import userMediaService, { UserMedia } from '../services/userMediaService'
 import authService from '../services/authService'
 import ConfirmModal from '../components/ConfirmModal'
-import ShareModal from '../components/ShareModal'
 import tokenService from '../services/tokenService'
 import { authenticatedFetch } from '../utils/apiClient'
 import { useToasts } from '../components/ui/Toasts'
@@ -37,11 +36,7 @@ const ProfileScreen: React.FC = () => {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
 
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
-  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
-  const [bulkDeleteConfirmed, setBulkDeleteConfirmed] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
-  const [shareMedia, setShareMedia] = useState<UserMedia | null>(null)
 
   // Use profile context
   const { profileData, updateProfile, refreshProfile } = useProfile()
@@ -338,74 +333,34 @@ const ProfileScreen: React.FC = () => {
         return
       }
 
-      // Show confirmation modal
-      setShowBulkDeleteModal(true)
-      return // Exit early, the actual deletion will happen when user confirms
-    } catch (error) {
-      console.error('❌ Bulk delete error:', error)
-      addNotification('Delete Failed', 'Network or server error', 'error')
-    }
-  }
-
-  // Actual bulk delete execution (called when user confirms)
-  const executeBulkDelete = async () => {
-    if (selectedMediaIds.size === 0) return
-
-    try {
-      const token = authService.getToken()
-      if (!token) {
-        addNotification('Delete Failed', 'Authentication required', 'error')
-        return
-      }
-
-      // Delete each selected media item
-      const deletePromises = Array.from(selectedMediaIds).map(async (mediaId) => {
-        try {
-                  const response = await authenticatedFetch(`/.netlify/functions/delete-media`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ mediaId })
-        })
-          
-          if (!response.ok) {
-            throw new Error(`Failed to delete media ${mediaId}`)
-          }
-          
-          return { success: true, mediaId }
-        } catch (error) {
-          console.error(`Failed to delete media ${mediaId}:`, error)
-          return { success: false, mediaId, error }
-        }
+      // Show confirmation modal for bulk delete
+      setConfirm({ 
+        open: true, 
+        media: { 
+          id: 'bulk-delete', 
+          userId: '', 
+          type: 'photo', 
+          url: '', 
+          prompt: '', 
+          aspectRatio: 1, 
+          width: 0, 
+          height: 0, 
+          timestamp: '', 
+          tokensUsed: 0, 
+          likes: 0, 
+          remixCount: 0, 
+          isPublic: false, 
+          tags: [], 
+          metadata: { quality: 'standard', generationTime: 0, modelVersion: '1.0' }
+        } as UserMedia 
       })
-
-      const results = await Promise.allSettled(deletePromises)
-      const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length
-      const failed = results.length - successful
-
-      if (successful > 0) {
-        addNotification(
-          'Bulk Delete Complete', 
-          `Successfully deleted ${successful} media items${failed > 0 ? `, ${failed} failed` : ''}`, 
-          'success'
-        )
-        
-        // Clear selection and refresh media
-        setSelectedMediaIds(new Set())
-        setIsSelectionMode(false)
-        await loadUserMedia()
-      } else {
-        addNotification('Delete Failed', 'No media items were deleted', 'error')
-      }
-
     } catch (error) {
       console.error('❌ Bulk delete error:', error)
       addNotification('Delete Failed', 'Network or server error', 'error')
-    } finally {
-      setShowBulkDeleteModal(false)
     }
   }
+
+
 
 
 
@@ -770,7 +725,7 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
-  // Updated share function that opens ShareModal for social media sharing
+  // Simple share function that copies media URL to clipboard
   const handleShare = async (media: UserMedia) => {
     try {
       // Auth guard: require JWT before attempting to share
@@ -780,13 +735,13 @@ const ProfileScreen: React.FC = () => {
         return
       }
 
-      // Open ShareModal for social media sharing
-      setShareMedia(media)
-      setShowShareModal(true)
+      // Copy media URL to clipboard
+      await navigator.clipboard.writeText(media.url)
+      addNotification('Link Copied', 'Media link copied to clipboard!', 'success')
       
     } catch (error) {
-      console.error('Failed to open share modal:', error)
-      addNotification('Share Failed', 'Failed to open share options. Please try again.', 'error')
+      console.error('Failed to copy media link:', error)
+      addNotification('Share Failed', 'Failed to copy link. Please try again.', 'error')
     }
   }
 
@@ -1070,46 +1025,7 @@ const ProfileScreen: React.FC = () => {
                         </div>
                     </div>
 
-      {/* Bulk Delete Confirmation Modal */}
-      {showBulkDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowBulkDeleteModal(false)} />
-          <div className="relative bg-[#222222] border border-white/20 rounded-2xl max-w-lg w-full p-8 shadow-2xl">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowBulkDeleteModal(false)}
-              className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
-            >
-              <X size={24} />
-            </button>
 
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-white text-xl font-bold mb-3">Delete Selected Media</h2>
-              <p className="text-white/60 text-sm">
-                Are you sure you want to delete {selectedMediaIds.size} media item{selectedMediaIds.size !== 1 ? 's' : ''}? This action cannot be undone.
-              </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <button
-                onClick={executeBulkDelete}
-                className="w-full bg-red-500 text-white font-semibold py-3 rounded-xl hover:bg-red-600 btn-optimized"
-              >
-                Delete {selectedMediaIds.size} Item{selectedMediaIds.size !== 1 ? 's' : ''}
-              </button>
-              
-              <button
-                onClick={() => setShowBulkDeleteModal(false)}
-                className="w-full bg-white/5 text-white font-semibold py-3 rounded-xl hover:bg-white/10 btn-optimized border border-white/20"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
         {/* Legal and Social Media Links - Bottom Section */}
         <div className="mt-auto">
@@ -1519,71 +1435,127 @@ const ProfileScreen: React.FC = () => {
         />
       </div>
 
-      {/* Profile Edit Modal */}
+      {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={confirm.open}
-        title="Delete media?"
-        message="This action cannot be undone."
-        confirmText="Delete"
+        title={confirm.media?.id === 'bulk-delete' ? `Delete ${selectedMediaIds.size} selected media?` : "Delete media?"}
+        message={confirm.media?.id === 'bulk-delete' ? 
+          `Are you sure you want to delete ${selectedMediaIds.size} media items? This action cannot be undone.` : 
+          "This action cannot be undone."
+        }
+        confirmText={confirm.media?.id === 'bulk-delete' ? `Delete ${selectedMediaIds.size} Items` : "Delete"}
         cancelText="Cancel"
         onClose={() => setConfirm({ open: false })}
         onConfirm={async () => {
           if (confirm.media) {
-            const mediaToDelete = confirm.media
-            console.log('🗑️ Deleting media:', mediaToDelete.id)
-            
-            try {
-              // Delete from server first
-              const jwt = authService.getToken()
-              let serverDeleteSuccess = false
+            if (confirm.media.id === 'bulk-delete') {
+              // Handle bulk delete
+              console.log('🗑️ Bulk deleting media:', selectedMediaIds.size, 'items')
               
-              if (jwt) {
-                try {
-                  const r = await fetch('/.netlify/functions/delete-media', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${jwt}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: mediaToDelete.id })
-                  })
-                  
-                  if (r.ok) {
-                    serverDeleteSuccess = true
-                    console.log('✅ Server delete successful')
-                  } else {
-                    console.warn('⚠️ Server delete failed:', r.status, r.statusText)
-                  }
-                } catch (serverError) {
-                  console.error('❌ Server delete error:', serverError)
+              try {
+                const token = authService.getToken()
+                if (!token) {
+                  addNotification('Delete Failed', 'Authentication required', 'error')
+                  return
                 }
-              }
 
-              // Update local state immediately for better UX
-              const isDraft = draftMedia.some(draft => draft.id === mediaToDelete.id)
+                // Delete each selected media item
+                const deletePromises = Array.from(selectedMediaIds).map(async (mediaId) => {
+                  try {
+                    const response = await authenticatedFetch(`/.netlify/functions/delete-media`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({ id: mediaId })
+                    })
+                    
+                    if (!response.ok) {
+                      throw new Error(`Failed to delete media ${mediaId}`)
+                    }
+                    
+                    return { success: true, mediaId }
+                  } catch (error) {
+                    console.error(`Failed to delete media ${mediaId}:`, error)
+                    return { success: false, mediaId, error }
+                  }
+                })
+
+                const results = await Promise.allSettled(deletePromises)
+                const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length
+                const failed = results.length - successful
+
+                if (successful > 0) {
+                  addNotification(
+                    'Bulk Delete Complete', 
+                    `Successfully deleted ${successful} media items${failed > 0 ? `, ${failed} failed` : ''}`, 
+                    'success'
+                  )
+                  
+                  // Clear selection and refresh media
+                  setSelectedMediaIds(new Set())
+                  setIsSelectionMode(false)
+                  await loadUserMedia()
+                } else {
+                  addNotification('Delete Failed', 'No media items were deleted', 'error')
+                }
+
+              } catch (error) {
+                console.error('❌ Bulk delete error:', error)
+                addNotification('Delete Failed', 'Network or server error', 'error')
+              }
+            } else {
+              // Handle single delete
+              const mediaToDelete = confirm.media
+              console.log('🗑️ Deleting single media:', mediaToDelete.id)
               
-              if (isDraft) {
-                // Remove from draft media
-                setDraftMedia(prev => prev.filter(item => item.id !== mediaToDelete.id))
-                // Draft Deleted - no notification needed
-              } else {
-                // Remove from user media immediately
-                setUserMedia(prev => prev.filter(item => item.id !== mediaToDelete.id))
+              try {
+                // Delete from server first
+                const jwt = authService.getToken()
+                let serverDeleteSuccess = false
                 
-                // Remix functionality removed - no more remix processing
+                if (jwt) {
+                  try {
+                    const r = await fetch('/.netlify/functions/delete-media', {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: mediaToDelete.id })
+                    })
+                    
+                    if (r.ok) {
+                      serverDeleteSuccess = true
+                      console.log('✅ Server delete successful')
+                    } else {
+                      console.warn('⚠️ Server delete failed:', r.status, r.statusText)
+                    }
+                  } catch (serverError) {
+                    console.error('❌ Server delete error:', serverError)
+                  }
+                }
+
+                // Update local state immediately for better UX
+                const isDraft = draftMedia.some(draft => draft.id === mediaToDelete.id)
                 
-                // Update local storage as backup
-                try {
-                  await userMediaService.deleteMedia(currentUserId, mediaToDelete.id)
-                } catch (localError) {
-                  console.warn('⚠️ Local storage delete failed:', localError)
+                if (isDraft) {
+                  // Remove from draft media
+                  setDraftMedia(prev => prev.filter(item => item.id !== mediaToDelete.id))
+                } else {
+                  // Remove from user media immediately
+                  setUserMedia(prev => prev.filter(item => item.id !== mediaToDelete.id))
+                  
+                  // Update local storage as backup
+                  try {
+                    await userMediaService.deleteMedia(currentUserId, mediaToDelete.id)
+                  } catch (localError) {
+                    console.warn('⚠️ Local storage delete failed:', localError)
+                  }
                 }
                 
-                // Media Deleted - no notification needed
+                console.log('✅ Local state updated, media removed from UI')
+                
+              } catch (error) {
+                console.error('❌ Delete operation failed:', error)
               }
-              
-              console.log('✅ Local state updated, media removed from UI')
-              
-            } catch (error) {
-              console.error('❌ Delete operation failed:', error)
-              // Delete Failed - no notification needed
             }
           }
           
@@ -1741,17 +1713,7 @@ const ProfileScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Share Modal */}
-      <ShareModal
-        isOpen={showShareModal}
-        onClose={() => {
-          setShowShareModal(false)
-          setShareMedia(null)
-        }}
-        mediaUrl={shareMedia?.url}
-        caption={shareMedia?.prompt}
-        title="Share Your Creation"
-      />
+
 
     </div>
   )

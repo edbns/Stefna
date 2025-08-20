@@ -97,7 +97,7 @@ class PresetRotationService {
       
       // If no active presets stored, generate new ones
       if (!activePresetIds || activePresetIds.length === 0) {
-        console.log('🔄 No active presets found, generating initial rotation...');
+        console.log('No active presets found, generating initial rotation...');
         return this.generateNewRotation();
       }
       
@@ -106,45 +106,38 @@ class PresetRotationService {
         .map(id => PROFESSIONAL_PRESETS[id as ProfessionalPresetKey])
         .filter(Boolean);
       
-      console.log(`✅ Returning ${activePresets.length} active presets`);
+      console.log(`Returning ${activePresets.length} active presets`);
       return activePresets;
     } catch (error) {
-      console.error('❌ Error getting active presets:', error);
+      console.error('Error getting active presets:', error);
       // Fallback to random selection if there's an error
-      console.log('🔄 Falling back to random preset selection');
+      console.log('Falling back to random preset selection');
       return this.getRandomPresets(6);
     }
   }
 
-  // Generate a new rotation of presets
+  // Generate a new rotation of presets using structured sets
   private generateNewRotation(): ProfessionalPresetConfig[] {
     try {
       const config = this.getRotationConfig();
-      const usage = this.getPresetUsage();
       
-      // Sort presets by usage (most used first)
-      const sortedPresets = Object.values(PROFESSIONAL_PRESETS).sort((a, b) => {
-        const aUsage = usage[a.id]?.usageCount || 0;
-        const bUsage = usage[b.id]?.usageCount || 0;
-        return bUsage - aUsage;
-      });
+      // Get the next rotation set based on current week
+      const currentSet = this.getCurrentRotationSet();
+      const presetIds = this.getPresetIdsForSet(currentSet);
       
-      // Keep top retentionCount presets
-      const retainedPresets = sortedPresets.slice(0, config.retentionCount);
-      
-      // Get random presets from the remaining ones
-      const remainingPresets = sortedPresets.slice(config.retentionCount);
-      const randomPresets = this.shuffleArray(remainingPresets).slice(0, config.totalPresets - config.retentionCount);
-      
-      // Combine retained and random presets
-      const newRotation = [...retainedPresets, ...randomPresets];
+      // Get the actual preset objects
+      const newRotation = presetIds
+        .map(id => PROFESSIONAL_PRESETS[id as ProfessionalPresetKey])
+        .filter(Boolean);
       
       // Store the new rotation
       this.storeActivePresets(newRotation.map(p => p.id));
       
+      console.log(`Generated new rotation using Set ${currentSet}:`, newRotation.map(p => p.name));
+      
       return newRotation;
     } catch (error) {
-      console.error('❌ Error generating new rotation:', error);
+      console.error('Error generating new rotation:', error);
       // Fallback to random selection if there's an error
       return this.getRandomPresets(6);
     }
@@ -152,9 +145,9 @@ class PresetRotationService {
 
   // Perform the rotation
   private performRotation(): void {
-    console.log('🔄 Performing preset rotation...');
+    console.log('Performing preset rotation...');
     const newPresets = this.generateNewRotation();
-    console.log('✅ New preset rotation:', newPresets.map(p => p.name));
+    console.log('New preset rotation:', newPresets.map(p => p.name));
   }
 
   // Store active preset IDs
@@ -237,8 +230,38 @@ class PresetRotationService {
 
   // Force rotation (for testing or manual control)
   public forceRotation(): void {
-    console.log('🔄 Forcing preset rotation...');
+    console.log('Forcing preset rotation...');
     this.performRotation();
+  }
+
+  // Get current rotation set info (for debugging/monitoring)
+  public getCurrentRotationInfo(): {
+    currentSet: string;
+    setDescription: string;
+    presetNames: string[];
+    nextRotation: Date;
+  } {
+    const currentSet = this.getCurrentRotationSet();
+    const presetIds = this.getPresetIdsForSet(currentSet);
+    const presetNames = presetIds
+      .map(id => PROFESSIONAL_PRESETS[id as ProfessionalPresetKey]?.name)
+      .filter(Boolean);
+    
+    const setDescriptions: Record<string, string> = {
+      'A': 'Cinematic Everyday',
+      'B': 'Travel Vibes', 
+      'C': 'Urban Mood',
+      'D': 'Natural Elements',
+      'E': 'Cultural Moments',
+      'F': 'Noir Street'
+    };
+    
+    return {
+      currentSet,
+      setDescription: setDescriptions[currentSet] || 'Unknown',
+      presetNames,
+      nextRotation: this.getNextRotationTime()
+    };
   }
 
   // Get next rotation time
@@ -280,7 +303,84 @@ class PresetRotationService {
     localStorage.removeItem(this.USAGE_STORAGE_KEY);
     localStorage.removeItem('stefna_active_presets');
     localStorage.removeItem('stefna_last_rotation');
-    console.log('🧹 Cleared all preset rotation data');
+    console.log('Cleared all preset rotation data');
+  }
+
+  // Get random presets (for rotation fallback)
+  private getRandomPresets(count: number): ProfessionalPresetConfig[] {
+    const presets = Object.values(PROFESSIONAL_PRESETS);
+    const shuffled = this.shuffleArray(presets);
+    return shuffled.slice(0, count);
+  }
+
+  // Get current rotation set based on week number
+  private getCurrentRotationSet(): string {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const days = Math.floor((now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+    const weekNumber = Math.ceil(days / 7);
+    
+    // 6 sets, rotate every week
+    const setIndex = (weekNumber - 1) % 6;
+    const sets = ['A', 'B', 'C', 'D', 'E', 'F'];
+    
+    return sets[setIndex];
+  }
+
+  // Get preset IDs for a specific rotation set
+  private getPresetIdsForSet(setId: string): string[] {
+    const rotationSets: Record<string, string[]> = {
+      'A': [ // Set A - Cinematic Everyday
+        'cinematic_glow',      // Cinematic
+        'vivid_pop',           // Vibrant
+        'festival_vibes',      // Vibrant
+        'bright_airy',         // Minimal
+        'vintage_film_35mm',   // Vintage
+        'moody_forest'         // Nature
+      ],
+      'B': [ // Set B - Travel Vibes
+        'golden_hour_magic',   // Cinematic
+        'tropical_boost',      // Vibrant
+        'ocean_breeze',        // Vibrant
+        'soft_skin_portrait',  // Portrait
+        'retro_polaroid',      // Vintage
+        'desert_glow'          // Travel
+      ],
+      'C': [ // Set C - Urban Mood
+        'high_fashion_editorial', // Cinematic
+        'festival_vibes',      // Vibrant
+        'neon_nights',         // Vibrant
+        'mono_drama',          // Minimal/B&W
+        'vintage_film_35mm',   // Vintage
+        'urban_grit'           // Urban
+      ],
+      'D': [ // Set D - Natural Elements
+        'sun_kissed',          // Cinematic
+        'crystal_clear',       // Vibrant
+        'dreamy_pastels',      // Soft/Portrait
+        'retro_polaroid',      // Vintage
+        'wildlife_focus',      // Nature
+        'frost_light'          // Travel/Nature
+      ],
+      'E': [ // Set E - Cultural Moments
+        'golden_hour_magic',   // Cinematic
+        'vivid_pop',           // Vibrant
+        'cultural_glow',       // Vibrant/Travel
+        'soft_skin_portrait',  // Portrait
+        'desert_glow',         // Vintage/Travel
+        'rainy_day_mood'       // Nature/Moody
+      ],
+      'F': [ // Set F - Noir Street
+        'noir_classic',        // Cinematic B&W
+        'street_story',        // Vibrant/Urban
+        'mono_drama',          // Minimalist
+        'urban_grit',          // Vibrant
+        'vintage_film_35mm',   // Vintage
+        'rainy_day_mood'       // Nature/Street
+      ]
+    };
+    
+    return rotationSets[setId] || rotationSets['A'];
   }
 }
 

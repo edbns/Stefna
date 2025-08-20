@@ -706,7 +706,17 @@ const HomeNew: React.FC = () => {
     const handleGenerationError = (event: CustomEvent) => {
       const { message } = event.detail
       console.log('❌ Generation error:', message)
-              notifyError({ title: 'Media failed', message: 'Try again' })
+      notifyError({ title: 'Media failed', message: 'Try again' })
+      
+      // Clear composer state immediately after generation error
+      console.log('🧹 Clearing composer state after generation error')
+      handleClearComposerState()
+      
+      // Force additional clearing for stubborn cases
+      setTimeout(() => {
+        console.log('🧹 Force clearing composer after generation error (delayed)');
+        handleClearComposerState();
+      }, 300);
     }
 
     const handleUserMediaUpdated = () => {
@@ -1197,64 +1207,19 @@ const HomeNew: React.FC = () => {
         return;
       }
       
-      // Check if this is a curated emotion or dynamic
-      const curatedEmotions = [
-        "sad",
-        "angry", 
-        "love",
-        "surprised"
-      ];
-      
-      // Map display names to internal IDs
-      const emotionMap: Record<string, string> = {
-        "Sad": "sad",
-        "Angry": "angry",
-        "Love": "love",
-        "Surprised": "surprised"
-      };
-      
-      const internalEmotionId = emotionMap[emotionMaskPreset.label] || emotionMaskPreset.id.toLowerCase();
-      const isCurated = curatedEmotions.includes(internalEmotionId);
-      
-      if (isCurated) {
-        // Use curated preset with optimized parameters
+      // 🎭 EMOTION MASK MODE: ALWAYS use the original, curated prompt
+      // NO MORE SYNTHETIC PROMPT GENERATION - preserve emotional intent
       effectivePrompt = emotionMaskPreset.prompt;
-        generationMeta = { 
-          mode: 'emotionmask', 
-          emotionMaskPresetId, 
-          emotionMaskLabel: emotionMaskPreset.label, 
-          vibe: emotionMaskPreset.vibe,
-          model: validateModel(emotionMaskPreset.model),
-          strength: emotionMaskPreset.strength,
-          guidance_scale: emotionMaskPreset.guidance_scale,
-          face_fix: emotionMaskPreset.face_fix,
-          face_method: emotionMaskPreset.face_method,
-          postprocessing: emotionMaskPreset.postprocessing,
-          features: emotionMaskPreset.features,
-          generation_type: "preset"
-        };
-        console.log('🎭 EMOTION MASK MODE: Using curated preset:', emotionMaskPreset.label, effectivePrompt, 'Model:', emotionMaskPreset.model);
-      } else {
-        // Use dynamic prompt for rare/experimental emotions - photorealistic approach
-        const emotion = internalEmotionId;
-        effectivePrompt = `Enhance this face with strong ${emotion} expression. Keep identity and realism. Modify only facial muscles, eyebrows, and eyes. Add subtle lighting or tension to match emotion. Style must be cinematic portrait, natural lighting, shallow depth of field.`;
-        generationMeta = { 
-          mode: 'emotionmask', 
-          emotionMaskPresetId, 
-          emotionMaskLabel: emotionMaskPreset.label, 
-          vibe: emotionMaskPreset.vibe,
-          model: "stable-diffusion-v35-large", // Supported model for emotional authenticity
-          strength: 0.45,
-          guidance_scale: 7.5,
-          face_fix: true,
-          face_method: "ipadapter",
-          postprocessing: ["soft_light_blend", "face_restoration", "natural_color_enhancement"],
-          features: [`${emotion}_emotion`, "human_authenticity", "natural_lighting", "emotional_realism"],
-          generation_type: "dynamic"
-        };
-        console.log('🎭 EMOTION MASK MODE: Using dynamic photorealistic prompt for:', emotionMaskPreset.label, effectivePrompt);
-      }
-      
+      generationMeta = { 
+        mode: 'emotionmask', 
+        emotionMaskPresetId, 
+        emotionMaskLabel: emotionMaskPreset.label,
+        model: "stable-diffusion-v35-large", // Use known working model
+        strength: 0.75, // Balanced strength for emotional expression
+        guidance_scale: 7.5, // Standard guidance for consistency
+        generation_type: "emotion_mask_original" // Mark as using original prompt
+      };
+      console.log('🎭 EMOTION MASK MODE: Using ORIGINAL prompt:', emotionMaskPreset.label, effectivePrompt);
     } else if (kind === 'ghiblireact') {
       // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
       const ghibliReactionPresetId = options?.ghibliReactionPresetId || selectedGhibliReactionPreset;
@@ -1276,8 +1241,13 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = ghibliReactionPreset.prompt;
-      generationMeta = { mode: 'ghiblireact', ghibliReactionPresetId, ghibliReactionLabel: ghibliReactionPreset.label, model: validateModel(ghibliReactionPreset.model) };
-      console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model:', ghibliReactionPreset.model);
+      generationMeta = { 
+        mode: 'ghiblireact', 
+        ghibliReactionPresetId, 
+        ghibliReactionLabel: ghibliReactionPreset.label, 
+        model: "stable-diffusion-v35-large" // Use known working model for Ghibli style
+      };
+      console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: stable-diffusion-v35-large');
       
     } else if (kind === 'neotokyoglitch') {
       // NEO TOKYO GLITCH MODE: Use the selected Neo Tokyo Glitch preset
@@ -1300,8 +1270,14 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = neoTokyoGlitchPreset.prompt;
-      generationMeta = { mode: 'neotokyoglitch', neoTokyoGlitchPresetId, neoTokyoGlitchLabel: neoTokyoGlitchPreset.label, model: validateModel(neoTokyoGlitchPreset.model), features: neoTokyoGlitchPreset.features };
-      console.log('🎭 NEO TOKYO GLITCH MODE: Using Neo Tokyo Glitch preset:', neoTokyoGlitchPreset.label, effectivePrompt, 'Model:', neoTokyoGlitchPreset.model);
+      generationMeta = { 
+        mode: 'neotokyoglitch', 
+        neoTokyoGlitchPresetId, 
+        neoTokyoGlitchLabel: neoTokyoGlitchPreset.label, 
+        model: "stable-diffusion-v35-large", // Use known working model for Neo Tokyo style
+        features: neoTokyoGlitchPreset.features 
+      };
+      console.log('🎭 NEO TOKYO GLITCH MODE: Using ORIGINAL prompt:', neoTokyoGlitchPreset.label, effectivePrompt);
       
     } else {
       console.error('❌ Unknown generation kind:', kind);
@@ -3013,18 +2989,16 @@ const HomeNew: React.FC = () => {
 
       {/* Floating Controls - Top Right */}
       <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
-        {/* Generation Loading Spinner - Only show when generating */}
-        {navGenerating && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-white/10 text-white rounded-full border border-white/20 backdrop-blur-sm">
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-            <span className="text-sm font-medium">Generating...</span>
-          </div>
-        )}
+        
         
         {/* Upload Button */}
         <button
           onClick={handleUploadClick}
-          className="w-12 h-12 bg-white text-black rounded-full border border-white transition-all duration-300 flex items-center justify-center hover:bg-white/90 hover:scale-105 relative group"
+          className={`w-12 h-12 rounded-full border transition-all duration-300 flex items-center justify-center hover:scale-105 relative group ${
+            isAuthenticated 
+              ? 'bg-white/10 text-white border-white/20 hover:bg-white/20' 
+              : 'bg-white text-black border-white hover:bg-white/90'
+          }`}
           aria-label="Upload"
           title="Upload"
         >
@@ -3055,6 +3029,10 @@ const HomeNew: React.FC = () => {
             >
               <ProfileIcon size={24} className="transition-transform duration-200" />
             </button>
+            {/* Loading spinner around profile icon when generating */}
+            {navGenerating && (
+              <div className="absolute inset-0 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
+            )}
             
             {/* Profile Dropdown */}
             {profileDropdownOpen && (
@@ -3330,7 +3308,7 @@ const HomeNew: React.FC = () => {
                     
                     {/* Emotion Mask presets dropdown - show when in Emotion Mask mode */}
                     {composerState.mode === 'emotionmask' && emotionMaskDropdownOpen && (
-                        <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                      <div className="absolute bottom-full left-0 mb-2 z-50">
                         <EmotionMaskPicker
                           value={selectedEmotionMaskPreset}
                             onChange={async (presetId) => {
@@ -3344,9 +3322,17 @@ const HomeNew: React.FC = () => {
                                 await dispatchGenerate('emotionmask', {
                                   emotionMaskPresetId: presetId
                                   })
+                                // Clear composer after successful generation
+                                setTimeout(() => {
+                                  clearAllOptionsAfterGeneration()
+                                }, 500)
                                 } catch (error) {
                                   console.error('❌ Emotion Mask auto-generation failed:', error)
                                   notifyError({ title: 'Media failed', message: 'Try again' })
+                                  // Clear composer after generation error
+                                  setTimeout(() => {
+                                    clearAllOptionsAfterGeneration()
+                                  }, 300)
                                 }
                               }
                             }}
@@ -3414,6 +3400,10 @@ const HomeNew: React.FC = () => {
                               } catch (error) {
                                 console.error('❌ Ghibli Reaction auto-generation failed:', error)
                                 notifyError({ title: 'Media failed', message: 'Try again' })
+                                // Clear composer after generation error
+                                setTimeout(() => {
+                                  clearAllOptionsAfterGeneration()
+                                }, 300)
                               }
                             }
                           }}
@@ -3481,6 +3471,10 @@ const HomeNew: React.FC = () => {
                               } catch (error) {
                                 console.error('❌ Neo Tokyo Glitch auto-generation failed:', error)
                                 notifyError({ title: 'Media failed', message: 'Try again' })
+                                // Clear composer after generation error
+                                setTimeout(() => {
+                                  clearAllOptionsAfterGeneration()
+                                }, 300)
                               }
                             }
                           }}

@@ -17,7 +17,7 @@ export interface ProfessionalPresetConfig {
   negative_prompt?: string
   strength: number
   description: string
-  category: 'cinematic' | 'minimalist' | 'vibrant' | 'vintage' | 'travel' | 'urban' | 'black_white' | 'soft' | 'warm' | 'editorial' | 'nature' | 'cool' | 'portrait' | 'moody'
+  category: 'cinematic' | 'minimal' | 'vibrant' | 'vintage' | 'nature'
 }
 
 // All 25 Professional Presets
@@ -35,18 +35,18 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   
   bright_airy: {
     id: 'bright_airy',
-    name: 'Bright & Airy',
+    name: 'Clean Minimal',
     tag: 'Minimalist',
     prompt: 'Edit with a clean, airy style—soft lighting, pastel tones, balanced whites, and gentle shadows. Perfect for lifestyle, wellness, and yoga shots.',
     negative_prompt: 'dark, moody, harsh contrast, oversaturated',
     strength: 0.65,
     description: 'Clean, minimal aesthetic perfect for lifestyle content',
-    category: 'minimalist'
+    category: 'minimal'
   },
   
   vivid_pop: {
     id: 'vivid_pop',
-    name: 'Vivid Pop',
+    name: 'Color Pop',
     tag: 'Vibrant',
     prompt: 'Make colors vibrant and saturated while keeping skin tones realistic. Enhance clarity and add slight contrast for a punchy, Instagram-ready look.',
     negative_prompt: 'muted, dull, flat, desaturated',
@@ -57,7 +57,7 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   
   vintage_film_35mm: {
     id: 'vintage_film_35mm',
-    name: 'Vintage Film 35mm',
+    name: 'Film Look 35mm',
     tag: 'Vintage',
     prompt: 'Add a retro 35mm film look with warm faded tones, subtle grain, and soft shadows. Keep details sharp but with a nostalgic mood.',
     negative_prompt: 'digital, sharp, modern, oversaturated',
@@ -68,13 +68,13 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   
   tropical_boost: {
     id: 'tropical_boost',
-    name: 'Tropical Boost',
+    name: 'Tropical Vibes',
     tag: 'Travel',
     prompt: 'Boost blues, greens, and warm tones for a tropical, sunny feel. Slight HDR for landscapes, keep people looking natural.',
     negative_prompt: 'cold, muted, dull, flat lighting',
     strength: 0.70,
     description: 'Tropical paradise colors perfect for travel photos',
-    category: 'travel'
+    category: 'vibrant'
   },
   
   urban_grit: {
@@ -85,29 +85,29 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
     negative_prompt: 'bright, colorful, soft, pastel',
     strength: 0.75,
     description: 'Urban city aesthetic with gritty, modern feel',
-    category: 'urban'
+    category: 'vibrant'
   },
   
   mono_drama: {
     id: 'mono_drama',
-    name: 'Mono Drama',
+    name: 'B&W Drama',
     tag: 'Black & White',
     prompt: 'Convert to black and white with strong contrast, bright highlights, and detailed textures. Ideal for close-up portraits or moody street scenes.',
     negative_prompt: 'color, flat, low contrast, blurry',
     strength: 0.80,
     description: 'Dramatic black and white with strong contrast',
-    category: 'black_white'
+    category: 'cinematic'
   },
   
   dreamy_pastels: {
     id: 'dreamy_pastels',
-    name: 'Dreamy Pastels',
+    name: 'Soft Pastel Glow',
     tag: 'Soft',
     prompt: 'Add soft-focus effect, pastel colors, and warm highlights for a dreamy, romantic vibe. Keep details smooth and flattering.',
     negative_prompt: 'sharp, harsh, dark, oversaturated',
     strength: 0.65,
     description: 'Soft, dreamy aesthetic perfect for romantic content',
-    category: 'soft'
+    category: 'cinematic'
   },
   
   golden_hour_magic: {
@@ -118,23 +118,23 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
     negative_prompt: 'cold, blue, harsh, flat lighting',
     strength: 0.70,
     description: 'Warm golden hour lighting simulation',
-    category: 'warm'
+    category: 'cinematic'
   },
   
   high_fashion_editorial: {
     id: 'high_fashion_editorial',
-    name: 'High Fashion Editorial',
+    name: 'Fashion Editorial',
     tag: 'Editorial',
     prompt: 'Sleek desaturated tones with strong contrast, minimal noise, and smooth skin retouching. Magazine cover quality.',
     negative_prompt: 'colorful, soft, blurry, amateur',
     strength: 0.75,
     description: 'Professional editorial look for fashion content',
-    category: 'editorial'
+    category: 'cinematic'
   },
   
   moody_forest: {
     id: 'moody_forest',
-    name: 'Moody Forest',
+    name: 'Forest Mood',
     tag: 'Nature',
     prompt: 'Deep green tones, soft diffused light, and light fog overlay for a moody forest atmosphere.',
     negative_prompt: 'bright, sunny, colorful, harsh lighting',
@@ -145,18 +145,18 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   
   desert_glow: {
     id: 'desert_glow',
-    name: 'Desert Glow',
+    name: 'Golden Dunes',
     tag: 'Travel',
     prompt: 'Warm sandy tones, golden highlights, and gentle texture enhancement for desert and dune scenes.',
     negative_prompt: 'cold, blue, wet, lush',
     strength: 0.70,
     description: 'Warm desert tones perfect for landscape photography',
-    category: 'travel'
+    category: 'vintage'
   },
   
   retro_polaroid: {
     id: 'retro_polaroid',
-    name: 'Retro Polaroid',
+    name: 'Instant Retro',
     tag: 'Vintage',
     prompt: 'Add warm faded tones, soft focus, and subtle frame edge blur for a retro instant camera feel.',
     negative_prompt: 'sharp, digital, modern, clear',
@@ -167,29 +167,29 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   
   crystal_clear: {
     id: 'crystal_clear',
-    name: 'Crystal Clear',
+    name: 'Sharp Clarity',
     tag: 'Clarity',
     prompt: 'Enhance sharpness, remove haze, and boost clarity while keeping colors true to life.',
     negative_prompt: 'blurry, hazy, soft, distorted',
     strength: 0.65,
     description: 'Maximum clarity and sharpness enhancement',
-    category: 'minimalist'
+    category: 'minimal'
   },
   
   ocean_breeze: {
     id: 'ocean_breeze',
-    name: 'Ocean Breeze',
+    name: 'Coastal Air',
     tag: 'Travel',
     prompt: 'Bright blues, soft whites, and airy highlights for a clean, coastal feel.',
     negative_prompt: 'dark, moody, warm, inland',
     strength: 0.65,
     description: 'Clean coastal aesthetic with ocean blues',
-    category: 'travel'
+    category: 'nature'
   },
   
   festival_vibes: {
     id: 'festival_vibes',
-    name: 'Festival Vibes',
+    name: 'Vibrant Festival',
     tag: 'Vibrant',
     prompt: 'Rich saturated colors, warm highlights, and slight vignette for lively festival and street party scenes.',
     negative_prompt: 'muted, dull, dark, serious',
@@ -200,35 +200,35 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   
   noir_classic: {
     id: 'noir_classic',
-    name: 'Noir Classic',
+    name: 'Noir Cinema',
     tag: 'Black & White',
     prompt: 'High-contrast black and white with sharp detail, deep blacks, and a timeless cinematic mood.',
     negative_prompt: 'color, soft, low contrast, bright',
     strength: 0.80,
     description: 'Classic film noir with high contrast',
-    category: 'black_white'
+    category: 'cinematic'
   },
   
   sun_kissed: {
     id: 'sun_kissed',
-    name: 'Sun-Kissed',
+    name: 'Warm Glow',
     tag: 'Warm',
     prompt: 'Golden warmth, soft shadows, and glowing skin tones for outdoor sunlit photos.',
     negative_prompt: 'cold, dark, indoor, artificial lighting',
     strength: 0.70,
     description: 'Natural sunlit warmth for outdoor photography',
-    category: 'warm'
+    category: 'vibrant'
   },
   
   frost_light: {
     id: 'frost_light',
-    name: 'Frost & Light',
+    name: 'Winter Chill',
     tag: 'Cool',
     prompt: 'Cool blues and crisp whites for winter and mountain scenes, enhancing snow textures.',
     negative_prompt: 'warm, dark, summer, tropical',
     strength: 0.70,
     description: 'Cool winter aesthetic with enhanced snow textures',
-    category: 'cool'
+    category: 'nature'
   },
   
   neon_nights: {
@@ -239,45 +239,45 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
     negative_prompt: 'daytime, natural, muted, soft',
     strength: 0.75,
     description: 'Vibrant neon night city aesthetic',
-    category: 'urban'
+    category: 'vibrant'
   },
   
   cultural_glow: {
     id: 'cultural_glow',
-    name: 'Cultural Glow',
+    name: 'Cultural Heritage',
     tag: 'Travel',
     prompt: 'Enhance traditional fabrics, patterns, and natural light to showcase cultural richness.',
     negative_prompt: 'modern, artificial, dull, flat',
     strength: 0.70,
     description: 'Cultural heritage enhancement with natural lighting',
-    category: 'travel'
+    category: 'nature'
   },
   
   soft_skin_portrait: {
     id: 'soft_skin_portrait',
-    name: 'Soft Skin Portrait',
+    name: 'Natural Portrait',
     tag: 'Portrait',
     prompt: 'Smooth skin tones, natural color correction, and soft background blur for professional portraits.',
     negative_prompt: 'harsh, rough, oversaturated, blurry',
     strength: 0.65,
     description: 'Professional portrait with smooth skin enhancement',
-    category: 'portrait'
+    category: 'minimal'
   },
   
   rainy_day_mood: {
     id: 'rainy_day_mood',
-    name: 'Rainy Day Mood',
+    name: 'Rain Mood',
     tag: 'Moody',
     prompt: 'Cool tones, soft reflections, and subtle raindrop texture for rainy street or nature scenes.',
     negative_prompt: 'sunny, warm, dry, bright',
     strength: 0.70,
     description: 'Moody rainy day atmosphere with cool tones',
-    category: 'moody'
+    category: 'nature'
   },
   
   wildlife_focus: {
     id: 'wildlife_focus',
-    name: 'Wildlife Focus',
+    name: 'Wildlife Detail',
     tag: 'Nature',
     prompt: 'Enhance fur, feathers, or scales with natural tones and sharp detail, keeping background slightly blurred.',
     negative_prompt: 'blurry, artificial, oversaturated, harsh',
@@ -288,13 +288,13 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   
   street_story: {
     id: 'street_story',
-    name: 'Street Story',
+    name: 'Urban Portrait',
     tag: 'Urban',
     prompt: 'High contrast, rich shadows, and enhanced textures for documentary-style street photography.',
     negative_prompt: 'soft, bright, colorful, artificial',
     strength: 0.75,
     description: 'Documentary street photography aesthetic',
-    category: 'urban'
+    category: 'minimal'
   },
 
   express_enhance: {
@@ -305,7 +305,7 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
     negative_prompt: 'blurry, hazy, soft, distorted',
     strength: 0.70,
     description: 'Quickly enhance sharpness, remove haze, and boost clarity for a more polished look.',
-    category: 'minimalist'
+    category: 'minimal'
   }
 };
 

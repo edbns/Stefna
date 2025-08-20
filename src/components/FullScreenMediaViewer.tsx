@@ -144,11 +144,11 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
           {media.length > 1 && (
             <button
               onClick={handlePrev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-white hover:text-white/80"
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-white hover:text-white/80 bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 z-40"
               aria-label="Previous"
               title="Previous"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={24} />
             </button>
           )}
 
@@ -165,47 +165,41 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
           {media.length > 1 && (
             <button
               onClick={handleNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-white hover:text-white/80"
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-white hover:text-white/80 bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 z-40"
               aria-label="Next"
               title="Next"
             >
-              <ChevronRight size={20} />
+              <ChevronRight size={24} />
             </button>
           )}
 
           {/* Actions - Simplified layout with copy functionality */}
           <div className="mt-6 text-center max-w-4xl px-4">
-            {/* Prompt display with copy icon - one line only */}
+            {/* Prompt display with copy icon only */}
             {current.prompt && (
-              <div className="flex items-center justify-center gap-3 max-w-2xl mx-auto">
-                <div className="text-white/60 text-sm truncate max-w-md">
-                  "{current.prompt.length > 60 ? current.prompt.substring(0, 60) + '...' : current.prompt}"
-                </div>
+              <div className="flex items-center justify-center max-w-2xl mx-auto">
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(current.prompt)
                       .then(() => {
-                        // Optional: Show a brief success indicator
+                        // Show a brief success indicator
                         const button = document.activeElement as HTMLButtonElement
                         if (button) {
-                          const originalText = button.innerHTML
-                          button.innerHTML = '✓'
-                          button.className = 'text-green-400 text-xs px-2 py-1 rounded bg-white/10 border border-white/20 transition-all duration-200'
+                          const originalHTML = button.innerHTML
+                          button.innerHTML = '<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>'
                           setTimeout(() => {
-                            button.innerHTML = originalText
-                            button.className = 'text-white/60 text-xs px-2 py-1 rounded bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200'
+                            button.innerHTML = originalHTML
                           }, 1000)
                         }
                       })
                       .catch(err => console.error('Failed to copy prompt:', err))
                   }}
-                  className="text-white/60 text-xs px-2 py-1 rounded bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 flex items-center gap-1"
+                  className="text-white/60 p-2 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200"
                   title="Copy prompt to clipboard"
                 >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  Copy
                 </button>
               </div>
             )}
