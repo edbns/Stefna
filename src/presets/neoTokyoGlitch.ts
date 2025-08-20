@@ -1,4 +1,7 @@
 // src/presets/neoTokyoGlitch.ts
+// Identity-Safe Presets for AIML API (image-to-image)
+// Focus: preserve identity, gender, skin tone, ethnicity, age, and facial structure
+// Only subtle cyberpunk overlays that sit ON TOP of the photo (additive)
 
 export type NeoTokyoGlitchPreset = {
   id: string;
@@ -7,82 +10,122 @@ export type NeoTokyoGlitchPreset = {
   negative_prompt: string;
   strength: number;
   model: string;
-  mode: string;
-  input: string;
+  mode: 'i2i';
+  input: 'image';
   requiresSource: boolean;
   source: string;
   features?: string[];
   guidance_scale?: number;
   num_inference_steps?: number;
+  sampler?: string;
+  ip_adapter?: 'faceid' | 'instantid' | 'none';
+  ip_adapter_strength?: number;
 };
+
+const NEO_IDENTITY_NEG = [
+  'different person',
+  'identity swap',
+  'gender change',
+  'ethnicity change',
+  'race change',
+  'skin tone change',
+  'age change',
+  'anime face',
+  'cell shaded skin',
+  'toon face',
+  'robot face',
+  'cyborg face',
+  'deformed',
+  'lowres',
+].join(', ');
+
+const NEO_BASE =
+  'Preserve the exact human face, gender, skin tone, ethnicity, age, and facial proportions. No changes to bone structure, nose, eyes, or jawline. '
+  + 'Apply only subtle cyberpunk overlays that sit ON TOP of the photo (additive), never replacing skin detail.';
 
 export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
-    prompt: 'Keep the exact same face, only add barely visible neon lighting overlay, preserve identity 100%, same person, same features, minimal change',
-    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot, visible effect',
-    strength: 0.005, // Extremely subtle - barely visible effect
-    model: 'flux/dev/image-to-image',
+    prompt:
+      `${NEO_BASE} Add a faint neon ambience (magenta/teal rim glow) around the face edges and hair highlights; keep skin and features untouched.`,
+    negative_prompt: NEO_IDENTITY_NEG,
+    strength: 0.10,
+    model: 'stable-diffusion-3.5-large-i2i', // safer default to prevent identity drift
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['neon_overlay', 'identity_lock'],
-    guidance_scale: 1.5, // Very low for minimal change
-    num_inference_steps: 3, // Minimal steps for subtle effect
+    guidance_scale: 1.4,
+    num_inference_steps: 12,
+    sampler: 'DPM++ 2M Karras',
+    ip_adapter: 'faceid',
+    ip_adapter_strength: 0.9,
   },
   {
     id: 'neo_tokyo_visor',
     label: 'Glitch Visor',
-    prompt: 'Keep the exact same face, only add barely visible transparent digital visor overlay, preserve identity 100%, same person, same features, minimal change',
-    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot, visible effect',
-    strength: 0.005, // Extremely subtle - barely visible effect
-    model: 'flux/dev/image-to-image',
+    prompt:
+      `${NEO_BASE} Add a barely-visible translucent HUD visor hovering 2–3 mm above the eyes; ultra-thin lines, soft scan text; no occlusion of eyebrows or eyelashes.`,
+    negative_prompt: NEO_IDENTITY_NEG,
+    strength: 0.10,
+    model: 'stable-diffusion-3.5-large-i2i',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['glitch_visor', 'identity_lock'],
-    guidance_scale: 1.5, // Very low for minimal change
-    num_inference_steps: 3, // Minimal steps for subtle effect
+    guidance_scale: 1.4,
+    num_inference_steps: 12,
+    sampler: 'DPM++ 2M Karras',
+    ip_adapter: 'faceid',
+    ip_adapter_strength: 0.9,
   },
   {
     id: 'neo_tokyo_tattoos',
     label: 'Tech Tattoos',
-    prompt: 'Keep the exact same face, only add barely visible cybernetic tattoo patterns, preserve identity 100%, same person, same features, minimal change',
-    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot, visible effect',
-    strength: 0.005, // Extremely subtle - barely visible effect
-    model: 'flux/dev/image-to-image',
+    prompt:
+      `${NEO_BASE} Add ultra-faint cybernetic line-work along temples and cheekbones (silver micro-circuits). Lines must be hair-thin and semi-transparent. No color shift of skin.`,
+    negative_prompt: NEO_IDENTITY_NEG,
+    strength: 0.10,
+    model: 'stable-diffusion-3.5-large-i2i',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['tech_tattoos', 'identity_lock'],
-    guidance_scale: 1.5, // Very low for minimal change
-    num_inference_steps: 3, // Minimal steps for subtle effect
+    guidance_scale: 1.4,
+    num_inference_steps: 12,
+    sampler: 'DPM++ 2M Karras',
+    ip_adapter: 'faceid',
+    ip_adapter_strength: 0.9,
   },
   {
     id: 'neo_tokyo_scanlines',
     label: 'Scanline FX',
-    prompt: 'Keep the exact same face, only add barely visible VHS scanline effect overlay, preserve identity 100%, same person, same features, minimal change',
-    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation, cyborg, robot, visible effect',
-    strength: 0.005, // Extremely subtle - barely visible effect
-    model: 'flux/dev/image-to-image',
+    prompt:
+      `${NEO_BASE} Add an extremely subtle VHS scanline pattern in the background and slight chromatic aberration at image edges. Do not place lines across the face skin.`,
+    negative_prompt: NEO_IDENTITY_NEG,
+    strength: 0.08, // lowest since it affects the full frame aesthetics
+    model: 'stable-diffusion-3.5-large-i2i',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['vhs_scanline', 'identity_lock'],
-    guidance_scale: 1.5, // Very low for minimal change
-    num_inference_steps: 3, // Minimal steps for subtle effect
+    guidance_scale: 1.3,
+    num_inference_steps: 10,
+    sampler: 'DPM++ 2M Karras',
+    ip_adapter: 'faceid',
+    ip_adapter_strength: 0.9,
   },
 ];
 
 export function getNeoTokyoGlitchPreset(presetId: string): NeoTokyoGlitchPreset | undefined {
-  return NEO_TOKYO_GLITCH_PRESETS.find(p => p.id === presetId);
+  return NEO_TOKYO_GLITCH_PRESETS.find((p) => p.id === presetId);
 }
 
 export function isNeoTokyoGlitchPreset(presetId: string): boolean {
-  return NEO_TOKYO_GLITCH_PRESETS.some(p => p.id === presetId);
+  return NEO_TOKYO_GLITCH_PRESETS.some((p) => p.id === presetId);
 }

@@ -1,4 +1,7 @@
 // src/presets/ghibliReaction.ts
+// Identity-Safe Presets for AIML API (image-to-image)
+// Focus: preserve identity, gender, skin tone, ethnicity, age, and facial structure
+// Only micro-expression / light overlays inspired by Ghibli aesthetic
 
 export type GhibliReactionPreset = {
   id: string;
@@ -7,39 +10,86 @@ export type GhibliReactionPreset = {
   negative_prompt: string;
   strength: number;
   model: string;
+  guidance_scale?: number;
+  num_inference_steps?: number;
+  sampler?: string;
+  ip_adapter?: 'faceid' | 'instantid' | 'none';
+  ip_adapter_strength?: number;
+  mask_policy?: 'expression_only' | 'face_only' | 'none';
 };
+
+const GHIBLI_NEG = [
+  'anime face', // disallow full anime conversion
+  'toon shading on skin',
+  'cell shading on face',
+  'big eyes transformation',
+  'chibi proportions',
+  'different person',
+  'gender change',
+  'ethnicity change',
+  'skin tone change',
+  'age change',
+  'deformed',
+  'lowres',
+  'overprocessed',
+].join(', ');
+
+const GHIBLI_BASE =
+  'Keep the face realistic and unchanged. Preserve gender, skin tone, ethnicity, age, facial proportions, and identity 100%. '
+  + 'Add only small reaction overlays inspired by Ghibli — no cel-shaded skin, no anime facial restructuring.';
 
 export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_tears',
     label: 'Tears',
-    prompt: "Keep the exact same realistic face, only add subtle realistic tears in the eyes, preserve identity 100%, same person, same features, minimal change, realistic style",
-    negative_prompt: "different person, new face, distorted features, skin change, identity loss, anime, cartoon, stylized, dramatic effect",
-    strength: 0.01, // Extremely subtle for realistic effects
-    model: 'realistic-vision', // Keep realistic face, not anime
+    prompt:
+      `${GHIBLI_BASE} Add subtle glossy tear film at lower eyelids and a delicate single tear track on one cheek. Keep skin texture realistic; no cartoon outlines.`,
+    negative_prompt: GHIBLI_NEG,
+    strength: 0.12,
+    model: 'stable-diffusion-3.5-large-i2i',
+    guidance_scale: 1.3,
+    num_inference_steps: 12,
+    sampler: 'DPM++ 2M Karras',
+    ip_adapter: 'faceid',
+    ip_adapter_strength: 0.9,
+    mask_policy: 'expression_only',
   },
   {
     id: 'ghibli_shock',
     label: 'Shock',
-    prompt: "Keep the exact same realistic face, only modify expression to show subtle surprise, preserve identity 100%, same person, same features, minimal change, realistic style",
-    negative_prompt: "different person, new face, distorted features, skin change, identity loss, anime, cartoon, stylized, dramatic effect",
-    strength: 0.01, // Extremely subtle for realistic effects
-    model: 'realistic-vision', // Keep realistic face, not anime
+    prompt:
+      `${GHIBLI_BASE} Subtle surprise: slightly raised brows, mild sclera visibility, micro-parted lips without teeth. Optional tiny white sparkle highlight near pupils.`,
+    negative_prompt: GHIBLI_NEG,
+    strength: 0.12,
+    model: 'stable-diffusion-3.5-large-i2i',
+    guidance_scale: 1.3,
+    num_inference_steps: 12,
+    sampler: 'DPM++ 2M Karras',
+    ip_adapter: 'faceid',
+    ip_adapter_strength: 0.9,
+    mask_policy: 'expression_only',
   },
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: "Keep the exact same realistic face, only add subtle light in the eyes, preserve identity 100%, same person, same features, minimal change, realistic style",
-    negative_prompt: "different person, new face, distorted features, skin change, identity loss, anime, cartoon, stylized, dramatic effect",
-    strength: 0.01, // Extremely subtle for realistic effects
-    model: 'realistic-vision', // Keep realistic face, not anime
-  }
+    prompt:
+      `${GHIBLI_BASE} Add very small catchlight sparkles near the irises and faint soft bokeh specks around the face. No color cast on skin; keep pores and complexion realistic.`,
+    negative_prompt: GHIBLI_NEG,
+    strength: 0.12,
+    model: 'stable-diffusion-3.5-large-i2i',
+    guidance_scale: 1.3,
+    num_inference_steps: 12,
+    sampler: 'DPM++ 2M Karras',
+    ip_adapter: 'faceid',
+    ip_adapter_strength: 0.9,
+    mask_policy: 'expression_only',
+  },
 ];
 
 export function getGhibliReactionPreset(presetId: string): GhibliReactionPreset | undefined {
-  return GHIBLI_REACTION_PRESETS.find(p => p.id === presetId);
+  return GHIBLI_REACTION_PRESETS.find((p) => p.id === presetId);
 }
 
 export function isGhibliReactionPreset(presetId: string): boolean {
-  return GHIBLI_REACTION_PRESETS.some(p => p.id === presetId);
+  return GHIBLI_REACTION_PRESETS.some((p) => p.id === presetId);
 }
