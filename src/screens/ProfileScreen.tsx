@@ -1496,7 +1496,19 @@ const ProfileScreen: React.FC = () => {
                   // Clear selection and refresh media
                   setSelectedMediaIds(new Set())
                   setIsSelectionMode(false)
-                  await loadUserMedia()
+                  
+                  // Immediately remove deleted items from local state for better UX
+                  const successfulIds = results
+                    .filter(r => r.status === 'fulfilled' && r.value.success)
+                    .map(r => (r as PromiseFulfilledResult<{ success: boolean; mediaId: string }>).value.mediaId)
+                  
+                  setUserMedia(prev => prev.filter(item => !successfulIds.includes(item.id)))
+                  setDraftMedia(prev => prev.filter(item => !successfulIds.includes(item.id)))
+                  
+                  // Force refresh to ensure UI updates
+                  setTimeout(() => {
+                    loadUserMedia()
+                  }, 100)
                 } else {
                   addNotification('Delete Failed', 'No media items were deleted', 'error')
                 }
@@ -1552,6 +1564,11 @@ const ProfileScreen: React.FC = () => {
                     console.warn('⚠️ Local storage delete failed:', localError)
                   }
                 }
+                
+                // Force refresh to ensure UI updates
+                setTimeout(() => {
+                  loadUserMedia()
+                }, 100)
                 
                 console.log('✅ Local state updated, media removed from UI')
                 
