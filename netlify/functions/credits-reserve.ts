@@ -101,7 +101,7 @@ export const handler: Handler = async (event) => {
     }
     
     // Validate action values
-    const allowedActions = ['image.gen', 'video.gen', 'mask.gen', 'emotionmask', 'preset', 'presets', 'moodmorph', 'custom', 'ghiblireact', 'neotokyoglitch'];
+    const allowedActions = ['image.gen', 'video.gen', 'mask.gen', 'emotionmask', 'preset', 'presets', 'custom', 'ghiblireact', 'neotokyoglitch'];
     if (!allowedActions.includes(action)) {
       console.error("❌ Invalid action:", action, "Allowed:", allowedActions);
       return json({ ok: false, error: `Invalid action: ${action}. Allowed: ${allowedActions.join(', ')}` }, { status: 400 });

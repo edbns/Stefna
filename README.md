@@ -1,19 +1,20 @@
 # Stefna - AI Photo Editing Platform
 
-A modern, React-based AI photo generation platform with **four distinct generation modes**, built for stability, scalability, and user experience.
+A modern, React-based AI photo generation platform with **five distinct generation modes**, built for stability, scalability, and user experience.
 
 ## 🚀 **Features**
 
 ### **🎨 Editing Modes**
 
 1. **Presets Mode** - 26 professional AI style presets with auto-generation
-2. **MoodMorph™ Mode** - Generate 3 mood variations with batch processing
-3. **Emotion Mask Mode** - 5 emotional variants with cinematic styling
-4. **Custom Prompt Mode** - Full creative control with manual generation
+2. **Emotion Mask Mode** - 5 emotional variants with cinematic styling
+3. **Studio Ghibli Reaction Mode** - 3 facial emotion enhancements
+4. **Neo Tokyo Glitch Mode** - 4 cyberpunk aesthetic overlays
+5. **Custom Prompt Mode** - Full creative control with manual generation
 
 ### **💎 Core Capabilities**
 
-- **Smart Auto-Generation**: Presets, MoodMorph, and Emotion Mask auto-run when ready
+- **Smart Auto-Generation**: Presets, Emotion Mask, Ghibli Reaction, and Neo Tokyo Glitch auto-run when ready
 - **Manual Control**: Custom prompts require explicit user action
 - **Credit System**: Reserve → Generate → Finalize with automatic refunds
 - **File Upload**: Drag & drop or click to upload images
@@ -112,7 +113,6 @@ src/
 ├── services/            # Business logic and API calls
 │   ├── aiGenerationService.ts # Main generation orchestrator
 │   ├── aiml.ts         # AIML API client
-│   ├── moodMorph.ts    # MoodMorph generation
 │   ├── presets.ts      # Preset system
 │   └── credits.ts      # Credit management
 ├── stores/              # Zustand state management
@@ -120,7 +120,6 @@ src/
 │   ├── selectedPreset.ts # Preset selection
 │   └── userMedia.ts    # User media management
 ├── features/            # Feature-specific components
-│   ├── moodmorph/      # MoodMorph feature
 │   └── presets/        # Preset system
 └── app/                 # Application bootstrap
     └── bootstrap.ts    # Global initialization
@@ -221,13 +220,13 @@ SITE_URL=your_site_url
 - **Output**: Single generated image with preset styling
 - **Behavior**: Starts immediately after preset selection
 
-### **2. MoodMorph™ Mode**
-- **Purpose**: Generate 3 mood variations from one image
-- **Auto-Run**: ✅ Enabled for batch generation
-- **Credits**: 3 credits (1 per variation)
-- **UI**: Mood bundle dropdown + 3-variation display
-- **Output**: 3 images grouped together
-- **Behavior**: Generates all 3 variations automatically
+### **2. Studio Ghibli Reaction Mode**
+- **Purpose**: Enhance facial emotions with Ghibli-style anime features
+- **Auto-Run**: ✅ Enabled when triggered
+- **Credits**: 1 credit per generation
+- **UI**: 3 emotion enhancement options (Tears, Shock, Sparkle)
+- **Output**: Single image with enhanced facial expression
+- **Behavior**: Starts immediately after variant selection
 
 ### **3. Emotion Mask Mode**
 - **Purpose**: Emotional truth portraits with cinematic styling
@@ -237,7 +236,15 @@ SITE_URL=your_site_url
 - **Output**: Single emotionally transformed image
 - **Behavior**: Starts immediately after variant selection
 
-### **4. Custom Prompt Mode**
+### **4. Neo Tokyo Glitch Mode**
+- **Purpose**: Cyberpunk aesthetic overlays with identity preservation
+- **Auto-Run**: ✅ Enabled when triggered
+- **Credits**: 1 credit per generation
+- **UI**: 4 cyberpunk style options
+- **Output**: Single image with cyberpunk enhancements
+- **Behavior**: Starts immediately after variant selection
+
+### **5. Custom Prompt Mode**
 - **Purpose**: Full creative control with user-written prompts
 - **Auto-Run**: ❌ Manual generation only
 - **Credits**: 1 credit per generation
@@ -256,8 +263,9 @@ SITE_URL=your_site_url
 ### **Credit Requirements by Mode**
 - **Custom Prompt**: 1 credit
 - **Presets**: 1 credit
-- **MoodMorph**: 3 credits (batch generation)
+- **Studio Ghibli Reaction**: 1 credit
 - **Emotion Mask**: 1 credit
+- **Neo Tokyo Glitch**: 1 credit
 
 ### **Daily Limits**
 - **Daily Cap**: 30 generations per day
@@ -297,7 +305,7 @@ SITE_URL=your_site_url
 ## 📱 **UI/UX Features**
 
 ### **Smart Automation**
-- **Auto-Generation**: Where it makes sense (presets, moodmorph, emotion)
+- **Auto-Generation**: Where it makes sense (presets, emotion mask, ghibli reaction, neo tokyo glitch)
 - **Manual Control**: Where user choice matters (custom prompts)
 - **Immediate Feedback**: Clear indication of what will happen
 
@@ -329,8 +337,8 @@ npm run lint
 ```
 
 ### **Testing Checklist**
-1. **Mode Separation**: Verify all four modes work independently
-2. **Auto-Generation**: Test preset/moodmorph/emotion auto-run
+1. **Mode Separation**: Verify all five modes work independently
+2. **Auto-Generation**: Test preset/emotion mask/ghibli reaction/neo tokyo glitch auto-run
 3. **Manual Generation**: Test custom prompt manual flow
 4. **Credit System**: Test reservation, generation, and finalization
 5. **Error Handling**: Test with invalid inputs and network issues
