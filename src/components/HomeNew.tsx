@@ -3224,37 +3224,6 @@ const HomeNew: React.FC = () => {
             <div className="bg-black border border-[#333333] rounded-2xl px-4 py-3 shadow-2xl transition-all duration-300">
               
 
-              {/* Prompt Input - show for custom mode with Magic Wand */}
-              {composerState.mode === 'custom' && (
-                <div className="mb-2">
-                  <div className="relative">
-                    <textarea
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="Describe your vision... (click ✨ to enhance your prompt)"
-                      className="w-full px-3 py-2 pr-10 bg-white/5 border border-[#333333] rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors h-20 text-sm"
-                      disabled={isGenerating}
-                    />
-                    {/* Magic Wand Enhancement Button */}
-                    <button
-                      onClick={handleMagicWandEnhance}
-                      disabled={isGenerating || !prompt.trim()}
-                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
-                      title="Enhance prompt with AI (free)"
-                    >
-                      {isEnhancing ? (
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <span className="text-lg">✨</span>
-                      )}
-                    </button>
-                    <div className="absolute bottom-2 right-2 text-white/30 text-xs">
-                      {prompt.length}/500
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Prompt Input - ALWAYS VISIBLE for all modes */}
               <div className="mb-2">
                 <div className="relative">
