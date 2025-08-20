@@ -3218,19 +3218,26 @@ const HomeNew: React.FC = () => {
             <div className="relative w-full max-w-2xl px-6">
               <div ref={containerRef} className="w-full flex items-center justify-center">
                 {isVideoPreview ? (
-                  <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
+                  <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} referrerPolicy="no-referrer" />
                 ) : (
                   <img 
                     ref={(el) => (mediaRef.current = el as HTMLImageElement)} 
                     src={previewUrl || ''} 
                     alt="Preview" 
                     className="max-w-full max-h-[60vh] object-contain" 
+                    referrerPolicy="no-referrer"
                     onLoad={(e) => {
                       console.log('🖼️ Image loaded successfully:', previewUrl)
                       measure()
                     }}
                     onError={(e) => {
                       console.error('❌ Image failed to load:', previewUrl, e)
+                      console.error('❌ Error details:', {
+                        url: previewUrl,
+                        error: e,
+                        target: e.target,
+                        currentTarget: e.currentTarget
+                      })
                     }}
                   />
                 )}

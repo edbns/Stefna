@@ -227,12 +227,14 @@ const ImageToImageUpload: React.FC<ImageToImageUploadProps> = ({
                   src={previewUrl}
                   alt="Preview"
                   className="w-full h-32 object-cover rounded"
+                  referrerPolicy="no-referrer"
                 />
               ) : selectedFile.type.startsWith('video/') ? (
                 <video
                   src={previewUrl}
                   className="w-full h-32 object-cover rounded"
                   controls
+                  referrerPolicy="no-referrer"
                 />
               ) : null}
             </div>

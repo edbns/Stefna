@@ -49,17 +49,18 @@ function enhanceCustomPrompt(prompt: string): string {
 
 export const handler: Handler = async (event) => {
   // Force redeploy - v4
-  // Handle CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
+      // Handle CORS preflight
+    if (event.httpMethod === 'OPTIONS') {
+      const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-App-Key',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-      }
-    };
-  }
+      };
+      return {
+        statusCode: 200,
+        headers: corsHeaders
+      };
+    }
   try {
     // 🔧 CRITICAL FIX: Allow POST requests for generation
     console.log('🎯 aimlApi function called with method:', event.httpMethod);
@@ -219,13 +220,25 @@ export const handler: Handler = async (event) => {
       });
     }
     
-    // Build AIML API payload with variations support
+    // 🔧 CRITICAL FIX: HARD CLAMP strength to prevent double faces
+    const rawStrength = Number(requestBody.strength ?? 0.08);
+    const clampedStrength = Math.max(0.06, Math.min(0.10, rawStrength));
+    const numVariations = 1; // Always 1 to avoid grids/diptychs
+    
+    console.log('🔧 Strength clamping applied:', {
+      requested: rawStrength,
+      clamped: clampedStrength,
+      reason: rawStrength > 0.10 ? 'Too high - prevents double faces' : 
+              rawStrength < 0.06 ? 'Too low - ensures visible changes' : 'Within safe range'
+    });
+    
+    // Build AIML API payload with SAFE defaults
     const aimlPayload = {
-      model: requestBody.model ?? process.env.AIML_MODEL ?? 'flux/dev/image-to-image',
+      model: requestBody.model ?? process.env.AIML_MODEL ?? 'stable-diffusion-v35-large',
       prompt: enhancedPrompt,
       image_url: requestBody.image_url,
-      strength: requestBody.strength || 0.8,
-      num_variations: requestBody.num_variations || 1
+      strength: clampedStrength, // Use clamped value
+      num_variations: numVariations // Always 1
     };
 
     console.log('🚀 Sending to AIML API:', {
@@ -357,12 +370,21 @@ export const handler: Handler = async (event) => {
 
     console.log(`✅ AIML API success, ${variationsGenerated} URL(s) extracted:`, urls);
 
+    // 🔧 CRITICAL FIX: Return consistent response format with CORS headers
+    const responseHeaders = {
+      'content-type': 'application/json; charset=utf-8',
+      'access-control-allow-origin': '*',
+      'cache-control': 'no-store',
+    };
+
     // Return response with support for multiple variations
     const responseBody: any = {
       ok: true,
       model: aimlPayload.model,
       prompt: aimlPayload.prompt,
-      variations_generated: variationsGenerated
+      variations_generated: variationsGenerated,
+      strength_used: clampedStrength, // Show what strength was actually used
+      strength_requested: rawStrength // Show what was requested
     };
 
     // For backward compatibility, always include image_url (first variation)
@@ -373,8 +395,13 @@ export const handler: Handler = async (event) => {
       responseBody.result_urls = urls;
     }
 
+    // 🔍 DEBUG: Log the exact response being sent
+    console.log('🔍 Final response body:', JSON.stringify(responseBody, null, 2));
+    console.log('🔍 Response headers:', responseHeaders);
+
     return {
       statusCode: 200,
+      headers: responseHeaders,
       body: JSON.stringify(responseBody)
     };
 
