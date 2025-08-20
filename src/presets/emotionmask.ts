@@ -23,7 +23,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     label: 'Joy + Sadness',
     prompt: "Outer smile with inner sadness in the eyes. Show the mask of happiness hiding true sorrow. Preserve exact facial identity.",
     negative_prompt: "cartoon, anime, distorted face, different person, skin change",
-    strength: 0.25,
+    strength: 0.15, // More subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
@@ -31,7 +31,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     label: 'Strength + Vulnerability',
     prompt: "Confident exterior with hidden vulnerability in the eyes. Show the warrior who carries hidden wounds. Preserve exact facial identity.",
     negative_prompt: "cartoon, anime, distorted face, different person, skin change",
-    strength: 0.25,
+    strength: 0.15, // More subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
@@ -39,7 +39,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     label: 'Nostalgia + Distance',
     prompt: "Warm memories in the eyes but emotional distance in expression. Show longing for what's lost. Preserve exact facial identity.",
     negative_prompt: "cartoon, anime, distorted face, different person, skin change",
-    strength: 0.25,
+    strength: 0.15, // More subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
@@ -47,7 +47,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     label: 'Peace + Fear',
     prompt: "Calm exterior with subtle fear in the eyes. Show the peace that masks inner anxiety. Preserve exact facial identity.",
     negative_prompt: "cartoon, anime, distorted face, different person, skin change",
-    strength: 0.25,
+    strength: 0.15, // More subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
   {
@@ -55,7 +55,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     label: 'Confidence + Loneliness',
     prompt: "Strong, confident pose with hidden loneliness in the eyes. Show the leader who feels alone. Preserve exact facial identity.",
     negative_prompt: "cartoon, anime, distorted face, different person, skin change",
-    strength: 0.25,
+    strength: 0.15, // More subtle for better identity preservation
     model: 'realistic-vision', // Best for facial detail and identity preservation
   },
 ];

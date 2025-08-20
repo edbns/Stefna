@@ -15,7 +15,7 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     label: 'Tears',
     prompt: "Subtle, realistic tears in the eyes. Preserve exact facial identity.",
     negative_prompt: "cartoon, anime, distorted face, different person, fake tears",
-    strength: 0.2,
+    strength: 0.1, // More subtle for better identity preservation
     model: 'portraitplus', // Specialized for portrait quality
   },
   {
@@ -23,7 +23,7 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     label: 'Shock',
     prompt: "Slight widening of eyes, subtle surprise. Preserve exact facial identity.",
     negative_prompt: "cartoon, anime, distorted face, different person, exaggerated",
-    strength: 0.2,
+    strength: 0.1, // More subtle for better identity preservation
     model: 'portraitplus', // Specialized for portrait quality
   },
   {
@@ -31,7 +31,7 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     label: 'Sparkle',
     prompt: "Gentle light in the eyes, subtle glow. Preserve exact facial identity.",
     negative_prompt: "cartoon, anime, distorted face, different person, glitter",
-    strength: 0.2,
+    strength: 0.1, // More subtle for better identity preservation
     model: 'portraitplus', // Specialized for portrait quality
   }
 ];

@@ -20,62 +20,62 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
-    prompt: 'Subtle cyberpunk lighting overlay. Preserve exact facial identity.',
-    negative_prompt: 'cartoon, anime, distorted face, different person, skin change',
-    strength: 0.2,
-    model: 'flux/dev/image-to-image', // Default AIML model for complex effects
+    prompt: 'Add subtle neon lighting overlay to the existing face. Keep the face exactly as is, only add soft pink/blue glow.',
+    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation',
+    strength: 0.05, // Much more subtle
+    model: 'flux/dev/image-to-image',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
-    features: ['cyberpunk_enhancement', 'identity_preservation'],
-    guidance_scale: 6,
-    num_inference_steps: 15,
+    features: ['neon_overlay', 'identity_lock'],
+    guidance_scale: 4, // Lower for less aggressive generation
+    num_inference_steps: 10, // Fewer steps for subtle effects
   },
   {
     id: 'neo_tokyo_visor',
     label: 'Glitch Visor',
-    prompt: 'Subtle digital visor overlay. Preserve exact facial identity.',
-    negative_prompt: 'cartoon, anime, distorted face, different person, skin change',
-    strength: 0.2,
-    model: 'flux/dev/image-to-image', // Default AIML model for complex effects
+    prompt: 'Add transparent digital visor overlay to the existing face. Keep the face exactly as is, only add see-through visor effect.',
+    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation',
+    strength: 0.05, // Much more subtle
+    model: 'flux/dev/image-to-image',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['glitch_visor', 'identity_lock'],
-    guidance_scale: 6,
-    num_inference_steps: 15,
+    guidance_scale: 4,
+    num_inference_steps: 10,
   },
   {
     id: 'neo_tokyo_tattoos',
     label: 'Tech Tattoos',
-    prompt: 'Subtle cybernetic tattoo patterns. Preserve exact facial identity.',
-    negative_prompt: 'cartoon, anime, distorted face, different person, skin change',
-    strength: 0.2,
-    model: 'flux/dev/image-to-image', // Default AIML model for complex effects
+    prompt: 'Add subtle cybernetic tattoo patterns to the existing face. Keep the face exactly as is, only add small tech tattoos.',
+    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation',
+    strength: 0.05, // Much more subtle
+    model: 'flux/dev/image-to-image',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
-    features: ['tech_tattoos', 'real_face_lock'],
-    guidance_scale: 6,
-    num_inference_steps: 15,
+    features: ['tech_tattoos', 'identity_lock'],
+    guidance_scale: 4,
+    num_inference_steps: 10,
   },
   {
     id: 'neo_tokyo_scanlines',
     label: 'Scanline FX',
-    prompt: 'Subtle VHS scanline effect. Preserve exact facial identity.',
-    negative_prompt: 'cartoon, anime, distorted face, different person, skin change',
-    strength: 0.2,
-    model: 'flux/dev/image-to-image', // Default AIML model for complex effects
+    prompt: 'Add subtle VHS scanline effect over the existing face. Keep the face exactly as is, only add scanline overlay.',
+    negative_prompt: 'new face, different person, distorted features, skin change, identity loss, full transformation',
+    strength: 0.05, // Much more subtle
+    model: 'flux/dev/image-to-image',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['vhs_scanline', 'identity_lock'],
-    guidance_scale: 6,
-    num_inference_steps: 15,
+    guidance_scale: 4,
+    num_inference_steps: 10,
   },
 ];
 
