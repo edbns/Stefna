@@ -124,9 +124,28 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Parse request body
+    // 0) STRICT PAYLOAD WHITELIST - Prevent any stray keys
     const requestBody = JSON.parse(event.body || '{}');
     
+    // Enforce strict whitelist - only these keys allowed
+    const payload = {
+      model: String(requestBody.model || 'stable-diffusion-v35-large'),
+      prompt: String(requestBody.prompt || ''),
+      image_url: String(requestBody.image_url || ''),
+      strength: Math.max(0.06, Math.min(0.10, Number(requestBody.strength ?? 0.08))),
+      num_variations: 1,
+    };
+    
+    // Log the sanitized payload for debugging
+    console.log('🔒 Sanitized payload:', {
+      model: payload.model,
+      prompt_length: payload.prompt.length,
+      image_url: payload.image_url.substring(0, 50) + '...',
+      strength_requested: requestBody.strength,
+      strength_clamped: payload.strength,
+      num_variations: payload.num_variations
+    });
+
     // Handle ping requests for testing
     if (requestBody.ping) {
       console.log('🎯 AIML API ping received:', {
@@ -370,6 +389,108 @@ export const handler: Handler = async (event) => {
 
     console.log(`✅ AIML API success, ${variationsGenerated} URL(s) extracted:`, urls);
 
+    // 1) AUTO-RETRY LOGIC: Detect and retry diptychs/panels
+    let hadRetry = false;
+    let finalUrls = urls;
+    let finalStrength = clampedStrength;
+    let finalModel = aimlPayload.model;
+    let usedFallbackModel = false;
+    
+    // Heuristic: Check if output looks like a panel/split
+    const isPotentialDiptych = (
+      // Check if prompt contains problematic keywords
+      (enhancedPrompt.toLowerCase().includes('scanlines') || 
+       enhancedPrompt.toLowerCase().includes('sparkle') || 
+       enhancedPrompt.toLowerCase().includes('visor')) &&
+      // Check if we got multiple variations (should always be 1 with our clamp)
+      variationsGenerated > 1
+    );
+    
+    if (isPotentialDiptych && !hadRetry) {
+      console.log('🔄 Potential diptych detected, attempting retry with lower strength...');
+      
+      // Retry with lower strength and single panel guard
+      const retryStrength = Math.max(0.06, clampedStrength - 0.02);
+      const retryPrompt = enhancedPrompt + '. Use a single continuous frame; do not compose a grid or split the image.';
+      
+      const retryPayload = {
+        ...aimlPayload,
+        strength: retryStrength,
+        prompt: retryPrompt
+      };
+      
+      try {
+        console.log('🔄 Retry attempt with:', {
+          strength: retryStrength,
+          prompt_length: retryPrompt.length
+        });
+        
+        const retryResponse = await fetch(`${BASE}/v1/images/generations`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${API_KEY}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(retryPayload)
+        });
+        
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json();
+          if (retryData.images && retryData.images.length === 1) {
+            finalUrls = retryData.images.map(img => img.url).filter(Boolean);
+            finalStrength = retryStrength;
+            hadRetry = true;
+            console.log('✅ Retry successful, single image generated');
+          }
+        }
+      } catch (retryError) {
+        console.warn('⚠️ Retry failed, using original result:', retryError.message);
+      }
+    }
+    
+    // 9) FALLBACK MODEL RULE: If repeated diptychs, try flux model
+    if (finalUrls.length > 1 && !usedFallbackModel && aimlPayload.model === 'stable-diffusion-v35-large') {
+      console.log('🔄 Multiple images detected, trying fallback model...');
+      
+      try {
+        const fallbackPayload = {
+          ...aimlPayload,
+          model: 'flux/dev/image-to-image',
+          strength: 0.08, // Conservative strength for fallback
+          prompt: enhancedPrompt + '. Single image only, no grid or split.'
+        };
+        
+        console.log('🔄 Fallback attempt with flux model:', {
+          model: fallbackPayload.model,
+          strength: fallbackPayload.strength
+        });
+        
+        const fallbackResponse = await fetch(`${BASE}/v1/images/generations`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${API_KEY}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(fallbackPayload)
+        });
+        
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          if (fallbackData.images && fallbackData.images.length === 1) {
+            finalUrls = fallbackData.images.map(img => img.url).filter(Boolean);
+            finalStrength = fallbackPayload.strength;
+            finalModel = fallbackPayload.model;
+            usedFallbackModel = true;
+            console.log('✅ Fallback model successful, single image generated');
+          }
+        }
+      } catch (fallbackError) {
+        console.warn('⚠️ Fallback model failed, using original result:', fallbackError.message);
+      }
+    }
+
     // 🔧 CRITICAL FIX: Return consistent response format with CORS headers
     const responseHeaders = {
       'content-type': 'application/json; charset=utf-8',
@@ -380,25 +501,48 @@ export const handler: Handler = async (event) => {
     // Return response with support for multiple variations
     const responseBody: any = {
       ok: true,
-      image_urls: urls, // Primary format - array of URLs
-      model: aimlPayload.model,
+      image_urls: finalUrls, // Use final URLs (may be from retry)
+      model: finalModel, // Use final model (may be from fallback)
       prompt: aimlPayload.prompt,
-      variations_generated: variationsGenerated,
-      strength_used: clampedStrength, // Show what strength was actually used
-      strength_requested: rawStrength // Show what was requested
+      variations_generated: finalUrls.length,
+      strength_used: finalStrength, // Show what strength was actually used
+      strength_requested: rawStrength, // Show what was requested
+      had_retry: hadRetry, // Track if retry was attempted
+      retry_reason: hadRetry ? 'Potential diptych detected' : null,
+      used_fallback_model: usedFallbackModel, // Track if fallback was used
+      fallback_reason: usedFallbackModel ? 'Multiple images detected' : null
     };
 
     // For backward compatibility, also include image_url (first variation)
-    responseBody.image_url = urls[0];
+    responseBody.image_url = finalUrls[0];
     
     // If multiple variations, include result_urls array
-    if (urls.length > 1) {
-      responseBody.result_urls = urls;
+    if (finalUrls.length > 1) {
+      responseBody.result_urls = finalUrls;
     }
 
     // 🔍 DEBUG: Log the exact response being sent
     console.log('🔍 Final response body:', JSON.stringify(responseBody, null, 2));
     console.log('🔍 Response headers:', responseHeaders);
+    
+    // 10) TELEMETRY: Log per-generation metrics for drift detection
+    const telemetryData = {
+      timestamp: new Date().toISOString(),
+      preset_id: requestBody.presetId || 'unknown',
+      model_used: finalModel,
+      model_requested: aimlPayload.model,
+      strength_requested: rawStrength,
+      strength_used: finalStrength,
+      strength_clamped: clampedStrength,
+      num_variations: finalUrls.length,
+      had_retry: hadRetry,
+      used_fallback_model: usedFallbackModel,
+      prompt_length: enhancedPrompt.length,
+      mode: requestBody.mode || 'unknown',
+      run_id: requestBody.runId || 'unknown'
+    };
+    
+    console.log('📊 Generation telemetry:', telemetryData);
 
     return {
       statusCode: 200,

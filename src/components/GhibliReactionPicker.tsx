@@ -1,5 +1,5 @@
 import React from 'react'
-import { REACTION_OVERLAY_PRESETS } from '../presets/ghibliReact'
+import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
 import { MinimalPreset } from '../utils/presets/aimlUtils'
 
 interface GhibliReactionPickerProps {
@@ -11,7 +11,7 @@ interface GhibliReactionPickerProps {
 }
 
 export function GhibliReactionPicker({
-  presets = REACTION_OVERLAY_PRESETS,
+  presets = GHIBLI_REACTION_PRESETS,
   value,
   onChange,
   className = ''
@@ -35,7 +35,7 @@ export function GhibliReactionPicker({
           )}
         </button>
         
-        {/* Reaction Overlay preset options - matches presets exactly */}
+        {/* Ghibli Reaction preset options - matches presets exactly */}
         {presets.map((preset) => (
           <button
             key={preset.id}

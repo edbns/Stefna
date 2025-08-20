@@ -6,58 +6,55 @@
 import { MinimalPreset } from '../utils/presets/aimlUtils';
 
 // ================================================================
-// Neo Tokyo Glitch (unchanged identity, additive overlays)
+// Neo Tokyo Glitch (Colorful cyberpunk overlays)
 // ================================================================
 
-// Shared realism + single-panel guard (no negatives API needed)
-const REALISM_ANCHOR =
-  'Cinematic portrait photograph, natural skin pores, shallow depth of field, soft background bokeh.';
-
-const SINGLE_PANEL_GUARD_V2 =
-  'Use the INPUT PHOTO as a single, continuous frame. Show ONE instance of the same subject centered. ' +
+// Global guards (inline into prompts)
+const SINGLE_PANEL_GUARD =
+  'Render the INPUT PHOTO as a single, continuous frame. Show ONE instance of the same subject. ' +
   'Do NOT compose a grid, collage, split-screen, diptych, mirrored panel, border, seam, gutter, or frame. ' +
-  'Do NOT duplicate, mirror, or repeat any part of the face. Keep the original background and framing unchanged. ' +
-  'Keep the person\'s gender, skin tone, ethnicity, age, and facial structure exactly the same. Not anime or cartoon.';
+  'Do NOT duplicate, mirror, or repeat any part of the face. Keep the original camera crop and background. ' +
+  'Preserve the person\'s identity exactly: same gender, skin tone, ethnicity, age, and facial structure.';
 
 export const NEO_TOKYO_GLITCH_PRESETS: MinimalPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
     prompt:
-      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
-      'Add faint neon ambience (soft magenta/teal rim glow) around hair edges and background. Keep skin tone and face unchanged.',
+      `${SINGLE_PANEL_GUARD} Cinematic city-night palette. Add faint neon rim light around hair edges and a soft neon ambience in the background bokeh. ` +
+      `Do not recolor facial skin; no lines over facial skin.`,
     strength: 0.06,
-    model: 'stable-diffusion-3.5-large-i2i',
+    model: 'stable-diffusion-v35-large',
     num_variations: 1,
   },
   {
     id: 'neo_tokyo_visor',
     label: 'Glitch Visor',
     prompt:
-      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
-      'Add a barely visible translucent HUD visor hovering above the eyes with ultra-thin UI lines and micro text. Eyebrows and eyelashes remain visible.',
+      `${SINGLE_PANEL_GUARD} Add a translucent HUD visor above the eyes with bright neon UI glyphs and micro text. ` +
+      `Eyebrows and eyelashes remain fully visible. Background neon bokeh becomes more saturated.`,
     strength: 0.06,
-    model: 'stable-diffusion-3.5-large-i2i',
+    model: 'stable-diffusion-v35-large',
     num_variations: 1,
   },
   {
     id: 'neo_tokyo_tattoos',
     label: 'Tech Tattoos',
     prompt:
-      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
-      'Add ultra-faint silver micro-circuit lines along temples and cheekbones. Hair-thin, semi-transparent. No recolor of skin.',
+      `${SINGLE_PANEL_GUARD} Add ultra-faint silver micro-circuit lines along temples and cheekbones. Hair-thin, semi-transparent; ` +
+      `no recolor of skin and no lines over the eye regions.`,
     strength: 0.06,
-    model: 'stable-diffusion-3.5-large-i2i',
+    model: 'stable-diffusion-v35-large',
     num_variations: 1,
   },
   {
     id: 'neo_tokyo_scanlines',
     label: 'Scanline FX',
     prompt:
-      `${REALISM_ANCHOR} ${SINGLE_PANEL_GUARD_V2} ` +
-      'Add extremely subtle VHS scanlines in the BACKGROUND only and mild chromatic aberration at image edges. Never put lines over facial skin.',
+      `${SINGLE_PANEL_GUARD} Add subtle VHS scanlines and mild RGB split in the BACKGROUND only; never draw lines over facial skin. ` +
+      `Boost city neon saturation behind the subject for a strong, colorful mood.`,
     strength: 0.05,
-    model: 'stable-diffusion-3.5-large-i2i',
+    model: 'stable-diffusion-v35-large',
     num_variations: 1,
   },
 ];
