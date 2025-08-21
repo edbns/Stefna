@@ -23,7 +23,7 @@ function normalizeModel(model?: string) {
 
 // server-side strength policy (Flux needs higher denoise than SD to avoid passthrough)
 const STRENGTH: Record<Mode, { min: number; def: number; max: number }> = {
-  custom:         { min: 0.12, def: 0.16, max: 0.22 },
+  custom:         { min: 0.14, def: 0.18, max: 0.24 },
   preset:         { min: 0.12, def: 0.16, max: 0.22 },
   emotionmask:    { min: 0.10, def: 0.12, max: 0.15 },
   ghiblireact:    { min: 0.12, def: 0.14, max: 0.18 },

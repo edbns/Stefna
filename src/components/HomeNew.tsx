@@ -28,7 +28,7 @@ import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
 
 import { paramsForI2ISharp } from '../services/infer-params'
 import { clampStrength } from '../lib/strengthPolicy'
-import { buildPrompt } from '../lib/buildPrompt'
+
 
 
 
@@ -1150,15 +1150,31 @@ const HomeNew: React.FC = () => {
       "dall-e-3"
     ];
     
-    // Helper function to validate model
-    const validateModel = (model: string) => {
-      if (!ALLOWED_MODELS.includes(model)) {
-        console.error("🚫 Invalid model:", model);
-        notifyError({ title: 'Model Error', message: `Model '${model}' is not supported. Using fallback.` });
-        return "flux/dev/image-to-image"; // Fallback to known working model
-      }
-      return model;
-    };
+      // Helper function to validate model
+  const validateModel = (model: string) => {
+    if (!ALLOWED_MODELS.includes(model)) {
+      console.error("🚫 Invalid model:", model);
+      notifyError({ title: 'Model Error', message: `Model '${model}' is not supported. Using fallback.` });
+      return "flux/dev/image-to-image"; // Fallback to known working model
+    }
+    return model;
+  };
+
+  // Source URL validation - prevent using generated images as source
+  const assertIsSourceUrl = (url: string) => {
+    // Check if URL is from our sources bucket/folder (adjust to your storage layout)
+    const isSource = /\/stefna\/sources\//.test(url) || 
+                    /\/uploads\/sources\//.test(url) ||
+                    /\/image\/upload\/v\d+\/stefna\/sources\//.test(url);
+    
+    if (!isSource) {
+      console.error('❌ Invalid source URL - appears to be a generated image:', url);
+      throw new Error("Invalid source: must be an original input photo URL");
+    }
+    
+    console.log('✅ Source URL validation passed:', url);
+    return true;
+  };
     
     // Close composer immediately when generation starts
     setIsComposerOpen(false);
@@ -1389,6 +1405,17 @@ const HomeNew: React.FC = () => {
       })
       const sourceUrl = uploadResult.secureUrl
       
+      // Validate source URL to prevent using generated images as source
+      try {
+        assertIsSourceUrl(sourceUrl);
+      } catch (error) {
+        console.error('❌ Source URL validation failed:', error);
+        notifyError({ title: 'Invalid source', message: 'Please use an original photo, not a generated image' });
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
+      }
+      
       // Final sanity check before API call
       console.table({
         hasActiveAssetUrl: !!previewUrl,
@@ -1413,44 +1440,13 @@ const HomeNew: React.FC = () => {
       };
 
       // Build payload with correct URL key based on media type
-      const payload: Record<string, any> = {
-        mode: kind, // Add mode parameter for server-side routing
-        prompt: buildPrompt(kind, effectivePrompt), // Use new prompt builder with identity prelude
-        model: normalizeModel(generationMeta?.model || 'flux/dev'), // Normalize model name
-        ...(isVideo ? { video_url: sourceUrl } : { image_url: sourceUrl }), // ✅ Use correct key
-        isVideo, // Explicit flag for server-side model selection
-        // Clean payload - only essential fields for vendor
-        fps: 24,
-        duration: isVideo ? 5 : undefined,
-        stabilization: false,
-        // Internal fields for our system (not sent to vendor)
-        source: kind,
-        visibility: shareToFeed ? 'public' : 'private',
-        allow_remix: false, // Remix functionality removed - focus on personal creativity
-        // Generation metadata for tracking and display
-        ...(generationMeta && { generationMeta }),
-        // Include model from preset for new modes
-        ...(generationMeta?.model && { model: generationMeta.model }),
-        
-        // Include guidance scale from preset if available
-        ...(generationMeta?.guidance_scale && { guidance_scale: generationMeta.guidance_scale }),
-        
-        // Include inference steps from preset if available
-        ...(generationMeta?.num_inference_steps && { num_inference_steps: generationMeta.num_inference_steps }),
-        
-        // Include face fix parameters if available
-        ...(generationMeta?.face_fix && { face_fix: generationMeta.face_fix }),
-        ...(generationMeta?.face_method && { face_method: generationMeta.face_method }),
-        
-        // 🧠 Bonus Guard: Warn about missing models to prevent silent failure
-        ...(generationMeta?.model ? {} : (() => {
-          console.warn(`[GENERATION WARNING] Missing model for mode: ${kind}. Falling back to default.`);
-          return {};
-        })()),
-        num_variations: 1, // Single generation only
-        strength: clampStrength(kind as any, generationMeta?.strength || 0.85),  // Use new strength policy
-        seed: Date.now(), // Prevent provider-side caching
-        request_id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, // Idempotency key for credit charging
+      const payload = {
+        mode: kind,
+        prompt: effectivePrompt, // server will prepend the identity prelude
+        image_url: sourceUrl,
+        strength: clampStrength(kind as any, generationMeta?.strength || 0.85),
+        model: normalizeModel(generationMeta?.model || 'flux/dev'),
+        num_variations: 1,
       };
 
       // Video-specific parameters for V2V
