@@ -1735,13 +1735,12 @@ const HomeNew: React.FC = () => {
         throw new Error('No result URL in API response');
       }
       
-      // 🔒 IDENTITY PRESERVATION CHECK (IPA) - if identity lock is enabled
+      // 🔒 IDENTITY PRESERVATION CHECK - if identity lock is enabled
       let finalResultUrl = resultUrl;
-      let ipaPassed = true;
-      let ipaSimilarity = 0;
+
       
       if (identityLock && sourceUrl) {
-        console.log('🔒 Identity lock enabled - checking face similarity...');
+
         try {
           const { checkIdentityPreservation } = await import('../hooks/useIPAFaceCheck');
           
@@ -1751,13 +1750,9 @@ const HomeNew: React.FC = () => {
             threshold: 0.38, // Slightly higher than default for stricter identity preservation
           });
           
-          ipaSimilarity = ipaResult.similarity;
-          ipaPassed = ipaResult.passed;
+
           
-          console.log(`🔒 IPA Check: similarity ${ipaSimilarity.toFixed(3)} (threshold: 0.38, passed: ${ipaPassed})`);
-          
-          if (!ipaPassed) {
-            console.log('🔒 IPA check failed - attempting retry with lower strength...');
+          if (!ipaResult.passed) {
             
             // Retry with lower strength for better identity preservation
             const retryPayload = {
@@ -1765,7 +1760,7 @@ const HomeNew: React.FC = () => {
               strength: Math.min(payload.strength * 0.6, 0.35), // Lower strength for retry
             };
             
-            console.log('🔒 Retry payload with lower strength:', retryPayload);
+
             
             const retryRes = await authenticatedFetch('/.netlify/functions/aimlApi', {
               method: 'POST',
@@ -1779,7 +1774,7 @@ const HomeNew: React.FC = () => {
               const retryUrl = retryBody?.image_url || retryBody?.image_urls?.[0];
               
               if (retryUrl) {
-                console.log('🔒 Retry successful, checking IPA again...');
+
                 
                 const retryIpaResult = await checkIdentityPreservation({
                   originalUrl: sourceUrl,
@@ -1788,42 +1783,27 @@ const HomeNew: React.FC = () => {
                 });
                 
                 if (retryIpaResult.passed) {
-                  console.log('✅ Retry IPA check passed:', retryIpaResult.similarity.toFixed(3));
                   finalResultUrl = retryUrl;
-                  ipaPassed = true;
-                  ipaSimilarity = retryIpaResult.similarity;
-                                 } else {
-                   console.warn('⚠️ Retry IPA check still failed:', retryIpaResult.similarity.toFixed(3));
-                   console.log('🔒 Attempting face blending as final fallback...');
-                   
-                   try {
-                     const { blendOriginalFace } = await import('../hooks/useIPAFaceCheck');
-                     const blendedResult = await blendOriginalFace(sourceUrl, retryUrl, 16);
-                     
-                     console.log('✅ Face blending completed successfully');
-                     finalResultUrl = blendedResult;
-                     ipaPassed = true; // Mark as passed since we applied face preservation
-                     ipaSimilarity = retryIpaResult.similarity;
-                   } catch (blendError) {
-                     console.warn('⚠️ Face blending failed, keeping retry result:', blendError);
-                     finalResultUrl = retryUrl;
-                     ipaPassed = false;
-                     ipaSimilarity = retryIpaResult.similarity;
-                   }
+                } else {
+                  // Attempt face blending as final fallback
+                  try {
+                    const { blendOriginalFace } = await import('../hooks/useIPAFaceCheck');
+                    const blendedResult = await blendOriginalFace(sourceUrl, retryUrl, 16);
+                    finalResultUrl = blendedResult;
+                  } catch (blendError) {
+                    finalResultUrl = retryUrl;
+                  }
+                }
+                              } else {
+                  finalResultUrl = resultUrl;
                 }
               } else {
-                console.warn('⚠️ Retry failed - no result URL');
                 finalResultUrl = resultUrl;
               }
-            } else {
-              console.warn('⚠️ Retry request failed:', retryRes.status);
-              finalResultUrl = resultUrl;
             }
+          } catch (ipaError) {
+            finalResultUrl = resultUrl;
           }
-        } catch (ipaError) {
-          console.warn('⚠️ IPA check failed, proceeding with original result:', ipaError);
-          finalResultUrl = resultUrl;
-        }
       }
 
       console.info(`Generated ${variationsGenerated} variation(s):`, allResultUrls);
@@ -1835,99 +1815,35 @@ const HomeNew: React.FC = () => {
       setPreviewUrl(cacheBustedResultUrl);
       
       // Show IPA results in notification if identity lock was enabled
-      if (identityLock) {
-        if (ipaPassed) {
-          notifyReady({ 
-            title: 'Your media is ready', 
-            message: `✅ Identity preserved (similarity: ${ipaSimilarity.toFixed(3)})`, 
-            thumbUrl: finalResultUrl, 
-            onClickThumb: () => {
-              // Open the media viewer to show the generated image
-              setViewerMedia([{
-                id: 'generated-' + Date.now(),
-                userId: 'current-user',
-                type: 'photo',
-                url: finalResultUrl,
-                prompt: prompt,
-                aspectRatio: 4/3,
-                width: 800,
-                height: 600,
-                timestamp: new Date().toISOString(),
-                tokensUsed: 2,
-                likes: 0,
-                remixCount: 0,
-                isPublic: false,
-                allowRemix: false,
-                tags: [],
-                metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
-              }]);
-              setViewerStartIndex(0);
-              setViewerOpen(true);
-            } 
-          });
-        } else {
-          notifyReady({ 
-            title: 'Your media is ready', 
-            message: `⚠️ Identity check failed (similarity: ${ipaSimilarity.toFixed(3)})`, 
-            thumbUrl: finalResultUrl, 
-            onClickThumb: () => {
-              // Open the media viewer to show the generated image
-              setViewerMedia([{
-                id: 'generated-' + Date.now(),
-                userId: 'current-user',
-                type: 'photo',
-                url: finalResultUrl,
-                prompt: prompt,
-                aspectRatio: 4/3,
-                width: 800,
-                height: 600,
-                timestamp: new Date().toISOString(),
-                tokensUsed: 2,
-                likes: 0,
-                remixCount: 0,
-                isPublic: false,
-                allowRemix: false,
-                tags: [],
-                metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
-              }]);
-              setViewerStartIndex(0);
-              setViewerOpen(true);
-            } 
-          });
-        }
-      } else {
-        // Standard notification for non-identity-lock generations
-        notifyReady({ 
-          title: 'Your media is ready', 
-          message: 'Tap to open', 
-          thumbUrl: finalResultUrl, 
-          onClickThumb: () => {
-            // Open the media viewer to show the generated image
-            setViewerMedia([{
-              id: 'generated-' + Date.now(),
-              userId: 'current-user',
-              type: 'photo',
-              url: finalResultUrl,
-              prompt: prompt,
-              aspectRatio: 4/3,
-              width: 800,
-              height: 600,
-              timestamp: new Date().toISOString(),
-              tokensUsed: 2,
-              likes: 0,
-              remixCount: 0,
-              isPublic: false,
-              allowRemix: false,
-              tags: [],
-              metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
-            }]);
-            setViewerStartIndex(0);
-            setViewerOpen(true);
-          } 
-        });
-      }
-      
-      // Success notification is now handled above with IPA results
+      // Show success notification
+      notifyReady({ 
+        title: 'Your media is ready', 
+        message: 'Tap to open', 
+        thumbUrl: finalResultUrl, 
+        onClickThumb: () => {
+          // Open the media viewer to show the generated image
+          setViewerMedia([{
+            id: 'generated-' + Date.now(),
+            userId: 'current-user',
+            type: 'photo',
+            url: finalResultUrl,
+            prompt: prompt,
+            aspectRatio: 4/3,
+            width: 800,
+            height: 600,
+            timestamp: new Date().toISOString(),
+            tokensUsed: 2,
+            likes: 0,
+            remixCount: 0,
+            isPublic: false,
+            allowRemix: false,
+            tags: [],
+            metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
+          }]);
+          setViewerStartIndex(0);
+          setViewerOpen(true);
+        } 
+      });
 
       // Save the generated media to the database
           try {
@@ -3720,9 +3636,9 @@ const HomeNew: React.FC = () => {
                             onChange={(e) => setIdentityLock(e.target.checked)}
                             className="rounded border-gray-300"
                           />
-                          <label htmlFor="identity-lock-emotion" className="text-sm text-gray-600">
-                            🔒 Preserve face identity (lowers strength, enables IPA check)
-                          </label>
+                                                     <label htmlFor="identity-lock-emotion" className="text-sm text-gray-600">
+                             🔒 Preserve face identity
+                           </label>
                         </div>
                       )}
                   </div>
