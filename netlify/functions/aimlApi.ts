@@ -1,258 +1,336 @@
-// netlify/functions/aimlApi.ts
-import type { Handler } from '@netlify/functions';
+import type { Handler } from "@netlify/functions";
+import { json } from "./_lib/http";
 
-type Mode = 'custom' | 'preset' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch';
-
-// Lock to the correct AIML endpoint
-const AIML_BASE = 'https://api.aimlapi.com';
-const AIML_ROUTE = '/v1/images/generations'; // ✅ the only valid route
-const AIML_URL = `${AIML_BASE}${AIML_ROUTE}`;
-
-// Input you accept from client
-type InBody = {
-  model: string;          // e.g. 'flux/dev' (not flux/dev/image-to-image)
-  prompt: string;
-  image_url?: string;     // URL you upload to Cloudinary sources bucket
-  strength?: number;      // 0..1
-  num_variations?: number;// integer
-  mode?: Mode;
-};
-
-// Server-only identity prelude (inject once, de-dupe, clamp to 1000 chars)
-const IDENTITY_PRELUDE =
-  "Render the INPUT PHOTO as a single, continuous frame. Show ONE instance of the same subject. " +
-  "Do NOT compose a grid, collage, split-screen, diptych, mirrored panel, border, seam, gutter, or frame. " +
-  "Do NOT duplicate, mirror, or repeat any part of the face. Keep the original camera crop and background. " +
-  "Preserve the person's identity exactly: same gender, skin tone, ethnicity, age, and facial structure. ";
-
-const PRELUDE_SENTINEL = "Render the INPUT PHOTO as a single, continuous frame.";
-
-function buildFinalPrompt(mode: Mode, userPrompt: string) {
-  const modeClamp =
-    mode === 'ghiblireact'   ? "Face-only micro-stylization; body/background remain photorealistic. "
-  : mode === 'emotionmask'   ? "Modify micro-expressions only; no geometry or skin tone changes. "
-  : mode === 'neotokyoglitch'? "Additive overlays only; no facial geometry changes. "
-  : "";
-
-  // Remove any user-supplied identity text to avoid duplication
-  let core = (userPrompt ?? "")
-    .replace(new RegExp(IDENTITY_PRELUDE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), "")
-    .replace(new RegExp(PRELUDE_SENTINEL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), "")
-    .trim();
-
-  let out = `${IDENTITY_PRELUDE}${modeClamp}${core}`.trim();
-  if (out.length > 1000) out = out.slice(0, 1000); // AIML hard limit
-  return out;
-}
-
-// Strength clamp (server as source of truth)
-const STRENGTH_POLICY = {
-  custom:         { min: 0.14, def: 0.18, max: 0.24 },
-  preset:         { min: 0.12, def: 0.16, max: 0.22 },
-  emotionmask:    { min: 0.10, def: 0.12, max: 0.15 },
-  ghiblireact:    { min: 0.12, def: 0.14, max: 0.18 },
-  neotokyoglitch: { min: 0.20, def: 0.24, max: 0.30 },
-} as const;
-
-function clampStrength(mode: Mode, requested?: number) {
-  const p = STRENGTH_POLICY[mode];
-  if (requested == null) return p.def;
-  return Math.min(p.max, Math.max(p.min, requested));
-}
-
-// Model sanity (AIML decides i2i by presence of image_url; model must be valid enum)
-function normalizeModel(model: string, hasImage: boolean) {
-  // AIML decides i2i by the presence of image_url; model must be a valid enum.
-  if (hasImage && model === 'flux/dev/image-to-image') return 'flux/dev';
-  return model;
-}
-
-// Build the AIML payload with the correct keys
-function toAIMLPayload(body: InBody, prompt: string, strength: number) {
-  return {
-    model: normalizeModel(body.model, !!body.image_url),
-    prompt,
-    image_url: body.image_url,               // ✅ correct key
-    strength,                                // ✅ i2i denoise amount
-    num_variations: body.num_variations ?? 1 // ✅ your allowed field name
-  };
-}
-
-export const handler: Handler = async (event: any) => {
+export const handler: Handler = async (event) => {
+  // Force redeploy - v4
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-App-Key',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      }
+    };
+  }
   try {
+    // 🔧 CRITICAL FIX: Allow POST requests for generation
+    console.log('🎯 aimlApi function called with method:', event.httpMethod);
+    console.log('🎯 Event details:', { 
+      method: event.httpMethod, 
+      hasBody: !!event.body,
+      bodyLength: event.body?.length || 0,
+      headers: Object.keys(event.headers || {})
+    });
+    
     if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, body: JSON.stringify({ ok: false, error: 'METHOD_NOT_ALLOWED' }) };
+      console.log('❌ Method not allowed:', event.httpMethod);
+      return json({
+        error: 'Method Not Allowed',
+        message: 'This endpoint only accepts POST requests for image generation',
+        allowedMethods: ['POST'],
+        receivedMethod: event.httpMethod
+      }, { status: 405 });
     }
+    
+    console.log('✅ POST method accepted, proceeding with generation...');
 
-    const auth = event.headers['authorization'] || event.headers['Authorization'];
-    if (!auth) {
-      return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'NO_AUTH' }) };
+    // Handle header casing - Netlify lowercases header names
+    const headers = event.headers || {};
+    const auth = headers.authorization || headers.Authorization || '';
+    const appKey = headers['x-app-key'] || headers['X-App-Key'] || '';
+
+    // TEMP dev-bypass to unblock POC runs (remove in prod)
+    const devBypass = process.env.DEV_ALLOW_NOAUTH === '1';
+
+    if (!auth && !devBypass) {
+      console.warn('aimlApi 401 — missing Authorization. Keys seen:', Object.keys(headers).slice(0, 12));
+      return json({ error: 'missing_auth_header' }, { status: 401 });
     }
-
-    const raw = JSON.parse(event.body || '{}');
-
-    const mode: Mode = raw.mode;
-    const userPrompt: string = (raw.prompt || '').toString();
-    const image_url: string = (raw.image_url || '').toString();
-    const requestedStrength: number = Number(raw.strength);
-    const num_variations: number = Number(raw.num_variations || 1);
-
-    // basic validation
-    if (!mode || !['custom','preset','emotionmask','ghiblireact','neotokyoglitch'].includes(mode)) {
-      return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'INVALID_MODE' }) };
-    }
-    if (!image_url) {
-      return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'NO_IMAGE_URL' }) };
-    }
-
-    // normalize model and strength per-mode
-    const requestedModel = normalizeModel(raw.model, !!image_url);
-    const strength = clampStrength(mode, requestedStrength);
-
-    // build final prompt (server always injects identity prelude)
-    const finalPrompt = buildFinalPrompt(mode, userPrompt);
-
-    // Single POST to the correct endpoint
-    try {
-      // Build AIML payload
-      const payload = toAIMLPayload({ 
-        model: requestedModel, 
-        prompt: finalPrompt, 
-        image_url, 
-        num_variations 
-      }, finalPrompt, strength);
-
-      console.info('🎯 Sending to AIML', { 
-        url: AIML_URL, 
-        payload: { 
-          ...payload, 
-          prompt: `${payload.prompt.slice(0,120)}…(${payload.prompt.length})` 
-        } 
-      });
-
-      // Single POST with good error messages (no oscillating fallbacks)
-      const res = await fetch(AIML_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.AIML_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const txt = await res.text().catch(()=> '');
-        console.error('❌ AIML error', { 
-          url: AIML_URL, 
-          status: res.status, 
-          statusText: res.statusText, 
-          bodySent: payload, 
-          responseText: txt 
-        });
-        return {
-          statusCode: 502,
-          body: JSON.stringify({ 
-            ok: false, 
-            error: `AIML_${res.status}`, 
-            detail: 'Invalid model id or payload. Use flux/dev + image_url; prompt <= 1000 chars.' 
-          }),
-          headers: {
-            'content-type': 'application/json; charset=utf-8',
-            'access-control-allow-origin': '*',
-          },
-        };
-      }
-
-      // Parse response & smart retry for "too-similar"
-      type AIMLResponse = {
-        images?: { url: string }[];
-        timings?: { inference?: number };
-        seed?: number;
-        // ...other fields the API returns
+    
+    if (!appKey && !devBypass) {
+      console.warn('aimlApi 401 — missing x-app-key');
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ error: 'missing_app_key' })
       };
+    }
 
-      const data = await res.json() as AIMLResponse;
-      const urls = (data.images ?? []).map(x => x.url).filter(Boolean);
+    // Check if AIML API key is configured
+    const API_KEY = process.env.AIML_API_KEY;
+    if (!API_KEY) {
+      console.error('AIML_API_KEY missing from environment');
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'server_missing_upstream_key' })
+      };
+    }
 
-      // Optional retry: if "pass-through", bump strength once
-      if (!urls.length || (data.timings?.inference ?? 0) < 0.35) {
-        const bump = Math.min(0.06, STRENGTH_POLICY[mode].max - strength);
-        if (bump > 0) {
-          console.log('🔄 Retrying with bumped strength:', strength + bump);
-          const retry = { ...payload, strength: strength + bump };
-          const r = await fetch(AIML_URL, { 
-            method: 'POST', 
-            headers: {
-              'Authorization': `Bearer ${process.env.AIML_API_KEY}`,
-              'Content-Type': 'application/json'
-            }, 
-            body: JSON.stringify(retry) 
-          });
-          const d = await r.json() as AIMLResponse;
-          const u = (d.images ?? []).map(x => x.url).filter(Boolean);
-          if (u.length) {
-            return {
-              statusCode: 200,
-              body: JSON.stringify({ 
-                ok: true, 
-                image_urls: u, 
-                model: retry.model, 
-                strength_used: retry.strength,
-                had_retry: true,
-                prompt: finalPrompt,
-                variations_generated: u.length,
-                image_url: u[0] || null,
-              }),
-              headers: {
-                'content-type': 'application/json; charset=utf-8',
-                'access-control-allow-origin': '*',
-                'cache-control': 'no-store',
-              },
-            };
-          }
-        }
-      }
+    // Check if AIML API base is configured
+    const BASE = process.env.AIML_API_BASE ?? "https://api.aimlapi.com";
+    if (!BASE) {
+      console.error('AIML_API_BASE missing from environment');
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'server_missing_base_url' })
+      };
+    }
 
+    // Parse request body
+    const requestBody = JSON.parse(event.body || '{}');
+    
+    // Handle ping requests for testing
+    if (requestBody.ping) {
+      console.log('🎯 AIML API ping received:', {
+        hasAuth: !!auth,
+        hasAppKey: !!appKey,
+        devBypass,
+        timestamp: new Date().toISOString()
+      });
       return {
         statusCode: 200,
         body: JSON.stringify({ 
           ok: true, 
-          image_urls: urls, 
-          model: payload.model, 
-          strength_used: strength,
-          had_retry: false,
-          prompt: finalPrompt,
-          variations_generated: urls.length,
-          image_url: urls[0] || null,
-        }),
-        headers: {
-          'content-type': 'application/json; charset=utf-8',
-          'access-control-allow-origin': '*',
-          'cache-control': 'no-store',
-        },
-      };
-
-    } catch (error: any) {
-      console.error('❌ AIML request failed:', error);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ 
-          ok: false, 
-          error: 'AIML_REQUEST_FAILED',
-          detail: error?.message || 'Unknown error occurred'
-        }),
-        headers: {
-          'content-type': 'application/json; charset=utf-8',
-          'access-control-allow-origin': '*',
-        },
+          message: 'AIML API is running and ready for POST requests',
+          timestamp: new Date().toISOString(),
+          devMode: !!devBypass
+        })
       };
     }
-  } catch (err: any) {
+
+    // Structured logging for generation requests
+    const logData = {
+      timestamp: new Date().toISOString(),
+      runId: requestBody.runId || 'unknown',
+      presetId: requestBody.presetId || 'unknown',
+      mode: requestBody.mode || 'unknown',
+      hasImage: !!requestBody.image_url,
+      hasPrompt: !!requestBody.prompt,
+      strength: requestBody.strength,
+      numVariations: requestBody.num_variations || 1,
+      devBypass
+    };
+    
+    console.log('🎯 AIML API generation request:', logData);
+
+    // Check if this is a prompt enhancement request (magic wand)
+    if (requestBody.action === 'enhance_prompt') {
+      console.log('🎯 Magic Wand prompt enhancement request:', {
+        prompt: requestBody.prompt,
+        enhancementType: requestBody.enhancement_type
+      });
+      
+      // For prompt enhancement, we don't need image_url
+      if (!requestBody.prompt) {
+        console.error('Missing prompt for enhancement');
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'missing_prompt' })
+        };
+      }
+      
+      // Return enhanced prompt (simplified for now)
+      const enhancedPrompt = requestBody.prompt + ', professional photography style, high quality, sharp details, 8K resolution, enhanced contrast, vibrant colors';
+      
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ 
+          ok: true, 
+          enhanced_prompt: enhancedPrompt,
+          original_prompt: requestBody.prompt,
+          enhancement_type: requestBody.enhancement_type
+        })
+      };
+    }
+
+    // Validate required fields for image generation
+    if (!requestBody.image_url) {
+      console.error('Missing image_url in request');
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'missing_image_url' })
+      };
+    }
+
+    if (!requestBody.prompt) {
+      console.error('Missing prompt in request');
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'missing_prompt' })
+      };
+    }
+
+    // Build AIML API payload with variations support
+    const aimlPayload = {
+      model: requestBody.model ?? process.env.AIML_MODEL ?? 'flux/dev/image-to-image',
+      prompt: requestBody.prompt,
+      image_url: requestBody.image_url,
+      strength: requestBody.strength || 0.8,
+      num_variations: requestBody.num_variations || 1
+    };
+
+    console.log('🚀 Sending to AIML API:', {
+      base: BASE,
+      model: aimlPayload.model,
+      hasImage: !!aimlPayload.image_url,
+      variations: aimlPayload.num_variations
+    });
+
+    // Make request to AIML API - use correct endpoint for image generation
+    const response = await fetch(`${BASE}/v1/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(aimlPayload)
+    });
+
+    const responseText = await response.text();
+    
+    if (!response.ok) {
+      console.error('❌ AIML API error:', response.status, responseText);
+      return {
+        statusCode: response.status,
+        body: JSON.stringify({ 
+          ok: false, 
+          provider_error: responseText,
+          status: response.status 
+        })
+      };
+    }
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('❌ Failed to parse AIML API response:', responseText);
+      return {
+        statusCode: 502,
+        body: JSON.stringify({ 
+          ok: false, 
+          error: 'INVALID_JSON_RESPONSE',
+          raw: responseText 
+        })
+      };
+    }
+
+    // 🧠 DEBUG: Log the complete AIML API response
+    console.log("📡 AIML raw result:", JSON.stringify(data, null, 2));
+    console.log("📡 AIML response keys:", Object.keys(data));
+
+    // 🧪 TEMPORARY TEST: Uncomment this to test frontend flow
+    // return {
+    //   statusCode: 200,
+    //   body: JSON.stringify({ 
+    //     ok: true, 
+    //     image_url: "https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/test/fake-generated-image.jpg",
+    //     model: aimlPayload.model,
+    //     prompt: aimlPayload.prompt
+    //   })
+    // };
+
+    // Log the full response structure for debugging
+    console.log('🔍 AIML API response structure:', {
+      keys: Object.keys(data),
+      hasImageUrl: !!data.image_url,
+      hasOutput: !!data.output,
+      hasData: !!data.data,
+      hasUrl: !!data.url,
+      outputType: typeof data.output,
+      dataType: typeof data.data
+    });
+
+    // Extract URLs from various possible response formats with support for multiple variations
+    let urls = [];
+    let variationsGenerated = 1;
+    
+    // Try multiple extraction strategies for multiple variations
+    if (data.images && Array.isArray(data.images)) {
+      // 🎯 AIML API format: { "images": [{ "url": "...", "width": 1024, "height": 1024 }] }
+      urls = data.images.map(img => img.url).filter(Boolean);
+      variationsGenerated = urls.length;
+      console.log(`✅ Found ${variationsGenerated} URLs in images array:`, urls);
+    } else if (data.image_url) {
+      urls = [data.image_url];
+      console.log('✅ Found URL in image_url:', urls[0]);
+    } else if (data.output && Array.isArray(data.output)) {
+      urls = data.output.map(out => out.url).filter(Boolean);
+      variationsGenerated = urls.length;
+      console.log(`✅ Found ${variationsGenerated} URLs in output array:`, urls);
+    } else if (data.output && typeof data.output === 'object' && data.output.url) {
+      urls = [data.output.url];
+      console.log('✅ Found URL in output.url:', urls[0]);
+    } else if (data.data && Array.isArray(data.data)) {
+      urls = data.data.map(d => d.url).filter(Boolean);
+      variationsGenerated = urls.length;
+      console.log(`✅ Found ${variationsGenerated} URLs in data array:`, urls);
+    } else if (data.data && typeof data.data === 'object' && data.data.url) {
+      urls = [data.data.url];
+      console.log('✅ Found URL in data.url:', urls[0]);
+    } else if (data.url) {
+      urls = [data.url];
+      console.log('✅ Found URL in url:', urls[0]);
+    } else if (data.result_url) {
+      urls = [data.result_url];
+      console.log('✅ Found URL in result_url:', urls[0]);
+    } else if (data.generated_image) {
+      urls = [data.generated_image];
+      console.log('✅ Found URL in generated_image:', urls[0]);
+    } else if (data.image) {
+      urls = [data.image];
+      console.log('✅ Found URL in image:', urls[0]);
+    }
+
+    if (urls.length === 0) {
+      console.error('❌ No image URLs found in AIML response. Full response:', JSON.stringify(data, null, 2));
+      return {
+        statusCode: 502,
+        body: JSON.stringify({ 
+          ok: false, 
+          error: 'NO_URL_FROM_PROVIDER',
+          raw: data,
+          attempted_keys: ['images[0].url', 'image_url', 'output.url', 'output[0].url', 'data.url', 'data[0].url', 'url', 'result_url', 'generated_image', 'image']
+        })
+      };
+    }
+
+    console.log(`✅ AIML API success, ${variationsGenerated} URL(s) extracted:`, urls);
+
+    // Return response with support for multiple variations
+    const responseBody: any = {
+      ok: true,
+      model: aimlPayload.model,
+      prompt: aimlPayload.prompt,
+      variations_generated: variationsGenerated
+    };
+
+    // For backward compatibility, always include image_url (first variation)
+    responseBody.image_url = urls[0];
+    
+    // If multiple variations, include result_urls array
+    if (urls.length > 1) {
+      responseBody.result_urls = urls;
+    }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(responseBody)
+    };
+
+  } catch (error) {
+    console.error('💥 AIML API function error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ ok: false, error: 'SERVER_ERROR', message: err?.message }),
+      body: JSON.stringify({ 
+        ok: false, 
+        error: 'INTERNAL_ERROR',
+        message: error.message 
+      })
     };
   }
-};
+}
 
 

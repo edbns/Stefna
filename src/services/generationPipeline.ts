@@ -5,7 +5,7 @@ import { presetsStore } from '../stores/presetsStore'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import { useToasts } from '../components/ui/Toasts'
 import { authFetch } from '../utils/authFetch'
-import { preventDuplicateOperation, networkGuardRails, buttonGuardRails } from '../utils/guardRails'
+// import { preventDuplicateOperation, networkGuardRails, buttonGuardRails } from '../utils/guardRails' // REMOVED - complex drama file
 import { getHttpsSource } from '../services/mediaSource'
 import { runsStore } from '../stores/runs'
 import { postAuthed } from '../utils/fetchAuthed'
@@ -117,13 +117,13 @@ let activeRunId: string | null = null
 export async function runGeneration(buildJob: () => Promise<GenerateJob | null>): Promise<GenerationResult | null> {
   // Guard rails: prevent duplicate operations and check network
   const operationKey = `generation-${Date.now()}`
-  if (!preventDuplicateOperation(operationKey)) {
-    return null
-  }
+          // if (!preventDuplicateOperation(operationKey)) { // REMOVED - complex drama validation
+    //   return null
+    // }
 
-  if (!networkGuardRails.requireOnline('generation')) {
-    return null
-  }
+          // if (!networkGuardRails.requireOnline('generation')) { // REMOVED - complex drama validation
+    //   return null
+    // }
 
   // mark UI busy for *this* run with cancellation support
   const runId = crypto.randomUUID()

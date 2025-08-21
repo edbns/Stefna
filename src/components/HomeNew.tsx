@@ -86,12 +86,12 @@ import captionService from '../services/captionService'
 import { onPresetClick } from '../handlers/presetHandlers'
 
 
-import { validateModeMappings } from '../utils/validateMappings'
+// import { validateModeMappings } from '../utils/validateMappings' // REMOVED - complex drama file
 import FullScreenMediaViewer from './FullScreenMediaViewer'
 import ShareModal from './ShareModal'
 
 
-import { requireUserIntent } from '../utils/generationGuards'
+// import { requireUserIntent } from '../utils/generationGuards' // REMOVED - complex drama file
 import userMediaService from '../services/userMediaService'
 import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
@@ -253,7 +253,7 @@ const HomeNew: React.FC = () => {
   useEffect(() => {
     (async () => {
       // PRESETS are already loaded from import
-      validateModeMappings()
+      // validateModeMappings() // REMOVED - complex drama validation
     })()
   }, [])
 

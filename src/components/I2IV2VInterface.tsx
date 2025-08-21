@@ -4,7 +4,7 @@ import ImageToImageUpload from './ImageToImageUpload'
 import AIGenerationService, { GenerationRequest, GenerationStatus } from '../services/aiGenerationService'
 import fileUploadService from '../services/fileUploadService'
 import AIMLModelService from '../services/aimlModelService'
-import { requireUserIntent } from '../utils/generationGuards'
+// import { requireUserIntent } from '../utils/generationGuards' // REMOVED - complex drama file
 
 interface I2IV2VInterfaceProps {
   userId: string

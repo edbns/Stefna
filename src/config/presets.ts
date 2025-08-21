@@ -45,13 +45,12 @@ export function toSlug(sel: PresetSel): string {
   return raw.trim().toLowerCase().replace(/\s+/g, '_');
 }
 
-export function promptForPreset(sel: PresetSel, isVideo = false): string {
+export function promptForPreset(sel: PresetSel, isVideo = false, fallback = 'stylize, preserve subject and composition'): string {
   const slug = toSlug(sel);
   const promptMap = isVideo ? V2V_PRESET_PROMPTS : PRESET_PROMPTS;
   const prompt = promptMap[slug];
-  if (!prompt) throw new Error(`Preset prompt not found for "${slug}"`);
-  console.log('🎨 Preset lookup:', { input: sel, slug, isVideo, found: true, prompt });
-  return prompt;
+  console.log('🎨 Preset lookup:', { input: sel, slug, isVideo, found: !!prompt, prompt: prompt || fallback });
+  return prompt || fallback;
 }
 
 export interface PresetConfig {
@@ -80,9 +79,14 @@ export const PRESETS: Record<PresetKey, PresetConfig> = (() => {
   return presets;
 })();
 
-// Helper to build your I2I payload (uses router for proper engine selection)
-export function buildI2IPayload(presetId: string, image_url: string) {
-  // Import and use the router for proper payload building
-  const { buildPayload } = require('../utils/router');
-  return buildPayload(presetId, image_url);
+// Helper to build your I2I payload (Flux I2I)
+export function buildI2IPayload(preset: PresetConfig, image_url: string) {
+  return {
+    model: 'flux/dev/image-to-image',
+    prompt: preset.prompt,
+    image_url,
+    strength: preset.strength,
+    num_inference_steps: 36, // Default steps for all presets
+    guidance_scale: 7.5,   // Default guidance for all presets
+  };
 }

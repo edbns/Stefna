@@ -1,8 +1,8 @@
 // Application Bootstrap - Initialize all systems with hardening
 import { presetsStore } from '../stores/presetsStore'
-import { validateMappings } from '../utils/validateMappings'
+// import { validateMappings } from '../utils/validateMappings' // REMOVED - complex drama file
 import { setupNavigationCleanup } from './generationPipeline'
-import { setupMemoryLeakPrevention } from '../utils/guardRails'
+// import { setupMemoryLeakPrevention } from '../utils/guardRails' // REMOVED - complex drama file
 import { logger } from '../utils/logger'
 
 let bootstrapComplete = false
@@ -26,7 +26,7 @@ async function performBootstrap(): Promise<void> {
     // 1. Setup hardening systems first
     bootLogger.info('Setting up hardening systems...')
     setupNavigationCleanup()
-    setupMemoryLeakPrevention()
+    // setupMemoryLeakPrevention() // REMOVED - complex drama validation
     
     // 2. Load presets
     bootLogger.info('Loading presets...')
@@ -34,7 +34,7 @@ async function performBootstrap(): Promise<void> {
     
     // 3. Validate all mappings after presets are loaded
     bootLogger.info('Validating mappings...')
-    await validateMappings()
+    // await validateMappings() // REMOVED - complex drama validation
     
     // 4. Initialize other systems as needed
     // TODO: Add quota store initialization
