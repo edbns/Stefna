@@ -1246,10 +1246,10 @@ const HomeNew: React.FC = () => {
           emotionMaskPresetId, 
           emotionMaskLabel: emotionMaskPreset.label,
           model: "flux/dev/image-to-image", // Use known working model
-          strength: 0.45, // Lower strength for better identity preservation
+          strength: emotionMaskPreset.strength, // Use actual preset strength
           guidance_scale: 7.5, // Standard guidance for consistency
           cfg_scale: 7.0, // Balanced creativity vs adherence
-          denoising_strength: 0.45, // Match strength for consistency
+          denoising_strength: emotionMaskPreset.strength, // Match preset strength
           generation_type: "emotion_mask_identity_preserved" // Mark as identity-preserving
         };
       console.log('🎭 EMOTION MASK MODE: Using ORIGINAL prompt:', emotionMaskPreset.label, effectivePrompt);
@@ -1279,10 +1279,10 @@ const HomeNew: React.FC = () => {
           ghibliReactionPresetId, 
           ghibliReactionLabel: ghibliReactionPreset.label, 
           model: "flux/dev/image-to-image", // Use known working model for Ghibli style
-          strength: 0.55, // Balanced strength to prevent black images
+          strength: ghibliReactionPreset.strength, // Use actual preset strength
           guidance_scale: 7.5, // Standard guidance for consistency
           cfg_scale: 7.0, // Balanced creativity vs adherence
-          denoising_strength: 0.55, // Match strength for consistency
+          denoising_strength: ghibliReactionPreset.strength, // Match preset strength
           generation_type: "ghibli_reaction_balanced" // Mark as balanced transformation
         };
               console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: flux/dev/image-to-image');
@@ -1313,10 +1313,10 @@ const HomeNew: React.FC = () => {
           neoTokyoGlitchPresetId, 
           neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
           model: "flux/dev/image-to-image", // Use known working model for Neo Tokyo style
-          strength: 0.65, // Balanced strength for cyberpunk transformation
+          strength: neoTokyoGlitchPreset.strength, // Use actual preset strength
           guidance_scale: 7.5, // Standard guidance for consistency
           cfg_scale: 7.0, // Balanced creativity vs adherence
-          denoising_strength: 0.65, // Match strength for consistency
+          denoising_strength: neoTokyoGlitchPreset.strength, // Match preset strength
           features: neoTokyoGlitchPreset.features,
           generation_type: "neo_tokyo_cyberpunk" // Mark as cyberpunk transformation
         };

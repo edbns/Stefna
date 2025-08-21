@@ -239,25 +239,21 @@ export const handler: Handler = async (event) => {
       });
     }
     
-    // 🔧 CRITICAL FIX: HARD CLAMP strength to prevent double faces
-    const rawStrength = Number(requestBody.strength ?? 0.08);
-    const clampedStrength = Math.max(0.06, Math.min(0.10, rawStrength));
-    const numVariations = 1; // Always 1 to avoid grids/diptychs
-    
-    console.log('🔧 Strength clamping applied:', {
-      requested: rawStrength,
-      clamped: clampedStrength,
-      reason: rawStrength > 0.10 ? 'Too high - prevents double faces' : 
-              rawStrength < 0.06 ? 'Too low - ensures visible changes' : 'Within safe range'
+    // 🔧 Strength is already clamped in payload above - no need to clamp again
+    console.log('🔧 Strength validation:', {
+      requested: requestBody.strength,
+      final: payload.strength,
+      reason: Number(requestBody.strength) > 0.10 ? 'Too high - clamped to prevent double faces' : 
+              Number(requestBody.strength) < 0.06 ? 'Too low - clamped to ensure visible changes' : 'Within safe range'
     });
     
     // Build AIML API payload with SAFE defaults
     const aimlPayload = {
-      model: requestBody.model ?? process.env.AIML_MODEL ?? 'stable-diffusion-v35-large',
+      model: payload.model, // Use the sanitized payload
       prompt: enhancedPrompt,
       image_url: requestBody.image_url,
-      strength: clampedStrength, // Use clamped value
-      num_variations: numVariations // Always 1
+      strength: payload.strength, // Use the sanitized, clamped strength
+      num_variations: payload.num_variations // Always 1
     };
 
     console.log('🚀 Sending to AIML API:', {
@@ -392,7 +388,7 @@ export const handler: Handler = async (event) => {
     // 1) AUTO-RETRY LOGIC: Detect and retry diptychs/panels
     let hadRetry = false;
     let finalUrls = urls;
-    let finalStrength = clampedStrength;
+    let finalStrength = payload.strength;
     let finalModel = aimlPayload.model;
     let usedFallbackModel = false;
     
@@ -410,7 +406,7 @@ export const handler: Handler = async (event) => {
       console.log('🔄 Potential diptych detected, attempting retry with lower strength...');
       
       // Retry with lower strength and single panel guard
-      const retryStrength = Math.max(0.06, clampedStrength - 0.02);
+              const retryStrength = Math.max(0.06, payload.strength - 0.02);
       const retryPrompt = enhancedPrompt + '. Use a single continuous frame; do not compose a grid or split the image.';
       
       const retryPayload = {
@@ -506,7 +502,7 @@ export const handler: Handler = async (event) => {
       prompt: aimlPayload.prompt,
       variations_generated: finalUrls.length,
       strength_used: finalStrength, // Show what strength was actually used
-      strength_requested: rawStrength, // Show what was requested
+      strength_requested: requestBody.strength, // Show what was requested
       had_retry: hadRetry, // Track if retry was attempted
       retry_reason: hadRetry ? 'Potential diptych detected' : null,
       used_fallback_model: usedFallbackModel, // Track if fallback was used
@@ -531,9 +527,9 @@ export const handler: Handler = async (event) => {
       preset_id: requestBody.presetId || 'unknown',
       model_used: finalModel,
       model_requested: aimlPayload.model,
-      strength_requested: rawStrength,
+      strength_requested: requestBody.strength,
       strength_used: finalStrength,
-      strength_clamped: clampedStrength,
+      strength_clamped: payload.strength,
       num_variations: finalUrls.length,
       had_retry: hadRetry,
       used_fallback_model: usedFallbackModel,
