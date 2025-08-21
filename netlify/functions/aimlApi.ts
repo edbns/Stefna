@@ -7,19 +7,23 @@ const AIML_BASE = 'https://api.aimlapi.com';
 
 // Mode-aware fallback chain - prevents style drift for identity-sensitive modes
 const FALLBACKS: Record<Mode, string[]> = {
-  emotionmask:    ['flux/dev'],                    // No fallback - prevents style drift
-  ghiblireact:    ['flux/dev'],                    // No fallback - prevents style drift  
-  preset:         ['flux/dev', 'flux-pro', 'flux-realism'], // Graceful fallback
-  custom:         ['flux/dev', 'flux-pro', 'flux-realism'], // Graceful fallback
-  neotokyoglitch: ['flux/dev', 'flux-pro'],        // Limited fallback - keeps cyberpunk style
-  none:           ['flux/dev'],                    // No fallback needed
+  emotionmask:    ['flux/dev/image-to-image'],                    // No fallback - prevents style drift
+  ghiblireact:    ['flux/dev/image-to-image'],                    // No fallback - prevents style drift  
+  preset:         ['flux/dev/image-to-image', 'flux-pro/v1.1-ultra', 'flux-realism'], // Graceful fallback
+  custom:         ['flux/dev/image-to-image', 'flux-pro/v1.1-ultra', 'flux-realism'], // Graceful fallback
+  neotokyoglitch: ['flux/dev/image-to-image', 'flux-pro/v1.1-ultra'],        // Limited fallback - keeps cyberpunk style
+  none:           ['flux/dev/image-to-image'],                    // No fallback needed
 };
 
 // flux/dev is the correct model name to use with AIML for i2i
 function normalizeModel(model?: string) {
-  if (!model) return 'flux/dev';
-  // collapse any ".../image-to-image" suffix variants to "flux/dev"
-  if (/^flux\/dev/i.test(model)) return 'flux/dev';
+  if (!model) return 'flux/dev/image-to-image';
+  
+  // Map all flux variants to exact strings used in fallbacks
+  if (/^flux\/dev/i.test(model)) return 'flux/dev/image-to-image';
+  if (/^flux-pro/i.test(model)) return 'flux-pro/v1.1-ultra';
+  if (/^flux-realism/i.test(model)) return 'flux-realism';
+  
   return model;
 }
 
