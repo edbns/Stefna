@@ -202,8 +202,8 @@ export const handler: Handler = async (event) => {
       console.log('💰 Final balance verification successful:', finalBalanceCheck[0].balance);
       console.log('💰 User has', finalBalanceCheck[0].balance, 'credits, requesting', cost, 'credits');
       
-      // 🔒 ENFORCE DAILY CAP: Check if user has exceeded daily limit
-      console.log('🔒 Checking daily usage against daily cap...');
+      // 🔒 ENFORCE DAILY CAP: Check if user has exceeded daily limit (UPDATED)
+console.log('🔒 Checking daily usage against daily cap...');
       const dailyUsageCheck = await sql`SELECT 
         COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) as daily_used
         FROM credits_ledger 
