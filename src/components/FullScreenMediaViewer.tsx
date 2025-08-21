@@ -175,15 +175,13 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
           {/* Actions - Simplified layout with copy functionality */}
           <div className="mt-6 text-center max-w-4xl px-4">
-            {/* Prompt display with text and copy icon */}
+            {/* Simple prompt display - just a few words with copy icon */}
             {current.prompt && (
-              <div className="flex flex-col items-center max-w-2xl mx-auto space-y-3">
-                {/* Prompt text */}
-                <div className="bg-white/10 border border-white/20 rounded-lg p-4 w-full">
-                  <p className="text-white/80 text-sm leading-relaxed break-words">
-                    {current.prompt}
-                  </p>
-                </div>
+              <div className="flex items-center justify-center space-x-2">
+                {/* Just show first few words of prompt */}
+                <span className="text-white/60 text-sm">
+                  {current.prompt.split(' ').slice(0, 3).join(' ')}...
+                </span>
                 
                 {/* Copy button */}
                 <button
