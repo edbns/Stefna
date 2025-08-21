@@ -116,10 +116,10 @@ BEGIN
   INSERT INTO credits_ledger(user_id, request_id, action, amount, status)
   VALUES (p_user, p_request, p_action, -p_cost, 'reserved');
 
-  UPDATE user_credits
-  SET balance = balance - p_cost, updated_at = now()
-  WHERE user_id = p_user AND balance >= p_cost
-  RETURNING balance INTO new_balance;
+  UPDATE user_credits uc
+  SET balance = uc.balance - p_cost, updated_at = now()
+  WHERE uc.user_id = p_user AND uc.balance >= p_cost
+  RETURNING uc.balance INTO new_balance;
 
   IF new_balance IS NULL THEN
     DELETE FROM credits_ledger WHERE user_id = p_user AND request_id = p_request;
@@ -128,7 +128,7 @@ BEGIN
 
   RETURN QUERY SELECT new_balance;
 EXCEPTION WHEN unique_violation THEN
-  RETURN QUERY SELECT balance FROM user_credits WHERE user_id = p_user;
+  RETURN QUERY SELECT uc.balance FROM user_credits uc WHERE uc.user_id = p_user;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -157,9 +157,9 @@ BEGIN
     VALUES (res.user_id, res.request_id, res.action, -res.amount, 'refunded', jsonb_build_object('reason','op_failed'))
     ON CONFLICT DO NOTHING;
 
-    UPDATE user_credits
-    SET balance = balance + (-res.amount), updated_at = now()
-    WHERE user_id = p_user;
+    UPDATE user_credits uc
+    SET balance = uc.balance + (-res.amount), updated_at = now()
+    WHERE uc.user_id = p_user;
   ELSE
     RAISE EXCEPTION 'INVALID_FINALIZE_STATUS %', p_status;
   END IF;
@@ -172,8 +172,8 @@ CREATE OR REPLACE FUNCTION app.grant_credits(
 )
 RETURNS void AS $$
 BEGIN
-  UPDATE user_credits SET balance = balance + p_amount, updated_at = now()
-  WHERE user_id = p_user;
+  UPDATE user_credits uc SET balance = uc.balance + p_amount, updated_at = now()
+  WHERE uc.user_id = p_user;
   IF NOT FOUND THEN
     INSERT INTO user_credits(user_id, balance) VALUES (p_user, p_amount);
   END IF;
