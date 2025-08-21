@@ -1,9 +1,9 @@
 export interface ProfessionalPresetConfig {
   id: string;
   label: string;
+  category: string;
   description: string;
-  prompt: string;
-  negative_prompt?: string;
+  promptAdd: string; // free-form text you append to the base prompt
   strength: number;
   model: string;
   mode: 'i2i';
@@ -46,8 +46,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   cinematic_glow: {
     id: 'cinematic_glow',
     label: 'Cinematic Glow',
-    description: 'Cinematic color grading with warm highlights, deep shadows, and rich blacks',
-    prompt: 'Enhance this image/video with cinematic color grading, warm highlights, deep shadows, and rich blacks. Add a subtle teal-orange tone balance. Keep faces natural.',
+    category: 'Cinematic',
+    description: 'Cinematic grading, warm highlights, deep shadows…',
+    promptAdd: 'cinematic color grading, warm highlights, deep shadows, rich blacks, subtle teal-orange balance, natural faces',
     strength: 0.45,
     model: 'flux/dev',
     mode: 'i2i',
@@ -59,8 +60,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   bright_airy: {
     id: 'bright_airy',
     label: 'Bright & Airy',
-    description: 'Clean, airy style with soft lighting and pastel tones',
-    prompt: 'Edit with a clean, airy style—soft lighting, pastel tones, balanced whites, and gentle shadows. Perfect for lifestyle, wellness, and yoga shots.',
+    category: 'Minimalist',
+    description: 'Clean, airy, pastel tones…',
+    promptAdd: 'clean airy style, soft lighting, pastel tones, balanced whites, gentle shadows',
     strength: 0.35,
     model: 'flux/dev',
     mode: 'i2i',
@@ -72,8 +74,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   vivid_pop: {
     id: 'vivid_pop',
     label: 'Vivid Pop',
-    description: 'Vibrant colors with realistic skin tones and enhanced clarity',
-    prompt: 'Make colors vibrant and saturated while keeping skin tones realistic. Enhance clarity and add slight contrast for a punchy, Instagram-ready look.',
+    category: 'Vibrant',
+    description: 'Vibrant colors, realistic skin…',
+    promptAdd: 'vibrant saturated colors, realistic skin tones, enhanced clarity, slight contrast, punchy look',
     strength: 0.40,
     model: 'flux/dev',
     mode: 'i2i',
@@ -85,8 +88,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   vintage_film_35mm: {
     id: 'vintage_film_35mm',
     label: 'Vintage Film 35mm',
-    description: 'Retro 35mm film look with warm faded tones and subtle grain',
-    prompt: 'Add a retro 35mm film look with warm faded tones, subtle grain, and soft shadows. Keep details sharp but with a nostalgic mood.',
+    category: 'Vintage',
+    description: 'Retro 35mm look…',
+    promptAdd: 'retro 35mm film look, warm faded tones, subtle grain, soft shadows, nostalgic mood, sharp details',
     strength: 0.50,
     model: 'flux/dev',
     mode: 'i2i',
@@ -98,8 +102,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   tropical_boost: {
     id: 'tropical_boost',
     label: 'Tropical Boost',
-    description: 'Boost blues, greens, and warm tones for tropical sunny feel',
-    prompt: 'Boost blues, greens, and warm tones for a tropical, sunny feel. Slight HDR for landscapes, keep people looking natural.',
+    category: 'Travel',
+    description: 'Sunny tropical feel…',
+    promptAdd: 'boosted blues and greens, warm tones, slight HDR for landscapes, natural skin',
     strength: 0.45,
     model: 'flux/dev',
     mode: 'i2i',
@@ -111,8 +116,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   urban_grit: {
     id: 'urban_grit',
     label: 'Urban Grit',
-    description: 'Desaturated blues with deep contrast and crisp details',
-    prompt: 'Apply desaturated blues, deep contrast, and crisp details. Keep shadows strong and highlights clean for an urban city aesthetic.',
+    category: 'Urban',
+    description: 'Desaturated blues, deep contrast…',
+    promptAdd: 'desaturated blues, deep contrast, crisp details, strong shadows, clean highlights, urban aesthetic',
     strength: 0.55,
     model: 'flux/dev',
     mode: 'i2i',
@@ -124,8 +130,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   mono_drama: {
     id: 'mono_drama',
     label: 'Mono Drama',
-    description: 'Black and white with strong contrast and detailed textures',
-    prompt: 'Convert to black and white with strong contrast, bright highlights, and detailed textures. Ideal for close-up portraits or moody street scenes.',
+    category: 'Black & White',
+    description: 'High-contrast B&W…',
+    promptAdd: 'black and white, strong contrast, bright highlights, detailed textures',
     strength: 0.60,
     model: 'flux/dev',
     mode: 'i2i',
@@ -137,8 +144,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   dreamy_pastels: {
     id: 'dreamy_pastels',
     label: 'Dreamy Pastels',
-    description: 'Soft-focus effect with pastel colors and warm highlights',
-    prompt: 'Add soft-focus effect, pastel colors, and warm highlights for a dreamy, romantic vibe. Keep details smooth and flattering.',
+    category: 'Soft',
+    description: 'Soft focus, pastel colors…',
+    promptAdd: 'soft focus, pastel colors, warm highlights, dreamy romantic vibe, smooth details',
     strength: 0.35,
     model: 'flux/dev',
     mode: 'i2i',
@@ -150,8 +158,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   golden_hour_magic: {
     id: 'golden_hour_magic',
     label: 'Golden Hour Magic',
-    description: 'Simulate golden hour lighting with warm tones and glowing highlights',
-    prompt: 'Simulate golden hour lighting—warm tones, glowing highlights, and soft shadows. Perfect for portraits and sunsets.',
+    category: 'Warm',
+    description: 'Simulate golden hour…',
+    promptAdd: 'golden hour lighting, warm tones, glowing highlights, soft shadows',
     strength: 0.45,
     model: 'flux/dev',
     mode: 'i2i',
@@ -163,8 +172,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   high_fashion_editorial: {
     id: 'high_fashion_editorial',
     label: 'High Fashion Editorial',
-    description: 'Sleek desaturated tones with strong contrast and smooth skin',
-    prompt: 'Sleek desaturated tones with strong contrast, minimal noise, and smooth skin retouching. Magazine cover quality.',
+    category: 'Editorial',
+    description: 'Desaturated, strong contrast…',
+    promptAdd: 'sleek desaturated tones, strong contrast, minimal noise, smooth skin retouching, editorial quality',
     strength: 0.50,
     model: 'flux/dev',
     mode: 'i2i',
@@ -176,8 +186,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   moody_forest: {
     id: 'moody_forest',
     label: 'Moody Forest',
-    description: 'Deep green tones with soft diffused light and light fog',
-    prompt: 'Deep green tones, soft diffused light, and light fog overlay for a moody forest atmosphere.',
+    category: 'Nature',
+    description: 'Deep greens, light fog…',
+    promptAdd: 'deep green tones, soft diffused light, light fog overlay, moody forest atmosphere',
     strength: 0.55,
     model: 'flux/dev',
     mode: 'i2i',
@@ -189,8 +200,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   desert_glow: {
     id: 'desert_glow',
     label: 'Desert Glow',
-    description: 'Warm sandy tones with golden highlights and gentle texture',
-    prompt: 'Warm sandy tones, golden highlights, and gentle texture enhancement for desert and dune scenes.',
+    category: 'Travel',
+    description: 'Warm sandy tones…',
+    promptAdd: 'warm sandy tones, golden highlights, gentle texture enhancement',
     strength: 0.45,
     model: 'flux/dev',
     mode: 'i2i',
@@ -202,8 +214,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   retro_polaroid: {
     id: 'retro_polaroid',
     label: 'Retro Polaroid',
-    description: 'Warm faded tones with soft focus and subtle frame edge blur',
-    prompt: 'Add warm faded tones, soft focus, and subtle frame edge blur for a retro instant camera feel.',
+    category: 'Vintage',
+    description: 'Warm faded instant look…',
+    promptAdd: 'warm faded tones, soft focus, subtle frame edge blur, retro instant camera feel',
     strength: 0.50,
     model: 'flux/dev',
     mode: 'i2i',
@@ -215,8 +228,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   crystal_clear: {
     id: 'crystal_clear',
     label: 'Crystal Clear',
-    description: 'Enhanced sharpness and clarity while keeping colors true',
-    prompt: 'Enhance sharpness, remove haze, and boost clarity while keeping colors true to life.',
+    category: 'Clarity',
+    description: 'Haze removal, clarity…',
+    promptAdd: 'enhanced sharpness, dehaze, boosted clarity, true-to-life colors',
     strength: 0.40,
     model: 'flux/dev',
     mode: 'i2i',
@@ -228,8 +242,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   ocean_breeze: {
     id: 'ocean_breeze',
     label: 'Ocean Breeze',
-    description: 'Bright blues with soft whites and airy highlights',
-    prompt: 'Bright blues, soft whites, and airy highlights for a clean, coastal feel.',
+    category: 'Travel',
+    description: 'Bright blues, airy highlights…',
+    promptAdd: 'bright blues, soft whites, airy highlights, clean coastal feel',
     strength: 0.40,
     model: 'flux/dev',
     mode: 'i2i',
@@ -241,8 +256,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   festival_vibes: {
     id: 'festival_vibes',
     label: 'Festival Vibes',
-    description: 'Rich saturated colors with warm highlights and slight vignette',
-    prompt: 'Rich saturated colors, warm highlights, and slight vignette for lively festival and street party scenes.',
+    category: 'Vibrant',
+    description: 'Rich saturation, slight vignette…',
+    promptAdd: 'rich saturated colors, warm highlights, slight vignette, lively festival mood',
     strength: 0.50,
     model: 'flux/dev',
     mode: 'i2i',
@@ -254,8 +270,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   noir_classic: {
     id: 'noir_classic',
     label: 'Noir Classic',
-    description: 'High-contrast black and white with sharp detail and deep blacks',
-    prompt: 'High-contrast black and white with sharp detail, deep blacks, and a timeless cinematic mood.',
+    category: 'Black & White',
+    description: 'Timeless cinematic B&W…',
+    promptAdd: 'black and white, high contrast, sharp detail, deep blacks, timeless cinematic mood',
     strength: 0.60,
     model: 'flux/dev',
     mode: 'i2i',
@@ -267,8 +284,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   sun_kissed: {
     id: 'sun_kissed',
     label: 'Sun-Kissed',
-    description: 'Golden warmth with soft shadows and glowing skin tones',
-    prompt: 'Golden warmth, soft shadows, and glowing skin tones for outdoor sunlit photos.',
+    category: 'Warm',
+    description: 'Golden warmth, glowing skin…',
+    promptAdd: 'golden warmth, soft shadows, glowing skin tones',
     strength: 0.40,
     model: 'flux/dev',
     mode: 'i2i',
@@ -280,8 +298,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   frost_light: {
     id: 'frost_light',
     label: 'Frost & Light',
-    description: 'Cool blues and crisp whites for winter and mountain scenes',
-    prompt: 'Cool blues and crisp whites for winter and mountain scenes, enhancing snow textures.',
+    category: 'Cool',
+    description: 'Cool blues, crisp whites…',
+    promptAdd: 'cool blues, crisp whites, enhanced snow textures, winter feel',
     strength: 0.45,
     model: 'flux/dev',
     mode: 'i2i',
@@ -293,8 +312,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   neon_nights: {
     id: 'neon_nights',
     label: 'Neon Nights',
-    description: 'Vivid neon colors with deep blacks and sharp clarity',
-    prompt: 'Vivid neon colors, deep blacks, and sharp clarity for night city scenes.',
+    category: 'Urban',
+    description: 'Vivid neon, deep blacks…',
+    promptAdd: 'vivid neon colors, deep blacks, sharp clarity, night city scene',
     strength: 0.55,
     model: 'flux/dev',
     mode: 'i2i',
@@ -306,8 +326,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   cultural_glow: {
     id: 'cultural_glow',
     label: 'Cultural Glow',
-    description: 'Enhance traditional fabrics and patterns with natural light',
-    prompt: 'Enhance traditional fabrics, patterns, and natural light to showcase cultural richness.',
+    category: 'Travel',
+    description: 'Enhance fabrics, patterns…',
+    promptAdd: 'enhanced traditional fabrics and patterns, natural light, cultural richness',
     strength: 0.40,
     model: 'flux/dev',
     mode: 'i2i',
@@ -319,8 +340,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   soft_skin_portrait: {
     id: 'soft_skin_portrait',
     label: 'Soft Skin Portrait',
-    description: 'Smooth skin tones with natural color correction and soft blur',
-    prompt: 'Smooth skin tones, natural color correction, and soft background blur for professional portraits.',
+    category: 'Portrait',
+    description: 'Smooth skin, natural color…',
+    promptAdd: 'smooth natural skin tones, subtle color correction, soft background blur',
     strength: 0.35,
     model: 'flux/dev',
     mode: 'i2i',
@@ -332,8 +354,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   rainy_day_mood: {
     id: 'rainy_day_mood',
     label: 'Rainy Day Mood',
-    description: 'Cool tones with soft reflections and subtle raindrop texture',
-    prompt: 'Cool tones, soft reflections, and subtle raindrop texture for rainy street or nature scenes.',
+    category: 'Moody',
+    description: 'Cool tones, raindrop texture…',
+    promptAdd: 'cool tones, soft reflections, subtle raindrop texture, rainy ambience',
     strength: 0.45,
     model: 'flux/dev',
     mode: 'i2i',
@@ -345,8 +368,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   wildlife_focus: {
     id: 'wildlife_focus',
     label: 'Wildlife Focus',
-    description: 'Enhance fur, feathers, or scales with natural tones and sharp detail',
-    prompt: 'Enhance fur, feathers, or scales with natural tones and sharp detail, keeping background slightly blurred.',
+    category: 'Nature',
+    description: 'Enhance fur/feathers…',
+    promptAdd: 'natural tones, sharp detail on fur/feathers/scales, slightly blurred background',
     strength: 0.50,
     model: 'flux/dev',
     mode: 'i2i',
@@ -358,8 +382,9 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
   street_story: {
     id: 'street_story',
     label: 'Street Story',
-    description: 'High contrast with rich shadows and enhanced textures',
-    prompt: 'High contrast, rich shadows, and enhanced textures for documentary-style street photography.',
+    category: 'Urban',
+    description: 'High contrast, textured…',
+    promptAdd: 'high contrast, rich shadows, enhanced textures, documentary street style',
     strength: 0.55,
     model: 'flux/dev',
     mode: 'i2i',

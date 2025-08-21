@@ -16,7 +16,7 @@ export const PRESET_PROMPTS: Record<string, string> = (() => {
   const prompts: Record<string, string> = {};
   
   activePresets.forEach(preset => {
-    prompts[preset.id] = preset.prompt;
+    prompts[preset.id] = preset.promptAdd;
   });
   
   return prompts;
@@ -29,7 +29,7 @@ export const V2V_PRESET_PROMPTS: Record<string, string> = (() => {
   
   activePresets.forEach(preset => {
     // Add video-specific enhancements to prompts
-    prompts[preset.id] = `${preset.prompt}, smooth motion, cinematic timing, enhanced video quality`;
+    prompts[preset.id] = `${preset.promptAdd}, smooth motion, cinematic timing, enhanced video quality`;
   });
   
   return prompts;
@@ -68,8 +68,8 @@ export const PRESETS: Record<PresetKey, PresetConfig> = (() => {
   activePresets.forEach(preset => {
     presets[preset.id as PresetKey] = {
       label: preset.label,
-      prompt: preset.prompt,
-      negative_prompt: preset.negative_prompt || 'blurry, low quality, distorted',
+      prompt: preset.promptAdd,
+      negative_prompt: 'blurry, low quality, distorted',
       strength: preset.strength,
       description: preset.description
     };

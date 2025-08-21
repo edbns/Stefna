@@ -1,6 +1,58 @@
 import type { Handler } from "@netlify/functions";
 import { json } from "./_lib/http";
 
+// --- ANIME FILTERS - AIML API INTEGRATION (SINGLE IMAGE PIPELINE ONLY) ---
+// This covers: Preset Definitions, Custom Prompt Override, Model Routing, and Credit Handling
+
+// --- PRESET DEFINITIONS ---
+export const ANIME_PRESETS = [
+  {
+    id: 'ghibli_reaction',
+    label: 'Studio Ghibli Reaction',
+    kind: 'ghibli',
+    model: 'flux/dev/image-to-image',
+    defaultPrompt: 'Anime-style reaction portrait with glistening tears, shocked face, sparkle overlays. Inspired by Studio Ghibli expressions.',
+    credits: 3,
+  },
+  {
+    id: 'neo_tokyo_glitch',
+    label: 'Neo Tokyo Glitch',
+    kind: 'tokyo',
+    model: 'stable-diffusion-v35-large',
+    defaultPrompt: 'Cyberpunk anime portrait with cel shading, neon colors, scanlines, tech tattoos and glitch overlays. Digital dystopian city backdrop.',
+    credits: 5,
+  }
+];
+
+// --- PROMPT + MODEL BUILDER ---
+export function buildAnimeFilterPayload({ presetId, image_url, customPrompt }) {
+  const preset = ANIME_PRESETS.find(p => p.id === presetId);
+  if (!preset) throw new Error('Unknown anime preset');
+
+  return {
+    model: preset.model,
+    preset: preset.id,
+    kind: preset.kind,
+    image_url,
+    isVideo: false,
+    generateTwo: false,
+    fps: 24,
+    prompt: customPrompt?.trim() || preset.defaultPrompt,
+  };
+}
+
+// --- CREDIT RESERVATION STRUCTURE ---
+export function getAnimeCreditPayload({ presetId }) {
+  const preset = ANIME_PRESETS.find(p => p.id === presetId);
+  if (!preset) throw new Error('Unknown anime preset');
+
+  return {
+    kind: preset.kind,
+    mode: 'anime_filter',
+    creditsNeeded: preset.credits,
+  };
+}
+
 export const handler: Handler = async (event) => {
   // Force redeploy - v4
   // Handle CORS preflight

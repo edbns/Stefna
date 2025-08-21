@@ -1133,11 +1133,10 @@ const HomeNew: React.FC = () => {
     setCurrentRunId(runId);
     console.info('▶ NEW dispatchGenerate', { kind, options, runId });
     
-    // 🛡️ Defensive Runtime Guard - Check for unknown modes
-    const KNOWN_MODES = ['preset', 'custom', 'emotionmask', 'ghiblireact', 'neotokyoglitch'];
-    if (!KNOWN_MODES.includes(kind)) {
-      console.warn("⚠️ Unknown mode encountered:", kind);
-      notifyError({ title: 'Unsupported generation type', message: `Mode '${kind}' is not supported` });
+    // 🛡️ Runtime Guard (For Safety) - Prevent unknown modes from crashing the app
+    if (!['preset', 'custom', 'emotionmask', 'ghiblireact', 'neotokyoglitch'].includes(kind)) {
+      console.warn("[dispatchGenerate] Unknown mode: ", kind);
+      notifyError({ title: 'Unsupported generation mode', message: 'This generation mode is not supported.' });
       return;
     }
     
@@ -1433,8 +1432,17 @@ const HomeNew: React.FC = () => {
                      /\/video\/upload\//.test(sourceUrl || '') ||
                      /\.(mp4|mov|webm|m4v)(\?|$)/i.test(sourceUrl || '');
 
-      // Model normalization function (matches server-side logic)
-      const normalizeModel = (model?: string) => {
+      // Model normalization function with anime filter routing
+      const normalizeModel = (model?: string, mode?: string) => {
+        // 🎭 Anime Filter Model Routing - Route to the right model based on mode
+        if (mode === 'ghiblireact') {
+          return 'flux/dev/image-to-image'; // Ghibli uses flux/dev for anime effects
+        }
+        if (mode === 'neotokyoglitch') {
+          return 'stable-diffusion-v35-large'; // Neo Tokyo uses SD for cyberpunk effects
+        }
+        
+        // Default model normalization for other modes
         if (!model || /^flux\/dev/i.test(model)) return 'flux/dev';
         return model;
       };
@@ -1445,7 +1453,7 @@ const HomeNew: React.FC = () => {
         prompt: effectivePrompt, // server will prepend the identity prelude
         image_url: sourceUrl,
         strength: generationMeta?.strength || 0.85, // No drama clamping - use simple values
-        model: normalizeModel(generationMeta?.model || 'flux/dev'),
+        model: normalizeModel(generationMeta?.model || 'flux/dev', kind),
         num_variations: 1,
       };
 
