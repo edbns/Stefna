@@ -4,7 +4,8 @@ import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
 import { randomUUID } from "crypto";
 
-// Force redeploy - v3 (Token system fixes)
+// VERSION: 4.0 - Complete token system overhaul
+// Force complete rebuild - major version change
 export const handler: Handler = async (event) => {
   // Force redeploy - v2
   // Handle CORS preflight
