@@ -91,8 +91,8 @@ const PRESETS = Object.fromEntries(
     key,
     {
       label: preset.label,
-      prompt: preset.promptAdd,
-      negative_prompt: 'blurry, low quality, distorted',
+      prompt: `Transform this image with ${preset.promptAdd.toLowerCase()}. Keep the original composition and subject identity intact.`,
+      negative_prompt: 'blurry, low quality, distorted, deformed, ugly, bad anatomy, duplicate faces, extra limbs',
       strength: preset.strength,
       description: preset.description
     }
