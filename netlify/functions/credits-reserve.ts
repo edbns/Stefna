@@ -249,8 +249,8 @@ export const handler: Handler = async (event) => {
       
       // 🔒 NEW: Check if user has negative balance and block until 24h reset
       console.log('🔒 Checking user credit balance for negative balance blocking...');
-      const currentBalanceCheck = await sql`SELECT amount FROM credits WHERE user_id = ${userId}`;
-      const currentBalance = currentBalanceCheck[0]?.amount || 0;
+      const currentBalanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
+      const currentBalance = currentBalanceCheck[0]?.balance || 0;
       
       if (currentBalance < 0) {
         console.log('🔒 User has negative balance:', currentBalance, '- blocking generation until 24h reset');
