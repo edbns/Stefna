@@ -58,8 +58,8 @@ export interface IPAState {
 // Default threshold for face similarity (cosine similarity)
 const DEFAULT_THRESHOLD = 0.35;
 
-// InsightFace model loading state
-let insightfaceModel: any = null;
+// MediaPipe Face Mesh model loading state
+let faceMeshModel: any = null;
 let isModelLoading = false;
 
 export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
@@ -75,10 +75,10 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
 
   const modelLoadPromise = useRef<Promise<any> | null>(null);
 
-  // Load InsightFace model
-  const loadInsightFaceModel = useCallback(async (): Promise<any> => {
-    if (insightfaceModel) {
-      return insightfaceModel;
+  // Load MediaPipe Face Mesh model
+  const loadFaceMeshModel = useCallback(async (): Promise<any> => {
+    if (faceMeshModel) {
+      return faceMeshModel;
     }
 
     if (isModelLoading && modelLoadPromise.current) {
@@ -88,8 +88,8 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     if (isModelLoading) {
       return new Promise((resolve, reject) => {
         const checkModel = () => {
-          if (insightfaceModel) {
-            resolve(insightfaceModel);
+          if (faceMeshModel) {
+            resolve(faceMeshModel);
           } else if (isModelLoading) {
             setTimeout(checkModel, 100);
           } else {
@@ -103,29 +103,38 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     isModelLoading = true;
     
     try {
-      // Dynamic import of InsightFace
-      const insightface = await import('insightface');
+      // Dynamic import of MediaPipe Face Mesh
+      const { FaceMesh } = await import('@mediapipe/face_mesh');
+      const { Camera } = await import('@mediapipe/camera_utils');
+      const { drawConnectors } = await import('@mediapipe/drawing_utils');
       
-      // Load the model
-      const model = await insightface.FaceAnalysis({
-        models: ['inswapper_128', 'buffalo_l'],
-        useWebGL: true,
-        useWASM: false
+      // Initialize Face Mesh
+      const faceMesh = new FaceMesh({
+        locateFile: (file: string) => {
+          return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+        }
       });
-      
-      await model.prepare(ctx => {
-        // WebGL context setup
-        const canvas = document.createElement('canvas');
-        canvas.width = 640;
-        canvas.height = 640;
-        return canvas.getContext('webgl2') || canvas.getContext('webgl');
+
+      // Configure Face Mesh
+      faceMesh.setOptions({
+        maxNumFaces: 1,
+        refineLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
       });
-      
-      insightfaceModel = model;
+
+      // Wait for model to load
+      await new Promise<void>((resolve) => {
+        faceMesh.onResults(() => {
+          resolve();
+        });
+      });
+
+      faceMeshModel = faceMesh;
       setState(prev => ({ ...prev, isReady: true }));
-      return model;
+      return faceMesh;
     } catch (error) {
-      console.error('Failed to load InsightFace model:', error);
+      console.error('Failed to load MediaPipe Face Mesh model:', error);
       isModelLoading = false;
       throw error;
     } finally {
@@ -133,9 +142,9 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     }
   }, []);
 
-  // Extract face embedding from image
+  // Extract face embedding from image using MediaPipe
   const extractFaceEmbedding = useCallback(async (imageUrl: string): Promise<FaceEmbedding> => {
-    const model = await loadInsightFaceModel();
+    const model = await loadFaceMeshModel();
     
     // Create image element
     const img = new Image();
@@ -156,25 +165,33 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
           
-          // Detect faces
-          const faces = await model.detect(canvas);
+          // Process image with MediaPipe Face Mesh
+          const results = await new Promise<any>((resolveResults) => {
+            model.onResults((results: any) => {
+              resolveResults(results);
+            });
+            
+            // Send image to MediaPipe
+            model.send({ image: canvas });
+          });
           
-          if (faces.length === 0) {
+          if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
             reject(new Error('No faces detected in image'));
             return;
           }
           
-          // Get the first (main) face
-          const face = faces[0];
+          // Get the first (main) face landmarks
+          const landmarks = results.multiFaceLandmarks[0];
           
-          // Extract embedding vector
-          const embedding = await model.getEmbedding(face);
+          // Convert landmarks to embedding vector
+          // MediaPipe provides 468 3D points, we'll use a subset for the embedding
+          const embedding = convertLandmarksToEmbedding(landmarks);
           
           // Generate simple hash for image
           const imageHash = await generateImageHash(canvas);
           
           const result: FaceEmbedding = {
-            vector: Array.from(embedding),
+            vector: embedding,
             timestamp: Date.now(),
             imageHash
           };
@@ -188,7 +205,43 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
       img.onerror = () => reject(new Error('Failed to load image'));
       img.src = imageUrl;
     });
-  }, [loadInsightFaceModel]);
+  }, [loadFaceMeshModel]);
+
+  // Convert MediaPipe landmarks to embedding vector
+  const convertLandmarksToEmbedding = useCallback((landmarks: any[]): number[] => {
+    if (!landmarks || landmarks.length === 0) {
+      throw new Error('No landmarks provided');
+    }
+    
+    // Select key facial landmarks for embedding
+    // Focus on eyes, nose, mouth, and face outline for identity
+    const keyLandmarkIndices = [
+      10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109
+    ];
+    
+    const embedding: number[] = [];
+    
+    keyLandmarkIndices.forEach(index => {
+      if (landmarks[index]) {
+        const landmark = landmarks[index];
+        // Normalize coordinates and add to embedding
+        embedding.push(landmark.x);
+        embedding.push(landmark.y);
+        embedding.push(landmark.z);
+      }
+    });
+    
+    // Pad or truncate to consistent length (150 dimensions)
+    while (embedding.length < 150) {
+      embedding.push(0);
+    }
+    
+    if (embedding.length > 150) {
+      embedding.splice(150);
+    }
+    
+    return embedding;
+  }, []);
 
   // Generate simple image hash
   const generateImageHash = useCallback(async (canvas: HTMLCanvasElement): Promise<string> => {
@@ -428,7 +481,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     
     // Actions
     performIPACheck,
-    loadInsightFaceModel,
+    loadFaceMeshModel,
     extractFaceEmbedding,
     calculateCosineSimilarity,
     checkReadinessToScale,

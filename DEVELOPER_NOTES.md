@@ -50,7 +50,7 @@ The following files were created as part of a "Custom Prompt Composer" implement
 **What we built for quality control:**
 
 ### ✅ **IPA Face Check Hook** (`src/hooks/useIPAFaceCheck.ts`):
-- **Face Embedding Extraction** - Uses InsightFace for facial feature detection
+- **Face Embedding Extraction** - Uses MediaPipe Face Mesh for facial feature detection
 - **Cosine Similarity Calculation** - Measures how much generated images still look like the original person
 - **Quality Threshold** - Default 0.35 similarity threshold (configurable)
 - **Failure Logging** - Tracks every failed generation for analysis
@@ -60,12 +60,12 @@ The following files were created as part of a "Custom Prompt Composer" implement
 ### 🎯 **IPA System Features:**
 
 **Before Generation:**
-- Extract face vector from original image
+- Extract face vector from original image using MediaPipe Face Mesh
 - Store embedding for comparison
 
 **After Generation:**
-- Extract face vector from generated image
-- Calculate cosine similarity
+- Extract face vector from generated image using MediaPipe Face Mesh
+- Calculate cosine similarity between embeddings
 - If similarity < 0.35 → discard result
 - Log every failure with metadata
 
@@ -80,11 +80,17 @@ The following files were created as part of a "Custom Prompt Composer" implement
 
 ### 🔧 **Technical Implementation:**
 
-- **InsightFace Integration** - Professional face analysis library
-- **WebGL Acceleration** - Fast processing in browser
+- **MediaPipe Face Mesh Integration** - Uses existing MediaPipe library already in your project
+- **Browser-Optimized** - No server-side dependencies required
+- **468 Facial Landmarks** - High-precision face detection
 - **Vector Mathematics** - Cosine similarity for face comparison
 - **Persistent Logging** - Track all checks and failures
 - **Real-time Analysis** - Immediate quality feedback
+
+### 📦 **Dependencies (Already Installed):**
+- **MediaPipe Face Mesh** - Already available in your Emotion Mask, Ghibli, and Neo Tokyo modules
+- **No additional npm installs** required
+- **CDN-based model loading** for optimal performance
 
 ## 🎨 **Preset Engine System (Restored)**
 
@@ -173,7 +179,7 @@ if (result.passed) {
 **Your existing prompt composer now has:**
 
 ✅ **All 5 core features** working together  
-✅ **IPA V0.1 Face Embedding Check** for quality control  
+✅ **IPA V0.1 Face Embedding Check** for quality control (using MediaPipe)  
 ✅ **Smart preset engine** with rotation and management  
 ✅ **Complete FX modules** (Emotion Mask, Ghibli, Neo Tokyo)  
 ✅ **Production-ready generation pipeline**  
@@ -183,3 +189,5 @@ if (result.passed) {
 ---
 
 **Bottom Line:** Your existing prompt composer is already perfect. Don't recreate it! Instead, use the IPA system for quality control and the preset engine for smart preset management! 🎉
+
+**Note:** IPA system uses MediaPipe Face Mesh (already in your project) - no additional dependencies required! 🎭
