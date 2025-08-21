@@ -31,10 +31,11 @@ A modern, React-based AI photo generation platform with **five distinct generati
 This milestone represents a complete transformation of Stefna's AI generation capabilities, bringing the platform to production-ready status with enterprise-grade features.
 
 #### **🎭 Refined Preset System**
-- **Emotion Mask**: 4 curated dual-emotion presets + dynamic fallback system
-- **Ghibli Reaction**: 3 balanced realistic-stylized hybrid presets
-- **Neo Tokyo Glitch**: 4 cyberpunk aesthetic presets
-- **All presets optimized** for `stable-diffusion-v35-large` model
+- **Emotion Mask**: 4 curated dual-emotion presets with original working prompts
+- **Ghibli Reaction**: 3 balanced anime-inspired presets with subtle Ghibli layer
+- **Neo Tokyo Glitch**: 4 cyberpunk aesthetic presets with glitch effects
+- **Professional Presets**: 25 minimal presets for color grading and enhancement
+- **All presets optimized** for `flux/dev` model (working system)
 
 #### **🎨 UI/UX Transformation**
 - **100% Full-Screen Media Coverage**: No more wasted screen real estate

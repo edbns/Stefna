@@ -39,12 +39,23 @@ export const presetsStore = create<PresetsState>((set, get) => ({
     
     try {
       // Load presets dynamically to avoid circular dependencies
-      const { PRESETS } = await import('../utils/presets/types')
-      const presetEntries = Object.entries(PRESETS)
+      const { PROFESSIONAL_PRESETS } = await import('../config/professional-presets')
+      const presetEntries = Object.entries(PROFESSIONAL_PRESETS)
       const byId: Record<string, Preset> = {}
       
       for (const [key, preset] of presetEntries) {
-        byId[key] = preset
+        byId[preset.id] = {
+          id: preset.id,
+          label: preset.label,
+          description: preset.description,
+          prompt: preset.prompt,
+          negative_prompt: preset.negative_prompt,
+          strength: preset.strength,
+          model: 'flux' as const,
+          mode: preset.mode,
+          input: preset.input,
+          requiresSource: preset.requiresSource
+        }
       }
       
       set({ byId, status: 'ready' })

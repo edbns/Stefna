@@ -19,10 +19,10 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
-    prompt: 'portrait of a female cyberpunk anime character, cel-shaded, neon glow, glitch effects, cybernetic implants, glowing eyes, futuristic city background, pink and yellow light, sharp outline, dramatic lighting, synthwave color palette, retro scanlines',
+    prompt: 'Transform this image into a cyberpunk anime character. Use cel-shaded style, sharp neon outlines, and glitch effects. Background should look like a digital city with flickering lights or corrupted data.',
     negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features',
     strength: 0.65,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev', // Working system ignored this and used flux/dev/image-to-image
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
@@ -34,10 +34,10 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_visor',
     label: 'Glitch Visor',
-    prompt: 'portrait of a female cyberpunk anime character, cel-shaded, neon glow, glitch effects, cybernetic implants, glowing eyes, futuristic city background, pink and yellow light, sharp outline, dramatic lighting, synthwave color palette, retro scanlines, cybernetic visor, glitching UI overlay, holographic displays',
+    prompt: 'Transform this image into a cyberpunk anime character. Use cel-shaded style, sharp neon outlines, and glitch effects. Background should look like a digital city with flickering lights or corrupted data. Add a transparent glitch visor over one eye.',
     negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features',
     strength: 0.65,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev', // Working system ignored this and used flux/dev/image-to-image
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
@@ -49,10 +49,10 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_tattoos',
     label: 'Tech Tattoos',
-    prompt: 'portrait of a female cyberpunk anime character, cel-shaded, neon glow, glitch effects, cybernetic implants, glowing eyes, futuristic city background, pink and yellow light, sharp outline, dramatic lighting, synthwave color palette, retro scanlines, detailed tech tattoos, luminous skin implants, glowing circuitry patterns',
+    prompt: 'Transform this image into a cyberpunk anime character. Use cel-shaded style, sharp neon outlines, and glitch effects. Background should look like a digital city with flickering lights or corrupted data. Include glowing tech tattoos on the face or neck.',
     negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features',
     strength: 0.65,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev', // Working system ignored this and used flux/dev/image-to-image
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
@@ -64,10 +64,10 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_scanlines',
     label: 'Scanline FX',
-    prompt: 'portrait of a female cyberpunk anime character, cel-shaded, neon glow, glitch effects, cybernetic implants, glowing eyes, futuristic city background, pink and yellow light, sharp outline, dramatic lighting, synthwave color palette, retro scanlines, scanline texture overlay, VHS noise, visual distortion effects',
+    prompt: 'Transform this image into a cyberpunk anime character. Use cel-shaded style, sharp neon outlines, and glitch effects. Background should look like a digital city with flickering lights or corrupted data. Overlay subtle scanlines for a retro digital effect.',
     negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features',
     strength: 0.65,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev', // Working system ignored this and used flux/dev/image-to-image
     mode: 'i2i',
     input: 'image',
     requiresSource: true,

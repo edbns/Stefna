@@ -19,10 +19,10 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_tears',
     label: 'Tears',
-    prompt: 'Close-up portrait of a real person with a strong emotional Ghibli-style reaction. Keep facial features realistic and human. Add expressive details: large glassy eyes with reflections, slight blush, light tears, subtle manga-style stress lines or sweat drop. Emotion: crying with glassy tears streaming down face. Lighting is warm and soft. Skin is smooth and luminous. The emotion should be exaggerated but believable, like a moment from a Studio Ghibli film. Stylized but not fully anime.',
-    negative_prompt: 'full anime style, chibi, 3d, distorted face, cartoon, overly saturated colors, harsh outlines, surreal features, unrealistic proportions',
+    prompt: 'Transform the human face to resemble an anime reaction shot in the style of Studio Ghibli. Keep realistic skin and hair texture. Emphasize exaggerated emotion with stylized features like large glistening eyes, sparkles, tears, or shocked expressions. Add big glassy tears like Chihiro crying.',
+    negative_prompt: 'full anime face, 3d render, bad anatomy, distorted face, unrealistic, photo artifacts, harsh lighting',
     strength: 0.35,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev', // Working system ignored this and used flux/dev/image-to-image
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
@@ -34,10 +34,10 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_shock',
     label: 'Shock',
-    prompt: 'Close-up portrait of a real person with a strong emotional Ghibli-style reaction. Keep facial features realistic and human. Add expressive details: large glassy eyes with reflections, slight blush, light tears, subtle manga-style stress lines or sweat drop. Emotion: shocked with wide eyes and open mouth, surprise expression. Lighting is warm and soft. Skin is smooth and luminous. The emotion should be exaggerated but believable, like a moment from a Studio Ghibli film. Stylized but not fully anime.',
-    negative_prompt: 'full anime style, chibi, 3d, distorted face, cartoon, overly saturated colors, harsh outlines, surreal features, unrealistic proportions',
+    prompt: 'Transform the human face to resemble an anime reaction shot in the style of Studio Ghibli. Keep realistic skin and hair texture. Emphasize exaggerated emotion with stylized features like large glistening eyes, sparkles, tears, or shocked expressions. Exaggerate shocked anime face like Sophie from Howl\'s Moving Castle.',
+    negative_prompt: 'full anime face, 3d render, bad anatomy, distorted face, unrealistic, photo artifacts, harsh lighting',
     strength: 0.35,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev', // Working system ignored this and used flux/dev/image-to-image
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
@@ -49,10 +49,10 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: 'Close-up portrait of a real person with a strong emotional Ghibli-style reaction. Keep facial features realistic and human. Add expressive details: large glassy eyes with reflections, slight blush, light tears, subtle manga-style stress lines or sweat drop. Emotion: overjoyed with sparkles around face and bright anime blush, happy expression. Lighting is warm and soft. Skin is smooth and luminous. The emotion should be exaggerated but believable, like a moment from a Studio Ghibli film. Stylized but not fully anime.',
-    negative_prompt: 'full anime style, chibi, 3d, distorted face, cartoon, overly saturated colors, harsh outlines, surreal features, unrealistic proportions',
+    prompt: 'Transform the human face to resemble an anime reaction shot in the style of Studio Ghibli. Keep realistic skin and hair texture. Emphasize exaggerated emotion with stylized features like large glistening eyes, sparkles, tears, or shocked expressions. Add sparkles around face and big anime blush.',
+    negative_prompt: 'full anime face, 3d render, bad anatomy, distorted face, unrealistic, photo artifacts, harsh lighting',
     strength: 0.35,
-    model: 'stable-diffusion-v35-large',
+    model: 'flux/dev', // Working system ignored this and used flux/dev/image-to-image
     mode: 'i2i',
     input: 'image',
     requiresSource: true,

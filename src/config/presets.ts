@@ -1,14 +1,13 @@
 // presets.ts - Updated to use Professional Preset System
 import { PROFESSIONAL_PRESETS, ProfessionalPresetConfig, ProfessionalPresetKey } from './professional-presets';
-import presetRotationService from '../services/presetRotationService';
 
 export type PresetKey = ProfessionalPresetKey;
 
 export type PresetSel = { slug?: string; label?: string } | string;
 
-// Get active presets from rotation service
+// Get active presets directly from professional presets (no rotation service needed)
 export function getActivePresets(): ProfessionalPresetConfig[] {
-  return presetRotationService.getActivePresets();
+  return Object.values(PROFESSIONAL_PRESETS);
 }
 
 // Get preset prompts for active presets
@@ -68,7 +67,7 @@ export const PRESETS: Record<PresetKey, PresetConfig> = (() => {
   
   activePresets.forEach(preset => {
     presets[preset.id as PresetKey] = {
-      label: preset.name,
+      label: preset.label,
       prompt: preset.prompt,
       negative_prompt: preset.negative_prompt || 'blurry, low quality, distorted',
       strength: preset.strength,

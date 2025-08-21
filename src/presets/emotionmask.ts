@@ -24,14 +24,14 @@ export type EmotionMaskPreset = {
 
 export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
   {
-    id: "sad",
-    label: "Sad",
-    description: "Deep emotional sadness with teary eyes",
-    prompt: "Emotional portrait of a person looking deeply sad. Teary eyes, slightly trembling lips, furrowed brows. Lighting is moody and cinematic. Photorealistic style, realistic facial expression.",
+    id: "joy_sadness",
+    label: "Joy + Sadness",
+    description: "Bittersweet expression — smiling with teary eyes",
+    prompt: "edit the image to show a bittersweet expression — smiling with teary eyes, keep the face sharp, apply warm soft light on one side and cool blue shadows on the other, cinematic background blur, retain subject identity",
     negative_prompt: "cartoon, anime, ugly face, poorly drawn, overexaggerated",
-    vibe: "I'm feeling deeply sad and emotional.",
+    vibe: "I'm feeling bittersweet joy and sadness.",
     strength: 0.45,
-    model: "stable-diffusion-v35-large",
+    model: "flux/dev", // Working system ignored this and used flux/dev/image-to-image
     guidance_scale: 7.5,
     num_inference_steps: 30,
     face_fix: true,
@@ -42,18 +42,18 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
     meta: {
       source: "emotion_mask",
-      variant: "sad"
+      variant: "joy_sadness"
     }
   },
   {
-    id: "angry",
-    label: "Angry",
-    description: "Intense anger with dramatic expression",
-    prompt: "Close-up portrait showing intense anger. Eyebrows tightly pulled down, clenched jaw, flaring nostrils, strong eye focus. Dramatic lighting with warm tones. Cinematic realism.",
+    id: "strength_vulnerability",
+    label: "Strength + Vulnerability",
+    description: "Inner strength and subtle vulnerability",
+    prompt: "edit the image to reflect inner strength and subtle vulnerability, apply confident golden light from one side and soft blue-gray shadow on the other, keep eye contact strong, realistic skin texture, slight emotional tension in pose",
     negative_prompt: "cartoon, anime, deformed face, smiling",
-    vibe: "I'm feeling intense anger and frustration.",
+    vibe: "I'm feeling strong yet vulnerable.",
     strength: 0.45,
-    model: "stable-diffusion-v35-large",
+    model: "flux/dev", // Working system ignored this and used flux/dev/image-to-image
     guidance_scale: 7.5,
     num_inference_steps: 30,
     face_fix: true,
@@ -64,18 +64,18 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
     meta: {
       source: "emotion_mask",
-      variant: "angry"
+      variant: "strength_vulnerability"
     }
   },
   {
-    id: "love",
-    label: "Love",
-    description: "Affection and caring expression",
-    prompt: "Portrait of a person showing affection and love. Soft eyes, slight smile, glowing skin, warm lighting, gentle expression. Looks caring and emotionally open.",
+    id: "nostalgia_distance",
+    label: "Nostalgia + Distance",
+    description: "Nostalgic tone with reflective expression",
+    prompt: "transform the image with a nostalgic tone — faded warm backlight, cool desaturated face lighting, apply misty cinematic blur in background, keep expression soft and reflective, maintain identity and emotion",
     negative_prompt: "sad, crying, anime style, overly dramatic",
-    vibe: "I'm feeling love and affection.",
+    vibe: "I'm feeling nostalgic and distant.",
     strength: 0.45,
-    model: "stable-diffusion-v35-large",
+    model: "flux/dev", // Working system ignored this and used flux/dev/image-to-image
     guidance_scale: 7.5,
     num_inference_steps: 30,
     face_fix: true,
@@ -86,18 +86,18 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
     meta: {
       source: "emotion_mask",
-      variant: "love"
+      variant: "nostalgia_distance"
     }
   },
   {
-    id: "surprised",
-    label: "Surprised",
-    description: "Natural surprise expression",
-    prompt: "Photorealistic portrait of a person looking surprised. Raised eyebrows, wide-open eyes, slightly opened mouth. Lighting is even and soft, expression is natural.",
+    id: "peace_fear",
+    label: "Peace + Fear",
+    description: "Calm with underlying fear",
+    prompt: "edit to express calm with underlying fear, soft warm top light above the face, cool shadows under eyes and jaw, foggy or abstract background blur, keep the expression serene but eyes slightly tense, preserve full identity",
     negative_prompt: "cartoon, fake, unnatural lighting, unrealistic face",
-    vibe: "I'm feeling surprised and amazed.",
+    vibe: "I'm feeling peaceful yet afraid.",
     strength: 0.45,
-    model: "stable-diffusion-v35-large",
+    model: "flux/dev", // Working system ignored this and used flux/dev/image-to-image
     guidance_scale: 7.5,
     num_inference_steps: 30,
     face_fix: true,
