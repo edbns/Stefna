@@ -88,28 +88,69 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
         'neotokyo_cyberpunk': 'Neo Tokyo Glitch™',
         'neotokyo_retro': 'Neo Tokyo Glitch™',
         
-        // Standard presets
+        // Professional presets
         'cinematic_glow': 'Cinematic Glow',
         'bright_airy': 'Bright & Airy',
         'vivid_pop': 'Vivid Pop',
         'vintage_film_35mm': 'Vintage Film',
         'tropical_boost': 'Tropical Boost',
-        'urban_grit': 'Urban Grit'
+        'urban_grit': 'Urban Grit',
+        'mono_drama': 'B&W Drama',
+        'dreamy_pastels': 'Soft Pastel Glow',
+        'golden_hour_magic': 'Golden Hour Magic',
+        'high_fashion_editorial': 'Fashion Editorial',
+        'moody_forest': 'Forest Mood',
+        'desert_glow': 'Golden Dunes',
+        'retro_polaroid': 'Instant Retro',
+        'crystal_clear': 'Sharp Clarity',
+        'ocean_breeze': 'Coastal Air',
+        'festival_vibes': 'Vibrant Festival',
+        'noir_classic': 'Noir Cinema',
+        'sun_kissed': 'Warm Glow',
+        'frost_light': 'Winter Chill',
+        'neon_nights': 'Neon Nights',
+        'cultural_glow': 'Cultural Heritage',
+        'soft_skin_portrait': 'Natural Portrait',
+        'rainy_day_mood': 'Rain Mood',
+        'wildlife_focus': 'Wildlife Detail',
+        'street_story': 'Urban Portrait',
+        'express_enhance': 'Express Enhance'
       }
       return presetNames[media.metadata.presetId] || 'AI Style'
     }
     
-    // Check for generation modes
-    if (media.metadata?.mode === 'i2i') return 'Image to Image'
-    if (media.metadata?.mode === 'txt2img') return 'Text to Image'
-    if (media.metadata?.mode === 'restore') return 'Restore'
-    if (media.metadata?.mode === 'story') return 'Story Mode'
+    // Check for mode in metadata
+    if (media.metadata?.mode) {
+      const modeNames: Record<string, string> = {
+        'i2i': 'Image to Image',
+        'txt2img': 'Text to Image',
+        'restore': 'Restore',
+        'story': 'Story Mode'
+      }
+      return modeNames[media.metadata.mode] || 'AI Generated'
+    }
     
-
+    // Check for group in metadata
+    if (media.metadata?.group) {
+      const groupNames: Record<string, string> = {
+        'story': 'Story Mode',
+        'time_machine': 'Time Machine',
+        'restore': 'Restore'
+      }
+      return groupNames[media.metadata.group] || 'AI Generated'
+    }
     
-    // Fallback based on prompt
-    if (media.prompt && media.prompt.length > 0) return 'Custom Creation'
+    // Check for option key in metadata
+    if (media.metadata?.optionKey) {
+      return media.metadata.optionKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    }
     
+    // Fallback based on media type
+    if (media.type === 'video') {
+      return 'AI Video'
+    }
+    
+    // Default fallback
     return 'AI Generated'
   }
 
@@ -172,44 +213,6 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
               <ChevronRight size={24} />
             </button>
           )}
-
-          {/* Actions - Simplified layout with copy functionality */}
-          <div className="mt-6 text-center max-w-4xl px-4">
-            {/* Simple prompt display - just a few words with copy icon */}
-            {current.prompt && (
-              <div className="flex items-center justify-center space-x-2">
-                {/* Just show first few words of prompt */}
-                <span className="text-white/60 text-sm">
-                  {current.prompt.split(' ').slice(0, 3).join(' ')}...
-                </span>
-                
-                {/* Copy button */}
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(current.prompt)
-                      .then(() => {
-                        // Show a brief success indicator
-                        const button = document.activeElement as HTMLButtonElement
-                        if (button) {
-                          const originalHTML = button.innerHTML
-                          button.innerHTML = '<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>'
-                          setTimeout(() => {
-                            button.innerHTML = originalHTML
-                          }, 1000)
-                        }
-                      })
-                      .catch(err => console.error('Failed to copy prompt:', err))
-                  }}
-                  className="text-white/60 p-2 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200"
-                  title="Copy prompt to clipboard"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
