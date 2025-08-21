@@ -1,83 +1,123 @@
 // src/presets/emotionmask.ts
-// Stefna — AIML Minimal (No‑Grid, No‑Anime, Two‑Pass)
-// Only uses AIML-supported params: model, prompt, image_url, strength, num_variations
-// Purpose: eliminate "double face" and anime drift without adapters.
+export type EmotionMaskPreset = {
+  id: string;
+  label: string;
+  description: string;
+  prompt: string;
+  negative_prompt: string;
+  vibe: string;
+  strength: number;
+  model: string;
+  guidance_scale: number;
+  num_inference_steps: number;
+  face_fix: boolean;
+  face_method: string;
+  ipadapter_strength?: number;
+  ipadapter_noise?: number;
+  postprocessing: string[];
+  features: string[];
+  meta: {
+    source: string;
+    variant: string;
+  };
+};
 
-import { MinimalPreset } from '../utils/presets/aimlUtils';
+export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
+  {
+    id: "sad",
+    label: "Sad",
+    description: "Deep emotional sadness with teary eyes",
+    prompt: "Emotional portrait of a person looking deeply sad. Teary eyes, slightly trembling lips, furrowed brows. Lighting is moody and cinematic. Photorealistic style, realistic facial expression.",
+    negative_prompt: "cartoon, anime, ugly face, poorly drawn, overexaggerated",
+    vibe: "I'm feeling deeply sad and emotional.",
+    strength: 0.45,
+    model: "stable-diffusion-v35-large",
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    face_fix: true,
+    face_method: "ipadapter",
+    ipadapter_strength: 0.35,
+    ipadapter_noise: 0.05,
+    postprocessing: ["soft_light_blend", "face_restoration", "natural_color_enhancement"],
+    features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
+    meta: {
+      source: "emotion_mask",
+      variant: "sad"
+    }
+  },
+  {
+    id: "angry",
+    label: "Angry",
+    description: "Intense anger with dramatic expression",
+    prompt: "Close-up portrait showing intense anger. Eyebrows tightly pulled down, clenched jaw, flaring nostrils, strong eye focus. Dramatic lighting with warm tones. Cinematic realism.",
+    negative_prompt: "cartoon, anime, deformed face, smiling",
+    vibe: "I'm feeling intense anger and frustration.",
+    strength: 0.45,
+    model: "stable-diffusion-v35-large",
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    face_fix: true,
+    face_method: "ipadapter",
+    ipadapter_strength: 0.35,
+    ipadapter_noise: 0.05,
+    postprocessing: ["soft_light_blend", "face_restoration", "natural_color_enhancement"],
+    features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
+    meta: {
+      source: "emotion_mask",
+      variant: "angry"
+    }
+  },
+  {
+    id: "love",
+    label: "Love",
+    description: "Affection and caring expression",
+    prompt: "Portrait of a person showing affection and love. Soft eyes, slight smile, glowing skin, warm lighting, gentle expression. Looks caring and emotionally open.",
+    negative_prompt: "sad, crying, anime style, overly dramatic",
+    vibe: "I'm feeling love and affection.",
+    strength: 0.45,
+    model: "stable-diffusion-v35-large",
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    face_fix: true,
+    face_method: "ipadapter",
+    ipadapter_strength: 0.35,
+    ipadapter_noise: 0.05,
+    postprocessing: ["soft_light_blend", "face_restoration", "natural_color_enhancement"],
+    features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
+    meta: {
+      source: "emotion_mask",
+      variant: "love"
+    }
+  },
+  {
+    id: "surprised",
+    label: "Surprised",
+    description: "Natural surprise expression",
+    prompt: "Photorealistic portrait of a person looking surprised. Raised eyebrows, wide-open eyes, slightly opened mouth. Lighting is even and soft, expression is natural.",
+    negative_prompt: "cartoon, fake, unnatural lighting, unrealistic face",
+    vibe: "I'm feeling surprised and amazed.",
+    strength: 0.45,
+    model: "stable-diffusion-v35-large",
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    face_fix: true,
+    face_method: "ipadapter",
+    ipadapter_strength: 0.35,
+    ipadapter_noise: 0.05,
+    postprocessing: ["soft_light_blend", "face_restoration", "natural_color_enhancement"],
+    features: ["human_emotion", "natural_lighting", "emotional_realism", "cinematic_portrait"],
+    meta: {
+      source: "emotion_mask",
+      variant: "surprised"
+    }
+  },
 
-// ================================================================
-// Emotion Mask (Micro-expressions)
-// ================================================================
-
-// Global guards (inline into prompts)
-const SINGLE_PANEL_GUARD =
-  'Render the INPUT PHOTO as a single, continuous frame. Show ONE instance of the same subject. ' +
-  'Do NOT compose a grid, collage, split-screen, diptych, mirrored panel, border, seam, gutter, or frame. ' +
-  'Do NOT duplicate, mirror, or repeat any part of the face. Keep the original camera crop and background. ' +
-  'Preserve the person\'s identity exactly: same gender, skin tone, ethnicity, age, and facial structure.';
-
-export const EMOTION_MASK_PRESETS: MinimalPreset[] = [
-  {
-    id: 'none',
-    label: 'None',
-    prompt: '',
-    strength: 0.0,
-    model: 'flux/dev/image-to-image',
-    num_variations: 1,
-  },
-  {
-    id: 'joy_sadness',
-    label: 'Joy + Sadness',
-    prompt:
-      `${SINGLE_PANEL_GUARD} Modify only micro-expressions: gentle upward lip corners (no teeth) and eyes with subtle inner melancholy (slight inner-brow lift). ` +
-      `No geometry changes to nose, jaw, cheeks, or head angle.`,
-    strength: 0.07,
-    model: 'flux/dev/image-to-image',
-    num_variations: 1,
-  },
-  {
-    id: 'strength_vulnerability',
-    label: 'Strength + Vulnerability',
-    prompt:
-      `${SINGLE_PANEL_GUARD} Micro-only: confident steady gaze; faint lower-lid softness and a tiny brow pinch to hint vulnerability. ` +
-      `Do not alter facial structure, hairline, or crop.`,
-    strength: 0.07,
-    model: 'flux/dev/image-to-image',
-    num_variations: 1,
-  },
-  {
-    id: 'nostalgia_distance',
-    label: 'Nostalgia + Distance',
-    prompt:
-      `${SINGLE_PANEL_GUARD} Micro-only: softened gaze as if recalling a memory and a closed-mouth micro-smile; very slight pupil defocus to suggest distance.`,
-    strength: 0.07,
-    model: 'flux/dev/image-to-image',
-    num_variations: 1,
-  },
-  {
-    id: 'peace_fear',
-    label: 'Peace + Fear',
-    prompt:
-      `${SINGLE_PANEL_GUARD} Micro-only: relaxed cheeks and lips; slight brow raise with a touch more sclera visibility to imply quiet fear. Mouth closed.`,
-    strength: 0.07,
-    model: 'flux/dev/image-to-image',
-    num_variations: 1,
-  },
-  {
-    id: 'confidence_loneliness',
-    label: 'Confidence + Loneliness',
-    prompt:
-      `${SINGLE_PANEL_GUARD} Micro-only: confident eyes and steady mouth line; subtle inner-brow raise and minute down-turn at mouth corners to imply loneliness.`,
-    strength: 0.07,
-    model: 'flux/dev/image-to-image',
-    num_variations: 1,
-  },
 ];
 
-export function getEmotionMaskPreset(presetId: string): MinimalPreset | undefined {
-  return EMOTION_MASK_PRESETS.find((p) => p.id === presetId);
+export function getEmotionMaskPreset(presetId: string) {
+  return EMOTION_MASK_PRESETS.find(p => p.id === presetId);
 }
 
-export function isEmotionMaskPreset(presetId: string): boolean {
-  return EMOTION_MASK_PRESETS.some((p) => p.id === presetId);
+export function isEmotionMaskPreset(presetId: string) {
+  return presetId.startsWith('em_');
 }
