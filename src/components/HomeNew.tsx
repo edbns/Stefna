@@ -757,9 +757,15 @@ const HomeNew: React.FC = () => {
       // Dispatch event to refresh user profile if it's mounted
       window.dispatchEvent(new CustomEvent('refreshUserProfile'))
       
-      // Only clear composer for specific types of updates, not generation completion
-      // This prevents the generated image from disappearing immediately
-      console.log('🔄 User media updated - keeping composer state for generation results')
+      // Clear composer state after user media update (for MoodMorph and other modes)
+      console.log('🧹 Clearing composer state after user media update')
+      handleClearComposerState()
+      
+      // Force additional composer clearing for stubborn cases
+      setTimeout(() => {
+        console.log('🧹 Force clearing composer after user media update (delayed)');
+        handleClearComposerState();
+      }, 300);
     }
 
     const handleRefreshUserMedia = () => {
@@ -1573,8 +1579,8 @@ const HomeNew: React.FC = () => {
                 tags: [],
                 metadata: { quality: 'high', generationTime: 0, modelVersion: 'pending' }
               }
-              // Broadcast to profile to render immediately
-              window.dispatchEvent(new CustomEvent('userMediaUpdated', { detail: { optimistic: placeholder } }))
+              // Don't dispatch userMediaUpdated during generation - it clears the composer!
+              // The profile will refresh when the actual save completes
             }
           } catch {}
         } catch (err:any) {
@@ -1740,7 +1746,8 @@ const HomeNew: React.FC = () => {
                 tags: [],
                 metadata: { quality: 'high', generationTime: 0, modelVersion: 'pending' }
               }
-              window.dispatchEvent(new CustomEvent('userMediaUpdated', { detail: { optimistic: placeholder } }))
+              // Don't dispatch userMediaUpdated during generation - it clears the composer!
+              // The profile will refresh when the actual save completes
             }
           } catch {}
           try {
@@ -1769,6 +1776,13 @@ const HomeNew: React.FC = () => {
           }
           endGeneration(genId);
           setNavGenerating(false);
+          
+          // Clear composer after a delay so user can see their result
+          setTimeout(() => {
+            console.log('🧹 Clearing composer after generation completion');
+            handleClearComposerState();
+          }, 3000); // 3 seconds delay
+          
           return
         }
 
