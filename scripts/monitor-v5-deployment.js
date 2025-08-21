@@ -1,5 +1,5 @@
 async function monitorV5Deployment() {
-  console.log('🔍 Monitoring V5 function deployment...');
+  console.log('🔍 Monitoring credits-reserve function deployment...');
   console.log('⏰ Checking every 30 seconds...\n');
   
   let attempts = 0;
@@ -7,10 +7,10 @@ async function monitorV5Deployment() {
   
   const checkFunction = async () => {
     attempts++;
-    console.log(`📡 Attempt ${attempts}/${maxAttempts} - Checking V5 function...`);
+    console.log(`📡 Attempt ${attempts}/${maxAttempts} - Checking credits-reserve function...`);
     
     try {
-      const response = await fetch('https://stefna.netlify.app/.netlify/functions/credits-reserve-v5', {
+      const response = await fetch('https://stefna.netlify.app/.netlify/functions/credits-reserve', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ async function monitorV5Deployment() {
     // Continue checking
   }
   
-  console.log('🎯 V5 deployment monitoring complete!');
+  console.log('🎯 Credits-reserve deployment monitoring complete!');
   console.log('🚀 You can now test image generation!');
 }
 

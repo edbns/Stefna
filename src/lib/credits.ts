@@ -12,8 +12,8 @@ export async function runGeneration({
 }) {
   const requestId = crypto.randomUUID();
 
-  // reserve - using new v5 function
-  const r = await fetch(`${baseUrl}/credits-reserve-v5`, {
+  // reserve - using credits-reserve function
+  const r = await fetch(`${baseUrl}/credits-reserve`, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
     body: JSON.stringify({ action, cost: 2 }), // Updated to match new API

@@ -30,15 +30,29 @@ export const handler: Handler = async (event) => {
 
   console.log('[credits-reserve] Starting credits reservation...');
   console.log('[credits-reserve] Method:', event.httpMethod);
-  console.log('[credits-reserve] Headers:', event.headers);
+  console.log('[credits-reserve] Authorization header present:', !!event.headers.authorization);
+  console.log('[credits-reserve] Authorization header preview:', event.headers.authorization ? `${event.headers.authorization.substring(0, 20)}...` : 'none');
   
   try {
     if (event.httpMethod !== 'POST') {
       return json({ ok: false, error: 'Method not allowed' }, { status: 405 });
     }
 
-    const { userId } = requireAuth(event.headers.authorization);
-    console.log("[credits-reserve] User:", userId);
+    // Enhanced authentication with better error handling
+    let userId: string;
+    try {
+      const authResult = requireAuth(event.headers.authorization);
+      userId = authResult.userId;
+      console.log("[credits-reserve] User authenticated:", userId);
+    } catch (authError: any) {
+      console.error("[credits-reserve] Authentication failed:", authError.message);
+      return json({ 
+        ok: false, 
+        error: 'AUTHENTICATION_FAILED',
+        message: authError.message || 'Invalid or missing authentication token',
+        details: 'Please sign in again'
+      }, { status: 401 });
+    }
     
     const body = event.body ? JSON.parse(event.body) : {};
     console.log("📦 Request body parsed:", body);
