@@ -323,6 +323,9 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
+  // Add loading state for delete operations
+  const [isDeletingSelected, setIsDeletingSelected] = useState(false)
+
   const deleteSelectedMedia = async () => {
     if (selectedMediaIds.size === 0) return
 
@@ -357,6 +360,51 @@ const ProfileScreen: React.FC = () => {
     } catch (error) {
       console.error('❌ Bulk delete error:', error)
       addNotification('Delete Failed', 'Network or server error', 'error')
+    }
+  }
+
+  // Enhanced delete selected with loading state
+  const handleConfirmDeleteSelected = async () => {
+    if (selectedMediaIds.size === 0) return
+    
+    setIsDeletingSelected(true)
+    try {
+      // Delete each selected media item
+      const deletePromises = Array.from(selectedMediaIds).map(async (mediaId) => {
+        const token = authService.getToken()
+        if (!token) throw new Error('Authentication required')
+        
+        const response = await fetch('/.netlify/functions/delete-media', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ mediaId })
+        })
+        
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}))
+          throw new Error(error.message || `Failed to delete media ${mediaId}`)
+        }
+        
+        return mediaId
+      })
+      
+      await Promise.all(deletePromises)
+      
+      // Clear selection and refresh media
+      setSelectedMediaIds(new Set())
+      setIsSelectionMode(false)
+      await loadUserMedia()
+      
+      addNotification('Delete Successful', `Deleted ${selectedMediaIds.size} media items`, 'success')
+    } catch (error) {
+      console.error('❌ Bulk delete error:', error)
+      addNotification('Delete Failed', error instanceof Error ? error.message : 'Network or server error', 'error')
+    } finally {
+      setIsDeletingSelected(false)
+      setConfirm({ open: false, media: null })
     }
   }
 
@@ -1168,9 +1216,17 @@ const ProfileScreen: React.FC = () => {
                 {isSelectionMode && selectedMediaIds.size > 0 && (
                   <button
                     onClick={deleteSelectedMedia}
-                    className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/80 text-white hover:bg-red-500 transition-colors"
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/80 text-white hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isDeletingSelected}
                   >
-                    Delete Selected ({selectedMediaIds.size})
+                    {isDeletingSelected ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Deleting...</span>
+                      </div>
+                    ) : (
+                      `Delete Selected (${selectedMediaIds.size})`
+                    )}
                   </button>
                 )}
               </div>
