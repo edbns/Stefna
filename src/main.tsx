@@ -124,7 +124,9 @@ import { AppErrorBoundary } from './components/AppErrorBoundary'
 window.addEventListener('error', e => console.error('[window.onerror]', e.error || e.message));
 window.addEventListener('unhandledrejection', (e) => {
   const msg = String(e.reason || '');
-  if (msg.includes('ERR_BLOCKED_BY_CLIENT')) return; // ignore analytics blocks
+  if (msg.includes('ERR_BLOCKED_BY_CLIENT') || 
+      msg.includes('rum_collection') || 
+      msg.includes('Failed to fetch')) return; // ignore analytics/ad-blocker noise
   console.error('[unhandledrejection]', e.reason);
 });
 

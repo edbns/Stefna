@@ -2086,6 +2086,12 @@ const HomeNew: React.FC = () => {
       endGeneration(genId);
       setNavGenerating(false);
       
+      // 🛡️ RUN ID PROTECTION: Only handle success for current run
+      if (currentRunId !== runId) {
+        console.warn('⚠️ Ignoring success for stale run:', runId, 'current:', currentRunId);
+        return;
+      }
+      
       // Keep preset selected for user convenience (stateless generation doesn't need clearing)
       
       // Clear mode state on success
@@ -2139,6 +2145,12 @@ const HomeNew: React.FC = () => {
 
     } catch (e) {
       console.error('dispatchGenerate error', e);
+      
+      // 🛡️ RUN ID PROTECTION: Only handle errors for current run
+      if (currentRunId !== runId) {
+        console.warn('⚠️ Ignoring error for stale run:', runId, 'current:', currentRunId);
+        return;
+      }
       
       // Show user-friendly error message
       let errorMessage = 'Please try again';
