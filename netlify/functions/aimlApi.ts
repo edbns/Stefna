@@ -5,6 +5,14 @@ type Mode = 'custom' | 'preset' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitc
 
 const AIML_BASE = 'https://api.aimlapi.com';
 
+// Model fallback chain - try each model until one succeeds
+const MODEL_FALLBACK_CHAIN = [
+  'flux/dev',           // Primary: standard Flux
+  'flux-pro/v1.1-ultra', // Secondary: premium Flux Pro
+  'flux-realism',       // Tertiary: Flux Realism variant
+  'dall-e-3'            // Final: DALL-E 3 as last resort
+];
+
 // flux/dev is the correct model name to use with AIML for i2i
 function normalizeModel(model?: string) {
   if (!model) return 'flux/dev';
@@ -13,7 +21,7 @@ function normalizeModel(model?: string) {
   return model;
 }
 
-// server-side strength policy (Flux likes ~0.12–0.30 to be noticeable)
+// server-side strength policy (Flux needs higher denoise than SD to avoid passthrough)
 const STRENGTH: Record<Mode, { min: number; def: number; max: number }> = {
   custom:         { min: 0.12, def: 0.16, max: 0.22 },
   preset:         { min: 0.12, def: 0.16, max: 0.22 },
@@ -76,7 +84,7 @@ export const handler: Handler = async (event: any) => {
     }
 
     // normalize model and strength per-mode
-    const model = normalizeModel(raw.model);
+    const requestedModel = normalizeModel(raw.model);
     const policy = STRENGTH[mode];
     const strength = clamp(
       isFinite(requestedStrength) ? requestedStrength : policy.def,
@@ -91,71 +99,128 @@ export const handler: Handler = async (event: any) => {
 
     const prompt = `${prelude}\n${userPrompt || ''}`.trim();
 
-    // Only forward supported fields
-    const aimlPayload = {
-      model,
-      prompt,
-      image_url,
-      strength,
-      num_variations,
-    };
+    // Try endpoints and models in sequence until one succeeds
+    const ENDPOINTS = ['/v1/images', '/images'];
+    let lastError = '';
+    let result: any = null;
+    let successfulModel = '';
+    let used_fallback_model = false;
+    let fallback_reason = null;
 
-    // Try /v1/images then /images (some providers differ)
-    const tryOnce = async () => {
-      let res = await postAIML('/v1/images', auth, aimlPayload);
-      if (res.status === 404) res = await postAIML('/images', auth, aimlPayload);
+    // Try each model in the fallback chain
+    for (const model of MODEL_FALLBACK_CHAIN) {
+      console.log(`🎯 Trying model: ${model}`);
+      
+      // Build payload for this model
+      const aimlPayload = {
+        model,
+        prompt,
+        image_url,
+        strength,
+        num_variations,
+      };
+
+      // Try each endpoint for this model
+      for (const path of ENDPOINTS) {
+        try {
+          const { res, json, text } = await tryEndpoint(path, auth, aimlPayload);
+          
+          if (res.ok && json?.images?.[0]?.url) {
+            result = json;
+            successfulModel = model;
+            used_fallback_model = model !== MODEL_FALLBACK_CHAIN[0];
+            fallback_reason = used_fallback_model ? `Primary model failed, ${model} succeeded` : null;
+            
+            console.log(`✅ Success with model: ${model} on endpoint: ${path}`);
+            break;
+          } else {
+            lastError = `(${res.status}) ${text || res.statusText}`;
+            console.log(`❌ Model ${model} failed on ${path}: ${lastError}`);
+          }
+        } catch (error: any) {
+          lastError = `Error: ${error.message}`;
+          console.log(`❌ Model ${model} error on ${path}: ${lastError}`);
+        }
+      }
+      
+      // If we got a successful result, break out of model loop
+      if (result) break;
+    }
+
+    // Helper function to try an endpoint
+    async function tryEndpoint(path: string, auth: string, payload: any) {
+      let res = await postAIML(path, auth, payload);
+      if (res.status === 404) res = await postAIML(path === '/v1/images' ? '/images' : '/v1/images', auth, payload);
       const text = await res.text();
       let json: any = {};
       try { json = JSON.parse(text); } catch { /* leave text in */ }
       return { res, json, text };
-    };
-
-    let { res, json } = await tryOnce();
-
-    // No-op guard: if inference is suspiciously fast (<0.5s), bump strength once (+0.04) and retry
-    let had_retry = false;
-    if (res.ok && json?.timings?.inference != null && json.timings.inference < 0.5 && strength < policy.max) {
-      const bumped = clamp(strength + 0.04, policy.min, policy.max);
-      const retryPayload = { ...aimlPayload, strength: bumped };
-      let res2 = await postAIML('/v1/images', auth, retryPayload);
-      if (res2.status === 404) res2 = await postAIML('/images', auth, retryPayload);
-      const text2 = await res2.text();
-      let json2: any = {};
-      try { json2 = JSON.parse(text2); } catch {}
-      if (res2.ok) {
-        res = res2; json = json2; had_retry = true;
-      }
     }
 
-    if (!res.ok) {
-      const status = res.status;
-      const reason = json?.error || json || 'AIML_ERROR';
+    if (!result?.images?.[0]?.url) {
       return {
         statusCode: 500,
-        body: JSON.stringify({ ok: false, error: `AIML_${status}`, reason }),
+        body: JSON.stringify({ ok: false, error: `All models failed. Last error: ${lastError}` }),
       };
+    }
+
+    // No-op guard: if inference is suspiciously fast (<0.5s), bump strength once (+0.04) and retry
+    const inference = Number(result?.timings?.inference ?? 0);
+    const canBump = successfulModel.startsWith('flux') && strength < policy.max;
+    let had_retry = false;
+    
+    if (canBump && inference > 0 && inference < 0.5) {
+      const bumped = clamp(strength + 0.04, policy.min, policy.max);
+      const retryPayload = { 
+        model: successfulModel,
+        prompt,
+        image_url,
+        strength: bumped,
+        num_variations,
+      };
+      
+      // Retry with the successful model and endpoint
+      const retry = await postAIML('/v1/images', auth, retryPayload);
+      if (retry.status === 404) {
+        const retry2 = await postAIML('/images', auth, retryPayload);
+        if (retry2.ok) {
+          const retryJson = await retry2.json().catch(() => ({}));
+          if (retryJson?.images?.[0]?.url) {
+            result = retryJson;
+            had_retry = true;
+            console.log('🔄 Strength bumped from', strength, 'to', bumped, 'due to fast inference');
+          }
+        }
+      } else if (retry.ok) {
+        const retryJson = await retry.json().catch(() => ({}));
+        if (retryJson?.images?.[0]?.url) {
+          result = retryJson;
+          had_retry = true;
+          console.log('🔄 Strength bumped from', strength, 'to', bumped, 'due to fast inference');
+        }
+      }
     }
 
     // Normalize response to your client shape
     const imageUrls: string[] =
-      json?.image_urls ??
-      (Array.isArray(json?.images) ? json.images.map((i: any) => i.url).filter(Boolean) : []);
+      result?.image_urls ??
+      (Array.isArray(result?.images) ? result.images.map((i: any) => i.url).filter(Boolean) : []);
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         ok: true,
         image_urls: imageUrls,
-        model,
+        model: successfulModel,
         prompt,
         variations_generated: imageUrls.length || num_variations,
         strength_used: strength,
         strength_requested: requestedStrength,
         had_retry,
-        used_fallback_model: false,
-        fallback_reason: null,
+        used_fallback_model,
+        fallback_reason,
         image_url: imageUrls[0] || null,
-        timings: json?.timings ?? null,
+        timings: result?.timings ?? null,
       }),
       headers: {
         'content-type': 'application/json; charset=utf-8',
