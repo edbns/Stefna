@@ -1,9 +1,9 @@
 import React from 'react'
 import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
-import { MinimalPreset } from '../utils/presets/aimlUtils'
+// import { MinimalPreset } from '../utils/presets/aimlUtils' // REMOVED - drama file deleted
 
 interface GhibliReactionPickerProps {
-  presets?: MinimalPreset[]
+  presets?: any[] // MinimalPreset removed - drama type deleted
   value?: string | null
   onChange: (presetId: string | null) => void
   className?: string

@@ -68,10 +68,10 @@ const I2IV2VInterface: React.FC<I2IV2VInterfaceProps> = ({
     }
     
     // Apply user intent guard
-    if (requireUserIntent({ userInitiated: true, source: 'custom' })) {
-      onError('Generation blocked by guard');
-      return;
-    }
+    // if (requireUserIntent({ userInitiated: true, source: 'custom' })) { // REMOVED - drama function deleted
+    //   onError('Generation blocked by guard');
+    //   return;
+    // }
 
     setIsGenerating(true)
     setGenerationStatus({

@@ -27,7 +27,7 @@ import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
 import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
 
 import { paramsForI2ISharp } from '../services/infer-params'
-import { clampStrength } from '../lib/strengthPolicy'
+// import { clampStrength } from '../lib/strengthPolicy' // REMOVED - drama file deleted
 
 
 
@@ -81,7 +81,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
 
 
 import { PRESETS, resolvePreset } from '../utils/presets/types'
-import presetRotationService from '../services/presetRotationService'
+// import presetRotationService from '../services/presetRotationService' // REMOVED - drama service deleted
 import captionService from '../services/captionService'
 import { onPresetClick } from '../handlers/presetHandlers'
 
@@ -93,7 +93,7 @@ import ShareModal from './ShareModal'
 
 // import { requireUserIntent } from '../utils/generationGuards' // REMOVED - complex drama file
 import userMediaService from '../services/userMediaService'
-import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils'
+// import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils' // REMOVED - drama file deleted
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
 import { saveMedia, togglePublish } from '../lib/api'
@@ -1376,12 +1376,12 @@ const HomeNew: React.FC = () => {
 
     // Apply user intent guard
     console.log('🛡️ Checking user intent guard:', { userInitiated: true, source: kind });
-    if (requireUserIntent({ userInitiated: true, source: kind })) {
-      console.warn('⛔ Generation blocked by guard');
-      endGeneration(genId);
-      setNavGenerating(false);
-      return;
-    }
+    // if (requireUserIntent({ userInitiated: true, source: kind })) { // REMOVED - drama function deleted
+    //   console.warn('⛔ Generation blocked by guard');
+    //   endGeneration(genId);
+    //   setNavGenerating(false);
+    //   return;
+    // }
     console.log('✅ User intent guard passed');
 
     try {
@@ -1444,7 +1444,7 @@ const HomeNew: React.FC = () => {
         mode: kind,
         prompt: effectivePrompt, // server will prepend the identity prelude
         image_url: sourceUrl,
-        strength: clampStrength(kind as any, generationMeta?.strength || 0.85),
+        strength: generationMeta?.strength || 0.85, // No drama clamping - use simple values
         model: normalizeModel(generationMeta?.model || 'flux/dev'),
         num_variations: 1,
       };
@@ -1681,7 +1681,8 @@ const HomeNew: React.FC = () => {
       }
 
       // Process the generated result(s) using robust parsing
-      const resultUrl = pickResultUrl(body);
+      // const resultUrl = pickResultUrl(body); // REMOVED - drama function deleted
+      const resultUrl = body?.image_url || body?.image_urls?.[0] || null;
       const allResultUrls = body.result_urls || [resultUrl];
       const variationsGenerated = body.variations_generated || 1;
       
@@ -2164,10 +2165,10 @@ const HomeNew: React.FC = () => {
     }
     
     // Apply user intent guard
-    if (requireUserIntent({ userInitiated: true, source: 'custom' })) {
-      console.warn('⛔ Generation blocked by guard');
-      return;
-    }
+    // if (requireUserIntent({ userInitiated: true, source: 'custom' })) { // REMOVED - drama function deleted
+    //   console.warn('⛔ Generation blocked by guard');
+    //   return;
+    // }
     // Close composer immediately and show progress on avatar
     const genId = startGeneration()
     setIsComposerOpen(false)
