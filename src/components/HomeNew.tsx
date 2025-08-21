@@ -1291,8 +1291,8 @@ const HomeNew: React.FC = () => {
       // NO MORE SYNTHETIC PROMPT GENERATION - preserve emotional intent
       effectivePrompt = emotionMaskPreset.prompt;
       
-      // Apply identity lock adjustments
-      const adjustedStrength = identityLock ? Math.min(emotionMaskPreset.strength * 0.7, 0.45) : emotionMaskPreset.strength;
+      // Apply identity lock adjustments - more aggressive for Emotion Mask
+      const adjustedStrength = identityLock ? Math.min(emotionMaskPreset.strength * 0.5, 0.32) : emotionMaskPreset.strength;
       
       generationMeta = { 
         mode: 'emotionmask', 
@@ -1753,12 +1753,17 @@ const HomeNew: React.FC = () => {
 
           
           if (!ipaResult.passed) {
+            console.log(`🔒 IPA check failed (${generationMeta?.mode || 'unknown'} mode) - similarity: ${ipaResult.similarity.toFixed(3)}`);
             
             // Retry with lower strength for better identity preservation
+            // More aggressive for Emotion Mask to preserve identity
+            const retryMultiplier = generationMeta?.mode === 'emotionmask' ? 0.4 : 0.6;
             const retryPayload = {
               ...payload,
-              strength: Math.min(payload.strength * 0.6, 0.35), // Lower strength for retry
+              strength: Math.min(payload.strength * retryMultiplier, 0.25),
             };
+            
+            console.log(`🔒 Retry with ${retryMultiplier}x strength: ${payload.strength} → ${retryPayload.strength}`);
             
 
             
