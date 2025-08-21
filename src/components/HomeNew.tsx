@@ -757,15 +757,9 @@ const HomeNew: React.FC = () => {
       // Dispatch event to refresh user profile if it's mounted
       window.dispatchEvent(new CustomEvent('refreshUserProfile'))
       
-      // Clear composer state after user media update (for MoodMorph and other modes)
-      console.log('🧹 Clearing composer state after user media update')
-      handleClearComposerState()
-      
-      // Force additional composer clearing for stubborn cases
-      setTimeout(() => {
-        console.log('🧹 Force clearing composer after user media update (delayed)');
-        handleClearComposerState();
-      }, 300);
+      // Only clear composer for specific types of updates, not generation completion
+      // This prevents the generated image from disappearing immediately
+      console.log('🔄 User media updated - keeping composer state for generation results')
     }
 
     const handleRefreshUserMedia = () => {
@@ -1762,7 +1756,8 @@ const HomeNew: React.FC = () => {
             console.log('✅ saveMedia ok:', saved)
             // Refresh both feed and user profile
             setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
-            setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated')), 1000)
+            // DON'T dispatch userMediaUpdated here - it clears the composer!
+            // The composer should stay open so user can see their result
           } catch (e:any) {
             console.error('❌ saveMedia failed:', e)
             notifyError({ title: 'Something went wrong', message: e?.message || 'Failed to save media' })
@@ -3260,6 +3255,8 @@ const HomeNew: React.FC = () => {
           {/* Bottom composer bar - compact, horizontally 70% */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
             <div className="bg-black border border-[#333333] rounded-2xl px-4 py-3 shadow-2xl transition-all duration-300">
+              
+
               
 
               {/* Prompt Input - ALWAYS VISIBLE for all modes */}
