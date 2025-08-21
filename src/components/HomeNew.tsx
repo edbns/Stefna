@@ -1541,7 +1541,7 @@ const HomeNew: React.FC = () => {
       
       console.log(`💰 Credit reservation: mapping ${kind} → ${creditAction}`);
       
-      const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
+      const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve-v5', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2251,7 +2251,7 @@ const HomeNew: React.FC = () => {
         creditsNeeded 
       });
       
-      const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
+      const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve-v5', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

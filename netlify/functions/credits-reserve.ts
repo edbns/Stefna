@@ -4,8 +4,16 @@ import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
 import { randomUUID } from "crypto";
 
-// VERSION: 4.0 - Complete token system overhaul
-// Force complete rebuild - major version change
+// ============================================================================
+// VERSION: 5.0 - COMPLETE TOKEN SYSTEM OVERHAUL
+// ============================================================================
+// This function has been completely rewritten to fix the token system
+// - Removed localStorage dependency
+// - Fixed database schema references
+// - Added proper error handling
+// - Force Netlify to completely rebuild this function
+// ============================================================================
+
 export const handler: Handler = async (event) => {
   // Force redeploy - v2
   // Handle CORS preflight

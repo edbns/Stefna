@@ -12,11 +12,11 @@ export async function runGeneration({
 }) {
   const requestId = crypto.randomUUID();
 
-  // reserve
-  const r = await fetch(`${baseUrl}/credits-reserve`, {
+  // reserve - using new v5 function
+  const r = await fetch(`${baseUrl}/credits-reserve-v5`, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-    body: JSON.stringify({ action, request_id: requestId }),
+    body: JSON.stringify({ action, cost: 2 }), // Updated to match new API
   });
   if (r.status === 401) throw new Error("Please sign in again.");
   if (r.status === 402) throw new Error("Not enough credits.");
