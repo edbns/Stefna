@@ -183,9 +183,9 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
           // Get the first (main) face landmarks
           const landmarks = results.multiFaceLandmarks[0];
           
-          // Convert landmarks to embedding vector
-          // MediaPipe provides 468 3D points, we'll use a subset for the embedding
-          const embedding = convertLandmarksToEmbedding(landmarks);
+          // Convert landmarks to pseudo-embedding vector
+          // MediaPipe provides 468 3D points, we'll select key landmarks for identity
+          const embedding = convertLandmarksToPseudoEmbedding(landmarks, canvas.width, canvas.height);
           
           // Generate simple hash for image
           const imageHash = await generateImageHash(canvas);
@@ -207,40 +207,62 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     });
   }, [loadFaceMeshModel]);
 
-  // Convert MediaPipe landmarks to embedding vector
-  const convertLandmarksToEmbedding = useCallback((landmarks: any[]): number[] => {
+  // Convert MediaPipe landmarks to pseudo-embedding vector
+  const convertLandmarksToPseudoEmbedding = useCallback((landmarks: any[], imageWidth: number, imageHeight: number): number[] => {
     if (!landmarks || landmarks.length === 0) {
       throw new Error('No landmarks provided');
     }
     
-    // Select key facial landmarks for embedding
-    // Focus on eyes, nose, mouth, and face outline for identity
+    // Select key facial landmarks for identity comparison
+    // Focus on eyes, nose, mouth, face outline, and key facial features
     const keyLandmarkIndices = [
-      10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109
+      // Face outline (jawline) - key for face shape
+      10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109,
+      
+      // Eyes - crucial for identity
+      33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308,
+      
+      // Nose - important for facial structure
+      1, 2, 3, 4, 5, 6, 19, 20, 61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318,
+      
+      // Mouth - key for expression and identity
+      61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318
     ];
     
-    const embedding: number[] = [];
+    const pseudoEmbedding: number[] = [];
     
     keyLandmarkIndices.forEach(index => {
       if (landmarks[index]) {
         const landmark = landmarks[index];
-        // Normalize coordinates and add to embedding
-        embedding.push(landmark.x);
-        embedding.push(landmark.y);
-        embedding.push(landmark.z);
+        
+        // Normalize coordinates to [0, 1] range for consistent comparison
+        const normalizedX = landmark.x / imageWidth;
+        const normalizedY = landmark.y / imageHeight;
+        
+        // Add normalized coordinates to pseudo-embedding
+        pseudoEmbedding.push(normalizedX);
+        pseudoEmbedding.push(normalizedY);
+        
+        // Optionally include Z coordinate for depth (normalized)
+        // const normalizedZ = (landmark.z + 1) / 2; // Z ranges from -1 to 1
+        // pseudoEmbedding.push(normalizedZ);
       }
     });
     
-    // Pad or truncate to consistent length (150 dimensions)
-    while (embedding.length < 150) {
-      embedding.push(0);
+    // Ensure consistent vector length by padding or truncating
+    const targetLength = 150; // Target pseudo-embedding dimension
+    
+    if (pseudoEmbedding.length < targetLength) {
+      // Pad with zeros if too short
+      while (pseudoEmbedding.length < targetLength) {
+        pseudoEmbedding.push(0);
+      }
+    } else if (pseudoEmbedding.length > targetLength) {
+      // Truncate if too long
+      pseudoEmbedding.splice(targetLength);
     }
     
-    if (embedding.length > 150) {
-      embedding.splice(150);
-    }
-    
-    return embedding;
+    return pseudoEmbedding;
   }, []);
 
   // Generate simple image hash
