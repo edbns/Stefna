@@ -168,12 +168,25 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
       {/* Layout */}
       <div className="h-full w-full flex flex-col">
-        {/* Top Bar - Simplified with creation method tag */}
+        {/* Top Bar - Simplified with creation method tag and timestamp */}
         <div className="bg-black/80 backdrop-blur-sm p-4">
           <div className="flex items-center justify-center h-full">
-            <div className="flex items-center space-x-2 pt-2">
+            <div className="flex items-center space-x-4 pt-2">
+              {/* Preset/creation method tag */}
               <span className="text-white/80 text-sm bg-white/10 px-3 py-1 rounded-full border border-white/20">
                 {getCreationMethod(current)}
+              </span>
+              
+              {/* Timestamp display */}
+              <span className="text-white/60 text-xs">
+                {new Date(current.timestamp).toLocaleString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true
+                })}
               </span>
             </div>
           </div>
