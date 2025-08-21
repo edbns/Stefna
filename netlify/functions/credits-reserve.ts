@@ -202,13 +202,48 @@ export const handler: Handler = async (event) => {
       console.log('💰 Final balance verification successful:', finalBalanceCheck[0].balance);
       console.log('💰 User has', finalBalanceCheck[0].balance, 'credits, requesting', cost, 'credits');
       
-      // Check daily cap AFTER ensuring user has credits
-      console.log('💰 Checking daily cap for user:', userId, 'cost:', cost, 'daily_cap:', config.daily_cap);
-      const capOk = await sql`SELECT app.allow_today_simple(${userId}::uuid,${cost}::int) AS allowed`;
-      console.log('💰 Daily cap check result:', capOk[0]);
-      if (!capOk[0]?.allowed) {
-        return json({ ok: false, error: "DAILY_CAP_REACHED" }, { status: 429 });
+      // 🔒 ENFORCE DAILY CAP: Check if user has exceeded daily limit
+      console.log('🔒 Checking daily usage against daily cap...');
+      const dailyUsageCheck = await sql`SELECT 
+        COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) as daily_used
+        FROM credits_ledger 
+        WHERE user_id = ${userId}::uuid 
+        AND status = 'committed' 
+        AND created_at >= (now() AT TIME ZONE 'UTC')::date`;
+      
+      const dailyUsed = dailyUsageCheck[0]?.daily_used || 0;
+      const dailyCap = config.daily_cap;
+      
+      console.log('🔒 Daily usage check:', { dailyUsed, dailyCap, remaining: dailyCap - dailyUsed });
+      
+      // BLOCK generation if daily cap is exceeded
+      if (dailyUsed >= dailyCap) {
+        console.log('🔒 Daily cap exceeded:', dailyUsed, '>=', dailyCap, '- blocking generation');
+        return json({ 
+          ok: false, 
+          error: "DAILY_CAP_EXCEEDED",
+          message: "You have reached your daily credit limit. Please wait until tomorrow for new credits.",
+          dailyUsed,
+          dailyCap,
+          remainingCredits: 0
+        }, { status: 429 });
       }
+      
+      // Check if this request would exceed daily cap
+      if (dailyUsed + cost > dailyCap) {
+        console.log('🔒 Request would exceed daily cap:', dailyUsed, '+', cost, '>', dailyCap, '- blocking generation');
+        return json({ 
+          ok: false, 
+          error: "DAILY_CAP_WOULD_EXCEED",
+          message: `This request would exceed your daily limit. You have ${dailyCap - dailyUsed} credits remaining today.`,
+          dailyUsed,
+          dailyCap,
+          remainingCredits: dailyCap - dailyUsed,
+          requestedCredits: cost
+        }, { status: 429 });
+      }
+      
+      console.log('🔒 Daily cap check passed:', dailyUsed, '+', cost, '<=', dailyCap);
       
       // 🔒 NEW: Check if user has negative balance and block until 24h reset
       console.log('🔒 Checking user credit balance for negative balance blocking...');
@@ -241,17 +276,8 @@ export const handler: Handler = async (event) => {
       
       console.log('🔒 Credit balance check passed:', currentBalance, '>=', cost);
       
-      // 📧 NEW: Check daily usage and trigger low credit warning emails
+      // 📧 Check daily usage and trigger low credit warning emails (using variables from earlier check)
       console.log('📧 Checking daily usage for low credit warnings...');
-      const dailyUsageCheck = await sql`SELECT 
-        COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) as daily_used
-        FROM credits_ledger 
-        WHERE user_id = ${userId}::uuid 
-        AND status = 'committed' 
-        AND created_at >= (now() AT TIME ZONE 'UTC')::date`;
-      
-      const dailyUsed = dailyUsageCheck[0]?.daily_used || 0;
-      const dailyCap = config.daily_cap;
       const usagePercentage = (dailyUsed / dailyCap) * 100;
       
       console.log('📧 Daily usage check:', { dailyUsed, dailyCap, usagePercentage: usagePercentage.toFixed(1) + '%' });

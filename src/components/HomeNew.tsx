@@ -20,11 +20,8 @@ import { storeSelectedFile } from '../services/mediaSource'
 import { useGenerationMode } from '../stores/generationMode'
 // MoodMorph removed - replaced with Anime Filters
 import { EmotionMaskPicker } from './EmotionMaskPicker'
-import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
-import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
-import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
 
 import { paramsForI2ISharp } from '../services/infer-params'
 // import { clampStrength } from '../lib/strengthPolicy' // REMOVED - drama file deleted
@@ -80,11 +77,25 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   
 
 
-import { PRESETS, resolvePreset } from '../utils/presets/types'
-// import presetRotationService from '../services/presetRotationService' // REMOVED - drama service deleted
-import captionService from '../services/captionService'
-import { onPresetClick } from '../handlers/presetHandlers'
+// Import from the new professional presets system
+import { PROFESSIONAL_PRESETS, ProfessionalPresetConfig } from '../config/professional-presets'
 
+// Helper function to get preset by ID from the new system
+const getPresetById = (presetId: string): ProfessionalPresetConfig | undefined => {
+  return PROFESSIONAL_PRESETS[presetId as keyof typeof PROFESSIONAL_PRESETS]
+}
+
+// Helper function to get preset label
+const getPresetLabel = (presetId: string): string => {
+  const preset = getPresetById(presetId)
+  return preset?.label || 'Unknown Preset'
+}
+
+// Helper function to get preset prompt
+const getPresetPrompt = (presetId: string): string => {
+  const preset = getPresetById(presetId)
+  return preset?.promptAdd || 'Transform this image'
+}
 
 // import { validateModeMappings } from '../utils/validateMappings' // REMOVED - complex drama file
 import FullScreenMediaViewer from './FullScreenMediaViewer'
@@ -98,9 +109,7 @@ import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
 import { saveMedia, togglePublish } from '../lib/api'
 import { Mode, MODE_LABELS } from '../config/modes'
-import { resolvePresetForMode } from '../utils/resolvePresetForMode'
-import { getPresetDef, getPresetLabel, MASTER_PRESET_CATALOG } from '../services/presets'
-import { buildEffectivePrompt, type DetailLevel } from '../services/prompt'
+// Removed old preset services - using new professional presets system
 const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
@@ -269,7 +278,7 @@ const HomeNew: React.FC = () => {
   useEffect(() => {
     console.log('🔍 selectedPreset changed to:', selectedPreset)
     if (selectedPreset) {
-      console.log('🎨 Preset details:', PRESETS[selectedPreset])
+      console.log('🎨 Preset details:', getPresetById(selectedPreset))
       // Update the ref for compatibility
       selectedPresetRef.current = selectedPreset
     } else {
@@ -292,12 +301,12 @@ const HomeNew: React.FC = () => {
   // Debug PRESETS object
   useEffect(() => {
     console.log('🎨 PRESETS object updated:', {
-      count: Object.keys(PRESETS).length,
-      keys: Object.keys(PRESETS),
-      sample: Object.keys(PRESETS).slice(0, 3).map(key => ({
+              count: Object.keys(PROFESSIONAL_PRESETS).length,
+        keys: Object.keys(PROFESSIONAL_PRESETS),
+              sample: Object.keys(PROFESSIONAL_PRESETS).slice(0, 3).map(key => ({
         key,
-        label: getPresetLabel(key, PRESETS),
-        prompt: PRESETS[key as keyof typeof PRESETS]?.prompt?.substring(0, 50) + '...'
+        label: getPresetLabel(key),
+        prompt: getPresetPrompt(key)?.substring(0, 50) + '...'
       }))
     })
   }, [PRESETS])
