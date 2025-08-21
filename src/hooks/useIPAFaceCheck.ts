@@ -115,10 +115,27 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     isModelLoading = true;
     
     try {
-      // Dynamic import of MediaPipe Face Mesh
-      const { FaceMesh } = await import('@mediapipe/face_mesh');
-      const { Camera } = await import('@mediapipe/camera_utils');
-      const { drawConnectors } = await import('@mediapipe/drawing_utils');
+      // Load MediaPipe Face Mesh from CDN dynamically
+      if (typeof window === 'undefined') {
+        throw new Error('MediaPipe is not available in server environment');
+      }
+
+      // Check if MediaPipe is already loaded globally
+      if (!(window as any).FaceMesh) {
+        // Load MediaPipe script from CDN
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load MediaPipe Face Mesh'));
+          document.head.appendChild(script);
+        });
+      }
+
+      const FaceMesh = (window as any).FaceMesh;
+      if (!FaceMesh) {
+        throw new Error('MediaPipe Face Mesh not available');
+      }
       
       // Initialize Face Mesh
       const faceMesh = new FaceMesh({
@@ -135,13 +152,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
         minTrackingConfidence: 0.5
       });
 
-      // Wait for model to load
-      await new Promise<void>((resolve) => {
-        faceMesh.onResults(() => {
-          resolve();
-        });
-      });
-
+      // Simple initialization - no need to wait for results
       faceMeshModel = faceMesh;
       setState(prev => ({ ...prev, isReady: true }));
       return faceMesh;

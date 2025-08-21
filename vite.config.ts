@@ -8,6 +8,7 @@ export default defineConfig({
     target: 'es2015',
     minify: 'terser', // Better minification than esbuild for production
     rollupOptions: {
+
       output: {
         manualChunks: {
           // Core React chunks
