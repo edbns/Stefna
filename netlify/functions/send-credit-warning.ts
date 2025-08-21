@@ -26,7 +26,7 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const { to } = JSON.parse(event.body || '{}');
+    const { to, usagePercentage, dailyUsed, dailyCap, remainingCredits, isCritical } = JSON.parse(event.body || '{}');
     
     if (!to) {
       return {
@@ -54,18 +54,41 @@ export const handler: Handler = async (event) => {
 
     const resend = new Resend(resendApiKey);
     
-    await resend.emails.send({
-      from: 'Stefna <hello@stefna.xyz>',
-      to: [to],
-      subject: 'You\'re Running Low on Credits',
-      text: `Just a heads-up — you're almost out of credits for today.
+    // Enhanced email content based on usage data
+    let subject, text;
+    
+    if (isCritical) {
+      subject = '⚠️ Critical: You\'re Almost Out of Credits Today';
+      text = `You've used ${dailyUsed} out of ${dailyCap} daily credits (${usagePercentage}%).
 
-Your daily 30 credits reset at midnight UTC. You'll be back to full power tomorrow.
+⚠️ WARNING: You only have ${remainingCredits} credits remaining today!
+
+Your daily credits reset at midnight UTC. You'll be back to full power tomorrow.
+
+Want more credits now? Invite a friend and get 50 bonus credits instantly.
+
+— The Stefna Team`;
+    } else {
+      subject = '📢 You\'re Running Low on Credits';
+      text = `You've used ${dailyUsed} out of ${dailyCap} daily credits (${usagePercentage}%).
+
+Just a heads-up — you're running low on credits for today.
+
+You have ${remainingCredits} credits remaining. Your daily 30 credits reset at midnight UTC.
 
 Want more now? Invite a friend and get 50 bonus credits instantly.
 
-— The Stefna Team`
+— The Stefna Team`;
+    }
+    
+    await resend.emails.send({
+      from: 'Stefna <hello@stefna.xyz>',
+      to: [to],
+      subject: subject,
+      text: text
     });
+
+    console.log(`📧 Low credit warning email sent to ${to}: ${usagePercentage}% usage (${dailyUsed}/${dailyCap})`);
 
     return {
       statusCode: 200,
@@ -75,7 +98,11 @@ Want more now? Invite a friend and get 50 bonus credits instantly.
       },
       body: JSON.stringify({ 
         ok: true, 
-        message: 'Credit warning email sent successfully' 
+        message: 'Credit warning email sent successfully',
+        usagePercentage,
+        dailyUsed,
+        dailyCap,
+        remainingCredits
       })
     };
 

@@ -111,6 +111,85 @@ export const handler: Handler = async (event) => {
         await db.query(sqlQuery, params);
         console.log('💰 Credits finalized successfully:', { disposition, status });
         
+        // 📧 NEW: Check if we should send low credit warning after finalization
+        if (disposition === 'commit') {
+          try {
+            console.log('📧 Checking if low credit warning email should be sent...');
+            
+            // Get current daily usage after this commit
+            const { rows: dailyUsageRows } = await db.query(`
+              SELECT COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) as daily_used
+              FROM credits_ledger 
+              WHERE user_id = $1::uuid 
+              AND status = 'committed' 
+              AND created_at >= (now() AT TIME ZONE 'UTC')::date
+            `, [userId]);
+            
+            const dailyUsed = dailyUsageRows[0]?.daily_used || 0;
+            const dailyCap = 30; // Default daily cap
+            const usagePercentage = (dailyUsed / dailyCap) * 100;
+            
+            console.log('📧 Daily usage after finalization:', { dailyUsed, dailyCap, usagePercentage: usagePercentage.toFixed(1) + '%' });
+            
+            // Send warning emails at 80% and 90% thresholds
+            if (usagePercentage >= 80 && usagePercentage < 90) {
+              console.log('📧 Triggering 80% low credit warning email after finalization...');
+              
+              // Get user email
+              const { rows: userRows } = await db.query(
+                "SELECT email FROM auth.users WHERE id = $1::uuid",
+                [userId]
+              );
+              
+              const userEmail = userRows[0]?.email;
+              if (userEmail) {
+                // Send warning email asynchronously
+                fetch('/.netlify/functions/send-credit-warning', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    to: userEmail,
+                    usagePercentage: Math.round(usagePercentage),
+                    dailyUsed,
+                    dailyCap,
+                    remainingCredits: dailyCap - dailyUsed
+                  })
+                }).catch(emailError => {
+                  console.warn('📧 Low credit warning email failed after finalization (non-blocking):', emailError);
+                });
+              }
+            } else if (usagePercentage >= 90) {
+              console.log('📧 Triggering 90% critical low credit warning email after finalization...');
+              
+              const { rows: userRows } = await db.query(
+                "SELECT email FROM auth.users WHERE id = $1::uuid",
+                [userId]
+              );
+              
+              const userEmail = userRows[0]?.email;
+              if (userEmail) {
+                // Send critical warning email
+                fetch('/.netlify/functions/send-credit-warning', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    to: userEmail,
+                    usagePercentage: Math.round(usagePercentage),
+                    dailyUsed,
+                    dailyCap,
+                    remainingCredits: dailyCap - dailyUsed,
+                    isCritical: true
+                  })
+                }).catch(emailError => {
+                  console.warn('📧 Critical low credit warning email failed after finalization (non-blocking):', emailError);
+                });
+              }
+            }
+          } catch (emailError) {
+            console.warn('📧 Failed to check/send low credit warning email after finalization (non-blocking):', emailError);
+          }
+        }
+        
         // Get current balance for response
         const { rows: balanceRows } = await db.query(
           "SELECT balance FROM app.user_credits WHERE user_id = $1::uuid",

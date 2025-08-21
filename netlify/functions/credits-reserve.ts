@@ -241,6 +241,76 @@ export const handler: Handler = async (event) => {
       
       console.log('🔒 Credit balance check passed:', currentBalance, '>=', cost);
       
+      // 📧 NEW: Check daily usage and trigger low credit warning emails
+      console.log('📧 Checking daily usage for low credit warnings...');
+      const dailyUsageCheck = await sql`SELECT 
+        COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) as daily_used
+        FROM credits_ledger 
+        WHERE user_id = ${userId}::uuid 
+        AND status = 'committed' 
+        AND created_at >= (now() AT TIME ZONE 'UTC')::date`;
+      
+      const dailyUsed = dailyUsageCheck[0]?.daily_used || 0;
+      const dailyCap = config.daily_cap;
+      const usagePercentage = (dailyUsed / dailyCap) * 100;
+      
+      console.log('📧 Daily usage check:', { dailyUsed, dailyCap, usagePercentage: usagePercentage.toFixed(1) + '%' });
+      
+      // Trigger low credit warning emails at 80% and 90% thresholds
+      if (usagePercentage >= 80 && usagePercentage < 90) {
+        console.log('📧 Triggering 80% low credit warning email...');
+        try {
+          // Get user email from auth.users table
+          const userEmailCheck = await sql`SELECT email FROM auth.users WHERE id = ${userId}::uuid`;
+          const userEmail = userEmailCheck[0]?.email;
+          
+          if (userEmail) {
+            // Send warning email asynchronously (don't block the reservation)
+            fetch('/.netlify/functions/send-credit-warning', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                to: userEmail,
+                usagePercentage: Math.round(usagePercentage),
+                dailyUsed,
+                dailyCap,
+                remainingCredits: dailyCap - dailyUsed
+              })
+            }).catch(emailError => {
+              console.warn('📧 Low credit warning email failed (non-blocking):', emailError);
+            });
+          }
+        } catch (emailError) {
+          console.warn('📧 Failed to send low credit warning email (non-blocking):', emailError);
+        }
+      } else if (usagePercentage >= 90) {
+        console.log('📧 Triggering 90% critical low credit warning email...');
+        try {
+          const userEmailCheck = await sql`SELECT email FROM auth.users WHERE id = ${userId}::uuid`;
+          const userEmail = userEmailCheck[0]?.email;
+          
+          if (userEmail) {
+            // Send critical warning email
+            fetch('/.netlify/functions/send-credit-warning', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                to: userEmail,
+                usagePercentage: Math.round(usagePercentage),
+                dailyUsed,
+                dailyCap,
+                remainingCredits: dailyCap - dailyUsed,
+                isCritical: true
+              })
+            }).catch(emailError => {
+              console.warn('📧 Critical low credit warning email failed (non-blocking):', emailError);
+            });
+          }
+        } catch (emailError) {
+          console.warn('📧 Failed to send critical low credit warning email (non-blocking):', emailError);
+        }
+      }
+      
       // Reserve credits using the new system
       console.log('💰 reserve_credits inputs:', {
         userId,
