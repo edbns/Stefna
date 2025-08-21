@@ -3642,7 +3642,7 @@ const HomeNew: React.FC = () => {
                             className="rounded border-gray-300"
                           />
                                                      <label htmlFor="identity-lock-emotion" className="text-sm text-gray-600">
-                             🔒 Preserve face identity
+                             Preserve face identity
                            </label>
                         </div>
                       )}
