@@ -203,6 +203,13 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
             return;
           }
           
+          // Check for identity hallucination (multiple faces)
+          if (results.multiFaceLandmarks.length > 1) {
+            console.warn(`⚠️ Multiple faces detected (${results.multiFaceLandmarks.length}) - possible identity hallucination`);
+            // For now, use the first face but log the issue
+            // In production, this could trigger immediate fallback
+          }
+          
           // Get the first (main) face landmarks
           const landmarks = results.multiFaceLandmarks[0];
           

@@ -1755,6 +1755,11 @@ const HomeNew: React.FC = () => {
           if (!ipaResult.passed) {
             console.log(`🔒 IPA check failed (${generationMeta?.mode || 'unknown'} mode) - similarity: ${ipaResult.similarity.toFixed(3)}`);
             
+            // Show user feedback for identity check failure
+            if (generationMeta?.mode === 'emotionmask') {
+              toast.info('Identity check failed, retrying with lower strength...', { duration: 3000 });
+            }
+            
             // Retry with lower strength for better identity preservation
             // More aggressive for Emotion Mask to preserve identity
             const retryMultiplier = generationMeta?.mode === 'emotionmask' ? 0.4 : 0.6;
@@ -1791,12 +1796,23 @@ const HomeNew: React.FC = () => {
                   finalResultUrl = retryUrl;
                 } else {
                   // Attempt face blending as final fallback
+                  if (generationMeta?.mode === 'emotionmask') {
+                    toast.info('Enabling face blending fallback...', { duration: 3000 });
+                  }
+                  
                   try {
                     const { blendOriginalFace } = await import('../hooks/useIPAFaceCheck');
                     const blendedResult = await blendOriginalFace(sourceUrl, retryUrl, 16);
                     finalResultUrl = blendedResult;
+                    
+                    if (generationMeta?.mode === 'emotionmask') {
+                      toast.success('Face blending completed - identity preserved!', { duration: 4000 });
+                    }
                   } catch (blendError) {
                     finalResultUrl = retryUrl;
+                    if (generationMeta?.mode === 'emotionmask') {
+                      toast.warning('Face blending failed, using retry result', { duration: 3000 });
+                    }
                   }
                 }
                               } else {
