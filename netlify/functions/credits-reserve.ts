@@ -146,12 +146,12 @@ export const handler: Handler = async (event) => {
       // 🔍 DEBUG: Check user's current credit balance before reservation
       console.log('🔍 Checking user credit balance before reservation...');
       
-      // Use the proper user_credits table for balance tracking
-      const balanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
-      console.log('🔍 Current credit balance:', balanceCheck[0]?.balance || 'No balance record found');
+      // Use the existing credits table that was working before
+      const balanceCheck = await sql`SELECT amount FROM credits WHERE user_id = ${userId}`;
+      console.log('🔍 Current credit balance from credits table:', balanceCheck[0]?.amount || 'No balance record found');
       
       // 💰 AUTO-INITIALIZE: Create user credits if they don't exist
-      if (balanceCheck.length === 0 || !balanceCheck[0]?.balance) {
+      if (balanceCheck.length === 0 || !balanceCheck[0]?.amount) {
         console.log('💰 No credit balance found - initializing new user with starter credits...');
         
         try {
@@ -159,49 +159,34 @@ export const handler: Handler = async (event) => {
           const starterRows = await sql`SELECT (value::text)::int AS v FROM app_config WHERE key='starter_grant'`;
           const STARTER_GRANT = starterRows[0]?.v ?? 30;
           
-          console.log(`💰 Creating user_credits row with ${STARTER_GRANT} starter credits...`);
+          console.log(`💰 Creating credits row with ${STARTER_GRANT} starter credits...`);
           
-          // Check if user_credits table exists first
+          // Check if credits table exists first
           const tableCheck = await sql`SELECT EXISTS (
             SELECT FROM information_schema.tables 
             WHERE table_schema = 'public' 
-            AND table_name = 'user_credits'
+            AND table_name = 'credits'
           )`;
-          console.log('🔍 user_credits table exists:', tableCheck[0]?.exists);
+          console.log('🔍 credits table exists:', tableCheck[0]?.exists);
           
           if (!tableCheck[0]?.exists) {
-            throw new Error('user_credits table does not exist in database');
+            throw new Error('credits table does not exist in database');
           }
           
-          // Insert starter credits (or update if exists with 0 balance)
+          // Insert starter credits into existing credits table
           const insertResult = await sql`
-            INSERT INTO user_credits(user_id, balance) 
-            VALUES (${userId}, ${STARTER_GRANT})
-            ON CONFLICT (user_id) DO UPDATE SET 
-              balance = CASE 
-                WHEN user_credits.balance IS NULL OR user_credits.balance = 0 
-                THEN ${STARTER_GRANT} 
-                ELSE user_credits.balance 
-              END,
-              updated_at = now()
-            RETURNING user_id, balance
+            INSERT INTO credits(user_id, amount, reason, request_id, env, created_at) 
+            VALUES (${userId}, ${STARTER_GRANT}, 'starter_grant', gen_random_uuid(), 'prod', now())
+            ON CONFLICT DO NOTHING
+            RETURNING user_id, amount
           `;
           console.log('🔍 INSERT result:', insertResult);
-          
-          // Create ledger entry for starter grant
-          const ledgerResult = await sql`
-            INSERT INTO credits_ledger(user_id, request_id, action, amount, status, meta)
-            VALUES (${userId}, gen_random_uuid(), 'grant', ${STARTER_GRANT}, 'granted', jsonb_build_object('reason','starter'))
-            ON CONFLICT DO NOTHING
-            RETURNING id, user_id, amount
-          `;
-          console.log('🔍 Ledger INSERT result:', ledgerResult);
           
           console.log(`✅ Successfully initialized user with ${STARTER_GRANT} starter credits`);
           
           // Refresh balance check after initialization
-          const refreshBalanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
-          console.log('💰 Balance after initialization:', refreshBalanceCheck[0]?.balance || 'Still no balance');
+          const refreshBalanceCheck = await sql`SELECT amount FROM credits WHERE user_id = ${userId}`;
+          console.log('💰 Balance after initialization:', refreshBalanceCheck[0]?.amount || 'Still no balance');
           
         } catch (initError) {
           console.error('❌ Failed to initialize user credits:', initError);
@@ -215,8 +200,8 @@ export const handler: Handler = async (event) => {
       }
       
       // Final balance verification before proceeding
-      const finalBalanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
-      if (!finalBalanceCheck[0]?.balance) {
+      const finalBalanceCheck = await sql`SELECT amount FROM credits WHERE user_id = ${userId}`;
+      if (!finalBalanceCheck[0]?.amount) {
         console.error('❌ User still has no credits after initialization');
         return json({ 
           ok: false, 
@@ -225,8 +210,8 @@ export const handler: Handler = async (event) => {
         }, { status: 500 });
       }
       
-      console.log('💰 Final balance verification successful:', finalBalanceCheck[0].balance);
-      console.log('💰 User has', finalBalanceCheck[0].balance, 'credits, requesting', cost, 'credits');
+      console.log('💰 Final balance verification successful:', finalBalanceCheck[0].amount);
+      console.log('💰 User has', finalBalanceCheck[0].amount, 'credits, requesting', cost, 'credits');
       
       // 🔒 ENFORCE DAILY CAP: Check if user has exceeded daily limit (UPDATED)
       console.log('🔒 Checking daily usage against daily cap...');
@@ -372,8 +357,8 @@ export const handler: Handler = async (event) => {
         }
       }
       
-      // Reserve credits using the proper app.reserve_credits function
-      console.log('💰 reserve_credits inputs:', {
+      // Reserve credits using the existing credits table structure
+      console.log('💰 Credits reservation inputs:', {
         userId,
         request_id,
         action,
@@ -384,36 +369,35 @@ export const handler: Handler = async (event) => {
         costType: typeof cost
       });
       
-      console.log('💰 Calling app.reserve_credits with Neon tagged template');
+      console.log('💰 Inserting credit reservation into existing credits table');
       
       try {
-        const result = await sql`SELECT * FROM app.reserve_credits(${userId}::uuid, ${request_id}::uuid, ${action}::text, ${cost}::int)`;
+        // Insert the credit reservation into the existing credits table
+        const result = await sql`
+          INSERT INTO credits(user_id, amount, reason, request_id, env, created_at)
+          VALUES (${userId}::uuid, -${cost}, ${action}, ${request_id}::uuid, 'prod', now())
+          RETURNING user_id, amount, reason, request_id
+        `;
         rows = result;
         console.log('💰 Credits reserved successfully:', rows[0]);
         
-        // Validate the return structure matches our SQL function
-        if (!rows[0] || typeof rows[0].balance !== 'number') {
-          console.error('❌ Unexpected return structure:', rows[0]);
-          return json({
-            ok: false,
-            error: "DB_UNEXPECTED_RETURN_STRUCTURE",
-            message: `Expected {balance: number}, got: ${JSON.stringify(rows[0])}`,
-          }, { status: 500 });
-        }
+        // Get updated balance
+        const balanceResult = await sql`SELECT amount FROM credits WHERE user_id = ${userId}`;
+        const currentBalance = balanceResult[0]?.amount || 0;
         
-        console.log('💰 Balance after reservation:', rows[0].balance);
+        console.log('💰 Balance after reservation:', currentBalance);
         
         // Return success with request_id for finalization
         return json({
           ok: true,
           request_id: request_id,
-          balance: rows[0].balance,
+          balance: currentBalance,
           cost: cost,
           action: action
         }, { status: 200 });
         
       } catch (dbError) {
-        console.error("❌ reserve_credits() call failed:", dbError);
+        console.error("❌ Credits reservation failed:", dbError);
         return json({
           ok: false,
           error: "DB_RESERVE_CREDITS_FAILED",
