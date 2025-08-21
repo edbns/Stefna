@@ -49,6 +49,47 @@ class TokenService {
 
   // Check if user can generate content (photos only for now)
   async canGenerate(userId: string, type: 'photo', quality: 'hd' = 'hd'): Promise<{ canGenerate: boolean; reason?: string; remainingTokens?: number }> {
+    try {
+      // Use backend to check credits instead of local calculation
+      const response = await fetch('/.netlify/functions/getQuota', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to get backend quota, falling back to local check');
+        return this.localCanGenerate(userId, type, quality);
+      }
+
+      const quota = await response.json();
+      const cost = this.PHOTO_COST;
+      const remaining = quota.remaining || (quota.daily_limit - quota.daily_used);
+      
+      if (remaining < cost) {
+        return { 
+          canGenerate: false, 
+          reason: `Insufficient credits. You need ${cost} credits but only have ${remaining}.`,
+          remainingTokens: remaining
+        }
+      }
+
+      // Check rate limiting
+      if (this.isRateLimited(userId)) {
+        return { canGenerate: false, reason: 'Rate limited. Please wait 30 seconds between generations.' }
+      }
+
+      return { canGenerate: true, remainingTokens: remaining - cost }
+    } catch (error) {
+      console.warn('Backend quota check failed, falling back to local check:', error);
+      return this.localCanGenerate(userId, type, quality);
+    }
+  }
+
+  // Fallback local check (legacy)
+  private async localCanGenerate(userId: string, type: 'photo', quality: 'hd' = 'hd'): Promise<{ canGenerate: boolean; reason?: string; remainingTokens?: number }> {
     const usage = await this.getUserUsage(userId)
     const cost = this.PHOTO_COST
 
@@ -72,6 +113,22 @@ class TokenService {
     }
 
     return { canGenerate: true, remainingTokens: this.DAILY_LIMIT - usage.dailyUsage - cost }
+  }
+
+  // Get auth token from localStorage or auth service
+  private getAuthToken(): string {
+    // Try to get from localStorage first
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('jwt_token');
+    if (token) return token;
+    
+    // Fallback to auth service if available
+    try {
+      // @ts-ignore - dynamic import
+      const authService = require('./authService').default;
+      return authService.getToken() || '';
+    } catch {
+      return '';
+    }
   }
 
   // Generate content and deduct tokens (photos only for now)
@@ -119,6 +176,30 @@ class TokenService {
 
   // Get user's current token usage
   async getUserUsage(userId: string): Promise<TokenUsage> {
+    try {
+      // Try to get from backend first
+      const response = await fetch('/.netlify/functions/getQuota', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const quota = await response.json();
+        return {
+          dailyUsage: quota.daily_used || 0,
+          dailyLimit: quota.daily_limit || 30,
+          totalUsage: quota.weekly_used || 0,
+          lastReset: new Date().toISOString()
+        };
+      }
+    } catch (error) {
+      console.warn('Backend quota check failed, falling back to local storage:', error);
+    }
+
+    // Fallback to localStorage
     const key = `token_usage_${userId}`
     const stored = localStorage.getItem(key)
     

@@ -19,12 +19,20 @@ dotenv.config();
 
 // Database connection
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 async function runSqlFix() {
-  console.log('🔧 Running complete SQL fix for credits system...');
+  // Get SQL file from command line argument
+  const sqlFileArg = process.argv[2];
+  if (!sqlFileArg) {
+    console.error('❌ Please provide a SQL file path as an argument');
+    console.error('Usage: node run-sql-fix.js <sql-file>');
+    process.exit(1);
+  }
+  
+  console.log('🔧 Running SQL fix from file:', sqlFileArg);
   
   try {
     // Test connection
@@ -32,7 +40,7 @@ async function runSqlFix() {
     console.log('✅ Database connection successful');
     
     // Read the SQL file
-    const sqlFile = path.join(__dirname, 'fix-credits-system-complete.sql');
+    const sqlFile = path.resolve(sqlFileArg);
     
     if (!fs.existsSync(sqlFile)) {
       throw new Error(`SQL file not found: ${sqlFile}`);

@@ -104,10 +104,43 @@ export const uiStore = {
   }
 }
 
-// Quota check (simplified - extend as needed)
+// Quota check (real implementation)
 const quotaStore = {
   getState: () => ({
-    hasCredit: () => true // TODO: Implement proper quota checking
+    hasCredit: async (userId?: string) => {
+      try {
+        // Get auth token
+        const token = localStorage.getItem('auth_token') || localStorage.getItem('jwt_token');
+        if (!token) {
+          console.warn('No auth token found for credit check');
+          return false;
+        }
+
+        // Check backend quota
+        const response = await fetch('/.netlify/functions/getQuota', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          console.warn('Failed to get backend quota');
+          return false;
+        }
+
+        const quota = await response.json();
+        const remaining = quota.remaining || (quota.daily_limit - quota.daily_used);
+        const hasCredits = remaining >= 2; // Minimum cost for image generation
+
+        console.log(`Credit check: ${remaining} credits remaining, can generate: ${hasCredits}`);
+        return hasCredits;
+      } catch (error) {
+        console.warn('Credit check failed:', error);
+        return false;
+      }
+    }
   })
 }
 
@@ -170,7 +203,8 @@ export async function runGeneration(buildJob: () => Promise<GenerateJob | null>)
       return null
     }
 
-    if (!quotaStore.getState().hasCredit()) {
+    const hasCredits = await quotaStore.getState().hasCredit()
+    if (!hasCredits) {
       jobLogger.error('Insufficient credits')
       showError("You're out of credits", runId)
       return null
