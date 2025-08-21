@@ -10,7 +10,7 @@ const AIML_URL = `${AIML_BASE}${AIML_ROUTE}`;
 
 // Input you accept from client
 type InBody = {
-  model: string;          // e.g. 'flux/dev/image-to-image'
+  model: string;          // e.g. 'flux/dev' (not flux/dev/image-to-image)
   prompt: string;
   image_url?: string;     // URL you upload to Cloudinary sources bucket
   strength?: number;      // 0..1
@@ -18,31 +18,40 @@ type InBody = {
   mode?: Mode;
 };
 
-// Server-only identity prelude (inject once)
+// Server-only identity prelude (inject once, de-dupe, clamp to 1000 chars)
 const IDENTITY_PRELUDE =
   "Render the INPUT PHOTO as a single, continuous frame. Show ONE instance of the same subject. " +
   "Do NOT compose a grid, collage, split-screen, diptych, mirrored panel, border, seam, gutter, or frame. " +
   "Do NOT duplicate, mirror, or repeat any part of the face. Keep the original camera crop and background. " +
   "Preserve the person's identity exactly: same gender, skin tone, ethnicity, age, and facial structure. ";
 
+const PRELUDE_SENTINEL = "Render the INPUT PHOTO as a single, continuous frame.";
+
 function buildFinalPrompt(mode: Mode, userPrompt: string) {
-  // Add mode-specific constraints (short + additive)
   const modeClamp =
-    mode === 'ghiblireact' ? "Face-only micro-stylization; body/background remain photorealistic. "
-  : mode === 'emotionmask' ? "Modify micro-expressions only; no geometry or skin tone changes. "
-  : mode === 'neotokyoglitch' ? "Additive overlays only; no facial geometry changes. "
+    mode === 'ghiblireact'   ? "Face-only micro-stylization; body/background remain photorealistic. "
+  : mode === 'emotionmask'   ? "Modify micro-expressions only; no geometry or skin tone changes. "
+  : mode === 'neotokyoglitch'? "Additive overlays only; no facial geometry changes. "
   : "";
 
-  return (IDENTITY_PRELUDE + modeClamp + (userPrompt || "")).trim();
+  // Remove any user-supplied identity text to avoid duplication
+  let core = (userPrompt ?? "")
+    .replace(new RegExp(IDENTITY_PRELUDE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), "")
+    .replace(new RegExp(PRELUDE_SENTINEL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), "")
+    .trim();
+
+  let out = `${IDENTITY_PRELUDE}${modeClamp}${core}`.trim();
+  if (out.length > 1000) out = out.slice(0, 1000); // AIML hard limit
+  return out;
 }
 
 // Strength clamp (server as source of truth)
 const STRENGTH_POLICY = {
-  custom:        { min: 0.14, def: 0.18, max: 0.24 },
-  preset:        { min: 0.12, def: 0.16, max: 0.22 },
-  emotionmask:   { min: 0.10, def: 0.12, max: 0.15 },
-  ghiblireact:   { min: 0.12, def: 0.14, max: 0.18 },
-  neotokyoglitch:{ min: 0.20, def: 0.24, max: 0.30 },
+  custom:         { min: 0.14, def: 0.18, max: 0.24 },
+  preset:         { min: 0.12, def: 0.16, max: 0.22 },
+  emotionmask:    { min: 0.10, def: 0.12, max: 0.15 },
+  ghiblireact:    { min: 0.12, def: 0.14, max: 0.18 },
+  neotokyoglitch: { min: 0.20, def: 0.24, max: 0.30 },
 } as const;
 
 function clampStrength(mode: Mode, requested?: number) {
@@ -51,23 +60,21 @@ function clampStrength(mode: Mode, requested?: number) {
   return Math.min(p.max, Math.max(p.min, requested));
 }
 
-// Model sanity (Flux i2i must be an i2i model id)
+// Model sanity (AIML decides i2i by presence of image_url; model must be valid enum)
 function normalizeModel(model: string, hasImage: boolean) {
-  if (hasImage) {
-    if (model === 'flux/dev') return 'flux/dev/image-to-image';
-    // Allow your other Flux variants here if needed…
-  }
+  // AIML decides i2i by the presence of image_url; model must be a valid enum.
+  if (hasImage && model === 'flux/dev/image-to-image') return 'flux/dev';
   return model;
 }
 
-// Map your allowed fields → AIML payload
-function toAIMLPayload(b: InBody, finalPrompt: string, strength: number) {
+// Build the AIML payload with the correct keys
+function toAIMLPayload(body: InBody, prompt: string, strength: number) {
   return {
-    model: b.model,
-    prompt: finalPrompt,
-    image: b.image_url,              // ✅ AIML expects "image" (URL or base64)
-    strength,                        // ✅ denoising strength for i2i
-    n: Math.max(1, b.num_variations ?? 1),  // ✅ AIML expects "n"
+    model: normalizeModel(body.model, !!body.image_url),
+    prompt,
+    image_url: body.image_url,               // ✅ correct key
+    strength,                                // ✅ i2i denoise amount
+    num_variations: body.num_variations ?? 1 // ✅ your allowed field name
   };
 }
 
@@ -108,18 +115,19 @@ export const handler: Handler = async (event: any) => {
     // Single POST to the correct endpoint
     try {
       // Build AIML payload
-      const aimlPayload = toAIMLPayload({ 
+      const payload = toAIMLPayload({ 
         model: requestedModel, 
         prompt: finalPrompt, 
         image_url, 
         num_variations 
       }, finalPrompt, strength);
 
-      console.log('🎯 Sending to AIML:', {
-        url: AIML_URL,
-        payload: aimlPayload,
-        mode,
-        strength
+      console.info('🎯 Sending to AIML', { 
+        url: AIML_URL, 
+        payload: { 
+          ...payload, 
+          prompt: `${payload.prompt.slice(0,120)}…(${payload.prompt.length})` 
+        } 
       });
 
       // Single POST with good error messages (no oscillating fallbacks)
@@ -129,26 +137,24 @@ export const handler: Handler = async (event: any) => {
           'Authorization': `Bearer ${process.env.AIML_API_KEY}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(aimlPayload)
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
-        const text = await res.text().catch(()=>'');
-        // Helpful server-side log
-        console.error('AIML error', {
-          url: AIML_URL,
-          status: res.status,
-          statusText: res.statusText,
-          bodySent: aimlPayload,
-          responseText: text?.slice(0, 4000),
+        const txt = await res.text().catch(()=> '');
+        console.error('❌ AIML error', { 
+          url: AIML_URL, 
+          status: res.status, 
+          statusText: res.statusText, 
+          bodySent: payload, 
+          responseText: txt 
         });
-        // Surface a concise error to client
         return {
           statusCode: 502,
-          body: JSON.stringify({
-            ok: false,
-            error: `AIML_${res.status}`,
-            detail: 'Images endpoint must be /v1/images/generations; check model id and payload keys.',
+          body: JSON.stringify({ 
+            ok: false, 
+            error: `AIML_${res.status}`, 
+            detail: 'Invalid model id or payload. Use flux/dev + image_url; prompt <= 1000 chars.' 
           }),
           headers: {
             'content-type': 'application/json; charset=utf-8',
@@ -173,7 +179,7 @@ export const handler: Handler = async (event: any) => {
         const bump = Math.min(0.06, STRENGTH_POLICY[mode].max - strength);
         if (bump > 0) {
           console.log('🔄 Retrying with bumped strength:', strength + bump);
-          const retry = { ...aimlPayload, strength: strength + bump };
+          const retry = { ...payload, strength: strength + bump };
           const r = await fetch(AIML_URL, { 
             method: 'POST', 
             headers: {
@@ -212,7 +218,7 @@ export const handler: Handler = async (event: any) => {
         body: JSON.stringify({ 
           ok: true, 
           image_urls: urls, 
-          model: aimlPayload.model, 
+          model: payload.model, 
           strength_used: strength,
           had_retry: false,
           prompt: finalPrompt,
