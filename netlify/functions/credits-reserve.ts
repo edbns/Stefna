@@ -210,6 +210,37 @@ export const handler: Handler = async (event) => {
         return json({ ok: false, error: "DAILY_CAP_REACHED" }, { status: 429 });
       }
       
+      // 🔒 NEW: Check if user has negative balance and block until 24h reset
+      console.log('🔒 Checking user credit balance for negative balance blocking...');
+      const currentBalanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
+      const currentBalance = currentBalanceCheck[0]?.balance || 0;
+      
+      if (currentBalance < 0) {
+        console.log('🔒 User has negative balance:', currentBalance, '- blocking generation until 24h reset');
+        return json({ 
+          ok: false, 
+          error: "NEGATIVE_BALANCE_BLOCKED",
+          message: "You have exceeded your daily credit limit. Please wait until tomorrow for new credits.",
+          currentBalance: currentBalance,
+          blockedUntil: "24 hours from now"
+        }, { status: 403 });
+      }
+      
+      // 🔒 NEW: Check if user has insufficient credits for this request
+      if (currentBalance < cost) {
+        console.log('🔒 Insufficient credits:', currentBalance, '<', cost, '- blocking generation');
+        return json({ 
+          ok: false, 
+          error: "INSUFFICIENT_CREDITS",
+          message: `You need ${cost} credits but only have ${currentBalance}. Please wait for daily reset or upgrade your plan.`,
+          currentBalance: currentBalance,
+          requiredCredits: cost,
+          shortfall: cost - currentBalance
+        }, { status: 403 });
+      }
+      
+      console.log('🔒 Credit balance check passed:', currentBalance, '>=', cost);
+      
       // Reserve credits using the new system
       console.log('💰 reserve_credits inputs:', {
         userId,

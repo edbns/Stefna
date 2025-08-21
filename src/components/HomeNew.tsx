@@ -1519,6 +1519,16 @@ const HomeNew: React.FC = () => {
           const errorData = await creditsResponse.json();
           throw new Error(`Daily cap reached: ${errorData.error}`);
         }
+        if (creditsResponse.status === 403) {
+          const errorData = await creditsResponse.json();
+          if (errorData.error === 'NEGATIVE_BALANCE_BLOCKED') {
+            throw new Error(`Generation blocked: ${errorData.message} You have ${errorData.currentBalance} credits. Please wait until tomorrow for new credits.`);
+          } else if (errorData.error === 'INSUFFICIENT_CREDITS') {
+            throw new Error(`Insufficient credits: ${errorData.message} You need ${errorData.requiredCredits} credits but only have ${errorData.currentBalance}.`);
+          } else {
+            throw new Error(`Credit error: ${errorData.message || errorData.error}`);
+          }
+        }
         throw new Error(`Credits reservation failed: ${creditsResponse.status}`);
       }
 
@@ -2217,6 +2227,16 @@ const HomeNew: React.FC = () => {
         if (creditsResponse.status === 429) {
           const errorData = await creditsResponse.json();
           throw new Error(`Daily cap reached: ${errorData.error}`);
+        }
+        if (creditsResponse.status === 403) {
+          const errorData = await creditsResponse.json();
+          if (errorData.error === 'NEGATIVE_BALANCE_BLOCKED') {
+            throw new Error(`Generation blocked: ${errorData.message} You have ${errorData.currentBalance} credits. Please wait until tomorrow for new credits.`);
+          } else if (errorData.error === 'INSUFFICIENT_CREDITS') {
+            throw new Error(`Insufficient credits: ${errorData.message} You need ${errorData.requiredCredits} credits but only have ${errorData.currentBalance}.`);
+          } else {
+            throw new Error(`Credit error: ${errorData.message || errorData.error}`);
+          }
         }
         throw new Error(`Credits reservation failed: ${creditsResponse.status}`);
       }

@@ -166,6 +166,19 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
         </div>
       )}
 
+      {/* Negative Balance Warning */}
+      {serverQuota && serverQuota.daily_used > serverQuota.daily_limit && (
+        <div className="mt-3 p-2 bg-red-600/20 border border-red-600/30 rounded text-xs text-red-300">
+          <div className="flex items-center space-x-1">
+            <AlertCircle size={12} />
+            <span>Daily limit exceeded - generation blocked until tomorrow</span>
+          </div>
+          <div className="mt-1 text-red-200">
+            You have used {serverQuota.daily_used} credits today (limit: {serverQuota.daily_limit})
+          </div>
+        </div>
+      )}
+
       {/* Rate Limit Warning */}
       {usage.isRateLimited && (
         <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-400">
