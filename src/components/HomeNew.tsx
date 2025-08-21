@@ -80,6 +80,20 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
 // Import from the new professional presets system
 import { PROFESSIONAL_PRESETS, ProfessionalPresetConfig } from '../config/professional-presets'
 
+// Create a PRESETS object that maps to the new system for backward compatibility
+const PRESETS = Object.fromEntries(
+  Object.entries(PROFESSIONAL_PRESETS).map(([key, preset]) => [
+    key,
+    {
+      label: preset.label,
+      prompt: preset.promptAdd,
+      negative_prompt: 'blurry, low quality, distorted',
+      strength: preset.strength,
+      description: preset.description
+    }
+  ])
+)
+
 // Helper function to get preset by ID from the new system
 const getPresetById = (presetId: string): ProfessionalPresetConfig | undefined => {
   return PROFESSIONAL_PRESETS[presetId as keyof typeof PROFESSIONAL_PRESETS]
@@ -169,7 +183,7 @@ const HomeNew: React.FC = () => {
   const setSelectedPreset = setStickySelectedPreset
 
   // Stable ref for selectedPreset to prevent re-render issues during generation
-  const selectedPresetRef = useRef<keyof typeof PRESETS | null>(null)
+  const selectedPresetRef = useRef<string | null>(null)
   const genIdRef = useRef(0) // increments per job to prevent race conditions
   const [currentRunId, setCurrentRunId] = useState<string | null>(null)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
@@ -266,13 +280,13 @@ const HomeNew: React.FC = () => {
     })()
   }, [])
 
-  // Initialize sticky preset system when PRESETS are loaded
+  // Initialize sticky preset system when PROFESSIONAL_PRESETS are loaded
   useEffect(() => {
-    if (Object.keys(PRESETS).length > 0) {
-      const activePresets = Object.keys(PRESETS) as (keyof typeof PRESETS)[]
+    if (Object.keys(PROFESSIONAL_PRESETS).length > 0) {
+      const activePresets = Object.keys(PROFESSIONAL_PRESETS)
       ensureDefault(activePresets)
     }
-  }, [PRESETS, ensureDefault])
+  }, [PROFESSIONAL_PRESETS, ensureDefault])
 
   // Debug preset changes
   useEffect(() => {
@@ -284,7 +298,7 @@ const HomeNew: React.FC = () => {
     } else {
       selectedPresetRef.current = null
     }
-  }, [selectedPreset, PRESETS])
+  }, [selectedPreset, PROFESSIONAL_PRESETS])
 
   // Debug composer state changes
   useEffect(() => {
