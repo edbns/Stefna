@@ -239,10 +239,17 @@ export const handler: Handler = async (event) => {
         AND status = 'committed' 
         AND created_at >= (now() AT TIME ZONE 'UTC')::date`;
       
-      const dailyUsed = dailyUsageCheck[0]?.daily_used || 0;
+      // Ensure dailyUsed is a number and handle type conversion
+      const dailyUsed = Number(dailyUsageCheck[0]?.daily_used) || 0;
       const dailyCap = config.daily_cap;
       
-      console.log('🔒 Daily usage check:', { dailyUsed, dailyCap, remaining: dailyCap - dailyUsed });
+      console.log('🔒 Daily usage check:', { 
+        dailyUsed, 
+        dailyUsedType: typeof dailyUsed, 
+        dailyCap, 
+        remaining: dailyCap - dailyUsed,
+        calculation: `${dailyUsed} + ${cost} <= ${dailyCap} = ${dailyUsed + cost <= dailyCap}`
+      });
       
       // BLOCK generation if daily cap is exceeded
       if (dailyUsed >= dailyCap) {
