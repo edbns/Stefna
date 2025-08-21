@@ -358,3 +358,31 @@ export function getRandomPresets(count: number): ProfessionalPresetConfig[] {
   const shuffled = [...presets].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, count);
 }
+
+// ================================================================
+// Identity-Safe Hardened Presets
+// ================================================================
+
+// Automatically clamp all professional presets to identity-safe strength ranges
+export function hardenForIdentity<T extends ProfessionalPresetConfig>(p: T): T {
+  const SAFE = (x: number) => Math.min(0.22, Math.max(0.12, x));
+  return { ...p, strength: SAFE(p.strength ?? 0.18) };
+}
+
+// Export hardened presets for safe usage
+export const PROFESSIONAL_PRESETS_HARDENED: Record<ProfessionalPresetKey, ProfessionalPresetConfig> = Object.fromEntries(
+  Object.entries(PROFESSIONAL_PRESETS).map(([k, v]) => [k, hardenForIdentity(v)])
+) as Record<ProfessionalPresetKey, ProfessionalPresetConfig>;
+
+// Convert professional preset to background-only grade (for advanced editing)
+export function wrapAsBackgroundGrade(p: ProfessionalPresetConfig) {
+  return {
+    ...p,
+    subject_lock: { enabled: true, weight: 0.8 },
+    control: [{ type: 'ip_face', weight: 0.8 }],
+    applies: [
+      { key: 'subject',    denoise: 0.16, blend: 'normal' },
+      { key: 'background', denoise: p.strength, blend: 'soft-light' }
+    ]
+  };
+}
