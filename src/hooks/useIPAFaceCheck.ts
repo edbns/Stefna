@@ -544,6 +544,161 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     }
   }, [extractFaceEmbedding, threshold]);
 
+  // Build face mask from landmarks
+  const buildFaceMask = useCallback(async (
+    imageUrl: string, 
+    featherSize: number = 12
+  ): Promise<{ mask: ImageData; landmarks: any[] }> => {
+    const model = await loadFaceMeshModel();
+    
+    // Create image element
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    return new Promise((resolve, reject) => {
+      img.onload = async () => {
+        try {
+          // Create canvas for processing
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+          
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          
+          // Get face landmarks
+          const results = await new Promise<any>((resolveResults) => {
+            model.onResults((results: any) => {
+              resolveResults(results);
+            });
+            model.send({ image: canvas });
+          });
+          
+          if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+            reject(new Error('No faces detected for mask creation'));
+            return;
+          }
+          
+          const landmarks = results.multiFaceLandmarks[0];
+          
+          // Create face mask
+          const maskCanvas = document.createElement('canvas');
+          const maskCtx = maskCanvas.getContext('2d')!;
+          maskCanvas.width = canvas.width;
+          maskCanvas.height = canvas.height;
+          
+          // Face outline indices (simplified but comprehensive)
+          const faceOutline = [
+            10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 
+            397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 
+            172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109
+          ];
+          
+          // Create face mask path
+          maskCtx.fillStyle = 'white';
+          maskCtx.beginPath();
+          faceOutline.forEach((index, i) => {
+            if (landmarks[index]) {
+              const x = landmarks[index].x * canvas.width;
+              const y = landmarks[index].y * canvas.height;
+              if (i === 0) maskCtx.moveTo(x, y);
+              else maskCtx.lineTo(x, y);
+            }
+          });
+          maskCtx.closePath();
+          maskCtx.fill();
+          
+          // Apply feathering with blur
+          if (featherSize > 0) {
+            maskCtx.filter = `blur(${featherSize}px)`;
+            maskCtx.globalCompositeOperation = 'source-atop';
+            maskCtx.drawImage(maskCanvas, 0, 0);
+          }
+          
+          const maskData = maskCtx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          resolve({
+            mask: maskData,
+            landmarks
+          });
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      img.onerror = () => reject(new Error('Failed to load image for mask'));
+      img.src = imageUrl;
+    });
+  }, [loadFaceMeshModel]);
+
+  // Blend original face with AI output
+  const blendOriginalFace = useCallback(async (
+    originalImageUrl: string,
+    aiOutputUrl: string,
+    featherSize: number = 12
+  ): Promise<string> => {
+    try {
+      // Load both images
+      const [originalImg, aiImg] = await Promise.all([
+        new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = originalImageUrl;
+        }),
+        new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = aiOutputUrl;
+        })
+      ]);
+      
+      // Create final canvas
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      canvas.width = aiImg.width;
+      canvas.height = aiImg.height;
+      
+      // Get face mask from original image
+      const { mask: faceMask } = await buildFaceMask(originalImageUrl, featherSize);
+      
+      // Draw AI output as base
+      ctx.drawImage(aiImg, 0, 0);
+      const aiImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Resize and draw original image
+      ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
+      const originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Blend pixels using face mask
+      for (let i = 0; i < aiImageData.data.length; i += 4) {
+        // Use red channel of mask as alpha (assuming white mask)
+        const maskAlpha = faceMask.data[i] / 255;
+        
+        // Blend: final = aiOutput * (1 - maskAlpha) + original * maskAlpha
+        aiImageData.data[i] = aiImageData.data[i] * (1 - maskAlpha) + originalImageData.data[i] * maskAlpha;
+        aiImageData.data[i + 1] = aiImageData.data[i + 1] * (1 - maskAlpha) + originalImageData.data[i + 1] * maskAlpha;
+        aiImageData.data[i + 2] = aiImageData.data[i + 2] * (1 - maskAlpha) + originalImageData.data[i + 2] * maskAlpha;
+      }
+      
+      // Put blended result back
+      ctx.putImageData(aiImageData, 0, 0);
+      
+      // Return as data URL
+      return canvas.toDataURL('image/jpeg', 0.9);
+    } catch (error) {
+      console.error('Face blending failed:', error);
+      throw error;
+    }
+  }, [buildFaceMask]);
+
   return {
     // State
     ...state,
@@ -558,6 +713,8 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     resetStyleFailureCount,
     updateThreshold,
     clearHistory,
-    checkIdentityPreservation
+    checkIdentityPreservation,
+    buildFaceMask,
+    blendOriginalFace
   };
 }

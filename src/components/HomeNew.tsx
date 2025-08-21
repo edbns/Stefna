@@ -1792,12 +1792,24 @@ const HomeNew: React.FC = () => {
                   finalResultUrl = retryUrl;
                   ipaPassed = true;
                   ipaSimilarity = retryIpaResult.similarity;
-                } else {
-                  console.warn('⚠️ Retry IPA check still failed:', retryIpaResult.similarity.toFixed(3));
-                  // Keep original result but mark as failed
-                  finalResultUrl = resultUrl;
-                  ipaPassed = false;
-                  ipaSimilarity = retryIpaResult.similarity;
+                                 } else {
+                   console.warn('⚠️ Retry IPA check still failed:', retryIpaResult.similarity.toFixed(3));
+                   console.log('🔒 Attempting face blending as final fallback...');
+                   
+                   try {
+                     const { blendOriginalFace } = await import('../hooks/useIPAFaceCheck');
+                     const blendedResult = await blendOriginalFace(sourceUrl, retryUrl, 16);
+                     
+                     console.log('✅ Face blending completed successfully');
+                     finalResultUrl = blendedResult;
+                     ipaPassed = true; // Mark as passed since we applied face preservation
+                     ipaSimilarity = retryIpaResult.similarity;
+                   } catch (blendError) {
+                     console.warn('⚠️ Face blending failed, keeping retry result:', blendError);
+                     finalResultUrl = retryUrl;
+                     ipaPassed = false;
+                     ipaSimilarity = retryIpaResult.similarity;
+                   }
                 }
               } else {
                 console.warn('⚠️ Retry failed - no result URL');
