@@ -1,7 +1,10 @@
-// Professional AI Editing Presets - 25 Premium Styles
-// Smart rotation system with usage tracking
+// Professional AI Editing Presets (retuned for safe I2I)
+// Notes:
+// - Prompts include preservation + single-panel guard.
+// - Strengths are edit-safe; your router should still clamp to [0.08, 0.22].
+// - Always pass negative_prompt through to the model.
 
-export type ProfessionalPresetKey = 
+export type ProfessionalPresetKey =
   | 'cinematic_glow' | 'bright_airy' | 'vivid_pop' | 'vintage_film_35mm' | 'tropical_boost'
   | 'urban_grit' | 'mono_drama' | 'dreamy_pastels' | 'golden_hour_magic' | 'high_fashion_editorial'
   | 'moody_forest' | 'desert_glow' | 'retro_polaroid' | 'crystal_clear' | 'ocean_breeze'
@@ -20,280 +23,313 @@ export interface ProfessionalPresetConfig {
   category: 'cinematic' | 'minimal' | 'vibrant' | 'vintage' | 'nature'
 }
 
-// All 25 Professional Presets
+const SINGLE_PANEL_GUARD =
+  'Render as one continuous single frame (no grid, collage, split-screen, mirror, border or frame). Show only one instance of the subject.';
+const PRESERVE_IDENTITY =
+  'Preserve the original composition, camera crop, subject identity and facial geometry. Do not add or remove objects. Keep background layout unchanged.';
+const BASE_NEG =
+  'duplicate face, extra face, extra limb, split screen, collage, grid, diptych, mirror, border, frame, text, caption, watermark, logo, signature, anime, cartoon, 2D, low quality, jpeg artifacts, oversharpened, waxy skin, deformed, distorted, unrealistic';
+const BASE_PROMPT_SUFFIX = `${SINGLE_PANEL_GUARD} ${PRESERVE_IDENTITY}`;
+
+// All Professional Presets (retuned)
 export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPresetConfig> = {
   cinematic_glow: {
     id: 'cinematic_glow',
     name: 'Cinematic Glow',
     tag: 'Cinematic',
-    prompt: 'Enhance this image/video with cinematic color grading, warm highlights, deep shadows, and rich blacks. Add a subtle teal-orange tone balance. Keep faces natural.',
-    negative_prompt: 'flat, dull, oversaturated, harsh lighting',
-    strength: 0.75,
-    description: 'Professional cinematic look with teal-orange balance',
+    prompt:
+      `Enhance with cinematic color grading: warm highlights, deep shadows, rich blacks, subtle teal–orange balance. Keep skin natural. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, harsh color shifts`,
+    strength: 0.16,
+    description: 'Professional cinematic look with teal–orange balance',
     category: 'cinematic'
   },
-  
+
   bright_airy: {
     id: 'bright_airy',
     name: 'Clean Minimal',
     tag: 'Minimalist',
-    prompt: 'Edit with a clean, airy style—soft lighting, pastel tones, balanced whites, and gentle shadows. Perfect for lifestyle, wellness, and yoga shots.',
-    negative_prompt: 'dark, moody, harsh contrast, oversaturated',
-    strength: 0.65,
-    description: 'Clean, minimal aesthetic perfect for lifestyle content',
+    prompt:
+      `Clean, airy edit: soft light, pastel tones, balanced whites, gentle shadows. Ideal for lifestyle/wellness. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, crushed blacks, blown highlights`,
+    strength: 0.12,
+    description: 'Clean, minimal aesthetic for lifestyle content',
     category: 'minimal'
   },
-  
+
   vivid_pop: {
     id: 'vivid_pop',
     name: 'Color Pop',
     tag: 'Vibrant',
-    prompt: 'Make colors vibrant and saturated while keeping skin tones realistic. Enhance clarity and add slight contrast for a punchy, Instagram-ready look.',
-    negative_prompt: 'muted, dull, flat, desaturated',
-    strength: 0.70,
-    description: 'Bold, vibrant colors perfect for social media',
+    prompt:
+      `Boost saturation and micro-contrast for vibrant, punchy color while keeping skin tones realistic. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, posterization, oversaturation`,
+    strength: 0.18,
+    description: 'Bold, vibrant colors suited to social media',
     category: 'vibrant'
   },
-  
+
   vintage_film_35mm: {
     id: 'vintage_film_35mm',
     name: 'Film Look 35mm',
     tag: 'Vintage',
-    prompt: 'Add a retro 35mm film look with warm faded tones, subtle grain, and soft shadows. Keep details sharp but with a nostalgic mood.',
-    negative_prompt: 'digital, sharp, modern, oversaturated',
-    strength: 0.75,
+    prompt:
+      `Retro 35mm vibe: warm faded tones, subtle fine film grain (not digital noise), soft shadows; keep detail intact. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, digital noise, plastic skin`,
+    strength: 0.18,
     description: 'Classic film aesthetic with warm, nostalgic tones',
     category: 'vintage'
   },
-  
+
   tropical_boost: {
     id: 'tropical_boost',
     name: 'Tropical Vibes',
     tag: 'Travel',
-    prompt: 'Boost blues, greens, and warm tones for a tropical, sunny feel. Slight HDR for landscapes, keep people looking natural.',
-    negative_prompt: 'cold, muted, dull, flat lighting',
-    strength: 0.70,
-    description: 'Tropical paradise colors perfect for travel photos',
+    prompt:
+      `Enhance blues/greens and warm sunlit tones; gentle HDR for landscapes; keep people natural. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, cyan shift on skin`,
+    strength: 0.18,
+    description: 'Tropical colors for travel scenes',
     category: 'vibrant'
   },
-  
+
   urban_grit: {
     id: 'urban_grit',
     name: 'Urban Grit',
     tag: 'Urban',
-    prompt: 'Apply desaturated blues, deep contrast, and crisp details. Keep shadows strong and highlights clean for an urban city aesthetic.',
-    negative_prompt: 'bright, colorful, soft, pastel',
-    strength: 0.75,
-    description: 'Urban city aesthetic with gritty, modern feel',
+    prompt:
+      `Desaturated blues, strong contrast, crisp micro-detail; modern street mood without changing layout. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, halos, over-sharpening`,
+    strength: 0.18,
+    description: 'Gritty, modern city aesthetic',
     category: 'vibrant'
   },
-  
+
   mono_drama: {
     id: 'mono_drama',
     name: 'B&W Drama',
     tag: 'Black & White',
-    prompt: 'Convert to black and white with strong contrast, bright highlights, and detailed textures. Ideal for close-up portraits or moody street scenes.',
-    negative_prompt: 'color, flat, low contrast, blurry',
-    strength: 0.80,
-    description: 'Dramatic black and white with strong contrast',
+    prompt:
+      `Convert to rich black and white: strong contrast, bright highlights, detailed textures; filmic tonality. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, color`,
+    strength: 0.20,
+    description: 'Dramatic B&W with strong contrast',
     category: 'cinematic'
   },
-  
+
   dreamy_pastels: {
     id: 'dreamy_pastels',
     name: 'Soft Pastel Glow',
     tag: 'Soft',
-    prompt: 'Add soft-focus effect, pastel colors, and warm highlights for a dreamy, romantic vibe. Keep details smooth and flattering.',
-    negative_prompt: 'sharp, harsh, dark, oversaturated',
-    strength: 0.65,
-    description: 'Soft, dreamy aesthetic perfect for romantic content',
+    prompt:
+      `Soft-focus glow, pastel palette, warm highlights; flattering but natural detail retention. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, haze artifacts, plastic skin`,
+    strength: 0.14,
+    description: 'Soft, dreamy aesthetic',
     category: 'cinematic'
   },
-  
+
   golden_hour_magic: {
     id: 'golden_hour_magic',
     name: 'Golden Hour Magic',
     tag: 'Warm',
-    prompt: 'Simulate golden hour lighting—warm tones, glowing highlights, and soft shadows. Perfect for portraits and sunsets.',
-    negative_prompt: 'cold, blue, harsh, flat lighting',
-    strength: 0.70,
-    description: 'Warm golden hour lighting simulation',
+    prompt:
+      `Simulate golden hour: warm tones, glowing highlights, soft rolloff in shadows; keep skin natural. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, orange cast on whites`,
+    strength: 0.16,
+    description: 'Warm golden hour simulation',
     category: 'cinematic'
   },
-  
+
   high_fashion_editorial: {
     id: 'high_fashion_editorial',
     name: 'Fashion Editorial',
     tag: 'Editorial',
-    prompt: 'Sleek desaturated tones with strong contrast, minimal noise, and smooth skin retouching. Magazine cover quality.',
-    negative_prompt: 'colorful, soft, blurry, amateur',
-    strength: 0.75,
-    description: 'Professional editorial look for fashion content',
+    prompt:
+      `Sleek editorial finish: gently desaturated palette, strong contrast, subtle skin polish (retain pores), magazine clean. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, over-smoothing, plastic skin`,
+    strength: 0.18,
+    description: 'Editorial look for fashion content',
     category: 'cinematic'
   },
-  
+
   moody_forest: {
     id: 'moody_forest',
     name: 'Forest Mood',
     tag: 'Nature',
-    prompt: 'Deep green tones, soft diffused light, and light fog overlay for a moody forest atmosphere.',
-    negative_prompt: 'bright, sunny, colorful, harsh lighting',
-    strength: 0.70,
-    description: 'Moody forest atmosphere with deep greens',
+    prompt:
+      `Deep greens, soft diffused light, subtle fog atmosphere; maintain natural luminance separation. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, color cast on skin`,
+    strength: 0.16,
+    description: 'Moody forest atmosphere',
     category: 'nature'
   },
-  
+
   desert_glow: {
     id: 'desert_glow',
     name: 'Golden Dunes',
     tag: 'Travel',
-    prompt: 'Warm sandy tones, golden highlights, and gentle texture enhancement for desert and dune scenes.',
-    negative_prompt: 'cold, blue, wet, lush',
-    strength: 0.70,
-    description: 'Warm desert tones perfect for landscape photography',
+    prompt:
+      `Warm sandy palette, golden highlights, gentle texture/clarity for dunes; avoid halos. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, cyan shadows`,
+    strength: 0.16,
+    description: 'Warm desert tones',
     category: 'vintage'
   },
-  
+
   retro_polaroid: {
     id: 'retro_polaroid',
     name: 'Instant Retro',
     tag: 'Vintage',
-    prompt: 'Add warm faded tones, soft focus, and subtle frame edge blur for a retro instant camera feel.',
-    negative_prompt: 'sharp, digital, modern, clear',
-    strength: 0.70,
-    description: 'Retro Polaroid instant camera aesthetic',
+    prompt:
+      `Warm faded tones, soft focus, subtle edge vignette (not a hard frame) for instant-camera feel. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}`, // keep frame/border neg to avoid fake frames
+    strength: 0.16,
+    description: 'Retro instant camera aesthetic',
     category: 'vintage'
   },
-  
+
   crystal_clear: {
     id: 'crystal_clear',
     name: 'Sharp Clarity',
     tag: 'Clarity',
-    prompt: 'Enhance sharpness, remove haze, and boost clarity while keeping colors true to life.',
-    negative_prompt: 'blurry, hazy, soft, distorted',
-    strength: 0.65,
-    description: 'Maximum clarity and sharpness enhancement',
+    prompt:
+      `Increase clarity and sharpness, remove haze, keep colors true-to-life; retain natural skin texture. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, halos, over-sharpening, crunchy detail`,
+    strength: 0.12,
+    description: 'Maximum clarity with natural rendering',
     category: 'minimal'
   },
-  
+
   ocean_breeze: {
     id: 'ocean_breeze',
     name: 'Coastal Air',
     tag: 'Travel',
-    prompt: 'Bright blues, soft whites, and airy highlights for a clean, coastal feel.',
-    negative_prompt: 'dark, moody, warm, inland',
-    strength: 0.65,
-    description: 'Clean coastal aesthetic with ocean blues',
+    prompt:
+      `Bright ocean blues, clean whites, airy highlights; crisp yet soft coastal feel. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, cyan skin`,
+    strength: 0.14,
+    description: 'Clean coastal aesthetic',
     category: 'nature'
   },
-  
+
   festival_vibes: {
     id: 'festival_vibes',
     name: 'Vibrant Festival',
     tag: 'Vibrant',
-    prompt: 'Rich saturated colors, warm highlights, and slight vignette for lively festival and street party scenes.',
-    negative_prompt: 'muted, dull, dark, serious',
-    strength: 0.75,
-    description: 'Vibrant festival atmosphere with rich colors',
+    prompt:
+      `Rich saturation, warm highlights, slight vignette for lively festival energy; keep faces true. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, neon clipping, oversaturation`,
+    strength: 0.20,
+    description: 'Lively, colorful festival atmosphere',
     category: 'vibrant'
   },
-  
+
   noir_classic: {
     id: 'noir_classic',
     name: 'Noir Cinema',
     tag: 'Black & White',
-    prompt: 'High-contrast black and white with sharp detail, deep blacks, and a timeless cinematic mood.',
-    negative_prompt: 'color, soft, low contrast, bright',
-    strength: 0.80,
-    description: 'Classic film noir with high contrast',
+    prompt:
+      `High-contrast monochrome with deep blacks and crisp detail; timeless cinematic mood. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, color`,
+    strength: 0.20,
+    description: 'Classic high-contrast noir',
     category: 'cinematic'
   },
-  
+
   sun_kissed: {
     id: 'sun_kissed',
     name: 'Warm Glow',
     tag: 'Warm',
-    prompt: 'Golden warmth, soft shadows, and glowing skin tones for outdoor sunlit photos.',
-    negative_prompt: 'cold, dark, indoor, artificial lighting',
-    strength: 0.70,
-    description: 'Natural sunlit warmth for outdoor photography',
+    prompt:
+      `Golden warmth, soft shadows, glowing skin tones for outdoor sunlight; protect whites. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, orange cast on whites`,
+    strength: 0.16,
+    description: 'Natural sunlit warmth',
     category: 'vibrant'
   },
-  
+
   frost_light: {
     id: 'frost_light',
     name: 'Winter Chill',
     tag: 'Cool',
-    prompt: 'Cool blues and crisp whites for winter and mountain scenes, enhancing snow textures.',
-    negative_prompt: 'warm, dark, summer, tropical',
-    strength: 0.70,
-    description: 'Cool winter aesthetic with enhanced snow textures',
+    prompt:
+      `Cool blues and crisp whites; enhance snow texture without gray mush; keep skin neutral. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, muddy snow`,
+    strength: 0.16,
+    description: 'Cool winter aesthetic',
     category: 'nature'
   },
-  
+
   neon_nights: {
     id: 'neon_nights',
     name: 'Neon Nights',
     tag: 'Urban',
-    prompt: 'Vivid neon colors, deep blacks, and sharp clarity for night city scenes.',
-    negative_prompt: 'daytime, natural, muted, soft',
-    strength: 0.75,
-    description: 'Vibrant neon night city aesthetic',
+    prompt:
+      `Vivid neon color contrast with deep blacks and high clarity for night city scenes; protect skin tones. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, banding, neon clipping`,
+    strength: 0.20,
+    description: 'Vibrant neon city night look',
     category: 'vibrant'
   },
-  
+
   cultural_glow: {
     id: 'cultural_glow',
     name: 'Cultural Heritage',
     tag: 'Travel',
-    prompt: 'Enhance traditional fabrics, patterns, and natural light to showcase cultural richness.',
-    negative_prompt: 'modern, artificial, dull, flat',
-    strength: 0.70,
-    description: 'Cultural heritage enhancement with natural lighting',
+    prompt:
+      `Enhance traditional fabrics/patterns and natural light; emphasize authentic color and texture. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, artificial tint`,
+    strength: 0.16,
+    description: 'Cultural richness with natural lighting',
     category: 'nature'
   },
-  
+
   soft_skin_portrait: {
     id: 'soft_skin_portrait',
     name: 'Natural Portrait',
     tag: 'Portrait',
-    prompt: 'Smooth skin tones, natural color correction, and soft background blur for professional portraits.',
-    negative_prompt: 'harsh, rough, oversaturated, blurry',
-    strength: 0.65,
-    description: 'Professional portrait with smooth skin enhancement',
+    prompt:
+      `Subtle skin polish and color correction with soft background separation; retain pores and natural texture. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, plastic skin, over-smoothing`,
+    strength: 0.12,
+    description: 'Natural portrait with gentle enhancement',
     category: 'minimal'
   },
-  
+
   rainy_day_mood: {
     id: 'rainy_day_mood',
     name: 'Rain Mood',
     tag: 'Moody',
-    prompt: 'Cool tones, soft reflections, and subtle raindrop texture for rainy street or nature scenes.',
-    negative_prompt: 'sunny, warm, dry, bright',
-    strength: 0.70,
-    description: 'Moody rainy day atmosphere with cool tones',
+    prompt:
+      `Cool tonal palette, soft reflections, subtle rain atmosphere; preserve contrast in midtones. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, muddy midtones`,
+    strength: 0.16,
+    description: 'Moody rainy atmosphere',
     category: 'nature'
   },
-  
+
   wildlife_focus: {
     id: 'wildlife_focus',
     name: 'Wildlife Detail',
     tag: 'Nature',
-    prompt: 'Enhance fur, feathers, or scales with natural tones and sharp detail, keeping background slightly blurred.',
-    negative_prompt: 'blurry, artificial, oversaturated, harsh',
-    strength: 0.75,
-    description: 'Wildlife photography with enhanced natural details',
+    prompt:
+      `Enhance fur/feather/scale detail with natural tones; gently blur background separation if needed. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, over-sharpening, artifacting`,
+    strength: 0.16,
+    description: 'Natural detail for wildlife',
     category: 'nature'
   },
-  
+
   street_story: {
     id: 'street_story',
     name: 'Urban Portrait',
     tag: 'Urban',
-    prompt: 'High contrast, rich shadows, and enhanced textures for documentary-style street photography.',
-    negative_prompt: 'soft, bright, colorful, artificial',
-    strength: 0.75,
-    description: 'Documentary street photography aesthetic',
+    prompt:
+      `Documentary street contrast, rich shadows, enhanced textures; keep story elements intact. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, halos, crunchy grain`,
+    strength: 0.18,
+    description: 'Documentary street aesthetic',
     category: 'minimal'
   },
 
@@ -301,25 +337,22 @@ export const PROFESSIONAL_PRESETS: Record<ProfessionalPresetKey, ProfessionalPre
     id: 'express_enhance',
     name: 'Express Enhance',
     tag: 'Clarity',
-    prompt: 'Quickly enhance sharpness, remove haze, and boost clarity for a more polished look.',
-    negative_prompt: 'blurry, hazy, soft, distorted',
-    strength: 0.70,
-    description: 'Quickly enhance sharpness, remove haze, and boost clarity for a more polished look.',
+    prompt:
+      `Quick clarity boost: sharpen, dehaze, polish—without altering composition or skin realism. ${BASE_PROMPT_SUFFIX}`,
+    negative_prompt: `${BASE_NEG}, halos, plastic skin`,
+    strength: 0.12,
+    description: 'Fast polish: clarity + dehaze',
     category: 'minimal'
   }
 };
 
-// Helper function to get presets by category
+// Helpers unchanged:
 export function getPresetsByCategory(category: string): ProfessionalPresetConfig[] {
   return Object.values(PROFESSIONAL_PRESETS).filter(preset => preset.category === category);
 }
-
-// Helper function to get all categories
 export function getAllCategories(): string[] {
   return [...new Set(Object.values(PROFESSIONAL_PRESETS).map(preset => preset.category))];
 }
-
-// Helper function to get random presets (for rotation)
 export function getRandomPresets(count: number): ProfessionalPresetConfig[] {
   const presets = Object.values(PROFESSIONAL_PRESETS);
   const shuffled = [...presets].sort(() => 0.5 - Math.random());

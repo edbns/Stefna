@@ -45,12 +45,13 @@ export function toSlug(sel: PresetSel): string {
   return raw.trim().toLowerCase().replace(/\s+/g, '_');
 }
 
-export function promptForPreset(sel: PresetSel, isVideo = false, fallback = 'stylize, preserve subject and composition'): string {
+export function promptForPreset(sel: PresetSel, isVideo = false): string {
   const slug = toSlug(sel);
   const promptMap = isVideo ? V2V_PRESET_PROMPTS : PRESET_PROMPTS;
   const prompt = promptMap[slug];
-  console.log('🎨 Preset lookup:', { input: sel, slug, isVideo, found: !!prompt, prompt: prompt || fallback });
-  return prompt || fallback;
+  if (!prompt) throw new Error(`Preset prompt not found for "${slug}"`);
+  console.log('🎨 Preset lookup:', { input: sel, slug, isVideo, found: true, prompt });
+  return prompt;
 }
 
 export interface PresetConfig {
@@ -79,14 +80,9 @@ export const PRESETS: Record<PresetKey, PresetConfig> = (() => {
   return presets;
 })();
 
-// Helper to build your I2I payload (Flux I2I)
-export function buildI2IPayload(preset: PresetConfig, image_url: string) {
-  return {
-    model: 'stable-diffusion-v35-large',
-    prompt: preset.prompt,
-    image_url,
-    strength: preset.strength,
-    num_inference_steps: 36, // Default steps for all presets
-    guidance_scale: 7.5,   // Default guidance for all presets
-  };
+// Helper to build your I2I payload (uses router for proper engine selection)
+export function buildI2IPayload(presetId: string, image_url: string) {
+  // Import and use the router for proper payload building
+  const { buildPayload } = require('../utils/router');
+  return buildPayload(presetId, image_url);
 }

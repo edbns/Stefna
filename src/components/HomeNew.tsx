@@ -3055,6 +3055,12 @@ const HomeNew: React.FC = () => {
         const updatedProfile = { ...currentProfile, ...result }
         localStorage.setItem('userProfile', JSON.stringify(updatedProfile))
         
+        // Refresh feed to show/hide shared media based on new setting
+        if (newSettings.shareToFeed !== undefined) {
+          console.log('🔄 Refreshing feed after shareToFeed change:', newSettings.shareToFeed)
+          await loadFeed() // Refresh feed to reflect new visibility
+        }
+        
         return true
       } else {
         console.error('❌ Failed to update settings in database:', response.status)
@@ -3093,7 +3099,7 @@ const HomeNew: React.FC = () => {
       <HiddenUploader />
 
       {/* Floating Logo - Top Left */}
-      <div className="fixed top-6 left-6 z-50">
+      <div className="fixed top-6 left-6 z-50 flex items-center">
         <img 
           src="/logo.png" 
           alt="Stefna Logo" 

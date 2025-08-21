@@ -23,6 +23,8 @@ interface MasonryMediaGridProps {
   // Show auth modal for logged out users
   onShowAuth?: () => void
   isLoggedIn?: boolean
+  // Loading states for actions
+  deletingMediaIds?: Set<string>
 }
 
 const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
@@ -40,7 +42,9 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   onToggleSelection,
   // Auth props
   onShowAuth,
-  isLoggedIn = true
+  isLoggedIn = true,
+  // Loading states for actions
+  deletingMediaIds = new Set()
 }) => {
   const gridRef = useRef<HTMLDivElement>(null)
 
@@ -220,12 +224,17 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                                     onClick={(e) => handleAction(() => onDelete(item), e)}
                                     className="w-7 h-7 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-red-500/80 transition-all duration-200"
                                     title="Delete"
+                                    disabled={deletingMediaIds.has(item.id)}
                                   >
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
-                                      <path d="M3 6h18"/>
-                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-                                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                    </svg>
+                                    {deletingMediaIds.has(item.id) ? (
+                                      <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    ) : (
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
+                                        <path d="M3 6h18"/>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                      </svg>
+                                    )}
                                   </button>
                                 )}
                               </div>

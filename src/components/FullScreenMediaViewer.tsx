@@ -175,9 +175,17 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
           {/* Actions - Simplified layout with copy functionality */}
           <div className="mt-6 text-center max-w-4xl px-4">
-            {/* Prompt display with copy icon only */}
+            {/* Prompt display with text and copy icon */}
             {current.prompt && (
-              <div className="flex items-center justify-center max-w-2xl mx-auto">
+              <div className="flex flex-col items-center max-w-2xl mx-auto space-y-3">
+                {/* Prompt text */}
+                <div className="bg-white/10 border border-white/20 rounded-lg p-4 w-full">
+                  <p className="text-white/80 text-sm leading-relaxed break-words">
+                    {current.prompt}
+                  </p>
+                </div>
+                
+                {/* Copy button */}
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(current.prompt)
