@@ -1,158 +1,172 @@
-// aimlApi.ts
+// netlify/functions/aimlApi.ts
 import type { Handler } from '@netlify/functions';
-import fetch from 'node-fetch';
+
+type Mode = 'custom' | 'preset' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'none';
 
 const AIML_BASE = 'https://api.aimlapi.com';
-const AIML_KEY  = process.env.AIML_API_KEY!;
 
-type Family = 'neotokyo' | 'ghibli' | 'emotion' | 'none' | 'unknown';
-type Policy = { min: number; max: number; def: number; family: Family };
-
-const ENDPOINTS = ['/v1/images', '/images']; // try v1, then legacy
-const HEADERS = (key: string) => ({
-  'Authorization': `Bearer ${key}`,
-  'Content-Type': 'application/json',
-});
-
-// --- Global policy (Flux needs higher denoise than SD to avoid passthrough)
-function classifyFamily(presetId = '', prompt = ''): Policy {
-  const t = `${presetId} ${prompt}`.toLowerCase();
-  if (/neo[_\s-]?tokyo|visor|hud|neon|scanline|tattoo|circuit|rgb split|vhs/.test(t))
-    return { min: 0.20, max: 0.30, def: 0.24, family: 'neotokyo' };
-  if (/^rx_|tears|sparkle|shock|anime/.test(t))
-    return { min: 0.12, max: 0.18, def: 0.14, family: 'ghibli' };
-  if (/joy|sadness|nostalgia|distance|peace|fear|confidence|loneliness|vulnerability/.test(t))
-    return { min: 0.10, max: 0.15, def: 0.12, family: 'emotion' };
-  if (presetId === 'none')
-    return { min: 0.00, max: 0.00, def: 0.00, family: 'none' };
-  // Custom prompt safe default
-  return { min: 0.12, max: 0.22, def: 0.16, family: 'unknown' };
-}
-
-function clamp(s: any, pol: Policy) {
-  const n = Number(s);
-  const v = Number.isFinite(n) ? n : pol.def;
-  return Math.max(pol.min, Math.min(pol.max, v));
-}
-
-// Some providers 404 on '/image-to-image' suffix in model name.
-function normalizeModel(model: string) {
+// flux/dev is the correct model name to use with AIML for i2i
+function normalizeModel(model?: string) {
   if (!model) return 'flux/dev';
-  if (model.startsWith('flux/')) {
-    return model.replace(/\/image-to-image$/i, ''); // 'flux/dev/image-to-image' -> 'flux/dev'
-  }
+  // collapse any ".../image-to-image" suffix variants to "flux/dev"
+  if (/^flux\/dev/i.test(model)) return 'flux/dev';
   return model;
 }
 
-async function callAIML(path: string, payload: any) {
+// server-side strength policy (Flux likes ~0.12–0.30 to be noticeable)
+const STRENGTH: Record<Mode, { min: number; def: number; max: number }> = {
+  custom:         { min: 0.12, def: 0.16, max: 0.22 },
+  preset:         { min: 0.12, def: 0.16, max: 0.22 },
+  emotionmask:    { min: 0.10, def: 0.12, max: 0.15 },
+  ghiblireact:    { min: 0.12, def: 0.14, max: 0.18 },
+  neotokyoglitch: { min: 0.20, def: 0.24, max: 0.30 },
+  none:           { min: 0.00, def: 0.00, max: 0.00 },
+};
+
+function clamp(val: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, val));
+}
+
+// Global identity prelude (kills duplicate/mirror/diptych + anime bleed)
+const IDENTITY_PRELUDE = `Render the INPUT PHOTO as a single, continuous frame of ONE subject.
+Do NOT create a grid, collage, split-screen, diptych, mirrored panel, border, seam, gutter, or frame.
+Do NOT duplicate, mirror, overlay, or repeat any part of the face or body.
+Preserve identity exactly: same gender, skin tone, ethnicity, age, and facial structure.`;
+
+const GHIBLI_FACE_ONLY = `Apply changes on the FACE ONLY; hair, body, clothing, and background remain photorealistic and unchanged.
+Allow light, face-only anime micro-stylization (catchlights/tiny highlights). Avoid outlines and cel-shading. No skin recolor.`;
+
+async function postAIML(path: string, token: string, body: any) {
   const res = await fetch(`${AIML_BASE}${path}`, {
     method: 'POST',
-    headers: HEADERS(AIML_KEY),
-    body: JSON.stringify(payload),
+    headers: {
+      'authorization': token,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
   });
-  const text = await res.text();
-  let json: any = null;
-  try { json = JSON.parse(text); } catch {}
-  return { res, text, json };
+  return res;
 }
 
 export const handler: Handler = async (event: any) => {
   try {
     if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, body: 'Method Not Allowed' };
+      return { statusCode: 405, body: JSON.stringify({ ok: false, error: 'METHOD_NOT_ALLOWED' }) };
     }
 
-    const req = JSON.parse(event.body || '{}');
+    const auth = event.headers['authorization'] || event.headers['Authorization'];
+    if (!auth) {
+      return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'NO_AUTH' }) };
+    }
 
-    const presetId  = String(req.presetId || '');
-    const modelIn   = String(req.model || 'flux/dev'); // default Flux
-    const prompt    = String(req.prompt || '');
-    const image_url = String(req.image_url || '');
+    const raw = JSON.parse(event.body || '{}');
 
-    // Policy by family (Flux-aware)
-    const isFlux = modelIn.startsWith('flux/');
-    const pol    = isFlux ? classifyFamily(presetId, prompt)
-                          : { min: 0.06, max: 0.10, def: 0.08, family: 'unknown' as Family };
+    const mode: Mode = raw.mode;
+    const userPrompt: string = (raw.prompt || '').toString();
+    const image_url: string = (raw.image_url || '').toString();
+    const requestedStrength: number = Number(raw.strength);
+    const num_variations: number = Number(raw.num_variations || 1);
 
-    let model    = normalizeModel(modelIn);
-    let strength = clamp(req.strength, pol);
+    // basic validation
+    if (!mode || !['custom','preset','emotionmask','ghiblireact','neotokyoglitch','none'].includes(mode)) {
+      return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'INVALID_MODE' }) };
+    }
+    if (!image_url) {
+      return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'NO_IMAGE_URL' }) };
+    }
 
-    // Log strength policy for debugging
-    console.log('🎯 Strength policy:', { presetId, family: pol.family, min: pol.min, max: pol.max, used: strength });
+    // normalize model and strength per-mode
+    const model = normalizeModel(raw.model);
+    const policy = STRENGTH[mode];
+    const strength = clamp(
+      isFinite(requestedStrength) ? requestedStrength : policy.def,
+      policy.min,
+      policy.max
+    );
 
-    // Minimal, AIML-supported payload ONLY
-    const basePayload = {
+    // build final prompt (server always injects identity prelude)
+    const prelude = mode === 'ghiblireact'
+      ? `${IDENTITY_PRELUDE}\n${GHIBLI_FACE_ONLY}`
+      : IDENTITY_PRELUDE;
+
+    const prompt = `${prelude}\n${userPrompt || ''}`.trim();
+
+    // Only forward supported fields
+    const aimlPayload = {
       model,
       prompt,
       image_url,
       strength,
-      num_variations: 1 as const,
+      num_variations,
     };
 
-    // -------- try endpoints (and remap model if 404) ----------
-    let lastErr = '';
-    let result: any = null;
+    // Try /v1/images then /images (some providers differ)
+    const tryOnce = async () => {
+      let res = await postAIML('/v1/images', auth, aimlPayload);
+      if (res.status === 404) res = await postAIML('/images', auth, aimlPayload);
+      const text = await res.text();
+      let json: any = {};
+      try { json = JSON.parse(text); } catch { /* leave text in */ }
+      return { res, json, text };
+    };
 
-    for (const path of ENDPOINTS) {
-      // 1st attempt with as-is normalized model
-      let { res, json, text } = await callAIML(path, basePayload);
-      if (res.ok) { result = json; break; }
-      lastErr = `(${res.status}) ${text || res.statusText}`;
+    let { res, json } = await tryOnce();
 
-      // If 404/400, try model alias fallback once (Flux only)
-      if ((res.status === 404 || res.status === 400) && isFlux && /\/image-to-image$/i.test(modelIn)) {
-        const aliasPayload = { ...basePayload, model: normalizeModel(modelIn) }; // already normalized, but safe
-        const r2 = await callAIML(path, aliasPayload);
-        if (r2.res.ok) { result = r2.json; model = aliasPayload.model; break; }
-        lastErr = `alias ${path} -> (${r2.res.status}) ${r2.text || r2.res.statusText}`;
+    // No-op guard: if inference is suspiciously fast (<0.5s), bump strength once (+0.04) and retry
+    let had_retry = false;
+    if (res.ok && json?.timings?.inference != null && json.timings.inference < 0.5 && strength < policy.max) {
+      const bumped = clamp(strength + 0.04, policy.min, policy.max);
+      const retryPayload = { ...aimlPayload, strength: bumped };
+      let res2 = await postAIML('/v1/images', auth, retryPayload);
+      if (res2.status === 404) res2 = await postAIML('/images', auth, retryPayload);
+      const text2 = await res2.text();
+      let json2: any = {};
+      try { json2 = JSON.parse(text2); } catch {}
+      if (res2.ok) {
+        res = res2; json = json2; had_retry = true;
       }
-      // try next path
     }
 
-    if (!result?.images?.[0]?.url) {
+    if (!res.ok) {
+      const status = res.status;
+      const reason = json?.error || json || 'AIML_ERROR';
       return {
         statusCode: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ ok: false, error: `AIML call failed ${lastErr}` }),
+        body: JSON.stringify({ ok: false, error: `AIML_${status}`, reason }),
       };
     }
 
-    // Heuristic "no-op" guard: if inference is extremely fast AND family not 'none', bump once
-    const inference = Number(result?.timings?.inference ?? 0);
-    const canBump = isFlux && pol.family !== 'none' && strength < pol.max;
-    if (canBump && inference > 0 && inference < 0.5) {
-      const bumped = Math.min(pol.max, strength + 0.04);
-      if (bumped > strength) {
-        strength = bumped;
-        const retryPayload = { ...basePayload, strength };
-        // Re-use last successful path
-        const retry = await callAIML(ENDPOINTS[0], retryPayload);
-        if (retry.res.ok && retry.json?.images?.[0]?.url) {
-          result = retry.json;
-          console.log('🔄 Strength bumped from', strength - 0.04, 'to', strength, 'due to fast inference');
-        }
-      }
-    }
+    // Normalize response to your client shape
+    const imageUrls: string[] =
+      json?.image_urls ??
+      (Array.isArray(json?.images) ? json.images.map((i: any) => i.url).filter(Boolean) : []);
 
-    const outUrl = result.images[0].url;
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
         ok: true,
-        image_urls: [outUrl],
+        image_urls: imageUrls,
         model,
         prompt,
-        variations_generated: 1,
+        variations_generated: imageUrls.length || num_variations,
         strength_used: strength,
-        family: pol.family,
+        strength_requested: requestedStrength,
+        had_retry,
+        used_fallback_model: false,
+        fallback_reason: null,
+        image_url: imageUrls[0] || null,
+        timings: json?.timings ?? null,
       }),
+      headers: {
+        'content-type': 'application/json; charset=utf-8',
+        'access-control-allow-origin': '*',
+        'cache-control': 'no-store',
+      },
     };
   } catch (err: any) {
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ ok: false, error: String(err?.message || err) }),
+      body: JSON.stringify({ ok: false, error: 'SERVER_ERROR', message: err?.message }),
     };
   }
 };

@@ -26,6 +26,10 @@ import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
 import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
 
+import { paramsForI2ISharp } from '../services/infer-params'
+import { clampStrength } from '../lib/strengthPolicy'
+import { buildPrompt } from '../lib/buildPrompt'
+
 
 
 
@@ -97,7 +101,6 @@ import { Mode, MODE_LABELS } from '../config/modes'
 import { resolvePresetForMode } from '../utils/resolvePresetForMode'
 import { getPresetDef, getPresetLabel, MASTER_PRESET_CATALOG } from '../services/presets'
 import { buildEffectivePrompt, type DetailLevel } from '../services/prompt'
-import { paramsForI2ISharp } from '../services/infer-params'
 const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
@@ -1403,9 +1406,17 @@ const HomeNew: React.FC = () => {
                      /\/video\/upload\//.test(sourceUrl || '') ||
                      /\.(mp4|mov|webm|m4v)(\?|$)/i.test(sourceUrl || '');
 
+      // Model normalization function (matches server-side logic)
+      const normalizeModel = (model?: string) => {
+        if (!model || /^flux\/dev/i.test(model)) return 'flux/dev';
+        return model;
+      };
+
       // Build payload with correct URL key based on media type
       const payload: Record<string, any> = {
-        prompt: effectivePrompt,
+        mode: kind, // Add mode parameter for server-side routing
+        prompt: buildPrompt(kind, effectivePrompt), // Use new prompt builder with identity prelude
+        model: normalizeModel(generationMeta?.model || 'flux/dev'), // Normalize model name
         ...(isVideo ? { video_url: sourceUrl } : { image_url: sourceUrl }), // ✅ Use correct key
         isVideo, // Explicit flag for server-side model selection
         // Clean payload - only essential fields for vendor
@@ -1437,7 +1448,7 @@ const HomeNew: React.FC = () => {
           return {};
         })()),
         num_variations: 1, // Single generation only
-        strength: generationMeta?.strength || 0.85,  // Use preset strength or default
+        strength: clampStrength(kind as any, generationMeta?.strength || 0.85),  // Use new strength policy
         seed: Date.now(), // Prevent provider-side caching
         request_id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, // Idempotency key for credit charging
       };
