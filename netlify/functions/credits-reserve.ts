@@ -64,28 +64,14 @@ export const handler: Handler = async (event) => {
       request_id: body.request_id || body.requestId
     });
     
-    // Get dynamic configuration from app_config
-    let config;
-    try {
-      const sql = neon(process.env.NETLIFY_DATABASE_URL!);
-      // Read values individually to avoid array/IN binding issues
-      const imageCostRows = await sql`SELECT (value::text)::int AS v FROM app_config WHERE key='image_cost'`;
-      const dailyCapRows  = await sql`SELECT (value::text)::int AS v FROM app_config WHERE key='daily_cap'`;
-
-      const image_cost = imageCostRows?.[0]?.v;
-      const daily_cap  = dailyCapRows?.[0]?.v;
-
-      config = {
-        image_cost: typeof image_cost === 'number' && !Number.isNaN(image_cost) ? image_cost : 2,
-        daily_cap: typeof daily_cap === 'number' && !Number.isNaN(daily_cap) ? daily_cap : 30,
-      };
-      console.log('💰 App config resolved:', config);
-    } catch (configError) {
-      console.error('💰 Failed to load app config, using defaults:', configError);
-      config = { image_cost: 2, daily_cap: 30 };
-    }
+    // Use hardcoded configuration since app_config table doesn't exist
+    const config = {
+      image_cost: 2,
+      daily_cap: 30,
+    };
+    console.log('💰 Using hardcoded config:', config);
     
-    const cost = body.cost || body.amount || parseInt(config.image_cost) || 2;
+    const cost = body.cost || body.amount || config.image_cost || 2;
     const action = body.action || body.intent || "image.gen";
     const request_id = body.request_id || body.requestId || randomUUID();
 
@@ -153,9 +139,8 @@ export const handler: Handler = async (event) => {
         console.log('💰 No credit balance found - initializing new user with starter credits...');
         
         try {
-          // Get starter grant amount from app_config
-          const starterRows = await sql`SELECT (value::text)::int AS v FROM app_config WHERE key='starter_grant'`;
-          const STARTER_GRANT = starterRows[0]?.v ?? 30;
+          // Use hardcoded starter grant since app_config table doesn't exist
+          const STARTER_GRANT = 30;
           
           console.log(`💰 Creating user_credits row with ${STARTER_GRANT} starter credits...`);
           
@@ -203,12 +188,12 @@ export const handler: Handler = async (event) => {
           
         } catch (initError) {
           console.error('❌ Failed to initialize user credits:', initError);
-                        return json({
-          ok: false,
-          error: "USER_CREDITS_INIT_FAILED",
-          message: "Failed to initialize user credits",
-          details: initError instanceof Error ? initError.message : String(initError)
-        }, { status: "500" });
+          return json({
+            ok: false,
+            error: "USER_CREDITS_INIT_FAILED",
+            message: "Failed to initialize user credits",
+            details: initError instanceof Error ? initError.message : String(initError)
+          }, { status: 500 });
         }
       }
       
