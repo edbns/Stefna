@@ -80,6 +80,11 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
 // Import from the new professional presets system
 import { PROFESSIONAL_PRESETS, ProfessionalPresetConfig } from '../config/professional-presets'
 
+// Import the actual preset files
+import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
+import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
+import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
+
 // Create a PRESETS object that maps to the new system for backward compatibility
 const PRESETS = Object.fromEntries(
   Object.entries(PROFESSIONAL_PRESETS).map(([key, preset]) => [
