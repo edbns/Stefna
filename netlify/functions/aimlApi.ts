@@ -5,13 +5,15 @@ type Mode = 'custom' | 'preset' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitc
 
 const AIML_BASE = 'https://api.aimlapi.com';
 
-// Model fallback chain - try each model until one succeeds
-const MODEL_FALLBACK_CHAIN = [
-  'flux/dev',           // Primary: standard Flux
-  'flux-pro/v1.1-ultra', // Secondary: premium Flux Pro
-  'flux-realism',       // Tertiary: Flux Realism variant
-  'dall-e-3'            // Final: DALL-E 3 as last resort
-];
+// Mode-aware fallback chain - prevents style drift for identity-sensitive modes
+const FALLBACKS: Record<Mode, string[]> = {
+  emotionmask:    ['flux/dev'],                    // No fallback - prevents style drift
+  ghiblireact:    ['flux/dev'],                    // No fallback - prevents style drift  
+  preset:         ['flux/dev', 'flux-pro', 'flux-realism'], // Graceful fallback
+  custom:         ['flux/dev', 'flux-pro', 'flux-realism'], // Graceful fallback
+  neotokyoglitch: ['flux/dev', 'flux-pro'],        // Limited fallback - keeps cyberpunk style
+  none:           ['flux/dev'],                    // No fallback needed
+};
 
 // flux/dev is the correct model name to use with AIML for i2i
 function normalizeModel(model?: string) {
@@ -107,45 +109,57 @@ export const handler: Handler = async (event: any) => {
     let used_fallback_model = false;
     let fallback_reason = null;
 
-    // Try each model in the fallback chain
-    for (const model of MODEL_FALLBACK_CHAIN) {
-      console.log(`🎯 Trying model: ${model}`);
-      
-      // Build payload for this model
-      const aimlPayload = {
-        model,
-        prompt,
-        image_url,
-        strength,
-        num_variations,
-      };
-
-      // Try each endpoint for this model
-      for (const path of ENDPOINTS) {
-        try {
-          const { res, json, text } = await tryEndpoint(path, auth, aimlPayload);
-          
-          if (res.ok && json?.images?.[0]?.url) {
-            result = json;
-            successfulModel = model;
-            used_fallback_model = model !== MODEL_FALLBACK_CHAIN[0];
-            fallback_reason = used_fallback_model ? `Primary model failed, ${model} succeeded` : null;
+    // Mode-aware model fallback system
+    async function tryProviders(models: string[]) {
+      let lastErr: any = null;
+      for (const m of models) {
+        console.log(`🎯 Trying model: ${m}`);
+        
+        const payload = { 
+          model: m,
+          prompt,
+          image_url,
+          strength,
+          num_variations,
+        };
+        
+        // Try each endpoint for this model
+        for (const path of ENDPOINTS) {
+          try {
+            const { res, json, text } = await tryEndpoint(path, auth, payload);
             
-            console.log(`✅ Success with model: ${model} on endpoint: ${path}`);
-            break;
-          } else {
-            lastError = `(${res.status}) ${text || res.statusText}`;
-            console.log(`❌ Model ${model} failed on ${path}: ${lastError}`);
+            if (res.ok && json?.images?.[0]?.url) {
+              console.log(`✅ Success with model: ${m} on endpoint: ${path}`);
+              return { res, json, modelUsed: m };
+            } else {
+              lastErr = { status: res.status, json, text };
+              console.log(`❌ Model ${m} failed on ${path}: (${res.status}) ${text || res.statusText}`);
+            }
+          } catch (error: any) {
+            lastErr = { error: error.message };
+            console.log(`❌ Model ${m} error on ${path}: ${error.message}`);
           }
-        } catch (error: any) {
-          lastError = `Error: ${error.message}`;
-          console.log(`❌ Model ${model} error on ${path}: ${lastError}`);
+        }
+        
+        // Only advance fallback on 404/400/422 style errors; for 5xx you can retry same model
+        if (lastErr?.status && ![400, 404, 422].includes(lastErr.status)) {
+          console.log(`⚠️ Stopping fallback due to non-fallback error: ${lastErr.status}`);
+          break;
         }
       }
-      
-      // If we got a successful result, break out of model loop
-      if (result) break;
+      throw lastErr || new Error('All models failed');
     }
+
+    // Try the mode-specific fallback chain
+    const { res: firstRes, json: firstJson, modelUsed: firstModel } = 
+      await tryProviders(FALLBACKS[mode]);
+    
+    let res = firstRes, json = firstJson, modelUsed = firstModel;
+    successfulModel = modelUsed;
+    used_fallback_model = modelUsed !== FALLBACKS[mode][0];
+    fallback_reason = used_fallback_model ? `Primary model failed, ${modelUsed} succeeded` : null;
+    
+    result = json;
 
     // Helper function to try an endpoint
     async function tryEndpoint(path: string, auth: string, payload: any) {
@@ -164,16 +178,21 @@ export const handler: Handler = async (event: any) => {
       };
     }
 
-    // No-op guard: if inference is suspiciously fast (<0.5s), bump strength once (+0.04) and retry
+    // No-op guard: if inference is suspiciously fast (<0.5s), bump strength once and retry same model only
     const inference = Number(result?.timings?.inference ?? 0);
     const canBump = successfulModel.startsWith('flux') && strength < policy.max;
     let had_retry = false;
     
     if (canBump && inference > 0 && inference < 0.5) {
       const bumped = clamp(strength + 0.04, policy.min, policy.max);
+      
+      // Add tiny nonce to break provider caching without changing semantics
+      const nonce = Math.random().toString(36).slice(2, 6);
+      const retryPrompt = `${prompt}\n[nonce:${nonce}]`;
+      
       const retryPayload = { 
-        model: successfulModel,
-        prompt,
+        model: modelUsed, // Use same successful model
+        prompt: retryPrompt,
         image_url,
         strength: bumped,
         num_variations,
@@ -188,7 +207,7 @@ export const handler: Handler = async (event: any) => {
           if (retryJson?.images?.[0]?.url) {
             result = retryJson;
             had_retry = true;
-            console.log('🔄 Strength bumped from', strength, 'to', bumped, 'due to fast inference');
+            console.log('🔄 Strength bumped from', strength, 'to', bumped, 'due to fast inference (cache-busted)');
           }
         }
       } else if (retry.ok) {
@@ -196,7 +215,7 @@ export const handler: Handler = async (event: any) => {
         if (retryJson?.images?.[0]?.url) {
           result = retryJson;
           had_retry = true;
-          console.log('🔄 Strength bumped from', strength, 'to', bumped, 'due to fast inference');
+          console.log('🔄 Strength bumped from', strength, 'to', bumped, 'due to fast inference (cache-busted)');
         }
       }
     }
@@ -211,7 +230,7 @@ export const handler: Handler = async (event: any) => {
       body: JSON.stringify({
         ok: true,
         image_urls: imageUrls,
-        model: successfulModel,
+        model: modelUsed, // Use the actual model that succeeded
         prompt,
         variations_generated: imageUrls.length || num_variations,
         strength_used: strength,
