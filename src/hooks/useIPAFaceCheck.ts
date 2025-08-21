@@ -58,6 +58,18 @@ export interface IPAState {
 // Default threshold for face similarity (cosine similarity)
 const DEFAULT_THRESHOLD = 0.35;
 
+// Cosine similarity helper function
+export function cosineSimilarity(a: number[], b: number[]): number {
+  const n = Math.min(a.length, b.length);
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < n; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(na) * Math.sqrt(nb) || 1);
+}
+
 // MediaPipe Face Mesh model loading state
 let faceMeshModel: any = null;
 let isModelLoading = false;
@@ -497,6 +509,41 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     }));
   }, []);
 
+  // Identity preservation check function
+  const checkIdentityPreservation = useCallback(async ({
+    originalUrl,
+    generatedUrl,
+    threshold: customThreshold = threshold,
+  }: {
+    originalUrl: string;
+    generatedUrl: string;
+    threshold?: number;
+  }): Promise<{
+    similarity: number;
+    passed: boolean;
+    originalEmbedding?: FaceEmbedding;
+    generatedEmbedding?: FaceEmbedding;
+  }> => {
+    try {
+      const orig = await extractFaceEmbedding(originalUrl);
+      const gen = await extractFaceEmbedding(generatedUrl);
+      const similarity = cosineSimilarity(orig.vector, gen.vector);
+      
+      return {
+        similarity,
+        passed: similarity >= customThreshold,
+        originalEmbedding: orig,
+        generatedEmbedding: gen,
+      };
+    } catch (err) {
+      console.warn('IPA check failed', err);
+      return {
+        similarity: 0,
+        passed: false,
+      };
+    }
+  }, [extractFaceEmbedding, threshold]);
+
   return {
     // State
     ...state,
@@ -510,6 +557,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     getStylesNeedingRefinement,
     resetStyleFailureCount,
     updateThreshold,
-    clearHistory
+    clearHistory,
+    checkIdentityPreservation
   };
 }

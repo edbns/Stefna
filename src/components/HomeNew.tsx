@@ -160,6 +160,9 @@ const HomeNew: React.FC = () => {
   // Mode state
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null)
   
+  // Identity lock state
+  const [identityLock, setIdentityLock] = useState(false)
+  
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
     mode: 'custom' as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch', // remix mode removed
@@ -1287,17 +1290,22 @@ const HomeNew: React.FC = () => {
       // 🎭 EMOTION MASK MODE: ALWAYS use the original, curated prompt
       // NO MORE SYNTHETIC PROMPT GENERATION - preserve emotional intent
       effectivePrompt = emotionMaskPreset.prompt;
-              generationMeta = { 
-          mode: 'emotionmask', 
-          emotionMaskPresetId, 
-          emotionMaskLabel: emotionMaskPreset.label,
-          model: "flux/dev/image-to-image", // Use known working model
-          strength: emotionMaskPreset.strength, // Use actual preset strength
-          guidance_scale: 7.5, // Standard guidance for consistency
-          cfg_scale: 7.0, // Balanced creativity vs adherence
-          denoising_strength: emotionMaskPreset.strength, // Match preset strength
-          generation_type: "emotion_mask_identity_preserved" // Mark as identity-preserving
-        };
+      
+      // Apply identity lock adjustments
+      const adjustedStrength = identityLock ? Math.min(emotionMaskPreset.strength * 0.7, 0.45) : emotionMaskPreset.strength;
+      
+      generationMeta = { 
+        mode: 'emotionmask', 
+        emotionMaskPresetId, 
+        emotionMaskPresetLabel: emotionMaskPreset.label,
+        model: "flux/dev/image-to-image", // Use known working model
+        strength: adjustedStrength, // Adjusted for identity lock
+        guidance_scale: 7.5, // Standard guidance for consistency
+        cfg_scale: 7.0, // Balanced creativity vs adherence
+        denoising_strength: adjustedStrength, // Match adjusted strength
+        generation_type: identityLock ? "emotion_mask_identity_preserved" : "emotion_mask_standard",
+        identityLock: identityLock // Track identity lock state
+      };
       console.log('🎭 EMOTION MASK MODE: Using ORIGINAL prompt:', emotionMaskPreset.label, effectivePrompt);
     } else if (kind === 'ghiblireact') {
       // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
@@ -1726,44 +1734,188 @@ const HomeNew: React.FC = () => {
         console.error('No result URL in response:', body);
         throw new Error('No result URL in API response');
       }
+      
+      // 🔒 IDENTITY PRESERVATION CHECK (IPA) - if identity lock is enabled
+      let finalResultUrl = resultUrl;
+      let ipaPassed = true;
+      let ipaSimilarity = 0;
+      
+      if (identityLock && sourceUrl) {
+        console.log('🔒 Identity lock enabled - checking face similarity...');
+        try {
+          const { checkIdentityPreservation } = await import('../hooks/useIPAFaceCheck');
+          
+          const ipaResult = await checkIdentityPreservation({
+            originalUrl: sourceUrl,
+            generatedUrl: resultUrl,
+            threshold: 0.38, // Slightly higher than default for stricter identity preservation
+          });
+          
+          ipaSimilarity = ipaResult.similarity;
+          ipaPassed = ipaResult.passed;
+          
+          console.log(`🔒 IPA Check: similarity ${ipaSimilarity.toFixed(3)} (threshold: 0.38, passed: ${ipaPassed})`);
+          
+          if (!ipaPassed) {
+            console.log('🔒 IPA check failed - attempting retry with lower strength...');
+            
+            // Retry with lower strength for better identity preservation
+            const retryPayload = {
+              ...payload,
+              strength: Math.min(payload.strength * 0.6, 0.35), // Lower strength for retry
+            };
+            
+            console.log('🔒 Retry payload with lower strength:', retryPayload);
+            
+            const retryRes = await authenticatedFetch('/.netlify/functions/aimlApi', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(retryPayload),
+              signal: controller.signal
+            });
+            
+            if (retryRes.ok) {
+              const retryBody = await retryRes.json();
+              const retryUrl = retryBody?.image_url || retryBody?.image_urls?.[0];
+              
+              if (retryUrl) {
+                console.log('🔒 Retry successful, checking IPA again...');
+                
+                const retryIpaResult = await checkIdentityPreservation({
+                  originalUrl: sourceUrl,
+                  generatedUrl: retryUrl,
+                  threshold: 0.38,
+                });
+                
+                if (retryIpaResult.passed) {
+                  console.log('✅ Retry IPA check passed:', retryIpaResult.similarity.toFixed(3));
+                  finalResultUrl = retryUrl;
+                  ipaPassed = true;
+                  ipaSimilarity = retryIpaResult.similarity;
+                } else {
+                  console.warn('⚠️ Retry IPA check still failed:', retryIpaResult.similarity.toFixed(3));
+                  // Keep original result but mark as failed
+                  finalResultUrl = resultUrl;
+                  ipaPassed = false;
+                  ipaSimilarity = retryIpaResult.similarity;
+                }
+              } else {
+                console.warn('⚠️ Retry failed - no result URL');
+                finalResultUrl = resultUrl;
+              }
+            } else {
+              console.warn('⚠️ Retry request failed:', retryRes.status);
+              finalResultUrl = resultUrl;
+            }
+          }
+        } catch (ipaError) {
+          console.warn('⚠️ IPA check failed, proceeding with original result:', ipaError);
+          finalResultUrl = resultUrl;
+        }
+      }
 
       console.info(`Generated ${variationsGenerated} variation(s):`, allResultUrls);
 
 
 
-      // Show the first generated result immediately with cache busting
-      const cacheBustedResultUrl = `${resultUrl}${resultUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      // Show the final result (original or retry) with cache busting
+      const cacheBustedResultUrl = `${finalResultUrl}${finalResultUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
       setPreviewUrl(cacheBustedResultUrl);
       
-      // Add success notification
-      notifyReady({ 
-        title: 'Your media is ready', 
-        message: 'Tap to open', 
-        thumbUrl: resultUrl, 
-        onClickThumb: () => {
-          // Open the media viewer to show the generated image
-          setViewerMedia([{
-            id: 'generated-' + Date.now(),
-            userId: 'current-user',
-            type: 'photo',
-            url: resultUrl,
-            prompt: prompt,
-            aspectRatio: 4/3,
-            width: 800,
-            height: 600,
-            timestamp: new Date().toISOString(),
-            tokensUsed: 2,
-            likes: 0,
-            remixCount: 0,
-            isPublic: false,
-            allowRemix: false,
-            tags: [],
-            metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
-          }]);
-          setViewerStartIndex(0);
-          setViewerOpen(true);
-        } 
-      });
+      // Show IPA results in notification if identity lock was enabled
+      if (identityLock) {
+        if (ipaPassed) {
+          notifyReady({ 
+            title: 'Your media is ready', 
+            message: `✅ Identity preserved (similarity: ${ipaSimilarity.toFixed(3)})`, 
+            thumbUrl: finalResultUrl, 
+            onClickThumb: () => {
+              // Open the media viewer to show the generated image
+              setViewerMedia([{
+                id: 'generated-' + Date.now(),
+                userId: 'current-user',
+                type: 'photo',
+                url: finalResultUrl,
+                prompt: prompt,
+                aspectRatio: 4/3,
+                width: 800,
+                height: 600,
+                timestamp: new Date().toISOString(),
+                tokensUsed: 2,
+                likes: 0,
+                remixCount: 0,
+                isPublic: false,
+                allowRemix: false,
+                tags: [],
+                metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
+              }]);
+              setViewerStartIndex(0);
+              setViewerOpen(true);
+            } 
+          });
+        } else {
+          notifyReady({ 
+            title: 'Your media is ready', 
+            message: `⚠️ Identity check failed (similarity: ${ipaSimilarity.toFixed(3)})`, 
+            thumbUrl: finalResultUrl, 
+            onClickThumb: () => {
+              // Open the media viewer to show the generated image
+              setViewerMedia([{
+                id: 'generated-' + Date.now(),
+                userId: 'current-user',
+                type: 'photo',
+                url: finalResultUrl,
+                prompt: prompt,
+                aspectRatio: 4/3,
+                width: 800,
+                height: 600,
+                timestamp: new Date().toISOString(),
+                tokensUsed: 2,
+                likes: 0,
+                remixCount: 0,
+                isPublic: false,
+                allowRemix: false,
+                tags: [],
+                metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
+              }]);
+              setViewerStartIndex(0);
+              setViewerOpen(true);
+            } 
+          });
+        }
+      } else {
+        // Standard notification for non-identity-lock generations
+        notifyReady({ 
+          title: 'Your media is ready', 
+          message: 'Tap to open', 
+          thumbUrl: finalResultUrl, 
+          onClickThumb: () => {
+            // Open the media viewer to show the generated image
+            setViewerMedia([{
+              id: 'generated-' + Date.now(),
+              userId: 'current-user',
+              type: 'photo',
+              url: finalResultUrl,
+              prompt: prompt,
+              aspectRatio: 4/3,
+              width: 800,
+              height: 600,
+              timestamp: new Date().toISOString(),
+              tokensUsed: 2,
+              likes: 0,
+              remixCount: 0,
+              isPublic: false,
+              allowRemix: false,
+              tags: [],
+              metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
+            }]);
+            setViewerStartIndex(0);
+            setViewerOpen(true);
+          } 
+        });
+      }
+      
+      // Success notification is now handled above with IPA results
 
       // Save the generated media to the database
           try {
@@ -1806,7 +1958,7 @@ const HomeNew: React.FC = () => {
           } catch {}
           try {
             const saved = await saveMedia({
-              resultUrl,
+              resultUrl: finalResultUrl, // Use final result (original or retry)
               userId,
               presetKey: selectedPreset ?? null,
               sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : null,
@@ -3543,6 +3695,22 @@ const HomeNew: React.FC = () => {
                             }}
                             disabled={!isAuthenticated}
                           />
+                        </div>
+                      )}
+                      
+                      {/* Identity Lock Toggle - show when in Emotion Mask mode */}
+                      {composerState.mode === 'emotionmask' && (
+                        <div className="flex items-center gap-2 mt-2 p-2 bg-gray-50 rounded-lg">
+                          <input
+                            type="checkbox"
+                            id="identity-lock-emotion"
+                            checked={identityLock}
+                            onChange={(e) => setIdentityLock(e.target.checked)}
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor="identity-lock-emotion" className="text-sm text-gray-600">
+                            🔒 Preserve face identity (lowers strength, enables IPA check)
+                          </label>
                         </div>
                       )}
                   </div>
