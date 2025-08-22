@@ -10,21 +10,21 @@ export const handler: Handler = async (event) => {
     const url = new URL(event.rawUrl);
     const limit = Number(url.searchParams.get('limit') ?? 50);
 
-    // Get public media from database using our new working view
+    // Get public media from database using the correct public_feed view
     // Note: We removed tier system, so users table only has basic fields
     const media = await sql`
       SELECT 
         pf.id,
         pf.user_id,
         u.email AS user_email, -- Use email instead of name since we removed tier system
-        pf.url,
+        pf.final_url, -- Use final_url for Replicate images, cloudinary_public_id for Cloudinary
         pf.cloudinary_public_id,
         pf.media_type AS resource_type,
         pf.prompt,
         pf.created_at AS published_at,
         pf.is_public AS visibility,
         pf.allow_remix
-      FROM public_feed_working pf
+      FROM public_feed pf
       LEFT JOIN app_users u ON pf.user_id = u.id
       ORDER BY pf.created_at DESC
       LIMIT ${limit}
@@ -41,7 +41,7 @@ export const handler: Handler = async (event) => {
       user_name: item.user_email?.split('@')[0] || 'User', // Generate display name from email
       user_avatar: null, // No avatar system in simplified structure
       prompt: item.prompt,
-      url: item.url,
+      url: item.final_url, // Use final_url for Replicate images
       allow_remix: item.allow_remix
     }));
 
