@@ -4174,9 +4174,10 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           </div>
 
           {/* Main Popup */}
-          <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-black border-2 border-pink-500/50 rounded-2xl p-8 max-w-md mx-4 shadow-2xl backdrop-blur-md">
-            {/* Glitchy Border Effect */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/20 via-cyan-500/20 to-purple-500/20 animate-pulse"></div>
+          <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-black border-2 border-pink-500/50 rounded-2xl p-8 max-w-lg mx-4 shadow-2xl backdrop-blur-md">
+            {/* Enhanced Glitchy Border Effect */}
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/30 via-cyan-500/30 via-purple-500/30 via-yellow-500/20 to-pink-500/30 animate-pulse"></div>
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-transparent via-blue-500/20 to-transparent animate-pulse" style={{ animationDelay: '0.3s' }}></div>
             
             {/* Close Button */}
             <button
@@ -4188,11 +4189,13 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
 
             {/* Content */}
             <div className="relative z-10">
-              {/* Title with glitch effect */}
+              {/* Title with enhanced glitch effect */}
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-cyan-400 to-purple-400 animate-pulse">
+                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-cyan-400 via-yellow-300 via-blue-400 to-purple-400 animate-pulse">
                   ⚠️ NEO TOKYO GLITCH DISCLAIMER
                 </h2>
+                {/* Additional neon glow effect */}
+                <div className="absolute inset-0 blur-sm bg-gradient-to-r from-pink-500/50 via-cyan-500/50 via-yellow-400/50 via-blue-500/50 to-purple-500/50 rounded-lg"></div>
               </div>
 
               {/* Disclaimer text */}
@@ -4218,7 +4221,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                     localStorage.setItem('neoTokyoGlitchAgreed', 'true')
                     setShowNeoTokyoGlitchDisclaimer(false)
                   }}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 to-cyan-500 hover:from-pink-600 hover:to-cyan-600 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-pink-500/25 animate-pulse"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 via-purple-500 via-blue-500 to-cyan-500 hover:from-pink-600 hover:via-purple-600 hover:via-blue-600 hover:to-cyan-600 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-pink-500/25 animate-pulse border border-pink-400/50"
                 >
                   I AGREE - LET'S GET GLITCHY! ⚡
                 </button>
