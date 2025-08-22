@@ -192,15 +192,35 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
           </div>
         </div>
 
-        {/* NEW LAYOUT: Left Side - Generation Analysis, Right Side - Media Display */}
+        {/* REFINED LAYOUT: Left Side - Compact Analytics, Right Side - Elevated Media Display */}
         <div className="flex-1 flex">
-          {/* 🔍 LEFT SIDE: Generation Analysis Panel */}
-          <div className="w-1/2 bg-black/80 backdrop-blur-sm p-6 border-r border-white/20 overflow-y-auto">
-            <div className="space-y-4">
+          {/* 🔍 LEFT SIDE: Compact Generation Analysis Panel */}
+          <div className="w-1/2 bg-black/80 backdrop-blur-sm p-4 border-r border-white/20 overflow-y-auto">
+            <div className="space-y-3">
               {/* Section Title */}
-              <div className="text-center">
-                <h3 className="text-white text-lg font-semibold mb-2">🔍 Generation Analysis</h3>
-                <p className="text-white/60 text-sm">Complete prompt and generation details for debugging</p>
+              <div className="text-center mb-4">
+                <h3 className="text-white text-lg font-semibold">🔍 Generation Analysis</h3>
+                <p className="text-white/60 text-xs">Complete prompt and generation details for debugging</p>
+              </div>
+
+              {/* 🎯 PROMINENT: Generation Mode & Tag Display */}
+              <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg p-3 border border-blue-500/30">
+                <h4 className="text-blue-300 font-semibold text-sm mb-2">🎯 GENERATION MODE & TAG:</h4>
+                <div className="flex items-center gap-2">
+                  <span className="bg-blue-600/50 text-white px-2 py-1 rounded text-xs font-medium">
+                    {getCreationMethod(current)}
+                  </span>
+                  {current.metadata?.mode && (
+                    <span className="bg-purple-600/50 text-white px-2 py-1 rounded text-xs font-medium">
+                      {current.metadata.mode}
+                    </span>
+                  )}
+                  {current.metadata?.presetId && (
+                    <span className="bg-green-600/50 text-white px-2 py-1 rounded text-xs font-medium">
+                      {current.metadata.presetId}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Prompt Display */}
@@ -211,72 +231,51 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
                 </div>
               )}
 
-              {/* Generation Metadata */}
-              <div className="space-y-3">
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                  <h4 className="text-white font-medium mb-2">🎯 Generation Mode:</h4>
-                  <p className="text-white/80 text-sm">{getCreationMethod(current)}</p>
+              {/* 📊 Compact Metadata Grid */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-white/5 rounded p-2 border border-white/10">
+                  <h4 className="text-white font-medium text-xs mb-1">🆔 Media ID:</h4>
+                  <p className="text-white/80 text-xs font-mono">{current.id.substring(0, 8)}...</p>
                 </div>
-
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                  <h4 className="text-white font-medium mb-2">🆔 Media ID:</h4>
-                  <p className="text-white/80 text-sm font-mono text-xs">{current.id}</p>
+                <div className="bg-white/5 rounded p-2 border border-white/10">
+                  <h4 className="text-white font-medium text-xs mb-1">👤 User ID:</h4>
+                  <p className="text-white/80 text-xs font-mono">{current.userId ? current.userId.substring(0, 8) + '...' : 'Unknown'}</p>
                 </div>
-
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                  <h4 className="text-white font-medium mb-2">👤 User ID:</h4>
-                  <p className="text-white/80 text-sm font-mono text-xs">{current.userId || 'Unknown'}</p>
+                <div className="bg-white/5 rounded p-2 border border-white/10">
+                  <h4 className="text-white font-medium text-xs mb-1">📅 Created:</h4>
+                  <p className="text-white/80 text-xs">{new Date(current.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
-
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                  <h4 className="text-white font-medium mb-2">📅 Created:</h4>
-                  <p className="text-white/80 text-sm">{new Date(current.timestamp).toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true
-                  })}</p>
-                </div>
-
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                  <h4 className="text-white font-medium mb-2">📊 Media Type:</h4>
-                  <p className="text-white/80 text-sm">{current.type || 'image'} {current.aspectRatio ? `(${current.aspectRatio})` : ''}</p>
-                </div>
-
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                  <h4 className="text-white font-medium mb-2">🔗 URL:</h4>
-                  <p className="text-white/80 text-sm font-mono text-xs break-all">{current.url.substring(0, 100)}...</p>
+                <div className="bg-white/5 rounded p-2 border border-white/10">
+                  <h4 className="text-white font-medium text-xs mb-1">📊 Type:</h4>
+                  <p className="text-white/80 text-xs">{current.type || 'image'} {current.aspectRatio ? `(${current.aspectRatio})` : ''}</p>
                 </div>
               </div>
 
-              {/* Full Metadata Dump */}
+              {/* 🔧 Compact Metadata Dump */}
               {current.metadata && Object.keys(current.metadata).length > 0 && (
-                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                  <h4 className="text-white font-medium mb-2">🔧 Complete Metadata:</h4>
-                  <pre className="text-white/80 text-xs overflow-x-auto bg-black/20 p-3 rounded border border-white/10">
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <h4 className="text-white font-medium text-sm mb-2">🔧 Complete Metadata:</h4>
+                  <pre className="text-white/80 text-xs overflow-x-auto bg-black/20 p-2 rounded border border-white/10 max-h-32">
                     {JSON.stringify(current.metadata, null, 2)}
                   </pre>
                 </div>
               )}
 
-              {/* Debug Info */}
-              <div className="bg-blue-900/20 rounded-lg p-4 border border-blue-500/30">
-                <h4 className="text-blue-300 font-medium mb-2">🐛 Debug Information:</h4>
-                <div className="text-blue-200/80 text-xs space-y-1">
-                  <p>• Prompt Length: {current.prompt?.length || 0} characters</p>
-                  <p>• Has Metadata: {current.metadata ? 'Yes' : 'No'}</p>
-                  <p>• Metadata Keys: {current.metadata ? Object.keys(current.metadata).join(', ') : 'None'}</p>
-                  <p>• Media Object Keys: {Object.keys(current).join(', ')}</p>
+              {/* 🐛 Compact Debug Info */}
+              <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/30">
+                <h4 className="text-blue-300 font-medium text-sm mb-2">🐛 Debug Info:</h4>
+                <div className="text-blue-200/80 text-xs grid grid-cols-2 gap-2">
+                  <span>• Prompt: {current.prompt?.length || 0} chars</span>
+                  <span>• Metadata: {current.metadata ? Object.keys(current.metadata).length : 0} keys</span>
+                  <span>• Media Keys: {Object.keys(current).length}</span>
+                  <span>• Has Metadata: {current.metadata ? 'Yes' : 'No'}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 🖼️ RIGHT SIDE: Media Display Area */}
-          <div className="w-1/2 relative flex flex-col items-center justify-center p-4">
+          {/* 🖼️ RIGHT SIDE: Elevated Media Display Area */}
+          <div className="w-1/2 relative flex flex-col items-center justify-start pt-8">
             {/* Prev Button */}
             {media.length > 1 && (
               <button
@@ -289,12 +288,12 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
               </button>
             )}
 
-            {/* Media */}
-            <div className="max-w-full max-h-full object-contain">
+            {/* Media - Elevated Position */}
+            <div className="max-w-full max-h-[calc(100vh-120px)] object-contain">
               {current.type === 'video' ? (
-                <video src={current.url} className="max-w-full max-h-[calc(100vh-200px)] object-contain" controls autoPlay muted />
+                <video src={current.url} className="max-w-full max-h-full object-contain" controls autoPlay muted />
               ) : (
-                <img src={current.url} alt={current.prompt} className="max-w-full max-h-[calc(100vh-200px)] object-contain" />
+                <img src={current.url} alt={current.prompt} className="max-w-full max-h-full object-contain" />
               )}
             </div>
 
