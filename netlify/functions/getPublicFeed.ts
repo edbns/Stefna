@@ -10,23 +10,23 @@ export const handler: Handler = async (event) => {
     const url = new URL(event.rawUrl);
     const limit = Number(url.searchParams.get('limit') ?? 50);
 
-    // Get public media from database using the media_assets table
+    // Get public media from database using our new working view
+    // Note: We removed tier system, so users table only has basic fields
     const media = await sql`
       SELECT 
-        ma.id,
-        ma.owner_id AS user_id,
-        u.email AS user_email,
-        ma.url,
-        ma.public_id AS cloudinary_public_id,
-        ma.resource_type,
-        ma.prompt,
-        ma.created_at AS published_at,
-        ma.visibility,
-        ma.allow_remix
-      FROM public.media_assets ma
-      LEFT JOIN public.users u ON ma.owner_id::text = u.id
-      WHERE ma.visibility = 'public'
-      ORDER BY ma.created_at DESC
+        pf.id,
+        pf.user_id,
+        u.email AS user_email, -- Use email instead of name since we removed tier system
+        pf.url,
+        pf.cloudinary_public_id,
+        pf.media_type AS resource_type,
+        pf.prompt,
+        pf.created_at AS published_at,
+        pf.is_public AS visibility,
+        pf.allow_remix
+      FROM public_feed_working pf
+      LEFT JOIN app_users u ON pf.user_id = u.id
+      ORDER BY pf.created_at DESC
       LIMIT ${limit}
     `;
 

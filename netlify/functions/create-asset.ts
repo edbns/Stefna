@@ -70,24 +70,26 @@ export const handler: Handler = async (event) => {
     
     try {
       const result = await sql`
-        INSERT INTO public.media_assets (
-          id,
-          owner_id, 
-          public_id, 
-          resource_type, 
+        INSERT INTO assets (
+          user_id, 
+          cloudinary_public_id, 
+          media_type, 
+          preset_key, 
           prompt, 
-          visibility, 
-          allow_remix,
-          meta
+          source_asset_id, 
+          status, 
+          is_public, 
+          allow_remix
         ) VALUES (
-          gen_random_uuid(),
           ${userId}, 
           ${input.sourcePublicId ?? null}, 
           ${mediaType}, 
+          ${input.presetKey ?? null}, 
           ${input.prompt ?? null}, 
-          'private', 
-          false,
-          jsonb_build_object('preset_key', ${input.presetKey ?? null}, 'source_asset_id', ${input.sourceAssetId ?? null})
+          ${input.sourceAssetId ?? null}, 
+          'queued', 
+          false, 
+          false
         ) RETURNING *
       `;
       
