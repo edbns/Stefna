@@ -227,6 +227,93 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
             </button>
           )}
         </div>
+
+        {/* 🔍 COMPREHENSIVE PROMPT ANALYSIS SECTION */}
+        <div className="bg-black/80 backdrop-blur-sm p-6 border-t border-white/20">
+          <div className="max-w-4xl mx-auto space-y-4">
+            {/* Section Title */}
+            <div className="text-center">
+              <h3 className="text-white text-lg font-semibold mb-2">🔍 Generation Analysis</h3>
+              <p className="text-white/60 text-sm">Complete prompt and generation details for debugging</p>
+            </div>
+
+            {/* Prompt Display */}
+            {current.prompt && (
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <h4 className="text-white font-medium mb-2">📝 User Prompt:</h4>
+                <p className="text-white/90 text-sm leading-relaxed break-words">{current.prompt}</p>
+              </div>
+            )}
+
+            {/* Generation Metadata */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left Column - Basic Info */}
+              <div className="space-y-3">
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <h4 className="text-white font-medium mb-2">🎯 Generation Mode:</h4>
+                  <p className="text-white/80 text-sm">{getCreationMethod(current)}</p>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <h4 className="text-white font-medium mb-2">🆔 Media ID:</h4>
+                  <p className="text-white/80 text-sm font-mono text-xs">{current.id}</p>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <h4 className="text-white font-medium mb-2">👤 User ID:</h4>
+                  <p className="text-white/80 text-sm font-mono text-xs">{current.userId || 'Unknown'}</p>
+                </div>
+              </div>
+
+              {/* Right Column - Technical Details */}
+              <div className="space-y-3">
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <h4 className="text-white font-medium mb-2">📅 Created:</h4>
+                  <p className="text-white/80 text-sm">{new Date(current.timestamp).toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                  })}</p>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <h4 className="text-white font-medium mb-2">📊 Media Type:</h4>
+                  <p className="text-white/80 text-sm">{current.type || 'image'} {current.aspectRatio ? `(${current.aspectRatio})` : ''}</p>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <h4 className="text-white font-medium mb-2">🔗 URL:</h4>
+                  <p className="text-white/80 text-sm font-mono text-xs break-all">{current.url.substring(0, 100)}...</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Full Metadata Dump */}
+            {current.metadata && Object.keys(current.metadata).length > 0 && (
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <h4 className="text-white font-medium mb-2">🔧 Complete Metadata:</h4>
+                <pre className="text-white/80 text-xs overflow-x-auto bg-black/20 p-3 rounded border border-white/10">
+                  {JSON.stringify(current.metadata, null, 2)}
+                </pre>
+              </div>
+            )}
+
+            {/* Debug Info */}
+            <div className="bg-blue-900/20 rounded-lg p-4 border border-blue-500/30">
+              <h4 className="text-blue-300 font-medium mb-2">🐛 Debug Information:</h4>
+              <div className="text-blue-200/80 text-xs space-y-1">
+                <p>• Prompt Length: {current.prompt?.length || 0} characters</p>
+                <p>• Has Metadata: {current.metadata ? 'Yes' : 'No'}</p>
+                <p>• Metadata Keys: {current.metadata ? Object.keys(current.metadata).join(', ') : 'None'}</p>
+                <p>• Media Object Keys: {Object.keys(current).join(', ')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
