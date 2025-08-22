@@ -192,62 +192,26 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
           </div>
         </div>
 
-        {/* Media Area */}
-        <div className="flex-1 relative flex flex-col items-center justify-start pt-4">
-          {/* Prev */}
-          {media.length > 1 && (
-            <button
-              onClick={handlePrev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-white hover:text-white/80 bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 z-40"
-              aria-label="Previous"
-              title="Previous"
-            >
-              <ChevronLeft size={24} />
-            </button>
-          )}
-
-          {/* Media */}
-          <div className="max-w-full max-h-full object-contain">
-            {current.type === 'video' ? (
-              <video src={current.url} className="max-w-full max-h-[calc(100vh-200px)] object-contain" controls autoPlay muted />
-            ) : (
-              <img src={current.url} alt={current.prompt} className="max-w-full max-h-[calc(100vh-200px)] object-contain" />
-            )}
-          </div>
-
-          {/* Next */}
-          {media.length > 1 && (
-            <button
-              onClick={handleNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-white hover:text-white/80 bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 z-40"
-              aria-label="Next"
-              title="Next"
-            >
-              <ChevronRight size={24} />
-            </button>
-          )}
-        </div>
-
-        {/* 🔍 COMPREHENSIVE PROMPT ANALYSIS SECTION */}
-        <div className="bg-black/80 backdrop-blur-sm p-6 border-t border-white/20">
-          <div className="max-w-4xl mx-auto space-y-4">
-            {/* Section Title */}
-            <div className="text-center">
-              <h3 className="text-white text-lg font-semibold mb-2">🔍 Generation Analysis</h3>
-              <p className="text-white/60 text-sm">Complete prompt and generation details for debugging</p>
-            </div>
-
-            {/* Prompt Display */}
-            {current.prompt && (
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <h4 className="text-white font-medium mb-2">📝 User Prompt:</h4>
-                <p className="text-white/90 text-sm leading-relaxed break-words">{current.prompt}</p>
+        {/* NEW LAYOUT: Left Side - Generation Analysis, Right Side - Media Display */}
+        <div className="flex-1 flex">
+          {/* 🔍 LEFT SIDE: Generation Analysis Panel */}
+          <div className="w-1/2 bg-black/80 backdrop-blur-sm p-6 border-r border-white/20 overflow-y-auto">
+            <div className="space-y-4">
+              {/* Section Title */}
+              <div className="text-center">
+                <h3 className="text-white text-lg font-semibold mb-2">🔍 Generation Analysis</h3>
+                <p className="text-white/60 text-sm">Complete prompt and generation details for debugging</p>
               </div>
-            )}
 
-            {/* Generation Metadata */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Left Column - Basic Info */}
+              {/* Prompt Display */}
+              {current.prompt && (
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h4 className="text-white font-medium mb-2">📝 User Prompt:</h4>
+                  <p className="text-white/90 text-sm leading-relaxed break-words">{current.prompt}</p>
+                </div>
+              )}
+
+              {/* Generation Metadata */}
               <div className="space-y-3">
                 <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                   <h4 className="text-white font-medium mb-2">🎯 Generation Mode:</h4>
@@ -263,10 +227,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
                   <h4 className="text-white font-medium mb-2">👤 User ID:</h4>
                   <p className="text-white/80 text-sm font-mono text-xs">{current.userId || 'Unknown'}</p>
                 </div>
-              </div>
 
-              {/* Right Column - Technical Details */}
-              <div className="space-y-3">
                 <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                   <h4 className="text-white font-medium mb-2">📅 Created:</h4>
                   <p className="text-white/80 text-sm">{new Date(current.timestamp).toLocaleString('en-US', {
@@ -290,28 +251,64 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
                   <p className="text-white/80 text-sm font-mono text-xs break-all">{current.url.substring(0, 100)}...</p>
                 </div>
               </div>
-            </div>
 
-            {/* Full Metadata Dump */}
-            {current.metadata && Object.keys(current.metadata).length > 0 && (
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <h4 className="text-white font-medium mb-2">🔧 Complete Metadata:</h4>
-                <pre className="text-white/80 text-xs overflow-x-auto bg-black/20 p-3 rounded border border-white/10">
-                  {JSON.stringify(current.metadata, null, 2)}
-                </pre>
+              {/* Full Metadata Dump */}
+              {current.metadata && Object.keys(current.metadata).length > 0 && (
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h4 className="text-white font-medium mb-2">🔧 Complete Metadata:</h4>
+                  <pre className="text-white/80 text-xs overflow-x-auto bg-black/20 p-3 rounded border border-white/10">
+                    {JSON.stringify(current.metadata, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {/* Debug Info */}
+              <div className="bg-blue-900/20 rounded-lg p-4 border border-blue-500/30">
+                <h4 className="text-blue-300 font-medium mb-2">🐛 Debug Information:</h4>
+                <div className="text-blue-200/80 text-xs space-y-1">
+                  <p>• Prompt Length: {current.prompt?.length || 0} characters</p>
+                  <p>• Has Metadata: {current.metadata ? 'Yes' : 'No'}</p>
+                  <p>• Metadata Keys: {current.metadata ? Object.keys(current.metadata).join(', ') : 'None'}</p>
+                  <p>• Media Object Keys: {Object.keys(current).join(', ')}</p>
+                </div>
               </div>
+            </div>
+          </div>
+
+          {/* 🖼️ RIGHT SIDE: Media Display Area */}
+          <div className="w-1/2 relative flex flex-col items-center justify-center p-4">
+            {/* Prev Button */}
+            {media.length > 1 && (
+              <button
+                onClick={handlePrev}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-white hover:text-white/80 bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 z-40"
+                aria-label="Previous"
+                title="Previous"
+              >
+                <ChevronLeft size={24} />
+              </button>
             )}
 
-            {/* Debug Info */}
-            <div className="bg-blue-900/20 rounded-lg p-4 border border-blue-500/30">
-              <h4 className="text-blue-300 font-medium mb-2">🐛 Debug Information:</h4>
-              <div className="text-blue-200/80 text-xs space-y-1">
-                <p>• Prompt Length: {current.prompt?.length || 0} characters</p>
-                <p>• Has Metadata: {current.metadata ? 'Yes' : 'No'}</p>
-                <p>• Metadata Keys: {current.metadata ? Object.keys(current.metadata).join(', ') : 'None'}</p>
-                <p>• Media Object Keys: {Object.keys(current).join(', ')}</p>
-              </div>
+            {/* Media */}
+            <div className="max-w-full max-h-full object-contain">
+              {current.type === 'video' ? (
+                <video src={current.url} className="max-w-full max-h-[calc(100vh-200px)] object-contain" controls autoPlay muted />
+              ) : (
+                <img src={current.url} alt={current.prompt} className="max-w-full max-h-[calc(100vh-200px)] object-contain" />
+              )}
             </div>
+
+            {/* Next Button */}
+            {media.length > 1 && (
+              <button
+                onClick={handleNext}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-white hover:text-white/80 bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 z-40"
+                aria-label="Next"
+                title="Next"
+              >
+                <ChevronRight size={24} />
+              </button>
+            )}
           </div>
         </div>
       </div>
