@@ -1796,6 +1796,17 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           });
         }
         
+        // For Neo Tokyo Glitch, ensure we have a proper body structure for asset creation
+        if (kind === 'neotokyoglitch') {
+          body = {
+            success: true,
+            image_url: resultUrl,
+            modeMeta: generationMeta,
+            prompt: effectivePrompt
+          };
+          console.log('🎭 Neo Tokyo Glitch body prepared for asset creation:', body);
+        }
+        
         // Continue to result processing
       } else {
       // Add timeout guard to prevent 504 errors
@@ -2185,7 +2196,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         const assetResult = await createAsset({
           sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
           mediaType: 'image', // Default to image for now
-          presetKey: selectedPreset,
+          presetKey: composerState.mode === 'neotokyoglitch' ? selectedNeoTokyoGlitchPreset : selectedPreset,
               prompt: effectivePrompt,
         });
 
@@ -2282,7 +2293,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                   prompt: effectivePrompt,
                   meta: {
                     mode: composerState.mode,
-                    presetId: selectedPreset,
+                    presetId: composerState.mode === 'neotokyoglitch' ? selectedNeoTokyoGlitchPreset : selectedPreset,
                     runId: genId
                   }
                 })
