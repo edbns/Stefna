@@ -65,7 +65,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
           <div key={item.id} className="aspect-square bg-gray-200 rounded overflow-hidden">
             <img 
               src={item.url} 
-              alt={`Generated ${item.type}`}
+              alt=""
               className="w-full h-full object-cover"
               loading="lazy"
             />

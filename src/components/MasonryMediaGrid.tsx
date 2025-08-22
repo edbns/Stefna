@@ -170,7 +170,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   ) : (
                       <img
                         src={item.url}
-                        alt={`Generated ${item.type}`}
+                        alt=""
                         className="w-full h-auto object-cover"
                       />
                   )}
