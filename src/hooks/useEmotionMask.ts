@@ -1,6 +1,29 @@
 import { useRef } from 'react';
-import { FaceMesh } from '@mediapipe/face_mesh';
-import { drawConnectors } from '@mediapipe/drawing_utils';
+// MediaPipe is loaded dynamically from CDN
+
+// Function to dynamically load MediaPipe scripts
+async function loadMediaPipeScripts(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // Check if already loaded
+    if ((window as any).FaceMesh) {
+      resolve();
+      return;
+    }
+
+    // Load MediaPipe scripts
+    const script1 = document.createElement('script');
+    script1.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
+    script1.onload = () => {
+      const script2 = document.createElement('script');
+      script2.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js';
+      script2.onload = () => resolve();
+      script2.onerror = () => reject(new Error('Failed to load drawing_utils'));
+      document.head.appendChild(script2);
+    };
+    script1.onerror = () => reject(new Error('Failed to load face_mesh'));
+    document.head.appendChild(script1);
+  });
+}
 
 export interface FaceMaskOptions {
   includeEyes?: boolean;
@@ -45,9 +68,36 @@ export function useEmotionMask() {
       smoothEdges = true
     } = options;
 
-    return new Promise<HTMLCanvasElement>((resolve, reject) => {
+    return new Promise<HTMLCanvasElement>(async (resolve, reject) => {
+      // Dynamically load MediaPipe from CDN
+      let FaceMesh: any;
+      let drawConnectors: any;
+      
+      try {
+        // Load MediaPipe scripts dynamically
+        await loadMediaPipeScripts();
+        
+        // Get MediaPipe from global scope
+        FaceMesh = (window as any).FaceMesh;
+        drawConnectors = (window as any).drawConnectors;
+        
+        if (!FaceMesh) {
+          throw new Error('FaceMesh not loaded from CDN');
+        }
+      } catch (error) {
+        console.error('Failed to load MediaPipe:', error);
+        // Fallback: create basic canvas without face detection
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(image, 0, 0);
+        resolve(canvas);
+        return;
+      }
+
       const faceMesh = new FaceMesh({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+        locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
       });
 
       faceMesh.setOptions({
@@ -57,7 +107,7 @@ export function useEmotionMask() {
         minTrackingConfidence: 0.5,
       });
 
-      faceMesh.onResults((results) => {
+      faceMesh.onResults((results: any) => {
         if (!results.multiFaceLandmarks?.length) return reject('No face detected');
         const landmarks = results.multiFaceLandmarks[0];
         const canvas = document.createElement('canvas');
