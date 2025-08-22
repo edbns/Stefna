@@ -1779,6 +1779,23 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         variationsGenerated = replicateVariationsGenerated;
         body = { success: true, image_url: resultUrl };
         
+        // Ensure allResultUrls is properly set for Neo Tokyo Glitch
+        if (kind === 'neotokyoglitch' && (!allResultUrls || allResultUrls.length === 0)) {
+          allResultUrls = [replicateResultUrl];
+          console.log('🎭 Fixed Neo Tokyo Glitch allResultUrls:', allResultUrls);
+        }
+        
+        // Debug logging for Neo Tokyo Glitch URL handling
+        if (kind === 'neotokyoglitch') {
+          console.log('🎭 Neo Tokyo Glitch URL Debug:', {
+            replicateResultUrl,
+            replicateAllResultUrls,
+            allResultUrls,
+            resultUrl,
+            body
+          });
+        }
+        
         // Continue to result processing
       } else {
       // Add timeout guard to prevent 504 errors
