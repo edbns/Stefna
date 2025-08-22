@@ -8,6 +8,7 @@ const UPLOAD_RETRY_CONFIG = {
   baseDelay: 1000, // 1 second
   maxDelay: 8000,  // 8 seconds
   backoffMultiplier: 2,
+  jitterRange: 300, // 0-300ms random jitter
 };
 
 // Retry wrapper for Cloudinary upload with exponential backoff
@@ -23,20 +24,37 @@ async function retryCloudinaryUpload(
     const isRetryableError = isRetryableUploadError(error);
     
     if (isLastAttempt || !isRetryableError) {
-      console.error(`❌ Cloudinary upload failed after ${attempt} attempts:`, error);
+      // Enhanced final error logging
+      if (isLastAttempt) {
+        console.error(`❌ FINAL Cloudinary upload failure (attempt ${attempt}/${UPLOAD_RETRY_CONFIG.maxAttempts}):`, {
+          error: error instanceof Error ? error.message : String(error),
+          attempt,
+          maxAttempts: UPLOAD_RETRY_CONFIG.maxAttempts,
+          isRetryable: isRetryableError,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        console.error(`❌ Non-retryable Cloudinary upload error (attempt ${attempt}):`, {
+          error: error instanceof Error ? error.message : String(error),
+          reason: 'Fatal error detected - skipping retries',
+          timestamp: new Date().toISOString()
+        });
+      }
       throw error;
     }
     
-    // Calculate delay with exponential backoff
-    const delay = Math.min(
-      UPLOAD_RETRY_CONFIG.baseDelay * Math.pow(UPLOAD_RETRY_CONFIG.backoffMultiplier, attempt - 1),
-      UPLOAD_RETRY_CONFIG.maxDelay
-    );
+    // Calculate delay with exponential backoff + jitter
+    const baseDelay = UPLOAD_RETRY_CONFIG.baseDelay * Math.pow(UPLOAD_RETRY_CONFIG.backoffMultiplier, attempt - 1);
+    const jitter = Math.random() * UPLOAD_RETRY_CONFIG.jitterRange;
+    const delay = Math.min(baseDelay + jitter, UPLOAD_RETRY_CONFIG.maxDelay);
     
-    console.log(`⚠️ Cloudinary upload attempt ${attempt} failed, retrying in ${delay}ms...`, {
+    console.log(`⚠️ Cloudinary upload attempt ${attempt}/${UPLOAD_RETRY_CONFIG.maxAttempts} failed, retrying in ${Math.round(delay)}ms...`, {
       error: error instanceof Error ? error.message : String(error),
       nextAttempt: attempt + 1,
-      delay
+      baseDelay: Math.round(baseDelay),
+      jitter: Math.round(jitter),
+      finalDelay: Math.round(delay),
+      timestamp: new Date().toISOString()
     });
     
     // Wait before retry
@@ -54,6 +72,28 @@ function isRetryableUploadError(error: any): boolean {
   const errorMessage = error.message || String(error);
   const errorName = error.name || '';
   
+  // Non-retryable patterns (fatal errors)
+  const nonRetryablePatterns = [
+    /invalid signature/i,
+    /unsupported file/i,
+    /file too large/i,
+    /invalid preset/i,
+    /authentication failed/i,
+    /unauthorized/i,
+    /forbidden/i,
+    /not found/i,
+    /bad request/i,
+    /invalid api key/i,
+    /quota exceeded/i,
+    /rate limit exceeded/i,
+  ];
+  
+  // Check for fatal errors first
+  if (nonRetryablePatterns.some(pattern => pattern.test(errorMessage))) {
+    console.log(`🚫 Fatal error detected, skipping retries:`, errorMessage);
+    return false;
+  }
+  
   // Retry on network errors, timeouts, and temporary Cloudinary issues
   const retryablePatterns = [
     /timeout/i,
@@ -67,6 +107,9 @@ function isRetryableUploadError(error: any): boolean {
     /502/i,
     /503/i,
     /504/i,
+    /connection/i,
+    /econnreset/i,
+    /enotfound/i,
   ];
   
   return retryablePatterns.some(pattern => pattern.test(errorMessage));
