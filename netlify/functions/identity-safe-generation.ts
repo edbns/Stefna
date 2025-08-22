@@ -42,18 +42,21 @@ interface IdentitySafeGenerationResponse {
   message: string;
 }
 
-// Neo Tokyo Glitch presets with refined prompts and optimized parameters
+// Neo Tokyo Glitch presets with identity-preserving prompts and optimized parameters
 const NEO_TOKYO_GLITCH_PRESETS = {
   base: {
-    prompt: `Transform this person into a stylized cyberpunk portrait inspired by Neo Tokyo aesthetics. 
+    prompt: `Stylized cyberpunk portrait inspired by Neo Tokyo aesthetics. 
+Retain facial identity and beauty. Face must match the subject image. Keep symmetry, skin tone, and gender. Subject must be clearly recognizable. Stylize only with overlays and lighting, not by changing facial structure.
+
 Use cel-shaded anime detail and high-fashion sci-fi energy. Add glowing holographic elements, glitch FX, particle trails, and neon shimmer.
-Face must retain identity with hyperrealistic symmetry, flawless skin, and vivid emotion in the eyes.
+Stylize with soft glitch effects, digital particles, and cyberpunk background. Keep lighting dramatic but not overpowering. Use ambient reflections and subtle neon shimmer.
+
 Background: vertical city lights, violet haze, soft scanlines. 
 Color palette: electric pink, cyan, sapphire blue, ultraviolet, black. 
 Inspired by Akira, Ghost in the Shell, and glitch fashion photography.`,
     negative_prompt: `blurry, distorted face, ugly, deformed, bad anatomy, extra limbs, photorealism, dull style, low contrast, 
 nudity, cleavage, gender change, ethnicity change, identity change, merged face, artifacts, realistic texture, boring lighting`,
-    strength: 0.4,
+    strength: 0.45,
     guidance_scale: 7.5
   },
   visor: {
@@ -70,28 +73,31 @@ nudity, dull colors, flat lighting, weak glitch effects, minimal transformation`
     guidance_scale: 8.0
   },
   tattoos: {
-    prompt: `Transform the subject into a Neo Tokyo avatar with glowing cyber tattoos. 
-FACE, NECK, and SHOULDERS must be covered in MAGENTA or CYAN tattoos, layered with circuit patterns, code streaks, and shimmer. 
-Keep the original facial structure, beauty, and symmetry. 
+    prompt: `Stylized cyberpunk portrait with glowing cyber tattoos. 
+Retain facial identity and beauty. Face must match the subject image. Keep symmetry, skin tone, and gender. Subject must be clearly recognizable. Stylize only with overlays and lighting, not by changing facial structure.
+
+Add glowing cyan and magenta cyber tattoos over face and neck, designed as holographic circuits. Tattoos should be layered, not replace the face. Face must remain unchanged - overlay tattoos while preserving natural facial features. Enhance with glowing facial circuit patterns while keeping core identity.
+
 Add glitch overlays, datamosh FX, and soft neon ambient lighting. 
 Background: chaotic digital Tokyo, broken signage, animated overlays.
 Color theme: glowing tattoos, pink/blue/cyan/neon blend with dark backdrop.`,
     negative_prompt: `small tattoos, faint markings, weak glow, blurry face, identity distortion, merged features, 
-nudity, photorealism, boring style, unflattering, bad anatomy, pose change`,
-    strength: 0.5,
+nudity, photorealism, boring style, unflattering, bad anatomy, pose change, ethnicity change, gender change`,
+    strength: 0.48,
     guidance_scale: 8.5
   },
   scanlines: {
-    prompt: `Transform the subject into a CRT-glitched cyberpunk portrait. 
-OVERLAY the entire image with INTENSE SCANLINES, VHS noise, flickering datamosh FX, and digital tearing. 
-Keep face sharp, expressive, symmetrical, and identity-locked. 
-Add cel-shaded highlights, neon reflections, and subtle chromatic aberration on skin edges. 
+    prompt: `Stylized cyberpunk portrait with CRT scanline effects. 
+Retain facial identity and beauty. Face must match the subject image. Keep symmetry, skin tone, and gender. Subject must be clearly recognizable. Stylize only with overlays and lighting, not by changing facial structure.
+
+Overlay intense CRT scanlines and VHS noise. Simulate broken holographic monitor interface over the background. Use high-contrast neon hues. Keep face sharp, expressive, symmetrical, and identity-locked. Add cel-shaded highlights, neon reflections, and subtle chromatic aberration on skin edges.
+
 Background: corrupted cityscape viewed through broken CRT monitor. 
 Color palette: high-contrast glitch colors — pink, cyan, ultraviolet, blue, black.`,
     negative_prompt: `clean image, no scanlines, no distortion, realistic look, gender/ethnicity change, distorted face, 
-photorealistic, minimal transformation, low noise, soft glitch, muted color, bad lighting`,
-    strength: 0.48,
-    guidance_scale: 9.0
+photorealistic, minimal transformation, low noise, soft glitch, muted color, bad lighting, face replacement, male features`,
+    strength: 0.45,
+    guidance_scale: 8.5
   }
 };
 
