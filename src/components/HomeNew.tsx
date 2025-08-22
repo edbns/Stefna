@@ -65,7 +65,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
           <div key={item.id} className="aspect-square bg-gray-200 rounded overflow-hidden">
             <img 
               src={item.url} 
-              alt={item.prompt}
+              alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
               className="w-full h-full object-cover"
               loading="lazy"
             />

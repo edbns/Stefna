@@ -148,11 +148,11 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                       {item.type === 'video' ? (
                         <video src={item.url} className="w-full h-auto object-cover opacity-50" muted />
                       ) : (
-                        <img 
-                          src={item.url} 
-                          alt={item.prompt} 
-                          className="w-full h-auto opacity-50 object-cover"
-                        />
+                                              <img 
+                        src={item.url} 
+                        alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
+                        className="w-full h-auto opacity-50 object-cover"
+                      />
                       )}
                       <div className="absolute inset-0 grid place-items-center">
                         <div className="px-3 py-1 rounded-full bg-red-600/80 text-white text-xs font-semibold">Failed</div>
@@ -170,7 +170,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   ) : (
                       <img
                         src={item.url}
-                        alt={item.prompt}
+                        alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
                         className="w-full h-auto object-cover"
                       />
                   )}
