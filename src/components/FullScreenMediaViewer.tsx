@@ -204,12 +204,9 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
               </div>
 
               {/* 🎯 PROMINENT: Generation Mode & Tag Display */}
-              <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg p-3 border border-blue-500/30">
+              <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg p-3 border border-blue-500/30 mb-3">
                 <h4 className="text-blue-300 font-semibold text-sm mb-2">🎯 GENERATION MODE & TAG:</h4>
                 <div className="flex items-center gap-2">
-                  <span className="bg-blue-600/50 text-white px-2 py-1 rounded text-xs font-medium">
-                    {getCreationMethod(current)}
-                  </span>
                   {current.metadata?.mode && (
                     <span className="bg-purple-600/50 text-white px-2 py-1 rounded text-xs font-medium">
                       {current.metadata.mode}
@@ -220,36 +217,21 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
                       {current.metadata.presetId}
                     </span>
                   )}
+                  {!current.metadata?.mode && !current.metadata?.presetId && (
+                    <span className="bg-blue-600/50 text-white px-2 py-1 rounded text-xs font-medium">
+                      {getCreationMethod(current)}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* Prompt Display */}
+              {/* 📝 User Prompt - Compact */}
               {current.prompt && (
-                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                  <h4 className="text-white font-medium mb-2">📝 User Prompt:</h4>
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10 mb-3">
+                  <h4 className="text-white font-medium text-sm mb-2">📝 User Prompt:</h4>
                   <p className="text-white/90 text-sm leading-relaxed break-words">{current.prompt}</p>
                 </div>
               )}
-
-              {/* 📊 Compact Metadata Grid */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-white/5 rounded p-2 border border-white/10">
-                  <h4 className="text-white font-medium text-xs mb-1">🆔 Media ID:</h4>
-                  <p className="text-white/80 text-xs font-mono">{current.id.substring(0, 8)}...</p>
-                </div>
-                <div className="bg-white/5 rounded p-2 border border-white/10">
-                  <h4 className="text-white font-medium text-xs mb-1">👤 User ID:</h4>
-                  <p className="text-white/80 text-xs font-mono">{current.userId ? current.userId.substring(0, 8) + '...' : 'Unknown'}</p>
-                </div>
-                <div className="bg-white/5 rounded p-2 border border-white/10">
-                  <h4 className="text-white font-medium text-xs mb-1">📅 Created:</h4>
-                  <p className="text-white/80 text-xs">{new Date(current.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                </div>
-                <div className="bg-white/5 rounded p-2 border border-white/10">
-                  <h4 className="text-white font-medium text-xs mb-1">📊 Type:</h4>
-                  <p className="text-white/80 text-xs">{current.type || 'image'} {current.aspectRatio ? `(${current.aspectRatio})` : ''}</p>
-                </div>
-              </div>
 
               {/* 🔧 Compact Metadata Dump */}
               {current.metadata && Object.keys(current.metadata).length > 0 && (
