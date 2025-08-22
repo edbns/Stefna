@@ -19,47 +19,47 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_tears',
     label: 'Tears',
-    prompt: 'Transform the human face to resemble an anime reaction shot in the style of Studio Ghibli. Keep realistic skin and hair texture. Emphasize exaggerated emotion with stylized features like large glistening eyes, sparkles, tears, or shocked expressions. Add big glassy tears like Chihiro crying.',
-    negative_prompt: 'full anime face, 3d render, bad anatomy, distorted face, unrealistic, photo artifacts, harsh lighting',
+    prompt: `Transform the human face into a Studio Ghibli-style emotional reaction while preserving realistic skin, hair, and facial structure. Add glistening anime-inspired tears under the eyes. Eyes should appear larger and wetter, with soft sparkles and emotional intensity. Preserve skin tone, gender, and facial integrity. Lighting should be soft and warm, like sunset glow. Keep hairstyle and identity intact.`,
+    negative_prompt: `anime face replacement, distorted features, overexaggerated proportions, fake texture, plastic skin, full anime rendering, gender swap, photorealism, 3D look, harsh shadows`,
     strength: 0.35,
-    model: 'flux/dev', // Working system ignored this and used flux/dev/image-to-image
+    model: 'flux-dev/image-to-image', // Explicit corrected path
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'ghibli_reaction',
     guidance_scale: 9,
     num_inference_steps: 28,
-    features: ['ghibli_style', 'emotional_reaction', 'tears', 'soft_lighting']
+    features: ['ghibli_style', 'emotional_reaction', 'tears', 'soft_lighting', 'identity_preserved']
   },
   {
     id: 'ghibli_shock',
     label: 'Shock',
-    prompt: 'Transform the human face to resemble an anime reaction shot in the style of Studio Ghibli. Keep realistic skin and hair texture. Emphasize exaggerated emotion with stylized features like large glistening eyes, sparkles, tears, or shocked expressions. Exaggerate shocked anime face like Sophie from Howl\'s Moving Castle.',
-    negative_prompt: 'full anime face, 3d render, bad anatomy, distorted face, unrealistic, photo artifacts, harsh lighting',
+    prompt: `Transform the human face into a shocked Studio Ghibli-style reaction while preserving identity and facial realism. Exaggerate expression with widened anime-style eyes and slightly parted lips. Add subtle sparkles, blush, or trembling mouth expression. Retain hair, skin texture, gender, and core facial structure. Background and lighting should feel soft and dreamy, like a still from a Ghibli film.`,
+    negative_prompt: `cartoon face, huge bug eyes, distorted anatomy, face merged or replaced, fake skin, photorealism, bland expression, anime mask overlay`,
     strength: 0.35,
-    model: 'flux/dev', // Working system ignored this and used flux/dev/image-to-image
+    model: 'flux-dev/image-to-image', // Explicit corrected path
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'ghibli_reaction',
     guidance_scale: 9,
     num_inference_steps: 28,
-    features: ['ghibli_style', 'emotional_reaction', 'shock', 'soft_lighting']
+    features: ['ghibli_style', 'emotional_reaction', 'shock', 'soft_lighting', 'identity_preserved']
   },
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: 'Transform the human face to resemble an anime reaction shot in the style of Studio Ghibli. Keep realistic skin and hair texture. Emphasize exaggerated emotion with stylized features like large glistening eyes, sparkles, tears, or shocked expressions. Add sparkles around face and big anime blush.',
-    negative_prompt: 'full anime face, 3d render, bad anatomy, distorted face, unrealistic, photo artifacts, harsh lighting',
+    prompt: `Transform the human face into a dreamy Ghibli-style expression with sparkles and soft blush. Retain the subject's identity, facial proportions, and realism. Enhance the eyes with light shimmer and gentle expression. Add whimsical sparkle particles around the cheeks and subtle pink blush. Skin, hair, and gender should stay accurate to the source. Use golden hour or pastel lighting for warmth and nostalgia.`,
+    negative_prompt: `overdone sparkle, anime face swap, distorted head, full cartoon rendering, hard shadows, gender change, poor skin texture`,
     strength: 0.35,
-    model: 'flux/dev', // Working system ignored this and used flux/dev/image-to-image
+    model: 'flux-dev/image-to-image', // Explicit corrected path
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'ghibli_reaction',
     guidance_scale: 9,
     num_inference_steps: 28,
-    features: ['ghibli_style', 'emotional_reaction', 'sparkles', 'soft_lighting']
+    features: ['ghibli_style', 'emotional_reaction', 'sparkles', 'soft_lighting', 'identity_preserved']
   }
 ]
 
