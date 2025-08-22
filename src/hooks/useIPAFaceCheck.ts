@@ -1,4 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
+import * as tf from '@tensorflow/tfjs-core';
+import '@tensorflow/tfjs-backend-webgl';
+import { createDetector, SupportedModels } from '@tensorflow-models/face-landmarks-detection';
 
 export interface FaceEmbedding {
   vector: number[];
@@ -70,8 +73,8 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return dot / (Math.sqrt(na) * Math.sqrt(nb) || 1);
 }
 
-// MediaPipe Face Mesh model loading state
-let faceMeshModel: any = null;
+// TensorFlow.js Face Landmarks Detection model loading state
+let tfModel: any = null;
 let isModelLoading = false;
 
 export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
@@ -87,10 +90,10 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
 
   const modelLoadPromise = useRef<Promise<any> | null>(null);
 
-  // Load MediaPipe Face Mesh model
-  const loadFaceMeshModel = useCallback(async (): Promise<any> => {
-    if (faceMeshModel) {
-      return faceMeshModel;
+  // Load TensorFlow.js Face Landmarks Detection model
+  const loadTFModel = useCallback(async (): Promise<any> => {
+    if (tfModel) {
+      return tfModel;
     }
 
     if (isModelLoading && modelLoadPromise.current) {
@@ -100,8 +103,8 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     if (isModelLoading) {
       return new Promise((resolve, reject) => {
         const checkModel = () => {
-          if (faceMeshModel) {
-            resolve(faceMeshModel);
+          if (tfModel) {
+            resolve(tfModel);
           } else if (isModelLoading) {
             setTimeout(checkModel, 100);
           } else {
@@ -115,49 +118,18 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     isModelLoading = true;
     
     try {
-      // Load MediaPipe Face Mesh from CDN dynamically
-      if (typeof window === 'undefined') {
-        throw new Error('MediaPipe is not available in server environment');
-      }
-
-      // Check if MediaPipe is already loaded globally
-      if (!(window as any).FaceMesh) {
-        // Load MediaPipe script from CDN
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Failed to load MediaPipe Face Mesh'));
-          document.head.appendChild(script);
-        });
-      }
-
-      const FaceMesh = (window as any).FaceMesh;
-      if (!FaceMesh) {
-        throw new Error('MediaPipe Face Mesh not available');
-      }
+      // Set TensorFlow.js backend
+      await tf.setBackend('webgl');
       
-      // Initialize Face Mesh
-      const faceMesh = new FaceMesh({
-        locateFile: (file: string) => {
-          return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-        }
-      });
+      // Load face landmarks detection model
+      const model = await createDetector(SupportedModels.MediaPipeFaceMesh);
 
-      // Configure Face Mesh
-      faceMesh.setOptions({
-        maxNumFaces: 1,
-        refineLandmarks: true,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
-      });
-
-      // Simple initialization - no need to wait for results
-      faceMeshModel = faceMesh;
+      // Store model and update state
+      tfModel = model;
       setState(prev => ({ ...prev, isReady: true }));
-      return faceMesh;
+      return model;
     } catch (error) {
-      console.error('Failed to load MediaPipe Face Mesh model:', error);
+      console.error('Failed to load TensorFlow.js Face Landmarks Detection model:', error);
       isModelLoading = false;
       throw error;
     } finally {
@@ -165,9 +137,9 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     }
   }, []);
 
-  // Extract face embedding from image using MediaPipe
+  // Extract face embedding from image using TensorFlow.js
   const extractFaceEmbedding = useCallback(async (imageUrl: string): Promise<FaceEmbedding> => {
-    const model = await loadFaceMeshModel();
+    const model = await loadTFModel();
     
     // Create image element
     const img = new Image();
@@ -188,34 +160,31 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
           
-          // Process image with MediaPipe Face Mesh
-          const results = await new Promise<any>((resolveResults) => {
-            model.onResults((results: any) => {
-              resolveResults(results);
-            });
-            
-            // Send image to MediaPipe
-            model.send({ image: canvas });
-          });
+          // Process image with TensorFlow.js Face Landmarks Detection
+          const predictions = await model.estimateFaces({ input: img });
           
-          if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+          if (!predictions || predictions.length === 0) {
             reject(new Error('No faces detected in image'));
             return;
           }
           
           // Check for identity hallucination (multiple faces)
-          if (results.multiFaceLandmarks.length > 1) {
-            console.warn(`⚠️ Multiple faces detected (${results.multiFaceLandmarks.length}) - possible identity hallucination`);
+          if (predictions.length > 1) {
+            console.warn(`⚠️ Multiple faces detected (${predictions.length}) - possible identity hallucination`);
             // For now, use the first face but log the issue
             // In production, this could trigger immediate fallback
           }
           
-          // Get the first (main) face landmarks
-          const landmarks = results.multiFaceLandmarks[0];
+          // Get the first (main) face
+          const face = predictions[0];
+          if (!face.keypoints) {
+            reject(new Error('No keypoints detected'));
+            return;
+          }
           
-          // Convert landmarks to pseudo-embedding vector
-          // MediaPipe provides 468 3D points, we'll select key landmarks for identity
-          const embedding = convertLandmarksToPseudoEmbedding(landmarks, canvas.width, canvas.height);
+          // Convert keypoints to pseudo-embedding vector
+          // TensorFlow.js provides keypoints, we'll use them for identity
+          const embedding = convertTensorFlowKeypointsToEmbedding(face.keypoints, canvas.width, canvas.height);
           
           // Generate simple hash for image
           const imageHash = await generateImageHash(canvas);
@@ -235,47 +204,33 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
       img.onerror = () => reject(new Error('Failed to load image'));
       img.src = imageUrl;
     });
-  }, [loadFaceMeshModel]);
+  }, [loadTFModel]);
 
-  // Convert MediaPipe landmarks to pseudo-embedding vector
-  const convertLandmarksToPseudoEmbedding = useCallback((landmarks: any[], imageWidth: number, imageHeight: number): number[] => {
-    if (!landmarks || landmarks.length === 0) {
-      throw new Error('No landmarks provided');
+  // Convert TensorFlow.js keypoints to pseudo-embedding vector
+  const convertTensorFlowKeypointsToEmbedding = useCallback((keypoints: any[], imageWidth: number, imageHeight: number): number[] => {
+    if (!keypoints || keypoints.length === 0) {
+      throw new Error('No keypoints provided');
     }
-    
-    // Select key facial landmarks for identity comparison
-    // Focus on eyes, nose, mouth, face outline, and key facial features
-    const keyLandmarkIndices = [
-      // Face outline (jawline) - key for face shape
-      10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109,
-      
-      // Eyes - crucial for identity
-      33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308,
-      
-      // Nose - important for facial structure
-      1, 2, 3, 4, 5, 6, 19, 20, 61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318,
-      
-      // Mouth - key for expression and identity
-      61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318
-    ];
     
     const pseudoEmbedding: number[] = [];
     
-    keyLandmarkIndices.forEach(index => {
-      if (landmarks[index]) {
-        const landmark = landmarks[index];
-        
-        // Normalize coordinates to [0, 1] range for consistent comparison
-        const normalizedX = landmark.x / imageWidth;
-        const normalizedY = landmark.y / imageHeight;
-        
-        // Add normalized coordinates to pseudo-embedding
-        pseudoEmbedding.push(normalizedX);
-        pseudoEmbedding.push(normalizedY);
-        
-        // Optionally include Z coordinate for depth (normalized)
-        // const normalizedZ = (landmark.z + 1) / 2; // Z ranges from -1 to 1
-        // pseudoEmbedding.push(normalizedZ);
+    // TensorFlow.js keypoints are already in the right format
+    // Each keypoint has x, y, z coordinates
+    keypoints.forEach((keypoint: any) => {
+      // Normalize coordinates to [0, 1] range for consistent comparison
+      const normalizedX = keypoint.x / imageWidth;
+      const normalizedY = keypoint.y / imageHeight;
+      
+      // Add normalized coordinates to pseudo-embedding
+      pseudoEmbedding.push(normalizedX);
+      pseudoEmbedding.push(normalizedY);
+      
+      // Include Z coordinate for depth if available
+      if (keypoint.z !== undefined) {
+        const normalizedZ = (keypoint.z + 1) / 2; // Z ranges from -1 to 1, normalize to 0-1
+        pseudoEmbedding.push(normalizedZ);
+      } else {
+        pseudoEmbedding.push(0); // Default Z if not available
       }
     });
     
@@ -562,12 +517,12 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     }
   }, [extractFaceEmbedding, threshold]);
 
-  // Build face mask from landmarks
+  // Build face mask from TensorFlow.js keypoints
   const buildFaceMask = useCallback(async (
     imageUrl: string, 
     featherSize: number = 12
   ): Promise<{ mask: ImageData; landmarks: any[] }> => {
-    const model = await loadFaceMeshModel();
+    const model = await loadTFModel();
     
     // Create image element
     const img = new Image();
@@ -588,45 +543,38 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
           
-          // Get face landmarks
-          const results = await new Promise<any>((resolveResults) => {
-            model.onResults((results: any) => {
-              resolveResults(results);
-            });
-            model.send({ image: canvas });
-          });
+          // Get face keypoints using TensorFlow.js
+          const predictions = await model.estimateFaces({ input: img });
           
-          if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+          if (!predictions || predictions.length === 0) {
             reject(new Error('No faces detected for mask creation'));
             return;
           }
           
-          const landmarks = results.multiFaceLandmarks[0];
+          const face = predictions[0];
+          if (!face.keypoints) {
+            reject(new Error('No keypoints detected for mask creation'));
+            return;
+          }
           
-          // Create face mask
+          // Create face mask from keypoints
           const maskCanvas = document.createElement('canvas');
           const maskCtx = maskCanvas.getContext('2d')!;
           maskCanvas.width = canvas.width;
           maskCanvas.height = canvas.height;
           
-          // Face outline indices (simplified but comprehensive)
-          const faceOutline = [
-            10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 
-            397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 
-            172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109
-          ];
-          
-          // Create face mask path
+          // Create face mask path from keypoints
           maskCtx.fillStyle = 'white';
           maskCtx.beginPath();
-          faceOutline.forEach((index, i) => {
-            if (landmarks[index]) {
-              const x = landmarks[index].x * canvas.width;
-              const y = landmarks[index].y * canvas.height;
-              if (i === 0) maskCtx.moveTo(x, y);
-              else maskCtx.lineTo(x, y);
-            }
+          
+          // Use keypoints to create face outline
+          face.keypoints.forEach((keypoint: any, i: number) => {
+            const x = keypoint.x;
+            const y = keypoint.y;
+            if (i === 0) maskCtx.moveTo(x, y);
+            else maskCtx.lineTo(x, y);
           });
+          
           maskCtx.closePath();
           maskCtx.fill();
           
@@ -641,7 +589,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
           
           resolve({
             mask: maskData,
-            landmarks
+            landmarks: face.keypoints
           });
         } catch (error) {
           reject(error);
@@ -651,7 +599,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
       img.onerror = () => reject(new Error('Failed to load image for mask'));
       img.src = imageUrl;
     });
-  }, [loadFaceMeshModel]);
+  }, [loadTFModel]);
 
   // Blend original face with AI output
   const blendOriginalFace = useCallback(async (
@@ -723,7 +671,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     
     // Actions
     performIPACheck,
-    loadFaceMeshModel,
+    loadTFModel,
     extractFaceEmbedding,
     calculateCosineSimilarity,
     checkReadinessToScale,
