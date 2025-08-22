@@ -937,24 +937,31 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           .map((item: any): UserMedia | null => {
             // Use the URL from the backend if available, otherwise construct from cloudinary_public_id
             let mediaUrl: string;
+            let provider = item.provider || 'unknown';
+            
             if (item.url && item.url.startsWith('http')) {
               // Use the URL provided by the backend (this should be the correct one)
               mediaUrl = item.url;
+              console.log(`🔗 URL mapping for item ${item.id}:`, {
+                provider: provider,
+                url: item.url,
+                source: 'backend_url'
+              });
             } else if (item.cloudinary_public_id && item.cloudinary_public_id.startsWith('stefna/')) {
               // Only construct URL if cloudinary_public_id has the correct prefix
               mediaUrl = cloudinaryUrlFromEnv(item.cloudinary_public_id, item.media_type);
+              provider = 'cloudinary';
+              console.log(`🔗 URL mapping for item ${item.id}:`, {
+                provider: provider,
+                cloudinary_public_id: item.cloudinary_public_id,
+                final: mediaUrl,
+                source: 'constructed_url'
+              });
             } else {
               // Skip items with invalid cloudinary_public_id
               console.warn(`⚠️ Skipping item ${item.id}: invalid cloudinary_public_id: ${item.cloudinary_public_id}`);
               return null;
             }
-            
-          console.log(`🔗 URL mapping for item ${item.id}:`, {
-            cloudinary_public_id: item.cloudinary_public_id,
-            media_type: item.media_type,
-              final: mediaUrl,
-              source: item.url ? 'backend_url' : 'constructed_url'
-          })
           
           return ({
             id: item.id,
