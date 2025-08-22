@@ -11,7 +11,7 @@ export const handler: Handler = async (event) => {
     const limit = Number(url.searchParams.get('limit') ?? 50);
 
     // Get public media directly from assets table to include both Cloudinary and Replicate images
-    // Note: We removed tier system, so users table only has basic fields
+    // Note: We removed tier system, so users table only has basic fields - UPDATED
     const media = await sql`
       SELECT 
         a.id,
