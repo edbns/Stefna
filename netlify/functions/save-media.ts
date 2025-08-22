@@ -1,9 +1,9 @@
 // netlify/functions/save-media.ts
-// Neon-focused media saving endpoint with proper URL handling
-// - Accepts generated media variations (from AIML)
-// - Records them in Neon database with proper schema
+// Updated to use consolidated media_assets table structure
+// - Accepts generated media variations (from AIML and Replicate)
+// - Records them in consolidated media_assets table
 // - Returns canonical items used by feed + UI
-// Force redeploy - v2 (fix table references to use assets instead of media)
+// Force redeploy - v3 (use media_assets table instead of assets)
 
 import type { Handler } from '@netlify/functions';
 import { sql } from './_db';
@@ -53,6 +53,7 @@ export const handler: Handler = async (event) => {
       cloudinary_public_id,
       source_public_id,
       preset_id,
+      preset_key,             // Alternative to preset_id
       run_id,
       batch_id,
       
@@ -96,7 +97,7 @@ export const handler: Handler = async (event) => {
 
         try {
           const result = await sql`
-            INSERT INTO assets (
+            INSERT INTO media_assets (
               user_id, 
               cloudinary_public_id, 
               media_type, 
@@ -113,7 +114,7 @@ export const handler: Handler = async (event) => {
               ${userId}, 
               ${cloudinary_public_id || null}, 
               ${media_type}, 
-              ${preset_id || null}, 
+              ${preset_key || preset_id || null}, 
               ${prompt || null}, 
               ${source_public_id || null}, 
               'ready', 
@@ -158,111 +159,95 @@ export const handler: Handler = async (event) => {
 
     // Single media item
     try {
-              const result = await sql`
-          INSERT INTO assets (
-            user_id, 
-            cloudinary_public_id, 
-            media_type, 
-            preset_key, 
-            prompt, 
-            source_asset_id, 
-            status, 
-            is_public, 
-            allow_remix,
-            final_url,
-            meta,
-            created_at
-          ) VALUES (
-            ${userId}, 
-            ${cloudinary_public_id || null}, 
-            ${media_type}, 
-            ${preset_id || null}, 
-            ${prompt || null}, 
-            ${source_public_id || null}, 
-            'ready', 
-            true, 
-            false,
-            ${finalUrl},
-            ${meta || {}},
-            NOW()
-          ) RETURNING id, final_url, media_type, created_at
-        `;
-      
-              if (result && result.length > 0) {
-          const savedItem = result[0];
-          console.log('✅ Media saved successfully:', savedItem.id);
-          
-          return {
-            statusCode: 200,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({
-              success: true,
-              message: 'Media saved successfully',
-              item: {
-                id: savedItem.id,
-                url: savedItem.final_url,
-                media_type: savedItem.media_type,
-                created_at: savedItem.created_at
-              }
-            })
-          };
-        } else {
-          throw new Error('No result returned from database insert');
-        }
+      const result = await sql`
+        INSERT INTO media_assets (
+          user_id, 
+          cloudinary_public_id, 
+          media_type, 
+          preset_key, 
+          prompt, 
+          source_asset_id, 
+          status, 
+          is_public, 
+          allow_remix,
+          final_url,
+          meta,
+          created_at
+        ) VALUES (
+          ${userId}, 
+          ${cloudinary_public_id || null}, 
+          ${media_type}, 
+          ${preset_key || preset_id || null}, 
+          ${prompt || null}, 
+          ${source_public_id || null}, 
+          'ready', 
+          true, 
+          false,
+          ${finalUrl},
+          ${meta || {}},
+          NOW()
+        ) RETURNING id, final_url, media_type, created_at
+      `;
+    
+      if (result && result.length > 0) {
+        const savedItem = result[0];
+        console.log('✅ Media saved successfully:', savedItem.id);
+        
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({
+            success: true,
+            message: 'Media saved successfully',
+            id: savedItem.id,
+            final_url: savedItem.final_url,
+            media_type: savedItem.media_type,
+            created_at: savedItem.created_at,
+            table_used: 'media_assets' // Indicate we're using the new structure
+          })
+        };
+      } else {
+        throw new Error('No result returned from database insert');
+      }
     } catch (error) {
-      console.error('❌ Database insert failed:', error);
-      throw httpErr(500, 'DATABASE_ERROR', 'Failed to save media to database');
+      console.error('❌ Failed to save media:', error);
+      throw httpErr(500, 'SAVE_FAILED', `Failed to save media: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
-  } catch (error: any) {
-    console.error('💥 Save media error:', error);
+  } catch (error: unknown) {
+    console.error('❌ save-media error:', error);
     
-    // Handle auth errors specifically
-    if (error.message === 'INVALID_JWT' || error.message === 'MISSING_BEARER') {
+    // Check if this is already an HTTP error
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      const httpError = error as { statusCode: number; error?: string; message?: string };
       return {
-        statusCode: 401,
+        statusCode: httpError.statusCode,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         },
         body: JSON.stringify({
           success: false,
-          error: 'AUTHENTICATION_FAILED',
-          message: 'Invalid or missing JWT token'
-        })
-      };
-    }
-    
-    // Handle validation errors
-    if (error.code === 'MISSING_URL') {
-      return {
-        statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-          success: false,
-          error: 'VALIDATION_ERROR',
-          message: error.extra || 'Missing required URL field'
+          error: httpError.error || 'Unknown error',
+          message: httpError.message || 'An error occurred while saving media'
         })
       };
     }
     
     // Generic error response
     return {
-      statusCode: error.statusCode || 500,
+      statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({
         success: false,
-        error: error.code || 'INTERNAL_ERROR',
-        message: error.message || 'An unexpected error occurred'
+        error: 'INTERNAL_ERROR',
+        message: 'An internal error occurred while saving media'
       })
     };
   }

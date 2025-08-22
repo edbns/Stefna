@@ -1,4 +1,5 @@
 // netlify/functions/getPublicFeed.ts
+// Updated to use consolidated media_assets table structure
 import { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
 
@@ -10,28 +11,32 @@ export const handler: Handler = async (event) => {
     const url = new URL(event.rawUrl);
     const limit = Number(url.searchParams.get('limit') ?? 50);
 
-    // Get public media directly from assets table to include both Cloudinary and Replicate images
-    // Note: We removed tier system, so users table only has basic fields - UPDATED
+    // Get public media from consolidated media_assets table
+    // This now properly handles both Cloudinary and Replicate images
+    // Fixed: Added proper type casting for UUID vs TEXT join
     const media = await sql`
       SELECT 
-        a.id,
-        a.user_id,
-        u.email AS user_email, -- Use email instead of name since we removed tier system
-        a.cloudinary_public_id,
-        a.media_type AS resource_type,
-        a.prompt,
-        a.created_at AS published_at,
-        a.is_public AS visibility,
-        a.allow_remix,
-        a.final_url,
-        a.meta
-      FROM assets a
-      LEFT JOIN app_users u ON a.user_id = u.id
-      WHERE a.is_public = true 
-        AND a.status = 'ready'
-        AND a.created_at IS NOT NULL
-        AND (a.cloudinary_public_id IS NOT NULL OR a.final_url IS NOT NULL)
-      ORDER BY a.created_at DESC
+        ma.id,
+        ma.user_id,
+        u.email AS user_email,
+        ma.cloudinary_public_id,
+        COALESCE(ma.media_type, ma.resource_type) AS resource_type,
+        ma.prompt,
+        ma.created_at AS published_at,
+        ma.is_public AS visibility,
+        ma.allow_remix,
+        ma.final_url,
+        ma.status,
+        ma.meta,
+        ma.preset_key,
+        ma.preset_id
+      FROM media_assets ma
+      LEFT JOIN users u ON ma.user_id::uuid = u.id
+      WHERE ma.is_public = true 
+        AND ma.status = 'ready'
+        AND ma.created_at IS NOT NULL
+        AND ma.final_url IS NOT NULL
+      ORDER BY ma.created_at DESC
       LIMIT ${limit}
     `;
 
@@ -48,12 +53,19 @@ export const handler: Handler = async (event) => {
         // Cloudinary image - construct URL
         url = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${item.cloudinary_public_id}`;
         provider = 'cloudinary';
+      } else if (item.final_url) {
+        // Fallback: use final_url if available
+        url = item.final_url;
+        provider = 'unknown';
       }
       
-      // Extract preset info from meta if available
+      // Extract preset info from meta or preset fields
       let presetKey = null;
       if (item.meta && typeof item.meta === 'object') {
         presetKey = item.meta.presetId || item.meta.preset_key || null;
+      }
+      if (!presetKey) {
+        presetKey = item.preset_key || item.preset_id || null;
       }
       
       return {
@@ -69,7 +81,8 @@ export const handler: Handler = async (event) => {
         prompt: item.prompt,
         url: url,
         provider: provider,
-        allow_remix: item.allow_remix
+        allow_remix: item.allow_remix,
+        status: item.status
       };
     });
 
@@ -85,7 +98,13 @@ export const handler: Handler = async (event) => {
         ok: true, 
         data,
         count: data.length,
-        limit 
+        limit,
+        table_source: 'media_assets', // Indicate we're using the new structure
+        provider_breakdown: {
+          replicate: data.filter(item => item.provider === 'replicate').length,
+          cloudinary: data.filter(item => item.provider === 'cloudinary').length,
+          unknown: data.filter(item => item.provider === 'unknown').length
+        }
       })
     };
 
