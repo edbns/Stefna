@@ -23,6 +23,9 @@ import { EmotionMaskPicker } from './EmotionMaskPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
 
+// Identity-safe generation fallback system (integrated with IPA)
+// Uses Replicate's face-preserving models when primary generation fails
+
 import { paramsForI2ISharp } from '../services/infer-params'
 // import { clampStrength } from '../lib/strengthPolicy' // REMOVED - drama file deleted
 
@@ -672,6 +675,36 @@ const HomeNew: React.FC = () => {
       })
     }
   }, [isComposerOpen, previewUrl, selectedFile, isVideoPreview, composerState.mode, composerState.status])
+
+  // Add global debug functions for identity-safe generation
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).checkIdentitySafeGeneration = async () => {
+        try {
+          const { isIdentitySafeGenerationAvailable } = await import('../utils/identitySafeGeneration');
+          const isAvailable = isIdentitySafeGenerationAvailable();
+          console.log('🔍 Identity-safe generation available:', isAvailable);
+          return isAvailable;
+        } catch (error) {
+          console.error('❌ Failed to check identity-safe generation:', error);
+          return false;
+        }
+      };
+
+      (window as any).testIdentitySafeGeneration = async (prompt: string, imageUrl: string) => {
+        try {
+          const { runIdentitySafeFallback } = await import('../utils/identitySafeGeneration');
+          console.log('🧪 Testing identity-safe generation...');
+          const result = await runIdentitySafeFallback(prompt, imageUrl);
+          console.log('✅ Test successful:', result);
+          return result;
+        } catch (error) {
+          console.error('❌ Test failed:', error);
+          throw error;
+        }
+      };
+    }
+  }, []);
 
   // Handle generation completion events from the pipeline
   useEffect(() => {
@@ -1809,9 +1842,40 @@ const HomeNew: React.FC = () => {
                       toast.success('Face blending completed - identity preserved!', { duration: 4000 });
                     }
                   } catch (blendError) {
-                    finalResultUrl = retryUrl;
-                    if (generationMeta?.mode === 'emotionmask') {
-                      toast.warning('Face blending failed, using retry result', { duration: 3000 });
+                    console.log('🔒 Face blending failed, trying identity-safe generation fallback...');
+                    
+                    // Final fallback: Identity-safe generation with Replicate
+                    try {
+                      const { runIdentitySafeFallback } = await import('../utils/identitySafeGeneration');
+                      
+                      if (generationMeta?.mode === 'emotionmask') {
+                        toast.info('Trying identity-safe generation...', { duration: 3000 });
+                      }
+                      
+                      const fallbackResult = await runIdentitySafeFallback(
+                        payload.prompt,
+                        sourceUrl,
+                        { strength: 0.5, guidance: 8.0 } // Conservative settings for identity preservation
+                      );
+                      
+                      finalResultUrl = fallbackResult.outputUrl;
+                      
+                      if (generationMeta?.mode === 'emotionmask') {
+                        toast.success('Identity-safe generation completed!', { duration: 4000 });
+                      }
+                      
+                      console.log('✅ Identity-safe fallback successful:', {
+                        predictionId: fallbackResult.predictionId,
+                        outputUrl: fallbackResult.outputUrl.substring(0, 100) + '...'
+                      });
+                      
+                    } catch (fallbackError) {
+                      console.error('❌ Identity-safe fallback also failed:', fallbackError);
+                      finalResultUrl = retryUrl; // Use retry result as final fallback
+                      
+                      if (generationMeta?.mode === 'emotionmask') {
+                        toast.warning('All identity preservation methods failed, using retry result', { duration: 4000 });
+                      }
                     }
                   }
                 }
