@@ -170,7 +170,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   ) : (
                       <img
                         src={item.url}
-                        alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
+                        alt={`Generated ${item.type}`}
                         className="w-full h-auto object-cover"
                       />
                   )}
