@@ -42,64 +42,54 @@ interface IdentitySafeGenerationResponse {
   message: string;
 }
 
-// Neo Tokyo Glitch presets with enhanced prompts and NSFW-safe parameters
+// Neo Tokyo Glitch presets with refined prompts and optimized parameters
 const NEO_TOKYO_GLITCH_PRESETS = {
   base: {
-    prompt: `Transform this person into a stylized cyberpunk portrait inspired by Neo Tokyo aesthetics. Use cel-shaded anime detail and high-fashion sci-fi energy. 
-Add glowing holographic elements, reflective materials, glitch FX, neon particle trails, and digital shimmer. 
-
-Face must retain full identity — hyperrealistic facial structure, perfect skin symmetry, vivid emotion in the eyes. 
-Background should be dark with bright glitch overlays, vertical city lights, and soft violet haze. 
-Color palette: electric pink, cyan, sapphire blue, ultraviolet, and glossy black.
-
-Style inspired by Akira, Ghost in the Shell, and sci-fi fashion photography. Prioritize beauty, symmetry, elegance, and chaos.`,
-    negative_prompt: `blurry, distorted face, ugly, deformed, bad anatomy, extra limbs, realistic texture, photorealism, boring style, low contrast, weak lighting, 
-nudity, cleavage, sexualized content, unflattering expression, duplicate face, mutated, face merge, distortion, identity loss, gender change, ethnicity change`,
+    prompt: `Transform this person into a stylized cyberpunk portrait inspired by Neo Tokyo aesthetics. 
+Use cel-shaded anime detail and high-fashion sci-fi energy. Add glowing holographic elements, glitch FX, particle trails, and neon shimmer.
+Face must retain identity with hyperrealistic symmetry, flawless skin, and vivid emotion in the eyes.
+Background: vertical city lights, violet haze, soft scanlines. 
+Color palette: electric pink, cyan, sapphire blue, ultraviolet, black. 
+Inspired by Akira, Ghost in the Shell, and glitch fashion photography.`,
+    negative_prompt: `blurry, distorted face, ugly, deformed, bad anatomy, extra limbs, photorealism, dull style, low contrast, 
+nudity, cleavage, gender change, ethnicity change, identity change, merged face, artifacts, realistic texture, boring lighting`,
     strength: 0.4,
     guidance_scale: 7.5
   },
   visor: {
-    prompt: `Transform this person into a stylized cyberpunk portrait inspired by Neo Tokyo aesthetics. Use cel-shaded anime detail and high-fashion sci-fi energy. 
-Add a PROMINENT glowing magenta or cyan glitch visor over the eyes with holographic UI elements and reflective materials. 
-Add glowing holographic elements, glitch FX, neon particle trails, and digital shimmer. 
-
-Face must retain full identity — hyperrealistic facial structure, perfect skin symmetry, vivid emotion in the eyes. 
-Background should be dark with bright glitch overlays, vertical city lights, and soft violet haze. 
-Color palette: electric pink, cyan, sapphire blue, ultraviolet, and glossy black.
-
-Style inspired by Akira, Ghost in the Shell, and sci-fi fashion photography. The glitch visor should be the dominant visual element.`,
-    negative_prompt: `blurry, distorted face, ugly, deformed, bad anatomy, extra limbs, realistic texture, photorealism, boring style, low contrast, weak lighting, 
-nudity, cleavage, sexualized content, unflattering expression, duplicate face, mutated, face merge, distortion, identity loss, gender change, ethnicity change, small visor`,
+    prompt: `Stylized cyberpunk portrait with a PROMINENT glowing glitch visor covering the eyes. 
+Add flickering holographic UI overlays and digital reflection in the visor. 
+Retain identity and beauty: symmetrical face, elegant structure, intense glowing eyes. 
+Use neon glitch bloom, chromatic aberration, and techno-chaotic lighting.
+Background: animated signs, deep contrast, vertical noise.
+Color theme: magenta visor glow, cyan-blue reflections, violet haze, black backdrop.
+Inspired by cyberpunk anime and digital fashion.`,
+    negative_prompt: `small visor, invisible visor, blurry, distorted eyes, mutated face, gender change, identity change, 
+nudity, dull colors, flat lighting, weak glitch effects, minimal transformation`,
     strength: 0.45,
     guidance_scale: 8.0
   },
   tattoos: {
-    prompt: `Transform this person into a stylized cyberpunk portrait inspired by Neo Tokyo aesthetics. Use cel-shaded anime detail and high-fashion sci-fi energy. 
-Add PROMINENT glowing magenta or cyan cyber tattoos covering the face, neck, and shoulders with holographic UI elements. 
-Add glowing holographic elements, reflective materials, glitch FX, neon particle trails, and digital shimmer. 
-
-Face must retain full identity — hyperrealistic facial structure, perfect skin symmetry, vivid emotion in the eyes. 
-Background should be dark with bright glitch overlays, vertical city lights, and soft violet haze. 
-Color palette: electric pink, cyan, sapphire blue, ultraviolet, and glossy black.
-
-Style inspired by Akira, Ghost in the Shell, and sci-fi fashion photography. The cyber tattoos should be the dominant visual element.`,
-    negative_prompt: `blurry, distorted face, ugly, deformed, bad anatomy, extra limbs, realistic texture, photorealism, boring style, low contrast, weak lighting, 
-nudity, cleavage, sexualized content, unflattering expression, duplicate face, mutated, face merge, distortion, identity loss, gender change, ethnicity change, small tattoos`,
+    prompt: `Transform the subject into a Neo Tokyo avatar with glowing cyber tattoos. 
+FACE, NECK, and SHOULDERS must be covered in MAGENTA or CYAN tattoos, layered with circuit patterns, code streaks, and shimmer. 
+Keep the original facial structure, beauty, and symmetry. 
+Add glitch overlays, datamosh FX, and soft neon ambient lighting. 
+Background: chaotic digital Tokyo, broken signage, animated overlays.
+Color theme: glowing tattoos, pink/blue/cyan/neon blend with dark backdrop.`,
+    negative_prompt: `small tattoos, faint markings, weak glow, blurry face, identity distortion, merged features, 
+nudity, photorealism, boring style, unflattering, bad anatomy, pose change`,
     strength: 0.5,
     guidance_scale: 8.5
   },
   scanlines: {
-    prompt: `Transform this person into a stylized cyberpunk portrait inspired by Neo Tokyo aesthetics. Use cel-shaded anime detail and high-fashion sci-fi energy. 
-Overlay INTENSE scanlines, VHS noise, datamosh artifacts, and static noise across the entire frame. 
-Add glowing holographic elements, reflective materials, glitch FX, neon particle trails, and digital shimmer. 
-
-Face must retain full identity — hyperrealistic facial structure, perfect skin symmetry, vivid emotion in the eyes. 
-Background should be dark with bright glitch overlays, vertical city lights, and soft violet haze. 
-Color palette: electric pink, cyan, sapphire blue, ultraviolet, and glossy black.
-
-Style inspired by Akira, Ghost in the Shell, and sci-fi fashion photography. The scanlines and VHS noise should be the dominant visual element, as if viewed on a broken CRT monitor.`,
-    negative_prompt: `blurry, distorted face, ugly, deformed, bad anatomy, extra limbs, realistic texture, photorealism, boring style, low contrast, weak lighting, 
-nudity, cleavage, sexualized content, unflattering expression, duplicate face, mutated, face merge, distortion, identity loss, gender change, ethnicity change, clean image`,
+    prompt: `Transform the subject into a CRT-glitched cyberpunk portrait. 
+OVERLAY the entire image with INTENSE SCANLINES, VHS noise, flickering datamosh FX, and digital tearing. 
+Keep face sharp, expressive, symmetrical, and identity-locked. 
+Add cel-shaded highlights, neon reflections, and subtle chromatic aberration on skin edges. 
+Background: corrupted cityscape viewed through broken CRT monitor. 
+Color palette: high-contrast glitch colors — pink, cyan, ultraviolet, blue, black.`,
+    negative_prompt: `clean image, no scanlines, no distortion, realistic look, gender/ethnicity change, distorted face, 
+photorealistic, minimal transformation, low noise, soft glitch, muted color, bad lighting`,
     strength: 0.48,
     guidance_scale: 9.0
   }
