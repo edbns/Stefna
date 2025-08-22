@@ -1327,18 +1327,18 @@ const HomeNew: React.FC = () => {
       // Apply identity lock adjustments - more aggressive for Emotion Mask
       const adjustedStrength = identityLock ? Math.min(emotionMaskPreset.strength * 0.5, 0.32) : emotionMaskPreset.strength;
       
-      generationMeta = { 
-        mode: 'emotionmask', 
-        emotionMaskPresetId, 
+              generationMeta = { 
+          mode: 'emotionmask', 
+          emotionMaskPresetId, 
         emotionMaskPresetLabel: emotionMaskPreset.label,
-        model: "flux/dev/image-to-image", // Use known working model
+          model: "flux/dev/image-to-image", // Use known working model
         strength: adjustedStrength, // Adjusted for identity lock
-        guidance_scale: 7.5, // Standard guidance for consistency
-        cfg_scale: 7.0, // Balanced creativity vs adherence
+          guidance_scale: 7.5, // Standard guidance for consistency
+          cfg_scale: 7.0, // Balanced creativity vs adherence
         denoising_strength: adjustedStrength, // Match adjusted strength
         generation_type: identityLock ? "emotion_mask_identity_preserved" : "emotion_mask_standard",
         identityLock: identityLock // Track identity lock state
-      };
+        };
       console.log('🎭 EMOTION MASK MODE: Using ORIGINAL prompt:', emotionMaskPreset.label, effectivePrompt);
     } else if (kind === 'ghiblireact') {
       // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
@@ -1412,19 +1412,19 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = neoTokyoGlitchPreset.prompt;
-      generationMeta = { 
-        mode: 'neotokyoglitch', 
-        neoTokyoGlitchPresetId, 
-        neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
+              generationMeta = { 
+          mode: 'neotokyoglitch', 
+          neoTokyoGlitchPresetId, 
+          neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
         model: "replicate/stability-ai/stable-diffusion-img2img", // Use Replicate for maximum glitch
         strength: 0.5, // Replicate preset strength
         guidance_scale: 6, // Replicate preset guidance
-        cfg_scale: 7.0, // Balanced creativity vs adherence
+          cfg_scale: 7.0, // Balanced creativity vs adherence
         denoising_strength: 0.5, // Match Replicate preset strength
-        features: neoTokyoGlitchPreset.features,
+          features: neoTokyoGlitchPreset.features,
         generation_type: "neo_tokyo_replicate_glitch", // Mark as Replicate glitch transformation
         replicatePreset // Store which Replicate preset to use
-      };
+        };
       console.log('🎭 NEO TOKYO GLITCH MODE: Using REPLICATE integration:', neoTokyoGlitchPreset.label, 'Preset:', replicatePreset);
       
     } else {
@@ -1780,55 +1780,55 @@ const HomeNew: React.FC = () => {
         
         // Continue to result processing
       } else {
-        // Add timeout guard to prevent 504 errors
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-          console.warn('⚠️ Request timeout approaching, aborting to prevent 504');
-          controller.abort();
-        }, 24000); // 24s cushion before Netlify's 26s limit
+      // Add timeout guard to prevent 504 errors
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.warn('⚠️ Request timeout approaching, aborting to prevent 504');
+        controller.abort();
+      }, 24000); // 24s cushion before Netlify's 26s limit
 
-        // Declare variables outside try block so they can be used later
-        let res: Response;
-        let body: any;
+      // Declare variables outside try block so they can be used later
+      let res: Response;
+      let body: any;
 
-        try {
-          res = await authenticatedFetch('/.netlify/functions/aimlApi', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId); // Clear timeout if request completes
-
-          console.info('aimlApi status', res.status);
-          body = await res.json().catch(() => ({}));
-          console.info('aimlApi body', body);
-        } catch (error) {
-          clearTimeout(timeoutId); // Clear timeout on error
-          if (error.name === 'AbortError') {
-            console.warn('⚠️ Request aborted due to timeout');
-            throw new Error('Request timed out. Please try again with a smaller image or different prompt.');
-          }
-          throw error; // Re-throw other errors
-        }
+      try {
+        res = await authenticatedFetch('/.netlify/functions/aimlApi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
         
+        clearTimeout(timeoutId); // Clear timeout if request completes
+
+        console.info('aimlApi status', res.status);
+        body = await res.json().catch(() => ({}));
+        console.info('aimlApi body', body);
+      } catch (error) {
+        clearTimeout(timeoutId); // Clear timeout on error
+        if (error.name === 'AbortError') {
+          console.warn('⚠️ Request aborted due to timeout');
+          throw new Error('Request timed out. Please try again with a smaller image or different prompt.');
+        }
+        throw error; // Re-throw other errors
+      }
+
         // Process aimlApi results
-        if (!res.ok) {
-          // Handle different error types
-          if (res.status === 501 && isVideoPreview) {
-            notifyQueue({ title: 'Added to queue', message: 'We will start processing shortly.' });
-            // Don't return - let the processing continue
-          } else if (res.status === 429) {
-            notifyError({ title: 'Something went wrong', message: 'Rate limited' });
-            endGeneration(genId);
-            setNavGenerating(false);
-            return;
-          } else {
-            throw new Error(body?.error || `aimlApi ${res.status}`);
-          }
+      if (!res.ok) {
+        // Handle different error types
+        if (res.status === 501 && isVideoPreview) {
+          notifyQueue({ title: 'Added to queue', message: 'We will start processing shortly.' });
+          // Don't return - let the processing continue
+        } else if (res.status === 429) {
+          notifyError({ title: 'Something went wrong', message: 'Rate limited' });
+          endGeneration(genId);
+          setNavGenerating(false);
+          return;
+        } else {
+          throw new Error(body?.error || `aimlApi ${res.status}`);
         }
-        
+      }
+
         // Extract result URLs from aimlApi response
         resultUrl = body?.image_url || body?.image_urls?.[0] || null;
         allResultUrls = body.result_urls || [resultUrl];

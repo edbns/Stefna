@@ -126,7 +126,9 @@ export async function checkPredictionStatus(predictionId: string): Promise<Repli
       },
       body: JSON.stringify({
         mode: 'check-status',
-        predictionId
+        predictionId,
+        retryCount: 0,
+        originalRequest: { imageUrl: '', preset: 'base' } // Will be filled by backend
       }),
     });
 

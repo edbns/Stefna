@@ -200,31 +200,31 @@ export async function prepareSourceAsset(
 
   // Standard upload with retry (existing logic)
   const uploadToCloudinary = async () => {
-    // Signed params
-    const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', { 
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ folder: 'stefna/sources' })
-    });
-    const { timestamp, signature, apiKey, cloudName, folder, upload_preset } = await signRes.json();
+  // Signed params
+  const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', { 
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ folder: 'stefna/sources' })
+  });
+  const { timestamp, signature, apiKey, cloudName, folder, upload_preset } = await signRes.json();
 
-    const form = new FormData();
+  const form = new FormData();
     form.append('file', file);
-    form.append('timestamp', String(timestamp));
-    form.append('signature', signature);
-    form.append('api_key', apiKey);
-    if (folder) form.append('folder', folder);
-    if (upload_preset) form.append('upload_preset', upload_preset);
+  form.append('timestamp', String(timestamp));
+  form.append('signature', signature);
+  form.append('api_key', apiKey);
+  if (folder) form.append('folder', folder);
+  if (upload_preset) form.append('upload_preset', upload_preset);
 
-    const up = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
-      method: 'POST',
-      body: form,
-    });
+  const up = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+    method: 'POST',
+    body: form,
+  });
 
-    // Better 400 debug
-    const json = await up.json().catch(() => ({} as any));
-    if (!up.ok) {
-      console.error('Cloudinary upload failed:', json);
+  // Better 400 debug
+  const json = await up.json().catch(() => ({} as any));
+  if (!up.ok) {
+    console.error('Cloudinary upload failed:', json);
       throw new Error(`Cloudinary upload failed: ${json.error?.message || up.statusText || 'Unknown error'}`);
     }
 

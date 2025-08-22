@@ -17,6 +17,8 @@ interface NeoTokyoGlitchRequest {
 
 interface StatusCheckRequest {
   predictionId: string;
+  retryCount?: number;
+  originalRequest?: NeoTokyoGlitchRequest;
 }
 
 interface ReplicatePredictionResponse {
@@ -40,31 +42,31 @@ interface IdentitySafeGenerationResponse {
   message: string;
 }
 
-// Neo Tokyo Glitch presets with optimized parameters for stability
+// Neo Tokyo Glitch presets with enhanced prompts and NSFW-safe parameters
 const NEO_TOKYO_GLITCH_PRESETS = {
   base: {
-    prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell",
-    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic",
-    strength: 0.4,
-    guidance_scale: 7
+    prompt: "Transform into a corrupted Neo Tokyo avatar. Cel-shaded glitch face, dominant glowing tattoos in vibrant neon magenta/cyan, intense scanlines and CRT noise. Face overlays: holographic UI, glitch masks, flicker effects. Apply digital tearing, VHS-style distortions, neon bloom, techno-chaos. Colors must pop: high-contrast magenta, cyan, blue, purple, black backdrop. Inspired by Akira + Ghost in the Shell",
+    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, nudity, sexual content, adult content, inappropriate",
+    strength: 0.45,
+    guidance_scale: 7.5
   },
   visor: {
-    prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, PROMINENT glowing magenta or cyan glitch visor over eyes, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell",
-    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, small visor",
-    strength: 0.4,
-    guidance_scale: 7
+    prompt: "Transform into a corrupted Neo Tokyo avatar. Cel-shaded glitch face, PROMINENT glowing magenta or cyan glitch visor over eyes, intense scanlines and CRT noise. Face overlays: holographic UI, glitch masks, flicker effects. Apply digital tearing, VHS-style distortions, neon bloom, techno-chaos. Colors must pop: high-contrast magenta, cyan, blue, purple, black backdrop. Inspired by Akira + Ghost in the Shell",
+    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, small visor, nudity, sexual content, adult content, inappropriate",
+    strength: 0.45,
+    guidance_scale: 7.5
   },
   tattoos: {
-    prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, PROMINENT glowing magenta or cyan cyber tattoos covering face and neck, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell",
-    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, small tattoos",
-    strength: 0.4,
-    guidance_scale: 7
+    prompt: "Transform into a corrupted Neo Tokyo avatar. Cel-shaded glitch face, PROMINENT glowing magenta or cyan cyber tattoos covering face and neck, intense scanlines and CRT noise. Face overlays: holographic UI, glitch masks, flicker effects. Apply digital tearing, VHS-style distortions, neon bloom, techno-chaos. Colors must pop: high-contrast magenta, cyan, blue, purple, black backdrop. Inspired by Akira + Ghost in the Shell",
+    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, small tattoos, nudity, sexual content, adult content, inappropriate",
+    strength: 0.45,
+    guidance_scale: 7.5
   },
   scanlines: {
-    prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, INTENSE scanlines and VHS noise, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell, as if viewed on a broken CRT monitor",
-    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, clean image",
-    strength: 0.4,
-    guidance_scale: 7
+    prompt: "Transform into a corrupted Neo Tokyo avatar. Cel-shaded glitch face, INTENSE scanlines and VHS noise, intense scanlines and CRT noise. Face overlays: holographic UI, glitch masks, flicker effects. Apply digital tearing, VHS-style distortions, neon bloom, techno-chaos. Colors must pop: high-contrast magenta, cyan, blue, purple, black backdrop. Inspired by Akira + Ghost in the Shell",
+    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, clean image, nudity, sexual content, adult content, inappropriate",
+    strength: 0.45,
+    guidance_scale: 7.5
   }
 };
 
@@ -139,6 +141,10 @@ const handler: Handler = async (event) => {
 };
 
 async function handleNeoTokyoGlitch(body: NeoTokyoGlitchRequest, headers: any) {
+  return await handleNeoTokyoGlitchWithRetry(body, headers, 0);
+}
+
+async function handleNeoTokyoGlitchWithRetry(body: NeoTokyoGlitchRequest, headers: any, retryCount: number) {
   console.log('🧠 Entered Neo Tokyo Glitch handler');
   console.log('📦 Request body:', JSON.stringify(body, null, 2));
   
@@ -229,7 +235,7 @@ async function handleNeoTokyoGlitch(body: NeoTokyoGlitchRequest, headers: any) {
           num_outputs: 1,
           scheduler: 'K_EULER_ANCESTRAL',
           guidance_scale: presetConfig.guidance_scale,
-          num_inference_steps: 30,
+          num_inference_steps: 40,
           seed: Math.floor(Math.random() * 1000000), // Random seed for variety
         }
       }),
@@ -323,7 +329,7 @@ async function handleIdentitySafeGeneration(body: IdentitySafeGenerationRequest,
           prompt: prompt,
           strength: strength,
           guidance_scale: guidance,
-          num_inference_steps: 30,
+          num_inference_steps: 40,
           seed: Math.floor(Math.random() * 1000000), // Random seed for variety
         }
       }),
@@ -439,6 +445,20 @@ async function handleStatusCheck(body: StatusCheckRequest, headers: any) {
       error: data.error,
       logs: data.logs
     });
+
+    // Handle NSFW failure with retry
+    if (data.status === 'failed' && data.error && data.error.includes('NSFW') && body.retryCount === 0 && body.originalRequest) {
+      console.log('🚨 NSFW content detected, retrying with adjusted parameters...');
+      
+      // Retry with lower guidance scale and more conservative prompt
+      const retryRequest = {
+        ...body.originalRequest,
+        customPrompt: body.originalRequest.customPrompt || 
+          "Transform into a Neo Tokyo cyberpunk character. Cel-shaded face, subtle neon accents, digital glitch effects, urban background. Keep it clean and artistic."
+      };
+      
+      return await handleNeoTokyoGlitchWithRetry(retryRequest, headers, 1);
+    }
 
     return {
       statusCode: 200,

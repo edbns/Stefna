@@ -29,11 +29,11 @@ export async function applyGhibliReactionFX(
     
     img.onload = () => {
       try {
-        const canvas = document.createElement('canvas');
+      const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
-        const ctx = canvas.getContext('2d')!;
-        
+      const ctx = canvas.getContext('2d')!;
+      
         // Draw original image
         ctx.drawImage(img, 0, 0);
         
@@ -90,7 +90,7 @@ function drawTears(ctx: CanvasRenderingContext2D, width: number, height: number,
     ctx.globalAlpha = 0.7 * intensity;
     
     // Tear drop shape
-    ctx.beginPath();
+            ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.quadraticCurveTo(x + 5, y + 10, x, y + 20);
     ctx.quadraticCurveTo(x - 5, y + 10, x, y);
@@ -98,7 +98,7 @@ function drawTears(ctx: CanvasRenderingContext2D, width: number, height: number,
     ctx.fill();
     
     // Tear highlight
-    ctx.beginPath();
+              ctx.beginPath();
     ctx.arc(x - 2, y + 5, 2, 0, Math.PI * 2);
     ctx.fillStyle = '#FFFFFF';
     ctx.fill();
@@ -120,15 +120,15 @@ function drawHearts(ctx: CanvasRenderingContext2D, width: number, height: number
     ctx.globalAlpha = opacity;
     
     // Heart shape
-    ctx.beginPath();
+          ctx.beginPath();
     ctx.moveTo(x, y + size * 0.3);
     ctx.bezierCurveTo(x, y, x - size * 0.5, y, x - size * 0.5, y + size * 0.3);
     ctx.bezierCurveTo(x - size * 0.5, y + size * 0.6, x, y + size * 0.8, x, y + size * 0.8);
     ctx.bezierCurveTo(x, y + size * 0.8, x + size * 0.5, y + size * 0.6, x + size * 0.5, y + size * 0.3);
     ctx.bezierCurveTo(x + size * 0.5, y, x, y, x, y + size * 0.3);
     ctx.fillStyle = '#FF69B4'; // Hot pink
-    ctx.fill();
-    
+          ctx.fill();
+          
     ctx.restore();
   }
 }
@@ -159,15 +159,15 @@ function drawBlush(ctx: CanvasRenderingContext2D, width: number, height: number,
   
   // Draw left blush
   ctx.fillStyle = leftGradient;
-  ctx.beginPath();
+            ctx.beginPath();
   ctx.arc(leftX, leftY, blushRadius, 0, Math.PI * 2);
-  ctx.fill();
-  
+            ctx.fill();
+            
   // Draw right blush
   ctx.fillStyle = rightGradient;
-  ctx.beginPath();
+              ctx.beginPath();
   ctx.arc(rightX, rightY, blushRadius, 0, Math.PI * 2);
-  ctx.fill();
+              ctx.fill();
   
   ctx.restore();
 }
