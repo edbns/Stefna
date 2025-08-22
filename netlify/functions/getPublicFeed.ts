@@ -24,7 +24,7 @@ export const handler: Handler = async (event) => {
         ma.visibility,
         ma.allow_remix
       FROM public.media_assets ma
-      LEFT JOIN public.users u ON ma.owner_id = u.id
+      LEFT JOIN public.users u ON ma.owner_id::text = u.id
       WHERE ma.visibility = 'public'
       ORDER BY ma.created_at DESC
       LIMIT ${limit}
