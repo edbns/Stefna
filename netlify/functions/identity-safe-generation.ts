@@ -92,13 +92,20 @@ const handler: Handler = async (event) => {
   }
 
   try {
+    console.log('🧠 Main handler entered');
+    console.log('📡 HTTP method:', event.httpMethod);
+    console.log('📦 Request body length:', event.body?.length || 0);
+    
     const body = JSON.parse(event.body || '{}');
+    console.log('🔍 Parsed body:', JSON.stringify(body, null, 2));
     
     // Check if this is a Neo Tokyo Glitch request
     if (body.mode === 'neo-tokyo-glitch') {
+      console.log('🎭 Neo Tokyo Glitch mode detected');
       return await handleNeoTokyoGlitch(body, headers);
     }
     
+    console.log('🆔 Identity-safe generation mode detected');
     // Default identity-safe generation
     return await handleIdentitySafeGeneration(body, headers);
 
@@ -122,10 +129,16 @@ const handler: Handler = async (event) => {
 };
 
 async function handleNeoTokyoGlitch(body: NeoTokyoGlitchRequest, headers: any) {
+  console.log('🧠 Entered Neo Tokyo Glitch handler');
+  console.log('📦 Request body:', JSON.stringify(body, null, 2));
+  
   const { imageUrl, preset = 'base', customPrompt } = body;
+
+  console.log('🔍 Parsed parameters:', { imageUrl: imageUrl?.substring(0, 100), preset, customPrompt: !!customPrompt });
 
   // Validate required parameters
   if (!imageUrl) {
+    console.log('❌ Missing imageUrl parameter');
     return {
       statusCode: 400,
       headers,
@@ -149,6 +162,14 @@ async function handleNeoTokyoGlitch(body: NeoTokyoGlitchRequest, headers: any) {
   const prompt = customPrompt || presetConfig.prompt;
   const negativePrompt = presetConfig.negative_prompt;
 
+  console.log('🔧 Preset configuration:', {
+    preset,
+    prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
+    negativePrompt: negativePrompt.substring(0, 100) + (negativePrompt.length > 100 ? '...' : ''),
+    strength: presetConfig.strength,
+    guidance_scale: presetConfig.guidance_scale
+  });
+
   console.log('🚀 Starting Neo Tokyo Glitch generation:', {
     preset,
     prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
@@ -157,6 +178,29 @@ async function handleNeoTokyoGlitch(body: NeoTokyoGlitchRequest, headers: any) {
     guidance_scale: presetConfig.guidance_scale,
     timestamp: new Date().toISOString()
   });
+
+  console.log('🔑 API Key check:', {
+    hasApiKey: !!process.env.REPLICATE_API_KEY,
+    apiKeyLength: process.env.REPLICATE_API_KEY?.length || 0,
+    apiKeyPrefix: process.env.REPLICATE_API_KEY?.substring(0, 10) + '...' || 'none'
+  });
+
+  console.log('⚡ Calling Replicate img2img for Neo Tokyo Glitch');
+  console.log('🌐 Replicate endpoint: https://api.replicate.com/v1/predictions');
+  console.log('📤 Request payload:', JSON.stringify({
+    version: "a00d0b7dcbb9c3fbb34ba87d2d5b46c56969c84a628bf778a7fdaec30b1b99c5",
+    input: {
+      image: imageUrl.substring(0, 100) + '...',
+      prompt: prompt.substring(0, 100) + '...',
+      negative_prompt: negativePrompt.substring(0, 100) + '...',
+      strength: presetConfig.strength,
+      num_outputs: 1,
+      scheduler: 'K_EULER_ANCESTRAL',
+      guidance_scale: presetConfig.guidance_scale,
+      num_inference_steps: 50,
+      seed: 'random'
+    }
+  }, null, 2));
 
   // Call Replicate API for Neo Tokyo Glitch generation
   const replicateRes = await fetch('https://api.replicate.com/v1/predictions', {
