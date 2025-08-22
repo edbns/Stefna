@@ -51,22 +51,22 @@ const NEO_TOKYO_GLITCH_PRESETS = {
     guidance_scale: 7.5
   },
   visor: {
-    prompt: "Transform into a corrupted Neo Tokyo avatar. Cel-shaded glitch face, PROMINENT glowing magenta or cyan glitch visor over eyes, intense scanlines and CRT noise. Face overlays: holographic UI, glitch masks, flicker effects. Apply digital tearing, VHS-style distortions, neon bloom, techno-chaos. Colors must pop: high-contrast magenta, cyan, blue, purple, black backdrop. Inspired by Akira + Ghost in the Shell",
+    prompt: "Transform into a corrupted Neo Tokyo avatar. Cel-shaded glitch face, ADD A PROMINENT GLOWING MAGENTA OR CYAN GLITCH VISOR OVER THE EYES, intense scanlines and CRT noise. Face overlays: holographic UI, glitch masks, flicker effects. Apply digital tearing, VHS-style distortions, neon bloom, techno-chaos. Colors must pop: high-contrast magenta, cyan, blue, purple, black backdrop. Inspired by Akira + Ghost in the Shell",
     negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, small visor, nudity, sexual content, adult content, inappropriate",
-    strength: 0.45,
-    guidance_scale: 7.5
+    strength: 0.5,
+    guidance_scale: 8.0
   },
   tattoos: {
-    prompt: "Transform into a corrupted Neo Tokyo avatar. Cel-shaded glitch face, PROMINENT glowing magenta or cyan cyber tattoos covering face and neck, intense scanlines and CRT noise. Face overlays: holographic UI, glitch masks, flicker effects. Apply digital tearing, VHS-style distortions, neon bloom, techno-chaos. Colors must pop: high-contrast magenta, cyan, blue, purple, black backdrop. Inspired by Akira + Ghost in the Shell",
+    prompt: "Transform into a corrupted Neo Tokyo avatar. Cel-shaded glitch face, ADD GLOWING MAGENTA OR CYAN CYBER TATTOOS COVERING THE ENTIRE FACE AND NECK, intense scanlines and CRT noise. Face overlays: holographic UI, glitch masks, flicker effects. Apply digital tearing, VHS-style distortions, neon bloom, techno-chaos. Colors must pop: high-contrast magenta, cyan, blue, purple, black backdrop. Inspired by Akira + Ghost in the Shell",
     negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, small tattoos, nudity, sexual content, adult content, inappropriate",
-    strength: 0.45,
-    guidance_scale: 7.5
+    strength: 0.55,
+    guidance_scale: 8.5
   },
   scanlines: {
-    prompt: "Transform into a corrupted Neo Tokyo avatar. Cel-shaded glitch face, INTENSE scanlines and VHS noise, intense scanlines and CRT noise. Face overlays: holographic UI, glitch masks, flicker effects. Apply digital tearing, VHS-style distortions, neon bloom, techno-chaos. Colors must pop: high-contrast magenta, cyan, blue, purple, black backdrop. Inspired by Akira + Ghost in the Shell",
+    prompt: "Transform into a corrupted Neo Tokyo avatar. Cel-shaded glitch face, OVERLAY INTENSE SCANLINES AND VHS NOISE DOMINATING THE ENTIRE FRAME, intense scanlines and CRT noise. Face overlays: holographic UI, glitch masks, flicker effects. Apply digital tearing, VHS-style distortions, neon bloom, techno-chaos. Colors must pop: high-contrast magenta, cyan, blue, purple, black backdrop. Inspired by Akira + Ghost in the Shell",
     negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, clean image, nudity, sexual content, adult content, inappropriate",
-    strength: 0.45,
-    guidance_scale: 7.5
+    strength: 0.6,
+    guidance_scale: 9.0
   }
 };
 
