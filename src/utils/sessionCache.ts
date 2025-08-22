@@ -4,9 +4,11 @@ export class SessionCache {
   private cache = new Map<string, any>();
   private readonly SESSION_PREFIX = 'stefna_session_';
   private readonly MAX_CACHE_SIZE = 50; // Prevent memory leaks
+  private isInitialized = false;
+  private onEvict?: (key: string, value: any) => void;
 
   private constructor() {
-    this.loadFromSessionStorage();
+    // Don't auto-load in constructor - use async init instead
   }
 
   static getInstance(): SessionCache {
@@ -16,24 +18,78 @@ export class SessionCache {
     return SessionCache.instance;
   }
 
+  // Async initialization method
+  async init(): Promise<void> {
+    if (this.isInitialized) return;
+    
+    try {
+      await this.loadFromSessionStorage();
+      this.isInitialized = true;
+      console.log('💾 Session cache initialized successfully');
+    } catch (error) {
+      console.warn('⚠️ Session cache initialization failed, using empty cache:', error);
+      this.isInitialized = true; // Mark as initialized to prevent infinite retries
+    }
+  }
+
+  // Set eviction callback for monitoring
+  setEvictionCallback(callback: (key: string, value: any) => void): void {
+    this.onEvict = callback;
+  }
+
   // Generate a hash for file content to use as cache key
-  static async generateFileHash(file: File): Promise<string> {
-    const buffer = await file.arrayBuffer();
+  static async generateFileHash(file: File | string): Promise<string> {
+    // Optimize for data URIs and short content
+    if (typeof file === 'string') {
+      if (file.startsWith('data:')) {
+        // For data URIs, use a shorter hash since content is already in string
+        const encoder = new TextEncoder();
+        const data = encoder.encode(file);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16); // Shorter hash for data URIs
+      }
+      if (file.startsWith('blob:')) {
+        // For blob URLs, we need to fetch and hash the actual content
+        const resp = await fetch(file);
+        const blob = await resp.blob();
+        return this.generateFileHashFromBlob(blob);
+      }
+      // For regular URLs, hash the URL string
+      const encoder = new TextEncoder();
+      const data = encoder.encode(file);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    
+    // For File objects, use the optimized blob hashing
+    return this.generateFileHashFromBlob(file);
+  }
+
+  // Optimized blob hashing
+  private static async generateFileHashFromBlob(blob: Blob): Promise<string> {
+    const buffer = await blob.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // Cache file upload result
-  async cacheFileUpload(file: File, result: { url: string; resource_type: string }): Promise<void> {
+  // Cache file upload result with optional namespace
+  async cacheFileUpload(
+    file: File | string, 
+    result: { url: string; resource_type: string },
+    namespace?: string
+  ): Promise<void> {
     const fileHash = await SessionCache.generateFileHash(file);
-    const key = `${this.SESSION_PREFIX}upload_${fileHash}`;
+    const key = `${this.SESSION_PREFIX}upload_${namespace ? namespace + '_' : ''}${fileHash}`;
     
     const cacheEntry = {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
+      fileName: typeof file === 'string' ? 'data_uri' : file.name,
+      fileSize: typeof file === 'string' ? file.length : file.size,
+      fileType: typeof file === 'string' ? 'text/uri-list' : file.type,
       result,
+      namespace,
       timestamp: Date.now(),
       expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
     };
@@ -43,24 +99,29 @@ export class SessionCache {
     this.cleanupExpiredEntries();
     
     console.log('💾 Cached file upload:', { 
-      fileName: file.name, 
+      fileName: cacheEntry.fileName, 
       hash: fileHash.substring(0, 8) + '...',
-      fileSize: this.formatFileSize(file.size),
+      fileSize: this.formatFileSize(cacheEntry.fileSize),
+      namespace: namespace || 'default',
       cacheSize: this.cache.size,
       timestamp: new Date().toISOString()
     });
   }
 
-  // Get cached upload result for a file
-  async getCachedUpload(file: File): Promise<{ url: string; resource_type: string } | null> {
+  // Get cached upload result for a file with optional namespace
+  async getCachedUpload(
+    file: File | string,
+    namespace?: string
+  ): Promise<{ url: string; resource_type: string } | null> {
     const fileHash = await SessionCache.generateFileHash(file);
-    const key = `${this.SESSION_PREFIX}upload_${fileHash}`;
+    const key = `${this.SESSION_PREFIX}upload_${namespace ? namespace + '_' : ''}${fileHash}`;
     
     const cached = this.cache.get(key);
     if (!cached) {
       console.log('💾 Cache miss for file:', { 
-        fileName: file.name, 
+        fileName: typeof file === 'string' ? 'data_uri' : file.name, 
         hash: fileHash.substring(0, 8) + '...',
+        namespace: namespace || 'default',
         cacheSize: this.cache.size
       });
       return null;
@@ -71,36 +132,39 @@ export class SessionCache {
       this.cache.delete(key);
       this.saveToSessionStorage();
       console.log('💾 Cache entry expired for file:', { 
-        fileName: file.name, 
+        fileName: cached.fileName, 
         hash: fileHash.substring(0, 8) + '...',
+        namespace: cached.namespace || 'default',
         age: this.formatTimeAgo(cached.timestamp)
       });
       return null;
     }
     
     console.log('💾 Using cached upload:', { 
-      fileName: file.name, 
+      fileName: cached.fileName, 
       hash: fileHash.substring(0, 8) + '...',
+      namespace: cached.namespace || 'default',
       age: this.formatTimeAgo(cached.timestamp),
       cacheHit: true
     });
     return cached.result;
   }
 
-  // Cache user preferences
-  setUserPreference(key: string, value: any): void {
-    const prefKey = `${this.SESSION_PREFIX}pref_${key}`;
+  // Cache user preferences with optional namespace
+  setUserPreference(key: string, value: any, namespace?: string): void {
+    const prefKey = `${this.SESSION_PREFIX}pref_${namespace ? namespace + '_' : ''}${key}`;
     this.cache.set(prefKey, {
       value,
+      namespace,
       timestamp: Date.now(),
       expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days
     });
     this.saveToSessionStorage();
   }
 
-  // Get user preference
-  getUserPreference(key: string): any | null {
-    const prefKey = `${this.SESSION_PREFIX}pref_${key}`;
+  // Get user preference with optional namespace
+  getUserPreference(key: string, namespace?: string): any | null {
+    const prefKey = `${this.SESSION_PREFIX}pref_${namespace ? namespace + '_' : ''}${key}`;
     const cached = this.cache.get(prefKey);
     
     if (!cached || Date.now() > cached.expiresAt) {
@@ -111,20 +175,21 @@ export class SessionCache {
     return cached.value;
   }
 
-  // Cache generation options
-  setGenerationOptions(mode: string, options: any): void {
-    const key = `${this.SESSION_PREFIX}gen_${mode}`;
+  // Cache generation options with namespace support
+  setGenerationOptions(mode: string, options: any, namespace?: string): void {
+    const key = `${this.SESSION_PREFIX}gen_${namespace ? namespace + '_' : ''}${mode}`;
     this.cache.set(key, {
       options,
+      namespace,
       timestamp: Date.now(),
       expiresAt: Date.now() + (60 * 60 * 1000), // 1 hour
     });
     this.saveToSessionStorage();
   }
 
-  // Get generation options
-  getGenerationOptions(mode: string): any | null {
-    const key = `${this.SESSION_PREFIX}gen_${mode}`;
+  // Get generation options with namespace support
+  getGenerationOptions(mode: string, namespace?: string): any | null {
+    const key = `${this.SESSION_PREFIX}gen_${namespace ? namespace + '_' : ''}${mode}`;
     const cached = this.cache.get(key);
     
     if (!cached || Date.now() > cached.expiresAt) {
@@ -200,6 +265,7 @@ export class SessionCache {
         console.log(`  ${key}:`, {
           fileName: entry.fileName || 'N/A',
           fileSize: entry.fileSize ? this.formatFileSize(entry.fileSize) : 'N/A',
+          namespace: entry.namespace || 'default',
           age,
           expiresIn: isExpired ? 'EXPIRED' : expiresIn,
           type: key.includes('upload_') ? 'upload' : key.includes('pref_') ? 'preference' : key.includes('gen_') ? 'generation' : 'other'
@@ -219,6 +285,9 @@ export class SessionCache {
       if (value.expiresAt && now > value.expiresAt) {
         this.cache.delete(key);
         cleanedCount++;
+        if (this.onEvict) {
+          this.onEvict(key, value);
+        }
       }
     }
     
@@ -235,7 +304,12 @@ export class SessionCache {
       const toDelete = entries.slice(0, entries.length - this.MAX_CACHE_SIZE);
       const deletedCount = toDelete.length;
       
-      toDelete.forEach(([key]) => this.cache.delete(key));
+      toDelete.forEach(([key]) => {
+        this.cache.delete(key);
+        if (this.onEvict) {
+          this.onEvict(key, this.cache.get(key)); // Pass the next entry in the map
+        }
+      });
       
       console.log(`🧹 Cache size limit exceeded, removed ${deletedCount} oldest entries`);
       this.saveToSessionStorage();
@@ -271,6 +345,41 @@ export class SessionCache {
 // Export singleton instance
 export const sessionCache = SessionCache.getInstance();
 
+/*
+🎯 Enhanced Session Cache Usage Examples:
+
+// 1. Basic file upload caching
+await sessionCache.cacheFileUpload(file, result);
+const cached = await sessionCache.getCachedUpload(file);
+
+// 2. Namespaced caching for different modules
+await sessionCache.cacheFileUpload(file, result, 'emotion_mask');
+await sessionCache.cacheFileUpload(file, result, 'neotokyo_glitch');
+const cached = await sessionCache.getCachedUpload(file, 'emotion_mask');
+
+// 3. User preferences with namespaces
+sessionCache.setUserPreference('theme', 'dark', 'ui');
+sessionCache.setUserPreference('quality', 'high', 'generation');
+const theme = sessionCache.getUserPreference('theme', 'ui');
+
+// 4. Generation options with namespaces
+sessionCache.setGenerationOptions('emotion_mask', options, 'fx');
+sessionCache.setGenerationOptions('neotokyo_glitch', options, 'fx');
+const options = sessionCache.getGenerationOptions('emotion_mask', 'fx');
+
+// 5. Eviction monitoring
+sessionCache.setEvictionCallback((key, value) => {
+  console.log(`🗑️ Cache entry evicted: ${key}`, value);
+});
+
+// 6. Console debugging
+window.debugSessionCache()           // Show detailed cache info
+window.clearSessionCache()           // Clear all cache
+window.getSessionCacheStats()        // Get cache statistics
+window.initSessionCache()            // Manual initialization
+window.setSessionCacheEvictionCallback(callback) // Set eviction callback
+*/
+
 // Add global debug function for easy console access
 if (typeof window !== 'undefined') {
   (window as any).debugSessionCache = () => {
@@ -285,4 +394,19 @@ if (typeof window !== 'undefined') {
   (window as any).getSessionCacheStats = () => {
     return sessionCache.getStats();
   };
+
+  (window as any).initSessionCache = async () => {
+    await sessionCache.init();
+    console.log('💾 Session cache initialized via console command');
+  };
+
+  (window as any).setSessionCacheEvictionCallback = (callback: (key: string, value: any) => void) => {
+    sessionCache.setEvictionCallback(callback);
+    console.log('🔔 Eviction callback set for session cache');
+  };
+
+  // Auto-initialize when page loads
+  window.addEventListener('load', () => {
+    sessionCache.init().catch(console.warn);
+  });
 }

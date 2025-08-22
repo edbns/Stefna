@@ -119,6 +119,11 @@ export async function prepareSourceAsset(
   activeFileOrUrl: File | string,
   options: BackgroundUploadOptions = {}
 ) {
+  // Ensure session cache is initialized
+  if (!sessionCache['isInitialized']) {
+    await sessionCache.init();
+  }
+
   // If it's already a public http(s) URL, skip upload.
   if (typeof activeFileOrUrl === 'string' && /^https?:\/\//i.test(activeFileOrUrl)) {
     const resource_type = /\.(mp4|mov|webm)$/i.test(activeFileOrUrl) ? 'video' : 'image';
