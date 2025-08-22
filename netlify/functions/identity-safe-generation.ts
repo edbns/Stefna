@@ -149,8 +149,8 @@ async function handleNeoTokyoGlitch(body: NeoTokyoGlitchRequest, headers: any) {
   }
 
   // Validate Replicate API key
-  if (!process.env.REPLICATE_API_KEY) {
-    console.error('REPLICATE_API_KEY environment variable not set');
+  if (!process.env.REPLICATE_API_TOKEN) {
+    console.error('REPLICATE_API_TOKEN environment variable not set');
     return {
       statusCode: 500,
       headers,
