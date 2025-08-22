@@ -57,16 +57,15 @@ export const handler: Handler = async (event) => {
 
     // Update the asset with the final result
     const result = await sql`
-      UPDATE public.assets 
+      UPDATE public.media_assets 
       SET 
-        final_url = ${finalUrl},
-        status = ${status},
+        url = ${finalUrl},
         prompt = COALESCE(${prompt}, prompt),
         meta = COALESCE(${meta}, meta),
-        is_public = true,
+        visibility = 'public',
         updated_at = NOW()
-      WHERE id = ${assetId} AND user_id = ${userId}
-      RETURNING id, final_url, status, is_public, updated_at
+      WHERE id = ${assetId} AND owner_id = ${userId}
+      RETURNING id, url, visibility, updated_at
     `;
 
     if (result && result.length > 0) {
