@@ -6,13 +6,17 @@ interface IdentitySafeGenerationRequest {
   imageUrl: string;
   strength?: number;
   guidance?: number;
-  mode?: 'identity-safe' | 'neo-tokyo-glitch';
+  mode?: 'identity-safe' | 'neo-tokyo-glitch' | 'check-status';
 }
 
 interface NeoTokyoGlitchRequest {
   imageUrl: string;
   preset?: 'base' | 'visor' | 'tattoos' | 'scanlines';
   customPrompt?: string;
+}
+
+interface StatusCheckRequest {
+  predictionId: string;
 }
 
 interface ReplicatePredictionResponse {
@@ -36,31 +40,31 @@ interface IdentitySafeGenerationResponse {
   message: string;
 }
 
-// Neo Tokyo Glitch presets with aggressive prompts
+// Neo Tokyo Glitch presets with optimized parameters for stability
 const NEO_TOKYO_GLITCH_PRESETS = {
   base: {
     prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell",
     negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic",
-    strength: 0.5,
-    guidance_scale: 6
+    strength: 0.4,
+    guidance_scale: 7
   },
   visor: {
     prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, PROMINENT glowing magenta or cyan glitch visor over eyes, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell",
     negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, small visor",
-    strength: 0.5,
-    guidance_scale: 6
+    strength: 0.4,
+    guidance_scale: 7
   },
   tattoos: {
     prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, PROMINENT glowing magenta or cyan cyber tattoos covering face and neck, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell",
     negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, small tattoos",
-    strength: 0.5,
-    guidance_scale: 6
+    strength: 0.4,
+    guidance_scale: 7
   },
   scanlines: {
     prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, INTENSE scanlines and VHS noise, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell, as if viewed on a broken CRT monitor",
     negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, clean image",
-    strength: 0.5,
-    guidance_scale: 6
+    strength: 0.4,
+    guidance_scale: 7
   }
 };
 
@@ -98,6 +102,12 @@ const handler: Handler = async (event) => {
     
     const body = JSON.parse(event.body || '{}');
     console.log('🔍 Parsed body:', JSON.stringify(body, null, 2));
+    
+    // Check if this is a status check request
+    if (body.mode === 'check-status') {
+      console.log('🔍 Status check mode detected');
+      return await handleStatusCheck(body, headers);
+    }
     
     // Check if this is a Neo Tokyo Glitch request
     if (body.mode === 'neo-tokyo-glitch') {
@@ -209,20 +219,20 @@ async function handleNeoTokyoGlitch(body: NeoTokyoGlitchRequest, headers: any) {
       Authorization: `Token ${process.env.REPLICATE_API_TOKEN}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      version: "a00d0b7dcbb9c3fbb34ba87d2d5b46c56969c84a628bf778a7fdaec30b1b99c5", // stability-ai/stable-diffusion-img2img
-      input: {
-        image: imageUrl,
-        prompt: prompt,
-        negative_prompt: negativePrompt,
-        strength: presetConfig.strength,
-        num_outputs: 1,
-        scheduler: 'K_EULER_ANCESTRAL',
-        guidance_scale: presetConfig.guidance_scale,
-        num_inference_steps: 50,
-        seed: Math.floor(Math.random() * 1000000), // Random seed for variety
-      }
-    }),
+          body: JSON.stringify({
+        version: "a00d0b7dcbb9c3fbb34ba87d2d5b46c56969c84a628bf778a7fdaec30b1b99c5", // stability-ai/stable-diffusion-img2img
+        input: {
+          image: imageUrl,
+          prompt: prompt,
+          negative_prompt: negativePrompt,
+          strength: presetConfig.strength,
+          num_outputs: 1,
+          scheduler: 'K_EULER_ANCESTRAL',
+          guidance_scale: presetConfig.guidance_scale,
+          num_inference_steps: 30,
+          seed: Math.floor(Math.random() * 1000000), // Random seed for variety
+        }
+      }),
   });
 
   if (!replicateRes.ok) {
@@ -306,17 +316,17 @@ async function handleIdentitySafeGeneration(body: IdentitySafeGenerationRequest,
       Authorization: `Token ${process.env.REPLICATE_API_TOKEN}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      version: "84f1bfa5a264ae8a4b9c77385b32f6b8bb717cdafdd6e21d30592b9b44da6a60", // zsxkib/infinite-you:sim_stage1
-      input: {
-        image: imageUrl,
-        prompt: prompt,
-        strength: strength,
-        guidance_scale: guidance,
-        num_inference_steps: 50,
-        seed: Math.floor(Math.random() * 1000000), // Random seed for variety
-      }
-    }),
+          body: JSON.stringify({
+        version: "84f1bfa5a264ae8a4b9c77385b32f6b8bb717cdafdd6e21d30592b9b44da6a60", // zsxkib/infinite-you:sim_stage1
+        input: {
+          image: imageUrl,
+          prompt: prompt,
+          strength: strength,
+          guidance_scale: guidance,
+          num_inference_steps: 30,
+          seed: Math.floor(Math.random() * 1000000), // Random seed for variety
+        }
+      }),
   });
 
   if (!replicateRes.ok) {
@@ -358,6 +368,101 @@ async function handleIdentitySafeGeneration(body: IdentitySafeGenerationRequest,
     headers,
     body: JSON.stringify(response),
   };
+}
+
+async function handleStatusCheck(body: StatusCheckRequest, headers: any) {
+  console.log('🧠 Entered status check handler');
+  console.log('📦 Request body:', JSON.stringify(body, null, 2));
+  
+  const { predictionId } = body;
+
+  console.log('🔍 Parsed parameters:', { predictionId });
+
+  // Validate required parameters
+  if (!predictionId) {
+    console.log('❌ Missing predictionId parameter');
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Missing required parameter: predictionId is required' 
+      }),
+    };
+  }
+
+  // Validate Replicate API key
+  if (!process.env.REPLICATE_API_TOKEN) {
+    console.error('REPLICATE_API_TOKEN environment variable not set');
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Replicate API not configured' }),
+    };
+  }
+
+  console.log('🔍 Checking Replicate prediction status:', predictionId);
+
+  try {
+    // Call Replicate's status endpoint
+    const response = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
+      headers: {
+        Authorization: `Token ${process.env.REPLICATE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      console.error('❌ Replicate status check error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: error?.detail || error?.error || 'Unknown error'
+      });
+      
+      return {
+        statusCode: response.status,
+        headers,
+        body: JSON.stringify({ 
+          error: error?.detail || error?.error || response.statusText,
+          status: response.status
+        })
+      };
+    }
+
+    const data = await response.json();
+    
+    console.log('✅ Status check successful:', {
+      predictionId: data.id,
+      status: data.status,
+      hasOutput: !!data.output,
+      outputCount: data.output?.length || 0,
+      error: data.error,
+      logs: data.logs
+    });
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        id: data.id,
+        status: data.status,
+        output: data.output,
+        error: data.error,
+        logs: data.logs
+      }),
+    };
+
+  } catch (error) {
+    console.error('💥 Status check failed:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Failed to check prediction status',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }),
+    };
+  }
 }
 
 export { handler };

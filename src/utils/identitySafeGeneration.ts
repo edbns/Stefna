@@ -116,17 +116,39 @@ export async function startIdentitySafeGeneration(
 // Check prediction status
 export async function checkPredictionStatus(predictionId: string): Promise<ReplicatePredictionStatus> {
   try {
-    // Note: This would typically call Replicate's status endpoint
-    // For now, we'll return a mock status since we need the Replicate API key
-    // In production, you'd implement the actual status checking
-    
     console.log('🔍 Checking prediction status:', predictionId);
     
-    // Mock response for development
+    // Call our Netlify function to check Replicate status
+    const response = await fetch('/.netlify/functions/identity-safe-generation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        mode: 'check-status',
+        predictionId
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('📡 Status check response:', {
+      id: data.id,
+      status: data.status,
+      output: data.output,
+      error: data.error,
+      logs: data.logs
+    });
+
     return {
-      id: predictionId,
-      status: 'processing' as const,
-      logs: 'Identity-safe generation in progress...'
+      id: data.id,
+      status: data.status,
+      output: data.output,
+      error: data.error,
+      logs: data.logs
     };
   } catch (error) {
     console.error('❌ Failed to check prediction status:', error);
