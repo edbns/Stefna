@@ -10,23 +10,27 @@ export const handler: Handler = async (event) => {
     const url = new URL(event.rawUrl);
     const limit = Number(url.searchParams.get('limit') ?? 50);
 
-    // Get public media from database using the correct public_feed view
+    // Get public media directly from assets table to include both Cloudinary and Replicate images
     // Note: We removed tier system, so users table only has basic fields
     const media = await sql`
       SELECT 
-        pf.id,
-        pf.user_id,
+        a.id,
+        a.user_id,
         u.email AS user_email, -- Use email instead of name since we removed tier system
-        pf.final_url, -- Use final_url for Replicate images, cloudinary_public_id for Cloudinary
-        pf.cloudinary_public_id,
-        pf.media_type AS resource_type,
-        pf.prompt,
-        pf.created_at AS published_at,
-        pf.is_public AS visibility,
-        pf.allow_remix
-      FROM public_feed pf
-      LEFT JOIN app_users u ON pf.user_id = u.id
-      ORDER BY pf.created_at DESC
+        a.cloudinary_public_id,
+        a.media_type AS resource_type,
+        a.prompt,
+        a.created_at AS published_at,
+        a.is_public AS visibility,
+        a.allow_remix,
+        a.final_url
+      FROM assets a
+      LEFT JOIN app_users u ON a.user_id = u.id
+      WHERE a.is_public = true 
+        AND a.status = 'ready'
+        AND a.created_at IS NOT NULL
+        AND (a.cloudinary_public_id IS NOT NULL OR a.final_url IS NOT NULL)
+      ORDER BY a.created_at DESC
       LIMIT ${limit}
     `;
 
@@ -41,7 +45,7 @@ export const handler: Handler = async (event) => {
       user_name: item.user_email?.split('@')[0] || 'User', // Generate display name from email
       user_avatar: null, // No avatar system in simplified structure
       prompt: item.prompt,
-      url: item.final_url, // Use final_url for Replicate images
+      url: item.final_url || (item.cloudinary_public_id ? `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${item.cloudinary_public_id}` : null),
       allow_remix: item.allow_remix
     }));
 
