@@ -180,9 +180,9 @@ async function handleNeoTokyoGlitch(body: NeoTokyoGlitchRequest, headers: any) {
   });
 
   console.log('🔑 API Key check:', {
-    hasApiKey: !!process.env.REPLICATE_API_KEY,
-    apiKeyLength: process.env.REPLICATE_API_KEY?.length || 0,
-    apiKeyPrefix: process.env.REPLICATE_API_KEY?.substring(0, 10) + '...' || 'none'
+    hasApiKey: !!process.env.REPLICATE_API_TOKEN,
+    apiKeyLength: process.env.REPLICATE_API_TOKEN?.length || 0,
+    apiKeyPrefix: process.env.REPLICATE_API_TOKEN?.substring(0, 10) + '...' || 'none'
   });
 
   console.log('⚡ Calling Replicate img2img for Neo Tokyo Glitch');
@@ -206,7 +206,7 @@ async function handleNeoTokyoGlitch(body: NeoTokyoGlitchRequest, headers: any) {
   const replicateRes = await fetch('https://api.replicate.com/v1/predictions', {
     method: 'POST',
     headers: {
-      Authorization: `Token ${process.env.REPLICATE_API_KEY}`,
+      Authorization: `Token ${process.env.REPLICATE_API_TOKEN}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -282,8 +282,8 @@ async function handleIdentitySafeGeneration(body: IdentitySafeGenerationRequest,
   }
 
   // Validate Replicate API key
-  if (!process.env.REPLICATE_API_KEY) {
-    console.error('REPLICATE_API_KEY environment variable not set');
+  if (!process.env.REPLICATE_API_TOKEN) {
+    console.error('REPLICATE_API_TOKEN environment variable not set');
     return {
       statusCode: 500,
       headers,
@@ -303,7 +303,7 @@ async function handleIdentitySafeGeneration(body: IdentitySafeGenerationRequest,
   const replicateRes = await fetch('https://api.replicate.com/v1/predictions', {
     method: 'POST',
     headers: {
-      Authorization: `Token ${process.env.REPLICATE_API_KEY}`,
+      Authorization: `Token ${process.env.REPLICATE_API_TOKEN}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
