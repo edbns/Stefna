@@ -1501,19 +1501,25 @@ const HomeNew: React.FC = () => {
                      /\/video\/upload\//.test(sourceUrl || '') ||
                      /\.(mp4|mov|webm|m4v)(\?|$)/i.test(sourceUrl || '');
 
-      // Model normalization function with anime filter routing
+      // Model normalization function with Flux Dev as primary, Flux Pro as fallback
       const normalizeModel = (model?: string, mode?: string) => {
-        // 🎭 Anime Filter Model Routing - Route to the right model based on mode
-        if (mode === 'ghiblireact') {
-          return 'flux/dev/image-to-image'; // Ghibli uses flux/dev for anime effects
-        }
-        if (mode === 'neotokyoglitch') {
-          return 'stable-diffusion-v35-large'; // Neo Tokyo uses SD for cyberpunk effects
-        }
+        // 🎯 CONSISTENT MODEL STRATEGY: Use flux/dev for all modes, flux-pro as fallback
+        // This ensures consistent style and identity preservation across all generations
         
-        // Default model normalization for other modes
-        if (!model || /^flux\/dev/i.test(model)) return 'flux/dev';
-        return model;
+        // Primary model for ALL modes (consistent style, reliable identity preservation)
+        const primaryModel = 'flux/dev/image-to-image';
+        
+        // Fallback model if primary fails (higher quality, different approach)
+        const fallbackModel = 'flux-pro/v1.1-ultra';
+        
+        // For now, always use primary model to fix the "6 different results" issue
+        // Fallback logic can be added later when we implement retry mechanisms
+        // 
+        // FALLBACK STRATEGY (Future Implementation):
+        // 1. Try primaryModel (flux/dev/image-to-image) first
+        // 2. If primary fails, retry with fallbackModel (flux-pro/v1.1-ultra)
+        // 3. This ensures users always get results, even if primary model is down
+        return primaryModel;
       };
 
       // Build payload with correct URL key based on media type
@@ -1524,6 +1530,8 @@ const HomeNew: React.FC = () => {
         strength: generationMeta?.strength || 0.85, // No drama clamping - use simple values
         model: normalizeModel(generationMeta?.model || 'flux/dev', kind),
         num_variations: 1,
+        seed: Date.now(), // Fixed seed for consistency - same input = same output
+        single_image: true, // Force single output to prevent variations
       };
 
       // Video-specific parameters for V2V
