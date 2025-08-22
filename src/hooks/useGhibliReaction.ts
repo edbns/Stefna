@@ -1,398 +1,214 @@
-import { FaceMesh } from '@mediapipe/face_mesh';
-
-export type ExpressionType = 'crying' | 'sparkle' | 'sweat' | 'anger' | 'surprise' | 'love';
+export interface GhibliReactionOptions {
+  enableTears: boolean;
+  enableHearts: boolean;
+  enableBlush: boolean;
+  enableEyeShine: boolean;
+  tearIntensity: number; // 0.1-1.0
+  heartOpacity: number; // 0.1-1.0
+  blushIntensity: number; // 0.1-1.0
+  eyeShineBrightness: number; // 0.1-1.0
+}
 
 export interface GhibliReactionResult {
-  baseImage: File;
-  ghibliLayer: HTMLCanvasElement;
-  mergedCanvas: HTMLCanvasElement;
+  processedImage: string;
   metadata: {
-    expression: ExpressionType;
+    effects: string[];
     intensity: number;
     timestamp: string;
   };
 }
 
-export interface GhibliReactionOptions {
-  expression: ExpressionType;
-  intensity: number; // 1-5
-  opacity?: number; // 0.1-1.0
-  blendMode?: 'normal' | 'multiply' | 'screen' | 'overlay';
-  enableShadows?: boolean;
-  enableHighlights?: boolean;
-}
-
-export async function generateGhibliOverlay(
-  image: HTMLImageElement,
+// Main function to apply Ghibli Reaction FX to an image URL
+export async function applyGhibliReactionFX(
+  imageUrl: string,
   options: GhibliReactionOptions
-): Promise<HTMLCanvasElement> {
-  const {
-    expression,
-    intensity,
-    opacity = 0.8,
-    blendMode = 'normal',
-    enableShadows = true,
-    enableHighlights = true
-  } = options;
-
-  return new Promise<HTMLCanvasElement>((resolve, reject) => {
-    const faceMesh = new FaceMesh({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-    });
-
-    faceMesh.setOptions({
-      maxNumFaces: 1,
-      refineLandmarks: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    });
-
-    faceMesh.onResults((results) => {
-      if (!results.multiFaceLandmarks?.length) return reject('No face found');
-
-      const landmarks = results.multiFaceLandmarks[0];
-      const canvas = document.createElement('canvas');
-      canvas.width = image.width;
-      canvas.height = image.height;
-      const ctx = canvas.getContext('2d')!;
-      
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Set blend mode
-      ctx.globalCompositeOperation = blendMode as GlobalCompositeOperation;
-      ctx.globalAlpha = opacity;
-
-      const w = canvas.width;
-      const h = canvas.height;
-
-      // Enhanced facial landmark coordinates
-      const eyeLeft = landmarks[33];
-      const eyeRight = landmarks[263];
-      const eyeLeftInner = landmarks[133];
-      const eyeRightInner = landmarks[362];
-      const cheekLeft = landmarks[205];
-      const cheekRight = landmarks[425];
-      const browLeft = landmarks[70];
-      const browRight = landmarks[300];
-      const nose = landmarks[168];
-      const mouth = landmarks[61];
-
-      // Helper function for smooth gradients
-      const createGradient = (x: number, y: number, radius: number, color1: string, color2: string) => {
-        const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-        gradient.addColorStop(0, color1);
-        gradient.addColorStop(1, color2);
-        return gradient;
-      };
-
-      // Enhanced tear effect with multiple drops
-      const drawTears = () => {
-        const tearColor = `rgba(135, 206, 250, ${opacity})`;
-        const tearShadow = `rgba(70, 130, 180, ${opacity * 0.6})`;
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d')!;
         
-        [cheekLeft, cheekRight].forEach((pt, index) => {
-          const x = pt.x * w;
-          const y = pt.y * h;
-          const offset = index === 0 ? -15 : 15;
-          
-          // Main tear drop
-          ctx.fillStyle = tearColor;
-          ctx.beginPath();
-          ctx.ellipse(x + offset, y + 20, 8 + intensity * 2, 20 + intensity * 3, 0, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Smaller tear drops
-          for (let i = 0; i < intensity; i++) {
-            const dropX = x + offset + (Math.random() - 0.5) * 20;
-            const dropY = y + 30 + i * 15;
-            const dropSize = 3 + Math.random() * 4;
-            
-            ctx.fillStyle = `rgba(135, 206, 250, ${opacity * 0.7})`;
-            ctx.beginPath();
-            ctx.arc(dropX, dropY, dropSize, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          
-          // Shadow effect
-          if (enableShadows) {
-            ctx.fillStyle = tearShadow;
-            ctx.beginPath();
-            ctx.ellipse(x + offset + 2, y + 22, 8 + intensity * 2, 20 + intensity * 3, 0, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        });
-      };
-
-      // Enhanced sparkle effect with multiple sparkles
-      const drawSparkles = () => {
-        const sparkleColor = `rgba(255, 255, 100, ${opacity})`;
-        const sparkleHighlight = `rgba(255, 255, 255, ${opacity})`;
+        // Draw original image
+        ctx.drawImage(img, 0, 0);
         
-        [eyeLeft, eyeRight].forEach((pt) => {
-          const x = pt.x * w;
-          const y = pt.y * h;
-          
-          // Multiple sparkles around eyes
-          for (let i = 0; i < intensity + 2; i++) {
-            const sparkleX = x + (Math.random() - 0.5) * 40;
-            const sparkleY = y + (Math.random() - 0.5) * 40;
-            const size = 3 + Math.random() * 6;
-            
-            // Main sparkle
-            ctx.fillStyle = sparkleColor;
-            ctx.beginPath();
-            ctx.moveTo(sparkleX, sparkleY - size);
-            ctx.lineTo(sparkleX + size * 0.5, sparkleY);
-            ctx.lineTo(sparkleX, sparkleY + size);
-            ctx.lineTo(sparkleX - size * 0.5, sparkleY);
-            ctx.closePath();
-            ctx.fill();
-            
-            // Highlight
-            if (enableHighlights) {
-              ctx.fillStyle = sparkleHighlight;
-              ctx.beginPath();
-              ctx.arc(sparkleX - size * 0.3, sparkleY - size * 0.3, size * 0.2, 0, Math.PI * 2);
-              ctx.fill();
-            }
-          }
-        });
-      };
-
-      // Enhanced sweat effect with multiple drops
-      const drawSweat = () => {
-        const sweatColor = `rgba(173, 216, 230, ${opacity})`;
-        const sweatShadow = `rgba(100, 149, 237, ${opacity * 0.6})`;
+        const effects: string[] = [];
         
-        // Multiple sweat drops
-        for (let i = 0; i < intensity; i++) {
-          const pt = landmarks[70 + i * 5]; // Use different brow points
-          const x = pt.x * w + 10 + i * 8;
-          const y = pt.y * h - 10 - i * 5;
-          const size = 8 + Math.random() * 8;
-          
-          ctx.fillStyle = sweatColor;
-          ctx.beginPath();
-          ctx.ellipse(x, y, size, size * 1.6, Math.PI / 4, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Shadow
-          if (enableShadows) {
-            ctx.fillStyle = sweatShadow;
-            ctx.beginPath();
-            ctx.ellipse(x + 1, y + 1, size, size * 1.6, Math.PI / 4, 0, Math.PI * 2);
-            ctx.fill();
-          }
+        // Apply tears effect
+        if (options.enableTears) {
+          drawTears(ctx, img.width, img.height, options.tearIntensity);
+          effects.push('tears');
         }
-      };
-
-      // Enhanced anger effect with multiple lines
-      const drawAnger = () => {
-        const angerColor = `rgba(255, 0, 0, ${opacity})`;
-        const angerShadow = `rgba(139, 0, 0, ${opacity * 0.8})`;
         
-        ctx.strokeStyle = angerColor;
-        ctx.lineWidth = 2 + intensity;
-        ctx.lineCap = 'round';
+        // Apply hearts effect
+        if (options.enableHearts) {
+          drawHearts(ctx, img.width, img.height, options.heartOpacity);
+          effects.push('hearts');
+        }
         
-        // Multiple anger lines on brows
-        [browLeft, browRight].forEach((pt, index) => {
-          const x = pt.x * w;
-          const y = pt.y * h;
-          const offset = index === 0 ? -1 : 1;
-          
-          for (let i = 0; i < intensity; i++) {
-            const lineX = x + (i * 8 - intensity * 4) * offset;
-            const lineY = y - 10 + i * 3;
-            
-            ctx.beginPath();
-            ctx.moveTo(lineX - 15, lineY - 10);
-            ctx.lineTo(lineX + 15, lineY + 10);
-            ctx.stroke();
-            
-            // Shadow
-            if (enableShadows) {
-              ctx.strokeStyle = angerShadow;
-              ctx.beginPath();
-              ctx.moveTo(lineX - 14, lineY - 9);
-              ctx.lineTo(lineX + 16, lineY + 11);
-              ctx.stroke();
-              ctx.strokeStyle = angerColor;
-            }
-          }
-        });
-      };
-
-      // New: Surprise effect with exclamation marks
-      const drawSurprise = () => {
-        const surpriseColor = `rgba(255, 215, 0, ${opacity})`;
-        const surpriseShadow = `rgba(255, 165, 0, ${opacity * 0.6})`;
+        // Apply blush effect
+        if (options.enableBlush) {
+          drawBlush(ctx, img.width, img.height, options.blushIntensity);
+          effects.push('blush');
+        }
         
-        [eyeLeft, eyeRight].forEach((pt) => {
-          const x = pt.x * w;
-          const y = pt.y * h;
-          
-          // Exclamation mark
-          ctx.fillStyle = surpriseColor;
-          ctx.fillRect(x - 2, y - 20, 4, 20);
-          ctx.beginPath();
-          ctx.arc(x, y + 5, 3, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Shadow
-          if (enableShadows) {
-            ctx.fillStyle = surpriseShadow;
-            ctx.fillRect(x - 1, y - 19, 4, 20);
-            ctx.beginPath();
-            ctx.arc(x + 1, y + 6, 3, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        });
-      };
-
-      // New: Love effect with hearts
-      const drawLove = () => {
-        const loveColor = `rgba(255, 20, 147, ${opacity})`;
-        const loveShadow = `rgba(199, 21, 133, ${opacity * 0.6})`;
+        // Apply eye shine effect
+        if (options.enableEyeShine) {
+          drawEyeShine(ctx, img.width, img.height, options.eyeShineBrightness);
+          effects.push('eye_shine');
+        }
         
-        [cheekLeft, cheekRight].forEach((pt, index) => {
-          const x = pt.x * w;
-          const y = pt.y * h;
-          const offset = index === 0 ? -1 : 1;
-          
-          for (let i = 0; i < intensity; i++) {
-            const heartX = x + (i * 15 - intensity * 7) * offset;
-            const heartY = y - 15 + i * 8;
-            const size = 8 + Math.random() * 6;
-            
-            // Draw heart
-            ctx.fillStyle = loveColor;
-            ctx.beginPath();
-            ctx.moveTo(heartX, heartY + size * 0.3);
-            ctx.bezierCurveTo(
-              heartX, heartY, 
-              heartX - size, heartY, 
-              heartX - size, heartY + size * 0.3
-            );
-            ctx.bezierCurveTo(
-              heartX - size, heartY + size * 0.6, 
-              heartX, heartY + size * 0.8, 
-              heartX, heartY + size * 0.8
-            );
-            ctx.bezierCurveTo(
-              heartX, heartY + size * 0.6, 
-              heartX + size, heartY + size * 0.6, 
-              heartX + size, heartY + size * 0.3
-            );
-            ctx.bezierCurveTo(
-              heartX + size, heartY, 
-              heartX, heartY, 
-              heartX, heartY + size * 0.3
-            );
-            ctx.fill();
-            
-            // Shadow
-            if (enableShadows) {
-              ctx.fillStyle = loveShadow;
-              ctx.beginPath();
-              ctx.moveTo(heartX + 1, heartY + size * 0.3 + 1);
-              ctx.bezierCurveTo(
-                heartX + 1, heartY + 1, 
-                heartX - size + 1, heartY + 1, 
-                heartX - size + 1, heartY + size * 0.3 + 1
-              );
-              ctx.bezierCurveTo(
-                heartX - size + 1, heartY + size * 0.6 + 1, 
-                heartX + 1, heartY + size * 0.8 + 1, 
-                heartX + 1, heartY + size * 0.8 + 1
-              );
-              ctx.bezierCurveTo(
-                heartX + 1, heartY + size * 0.6 + 1, 
-                heartX + size + 1, heartY + size * 0.6 + 1, 
-                heartX + size + 1, heartY + size * 0.3 + 1
-              );
-              ctx.bezierCurveTo(
-                heartX + size + 1, heartY + 1, 
-                heartX + 1, heartY + 1, 
-                heartX + 1, heartY + size * 0.3 + 1
-              );
-              ctx.fill();
-            }
-          }
-        });
-      };
-
-      // Apply selected expression
-      switch (expression) {
-        case 'crying':
-          drawTears();
-          break;
-        case 'sparkle':
-          drawSparkles();
-          break;
-        case 'sweat':
-          drawSweat();
-          break;
-        case 'anger':
-          drawAnger();
-          break;
-        case 'surprise':
-          drawSurprise();
-          break;
-        case 'love':
-          drawLove();
-          break;
+        // Convert canvas to data URL
+        const resultUrl = canvas.toDataURL('image/jpeg', 0.9);
+        
+        resolve(resultUrl);
+      } catch (error) {
+        console.error('Ghibli Reaction FX failed:', error);
+        reject(error);
       }
-
-      // Reset blend mode
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1.0;
-
-      resolve(canvas);
-    });
-
-    image.onload = () => faceMesh.send({ image });
-    image.onerror = () => reject('Image load error');
-    image.src = image.src;
+    };
+    
+    img.onerror = () => reject(new Error('Failed to load image for Ghibli Reaction FX'));
+    img.src = imageUrl;
   });
 }
 
-export async function generateGhibliReaction(
-  image: HTMLImageElement,
-  options: GhibliReactionOptions
-): Promise<GhibliReactionResult> {
-  const ghibliLayer = await generateGhibliOverlay(image, options);
+// Draw animated tears
+function drawTears(ctx: CanvasRenderingContext2D, width: number, height: number, intensity: number) {
+  const tearCount = Math.floor(intensity * 5) + 1;
   
-  // Create merged canvas
-  const mergedCanvas = document.createElement('canvas');
-  mergedCanvas.width = image.width;
-  mergedCanvas.height = image.height;
-  const ctx = mergedCanvas.getContext('2d')!;
+  for (let i = 0; i < tearCount; i++) {
+    const x = width * 0.3 + (i * width * 0.1);
+    const y = height * 0.2 + (i * height * 0.05);
+    
+    ctx.save();
+    ctx.globalAlpha = 0.7 * intensity;
+    
+    // Tear drop shape
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x + 5, y + 10, x, y + 20);
+    ctx.quadraticCurveTo(x - 5, y + 10, x, y);
+    ctx.fillStyle = '#87CEEB'; // Light blue
+    ctx.fill();
+    
+    // Tear highlight
+    ctx.beginPath();
+    ctx.arc(x - 2, y + 5, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+    
+    ctx.restore();
+  }
+}
+
+// Draw floating hearts
+function drawHearts(ctx: CanvasRenderingContext2D, width: number, height: number, opacity: number) {
+  const heartCount = 3;
   
-  // Draw base image
-  ctx.drawImage(image, 0, 0);
+  for (let i = 0; i < heartCount; i++) {
+    const x = width * 0.7 + (i * width * 0.1);
+    const y = height * 0.3 + (i * height * 0.1);
+    const size = 15 + (i * 5);
+    
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    
+    // Heart shape
+    ctx.beginPath();
+    ctx.moveTo(x, y + size * 0.3);
+    ctx.bezierCurveTo(x, y, x - size * 0.5, y, x - size * 0.5, y + size * 0.3);
+    ctx.bezierCurveTo(x - size * 0.5, y + size * 0.6, x, y + size * 0.8, x, y + size * 0.8);
+    ctx.bezierCurveTo(x, y + size * 0.8, x + size * 0.5, y + size * 0.6, x + size * 0.5, y + size * 0.3);
+    ctx.bezierCurveTo(x + size * 0.5, y, x, y, x, y + size * 0.3);
+    ctx.fillStyle = '#FF69B4'; // Hot pink
+    ctx.fill();
+    
+    ctx.restore();
+  }
+}
+
+// Draw blush effect
+function drawBlush(ctx: CanvasRenderingContext2D, width: number, height: number, intensity: number) {
+  const blushRadius = 30 * intensity;
   
-  // Draw Ghibli layer on top
-  ctx.drawImage(ghibliLayer, 0, 0);
+  // Left cheek blush
+  const leftX = width * 0.25;
+  const leftY = height * 0.6;
   
-  // Create File object from merged canvas
-  const blob = await new Promise<Blob>((resolve) => {
-    mergedCanvas.toBlob((blob) => {
-      resolve(blob!);
-    }, 'image/png');
-  });
+  // Right cheek blush
+  const rightX = width * 0.75;
+  const rightY = height * 0.6;
   
-  const baseImage = new File([blob], 'ghibli_reaction.png', { type: 'image/png' });
+  ctx.save();
+  ctx.globalAlpha = 0.4 * intensity;
   
-  return {
-    baseImage,
-    ghibliLayer,
-    mergedCanvas,
-    metadata: {
-      expression: options.expression,
-      intensity: options.intensity,
-      timestamp: new Date().toISOString()
-    }
-  };
+  // Create blush gradient
+  const leftGradient = ctx.createRadialGradient(leftX, leftY, 0, leftX, leftY, blushRadius);
+  leftGradient.addColorStop(0, 'rgba(255, 182, 193, 0.8)');
+  leftGradient.addColorStop(1, 'rgba(255, 182, 193, 0)');
+  
+  const rightGradient = ctx.createRadialGradient(rightX, rightY, 0, rightX, rightY, blushRadius);
+  rightGradient.addColorStop(0, 'rgba(255, 182, 193, 0.8)');
+  rightGradient.addColorStop(1, 'rgba(255, 182, 193, 0)');
+  
+  // Draw left blush
+  ctx.fillStyle = leftGradient;
+  ctx.beginPath();
+  ctx.arc(leftX, leftY, blushRadius, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Draw right blush
+  ctx.fillStyle = rightGradient;
+  ctx.beginPath();
+  ctx.arc(rightX, rightY, blushRadius, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.restore();
+}
+
+// Draw eye shine effect
+function drawEyeShine(ctx: CanvasRenderingContext2D, width: number, height: number, brightness: number) {
+  const eyeSize = 8 * brightness;
+  
+  // Left eye shine
+  const leftX = width * 0.35;
+  const leftY = height * 0.45;
+  
+  // Right eye shine
+  const rightX = width * 0.65;
+  const rightY = height * 0.45;
+  
+  ctx.save();
+  ctx.globalAlpha = 0.9 * brightness;
+  
+  // Create eye shine gradient
+  const leftGradient = ctx.createRadialGradient(leftX, leftY, 0, leftX, leftY, eyeSize);
+  leftGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  leftGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
+  leftGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  
+  const rightGradient = ctx.createRadialGradient(rightX, rightY, 0, rightX, rightY, eyeSize);
+  rightGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  rightGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
+  rightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  
+  // Draw left eye shine
+  ctx.fillStyle = leftGradient;
+  ctx.beginPath();
+  ctx.arc(leftX, leftY, eyeSize, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Draw right eye shine
+  ctx.fillStyle = rightGradient;
+  ctx.beginPath();
+  ctx.arc(rightX, rightY, eyeSize, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.restore();
 }

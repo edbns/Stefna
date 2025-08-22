@@ -27,6 +27,45 @@ export interface NeoTokyoGlitchResult {
   };
 }
 
+// Main function to apply Neo Tokyo Glitch FX to an image URL
+export async function applyNeoTokyoGlitch(
+  imageUrl: string,
+  options: Partial<NeoTokyoGlitchOptions> = {}
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = async () => {
+      try {
+        const canvas = await generateNeoTokyoGlitchOverlay(img, {
+          mode: 'neo_tokyo',
+          intensity: 3,
+          neonColor: '#ff00ff',
+          glitchAmount: 0.5,
+          scanlineOpacity: 0.3,
+          preserveFace: true,
+          enableGlow: true,
+          enableScanlines: true,
+          enableGlitch: true,
+          enableNeon: true,
+          ...options
+        });
+        
+        // Convert canvas to data URL
+        const resultUrl = canvas.toDataURL('image/jpeg', 0.9);
+        resolve(resultUrl);
+      } catch (error) {
+        console.error('Neo Tokyo Glitch FX failed:', error);
+        reject(error);
+      }
+    };
+    
+    img.onerror = () => reject(new Error('Failed to load image for Neo Tokyo FX'));
+    img.src = imageUrl;
+  });
+}
+
 export async function generateNeoTokyoGlitchOverlay(
   image: HTMLImageElement,
   options: NeoTokyoGlitchOptions = {

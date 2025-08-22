@@ -1827,6 +1827,81 @@ const HomeNew: React.FC = () => {
           }
       }
 
+      // 🎨 FX POST-PROCESSING - Apply visual effects based on generation mode
+      if (finalResultUrl && generationMeta?.mode) {
+        try {
+          let fxProcessedUrl = finalResultUrl;
+          
+          // Apply Neo Tokyo Glitch FX
+          if (generationMeta.mode === 'neotokyoglitch' && selectedNeoTokyoGlitchPreset) {
+            console.log('🎭 Applying Neo Tokyo Glitch FX...');
+            const { applyNeoTokyoGlitch } = await import('../hooks/useNeoTokyoGlitch');
+            
+            const fxOptions = {
+              enableGlow: true,
+              enableScanlines: true,
+              enableGlitch: true,
+              enableNeon: true,
+              glowIntensity: 0.8,
+              scanlineOpacity: 0.3,
+              glitchAmount: 0.4,
+              neonColor: '#00ffff'
+            };
+            
+            fxProcessedUrl = await applyNeoTokyoGlitch(finalResultUrl, fxOptions);
+            console.log('✅ Neo Tokyo FX applied successfully');
+          }
+          
+          // Apply Ghibli Reaction FX
+          else if (generationMeta.mode === 'ghiblireact' && selectedGhibliReactionPreset) {
+            console.log('🎭 Applying Ghibli Reaction FX...');
+            const { applyGhibliReactionFX } = await import('../hooks/useGhibliReaction');
+            
+            const fxOptions = {
+              enableTears: true,
+              enableHearts: true,
+              enableBlush: true,
+              enableEyeShine: true,
+              tearIntensity: 0.7,
+              heartOpacity: 0.6,
+              blushIntensity: 0.5,
+              eyeShineBrightness: 0.8
+            };
+            
+            fxProcessedUrl = await applyGhibliReactionFX(finalResultUrl, fxOptions);
+            console.log('✅ Ghibli Reaction FX applied successfully');
+          }
+          
+          // Apply Emotion Mask FX (subtle enhancement)
+          else if (generationMeta.mode === 'emotionmask' && selectedEmotionMaskPreset) {
+            console.log('🎭 Applying Emotion Mask FX...');
+            const { applyEmotionMaskFX } = await import('../hooks/useEmotionMask');
+            
+            const fxOptions = {
+              enableCinematicLighting: true,
+              enableSkinEnhancement: true,
+              enableExpressionBoost: true,
+              lightingIntensity: 0.6,
+              skinSmoothing: 0.4,
+              expressionIntensity: 0.7
+            };
+            
+            fxProcessedUrl = await applyEmotionMaskFX(finalResultUrl, fxOptions);
+            console.log('✅ Emotion Mask FX applied successfully');
+          }
+          
+          // Update final result with FX processing
+          if (fxProcessedUrl !== finalResultUrl) {
+            finalResultUrl = fxProcessedUrl;
+            console.log('🎨 FX processing completed, final result updated');
+          }
+          
+        } catch (fxError) {
+          console.warn('⚠️ FX processing failed, using original result:', fxError);
+          // Continue with original result if FX fails
+        }
+      }
+
       console.info(`Generated ${variationsGenerated} variation(s):`, allResultUrls);
 
 
