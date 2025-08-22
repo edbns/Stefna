@@ -2196,7 +2196,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         const assetResult = await createAsset({
           sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
           mediaType: 'image', // Default to image for now
-          presetKey: composerState.mode === 'neotokyoglitch' ? selectedNeoTokyoGlitchPreset : selectedPreset,
+          presetKey: composerState.mode === 'neotokyoglitch' ? 'neotokyoglitch' : selectedPreset,
               prompt: effectivePrompt,
         });
 
@@ -2293,7 +2293,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                   prompt: effectivePrompt,
                   meta: {
                     mode: composerState.mode,
-                    presetId: composerState.mode === 'neotokyoglitch' ? selectedNeoTokyoGlitchPreset : selectedPreset,
+                    presetId: composerState.mode === 'neotokyoglitch' ? 'neotokyoglitch' : selectedPreset,
                     runId: genId
                   }
                 })
