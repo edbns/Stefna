@@ -19,62 +19,62 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
-    prompt: 'Transform the person into a cyberpunk anime character. Retain the real face and identity. Apply cel-shaded art style with neon cyber tattoos, flickering holographic UI overlays, and glowing reflections in the eyes. Use intense colors (magenta, cyan, blue, violet). Add scanlines, chromatic aberration, and digital distortion. Background should be a stylized Neo Tokyo with tall buildings, glowing ads, and flickering signs. The person should look like a futuristic protagonist inside a glitchy simulation.',
-    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features, face distortion, identity change, gender change, ethnicity change, pose change',
-    strength: 0.45, // Increased strength for more visual impact
+    prompt: 'Transform this person into a futuristic cyberpunk character inside a corrupted digital world. Retain realistic facial structure and identity. Apply cel-shaded anime-inspired glitch effects across the image. Overlay intense chromatic aberration, scanlines, datamosh artifacts, and static noise. Face should have glowing magenta or cyan cyber tattoos and one semi-transparent glitch visor. Eyes should reflect digital overlays or flickering UI. Background must be a chaotic Neo Tokyo skyline: vertical buildings with animated signage, distorted billboards, and dark violet haze. Use intense neon colors: magenta, cyan, blue, violet. Simulate a malfunctioning simulation: flicker, distortion, digital tearing, particle trails, and streaming code.',
+    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features, face distortion, identity change, gender change, ethnicity change, pose change, subtle effects, minimal transformation, safe style',
+    strength: 0.60, // Aggressive strength since identity is locked!
     model: 'flux/dev/image-to-image', // Explicit model specification
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
-    features: ['identity_preserved', 'cyberpunk_intense', 'cel_shaded', 'neon_glow'],
-    guidance_scale: 8.0, // Higher guidance for stronger style adherence
-    num_inference_steps: 36
+    features: ['identity_preserved', 'full_glitch_takeover', 'corrupted_digital_world', 'chaotic_neo_tokyo'],
+    guidance_scale: 9.5, // Maximum guidance for aggressive style enforcement
+    num_inference_steps: 40
   },
   {
     id: 'neo_tokyo_visor',
     label: 'Glitch Visor',
-    prompt: 'Transform the person into a cyberpunk anime character. Retain the real face and identity. Apply cel-shaded art style with glowing glitch visor over the eyes, neon cyber tattoos, flickering holographic UI overlays, and intense glowing reflections. Use intense colors (magenta, cyan, blue, violet). Add scanlines, chromatic aberration, and digital distortion. Background should be a stylized Neo Tokyo with tall buildings, glowing ads, and flickering signs. The person should look like a futuristic protagonist inside a glitchy simulation with a prominent glowing visor.',
-    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features, face distortion, identity change, gender change, ethnicity change, pose change',
-    strength: 0.50, // Higher strength for prominent visor effect
+    prompt: 'Transform this person into a futuristic cyberpunk character inside a corrupted digital world. Retain realistic facial structure and identity. Apply cel-shaded anime-inspired glitch effects across the image. Overlay intense chromatic aberration, scanlines, datamosh artifacts, and static noise. Face should have a PROMINENT glowing magenta or cyan glitch visor over the eyes with holographic UI elements. Eyes should reflect digital overlays or flickering UI through the visor. Background must be a chaotic Neo Tokyo skyline: vertical buildings with animated signage, distorted billboards, and dark violet haze. Use intense neon colors: magenta, cyan, blue, violet. Simulate a malfunctioning simulation: flicker, distortion, digital tearing, particle trails, and streaming code. The glitch visor should be the dominant visual element.',
+    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features, face distortion, identity change, gender change, ethnicity change, pose change, subtle effects, minimal transformation, safe style, small visor',
+    strength: 0.65, // Maximum visor strength since identity is locked!
     model: 'flux/dev/image-to-image', // Explicit model specification
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
-    features: ['glitch_visor_intense', 'identity_preserved', 'holographic_ui', 'cel_shaded'],
-    guidance_scale: 8.0, // Higher guidance for stronger style adherence
-    num_inference_steps: 36
+    features: ['glitch_visor_dominant', 'identity_preserved', 'full_glitch_takeover', 'corrupted_digital_world'],
+    guidance_scale: 10.0, // Maximum guidance for aggressive style enforcement
+    num_inference_steps: 40
   },
   {
     id: 'neo_tokyo_tattoos',
     label: 'Tech Tattoos',
-    prompt: 'Transform the person into a cyberpunk anime character. Retain the real face and identity. Apply cel-shaded art style with prominent glowing tech tattoos on the face/neck, flickering holographic UI overlays, and intense glowing reflections in the eyes. Use intense colors (magenta, cyan, blue, violet). Add scanlines, chromatic aberration, and digital distortion. Background should be a stylized Neo Tokyo with tall buildings, glowing ads, and flickering signs. The person should look like a futuristic protagonist inside a glitchy simulation with prominent luminous tech tattoos.',
-    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features, face distortion, identity change, gender change, ethnicity change, pose change',
-    strength: 0.48, // Higher strength for prominent tattoo effects
+    prompt: 'Transform this person into a futuristic cyberpunk character inside a corrupted digital world. Retain realistic facial structure and identity. Apply cel-shaded anime-inspired glitch effects across the image. Overlay intense chromatic aberration, scanlines, datamosh artifacts, and static noise. Face should have PROMINENT glowing magenta or cyan cyber tattoos covering the face, neck, and shoulders with holographic UI elements. Eyes should reflect digital overlays or flickering UI. Background must be a chaotic Neo Tokyo skyline: vertical buildings with animated signage, distorted billboards, and dark violet haze. Use intense neon colors: magenta, cyan, blue, violet. Simulate a malfunctioning simulation: flicker, distortion, digital tearing, particle trails, and streaming code. The cyber tattoos should be the dominant visual element.',
+    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features, face distortion, identity change, gender change, ethnicity change, pose change, subtle effects, minimal transformation, safe style, small tattoos',
+    strength: 0.62, // Maximum tattoo strength since identity is locked!
     model: 'flux/dev/image-to-image', // Explicit model specification
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
-    features: ['tech_tattoos_intense', 'identity_preserved', 'luminous_implants', 'cel_shaded'],
-    guidance_scale: 8.0, // Higher guidance for stronger style adherence
-    num_inference_steps: 36
+    features: ['tech_tattoos_dominant', 'identity_preserved', 'full_glitch_takeover', 'corrupted_digital_world'],
+    guidance_scale: 9.5, // Maximum guidance for aggressive style enforcement
+    num_inference_steps: 40
   },
   {
     id: 'neo_tokyo_scanlines',
     label: 'Scanline FX',
-    prompt: 'Transform the person into a cyberpunk anime character. Retain the real face and identity. Apply cel-shaded art style with prominent scanlines, VHS noise, flickering holographic UI overlays, and intense glowing reflections in the eyes. Use intense colors (magenta, cyan, blue, violet). Add chromatic aberration and digital distortion. Background should be a stylized Neo Tokyo with tall buildings, glowing ads, and flickering signs. The person should look like a futuristic protagonist inside a glitchy simulation with prominent retro digital scanline effects.',
-    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features, face distortion, identity change, gender change, ethnicity change, pose change',
-    strength: 0.42, // Higher strength for prominent scanline effects
+    prompt: 'Transform this person into a futuristic cyberpunk character inside a corrupted digital world. Retain realistic facial structure and identity. Apply cel-shaded anime-inspired glitch effects across the image. Overlay INTENSE scanlines, VHS noise, datamosh artifacts, and static noise. Face should have glowing magenta or cyan cyber tattoos and one semi-transparent glitch visor. Eyes should reflect digital overlays or flickering UI. Background must be a chaotic Neo Tokyo skyline: vertical buildings with animated signage, distorted billboards, and dark violet haze. Use intense neon colors: magenta, cyan, blue, violet. Simulate a malfunctioning simulation: flicker, distortion, digital tearing, particle trails, and streaming code. The scanlines and VHS noise should be the dominant visual element, as if viewed on a broken CRT monitor.',
+    negative_prompt: 'realistic skin, lowres, bad anatomy, ugly, blurry, watermark, duplicate face, photorealistic, mutated hands, extra limbs, fused features, face distortion, identity change, gender change, ethnicity change, pose change, subtle effects, minimal transformation, safe style, clean image',
+    strength: 0.58, // Maximum scanline strength since identity is locked!
     model: 'flux/dev/image-to-image', // Explicit model specification
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
-    features: ['scanline_overlay_intense', 'identity_preserved', 'vhs_noise', 'cel_shaded'],
-    guidance_scale: 8.0, // Higher guidance for stronger style adherence
-    num_inference_steps: 36
+    features: ['scanlines_dominant', 'identity_preserved', 'full_glitch_takeover', 'corrupted_digital_world'],
+    guidance_scale: 9.5, // Maximum guidance for aggressive style enforcement
+    num_inference_steps: 40
   }
 ]
 
