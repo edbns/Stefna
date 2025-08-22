@@ -6,6 +6,13 @@ interface IdentitySafeGenerationRequest {
   imageUrl: string;
   strength?: number;
   guidance?: number;
+  mode?: 'identity-safe' | 'neo-tokyo-glitch';
+}
+
+interface NeoTokyoGlitchRequest {
+  imageUrl: string;
+  preset?: 'base' | 'visor' | 'tattoos' | 'scanlines';
+  customPrompt?: string;
 }
 
 interface ReplicatePredictionResponse {
@@ -28,6 +35,34 @@ interface IdentitySafeGenerationResponse {
   };
   message: string;
 }
+
+// Neo Tokyo Glitch presets with aggressive prompts
+const NEO_TOKYO_GLITCH_PRESETS = {
+  base: {
+    prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell",
+    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic",
+    strength: 0.5,
+    guidance_scale: 6
+  },
+  visor: {
+    prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, PROMINENT glowing magenta or cyan glitch visor over eyes, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell",
+    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, small visor",
+    strength: 0.5,
+    guidance_scale: 6
+  },
+  tattoos: {
+    prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, PROMINENT glowing magenta or cyan cyber tattoos covering face and neck, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell",
+    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, small tattoos",
+    strength: 0.5,
+    guidance_scale: 6
+  },
+  scanlines: {
+    prompt: "Neo Tokyo cyberpunk anime glitch style, cel-shaded face, INTENSE scanlines and VHS noise, vibrant neon, holographic overlays, techno-chaos, wires, digital distortion, futuristic energy — style of Akira, Ghost in the Shell, as if viewed on a broken CRT monitor",
+    negative_prompt: "deformed, mutated, cropped face, low resolution, distorted eyes, extra limbs, blur, realistic skin, photorealistic, clean image",
+    strength: 0.5,
+    guidance_scale: 6
+  }
+};
 
 const handler: Handler = async (event) => {
   // CORS headers for cross-origin requests
@@ -57,101 +92,19 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    const { prompt, imageUrl, strength = 0.7, guidance = 7.5 }: IdentitySafeGenerationRequest = 
-      JSON.parse(event.body || '{}');
-
-    // Validate required parameters
-    if (!prompt || !imageUrl) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: 'Missing required parameters: prompt and imageUrl are required' 
-        }),
-      };
-    }
-
-    // Validate Replicate API key
-    if (!process.env.REPLICATE_API_KEY) {
-      console.error('REPLICATE_API_KEY environment variable not set');
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Replicate API not configured' }),
-      };
-    }
-
-    console.log('🚀 Starting identity-safe generation:', {
-      prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
-      imageUrl: imageUrl.substring(0, 100) + '...',
-      strength,
-      guidance,
-      timestamp: new Date().toISOString()
-    });
-
-    // Call Replicate API for identity-safe generation
-    const replicateRes = await fetch('https://api.replicate.com/v1/predictions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Token ${process.env.REPLICATE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        version: "84f1bfa5a264ae8a4b9c77385b32f6b8bb717cdafdd6e21d30592b9b44da6a60", // zsxkib/infinite-you:sim_stage1
-        input: {
-          image: imageUrl,
-          prompt: prompt,
-          strength: strength,
-          guidance_scale: guidance,
-          num_inference_steps: 50,
-          seed: Math.floor(Math.random() * 1000000), // Random seed for variety
-        }
-      }),
-    });
-
-    if (!replicateRes.ok) {
-      const error = await replicateRes.json().catch(() => ({}));
-      console.error('❌ Replicate API error:', {
-        status: replicateRes.status,
-        statusText: replicateRes.statusText,
-        error: error?.detail || error?.error || 'Unknown error'
-      });
-      
-      return {
-        statusCode: replicateRes.status,
-        headers,
-        body: JSON.stringify({ 
-          error: error?.detail || error?.error || replicateRes.statusText,
-          status: replicateRes.status
-        })
-      };
-    }
-
-    const replicateData: ReplicatePredictionResponse = await replicateRes.json();
+    const body = JSON.parse(event.body || '{}');
     
-    console.log('✅ Identity-safe generation started successfully:', {
-      predictionId: replicateData.id,
-      status: replicateData.status,
-      createdAt: replicateData.created_at
-    });
-
-    const response: IdentitySafeGenerationResponse = {
-      id: replicateData.id,
-      status: replicateData.status,
-      created_at: replicateData.created_at,
-      urls: replicateData.urls,
-      message: 'Identity-safe generation started successfully'
-    };
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify(response),
-    };
+    // Check if this is a Neo Tokyo Glitch request
+    if (body.mode === 'neo-tokyo-glitch') {
+      return await handleNeoTokyoGlitch(body, headers);
+    }
+    
+    // Default identity-safe generation
+    return await handleIdentitySafeGeneration(body, headers);
 
   } catch (err) {
     const error = err as Error;
-    console.error('💥 Identity-safe generation error:', {
+    console.error('💥 Generation error:', {
       error: error.message,
       stack: error.stack,
       timestamp: new Date().toISOString()
@@ -161,11 +114,206 @@ const handler: Handler = async (event) => {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
-        error: error.message || 'Unknown error occurred during identity-safe generation',
+        error: error.message || 'Unknown error occurred during generation',
         timestamp: new Date().toISOString()
       }),
     };
   }
 };
+
+async function handleNeoTokyoGlitch(body: NeoTokyoGlitchRequest, headers: any) {
+  const { imageUrl, preset = 'base', customPrompt } = body;
+
+  // Validate required parameters
+  if (!imageUrl) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Missing required parameter: imageUrl is required' 
+      }),
+    };
+  }
+
+  // Validate Replicate API key
+  if (!process.env.REPLICATE_API_KEY) {
+    console.error('REPLICATE_API_KEY environment variable not set');
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Replicate API not configured' }),
+    };
+  }
+
+  const presetConfig = NEO_TOKYO_GLITCH_PRESETS[preset];
+  const prompt = customPrompt || presetConfig.prompt;
+  const negativePrompt = presetConfig.negative_prompt;
+
+  console.log('🚀 Starting Neo Tokyo Glitch generation:', {
+    preset,
+    prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
+    imageUrl: imageUrl.substring(0, 100) + '...',
+    strength: presetConfig.strength,
+    guidance_scale: presetConfig.guidance_scale,
+    timestamp: new Date().toISOString()
+  });
+
+  // Call Replicate API for Neo Tokyo Glitch generation
+  const replicateRes = await fetch('https://api.replicate.com/v1/predictions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Token ${process.env.REPLICATE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      version: "a00d0b7dcbb9c3fbb34ba87d2d5b46c56969c84a628bf778a7fdaec30b1b99c5", // stability-ai/stable-diffusion-img2img
+      input: {
+        image: imageUrl,
+        prompt: prompt,
+        negative_prompt: negativePrompt,
+        strength: presetConfig.strength,
+        num_outputs: 1,
+        scheduler: 'K_EULER_ANCESTRAL',
+        guidance_scale: presetConfig.guidance_scale,
+        num_inference_steps: 50,
+        seed: Math.floor(Math.random() * 1000000), // Random seed for variety
+      }
+    }),
+  });
+
+  if (!replicateRes.ok) {
+    const error = await replicateRes.json().catch(() => ({}));
+    console.error('❌ Neo Tokyo Glitch Replicate API error:', {
+      status: replicateRes.status,
+      statusText: replicateRes.statusText,
+      error: error?.detail || error?.error || 'Unknown error'
+    });
+    
+    return {
+      statusCode: replicateRes.status,
+      headers,
+      body: JSON.stringify({ 
+        error: error?.detail || error?.error || replicateRes.statusText,
+        status: replicateRes.status
+      })
+    };
+  }
+
+  const replicateData: ReplicatePredictionResponse = await replicateRes.json();
+  
+  console.log('✅ Neo Tokyo Glitch generation started successfully:', {
+    predictionId: replicateData.id,
+    status: replicateData.status,
+    createdAt: replicateData.created_at,
+    preset
+  });
+
+  const response: IdentitySafeGenerationResponse = {
+    id: replicateData.id,
+    status: replicateData.status,
+    created_at: replicateData.created_at,
+    urls: replicateData.urls,
+    message: `Neo Tokyo Glitch (${preset}) generation started successfully`
+  };
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify(response),
+  };
+}
+
+async function handleIdentitySafeGeneration(body: IdentitySafeGenerationRequest, headers: any) {
+  const { prompt, imageUrl, strength = 0.7, guidance = 7.5 } = body;
+
+  // Validate required parameters
+  if (!prompt || !imageUrl) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Missing required parameters: prompt and imageUrl are required' 
+      }),
+    };
+  }
+
+  // Validate Replicate API key
+  if (!process.env.REPLICATE_API_KEY) {
+    console.error('REPLICATE_API_KEY environment variable not set');
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Replicate API not configured' }),
+    };
+  }
+
+  console.log('🚀 Starting identity-safe generation:', {
+    prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
+    imageUrl: imageUrl.substring(0, 100) + '...',
+    strength,
+    guidance,
+    timestamp: new Date().toISOString()
+  });
+
+  // Call Replicate API for identity-safe generation
+  const replicateRes = await fetch('https://api.replicate.com/v1/predictions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Token ${process.env.REPLICATE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      version: "84f1bfa5a264ae8a4b9c77385b32f6b8bb717cdafdd6e21d30592b9b44da6a60", // zsxkib/infinite-you:sim_stage1
+      input: {
+        image: imageUrl,
+        prompt: prompt,
+        strength: strength,
+        guidance_scale: guidance,
+        num_inference_steps: 50,
+        seed: Math.floor(Math.random() * 1000000), // Random seed for variety
+      }
+    }),
+  });
+
+  if (!replicateRes.ok) {
+    const error = await replicateRes.json().catch(() => ({}));
+    console.error('❌ Replicate API error:', {
+      status: replicateRes.status,
+      statusText: replicateRes.statusText,
+      error: error?.detail || error?.error || 'Unknown error'
+    });
+    
+    return {
+      statusCode: replicateRes.status,
+      headers,
+      body: JSON.stringify({ 
+        error: error?.detail || error?.error || replicateRes.statusText,
+        status: replicateRes.status
+      })
+    };
+  }
+
+  const replicateData: ReplicatePredictionResponse = await replicateRes.json();
+  
+  console.log('✅ Identity-safe generation started successfully:', {
+    predictionId: replicateData.id,
+    status: replicateData.status,
+    createdAt: replicateData.created_at
+  });
+
+  const response: IdentitySafeGenerationResponse = {
+    id: replicateData.id,
+    status: replicateData.status,
+    created_at: replicateData.created_at,
+    urls: replicateData.urls,
+    message: 'Identity-safe generation started successfully'
+  };
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify(response),
+  };
+}
 
 export { handler };

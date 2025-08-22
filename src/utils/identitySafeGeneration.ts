@@ -6,6 +6,12 @@ export interface IdentitySafeGenerationRequest {
   guidance?: number;
 }
 
+export interface NeoTokyoGlitchRequest {
+  imageUrl: string;
+  preset?: 'base' | 'visor' | 'tattoos' | 'scanlines';
+  customPrompt?: string;
+}
+
 export interface IdentitySafeGenerationResponse {
   id: string;
   status: string;
@@ -23,6 +29,48 @@ export interface ReplicatePredictionStatus {
   output?: string[];
   error?: string;
   logs?: string;
+}
+
+// Start Neo Tokyo Glitch generation
+export async function startNeoTokyoGlitchGeneration(
+  request: NeoTokyoGlitchRequest
+): Promise<IdentitySafeGenerationResponse> {
+  try {
+    console.log('🚀 Starting Neo Tokyo Glitch generation:', {
+      preset: request.preset || 'base',
+      imageUrl: request.imageUrl.substring(0, 100) + '...',
+      customPrompt: request.customPrompt ? 'Custom prompt provided' : 'Using preset prompt'
+    });
+
+    const response = await fetch('/.netlify/functions/identity-safe-generation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        mode: 'neo-tokyo-glitch',
+        ...request
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result: IdentitySafeGenerationResponse = await response.json();
+    
+    console.log('✅ Neo Tokyo Glitch generation started:', {
+      predictionId: result.id,
+      status: result.status,
+      message: result.message
+    });
+
+    return result;
+  } catch (error) {
+    console.error('❌ Neo Tokyo Glitch generation failed:', error);
+    throw error;
+  }
 }
 
 // Start identity-safe generation
@@ -125,6 +173,48 @@ export async function waitForPredictionCompletion(
   throw new Error(`Generation timed out after ${maxWaitTime / 1000}s`);
 }
 
+// Complete Neo Tokyo Glitch generation workflow
+export async function runNeoTokyoGlitchGeneration(
+  imageUrl: string,
+  preset: 'base' | 'visor' | 'tattoos' | 'scanlines' = 'base',
+  customPrompt?: string
+): Promise<{ outputUrl: string; predictionId: string }> {
+  try {
+    console.log('🔄 Running Neo Tokyo Glitch generation...', { preset, customPrompt: !!customPrompt });
+    
+    // Start generation
+    const startResult = await startNeoTokyoGlitchGeneration({
+      imageUrl,
+      preset,
+      customPrompt
+    });
+    
+    // Wait for completion
+    const finalStatus = await waitForPredictionCompletion(startResult.id);
+    
+    if (!finalStatus.output || finalStatus.output.length === 0) {
+      throw new Error('Generation completed but no output received');
+    }
+    
+    const outputUrl = finalStatus.output[0];
+    
+    console.log('✅ Neo Tokyo Glitch generation completed:', {
+      predictionId: startResult.id,
+      outputUrl: outputUrl.substring(0, 100) + '...',
+      preset
+    });
+    
+    return {
+      outputUrl,
+      predictionId: startResult.id
+    };
+    
+  } catch (error) {
+    console.error('💥 Neo Tokyo Glitch generation failed:', error);
+    throw error;
+  }
+}
+
 // Complete identity-safe generation workflow
 export async function runIdentitySafeFallback(
   prompt: string,
@@ -169,6 +259,13 @@ export async function runIdentitySafeFallback(
 
 // Utility to check if identity-safe generation is available
 export function isIdentitySafeGenerationAvailable(): boolean {
+  // In production, you might check if the Netlify function is accessible
+  // For now, assume it's available
+  return true;
+}
+
+// Utility to check if Neo Tokyo Glitch generation is available
+export function isNeoTokyoGlitchAvailable(): boolean {
   // In production, you might check if the Netlify function is accessible
   // For now, assume it's available
   return true;
