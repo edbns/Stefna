@@ -3957,6 +3957,20 @@ const HomeNew: React.FC = () => {
                     )}
                   </div>
 
+                  {/* Neo Tokyo Glitch disclaimer - show when in Neo Tokyo Glitch mode */}
+                  {composerState.mode === 'neotokyoglitch' && (
+                    <div className="mb-3 px-3 py-2 bg-gradient-to-r from-pink-500/20 to-cyan-500/20 border border-pink-500/30 rounded-lg backdrop-blur-sm">
+                      <div className="flex items-center gap-2 text-xs text-white/90">
+                        <div className="w-2 h-2 bg-gradient-to-r from-pink-400 to-cyan-400 rounded-full animate-pulse"></div>
+                        <span className="font-medium">Neo Tokyo Glitch Disclaimer:</span>
+                        <span className="text-white/80">
+                          This preset transforms you into a future self in a Neo Tokyo glitch — expect chaos, color, and surprises. 
+                          Ethnicity/gender may shift as part of the artistic transformation. Enjoy your glitchy future self!
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Neo Tokyo Glitch™ button - SINGLE BUTTON with dropdown */}
                   <div className="relative" data-neotokyoglitch-dropdown>
                     <button
@@ -3991,20 +4005,6 @@ const HomeNew: React.FC = () => {
                         : 'Neo Tokyo Glitch'
                       }
                     </button>
-                    
-                    {/* Neo Tokyo Glitch disclaimer - show when in Neo Tokyo Glitch mode */}
-                    {composerState.mode === 'neotokyoglitch' && (
-                      <div className="mt-2 px-3 py-2 bg-gradient-to-r from-pink-500/20 to-cyan-500/20 border border-pink-500/30 rounded-lg backdrop-blur-sm">
-                        <div className="flex items-center gap-2 text-xs text-white/90">
-                          <div className="w-2 h-2 bg-gradient-to-r from-pink-400 to-cyan-400 rounded-full animate-pulse"></div>
-                          <span className="font-medium">Neo Tokyo Glitch Disclaimer:</span>
-                          <span className="text-white/80">
-                            This preset transforms you into a future self in a Neo Tokyo glitch — expect chaos, color, and surprises. 
-                            Ethnicity/gender may shift as part of the artistic transformation. Enjoy your glitchy future self!
-                          </span>
-                        </div>
-                      </div>
-                    )}
                     
                     {/* Neo Tokyo Glitch presets dropdown - show when in Neo Tokyo Glitch mode */}
                     {composerState.mode === 'neotokyoglitch' && neoTokyoGlitchDropdownOpen && (
