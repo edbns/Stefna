@@ -243,6 +243,7 @@ export const handler: Handler = async (event): Promise<any> => {
       // Insert the media
       const result = await sql`
         INSERT INTO media_assets (
+          id,
           user_id, 
           cloudinary_public_id, 
           media_type, 
@@ -256,6 +257,7 @@ export const handler: Handler = async (event): Promise<any> => {
           meta,
           created_at
         ) VALUES (
+          ${randomUUID()},
           ${userId}, 
           ${cloudinary_public_id || null}, 
           ${media_type || 'image'}, 
