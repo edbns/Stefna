@@ -128,9 +128,11 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // For now, return success to test the validation
-    // TODO: Implement actual Replicate API call
-    console.log('🚀 [NeoGlitch] Ready to start Replicate generation with:', {
+    // Start actual Replicate generation
+    const REPLICATE_API_URL = 'https://api.replicate.com/v1/predictions';
+    const NEO_TOKYO_GLITCH_MODEL = 'stability-ai/stable-diffusion-img2img:30c1d0b916a6f8efce20493f5d61ee27491ab2a6045c87d3d92bc3a208f1337d4';
+    
+    console.log('🚀 [NeoGlitch] Starting Replicate generation with:', {
       prompt: prompt.substring(0, 50) + '...',
       presetKey,
       runId,
@@ -138,19 +140,73 @@ export const handler: Handler = async (event) => {
       hasToken: !!REPLICATE_API_TOKEN
     });
 
+    // Create Replicate payload
+    const replicatePayload = {
+      version: NEO_TOKYO_GLITCH_MODEL,
+      input: {
+        prompt: prompt,
+        negative_prompt: "blurry, low quality, distorted, ugly, bad anatomy",
+        strength: 0.75,
+        guidance_scale: 7.5,
+        num_inference_steps: 50,
+        image: sourceUrl
+      }
+    };
+
+    console.log('📤 [NeoGlitch] Calling Replicate API with payload:', {
+      model: NEO_TOKYO_GLITCH_MODEL,
+      prompt: prompt.substring(0, 50) + '...',
+      sourceUrl,
+      hasToken: !!REPLICATE_API_TOKEN
+    });
+
+    // Call Replicate API
+    const replicateResponse = await fetch(REPLICATE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${REPLICATE_API_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(replicatePayload)
+    });
+
+    if (!replicateResponse.ok) {
+      const errorText = await replicateResponse.text();
+      console.error('❌ [NeoGlitch] Replicate API error:', {
+        status: replicateResponse.status,
+        statusText: replicateResponse.statusText,
+        errorText: errorText
+      });
+      
+      return {
+        statusCode: replicateResponse.status,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          error: 'REPLICATE_API_FAILED',
+          message: 'Failed to start Replicate generation',
+          details: errorText,
+          replicateStatus: replicateResponse.status
+        })
+      };
+    }
+
+    const replicateResult = await replicateResponse.json();
+    console.log('✅ [NeoGlitch] Replicate generation started successfully:', {
+      predictionId: replicateResult.id,
+      status: replicateResult.status,
+      urls: replicateResult.urls
+    });
+
+    // Return the replicateJobId for polling
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
         success: true,
-        message: 'Validation passed - ready for Replicate generation',
-        validatedFields: {
-          prompt: prompt.substring(0, 50) + '...',
-          presetKey,
-          runId,
-          sourceUrl,
-          userId
-        }
+        message: 'Neo Tokyo Glitch generation started successfully',
+        replicateJobId: replicateResult.id, // This is what the frontend needs for polling
+        status: 'processing',
+        urls: replicateResult.urls
       })
     };
 
