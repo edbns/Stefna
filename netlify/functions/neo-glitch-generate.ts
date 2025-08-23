@@ -120,14 +120,16 @@ export const handler: Handler = async (event) => {
         strength: 0.75,
         guidance_scale: 7.5,
         num_inference_steps: 50,
-        ...(sourceAssetId && { image: `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${sourceAssetId}` })
+        ...(sourceAssetId && { image: sourceAssetId }) // sourceAssetId should already be the full Cloudinary URL
       }
     };
 
     console.log('🚀 [NeoGlitch] Calling Replicate API with payload:', {
       model: NEO_TOKYO_GLITCH_MODEL,
       prompt: prompt.substring(0, 50) + '...',
-      hasSourceImage: !!sourceAssetId
+      hasSourceImage: !!sourceAssetId,
+      sourceAssetId: sourceAssetId,
+      fullPayload: replicatePayload
     });
 
     // Call Replicate API
