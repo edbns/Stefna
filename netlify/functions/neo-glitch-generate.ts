@@ -141,9 +141,20 @@ export const handler: Handler = async (event) => {
     };
 
     // Check if Stability.ai returned immediate result
-    if (stabilityResult.imageUrl) {
+    if (stabilityResult.imageUrl && stabilityResult.status === 'completed') {
       responseBody.imageUrl = stabilityResult.imageUrl;
       responseBody.status = 'completed';
+      
+      // Update database record with completed status and image URL
+      await db.neoGlitchMedia.update({
+        where: { id: initialRecord.id },
+        data: {
+          status: 'completed',
+          imageUrl: stabilityResult.imageUrl
+        }
+      });
+      
+      console.log('🎉 [NeoGlitch] Generation completed successfully with image URL');
     }
 
     return {
@@ -193,6 +204,43 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
   } catch (error: any) {
     console.error('❌ [NeoGlitch] Stability.ai generation failed:', error.message);
     throw new Error(`Stability.ai generation failed: ${error.message}`);
+  }
+}
+
+// Cloudinary Upload Function
+async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
+  const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+  const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
+  const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
+
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
+    throw new Error('Cloudinary credentials not configured');
+  }
+
+  try {
+    // Convert base64 to buffer
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    
+    // Create form data for Cloudinary upload
+    const formData = new FormData();
+    formData.append('file', new Blob([imageBuffer], { type: 'image/png' }), 'generated.png');
+    formData.append('upload_preset', 'ml_default'); // Use default upload preset
+    
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Cloudinary upload failed: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    return result.secure_url;
+  } catch (error: any) {
+    console.error('❌ [NeoGlitch] Cloudinary upload error:', error);
+    throw new Error(`Cloudinary upload failed: ${error.message}`);
   }
 }
 
@@ -283,16 +331,44 @@ async function attemptStabilityGeneration(
   }
 
   const result = await response.json();
-  console.log('✅ [NeoGlitch] Stability.ai generation started successfully');
+  console.log('✅ [NeoGlitch] Stability.ai generation completed successfully');
+  console.log('📦 [NeoGlitch] Stability.ai response:', JSON.stringify({
+    ...result,
+    artifacts: result.artifacts ? `${result.artifacts.length} artifacts returned` : 'no artifacts'
+  }, null, 2));
   
-  // For now, we'll return a job ID and handle async processing
-  // Stability.ai might return immediate results for some requests
-  const jobId = result.id || `stability_${Date.now()}`;
-  
-  return {
-    stabilityJobId: jobId,
-    model: 'sd3',
-    strategy: 'stability_sd3',
-    imageUrl: result.artifacts?.[0]?.base64 ? `data:image/png;base64,${result.artifacts[0].base64}` : undefined
-  };
+  // Check if we have a completed generation with artifacts
+  if (result.artifacts && result.artifacts.length > 0) {
+    const artifact = result.artifacts[0];
+    
+    if (artifact.base64 && artifact.finishReason === 'SUCCESS') {
+      console.log('🎨 [NeoGlitch] Found successful generation with base64 image');
+      
+      // Upload base64 image to Cloudinary
+      try {
+        const cloudinaryUrl = await uploadBase64ToCloudinary(artifact.base64);
+        console.log('☁️ [NeoGlitch] Image uploaded to Cloudinary:', cloudinaryUrl);
+        
+        return {
+          stabilityJobId: result.id || `stability_${Date.now()}`,
+          model: 'sd3',
+          strategy: 'stability_sd3',
+          imageUrl: cloudinaryUrl,
+          status: 'completed'
+        };
+      } catch (uploadError: any) {
+        console.error('❌ [NeoGlitch] Cloudinary upload failed:', uploadError);
+        throw new Error(`Failed to upload generated image: ${uploadError.message}`);
+      }
+    } else {
+      console.log('⚠️ [NeoGlitch] Generation completed but no valid image:', {
+        hasBase64: !!artifact.base64,
+        finishReason: artifact.finishReason
+      });
+      throw new Error(`Generation completed but no valid image output. Finish reason: ${artifact.finishReason}`);
+    }
+  } else {
+    console.log('⚠️ [NeoGlitch] No artifacts returned from Stability.ai');
+    throw new Error('No image artifacts returned from Stability.ai');
+  }
 }
