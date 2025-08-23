@@ -436,7 +436,7 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
       allowPublish: true, // TODO: get from user settings
       source: job.source,
       variations: [{
-        url: result.resultUrl,
+        image_url: result.resultUrl,  // ✅ Fixed: 'url' → 'image_url'
         type: 'image', // TODO: detect from result
         meta: {
           presetId: job.presetId,
