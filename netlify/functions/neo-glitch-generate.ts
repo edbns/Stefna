@@ -3,7 +3,6 @@
 // No intermediate table - direct Replicate → Cloudinary → neo_glitch_media flow
 
 import type { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
 import { requireAuth } from './lib/auth';
 import { json } from './_lib/http';
 

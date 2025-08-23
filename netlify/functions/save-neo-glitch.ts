@@ -3,7 +3,6 @@
 // No dependency on save-media.ts for clean architecture
 
 import type { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
 import { requireAuth } from './lib/auth';
 import { json } from './_lib/http';
 
@@ -71,6 +70,8 @@ export const handler: Handler = async (event) => {
       replicateJobId
     });
 
+    // Dynamic import for better Netlify compatibility
+    const { neon } = await import('@neondatabase/serverless');
     const sql = neon(process.env.NETLIFY_DATABASE_URL!);
 
     // Step 1: Check if this generation already exists

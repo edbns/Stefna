@@ -1,33 +1,33 @@
 [build]
-  command = "npm install && npm run build"
+  command = "npm ci && npm run build"
   publish = "dist"
   functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20.19.4"
-  NPM_FLAGS = "--prefer-offline --no-audit --production"
+  NPM_FLAGS = "--prefer-offline --no-audit"
   VITE_BUILD_OPTIMIZE = "true"
 
 # Production context
 [context.production]
-  command = "npm install && npm run build"
+  command = "npm ci && npm run build"
   environment = { NODE_ENV = "production" }
 
 # Deploy preview context  
 [context.deploy-preview]
-  command = "npm install && npm run build"
+  command = "npm ci && npm run build"
   environment = { NODE_ENV = "preview" }
 
 # Branch deploy context
 [context.branch-deploy]
-  command = "npm install && npm run build"
+  command = "npm ci && npm run build"
   environment = { NODE_ENV = "development" }
 
 # Function optimization
 [functions]
   node_bundler = "esbuild"
-  # Ensure all dependencies are bundled
-  external_node_modules = []
+  # External modules that should not be bundled
+  external_node_modules = ["@neondatabase/serverless", "pg", "@prisma/client"]
 
 # Function-specific configurations
 [functions."aimlApi"]
@@ -56,4 +56,4 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
