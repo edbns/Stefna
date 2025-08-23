@@ -83,8 +83,8 @@ export const handler: Handler = async (event) => {
           transactionUserId: creditTransaction.userId,
           requestUserId: userId
         });
-        return json({ 
-          ok: false, 
+          return json({ 
+            ok: false, 
           error: "UNAUTHORIZED",
           message: "Transaction belongs to different user"
         }, { status: 403 });
@@ -174,7 +174,7 @@ export const handler: Handler = async (event) => {
           message: 'Credits committed successfully'
         });
       }
-
+      
     } catch (dbError) {
       console.error("💥 DB finalization failed:", dbError);
       return json({ 

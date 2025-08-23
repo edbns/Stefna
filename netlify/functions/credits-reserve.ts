@@ -61,7 +61,7 @@ export const handler: Handler = async (event) => {
     const request_id = body.request_id || body.requestId || randomUUID();
 
     console.log("[credits-reserve] Parsed:", { userId, request_id, action, cost });
-    
+
     // Validation
     if (!userId) {
       console.error("❌ userId is missing or undefined");
@@ -162,15 +162,15 @@ export const handler: Handler = async (event) => {
       });
       
       console.log('💰 Balance updated:', updatedCredits.balance);
-      
-      // Return success with request_id for finalization
-      return json({
-        ok: true,
-        request_id: request_id,
+        
+        // Return success with request_id for finalization
+        return json({
+          ok: true,
+          request_id: request_id,
         balance: updatedCredits.balance,
-        cost: cost,
-        action: action
-      }, { status: 200 });
+          cost: cost,
+          action: action
+        }, { status: 200 });
       
     } catch (dbError) {
       console.error("💥 DB reservation failed:", dbError);

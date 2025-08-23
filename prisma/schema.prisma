@@ -141,20 +141,22 @@ model ReferralSignup {
 }
 
 model NeoGlitchMedia {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  imageUrl  String
-  sourceUrl String
-  prompt    String
-  preset    String
-  runId     String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  status    String   @default("completed")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  imageUrl        String
+  sourceUrl       String
+  prompt          String
+  preset          String
+  runId           String   @unique
+  replicateJobId  String?  @map("replicate_job_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  status          String   @default("completed")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([status])
   @@index([preset])
+  @@index([replicateJobId])
   @@map("neo_glitch_media")
 }
 
