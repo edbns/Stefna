@@ -130,7 +130,7 @@ export const handler: Handler = async (event) => {
 
     // Start actual Replicate generation
     const REPLICATE_API_URL = 'https://api.replicate.com/v1/predictions';
-    // Use latest working version to avoid model version issues
+    // Use latest working version to avoid model version issues - deployment retry
     const NEO_TOKYO_GLITCH_MODEL = 'stability-ai/stable-diffusion-img2img:latest';
     
     console.log('🚀 [NeoGlitch] Starting Replicate generation with:', {
