@@ -79,11 +79,8 @@ SELECT
   mag.cloudinary_url as final_url,
   mag.status,
   mag.meta,
-  mag.created_at,
-  u.name as username,
-  u.avatar_url
+  mag.created_at
 FROM media_assets_glitch mag
-JOIN users u ON mag.user_id = u.id
 WHERE mag.status = 'completed' 
   AND mag.cloudinary_url IS NOT NULL
 ORDER BY mag.created_at DESC;
