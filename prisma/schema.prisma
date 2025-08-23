@@ -157,3 +157,14 @@ model NeoGlitchMedia {
   @@index([preset])
   @@map("neo_glitch_media")
 }
+
+model AuthOtp {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String
+  code      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  used      Boolean? @default(false)
+
+  @@map("auth_otps")
+}
