@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,142 +7,107 @@ datasource db {
   url      = env("NETLIFY_DATABASE_URL")
 }
 
-// Enable required extensions
 model Extensions {
-  id String @id @default(cuid())
-  name String @unique
+  id      String  @id @default(cuid())
+  name    String  @unique
   enabled Boolean @default(true)
+
   @@map("_extensions")
 }
 
-// Users table - bulletproof ownership
 model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  externalId String   @unique @map("external_id") // Netlify Identity sub (string)
-  name       String?
-  avatarUrl  String?  @map("avatar_url")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  media      MediaAsset[]
-  settings   UserSettings?
-  credits    UserCredits?
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  externalId         String              @unique @map("external_id")
+  name               String?
+  avatarUrl          String?             @map("avatar_url")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
   creditTransactions CreditTransaction[]
-  notifications Notification[]
+  media              MediaAsset[]
+  neoGlitchMedia     NeoGlitchMedia[]
+  notifications      Notification[]
+  credits            UserCredits?
+  settings           UserSettings?
 
   @@map("users")
 }
 
-// User settings - separate table for flexibility
 model UserSettings {
-  id           String @id @default(cuid())
-  userId       String @unique @map("user_id")
-  shareToFeed  Boolean @default(true) @map("share_to_feed")
-  allowRemix   Boolean @default(true) @map("allow_remix")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  userId      String   @unique @map("user_id")
+  shareToFeed Boolean  @default(true) @map("share_to_feed")
+  allowRemix  Boolean  @default(true) @map("allow_remix")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
 }
 
-// Consolidated Media Assets table - replaces old media_assets and assets
 model MediaAsset {
-  id           String   @id @default(cuid())
-  userId       String   @map("user_id") // Always required, no nullable owner_id bugs
-  
-  // URL fields - consolidated for both Cloudinary and Replicate
-  url          String?  // Legacy field for backward compatibility
-  finalUrl     String?  @map("final_url") // Primary field for generated media URLs
-  cloudinaryPublicId String? @unique @map("cloudinary_public_id") // Cloudinary public ID
-  publicId     String?  @unique @map("public_id") // Alternative field name
-  
-  // Media properties
-  resourceType String?  @map("resource_type") // image, video, raw
-  mediaType    String?  @map("media_type") // Alternative field name
-  folder       String?
-  bytes        Int?
-  width        Int?
-  height       Int?
-  duration     Int?
-  
-  // Generation metadata
-  prompt       String?
-  negativePrompt String? @map("negative_prompt")
-  model        String?
-  mode         String?
-  
-  // Visibility and permissions
-  visibility   String   @default("private") // private, public
-  isPublic     Boolean  @default(false) @map("is_public") // Legacy field for backward compatibility
-  allowRemix   Boolean  @default(false) @map("allow_remix")
-  
-  // Status tracking
-  status       String   @default("ready") // ready, processing, failed
-  
-  // Preset and source tracking
-  presetKey    String?  @map("preset_key") // Alternative to preset_id
-  presetId     String?  @map("preset_id") // Alternative to preset_key
-  sourceAssetId String? @map("source_asset_id")
-  
-  // Environment and metadata
-  env          String   @default("production")
-  meta         Json?    // Flexible metadata
-  
-  // Timestamps
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(cuid())
+  userId             String   @map("user_id")
+  url                String?
+  finalUrl           String?  @map("final_url")
+  cloudinaryPublicId String?  @unique @map("cloudinary_public_id")
+  publicId           String?  @unique @map("public_id")
+  resourceType       String?  @map("resource_type")
+  mediaType          String?  @map("media_type")
+  folder             String?
+  bytes              Int?
+  width              Int?
+  height             Int?
+  duration           Int?
+  prompt             String?
+  negativePrompt     String?  @map("negative_prompt")
+  model              String?
+  mode               String?
+  visibility         String   @default("private")
+  isPublic           Boolean  @default(false) @map("is_public")
+  allowRemix         Boolean  @default(false) @map("allow_remix")
+  status             String   @default("ready")
+  presetKey          String?  @map("preset_key")
+  presetId           String?  @map("preset_id")
+  sourceAssetId      String?  @map("source_asset_id")
+  env                String   @default("production")
+  meta               Json?
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  owner              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relations
-  owner User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Indexes for performance
   @@index([userId, createdAt(sort: Desc)])
   @@index([visibility, createdAt(sort: Desc)])
   @@index([status])
   @@index([finalUrl])
   @@index([cloudinaryPublicId])
-  
   @@map("media_assets")
 }
 
-// User Credits table - current balance
 model UserCredits {
   userId    String   @id @map("user_id")
   balance   Int      @default(0)
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_credits")
 }
 
-// Credits Ledger table - transaction history
 model CreditTransaction {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  requestId String   @unique @map("request_id") // idempotency key
-  action    String   // e.g., "image.gen", "video.gen", "grant", "refund"
-  amount    Int      // negative for spend, positive for grant/refund
-  status    String   // reserved, committed, refunded, granted
-  meta      Json?    // additional metadata
+  requestId String   @unique @map("request_id")
+  action    String
+  amount    Int
+  status    String
+  meta      Json?
   createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Indexes for quota calculations
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, status, createdAt(sort: Desc)])
-  
   @@map("credits_ledger")
 }
 
-// App Configuration table - global settings
 model AppConfig {
   key   String @id
   value Json
@@ -153,33 +115,45 @@ model AppConfig {
   @@map("app_config")
 }
 
-// Notifications
 model Notification {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  type      String   // e.g., "generation_complete", "generation_started"
+  type      String
   title     String
   message   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Indexes
   @@index([userId, read, createdAt(sort: Desc)])
-  
   @@map("notifications")
 }
 
-// Referral system tables
 model ReferralSignup {
-  id               String   @id @default(cuid())
-  referrerUserId   String   @map("referrer_user_id")
-  newUserId        String   @unique @map("new_user_id")
-  referrerEmail    String?  @map("referrer_email")
-  newUserEmail     String?  @map("new_user_email")
-  createdAt        DateTime @default(now()) @map("created_at")
+  id             String   @id @default(cuid())
+  referrerUserId String   @map("referrer_user_id")
+  newUserId      String   @unique @map("new_user_id")
+  referrerEmail  String?  @map("referrer_email")
+  newUserEmail   String?  @map("new_user_email")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   @@map("referral_signups")
+}
+
+model NeoGlitchMedia {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  imageUrl  String
+  sourceUrl String
+  prompt    String
+  preset    String
+  runId     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  status    String   @default("completed")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([preset])
+  @@map("neo_glitch_media")
 }

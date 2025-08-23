@@ -1,10 +1,13 @@
 // Dedicated Neo Tokyo Glitch Save Function
 // Handles complete workflow: Replicate → Cloudinary → Database → Profile linking
-// No dependency on save-media.ts for clean architecture
+// Uses Prisma for type-safe database operations
 
 import type { Handler } from '@netlify/functions';
-import { requireAuth } from './lib/auth';
+import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 interface SaveNeoGlitchRequest {
   userId: string;
@@ -36,14 +39,21 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: { 
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
 
   try {
     // Authenticate user
-    const { sub: userId } = requireAuth(event);
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader) {
+      return json({ error: 'Missing Authorization header' }, { status: 401 });
+    }
+    const { userId } = requireAuth(authHeader);
     console.log('🎭 [SaveNeoGlitch] User authenticated:', userId);
 
     const body: SaveNeoGlitchRequest = JSON.parse(event.body || '{}');
@@ -70,26 +80,19 @@ export const handler: Handler = async (event) => {
       replicateJobId
     });
 
-    // Dynamic import for better Netlify compatibility
-    const { neon } = await import('@neondatabase/serverless');
-    const sql = neon(process.env.NETLIFY_DATABASE_URL!);
+    // Step 1: Check if this generation already exists using Prisma
+    const existingRecord = await prisma.neoGlitchMedia.findUnique({
+      where: { runId: replicateJobId }
+    });
 
-    // Step 1: Check if this generation already exists
-    const existingRecord = await sql`
-      SELECT id, status FROM neo_glitch_media 
-      WHERE user_id = ${userId} AND source_url = ${sourceUrl}
-      LIMIT 1
-    `;
-
-    if (existingRecord && existingRecord.length > 0) {
-      const record = existingRecord[0];
-      console.log('⚠️ [SaveNeoGlitch] Generation already exists:', record.id, record.status);
+    if (existingRecord) {
+      console.log('⚠️ [SaveNeoGlitch] Generation already exists:', existingRecord.id, existingRecord.status);
       
-      if (record.status === 'completed') {
+      if (existingRecord.status === 'completed') {
         return json({
           success: true,
           message: 'Generation already completed',
-          mediaId: record.id,
+          mediaId: existingRecord.id,
           status: 'completed'
         });
       }
@@ -112,65 +115,62 @@ export const handler: Handler = async (event) => {
       const backupError = await backupResponse.text();
       console.error('❌ [SaveNeoGlitch] Cloudinary backup failed:', backupError);
       
-      // Insert record with failed status
-      const failedRecord = await sql`
-        INSERT INTO neo_glitch_media (
-          user_id, preset_key, source_url, status, replicate_job_id, 
-          generation_meta, error_message
-        ) VALUES (
-          ${userId}, ${presetKey}, ${sourceUrl}, 'failed', ${replicateJobId},
-          ${JSON.stringify(generationMeta)}, ${`Cloudinary backup failed: ${backupError}`}
-        ) RETURNING id
-      `;
+      // Insert record with failed status using Prisma
+      const failedRecord = await prisma.neoGlitchMedia.create({
+        data: {
+          userId,
+          preset: presetKey,
+          sourceUrl,
+          imageUrl: '', // Empty for failed generations
+          prompt: generationMeta.prompt || 'Generation failed',
+          runId: replicateJobId,
+          status: 'failed'
+        }
+      });
 
       return json({ 
         error: 'Cloudinary backup failed',
         details: backupError,
-        mediaId: failedRecord[0]?.id
+        mediaId: failedRecord.id
       }, { status: 500 });
     }
 
     const backupResult = await backupResponse.json();
     console.log('✅ [SaveNeoGlitch] Cloudinary backup successful:', backupResult.permanentUrl);
 
-    // Step 3: Insert or update record in neo_glitch_media
+    // Step 3: Insert or update record using Prisma
     let mediaId: string;
     
-    if (existingRecord && existingRecord.length > 0) {
+    if (existingRecord) {
       // Update existing record
-      const updateResult = await sql`
-        UPDATE neo_glitch_media 
-        SET 
-          output_url = ${backupResult.permanentUrl},
-          status = 'completed',
-          replicate_job_id = ${replicateJobId},
-          generation_meta = ${JSON.stringify(generationMeta)},
-          updated_at = NOW()
-        WHERE id = ${existingRecord[0].id}
-        RETURNING id
-      `;
-      mediaId = updateResult[0].id;
+      const updateResult = await prisma.neoGlitchMedia.update({
+        where: { id: existingRecord.id },
+        data: {
+          imageUrl: backupResult.permanentUrl,
+          status: 'completed',
+          prompt: generationMeta.prompt || 'Neo Tokyo Glitch generation'
+        }
+      });
+      mediaId = updateResult.id;
       console.log('✅ [SaveNeoGlitch] Updated existing record:', mediaId);
     } else {
       // Insert new record
-      const insertResult = await sql`
-        INSERT INTO neo_glitch_media (
-          user_id, preset_key, source_url, output_url, status, 
-          replicate_job_id, generation_meta
-        ) VALUES (
-          ${userId}, ${presetKey}, ${sourceUrl}, ${backupResult.permanentUrl}, 'completed',
-          ${replicateJobId}, ${JSON.stringify(generationMeta)}
-        ) RETURNING id
-      `;
-      mediaId = insertResult[0].id;
+      const insertResult = await prisma.neoGlitchMedia.create({
+        data: {
+          userId,
+          preset: presetKey,
+          sourceUrl,
+          imageUrl: backupResult.permanentUrl,
+          prompt: generationMeta.prompt || 'Neo Tokyo Glitch generation',
+          runId: replicateJobId,
+          status: 'completed'
+        }
+      });
+      mediaId = insertResult.id;
       console.log('✅ [SaveNeoGlitch] Created new record:', mediaId);
     }
 
-    // Step 4: Link to user profile (if needed)
-    // This ensures the media appears in user's profile
-    console.log('🔗 [SaveNeoGlitch] Linking to user profile...');
-
-    // Step 5: Return success response
+    // Step 4: Return success response
     return json({
       success: true,
       message: 'Neo Tokyo Glitch media saved successfully',
@@ -192,5 +192,7 @@ export const handler: Handler = async (event) => {
       message: error.message,
       status: 'failed'
     }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 };

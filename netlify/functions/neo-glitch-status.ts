@@ -109,6 +109,37 @@ export const handler: Handler = async (event) => {
             num_inference_steps: replicateResult.input.num_inference_steps
           };
         }
+        
+        // Auto-save completed generation to database
+        if (replicateUrl) {
+          console.log('💾 [NeoGlitch] Auto-saving completed generation...');
+          try {
+            const saveResponse = await fetch(`${process.env.URL}/.netlify/functions/save-neo-glitch`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': event.headers.authorization || event.headers.Authorization || ''
+              },
+              body: JSON.stringify({
+                userId,
+                presetKey: 'neo-glitch', // Default preset key
+                sourceUrl: '', // Will be provided by frontend
+                replicateUrl,
+                replicateJobId: replicateJobId,
+                generationMeta
+              })
+            });
+            
+            if (saveResponse.ok) {
+              const saveResult = await saveResponse.json();
+              console.log('✅ [NeoGlitch] Auto-save successful:', saveResult.mediaId);
+            } else {
+              console.warn('⚠️ [NeoGlitch] Auto-save failed:', await saveResponse.text());
+            }
+          } catch (saveError) {
+            console.error('❌ [NeoGlitch] Auto-save error:', saveError);
+          }
+        }
         break;
       case 'failed':
         status = 'failed';
