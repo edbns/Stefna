@@ -110,18 +110,13 @@ export const handler: Handler = async (event) => {
     console.log('✅ [NeoGlitch] Initial record created:', initialRecord.id);
 
     // Smart Replicate Generation with Retry Logic
-    const replicateResult = await smartReplicateGeneration(sourceUrl, normalizedPrompt, presetKey);
+    const replicateResult = await smartGeneration(sourceUrl, normalizedPrompt, presetKey);
 
-    // Update record with provider-specific job ID
+    // Update record with AIML prediction ID
     const updateData: any = {
-      status: 'generating'
+      status: 'generating',
+      aimlPredictionId: replicateResult.replicateJobId // Store AIML ID
     };
-
-    if (replicateResult.strategy?.startsWith('replicate')) {
-      updateData.replicateJobId = replicateResult.replicateJobId;
-    } else if (replicateResult.strategy === 'aiml_fallback') {
-      updateData.aimlPredictionId = replicateResult.replicateJobId; // Store AIML ID in same field for now
-    }
 
     await db.neoGlitchMedia.update({
       where: { id: initialRecord.id },
@@ -130,30 +125,25 @@ export const handler: Handler = async (event) => {
 
     console.log('🚀 [NeoGlitch] Generation started successfully:', {
       strategy: replicateResult.strategy,
-      jobId: replicateResult.replicateJobId,
+      predictionId: replicateResult.replicateJobId,
       model: replicateResult.model
     });
 
-    // Return provider-aware response
+    // Return AIML-focused response
     const responseBody: any = {
       success: true,
-      message: 'Neo Tokyo Glitch generation started',
+      message: 'Neo Tokyo Glitch generation started with AIML',
       runId: runId.toString(),
       status: 'generating',
-      provider: replicateResult.strategy?.startsWith('replicate') ? 'replicate' : 'aiml',
-      strategy: replicateResult.strategy
+      provider: 'aiml',
+      strategy: replicateResult.strategy,
+      aimlPredictionId: replicateResult.replicateJobId
     };
 
-    // Only include replicateJobId for Replicate strategies
-    if (replicateResult.strategy?.startsWith('replicate')) {
-      responseBody.replicateJobId = replicateResult.replicateJobId;
-    } else if (replicateResult.strategy === 'aiml_fallback') {
-      responseBody.aimlPredictionId = replicateResult.replicateJobId;
-      // For AIML, we might get the result immediately or need to poll differently
-      if (replicateResult.urls && replicateResult.urls.length > 0) {
-        responseBody.imageUrl = replicateResult.urls[0];
-        responseBody.status = 'completed';
-      }
+    // Check if AIML returned immediate result
+    if (replicateResult.urls && replicateResult.urls.length > 0) {
+      responseBody.imageUrl = replicateResult.urls[0];
+      responseBody.status = 'completed';
     }
 
     return {
@@ -176,187 +166,36 @@ export const handler: Handler = async (event) => {
   }
 };
 
-// Smart Replicate Generation with Retry Logic
-async function smartReplicateGeneration(sourceUrl: string, prompt: string, presetKey: string) {
-  const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
+// Smart Generation with AIML Only
+async function smartGeneration(sourceUrl: string, prompt: string, presetKey: string) {
   const AIML_API_KEY = process.env.AIML_API_KEY;
-  const REPLICATE_API_URL = 'https://api.replicate.com/v1/predictions';
   const AIML_API_URL = 'https://api.aimlapi.com/v1/predictions';
 
-  if (!REPLICATE_API_TOKEN && !AIML_API_KEY) {
-    throw new Error('Neither REPLICATE_API_TOKEN nor AIML_API_KEY configured');
+  if (!AIML_API_KEY) {
+    throw new Error('AIML_API_KEY not configured');
   }
 
-  console.log('🚀 [NeoGlitch] Starting smart generation with fallback strategies:', {
-    hasReplicateToken: !!REPLICATE_API_TOKEN,
+  console.log('🚀 [NeoGlitch] Starting AIML generation with stable diffusion:', {
     hasAIMLToken: !!AIML_API_KEY,
     sourceUrl,
     promptLength: prompt.length,
     presetKey
   });
 
-  // Strategy 1: Replicate (no version hash) - Most reliable
-  if (REPLICATE_API_TOKEN) {
-    try {
-      console.log('🎯 [NeoGlitch] Strategy 1: Replicate (latest model, no version hash)');
-      const result = await attemptReplicateGeneration(
-        REPLICATE_API_URL,
-        REPLICATE_API_TOKEN,
-        "stability-ai/stable-diffusion-img2img", // No version hash = latest
-        sourceUrl,
-        prompt,
-        presetKey
-      );
-      return { ...result, strategy: 'replicate' };
-    } catch (error: any) {
-      console.log('⚠️ [NeoGlitch] Strategy 1 failed:', error.message);
-    }
+  try {
+    console.log('🎯 [NeoGlitch] Using AIML stable-diffusion-v35-large');
+    const result = await attemptAIMLGeneration(
+      AIML_API_URL,
+      AIML_API_KEY,
+      sourceUrl,
+      prompt,
+      presetKey
+    );
+    return { ...result, strategy: 'aiml_stable_diffusion' };
+  } catch (error: any) {
+    console.error('❌ [NeoGlitch] AIML generation failed:', error.message);
+    throw new Error(`AIML generation failed: ${error.message}`);
   }
-
-  // Strategy 2: Replicate (fallback version hash)
-  if (REPLICATE_API_TOKEN) {
-    try {
-      console.log('🎯 [NeoGlitch] Strategy 2: Replicate (fallback version hash)');
-      const result = await attemptReplicateGeneration(
-        REPLICATE_API_URL,
-        REPLICATE_API_TOKEN,
-        "stability-ai/stable-diffusion-img2img:db21e45b8cdadcd9f6d809d11518b9c4d29c3a7c513d175f2a58f540c6d04ea3",
-        sourceUrl,
-        prompt,
-        presetKey
-      );
-      return { ...result, strategy: 'replicate_versioned' };
-    } catch (error: any) {
-      console.log('⚠️ [NeoGlitch] Strategy 2 failed:', error.message);
-    }
-  }
-
-  // Strategy 3: AIML fallback
-  if (AIML_API_KEY) {
-    try {
-      console.log('🎯 [NeoGlitch] Strategy 3: AIML fallback (stable-diffusion-v35-large)');
-      const result = await attemptAIMLGeneration(
-        AIML_API_URL,
-        AIML_API_KEY,
-        sourceUrl,
-        prompt,
-        presetKey
-      );
-      return { ...result, strategy: 'aiml_fallback' };
-    } catch (error: any) {
-      console.log('⚠️ [NeoGlitch] Strategy 3 (AIML) failed:', error.message);
-    }
-  }
-
-  // All strategies failed
-  console.error('❌ [NeoGlitch] All generation strategies failed');
-  throw new Error('All Neo Tokyo Glitch generation strategies failed. Please check your API configurations.');
-}
-
-// Attempt Replicate generation with specific model
-async function attemptReplicateGeneration(
-  apiUrl: string,
-  apiToken: string,
-  model: string,
-  sourceUrl: string,
-  prompt: string,
-  presetKey: string,
-  isSDXL: boolean = false
-) {
-  // Optimize payload based on model type
-  const payload = isSDXL ? 
-    createSDXLPayload(sourceUrl, prompt, presetKey) :
-    createImg2ImgPayload(sourceUrl, prompt, presetKey);
-
-  console.log('🧪 [NeoGlitch] Attempting generation with model:', model);
-  console.log('📦 [NeoGlitch] Payload:', JSON.stringify(payload, null, 2));
-
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Token ${apiToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      version: model,
-      input: payload
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ [NeoGlitch] Replicate API error:', {
-      status: response.status,
-      statusText: response.statusText,
-      errorText,
-      model,
-      strategy: isSDXL ? 'SDXL Fallback' : 'Img2Img'
-    });
-
-    // Enhanced error parsing
-    let errorDetails;
-    try {
-      errorDetails = JSON.parse(errorText);
-    } catch {
-      errorDetails = errorText;
-    }
-
-    throw new Error(`Replicate API failed (${response.status}): ${JSON.stringify(errorDetails)}`);
-  }
-
-  const result = await response.json();
-  console.log('✅ [NeoGlitch] Generation started successfully with model:', model);
-  
-  return {
-    replicateJobId: result.id,
-    model: model,
-    strategy: isSDXL ? 'replicate_sdxl' : 'replicate',
-    urls: result.output || undefined // Add urls property for consistency
-  };
-}
-
-// Create optimized img2img payload
-function createImg2ImgPayload(sourceUrl: string, prompt: string, presetKey: string) {
-  // Preset-specific parameters
-  const presetConfigs = {
-    'visor': { strength: 0.75, guidance_scale: 7.5, steps: 50 },
-    'base': { strength: 0.65, guidance_scale: 7.0, steps: 40 },
-    'tattoos': { strength: 0.80, guidance_scale: 8.0, steps: 60 },
-    'scanlines': { strength: 0.70, guidance_scale: 7.5, steps: 45 }
-  };
-
-  const config = presetConfigs[presetKey as keyof typeof presetConfigs] || presetConfigs.visor;
-
-  return {
-    prompt: prompt,
-    image: sourceUrl, // Use direct URL (no base64 conversion)
-    strength: config.strength,
-    guidance_scale: config.guidance_scale,
-    num_inference_steps: config.steps,
-    negative_prompt: "blurry, low quality, distorted, ugly, bad anatomy, watermark, text"
-  };
-}
-
-// Create SDXL fallback payload
-function createSDXLPayload(sourceUrl: string, prompt: string, presetKey: string) {
-  const presetConfigs = {
-    'visor': { guidance_scale: 7.5, steps: 50 },
-    'base': { guidance_scale: 7.0, steps: 40 },
-    'tattoos': { guidance_scale: 8.0, steps: 60 },
-    'scanlines': { guidance_scale: 7.5, steps: 45 }
-  };
-
-  const config = presetConfigs[presetKey as keyof typeof presetConfigs] || presetConfigs.visor;
-
-  return {
-    prompt: prompt,
-    image: sourceUrl,
-    guidance_scale: config.guidance_scale,
-    num_inference_steps: config.steps,
-    negative_prompt: "blurry, low quality, distorted, ugly, bad anatomy, watermark, text",
-    width: 1024,
-    height: 1024
-  };
 }
 
 // AIML Generation Function
@@ -425,7 +264,7 @@ async function attemptAIMLGeneration(
   return {
     replicateJobId: result.id, // Keep same field name for consistency
     model: 'stable-diffusion-v35-large',
-    strategy: 'aiml_fallback',
+    strategy: 'aiml_stable_diffusion',
     urls: result.urls
   };
 }

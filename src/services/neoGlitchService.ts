@@ -81,26 +81,15 @@ class NeoGlitchService {
       }
 
       const replicateResult = await replicateRes.json();
-      console.log('🚀 [NeoGlitch] Generation started:', {
+      console.log('🚀 [NeoGlitch] AIML generation started:', {
         provider: replicateResult.provider,
         strategy: replicateResult.strategy,
-        replicateJobId: replicateResult.replicateJobId,
         aimlPredictionId: replicateResult.aimlPredictionId,
         imageUrl: replicateResult.imageUrl
       });
 
-      // Handle different providers
-      if (replicateResult.provider === 'replicate' && replicateResult.replicateJobId) {
-        // Replicate strategy - return job ID for polling
-        return {
-          id: replicateResult.replicateJobId,
-          status: 'pending',
-          runId: request.runId,
-          replicateJobId: replicateResult.replicateJobId,
-          provider: 'replicate'
-        };
-      } else if (replicateResult.provider === 'aiml') {
-        // AIML strategy - handle based on response
+      // Handle AIML response
+      if (replicateResult.provider === 'aiml') {
         if (replicateResult.imageUrl && replicateResult.status === 'completed') {
           // AIML returned immediate result
           console.log('✅ [NeoGlitch] AIML generation completed immediately:', replicateResult.imageUrl);
@@ -112,7 +101,7 @@ class NeoGlitchService {
             provider: 'aiml'
           };
         } else {
-          // AIML is processing - might need different polling logic
+          // AIML is processing
           console.log('🔄 [NeoGlitch] AIML generation in progress:', replicateResult.aimlPredictionId);
           return {
             id: replicateResult.aimlPredictionId || `aiml_${request.runId}`,
@@ -126,7 +115,7 @@ class NeoGlitchService {
         // Fallback for unexpected provider
         console.warn('⚠️ [NeoGlitch] Unexpected provider:', replicateResult.provider);
         return {
-          id: replicateResult.replicateJobId || replicateResult.aimlPredictionId || `unknown_${request.runId}`,
+          id: replicateResult.aimlPredictionId || `unknown_${request.runId}`,
           status: 'pending',
           runId: request.runId,
           provider: replicateResult.provider || 'unknown'
@@ -142,17 +131,10 @@ class NeoGlitchService {
   /**
    * Check the status of a Neo Tokyo Glitch generation
    */
-  async checkStatus(jobId: string, provider: string = 'replicate'): Promise<NeoGlitchStatus> {
+  async checkStatus(jobId: string, provider: string = 'aiml'): Promise<NeoGlitchStatus> {
     try {
-      let endpoint = '/.netlify/functions/neo-glitch-status';
-      let body: any = {};
-
-      if (provider === 'replicate') {
-        body.replicateJobId = jobId;
-      } else if (provider === 'aiml') {
-        endpoint = '/.netlify/functions/aiml-status'; // You might need to create this endpoint
-        body.predictionId = jobId;
-      }
+      const endpoint = '/.netlify/functions/aiml-status'; // You might need to create this endpoint
+      const body = { predictionId: jobId };
 
       const response = await authenticatedFetch(endpoint, {
         method: 'POST',
