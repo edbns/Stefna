@@ -19,7 +19,10 @@ export interface NeoGlitchGenerationResult {
   replicateUrl?: string;
   cloudinaryUrl?: string;
   runId: string;
-  inputHash: string;
+  inputHash?: string;
+  provider?: 'replicate' | 'aiml' | 'unknown';
+  replicateJobId?: string;
+  aimlPredictionId?: string;
 }
 
 export interface NeoGlitchStatus {
@@ -29,6 +32,9 @@ export interface NeoGlitchStatus {
   cloudinaryUrl?: string;
   error?: string;
   meta?: any;
+  mediaId?: string;
+  sourceUrl?: string;
+  generationMeta?: any;
 }
 
 class NeoGlitchService {
@@ -75,14 +81,57 @@ class NeoGlitchService {
       }
 
       const replicateResult = await replicateRes.json();
-      console.log('🚀 [NeoGlitch] Replicate generation started:', replicateResult.replicateJobId);
+      console.log('🚀 [NeoGlitch] Generation started:', {
+        provider: replicateResult.provider,
+        strategy: replicateResult.strategy,
+        replicateJobId: replicateResult.replicateJobId,
+        aimlPredictionId: replicateResult.aimlPredictionId,
+        imageUrl: replicateResult.imageUrl
+      });
 
-      return {
-        id: replicateResult.replicateJobId, // Use Replicate job ID as identifier
-        status: 'pending',
-        runId: request.runId,
-        replicateJobId: replicateResult.replicateJobId
-      };
+      // Handle different providers
+      if (replicateResult.provider === 'replicate' && replicateResult.replicateJobId) {
+        // Replicate strategy - return job ID for polling
+        return {
+          id: replicateResult.replicateJobId,
+          status: 'pending',
+          runId: request.runId,
+          replicateJobId: replicateResult.replicateJobId,
+          provider: 'replicate'
+        };
+      } else if (replicateResult.provider === 'aiml') {
+        // AIML strategy - handle based on response
+        if (replicateResult.imageUrl && replicateResult.status === 'completed') {
+          // AIML returned immediate result
+          console.log('✅ [NeoGlitch] AIML generation completed immediately:', replicateResult.imageUrl);
+          return {
+            id: replicateResult.aimlPredictionId || `aiml_${request.runId}`,
+            status: 'completed',
+            runId: request.runId,
+            cloudinaryUrl: replicateResult.imageUrl,
+            provider: 'aiml'
+          };
+        } else {
+          // AIML is processing - might need different polling logic
+          console.log('🔄 [NeoGlitch] AIML generation in progress:', replicateResult.aimlPredictionId);
+          return {
+            id: replicateResult.aimlPredictionId || `aiml_${request.runId}`,
+            status: 'pending',
+            runId: request.runId,
+            aimlPredictionId: replicateResult.aimlPredictionId,
+            provider: 'aiml'
+          };
+        }
+      } else {
+        // Fallback for unexpected provider
+        console.warn('⚠️ [NeoGlitch] Unexpected provider:', replicateResult.provider);
+        return {
+          id: replicateResult.replicateJobId || replicateResult.aimlPredictionId || `unknown_${request.runId}`,
+          status: 'pending',
+          runId: request.runId,
+          provider: replicateResult.provider || 'unknown'
+        };
+      }
 
     } catch (error) {
       console.error('❌ [NeoGlitch] Start generation failed:', error);
@@ -93,12 +142,22 @@ class NeoGlitchService {
   /**
    * Check the status of a Neo Tokyo Glitch generation
    */
-  async checkStatus(replicateJobId: string): Promise<NeoGlitchStatus> {
+  async checkStatus(jobId: string, provider: string = 'replicate'): Promise<NeoGlitchStatus> {
     try {
-      const response = await authenticatedFetch('/.netlify/functions/neo-glitch-status', {
+      let endpoint = '/.netlify/functions/neo-glitch-status';
+      let body: any = {};
+
+      if (provider === 'replicate') {
+        body.replicateJobId = jobId;
+      } else if (provider === 'aiml') {
+        endpoint = '/.netlify/functions/aiml-status'; // You might need to create this endpoint
+        body.predictionId = jobId;
+      }
+
+      const response = await authenticatedFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ replicateJobId })
+        body: JSON.stringify(body)
       });
 
       if (!response.ok) {
@@ -210,8 +269,8 @@ class NeoGlitchService {
    */
   private async getCurrentUserId(): Promise<string> {
     // Import auth service dynamically to avoid circular dependencies
-    const { default: authService } = await import('../lib/auth');
-    const user = authService.getCurrentUser();
+    const { default: AuthService } = await import('../services/authService');
+    const user = AuthService.getInstance().getCurrentUser();
     
     if (!user?.id) {
       throw new Error('User not authenticated or no user ID available');
