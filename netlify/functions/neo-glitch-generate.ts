@@ -3,7 +3,7 @@
 // No intermediate table - direct Replicate → Cloudinary → neo_glitch_media flow
 
 import type { Handler } from '@netlify/functions';
-import { requireAuth } from './lib/auth';
+import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
 
 // Replicate API configuration
@@ -36,7 +36,7 @@ export const handler: Handler = async (event) => {
 
   try {
     // Authenticate user
-    const { sub: userId } = requireAuth(event);
+    const { userId } = requireAuth(event.headers.authorization);
     console.log('🎭 [NeoGlitch] User authenticated for generation:', userId);
 
     const body = JSON.parse(event.body || '{}');
@@ -44,9 +44,13 @@ export const handler: Handler = async (event) => {
       prompt,
       presetKey,
       sourceUrl,
+      sourceAssetId, // Also accept sourceAssetId for compatibility
       runId,
       generationMeta
     } = body;
+    
+    // Use sourceAssetId if sourceUrl is not provided
+    const finalSourceUrl = sourceUrl || sourceAssetId;
 
     // Validate required fields for new architecture
     if (!prompt || !presetKey || !runId) {
@@ -63,31 +67,31 @@ export const handler: Handler = async (event) => {
     }
 
     // Validate source image URL if provided
-    if (sourceUrl) {
+    if (finalSourceUrl) {
       // Log the URL for debugging
-      console.log('🔍 [NeoGlitch] Validating source image URL:', sourceUrl);
+      console.log('🔍 [NeoGlitch] Validating source image URL:', finalSourceUrl);
       
       // Accept Cloudinary URLs (more flexible validation)
-      const isCloudinary = sourceUrl.includes('res.cloudinary.com');
-      const isReplicate = sourceUrl.includes('replicate.delivery');
-      const isValidUrl = sourceUrl.startsWith('http');
+      const isCloudinary = finalSourceUrl.includes('res.cloudinary.com');
+      const isReplicate = finalSourceUrl.includes('replicate.delivery');
+      const isValidUrl = finalSourceUrl.startsWith('http');
       
       if (!isValidUrl) {
-        console.warn('⚠️ [NeoGlitch] Rejected image URL - not HTTP:', sourceUrl);
+        console.warn('⚠️ [NeoGlitch] Rejected image URL - not HTTP:', finalSourceUrl);
         return json({ 
           error: 'Invalid source image URL: must be a valid HTTP URL' 
         }, { status: 400 });
       }
       
       if (!isCloudinary && !isReplicate) {
-        console.warn('⚠️ [NeoGlitch] Rejected image URL - not Cloudinary or Replicate:', sourceUrl);
+        console.warn('⚠️ [NeoGlitch] Rejected image URL - not Cloudinary or Replicate:', finalSourceUrl);
         return json({ 
           error: 'Invalid source image URL: must be Cloudinary or Replicate hosted' 
         }, { status: 400 });
       }
       
       console.log('✅ [NeoGlitch] Source image URL validation passed:', {
-        url: sourceUrl,
+        url: finalSourceUrl,
         isCloudinary,
         isReplicate
       });
@@ -105,8 +109,8 @@ export const handler: Handler = async (event) => {
       userId,
       presetKey,
       runId,
-      hasSource: !!sourceUrl,
-      sourceUrl: sourceUrl || 'none'
+      hasSource: !!finalSourceUrl,
+      sourceUrl: finalSourceUrl || 'none'
     });
 
     // Start Replicate generation directly (no intermediate table needed)
@@ -118,15 +122,15 @@ export const handler: Handler = async (event) => {
         strength: 0.75,
         guidance_scale: 7.5,
         num_inference_steps: 50,
-        ...(sourceUrl && { image: sourceUrl }) // sourceUrl should already be the full Cloudinary URL
+        ...(finalSourceUrl && { image: finalSourceUrl }) // finalSourceUrl should already be the full Cloudinary URL
       }
     };
 
     console.log('🚀 [NeoGlitch] Calling Replicate API with payload:', {
       model: NEO_TOKYO_GLITCH_MODEL,
       prompt: prompt.substring(0, 50) + '...',
-      hasSourceImage: !!sourceUrl,
-      sourceUrl: sourceUrl,
+      hasSourceImage: !!finalSourceUrl,
+      sourceUrl: finalSourceUrl,
       fullPayload: replicatePayload,
       replicateUrl: REPLICATE_API_URL,
       hasToken: !!REPLICATE_API_TOKEN,
