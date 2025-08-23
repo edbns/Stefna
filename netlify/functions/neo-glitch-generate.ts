@@ -208,7 +208,10 @@ export const handler: Handler = async (event) => {
           error: 'REPLICATE_API_FAILED',
           message: 'Failed to start Replicate generation',
           details: errorText,
-          replicateStatus: replicateResponse.status
+          replicateStatus: replicateResponse.status,
+          replicatePayload, // Add this to debug exactly what was sent
+          sourceUrl,
+          base64ImageSample: base64Image?.substring(0, 100) + '...'
         })
       };
     }
