@@ -37,6 +37,13 @@ export const handler: Handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
     console.log('[update-asset-result] Request body:', body);
 
+    // 🧠 DEBUG: Special logging for Neo Tokyo Glitch mode
+    if (body.meta?.mode === 'neotokyoglitch') {
+      console.log('🎭 [update-asset-result] NEO TOKYO GLITCH MODE DETECTED');
+      console.log('🎭 [update-asset-result] Meta details:', JSON.stringify(body.meta, null, 2));
+      console.log('🎭 [update-asset-result] This should update asset and link to user profile');
+    }
+
     const {
       assetId,
       finalUrl,
@@ -72,6 +79,14 @@ export const handler: Handler = async (event) => {
     if (result && result.length > 0) {
       const updatedAsset = result[0];
       console.log('[update-asset-result] Asset updated successfully:', updatedAsset.id);
+      
+      // 🧠 DEBUG: Confirm Neo Tokyo Glitch asset update
+      if (body.meta?.mode === 'neotokyoglitch') {
+        console.log('🎭 [update-asset-result] NEO TOKYO GLITCH: Asset successfully updated and linked to user profile');
+        console.log('🎭 [update-asset-result] Asset ID:', updatedAsset.id, 'User ID:', userId);
+        console.log('🎭 [update-asset-result] Final URL:', updatedAsset.final_url);
+        console.log('🎭 [update-asset-result] This should now appear in user profile');
+      }
       
       return json({
         ok: true,

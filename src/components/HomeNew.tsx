@@ -2319,21 +2319,58 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
               console.warn('⚠️ Cannot update Emotion Mask asset: missing result URL or asset ID');
             }
           } else if (composerState.mode === 'ghiblireact' || composerState.mode === 'neotokyoglitch') {
-            console.log(`🎭 ${composerState.mode} mode - generation pipeline handles saving automatically`);
+            console.log(`🎭 ${composerState.mode} mode - updating asset with final result for user profile linking`);
             
-            // For Ghibli Reaction and Neo Tokyo Glitch, the generation pipeline 
-            // already calls save-media, so we don't need to call it again here
-            // This prevents duplicate saves and feed duplication
-            
-            if (allResultUrls.length > 0) {
-              console.log(`✅ ${composerState.mode} generation completed - saving handled by pipeline`);
+            // For Ghibli Reaction and Neo Tokyo Glitch, we need to update the existing asset
+            // with the final result URL to link it to the user profile
+            if (allResultUrls.length > 0 && assetId) {
+              console.log(`✅ ${composerState.mode} generation completed - updating asset with final result`);
               
-              // Refresh user media to show the new image (after pipeline save completes)
-              setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                detail: { count: 1, runId: genId } 
-              })), 1200); // Slightly longer delay to ensure pipeline save completes
+              try {
+                // Update the asset with the final generated image URL
+                const updateRes = await authenticatedFetch('/.netlify/functions/update-asset-result', {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    assetId: assetId, // Use the asset ID from create-asset
+                    finalUrl: allResultUrls[0], // The generated image URL from Replicate
+                    status: 'ready', // Mark as ready
+                    prompt: effectivePrompt,
+                    meta: {
+                      mode: composerState.mode,
+                      presetId: selectedPreset,
+                      runId: genId,
+                      userId,
+                      shareNow: !!shareToFeed,
+                      generationType: 'replicate',
+                      model: generationMeta?.model || 'replicate/stability-ai/stable-diffusion-img2img'
+                    }
+                  })
+                });
+                
+                const updateText = await updateRes.text();
+                let updateBody: any = {};
+                try { updateBody = JSON.parse(updateText); } catch {}
+                
+                if (updateRes.ok && updateBody?.ok) {
+                  console.log(`✅ ${composerState.mode} asset updated successfully:`, updateBody);
+                  
+                  // Refresh user media to show the new image
+                  setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                    detail: { count: 1, runId: genId } 
+                  })), 800);
+                } else {
+                  console.error(`❌ ${composerState.mode} asset update failed:`, updateRes.status, updateBody || updateText);
+                  notifyError({ title: 'Update failed', message: updateBody?.error || `Failed to update ${composerState.mode} asset` });
+                }
+              } catch (updateError) {
+                console.error(`❌ ${composerState.mode} update-asset-result call failed:`, updateError);
+                notifyError({ title: 'Update failed', message: `Failed to update ${composerState.mode} asset` });
+              }
             } else {
-              console.warn(`⚠️ Cannot refresh ${composerState.mode} media: missing result URL`);
+              console.warn(`⚠️ Cannot update ${composerState.mode} asset: missing result URL or asset ID`);
             }
           } else if (composerState.mode === 'preset' || composerState.mode === 'custom') {
             console.log(`🎭 ${composerState.mode} mode - checking variation count: ${allResultUrls.length}`);

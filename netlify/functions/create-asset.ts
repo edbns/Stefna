@@ -122,6 +122,18 @@ export const handler: Handler = async (event) => {
     }
 
     console.log('✅ Asset created successfully:', data);
+    
+    // 🧠 DEBUG: Log user linking information for Neo Tokyo Glitch debugging
+    console.log('🧠 [create-asset] Final save: asset_id =', data.id, 'user_id =', userId || 'null');
+    console.log('🧠 [create-asset] Asset details:', {
+      id: data.id,
+      userId: userId,
+      mediaType: mediaType,
+      presetKey: input.presetKey,
+      prompt: input.prompt ? input.prompt.substring(0, 100) + '...' : null,
+      timestamp: new Date().toISOString()
+    });
+    
     return json({ ok: true, data: data as Asset });
   } catch (e: any) {
     return json({ ok: false, error: e.message || 'create-asset error' }, { status: 500 });

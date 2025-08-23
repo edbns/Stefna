@@ -328,6 +328,13 @@ export const handler: Handler = async (event): Promise<any> => {
       console.log(`🔍 [save-media] Inserting media with finalUrl: ${finalUrl}`);
       console.log(`🔍 [save-media] User ID: ${userId}, Preset: ${preset_key}`);
       
+      // 🧠 DEBUG: Special logging for Neo Tokyo Glitch mode
+      if (meta?.mode === 'neotokyoglitch') {
+        console.log('🎭 [save-media] NEO TOKYO GLITCH MODE DETECTED');
+        console.log('🎭 [save-media] Meta details:', JSON.stringify(meta, null, 2));
+        console.log('🎭 [save-media] This should link media to user profile');
+      }
+      
       const result = await sql`
         INSERT INTO media_assets (
           id,
@@ -367,6 +374,13 @@ export const handler: Handler = async (event): Promise<any> => {
       if (result && result.length > 0) {
         const savedItem = result[0];
         console.log('✅ Media saved successfully:', savedItem.id);
+        
+        // 🧠 DEBUG: Confirm user linking for Neo Tokyo Glitch
+        if (meta?.mode === 'neotokyoglitch') {
+          console.log('🎭 [save-media] NEO TOKYO GLITCH: Media successfully linked to user profile');
+          console.log('🎭 [save-media] User ID:', userId, 'Media ID:', savedItem.id);
+          console.log('🎭 [save-media] This should now appear in user profile');
+        }
         
         // 🔄 Auto-backup Replicate images to Cloudinary IMMEDIATELY
         if (finalUrl && finalUrl.includes('replicate.delivery')) {
