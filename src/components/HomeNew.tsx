@@ -2282,6 +2282,13 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
             }
           }));
 
+          // 🧪 DEBUG: Log batch save details
+          console.log('🧪 [Batch Save] Preparing variations:', variations.map(v => ({
+            source_public_id: v.source_public_id,
+            url: v.image_url,
+            meta: v.meta
+          })));
+
           // Handle different generation modes
           if (composerState.mode === 'emotionmask') {
             console.log('🎭 Emotion Mask mode - updating asset with final result');
@@ -2429,41 +2436,103 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
               // Multiple variations - use unified save-media
               console.log(`🎭 ${composerState.mode} mode - multiple variations (${allResultUrls.length}), using unified save-media`);
               
-              const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
-                method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json',
-                  'X-Idempotency-Key': genId // prevents double-saves on retries
-                },
-                body: JSON.stringify({
-                  variations: variations.map((url, index) => ({
-                    image_url: url,
-                    prompt: prompt?.trim() || 'AI Generated Content',
-                    media_type: 'image',
-                    meta: {
-                      variation_index: index,
-                      mode: composerState.mode,
-                      run_id: genId
-                    }
-                  })),
-                  runId: genId
-                })
-              });
-              
-              const saveText = await saveRes.text();
-              let saveBody: any = {};
-              try { saveBody = JSON.parse(saveText); } catch {}
-              
-              if (saveRes.ok && saveBody?.success && saveBody.count > 0) {
-                console.log(`✅ All ${saveBody.count} ${composerState.mode} variations saved successfully:`, saveBody);
+              try {
+                const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Idempotency-Key': genId // prevents double-saves on retries
+                  },
+                  body: JSON.stringify({
+                    variations: variations.map((url, index) => ({
+                      image_url: url,
+                      prompt: prompt?.trim() || 'AI Generated Content',
+                      media_type: 'image',
+                      meta: {
+                        variation_index: index,
+                        mode: composerState.mode,
+                        run_id: genId
+                      }
+                    })),
+                    runId: genId
+                  })
+                });
                 
-                // Only refresh when we actually saved something
-                setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                  detail: { count: saveBody.count, runId: genId } 
-                })), 800);
-              } else {
-                console.error(`❌ ${composerState.mode} save failed:`, saveRes.status, saveBody || saveText);
-                notifyError({ title: 'Save failed', message: saveBody?.error || 'Failed to save media' });
+                const saveText = await saveRes.text();
+                let saveBody: any = {};
+                try { saveBody = JSON.parse(saveText); } catch {}
+                
+                if (saveRes.ok && saveBody?.success) {
+                  console.log(`✅ ${composerState.mode} batch save successful:`, saveBody);
+                  
+                  // Refresh user media to show the new images
+                  setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                    detail: { count: saveBody.count || allResultUrls.length, runId: genId } 
+                  })), 800);
+                } else {
+                  console.warn(`⚠️ ${composerState.mode} batch save failed, falling back to individual saves:`, saveRes.status, saveBody || saveText);
+                  
+                  // 🧪 FALLBACK: Try saving each variation individually
+                  console.log('🧪 [Fallback] Attempting individual saves for each variation');
+                  
+                  let successfulSaves = 0;
+                  for (let i = 0; i < allResultUrls.length; i++) {
+                    try {
+                      const individualSaveRes = await authenticatedFetch('/.netlify/functions/save-media', {
+                        method: 'POST',
+                        headers: { 
+                          'Content-Type': 'application/json',
+                          'X-Idempotency-Key': `${genId}-variation-${i}` // unique idempotency key for each variation
+                        },
+                        body: JSON.stringify({
+                          finalUrl: allResultUrls[i],
+                          media_type: 'image',
+                          preset_key: selectedPreset,
+                          prompt: effectivePrompt,
+                          source_public_id: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
+                          meta: {
+                            mode: composerState.mode,
+                            presetId: selectedPreset,
+                            runId: genId,
+                            userId,
+                            shareNow: !!shareToFeed,
+                            variation_index: i,
+                            totalVariations: allResultUrls.length,
+                            fallback_save: true
+                          }
+                        })
+                      });
+                      
+                      const individualSaveText = await individualSaveRes.text();
+                      let individualSaveBody: any = {};
+                      try { individualSaveBody = JSON.parse(individualSaveText); } catch {}
+                      
+                      if (individualSaveRes.ok && individualSaveBody?.success) {
+                        console.log(`✅ [Fallback] Variation ${i} saved individually:`, individualSaveBody);
+                        successfulSaves++;
+                      } else {
+                        console.error(`❌ [Fallback] Variation ${i} individual save failed:`, individualSaveRes.status, individualSaveBody || individualSaveText);
+                      }
+                    } catch (individualSaveError) {
+                      console.error(`❌ [Fallback] Variation ${i} individual save error:`, individualSaveError);
+                    }
+                  }
+                  
+                  if (successfulSaves > 0) {
+                    console.log(`✅ [Fallback] ${successfulSaves}/${allResultUrls.length} variations saved individually`);
+                    
+                    // Refresh user media to show the successfully saved images
+                    setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                      detail: { count: successfulSaves, runId: genId } 
+                    })), 800);
+                  } else {
+                    console.error(`❌ [Fallback] All individual saves failed for ${composerState.mode}`);
+                    notifyError({ title: 'Save failed', message: 'Failed to save any variations' });
+                  }
+                }
+              } catch (batchSaveError) {
+                console.error(`❌ ${composerState.mode} batch save error:`, batchSaveError);
+                notifyError({ title: 'Save failed', message: 'Failed to save variations' });
               }
             } else {
               console.warn(`⚠️ ${composerState.mode} mode - no result URLs to save`);

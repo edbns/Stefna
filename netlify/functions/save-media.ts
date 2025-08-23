@@ -140,15 +140,20 @@ export const handler: Handler = async (event): Promise<any> => {
 
       if (validVariations.length !== variations.length) {
         console.warn(`⚠️ Filtered out ${variations.length - validVariations.length} variations with invalid source_asset_id`);
+        console.log('🔍 [Batch Save] Invalid variations details:', variations.filter(v => !v.source_asset_id || (typeof v.source_asset_id === 'string' && v.source_asset_id.length === 0)));
       }
 
       if (validVariations.length === 0) {
+        console.error('❌ [Batch Save] No valid variations to insert after filtering');
+        console.log('🔍 [Batch Save] All variations were invalid:', variations);
         return {
           statusCode: 400,
           headers: { 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ error: 'No valid variations to insert' })
+          body: JSON.stringify({ error: 'No valid variations to insert' }),
         };
       }
+
+      console.log(`✅ [Batch Save] Proceeding with ${validVariations.length} valid variations`);
 
       // Import database connection
       const { neon } = await import('@neondatabase/serverless');
@@ -159,6 +164,14 @@ export const handler: Handler = async (event): Promise<any> => {
         const id = randomUUID();
         const mediaType = v.media_type || 'image';
         const itemIdempotencyKey = `${runId || 'no-run'}:${v.meta?.mood || v.meta?.variation_index || Math.random().toString(36).substr(2, 9)}`;
+        
+        console.log(`🔍 [Batch Save] Processing variation:`, {
+          id,
+          mediaType,
+          itemIdempotencyKey,
+          imageUrl: v.image_url?.substring(0, 100) + '...',
+          meta: v.meta
+        });
         
         // Extract Cloudinary public ID from the image URL or handle non-Cloudinary URLs
         let cloudinaryPublicId: string | null = null;
