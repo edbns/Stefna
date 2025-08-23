@@ -13,13 +13,11 @@ export const handler: Handler = async (event) => {
     const offset = Number(url.searchParams.get('offset') ?? 0);
 
     // Get public media from consolidated media_assets table
-    // This now properly handles both Cloudinary and Replicate images
-    // Fixed: Added proper type casting for UUID vs TEXT join
+    // Simplified query to avoid JOIN issues
     const media = await sql`
       SELECT 
         ma.id,
         ma.user_id,
-        u.email AS user_email,
         ma.cloudinary_public_id,
         COALESCE(ma.media_type, ma.resource_type) AS resource_type,
         ma.prompt,
@@ -32,12 +30,10 @@ export const handler: Handler = async (event) => {
         ma.preset_key,
         ma.preset_id
       FROM media_assets ma
-      LEFT JOIN users u ON ma.user_id::uuid = u.id
       WHERE ma.is_public = true 
         AND ma.status = 'ready'
         AND ma.created_at IS NOT NULL
         AND ma.final_url IS NOT NULL
-        -- Note: Now including all images since we have auto-backup for Replicate images
       ORDER BY ma.created_at DESC
       LIMIT ${limit}
       OFFSET ${offset}
@@ -88,7 +84,7 @@ export const handler: Handler = async (event) => {
         preset_key: presetKey,
         source_public_id: null, // Can be added later if needed
         user_id: item.user_id,
-        user_name: item.user_email?.split('@')[0] || 'User', // Generate display name from email
+        user_name: 'User', // Simplified - no email lookup
         user_avatar: null, // No avatar system in simplified structure
         prompt: item.prompt,
         url: url,

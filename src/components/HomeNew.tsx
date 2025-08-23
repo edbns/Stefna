@@ -3672,30 +3672,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                 // handleRemix removed
               />
               
-              {/* Feed Info */}
-              <div className="text-center py-4 text-white/60 text-sm">
-                Showing {feed.length} items
-                {hasMoreFeed && ' • Scroll down or click Load More for more'}
-              </div>
-              
-              {/* Load More Button */}
-              {hasMoreFeed && (
-                <div className="text-center py-8">
-                  {isLoadingMore ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                      <span className="text-white/80">Loading more...</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={loadMoreFeed}
-                      className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-colors"
-                    >
-                      Load More
-                    </button>
-                  )}
-                </div>
-              )}
+
             </>
           ) : (
             <div className="text-center py-12">
