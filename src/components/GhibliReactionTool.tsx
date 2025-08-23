@@ -386,7 +386,7 @@ export const GhibliReactionTool = () => {
         <h3 className="font-semibold mb-2">How it works:</h3>
         <ul className="text-sm text-gray-600 space-y-1">
           <li>• Upload an image with a clear face</li>
-          <li>• Mediapipe detects facial landmarks for precise placement</li>
+          <li>• TensorFlow.js detects facial landmarks for precise placement</li>
           <li>• Choose from 6 emotional expressions with customizable intensity</li>
           <li>• Adjust opacity, blend modes, shadows, and highlights</li>
           <li>• Download the effect layer or final merged result</li>

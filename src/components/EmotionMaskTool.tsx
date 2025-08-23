@@ -294,7 +294,7 @@ export const EmotionMaskTool = () => {
         <h3 className="font-semibold mb-2">How it works:</h3>
         <ul className="text-sm text-gray-600 space-y-1">
           <li>• Upload an image with a clear face</li>
-          <li>• Mediapipe Face Mesh detects facial landmarks</li>
+          <li>• TensorFlow.js detects facial landmarks</li>
           <li>• Customize which face regions to include</li>
           <li>• Adjust opacity and edge smoothing</li>
           <li>• Download the mask for use with AI generation</li>

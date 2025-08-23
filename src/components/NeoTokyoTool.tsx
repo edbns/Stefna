@@ -446,7 +446,7 @@ export const NeoTokyoTool = () => {
         <h3 className="font-semibold mb-2">How it works:</h3>
         <ul className="text-sm text-gray-600 space-y-1">
           <li>• Upload an image with a clear face</li>
-          <li>• Mediapipe detects facial landmarks for identity preservation</li>
+          <li>• TensorFlow.js detects facial landmarks for identity preservation</li>
           <li>• Choose from 4 glitch modes with customizable intensity</li>
           <li>• Adjust neon colors, glitch amount, and scanline opacity</li>
           <li>• Toggle individual effects on/off</li>
