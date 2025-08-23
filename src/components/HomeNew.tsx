@@ -2452,11 +2452,35 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         } catch (error) {
           console.error(`❌ Save error:`, error);
           notifyError({ title: 'Save failed', message: error instanceof Error ? error.message : 'Unknown error' });
+          
+          // 🚨 CRITICAL: If save failed, refund the reserved credits
+          console.log('🚨 Save failed - refunding reserved credits to prevent charging for failed saves');
+          try {
+            const refundResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                request_id: requestId,
+                disposition: 'refund' // Refund instead of commit
+              })
+            });
+            
+            if (refundResponse.ok) {
+              const refundResult = await refundResponse.json();
+              console.log('✅ Credits refunded successfully after save failure:', refundResult);
+            } else {
+              console.error('❌ Credits refund failed after save failure:', refundResponse.status);
+            }
+          } catch (refundError) {
+            console.error('❌ Credits refund error after save failure:', refundError);
+          }
+          
+          return; // Exit early to prevent credits from being committed
         }
 
-        // 💰 Finalize credits (commit) after successful generation
+        // 💰 Finalize credits (commit) ONLY after successful save
         try {
-          console.log('💰 Finalizing credits (commit)...');
+          console.log('💰 Finalizing credits (commit) after successful save...');
           const finalizeResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
