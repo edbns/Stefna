@@ -87,6 +87,7 @@ import { PROFESSIONAL_PRESETS, ProfessionalPresetConfig } from '../config/profes
 import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
 import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
 import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
+import NeoGlitchService from '../services/neoGlitchService'
 
 // Create a PRESETS object that maps to the new system for backward compatibility
 const PRESETS = Object.fromEntries(
@@ -1762,32 +1763,55 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       let replicateVariationsGenerated = 1;
       
       if (kind === 'neotokyoglitch' && generationMeta?.replicatePreset) {
-        console.log('🚀 NEO TOKYO GLITCH: Using Replicate integration for maximum glitch intensity');
+        console.log('🚀 NEO TOKYO GLITCH: Using new first-class generation pipeline');
         console.log('🎭 Replicate preset:', generationMeta.replicatePreset);
         
         try {
-          // Import the Neo Tokyo Glitch Replicate function
-          const { runNeoTokyoGlitchGeneration } = await import('../utils/identitySafeGeneration');
+          // Use the new NeoGlitchService for complete pipeline management
+          const neoGlitchService = NeoGlitchService.getInstance();
           
-          // Start Replicate generation
-          const replicateResult = await runNeoTokyoGlitchGeneration(
-            sourceUrl,
-            generationMeta.replicatePreset
-          );
+          // Start the complete Neo Tokyo Glitch generation
+          const generationRequest = {
+            prompt: effectivePrompt,
+            presetKey: 'neotokyoglitch',
+            sourceAssetId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
+            userId: userId || '',
+            runId: genId,
+            meta: {
+              mode: 'neotokyoglitch',
+              presetId: selectedPreset,
+              replicatePreset: generationMeta.replicatePreset,
+              features: generationMeta.features
+            }
+          };
           
-          console.log('✅ Neo Tokyo Glitch Replicate generation completed:', replicateResult);
+          console.log('🎭 [NeoGlitch] Starting generation with request:', generationRequest);
           
-          // Set the result URL from Replicate
-          replicateResultUrl = replicateResult.outputUrl;
-          replicateAllResultUrls = [replicateResultUrl];
-          replicateVariationsGenerated = 1;
-          skipAimlApi = true;
+          // Create the initial glitch record and start Replicate generation
+          const generationResult = await neoGlitchService.startGeneration(generationRequest);
           
-          console.log('🎭 Neo Tokyo Glitch Replicate result ready, skipping aimlApi');
+          console.log('✅ [NeoGlitch] Generation started successfully:', generationResult);
+          
+          // Poll for completion
+          const finalStatus = await neoGlitchService.pollForCompletion(generationResult.id);
+          
+          if (finalStatus.status === 'completed' && finalStatus.cloudinaryUrl) {
+            console.log('✅ [NeoGlitch] Generation completed with Cloudinary URL:', finalStatus.cloudinaryUrl);
+            
+            // Set the result URL from Cloudinary (permanent)
+            replicateResultUrl = finalStatus.cloudinaryUrl;
+            replicateAllResultUrls = [replicateResultUrl];
+            replicateVariationsGenerated = 1;
+            skipAimlApi = true;
+            
+            console.log('🎭 [NeoGlitch] Using permanent Cloudinary URL, skipping aimlApi');
+          } else {
+            throw new Error(`Generation failed or incomplete: ${finalStatus.status} - ${finalStatus.error || 'Unknown error'}`);
+          }
           
         } catch (error) {
-          console.error('❌ Neo Tokyo Glitch Replicate generation failed:', error);
-          notifyError({ title: 'Replicate generation failed', message: error.message || 'Please try again' });
+          console.error('❌ [NeoGlitch] Generation failed:', error);
+          notifyError({ title: 'Neo Tokyo Glitch generation failed', message: error.message || 'Please try again' });
           endGeneration(genId);
           setNavGenerating(false);
           return;
@@ -2331,7 +2355,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
             } else {
               console.warn('⚠️ Cannot update Emotion Mask asset: missing result URL or asset ID');
             }
-          } else if (composerState.mode === 'ghiblireact' || composerState.mode === 'neotokyoglitch') {
+          } else if (composerState.mode === 'ghiblireact') {
             console.log(`🎭 ${composerState.mode} mode - calling save-media for complete user profile linking`);
             
             // For Ghibli Reaction and Neo Tokyo Glitch, we need to call save-media
@@ -2388,6 +2412,20 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
               }
             } else {
               console.warn(`⚠️ Cannot save ${composerState.mode} media: missing result URL`);
+            }
+          } else if (composerState.mode === 'neotokyoglitch') {
+            console.log(`🎭 [NeoGlitch] Neo Tokyo Glitch mode - media already saved by first-class pipeline`);
+            console.log(`✅ [NeoGlitch] No additional save-media call needed - using dedicated glitch table`);
+            
+            // Neo Tokyo Glitch media is already saved by our first-class pipeline
+            // The media_assets_glitch table handles everything automatically
+            if (allResultUrls.length > 0) {
+              console.log(`✅ [NeoGlitch] Generation completed successfully with URL:`, allResultUrls[0]);
+              
+              // Refresh user media to show the new image
+              setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                detail: { count: 1, runId: genId } 
+              })), 800);
             }
           } else if (composerState.mode === 'preset' || composerState.mode === 'custom') {
             console.log(`🎭 ${composerState.mode} mode - checking variation count: ${allResultUrls.length}`);
