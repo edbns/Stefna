@@ -275,28 +275,44 @@ export const handler: Handler = async (event): Promise<any> => {
         const savedItem = result[0];
         console.log('✅ Media saved successfully:', savedItem.id);
         
-        // 🔄 Auto-backup Replicate images to Cloudinary
+        // 🔄 Auto-backup Replicate images to Cloudinary IMMEDIATELY
         if (finalUrl && finalUrl.includes('replicate.delivery')) {
-          console.log('🔄 Triggering Replicate image backup for:', { id: savedItem.id, finalUrl });
+          console.log('🔄 Starting IMMEDIATE Replicate image backup for:', { id: savedItem.id, finalUrl });
           
-          // Call backup function asynchronously (don't wait for it)
-          fetch('/.netlify/functions/backup-replicate-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+          try {
+            // Import backup logic directly to avoid serverless function call issues
+            const { backupReplicateImage } = await import('./backup-replicate-image');
+            
+            // Call backup function directly (synchronously)
+            const backupResult = await backupReplicateImage({
               replicateUrl: finalUrl,
               mediaId: savedItem.id,
               userId: userId
-            })
-          }).then(response => {
-            if (response.ok) {
-              console.log('✅ Replicate backup triggered successfully for:', savedItem.id);
+            });
+            
+            if (backupResult.success) {
+              console.log('✅ Replicate backup completed successfully for:', savedItem.id);
+              
+              // Update the saved item with the new Cloudinary URL
+              const updatedResult = await sql`
+                UPDATE media_assets 
+                SET final_url = ${backupResult.permanentUrl},
+                    cloudinary_public_id = ${backupResult.cloudinaryPublicId}
+                WHERE id = ${savedItem.id}
+                RETURNING id, final_url
+              `;
+              
+              if (updatedResult.length > 0) {
+                console.log('✅ Database updated with Cloudinary URL for:', savedItem.id);
+                // Update the return value to reflect the new URL
+                savedItem.final_url = updatedResult[0].final_url;
+              }
             } else {
-              console.error('❌ Replicate backup trigger failed for:', savedItem.id, response.status);
+              console.error('❌ Replicate backup failed for:', savedItem.id, backupResult.error);
             }
-          }).catch(error => {
-            console.error('❌ Replicate backup trigger error for:', savedItem.id, error);
-          });
+          } catch (error) {
+            console.error('❌ Replicate backup error for:', savedItem.id, error);
+          }
         }
         
         return {

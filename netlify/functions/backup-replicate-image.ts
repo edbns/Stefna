@@ -8,32 +8,23 @@ interface BackupRequest {
   userId: string;
 }
 
-export const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
-  }
-
+// Main backup function that can be imported and called directly
+export async function backupReplicateImage(request: BackupRequest) {
   try {
-    const { replicateUrl, mediaId, userId }: BackupRequest = JSON.parse(event.body || '{}');
+    const { replicateUrl, mediaId, userId } = request;
 
     if (!replicateUrl || !mediaId || !userId) {
       return {
-        statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: 'Missing required fields: replicateUrl, mediaId, userId' })
+        success: false,
+        error: 'Missing required fields: replicateUrl, mediaId, userId'
       };
     }
 
     // Validate that this is actually a Replicate URL
     if (!replicateUrl.includes('replicate.delivery')) {
       return {
-        statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: 'Invalid URL: not a Replicate delivery URL' })
+        success: false,
+        error: 'Invalid URL: not a Replicate delivery URL'
       };
     }
 
@@ -115,17 +106,53 @@ export const handler: Handler = async (event) => {
     console.log('✅ Database updated successfully:', updateResult[0]);
 
     return {
-      statusCode: 200,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        success: true,
-        mediaId,
-        originalUrl: replicateUrl,
-        permanentUrl: uploadResult.secure_url,
-        cloudinaryPublicId: uploadResult.public_id,
-        bytes: uploadResult.bytes
-      })
+      success: true,
+      mediaId,
+      originalUrl: replicateUrl,
+      permanentUrl: uploadResult.secure_url,
+      cloudinaryPublicId: uploadResult.public_id,
+      bytes: uploadResult.bytes
     };
+
+  } catch (error) {
+    console.error('❌ Replicate backup failed:', error);
+    
+    return {
+      success: false,
+      error: 'Backup failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+// Netlify function handler
+export const handler: Handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  try {
+    const { replicateUrl, mediaId, userId }: BackupRequest = JSON.parse(event.body || '{}');
+    
+    const result = await backupReplicateImage({ replicateUrl, mediaId, userId });
+    
+    if (result.success) {
+      return {
+        statusCode: 200,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify(result)
+      };
+    } else {
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify(result)
+      };
+    }
 
   } catch (error) {
     console.error('❌ Replicate backup failed:', error);
