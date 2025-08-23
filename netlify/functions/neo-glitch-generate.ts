@@ -140,7 +140,30 @@ export const handler: Handler = async (event) => {
       hasToken: !!REPLICATE_API_TOKEN
     });
 
-    // Create Replicate payload
+    // Download and convert Cloudinary image to base64 for Replicate
+    console.log('📥 [NeoGlitch] Downloading image from Cloudinary:', sourceUrl);
+    
+    const imageResponse = await fetch(sourceUrl);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`);
+    }
+    
+    // Verify we got an image
+    const contentType = imageResponse.headers.get('content-type');
+    if (!contentType?.startsWith('image/')) {
+      throw new Error(`Downloaded file is not an image: ${contentType}`);
+    }
+    
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const base64Image = `data:${contentType};base64,${Buffer.from(imageBuffer).toString('base64')}`;
+    
+    console.log('✅ [NeoGlitch] Image converted to base64:', {
+      originalSize: imageBuffer.byteLength,
+      contentType,
+      base64Length: base64Image.length
+    });
+
+    // Create Replicate payload with base64 image
     const replicatePayload = {
       version: NEO_TOKYO_GLITCH_MODEL,
       input: {
@@ -149,7 +172,7 @@ export const handler: Handler = async (event) => {
         strength: 0.75,
         guidance_scale: 7.5,
         num_inference_steps: 50,
-        image: sourceUrl
+        image: base64Image
       }
     };
 
