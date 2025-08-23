@@ -61,6 +61,9 @@ export const handler: Handler = async (event): Promise<any> => {
     // Parse request body
     const body: SaveRequest = JSON.parse(event.body || '{}');
     
+    // Extract idempotency key from header
+    const idempotencyKey = event.headers['x-idempotency-key'] || event.headers['X-Idempotency-Key'];
+    
     // Extract user ID from auth header or request body
     let userId: string;
     if (body.userId) {
@@ -96,6 +99,11 @@ export const handler: Handler = async (event): Promise<any> => {
         headers: { 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({ error: 'Missing userId' })
       };
+    }
+    
+    // 🛡️ IDEMPOTENCY CHECK: Prevent duplicate saves
+    if (idempotencyKey) {
+      console.log(`🔍 Checking idempotency for key: ${idempotencyKey}`);
     }
 
     // Determine if this is a batch or single operation
@@ -233,6 +241,42 @@ export const handler: Handler = async (event): Promise<any> => {
       const { neon } = await import('@neondatabase/serverless');
       const sql = neon(process.env.NETLIFY_DATABASE_URL!);
 
+      // 🛡️ IDEMPOTENCY CHECK: Prevent duplicate saves
+      if (idempotencyKey) {
+        console.log(`🔍 Checking idempotency for key: ${idempotencyKey}`);
+        
+        // Check if an item with this idempotency key already exists
+        const existingItem = await sql`
+          SELECT id, final_url, media_type, created_at 
+          FROM media_assets 
+          WHERE idempotency_key = ${idempotencyKey}
+          LIMIT 1
+        `;
+        
+        if (existingItem && existingItem.length > 0) {
+          console.log(`✅ Idempotency check: Item already exists with key ${idempotencyKey}`);
+          const item = existingItem[0];
+          
+          return {
+            statusCode: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+              success: true,
+              message: 'Item already exists (idempotency)',
+              id: item.id,
+              final_url: item.final_url,
+              media_type: item.media_type,
+              created_at: item.created_at,
+              table_used: 'media_assets',
+              idempotency: true
+            })
+          };
+        }
+      }
+
       // Extract Cloudinary public ID if it's a Cloudinary URL
       let cloudinary_public_id: string | null = null;
       if (finalUrl.includes('cloudinary.com')) {
@@ -256,7 +300,8 @@ export const handler: Handler = async (event): Promise<any> => {
           final_url,
           meta,
           created_at,
-          updated_at
+          updated_at,
+          idempotency_key
         ) VALUES (
           ${randomUUID()},
           ${userId}, 
@@ -271,7 +316,8 @@ export const handler: Handler = async (event): Promise<any> => {
           ${finalUrl},
           ${meta || {}},
           NOW(),
-          NOW()
+          NOW(),
+          ${idempotencyKey || null}
         ) RETURNING id, final_url, media_type, created_at
       `;
     
