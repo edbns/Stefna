@@ -140,35 +140,19 @@ export const handler: Handler = async (event) => {
       hasToken: !!REPLICATE_API_TOKEN
     });
 
-    // Download and convert Cloudinary image to base64 for Replicate
-    console.log('📥 [NeoGlitch] Downloading image from Cloudinary:', sourceUrl);
-    
-    const imageResponse = await fetch(sourceUrl);
-    if (!imageResponse.ok) {
-      throw new Error(`Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`);
+    // Validate image URL before sending to Replicate
+    if (!sourceUrl.startsWith('http')) {
+      throw new Error(`Invalid source URL for image: ${sourceUrl}`);
     }
-    
-    // Verify we got an image
-    const contentType = imageResponse.headers.get('content-type');
-    if (!contentType?.startsWith('image/')) {
-      throw new Error(`Downloaded file is not an image: ${contentType}`);
-    }
-    
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const base64Image = `data:${contentType};base64,${Buffer.from(imageBuffer).toString('base64')}`;
-    
-    console.log('✅ [NeoGlitch] Image converted to base64:', {
-      originalSize: imageBuffer.byteLength,
-      contentType,
-      base64Length: base64Image.length
-    });
+
+    console.log('✅ [NeoGlitch] Using direct image URL for Replicate:', sourceUrl);
 
     // Create Replicate payload with correct field names for stability-ai/stable-diffusion-img2img
     const replicatePayload = {
       version: NEO_TOKYO_GLITCH_MODEL,
       input: {
         prompt: prompt,
-        image: base64Image,
+        image: sourceUrl,  // ✅ Use URL directly, not base64
         prompt_strength: 0.5,  // Use prompt_strength, not strength
         num_outputs: 1,
         guidance_scale: 7.5,
@@ -221,7 +205,7 @@ export const handler: Handler = async (event) => {
           })(),
           replicateStatus: replicateResponse.status,
           sourceUrl,
-          base64Preview: base64Image?.substring?.(0, 120) + '...',
+          imageUrl: sourceUrl,
           payload: replicatePayload
         })
       };
