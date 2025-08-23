@@ -1773,7 +1773,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           // Start the complete Neo Tokyo Glitch generation
           const generationRequest = {
             prompt: effectivePrompt,
-            presetKey: 'neotokyoglitch',
+            presetKey: generationMeta.replicatePreset, // Use the actual preset key (visor, base, etc.)
             sourceAssetId: sourceUrl || '',
             userId: authService.getCurrentUser()?.id || '',
             runId: genId,
@@ -1786,6 +1786,19 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           };
           
           console.log('🎭 [NeoGlitch] Starting generation with request:', generationRequest);
+          
+          // 🧪 DEBUG: Log the exact payload being sent to the backend
+          console.log('🧪 [NeoGlitch] DEBUG - Payload validation:', {
+            hasPrompt: !!generationRequest.prompt,
+            promptLength: generationRequest.prompt?.length,
+            hasUserId: !!generationRequest.userId,
+            hasPresetKey: !!generationRequest.presetKey,
+            presetKeyValue: generationRequest.presetKey,
+            hasSourceAssetId: !!generationRequest.sourceAssetId,
+            sourceAssetIdValue: generationRequest.sourceAssetId,
+            hasRunId: !!generationRequest.runId,
+            runIdValue: generationRequest.runId
+          });
           
           // Create the initial glitch record and start Replicate generation
           const generationResult = await neoGlitchService.startGeneration(generationRequest);
