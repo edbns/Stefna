@@ -255,7 +255,8 @@ export const handler: Handler = async (event): Promise<any> => {
           allow_remix,
           final_url,
           meta,
-          created_at
+          created_at,
+          updated_at
         ) VALUES (
           ${randomUUID()},
           ${userId}, 
@@ -269,6 +270,7 @@ export const handler: Handler = async (event): Promise<any> => {
           false,
           ${finalUrl},
           ${meta || {}},
+          NOW(),
           NOW()
         ) RETURNING id, final_url, media_type, created_at
       `;
