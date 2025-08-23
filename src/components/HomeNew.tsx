@@ -916,7 +916,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
     try {
       setIsLoadingFeed(true)
       console.log('🔄 Loading public feed...')
-      const res = await fetch('/.netlify/functions/getPublicFeed?limit=50')
+      const res = await fetch('/.netlify/functions/getPublicFeed?limit=100')
       console.log('📡 Feed response status:', res.status)
       
       if (res.ok) {
@@ -938,6 +938,8 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
             // Use the URL from the backend - it should already be properly constructed
             let mediaUrl: string;
             let provider = item.provider || 'unknown';
+            
+
             
             if (item.url && item.url.startsWith('http')) {
               // Use the URL provided by the backend (this should be the correct one)
