@@ -33,13 +33,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger for updated_at
+-- Create trigger for updated_at (drop if exists first)
+DROP TRIGGER IF EXISTS trigger_media_assets_glitch_updated_at ON media_assets_glitch;
 CREATE TRIGGER trigger_media_assets_glitch_updated_at
   BEFORE UPDATE ON media_assets_glitch
   FOR EACH ROW
   EXECUTE FUNCTION update_media_assets_glitch_updated_at();
 
--- Create indexes for performance
+-- Create indexes for performance (drop if exists first)
+DROP INDEX IF EXISTS idx_media_assets_glitch_user_id;
+DROP INDEX IF EXISTS idx_media_assets_glitch_run_id;
+DROP INDEX IF EXISTS idx_media_assets_glitch_status;
+DROP INDEX IF EXISTS idx_media_assets_glitch_created_at;
+DROP INDEX IF EXISTS idx_media_assets_glitch_input_hash;
+
 CREATE INDEX idx_media_assets_glitch_user_id ON media_assets_glitch(user_id);
 CREATE INDEX idx_media_assets_glitch_run_id ON media_assets_glitch(run_id);
 CREATE INDEX idx_media_assets_glitch_status ON media_assets_glitch(status);
@@ -62,6 +69,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create view for public feed (glitch items only)
+DROP VIEW IF EXISTS public_feed_glitch;
 CREATE OR REPLACE VIEW public_feed_glitch AS
 SELECT 
   mag.id,
@@ -81,6 +89,7 @@ WHERE mag.status = 'completed'
 ORDER BY mag.created_at DESC;
 
 -- Create view for user profile (glitch items only)
+DROP VIEW IF EXISTS user_profile_glitch;
 CREATE OR REPLACE VIEW user_profile_glitch AS
 SELECT 
   mag.id,
