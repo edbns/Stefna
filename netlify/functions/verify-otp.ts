@@ -174,38 +174,38 @@ export const handler: Handler = async (event) => {
             const newBonusAmount = newBonus?.value ? parseInt(newBonus.value) : 25;
             
             // Award referrer
-            await prisma.creditsLedger.create({
+            await prisma.creditTransaction.create({
               data: {
                 userId: referrerId,
                 requestId: uuidv4(),
                 action: 'referral_referrer',
                 amount: refBonusAmount,
                 status: 'granted',
-                meta: JSON.stringify({ reason: 'referral_referrer', newUserId: userId }),
+                meta: { reason: 'referral_referrer', newUserId: userId },
                 createdAt: now
               }
             });
             
             // Award new user
-            await prisma.creditsLedger.create({
+            await prisma.creditTransaction.create({
               data: {
                 userId: userId,
                 requestId: uuidv4(),
                 action: 'referral_new',
                 amount: newBonusAmount,
                 status: 'granted',
-                meta: JSON.stringify({ reason: 'referral_new', referrerUserId: referrerId }),
+                meta: { reason: 'referral_new', referrerUserId: referrerId },
                 createdAt: now
               }
             });
             
             // Update balances
-            await prisma.userCredit.update({
+            await prisma.userCredits.update({
               where: { userId: referrerId },
               data: { balance: { increment: refBonusAmount } }
             });
             
-            await prisma.userCredit.update({
+            await prisma.userCredits.update({
               where: { userId: userId },
               data: { balance: { increment: newBonusAmount } }
             });
