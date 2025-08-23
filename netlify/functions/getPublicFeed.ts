@@ -9,7 +9,8 @@ const sql = neon(process.env.NETLIFY_DATABASE_URL!)
 export const handler: Handler = async (event) => {
   try {
     const url = new URL(event.rawUrl);
-    const limit = Number(url.searchParams.get('limit') ?? 50);
+    const limit = Number(url.searchParams.get('limit') ?? 20);
+    const offset = Number(url.searchParams.get('offset') ?? 0);
 
     // Get public media from consolidated media_assets table
     // This now properly handles both Cloudinary and Replicate images
@@ -39,8 +40,12 @@ export const handler: Handler = async (event) => {
         -- Note: Now including all images since we have auto-backup for Replicate images
       ORDER BY ma.created_at DESC
       LIMIT ${limit}
+      OFFSET ${offset}
     `;
 
+    // Check if there are more items after this page
+    const hasMore = media.length === limit;
+    
     const data = media.map((item: any) => {
       // Determine provider and use proper URL
       let url: string | null = null;
@@ -107,6 +112,7 @@ export const handler: Handler = async (event) => {
         count: data.length,
         limit,
         table_source: 'media_assets', // Indicate we're using the new structure
+        hasMore,
         provider_breakdown: {
           replicate: data.filter(item => item.provider === 'replicate').length,
           cloudinary: data.filter(item => item.provider === 'cloudinary').length,

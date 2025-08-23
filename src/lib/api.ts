@@ -28,8 +28,8 @@ export async function publishAsset(input: import('./types').PublishAssetInput) {
   return res.json();
 }
 
-export async function getPublicFeed(limit = 100) {
-  const res = await fetch('/.netlify/functions/getPublicFeed?limit=' + limit);
+export async function getPublicFeed(limit = 20, offset = 0) {
+  const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${limit}&offset=${offset}`);
   return res.json();
 }
 

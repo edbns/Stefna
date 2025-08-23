@@ -433,6 +433,9 @@ const HomeNew: React.FC = () => {
   const [quota, setQuota] = useState<{ daily_used: number; daily_limit: number; weekly_used: number; weekly_limit: number } | null>(null)
   const [feed, setFeed] = useState<UserMedia[]>([])
   const [isLoadingFeed, setIsLoadingFeed] = useState(true)
+  const [hasMoreFeed, setHasMoreFeed] = useState(true)
+  const [feedPage, setFeedPage] = useState(0)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
   const [creatorFilter, setCreatorFilter] = useState<string | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
@@ -911,12 +914,40 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
     }
   }, [])
 
+  // Load more feed items (for infinite scroll)
+  const loadMoreFeed = async () => {
+    if (!hasMoreFeed || isLoadingMore) return
+    await loadFeed(false)
+  }
+
+  // Scroll detection for infinite scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1000) {
+        // User is near bottom, load more
+        loadMoreFeed()
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [hasMoreFeed, isLoadingMore])
+
   // Load public feed on mount
-  const loadFeed = async () => {
+  const loadFeed = async (isInitial = true) => {
     try {
-      setIsLoadingFeed(true)
-      console.log('🔄 Loading public feed...')
-      const res = await fetch('/.netlify/functions/getPublicFeed?limit=100')
+      if (isInitial) {
+        setIsLoadingFeed(true)
+        setFeedPage(0)
+      } else {
+        setIsLoadingMore(true)
+      }
+      
+      console.log(`🔄 Loading public feed ${isInitial ? '(initial)' : '(more)'}...`)
+      const pageSize = 20
+      const offset = isInitial ? 0 : feedPage * pageSize
+      
+      const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${pageSize}&offset=${offset}`)
       console.log('📡 Feed response status:', res.status)
       
       if (res.ok) {
@@ -929,17 +960,16 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           return
         }
         
-        const { data: media } = resp
+        const { data: media, hasMore } = resp
         console.log('📊 Raw feed data:', media)
         console.log('📊 Feed length:', media?.length || 0)
+        console.log('📊 Has more:', hasMore)
         
         const mapped: UserMedia[] = (media || [])
           .map((item: any): UserMedia | null => {
             // Use the URL from the backend - it should already be properly constructed
             let mediaUrl: string;
             let provider = item.provider || 'unknown';
-            
-
             
             if (item.url && item.url.startsWith('http')) {
               // Use the URL provided by the backend (this should be the correct one)
@@ -985,15 +1015,28 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           .filter((item): item is UserMedia => item !== null) // Filter out null items
         
         console.log('🎯 Mapped feed items:', mapped.length)
-        console.log('🎯 Setting feed with items:', mapped.length, 'first item ID:', mapped[0]?.id)
-        setFeed(mapped)
+        
+        if (isInitial) {
+          console.log('🎯 Setting initial feed with items:', mapped.length, 'first item ID:', mapped[0]?.id)
+          setFeed(mapped)
+        } else {
+          console.log('🎯 Adding more items to feed:', mapped.length)
+          setFeed(prev => [...prev, ...mapped])
+          setFeedPage(prev => prev + 1)
+        }
+        
+        setHasMoreFeed(hasMore !== false)
       } else {
         console.error('❌ Feed response not ok:', res.status, await res.text())
       }
     } catch (e) {
       console.error('❌ Failed to load feed', e)
     } finally {
-      setIsLoadingFeed(false)
+      if (isInitial) {
+        setIsLoadingFeed(false)
+      } else {
+        setIsLoadingMore(false)
+      }
     }
   }
 
@@ -3622,11 +3665,38 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
               </div>
             </div>
           ) : feed.length > 0 ? (
-            <SafeMasonryGrid 
-              feed={feed}
-              handleMediaClick={handleMediaClick}
-              // handleRemix removed
-            />
+            <>
+              <SafeMasonryGrid 
+                feed={feed}
+                handleMediaClick={handleMediaClick}
+                // handleRemix removed
+              />
+              
+              {/* Feed Info */}
+              <div className="text-center py-4 text-white/60 text-sm">
+                Showing {feed.length} items
+                {hasMoreFeed && ' • Scroll down or click Load More for more'}
+              </div>
+              
+              {/* Load More Button */}
+              {hasMoreFeed && (
+                <div className="text-center py-8">
+                  {isLoadingMore ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                      <span className="text-white/80">Loading more...</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={loadMoreFeed}
+                      className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-colors"
+                    >
+                      Load More
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-12">
               
