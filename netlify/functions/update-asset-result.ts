@@ -1,11 +1,13 @@
 // netlify/functions/update-asset-result.ts
 // Updates asset with final generation result (URL, status, etc.)
-// Force redeploy - v5 (make assets public and fix feed)
+// Uses Prisma for consistent database access
 
 import type { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
-import { requireAuth } from './lib/auth';
+import { PrismaClient } from '@prisma/client';
+import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
+
+const prisma = new PrismaClient();
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -31,7 +33,11 @@ export const handler: Handler = async (event) => {
     console.log('[update-asset-result] requireAuth function:', typeof requireAuth);
     console.log('[update-asset-result] requireAuth.toString():', requireAuth.toString().substring(0, 200));
     
-    const { sub: userId } = requireAuth(event);
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader) {
+      return json({ error: 'Missing Authorization header' }, { status: 401 });
+    }
+    const { userId } = requireAuth(authHeader);
     console.log('[update-asset-result] User:', userId);
 
     const body = JSON.parse(event.body || '{}');
@@ -60,31 +66,37 @@ export const handler: Handler = async (event) => {
       return json({ ok: false, error: 'MISSING_FINAL_URL' }, { status: 400 });
     }
 
-    const sql = neon(process.env.NETLIFY_DATABASE_URL!);
+    // Update the asset with the final result using Prisma
+    const updatedAsset = await prisma.mediaAsset.update({
+      where: {
+        id: assetId,
+        userId: userId
+      },
+      data: {
+        finalUrl: finalUrl,
+        status: status,
+        prompt: prompt || undefined,
+        meta: meta,
+        isPublic: true,
+        updatedAt: new Date()
+      },
+      select: {
+        id: true,
+        finalUrl: true,
+        status: true,
+        isPublic: true,
+        updatedAt: true
+      }
+    });
 
-    // Update the asset with the final result
-    const result = await sql`
-      UPDATE public.assets 
-      SET 
-        final_url = ${finalUrl},
-        status = ${status},
-        prompt = COALESCE(${prompt}, prompt),
-        meta = COALESCE(${meta}, meta),
-        is_public = true,
-        updated_at = NOW()
-      WHERE id = ${assetId} AND user_id = ${userId}
-      RETURNING id, final_url, status, is_public, updated_at
-    `;
-
-    if (result && result.length > 0) {
-      const updatedAsset = result[0];
+    if (updatedAsset) {
       console.log('[update-asset-result] Asset updated successfully:', updatedAsset.id);
       
       // 🧠 DEBUG: Confirm Neo Tokyo Glitch asset update
       if (body.meta?.mode === 'neotokyoglitch') {
         console.log('🎭 [update-asset-result] NEO TOKYO GLITCH: Asset successfully updated and linked to user profile');
         console.log('🎭 [update-asset-result] Asset ID:', updatedAsset.id, 'User ID:', userId);
-        console.log('🎭 [update-asset-result] Final URL:', updatedAsset.final_url);
+        console.log('🎭 [update-asset-result] Final URL:', updatedAsset.finalUrl);
         console.log('🎭 [update-asset-result] This should now appear in user profile');
       }
       
@@ -97,6 +109,14 @@ export const handler: Handler = async (event) => {
       console.log('[update-asset-result] Asset not found or access denied:', assetId);
       return json({ ok: false, error: 'ASSET_NOT_FOUND' }, { status: 404 });
     }
+
+  } catch (error: any) {
+    console.error('[update-asset-result] Error:', error);
+    return json({ ok: false, error: 'INTERNAL_ERROR' }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
+};
 
   } catch (error: any) {
     console.error('[update-asset-result] Error:', error);

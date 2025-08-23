@@ -1,9 +1,13 @@
-import { Handler } from '@netlify/functions'
-import { requireAuth } from './_lib/auth'
-import { json } from './_lib/http'
-import { neon } from '@neondatabase/serverless'
+// netlify/functions/delete-media.ts
+// Deletes media assets using Prisma for consistent database access
 
-const handler: Handler = async (event) => {
+import type { Handler } from '@netlify/functions';
+import { PrismaClient } from '@prisma/client';
+import { json } from './_lib/http';
+
+const prisma = new PrismaClient();
+
+export const handler: Handler = async (event) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -11,62 +15,66 @@ const handler: Handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        'Access-Control-Allow-Methods': 'DELETE, OPTIONS'
       }
     };
   }
 
-  if (event.httpMethod !== 'POST') {
-    return json({ ok: false, error: 'Method not allowed' }, { status: 405 });
+  if (event.httpMethod !== 'DELETE') {
+    return {
+      statusCode: 405,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
   }
 
   try {
-    console.log('🗑️ [delete-media] Starting media deletion...');
-    console.log('🗑️ [delete-media] Headers:', event.headers);
-    
-    const { userId } = requireAuth(event.headers.authorization);
-    console.log('👤 [delete-media] User authenticated:', userId);
-    
     const body = JSON.parse(event.body || '{}');
-    const id = body.id || body.mediaId; // Support both field names for compatibility
-    console.log('🗑️ [delete-media] Attempting to delete media:', id);
-    
-    if (!id) {
-      return json({ ok: false, error: 'Media ID is required (send as "id" or "mediaId")' }, { status: 400 });
+    const { mediaId, userId } = body;
+
+    if (!mediaId) {
+      return json({ error: 'Missing mediaId' }, { status: 400 });
     }
 
-    // Delete the media from the database
-    const sql = neon(process.env.NETLIFY_DATABASE_URL!);
-    const result = await sql`
-      DELETE FROM assets 
-      WHERE id = ${id} AND user_id = ${userId}
-      RETURNING id
-    `;
-
-    if (result.length === 0) {
-      console.log('❌ [delete-media] Media not found or access denied:', { id, userId });
-      return json({ ok: false, error: 'Media not found or access denied' }, { status: 404 });
+    if (!userId) {
+      return json({ error: 'Missing userId' }, { status: 400 });
     }
 
-    console.log('✅ [delete-media] Media deleted successfully:', { id, userId });
-    return json({ 
-      ok: true, 
-      message: 'Media deleted successfully',
-      deletedId: id
+    console.log('🗑️ [delete-media] Deleting media:', { mediaId, userId });
+
+    // Delete the media asset using Prisma
+    const deletedMedia = await prisma.mediaAsset.delete({
+      where: {
+        id: mediaId,
+        userId: userId
+      }
     });
 
+    if (deletedMedia) {
+      console.log('✅ [delete-media] Media deleted successfully:', mediaId);
+      return json({
+        success: true,
+        message: 'Media deleted successfully',
+        deletedId: mediaId
+      });
+    } else {
+      console.log('❌ [delete-media] Media not found or access denied:', mediaId);
+      return json({ error: 'Media not found or access denied' }, { status: 404 });
+    }
+
   } catch (error: any) {
-    console.error('❌ [delete-media] Error:', error);
+    console.error('💥 [delete-media] Delete error:', error);
     
-    // Handle authentication errors specifically
-    if (error.message?.includes('Missing/invalid Authorization') || 
-        error.message?.includes('Token missing userId/sub') ||
-        error.message?.includes('Invalid JWT')) {
-      return json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    if (error.code === 'P2025') {
+      return json({ error: 'Media not found' }, { status: 404 });
     }
     
-    return json({ ok: false, error: 'Internal server error' }, { status: 500 });
+    return json({ 
+      error: 'DELETE_FAILED',
+      message: error.message,
+      status: 'failed'
+    }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
-}
-
-export { handler }
+};

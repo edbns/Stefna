@@ -1,139 +1,119 @@
 // netlify/functions/getPublicFeed.ts
-// Updated to use consolidated media_assets table structure
-import { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
+// Public feed function - fetches public media assets using Prisma
+// Provides feed data for the main application
 
-// ---- Database connection ----
-const sql = neon(process.env.NETLIFY_DATABASE_URL!)
+import type { Handler } from '@netlify/functions';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export const handler: Handler = async (event) => {
-  try {
-    const url = new URL(event.rawUrl);
-    const limit = Number(url.searchParams.get('limit') ?? 20);
-    const offset = Number(url.searchParams.get('offset') ?? 0);
-
-    // Get public media from consolidated media_assets table
-    // Simplified query to avoid JOIN issues
-    const media = await sql`
-      SELECT 
-        ma.id,
-        ma.user_id,
-        ma.cloudinary_public_id,
-        COALESCE(ma.media_type, ma.resource_type) AS resource_type,
-        ma.prompt,
-        ma.created_at AS published_at,
-        ma.is_public AS visibility,
-        ma.allow_remix,
-        ma.final_url,
-        ma.status,
-        ma.meta,
-        ma.preset_key,
-        ma.preset_id
-      FROM media_assets ma
-      WHERE ma.is_public = true 
-        AND ma.status = 'ready'
-        AND ma.created_at IS NOT NULL
-        AND ma.final_url IS NOT NULL
-      ORDER BY ma.created_at DESC
-      LIMIT ${limit}
-      OFFSET ${offset}
-    `;
-
-    // Check if there are more items after this page
-    const hasMore = media.length === limit;
-    
-    const data = media.map((item: any) => {
-      // Determine provider and use proper URL
-      let url: string | null = null;
-      let provider: 'cloudinary' | 'replicate' | 'aiml' | 'unknown' = 'unknown';
-      
-      if (item.final_url) {
-        // Always use final_url as the primary source of truth
-        url = item.final_url;
-        
-        // Determine provider based on URL
-        if (item.final_url.includes('replicate.delivery')) {
-          provider = 'replicate';
-        } else if (item.final_url.includes('cdn.aimlapi.com')) {
-          provider = 'aiml';
-        } else if (item.final_url.includes('cloudinary.com')) {
-          provider = 'cloudinary';
-        } else {
-          provider = 'unknown';
-        }
-      } else if (item.cloudinary_public_id) {
-        // Fallback: construct Cloudinary URL if no final_url
-        url = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${item.cloudinary_public_id}`;
-        provider = 'cloudinary';
-      }
-      
-      // Extract preset info from meta or preset fields
-      let presetKey = null;
-      if (item.meta && typeof item.meta === 'object') {
-        presetKey = item.meta.presetId || item.meta.preset_key || null;
-      }
-      if (!presetKey) {
-        presetKey = item.preset_key || item.preset_id || null;
-      }
-      
-      return {
-        id: item.id,
-        cloudinary_public_id: item.cloudinary_public_id,
-        media_type: item.resource_type === 'video' ? 'video' : 'image',
-        published_at: item.published_at,
-        preset_key: presetKey,
-        source_public_id: null, // Can be added later if needed
-        user_id: item.user_id,
-        user_name: 'User', // Simplified - no email lookup
-        user_avatar: null, // No avatar system in simplified structure
-        prompt: item.prompt,
-        url: url,
-        provider: provider,
-        allow_remix: item.allow_remix,
-        status: item.status
-      };
-    });
-
-    return { 
-      statusCode: 200, 
+  // Handle CORS
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Allow-Methods': 'GET, OPTIONS'
       },
-      body: JSON.stringify({ 
-        ok: true, 
-        data,
-        count: data.length,
-        limit,
-        table_source: 'media_assets', // Indicate we're using the new structure
-        hasMore,
-        provider_breakdown: {
-          replicate: data.filter(item => item.provider === 'replicate').length,
-          cloudinary: data.filter(item => item.provider === 'cloudinary').length,
-          aiml: data.filter(item => item.provider === 'aiml').length,
-          unknown: data.filter(item => item.provider === 'unknown').length
+      body: ''
+    };
+  }
+
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  try {
+    // Get query parameters
+    const url = new URL(event.rawUrl);
+    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const offset = parseInt(url.searchParams.get('offset') || '0');
+    const userId = url.searchParams.get('userId'); // Optional: filter by user
+
+    console.log('🔍 [getPublicFeed] Fetching public feed:', {
+      limit,
+      offset,
+      userId: userId || 'all'
+    });
+
+    // Build query conditions
+    const where: any = {
+      isPublic: true,
+      status: 'ready'
+    };
+
+    if (userId) {
+      where.userId = userId;
+    }
+
+    // Fetch public media using Prisma
+    const publicMedia = await prisma.mediaAsset.findMany({
+      where,
+      include: {
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
         }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: limit,
+      skip: offset
+    });
+
+    console.log('✅ [getPublicFeed] Retrieved public media:', publicMedia.length);
+
+    // Transform to feed format
+    const feedItems = publicMedia.map(item => ({
+      id: item.id,
+      userId: item.userId,
+      user: item.owner,
+      finalUrl: item.finalUrl,
+      mediaType: item.mediaType,
+      prompt: item.prompt,
+      presetKey: item.presetKey,
+      status: item.status,
+      createdAt: item.createdAt,
+      type: 'media-asset' // Identify as main media asset
+    }));
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        success: true,
+        items: feedItems,
+        total: feedItems.length,
+        hasMore: feedItems.length === limit
       })
     };
 
-  } catch (error) {
-    console.error('❌ getPublicFeed error:', error);
+  } catch (error: any) {
+    console.error('💥 [getPublicFeed] Feed error:', error);
     
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      },
+      headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
-        ok: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        details: process.env.NODE_ENV === 'development' ? error : undefined
+        error: 'FEED_FETCH_FAILED',
+        message: error.message,
+        status: 'failed'
       })
     };
+  } finally {
+    await prisma.$disconnect();
   }
 };

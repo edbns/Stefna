@@ -1,10 +1,10 @@
 import type { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
+import { PrismaClient } from '@prisma/client';
 import type { CreateAssetInput, ApiResult, Asset } from '../lib/types';
 import { json } from './_lib/http';
 
-// Initialize Neon connection
-const sql = neon(process.env.NETLIFY_DATABASE_URL!);
+// Initialize Prisma client
+const prisma = new PrismaClient();
 
 function getUserIdFromToken(auth?: string): string | null {
   try {
@@ -54,8 +54,8 @@ export const handler: Handler = async (event) => {
     console.log('🔍 User ID:', userId);
     console.log('🔍 Media type:', mediaType);
     
-    // Use direct SQL instead of deprecated neonAdmin
-    console.log('🔍 Executing SQL query with parameters:', {
+    // Use Prisma instead of raw SQL
+    console.log('🔍 Executing Prisma create with parameters:', {
       userId,
       sourcePublicId: input.sourcePublicId ?? null,
       mediaType,
@@ -64,41 +64,31 @@ export const handler: Handler = async (event) => {
       sourceAssetId: input.sourceAssetId ?? null
     });
     
-    console.log('🔍 About to execute SQL insert...');
+    console.log('🔍 About to execute Prisma create...');
     
     let data, error;
     
     try {
-      const result = await sql`
-        INSERT INTO assets (
-          user_id, 
-          cloudinary_public_id, 
-          media_type, 
-          preset_key, 
-          prompt, 
-          source_asset_id, 
-          status, 
-          is_public, 
-          allow_remix
-        ) VALUES (
-          ${userId}, 
-          ${input.sourcePublicId ?? null}, 
-          ${mediaType}, 
-          ${input.presetKey ?? null}, 
-          ${input.prompt ?? null}, 
-          ${input.sourceAssetId ?? null}, 
-          'queued', 
-          false, 
-          false
-        ) RETURNING *
-      `;
+      const result = await prisma.mediaAsset.create({
+        data: {
+          userId,
+          cloudinaryPublicId: input.sourcePublicId ?? null,
+          mediaType,
+          presetKey: input.presetKey ?? null,
+          prompt: input.prompt ?? null,
+          sourceAssetId: input.sourceAssetId ?? null,
+          status: 'queued',
+          isPublic: false,
+          allowRemix: false
+        }
+      });
       
-      console.log('🔍 SQL execution completed, result:', result);
-      data = result[0] || null;
-      error = null; // SQL errors will throw exceptions
-    } catch (sqlError) {
-      console.error('❌ SQL execution failed:', sqlError);
-      return json({ ok: false, error: `Database insert failed: ${sqlError.message}` }, { status: 500 });
+      console.log('🔍 Prisma create completed, result:', result);
+      data = result;
+      error = null;
+    } catch (prismaError) {
+      console.error('❌ Prisma create failed:', prismaError);
+      return json({ ok: false, error: `Database insert failed: ${prismaError.message}` }, { status: 500 });
     }
 
     console.log('🔍 Database insert result:', { data, error });

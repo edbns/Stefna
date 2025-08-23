@@ -1,12 +1,14 @@
 // netlify/functions/save-media.ts
 // Unified media saving function - handles both single and batch operations
 // - Accepts generated media variations (from AIML and Replicate)
-// - Records them in consolidated media_assets table
+// - Records them in consolidated media_assets table using Prisma
 // - Returns canonical items used by feed + UI
-// Force redeploy - v4 (unified single/batch saving)
 
 import type { Handler } from '@netlify/functions';
+import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
+
+const prisma = new PrismaClient();
 
 interface MediaVariation {
   image_url: string;
@@ -155,11 +157,7 @@ export const handler: Handler = async (event): Promise<any> => {
 
       console.log(`✅ [Batch Save] Proceeding with ${validVariations.length} valid variations`);
 
-      // Import database connection
-      const { neon } = await import('@neondatabase/serverless');
-      const sql = neon(process.env.NETLIFY_DATABASE_URL!);
-
-      // Insert each variation
+      // Insert each variation using Prisma
       for (const v of validVariations) {
         const id = randomUUID();
         const mediaType = v.media_type || 'image';
@@ -185,15 +183,23 @@ export const handler: Handler = async (event): Promise<any> => {
           cloudinaryPublicId = v.cloudinary_public_id || null;
         }
         
-        const row = await sql`
-          INSERT INTO media_assets (id, user_id, cloudinary_public_id, media_type, preset_key, prompt, 
-                                  source_asset_id, status, is_public, allow_remix, final_url, meta, created_at)
-          VALUES (${id}, ${userId}, ${cloudinaryPublicId}, ${mediaType}, ${v.preset_id || null}, ${v.prompt || null},
-                  ${v.source_asset_id}, 'ready', true, false, ${v.image_url}, 
-                  ${JSON.stringify({...v.meta, batch_id: batchId, run_id: runId, idempotency_key: itemIdempotencyKey})}, NOW())
-          RETURNING *
-        `;
-        items.push(row[0]);
+        const row = await prisma.mediaAsset.create({
+          data: {
+            id,
+            userId,
+            cloudinaryPublicId,
+            mediaType,
+            presetKey: v.preset_id || null,
+            prompt: v.prompt || null,
+            sourceAssetId: v.source_asset_id,
+            status: 'ready',
+            isPublic: true,
+            allowRemix: false,
+            finalUrl: v.image_url,
+            meta: {...v.meta, batch_id: batchId, run_id: runId, idempotency_key: itemIdempotencyKey}
+          }
+        });
+        items.push(row);
         
         // 🔄 Auto-backup Replicate images to Cloudinary
         if (v.image_url && v.image_url.includes('replicate.delivery')) {
@@ -256,25 +262,28 @@ export const handler: Handler = async (event): Promise<any> => {
         };
       }
 
-      // Import database connection
-      const { neon } = await import('@neondatabase/serverless');
-      const sql = neon(process.env.NETLIFY_DATABASE_URL!);
-
       // 🛡️ IDEMPOTENCY CHECK: Prevent duplicate saves
       if (idempotencyKey) {
         console.log(`🔍 [save-media] Checking idempotency for key: ${idempotencyKey}`);
         
         // Check if an item with this idempotency key already exists
-        const existingItem = await sql`
-          SELECT id, final_url, media_type, created_at 
-          FROM media_assets 
-          WHERE idempotency_key = ${idempotencyKey}
-          LIMIT 1
-        `;
+        const existingItem = await prisma.mediaAsset.findFirst({
+          where: {
+            meta: {
+              path: ['idempotency_key'],
+              equals: idempotencyKey
+            }
+          },
+          select: {
+            id: true,
+            finalUrl: true,
+            mediaType: true,
+            createdAt: true
+          }
+        });
         
-        if (existingItem && existingItem.length > 0) {
+        if (existingItem) {
           console.log(`✅ [save-media] Idempotency check: Item already exists with key ${idempotencyKey}`);
-          const item = existingItem[0];
           
           return {
             statusCode: 200,
@@ -285,10 +294,10 @@ export const handler: Handler = async (event): Promise<any> => {
             body: JSON.stringify({
               success: true,
               message: 'Item already exists (idempotency)',
-              id: item.id,
-              final_url: item.final_url,
-              media_type: item.media_type,
-              created_at: item.created_at,
+              id: existingItem.id,
+              final_url: existingItem.finalUrl,
+              media_type: existingItem.mediaType,
+              created_at: existingItem.createdAt,
               table_used: 'media_assets',
               idempotency: true
             })
@@ -300,17 +309,18 @@ export const handler: Handler = async (event): Promise<any> => {
 
       // 🛡️ ADDITIONAL DUPLICATE PREVENTION: Check for existing URL
       console.log(`🔍 [save-media] Checking for existing URL: ${finalUrl}`);
-      const existingUrlCheck = await sql`
-        SELECT id, user_id, created_at 
-        FROM media_assets 
-        WHERE final_url = ${finalUrl}
-        LIMIT 1
-      `;
+      const existingUrlCheck = await prisma.mediaAsset.findFirst({
+        where: { finalUrl },
+        select: {
+          id: true,
+          userId: true,
+          createdAt: true
+        }
+      });
       
-      if (existingUrlCheck && existingUrlCheck.length > 0) {
-        const existingItem = existingUrlCheck[0];
-        console.log(`⚠️ [save-media] URL already exists in database: ${existingItem.id}`);
-        console.log(`⚠️ [save-media] User: ${existingItem.user_id}, Created: ${existingItem.created_at}`);
+      if (existingUrlCheck) {
+        console.log(`⚠️ [save-media] URL already exists in database: ${existingUrlCheck.id}`);
+        console.log(`⚠️ [save-media] User: ${existingUrlCheck.userId}, Created: ${existingUrlCheck.createdAt}`);
         
         return {
           statusCode: 200,
@@ -321,9 +331,9 @@ export const handler: Handler = async (event): Promise<any> => {
           body: JSON.stringify({
             success: true,
             message: 'URL already exists in database',
-            id: existingItem.id,
+            id: existingUrlCheck.id,
             final_url: finalUrl,
-            created_at: existingItem.created_at,
+            created_at: existingUrlCheck.createdAt,
             table_used: 'media_assets',
             duplicate_prevention: true
           })
@@ -348,44 +358,30 @@ export const handler: Handler = async (event): Promise<any> => {
         console.log('🎭 [save-media] This should link media to user profile');
       }
       
-      const result = await sql`
-        INSERT INTO media_assets (
-          id,
-          user_id, 
-          cloudinary_public_id, 
-          media_type, 
-          preset_key, 
-          prompt, 
-          source_asset_id, 
-          status, 
-          is_public, 
-          allow_remix,
-          final_url,
-          meta,
-          created_at,
-          updated_at,
-          idempotency_key
-        ) VALUES (
-          ${randomUUID()},
-          ${userId}, 
-          ${cloudinary_public_id || null}, 
-          ${media_type || 'image'}, 
-          ${preset_key || null}, 
-          ${prompt || null}, 
-          ${source_public_id || null}, 
-          'ready', 
-          true, 
-          false,
-          ${finalUrl},
-          ${meta || {}},
-          NOW(),
-          NOW(),
-          ${idempotencyKey || null}
-        ) RETURNING id, final_url, media_type, created_at
-      `;
+      const savedItem = await prisma.mediaAsset.create({
+        data: {
+          id: randomUUID(),
+          userId,
+          cloudinaryPublicId: cloudinary_public_id || null,
+          mediaType: media_type || 'image',
+          presetKey: preset_key || null,
+          prompt: prompt || null,
+          sourceAssetId: source_public_id || null,
+          status: 'ready',
+          isPublic: true,
+          allowRemix: false,
+          finalUrl: finalUrl,
+          meta: { ...(meta || {}), idempotency_key: idempotencyKey || null }
+        },
+        select: {
+          id: true,
+          finalUrl: true,
+          mediaType: true,
+          createdAt: true
+        }
+      });
     
-      if (result && result.length > 0) {
-        const savedItem = result[0];
+      if (savedItem) {
         console.log('✅ Media saved successfully:', savedItem.id);
         
         // 🧠 DEBUG: Confirm user linking for Neo Tokyo Glitch
@@ -414,18 +410,22 @@ export const handler: Handler = async (event): Promise<any> => {
               console.log('✅ Replicate backup completed successfully for:', savedItem.id);
               
               // Update the saved item with the new Cloudinary URL
-              const updatedResult = await sql`
-                UPDATE media_assets 
-                SET final_url = ${backupResult.permanentUrl},
-                    cloudinary_public_id = ${backupResult.cloudinaryPublicId}
-                WHERE id = ${savedItem.id}
-                RETURNING id, final_url
-              `;
+              const updatedResult = await prisma.mediaAsset.update({
+                where: { id: savedItem.id },
+                data: {
+                  finalUrl: backupResult.permanentUrl,
+                  cloudinaryPublicId: backupResult.cloudinaryPublicId
+                },
+                select: {
+                  id: true,
+                  finalUrl: true
+                }
+              });
               
-              if (updatedResult.length > 0) {
+              if (updatedResult) {
                 console.log('✅ Database updated with Cloudinary URL for:', savedItem.id);
                 // Update the return value to reflect the new URL
-                savedItem.final_url = updatedResult[0].final_url;
+                savedItem.finalUrl = updatedResult.finalUrl;
               }
             } else {
               console.error('❌ Replicate backup failed for:', savedItem.id, backupResult.error);
@@ -445,9 +445,9 @@ export const handler: Handler = async (event): Promise<any> => {
             success: true,
             message: 'Media saved successfully',
             id: savedItem.id,
-            final_url: savedItem.final_url,
-            media_type: savedItem.media_type,
-            created_at: savedItem.created_at,
+            final_url: savedItem.finalUrl,
+            media_type: savedItem.mediaType,
+            created_at: savedItem.createdAt,
             table_used: 'media_assets'
           })
         };
@@ -468,5 +468,7 @@ export const handler: Handler = async (event): Promise<any> => {
         message: error instanceof Error ? error.message : 'Unknown error'
       })
     };
+  } finally {
+    await prisma.$disconnect();
   }
 };

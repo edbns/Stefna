@@ -1,134 +1,112 @@
 // netlify/functions/getUserMedia.ts
+// User media function - fetches user's media assets using Prisma
+// Provides user-specific media data
+
 import type { Handler } from '@netlify/functions';
-import { sql } from '../lib/db';
-import { getAuthedUser } from '../lib/auth';
+import { PrismaClient } from '@prisma/client';
 
-// Helper function to validate UUID format
-function isValidUUID(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-}
-
-// Get user media from new database
-async function getUserMedia(ownerId: string) {
-  try {
-    const media = await sql`
-      SELECT 
-        id, user_id, is_public, allow_remix, created_at, prompt,
-        COALESCE(final_url, 
-          CASE 
-            WHEN cloudinary_public_id ~~ 'stefna/%'::text THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id)
-            WHEN cloudinary_public_id IS NOT NULL AND cloudinary_public_id !~ '^stefna/' THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/stefna/'::text || cloudinary_public_id)
-            ELSE final_url::text 
-          END
-        ) AS url,
-        cloudinary_public_id, media_type, status, source_asset_id, preset_key, meta
-      FROM media_assets 
-      WHERE user_id = ${ownerId}
-      ORDER BY created_at DESC
-    `;
-    
-    return media;
-  } catch (error) {
-    console.error('Database error:', error);
-    return [];
-  }
-}
+const prisma = new PrismaClient();
 
 export const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  // Handle CORS
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      },
+      body: ''
+    };
+  }
+
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
   }
 
   try {
-    // Use new auth helper
-    const { user } = await getAuthedUser(event); // may be null for visitors
-    const params = event.queryStringParameters ?? {};
-    const ownerId = params.ownerId || user?.id;
-    const limit = Math.min(Number(params.limit || 50), 100);
+    // Get query parameters
+    const url = new URL(event.rawUrl);
+    const userId = url.searchParams.get('userId');
+    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const offset = parseInt(url.searchParams.get('offset') || '0');
 
-    if (!ownerId) {
-      return { statusCode: 400, body: JSON.stringify({ ok: false, message: 'ownerId required' }) };
-    }
-
-    // Validate UUID format before database query
-    if (!isValidUUID(ownerId)) {
-      console.error('❌ Invalid UUID format:', ownerId);
-      return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Invalid user ID format' }) };
-    }
-
-    const isSelf = user?.id === ownerId;
-
-    // Get user media with visibility filtering from media_assets table
-    const media = await sql`
-      SELECT 
-        id, user_id, is_public, allow_remix, created_at, prompt,
-        COALESCE(final_url, 
-          CASE 
-            WHEN cloudinary_public_id ~~ 'stefna/%'::text THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id)
-            WHEN cloudinary_public_id IS NOT NULL AND cloudinary_public_id !~ '^stefna/' THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/stefna/'::text || cloudinary_public_id)
-            ELSE final_url::text 
-          END
-        ) AS url,
-        cloudinary_public_id, media_type, status, source_asset_id, preset_key, meta
-      FROM media_assets 
-      WHERE user_id = ${ownerId}
-      ${isSelf ? sql`` : sql`AND is_public = true`}
-      ORDER BY created_at DESC
-      LIMIT ${limit}
-    `;
-
-    // Transform to match frontend expectations
-    const items = (media ?? []).map((m: any) => {
-      // 🛡️ Ensure Neo Glitch items always have a valid download URL
-      let downloadUrl = m.url;
-      if (!downloadUrl && m.preset_key === 'neotokyoglitch') {
-        // For Neo Glitch items, if URL is missing, try to construct from meta or use a fallback
-        if (m.meta && m.meta.finalUrl) {
-          downloadUrl = m.meta.finalUrl;
-        } else if (m.meta && m.meta.url) {
-          downloadUrl = m.meta.url;
-        }
-        console.log(`🔧 Neo Glitch item ${m.id}: URL fallback applied:`, downloadUrl);
-      }
-      
+    if (!userId) {
       return {
-        id: m.id,
-        userId: m.user_id,
-        type: m.media_type === 'video' ? 'video' : 'photo',
-        cloudinary_public_id: m.cloudinary_public_id,
-        url: downloadUrl,
-        prompt: m.prompt ?? null,
-        is_public: m.is_public,
-        created_at: m.created_at,
-        meta: m.meta,
-        // Add result_url for backward compatibility with ProfileScreen
-        result_url: downloadUrl
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'userId parameter is required' })
       };
+    }
+
+    console.log('🔍 [getUserMedia] Fetching media for user:', {
+      userId,
+      limit,
+      offset
     });
 
-    // Ensure user exists in users table
-    try {
-      await sql`
-        INSERT INTO users (id, email, external_id, created_at, updated_at)
-        VALUES (${user?.id || 'unknown'}, ${user?.email || `user-${ownerId}@placeholder.com`}, ${ownerId}, NOW(), NOW())
-        ON CONFLICT (id) DO UPDATE SET 
-          email = EXCLUDED.email,
-          updated_at = NOW()
-      `;
-    } catch (userError) {
-      console.error('Failed to upsert user:', userError);
-      // Continue even if user upsert fails
-    }
+    // Fetch user's media using Prisma
+    const userMedia = await prisma.mediaAsset.findMany({
+      where: {
+        userId,
+        status: 'ready'
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: limit,
+      skip: offset
+    });
 
-    return { statusCode: 200, body: JSON.stringify({
-      ok: true,
-      userId: ownerId,
-      items,
-      count: items.length
-    }) };
+    console.log('✅ [getUserMedia] Retrieved user media:', userMedia.length);
 
-  } catch (error) {
-    console.error('Handler error:', error);
-    return { statusCode: 500, body: JSON.stringify({ error: 'Internal server error' }) };
+    // Transform to media format
+    const mediaItems = userMedia.map(item => ({
+      id: item.id,
+      userId: item.userId,
+      finalUrl: item.finalUrl,
+      mediaType: item.mediaType,
+      prompt: item.prompt,
+      presetKey: item.presetKey,
+      status: item.status,
+      isPublic: item.isPublic,
+      allowRemix: item.allowRemix,
+      createdAt: item.createdAt,
+      type: 'media-asset'
+    }));
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        success: true,
+        items: mediaItems,
+        total: mediaItems.length,
+        hasMore: mediaItems.length === limit
+      })
+    };
+
+  } catch (error: any) {
+    console.error('💥 [getUserMedia] Media fetch error:', error);
+    
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ 
+        error: 'MEDIA_FETCH_FAILED',
+        message: error.message,
+        status: 'failed'
+      })
+    };
+  } finally {
+    await prisma.$disconnect();
   }
 };
