@@ -36,42 +36,65 @@ export const handler: Handler = async (event) => {
 
   try {
     // Authenticate user
-    const { userId } = requireAuth(event.headers.authorization);
-    console.log('🎭 [NeoGlitch] User authenticated for generation:', userId);
+    const authResult = requireAuth(event.headers.authorization);
+    const authenticatedUserId = authResult.userId;
+    console.log('🎭 [NeoGlitch] User authenticated for generation:', authenticatedUserId);
 
     const body = JSON.parse(event.body || '{}');
+    console.log('🔍 [NeoGlitch] Raw incoming payload:', body);
+    
     const {
       prompt,
       presetKey,
       sourceUrl,
       sourceAssetId, // Also accept sourceAssetId for compatibility
       runId,
-      generationMeta
+      generationMeta,
+      userId
     } = body;
     
-    // Use sourceAssetId if sourceUrl is not provided
+    // Normalize and sanitize input fields
+    const finalPrompt = prompt?.trim();
     const finalSourceUrl = sourceUrl || sourceAssetId;
+    const finalRunId = String(runId || crypto.randomUUID());
+    const finalPresetKey = presetKey;
+    
+    console.log('🔍 [NeoGlitch] Normalized values:', {
+      prompt: finalPrompt,
+      sourceUrl: finalSourceUrl,
+      runId: finalRunId,
+      presetKey: finalPresetKey,
+      userId
+    });
 
-    // Validate required fields for new architecture
-    if (!prompt || !presetKey) {
+    // Validate required fields using normalized values
+    if (!finalPrompt || finalPrompt.length < 10) {
       return json({ 
-        error: 'Missing required fields: prompt and presetKey are required' 
+        error: 'Missing or invalid prompt: must be at least 10 characters long' 
       }, { status: 400 });
     }
 
-    // Validate runId (can be any value, just needs to exist)
-    if (runId === undefined || runId === null) {
+    if (!finalPresetKey) {
+      return json({ 
+        error: 'Missing presetKey field' 
+      }, { status: 400 });
+    }
+
+    if (!finalSourceUrl) {
+      return json({ 
+        error: 'Missing source image URL (sourceUrl or sourceAssetId)' 
+      }, { status: 400 });
+    }
+
+    if (!finalRunId) {
       return json({ 
         error: 'Missing runId field' 
       }, { status: 400 });
     }
 
-    // Validate prompt content
-    if (!prompt.trim() || prompt.trim().length < 10) {
-      return json({ 
-        error: 'Prompt must be at least 10 characters long' 
-      }, { status: 400 });
-    }
+    console.log('✅ [NeoGlitch] All required fields validated successfully');
+
+
 
     // Validate source image URL if provided
     if (finalSourceUrl) {
@@ -113,9 +136,9 @@ export const handler: Handler = async (event) => {
     }
 
     console.log('🎭 [NeoGlitch] Starting Replicate generation:', {
-      userId,
-      presetKey,
-      runId,
+      userId: authenticatedUserId,
+      presetKey: finalPresetKey,
+      runId: finalRunId,
       hasSource: !!finalSourceUrl,
       sourceUrl: finalSourceUrl || 'none'
     });
@@ -124,7 +147,7 @@ export const handler: Handler = async (event) => {
     const replicatePayload = {
       version: NEO_TOKYO_GLITCH_MODEL,
       input: {
-        prompt: prompt,
+        prompt: finalPrompt,
         negative_prompt: "blurry, low quality, distorted, ugly, bad anatomy",
         strength: 0.75,
         guidance_scale: 7.5,
@@ -135,7 +158,7 @@ export const handler: Handler = async (event) => {
 
     console.log('🚀 [NeoGlitch] Calling Replicate API with payload:', {
       model: NEO_TOKYO_GLITCH_MODEL,
-      prompt: prompt.substring(0, 50) + '...',
+      prompt: finalPrompt.substring(0, 50) + '...',
       hasSourceImage: !!finalSourceUrl,
       sourceUrl: finalSourceUrl,
       fullPayload: replicatePayload,
