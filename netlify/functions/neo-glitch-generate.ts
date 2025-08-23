@@ -130,8 +130,8 @@ export const handler: Handler = async (event) => {
 
     // Start actual Replicate generation
     const REPLICATE_API_URL = 'https://api.replicate.com/v1/predictions';
-    // Use a valid, working model version for Replicate
-    const NEO_TOKYO_GLITCH_MODEL = 'stability-ai/stable-diffusion-img2img:30c1d0b916a6f8efce20493f5d61ee27491ab2a6045c87d3d92bc3a208f1337d4';
+    // Use the latest working version of stable-diffusion-img2img from Replicate
+    const NEO_TOKYO_GLITCH_MODEL = 'stability-ai/stable-diffusion-img2img:db21e45b8cdadcd9f6d809d11518b9c4d29c3a7c513d175f2a58f540c6d04ea3';
     
     console.log('🚀 [NeoGlitch] Starting Replicate generation with:', {
       prompt: prompt.substring(0, 50) + '...',
@@ -148,14 +148,13 @@ export const handler: Handler = async (event) => {
 
     console.log('✅ [NeoGlitch] Using direct image URL for Replicate:', sourceUrl);
 
-    // Create Replicate payload with correct field names for stability-ai/stable-diffusion-img2img
+    // Create Replicate payload with correct field names for stable-diffusion-img2img
     const replicatePayload = {
       version: NEO_TOKYO_GLITCH_MODEL,
       input: {
         prompt: prompt,
         image: sourceUrl,  // ✅ Use URL directly, not base64
-        prompt_strength: 0.5,  // Use prompt_strength, not strength
-        num_outputs: 1,
+        strength: 0.75,  // This model uses 'strength' not 'prompt_strength'
         guidance_scale: 7.5,
         num_inference_steps: 50
       }
