@@ -148,7 +148,7 @@ model NeoGlitchMedia {
   prompt          String
   preset          String
   runId           String   @unique
-  replicateJobId  String?  @map("replicate_job_id")
+  stabilityJobId  String?  @map("stability_job_id")
   createdAt       DateTime @default(now()) @map("created_at")
   status          String   @default("completed")
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -156,7 +156,7 @@ model NeoGlitchMedia {
   @@index([userId, createdAt(sort: Desc)])
   @@index([status])
   @@index([preset])
-  @@index([replicateJobId])
+  @@index([stabilityJobId])
   @@map("neo_glitch_media")
 }
 

@@ -17,7 +17,7 @@ if [ $? -eq 0 ]; then
     echo "🎉 Deployment complete!"
     echo "📱 Your app is now live!"
     echo "🔧 Don't forget to set environment variables in Netlify dashboard:"
-    echo "   VITE_REPLICATE_API_KEY=your_api_key_here"
+    echo "   VITE_STABILITY_API_KEY=your_api_key_here"
 else
     echo "❌ Build failed! Please check the errors above."
     exit 1

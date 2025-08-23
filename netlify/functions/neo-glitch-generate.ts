@@ -109,13 +109,13 @@ export const handler: Handler = async (event) => {
 
     console.log('✅ [NeoGlitch] Initial record created:', initialRecord.id);
 
-    // Smart Replicate Generation with Retry Logic
-    const replicateResult = await smartGeneration(sourceUrl, normalizedPrompt, presetKey);
+    // Start Stability.ai generation
+    const stabilityResult = await startStabilityGeneration(sourceUrl, normalizedPrompt, presetKey);
 
-    // Update record with AIML prediction ID
+    // Update record with Stability.ai job ID
     const updateData: any = {
       status: 'generating',
-      aimlPredictionId: replicateResult.replicateJobId // Store AIML ID
+      stabilityJobId: stabilityResult.stabilityJobId
     };
 
     await db.neoGlitchMedia.update({
@@ -124,25 +124,25 @@ export const handler: Handler = async (event) => {
     });
 
     console.log('🚀 [NeoGlitch] Generation started successfully:', {
-      strategy: replicateResult.strategy,
-      predictionId: replicateResult.replicateJobId,
-      model: replicateResult.model
+      strategy: stabilityResult.strategy,
+      jobId: stabilityResult.stabilityJobId,
+      model: stabilityResult.model
     });
 
-    // Return AIML-focused response
+    // Return Stability.ai-focused response
     const responseBody: any = {
       success: true,
-      message: 'Neo Tokyo Glitch generation started with AIML',
+      message: 'Neo Tokyo Glitch generation started with Stability.ai',
       runId: runId.toString(),
       status: 'generating',
-      provider: 'aiml',
-      strategy: replicateResult.strategy,
-      aimlPredictionId: replicateResult.replicateJobId
+      provider: 'stability',
+      strategy: stabilityResult.strategy,
+      stabilityJobId: stabilityResult.stabilityJobId
     };
 
-    // Check if AIML returned immediate result
-    if (replicateResult.urls && replicateResult.urls.length > 0) {
-      responseBody.imageUrl = replicateResult.urls[0];
+    // Check if Stability.ai returned immediate result
+    if (stabilityResult.imageUrl) {
+      responseBody.imageUrl = stabilityResult.imageUrl;
       responseBody.status = 'completed';
     }
 
@@ -166,47 +166,44 @@ export const handler: Handler = async (event) => {
   }
 };
 
-// Smart Generation with AIML Only
-async function smartGeneration(sourceUrl: string, prompt: string, presetKey: string) {
-  const AIML_API_KEY = process.env.AIML_API_KEY;
-  const AIML_API_URL = 'https://api.aimlapi.com/v1/predictions';
+// Stability.ai Generation Function
+async function startStabilityGeneration(sourceUrl: string, prompt: string, presetKey: string) {
+  const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
 
-  if (!AIML_API_KEY) {
-    throw new Error('AIML_API_KEY not configured');
+  if (!STABILITY_API_KEY) {
+    throw new Error('STABILITY_API_KEY not configured');
   }
 
-  console.log('🚀 [NeoGlitch] Starting AIML generation with stable diffusion:', {
-    hasAIMLToken: !!AIML_API_KEY,
+  console.log('🚀 [NeoGlitch] Starting Stability.ai generation:', {
+    hasStabilityToken: !!STABILITY_API_KEY,
     sourceUrl,
     promptLength: prompt.length,
     presetKey
   });
 
   try {
-    console.log('🎯 [NeoGlitch] Using AIML stable-diffusion-v35-large');
-    const result = await attemptAIMLGeneration(
-      AIML_API_URL,
-      AIML_API_KEY,
+    console.log('🎯 [NeoGlitch] Using Stability.ai SD3 model');
+    const result = await attemptStabilityGeneration(
+      STABILITY_API_KEY,
       sourceUrl,
       prompt,
       presetKey
     );
-    return { ...result, strategy: 'aiml_stable_diffusion' };
+    return { ...result, strategy: 'stability_sd3' };
   } catch (error: any) {
-    console.error('❌ [NeoGlitch] AIML generation failed:', error.message);
-    throw new Error(`AIML generation failed: ${error.message}`);
+    console.error('❌ [NeoGlitch] Stability.ai generation failed:', error.message);
+    throw new Error(`Stability.ai generation failed: ${error.message}`);
   }
 }
 
-// AIML Generation Function
-async function attemptAIMLGeneration(
-  apiUrl: string,
+// Stability.ai Generation Implementation
+async function attemptStabilityGeneration(
   apiToken: string,
   sourceUrl: string,
   prompt: string,
   presetKey: string
 ) {
-  // Preset-specific parameters for AIML
+  // Preset-specific parameters for Stability.ai
   const presetConfigs = {
     'visor': { strength: 0.75, guidance_scale: 7.5, steps: 50 },
     'base': { strength: 0.65, guidance_scale: 7.0, steps: 40 },
@@ -216,33 +213,54 @@ async function attemptAIMLGeneration(
 
   const config = presetConfigs[presetKey as keyof typeof presetConfigs] || presetConfigs.visor;
 
+  // Download the source image to convert to base64
+  const imageResponse = await fetch(sourceUrl);
+  if (!imageResponse.ok) {
+    throw new Error(`Failed to download source image: ${imageResponse.status}`);
+  }
+  
+  const imageBuffer = await imageResponse.arrayBuffer();
+  const base64Image = Buffer.from(imageBuffer).toString('base64');
+
   const payload = {
-    prompt: prompt,
-    image: sourceUrl,
-    strength: config.strength,
-    guidance_scale: config.guidance_scale,
-    num_inference_steps: config.steps,
-    negative_prompt: "blurry, low quality, distorted, ugly, bad anatomy, watermark, text"
+    text_prompts: [
+      {
+        text: prompt,
+        weight: 1
+      },
+      {
+        text: "blurry, low quality, distorted, ugly, bad anatomy, watermark, text",
+        weight: -1
+      }
+    ],
+    init_image: base64Image,
+    init_image_mode: "IMAGE_TO_IMAGE",
+    image_strength: config.strength,
+    cfg_scale: config.guidance_scale,
+    steps: config.steps,
+    samples: 1,
+    aspect_ratio: "1:1"
   };
 
-  console.log('🧪 [NeoGlitch] Attempting AIML generation with stable-diffusion-v35-large');
-  console.log('📦 [NeoGlitch] AIML payload:', JSON.stringify(payload, null, 2));
+  console.log('🧪 [NeoGlitch] Attempting Stability.ai generation with SD3');
+  console.log('📦 [NeoGlitch] Stability.ai payload:', JSON.stringify({
+    ...payload,
+    init_image: '[BASE64_IMAGE_DATA]' // Don't log the actual image data
+  }, null, 2));
 
-  const response = await fetch(apiUrl, {
+  const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/sd3', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiToken}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
     },
-    body: JSON.stringify({
-      version: 'stable-diffusion-v35-large',
-      input: payload
-    })
+    body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('❌ [NeoGlitch] AIML API error:', {
+    console.error('❌ [NeoGlitch] Stability.ai API error:', {
       status: response.status,
       statusText: response.statusText,
       errorText
@@ -255,16 +273,20 @@ async function attemptAIMLGeneration(
       errorDetails = errorText;
     }
 
-    throw new Error(`AIML API failed (${response.status}): ${JSON.stringify(errorDetails)}`);
+    throw new Error(`Stability.ai API failed (${response.status}): ${JSON.stringify(errorDetails)}`);
   }
 
   const result = await response.json();
-  console.log('✅ [NeoGlitch] AIML generation started successfully');
+  console.log('✅ [NeoGlitch] Stability.ai generation started successfully');
+  
+  // For now, we'll return a job ID and handle async processing
+  // Stability.ai might return immediate results for some requests
+  const jobId = result.id || `stability_${Date.now()}`;
   
   return {
-    replicateJobId: result.id, // Keep same field name for consistency
-    model: 'stable-diffusion-v35-large',
-    strategy: 'aiml_stable_diffusion',
-    urls: result.urls
+    stabilityJobId: jobId,
+    model: 'sd3',
+    strategy: 'stability_sd3',
+    imageUrl: result.artifacts?.[0]?.base64 ? `data:image/png;base64,${result.artifacts[0].base64}` : undefined
   };
 }

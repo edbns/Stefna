@@ -1,28 +1,5 @@
-// MediaPipe is loaded dynamically from CDN
-
-// Function to dynamically load MediaPipe scripts
-async function loadMediaPipeScripts(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // Check if already loaded
-    if ((window as any).FaceMesh) {
-      resolve();
-      return;
-    }
-
-    // Load MediaPipe scripts
-    const script1 = document.createElement('script');
-    script1.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
-    script1.onload = () => {
-      const script2 = document.createElement('script');
-      script2.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js';
-      script2.onload = () => resolve();
-      script2.onerror = () => reject(new Error('Failed to load drawing_utils'));
-      document.head.appendChild(script2);
-    };
-    script1.onerror = () => reject(new Error('Failed to load face_mesh'));
-    document.head.appendChild(script1);
-  });
-}
+import '@tensorflow/tfjs-backend-webgl';
+import { createDetector, SupportedModels } from '@tensorflow-models/face-landmarks-detection';
 
 export type GlitchMode = 'neo_tokyo' | 'cyberpunk' | 'digital_glitch' | 'neon_wave';
 
@@ -49,6 +26,42 @@ export interface NeoTokyoGlitchResult {
     intensity: number;
     timestamp: string;
   };
+}
+
+// TensorFlow.js Face Landmarks Detection model loading state
+let tfModel: any = null;
+let isModelLoading = false;
+
+// Load TensorFlow.js Face Landmarks Detection model
+async function loadTFModel(): Promise<any> {
+  if (tfModel) {
+    return tfModel;
+  }
+
+  if (isModelLoading) {
+    // Wait for the model to finish loading
+    while (isModelLoading) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return tfModel;
+  }
+
+  isModelLoading = true;
+  try {
+    console.log('🎭 Loading TensorFlow.js Face Landmarks Detection model...');
+    tfModel = await createDetector(SupportedModels.MediaPipeFaceMesh, {
+      runtime: 'tfjs',
+      refineLandmarks: true,
+      maxFaces: 1
+    });
+    console.log('✅ Face detection model loaded successfully');
+    return tfModel;
+  } catch (error) {
+    console.error('❌ Failed to load face detection model:', error);
+    throw error;
+  } finally {
+    isModelLoading = false;
+  }
 }
 
 // Main function to apply Neo Tokyo Glitch FX to an image URL
@@ -119,41 +132,8 @@ export async function generateNeoTokyoGlitchOverlay(
   } = options;
 
   return new Promise<HTMLCanvasElement>(async (resolve, reject) => {
-    // Dynamically load MediaPipe from CDN
-    let FaceMesh: any;
     try {
-      // Load MediaPipe scripts dynamically
-      await loadMediaPipeScripts();
-      
-      // Get FaceMesh from global scope
-      FaceMesh = (window as any).FaceMesh;
-      if (!FaceMesh) {
-        throw new Error('FaceMesh not loaded from CDN');
-      }
-    } catch (error) {
-      console.error('Failed to load MediaPipe:', error);
-      // Fallback: create basic canvas without face detection
-      const canvas = document.createElement('canvas');
-      canvas.width = image.width;
-      canvas.height = image.height;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(image, 0, 0);
-      resolve(canvas);
-      return;
-    }
-
-    const faceMesh = new FaceMesh({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-    });
-
-    faceMesh.setOptions({
-      maxNumFaces: 1,
-      refineLandmarks: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    });
-
-    faceMesh.onResults((results) => {
+      // Create canvas for glitch effects
       const canvas = document.createElement('canvas');
       canvas.width = image.width;
       canvas.height = image.height;
@@ -321,47 +301,60 @@ export async function generateNeoTokyoGlitchOverlay(
         }
       }
 
-      // Face Mesh to clear face region (so we don't glitch it)
-      if (preserveFace && results.multiFaceLandmarks?.length) {
-        const landmarks = results.multiFaceLandmarks[0];
-        ctx.save();
-        ctx.beginPath();
-        
-        // Create face mask using jaw and face outline
-        const faceOutline = [
-          ...landmarks.slice(0, 17), // Jaw
-          ...landmarks.slice(17, 22), // Right eyebrow
-          ...landmarks.slice(22, 27), // Left eyebrow
-          ...landmarks.slice(27, 31), // Nose bridge
-          ...landmarks.slice(31, 36), // Nose bottom
-          ...landmarks.slice(36, 42), // Right eye
-          ...landmarks.slice(42, 48), // Left eye
-          ...landmarks.slice(48, 60), // Outer mouth
-          ...landmarks.slice(60, 68)  // Inner mouth
-        ];
-        
-        // Draw face mask path
-        faceOutline.forEach((pt, i) => {
-          const x = pt.x * w;
-          const y = pt.y * h;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        
-        ctx.closePath();
-        ctx.clip();
-        
-        // Clear the face region
-        ctx.clearRect(0, 0, w, h);
-        ctx.restore();
+      // Face detection to clear face region (so we don't glitch it)
+      if (preserveFace) {
+        try {
+          const model = await loadTFModel();
+          const faces = await model.estimateFaces(image);
+          
+          if (faces && faces.length > 0) {
+            const face = faces[0];
+            const keypoints = face.keypoints;
+            
+            if (keypoints && keypoints.length > 0) {
+              ctx.save();
+              ctx.beginPath();
+              
+              // Create face mask using key facial landmarks
+              // TensorFlow.js provides keypoints in a different format than MediaPipe
+              // We'll use a simplified face outline based on available keypoints
+              
+              // Try to find key facial points
+              const leftEye = keypoints.find((kp: any) => kp.name === 'leftEye');
+              const rightEye = keypoints.find((kp: any) => kp.name === 'rightEye');
+              const nose = keypoints.find((kp: any) => kp.name === 'noseTip');
+              const leftMouth = keypoints.find((kp: any) => kp.name === 'leftMouth');
+              const rightMouth = keypoints.find((kp: any) => kp.name === 'rightMouth');
+              
+              if (leftEye && rightEye && nose && leftMouth && rightMouth) {
+                // Create a simple face mask using the key points
+                const centerX = (leftEye.x + rightEye.x) / 2;
+                const centerY = (leftEye.y + rightEye.y) / 2;
+                const faceWidth = Math.abs(rightEye.x - leftEye.x) * 2.5;
+                const faceHeight = Math.abs(nose.y - centerY) * 3;
+                
+                // Draw elliptical face mask
+                ctx.ellipse(centerX, centerY, faceWidth / 2, faceHeight / 2, 0, 0, Math.PI * 2);
+                ctx.clip();
+                
+                // Clear the face region
+                ctx.clearRect(0, 0, w, h);
+              }
+              
+              ctx.restore();
+            }
+          }
+        } catch (faceError) {
+          console.warn('⚠️ Face detection failed, continuing without face preservation:', faceError);
+          // Continue without face preservation if detection fails
+        }
       }
 
       resolve(canvas);
-    });
-
-    image.onload = () => faceMesh.send({ image });
-    image.onerror = () => reject('Image load error');
-    image.src = image.src;
+    } catch (error) {
+      console.error('❌ Neo Tokyo Glitch generation failed:', error);
+      reject(error);
+    }
   });
 }
 
