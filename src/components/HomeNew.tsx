@@ -1774,7 +1774,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           const generationRequest = {
             prompt: effectivePrompt,
             presetKey: 'neotokyoglitch',
-            sourceAssetId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
+            sourceAssetId: sourceUrl || '',
             userId: authService.getCurrentUser()?.id || '',
             runId: genId,
             meta: {
