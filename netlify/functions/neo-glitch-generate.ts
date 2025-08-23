@@ -30,7 +30,7 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 405,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Method not allowed' });
+      body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
 
