@@ -1,6 +1,6 @@
 // Neo Tokyo Glitch Generation Function
-// Starts the actual Replicate generation and updates the glitch record
-// Handles Replicate API integration and status tracking
+// Starts the actual Replicate generation using dedicated architecture
+// No intermediate table - direct Replicate → Cloudinary → neo_glitch_media flow
 
 import type { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
@@ -31,7 +31,7 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 405,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify({ error: 'Method not allowed' });
     };
   }
 
@@ -42,17 +42,17 @@ export const handler: Handler = async (event) => {
 
     const body = JSON.parse(event.body || '{}');
     const {
-      glitchId,
       prompt,
       presetKey,
-      sourceAssetId,
-      runId
+      sourceUrl,
+      runId,
+      generationMeta
     } = body;
 
-    // Validate required fields
-    if (!glitchId || !prompt || !presetKey || !runId) {
+    // Validate required fields for new architecture
+    if (!prompt || !presetKey || !runId) {
       return json({ 
-        error: 'Missing required fields: glitchId, prompt, presetKey, and runId are required' 
+        error: 'Missing required fields: prompt, presetKey, and runId are required' 
       }, { status: 400 });
     }
 
@@ -64,31 +64,31 @@ export const handler: Handler = async (event) => {
     }
 
     // Validate source image URL if provided
-    if (sourceAssetId) {
+    if (sourceUrl) {
       // Log the URL for debugging
-      console.log('🔍 [NeoGlitch] Validating source image URL:', sourceAssetId);
+      console.log('🔍 [NeoGlitch] Validating source image URL:', sourceUrl);
       
       // Accept Cloudinary URLs (more flexible validation)
-      const isCloudinary = sourceAssetId.includes('res.cloudinary.com');
-      const isReplicate = sourceAssetId.includes('replicate.delivery');
-      const isValidUrl = sourceAssetId.startsWith('http');
+      const isCloudinary = sourceUrl.includes('res.cloudinary.com');
+      const isReplicate = sourceUrl.includes('replicate.delivery');
+      const isValidUrl = sourceUrl.startsWith('http');
       
       if (!isValidUrl) {
-        console.warn('⚠️ [NeoGlitch] Rejected image URL - not HTTP:', sourceAssetId);
+        console.warn('⚠️ [NeoGlitch] Rejected image URL - not HTTP:', sourceUrl);
         return json({ 
           error: 'Invalid source image URL: must be a valid HTTP URL' 
         }, { status: 400 });
       }
       
       if (!isCloudinary && !isReplicate) {
-        console.warn('⚠️ [NeoGlitch] Rejected image URL - not Cloudinary or Replicate:', sourceAssetId);
+        console.warn('⚠️ [NeoGlitch] Rejected image URL - not Cloudinary or Replicate:', sourceUrl);
         return json({ 
           error: 'Invalid source image URL: must be Cloudinary or Replicate hosted' 
         }, { status: 400 });
       }
       
       console.log('✅ [NeoGlitch] Source image URL validation passed:', {
-        url: sourceAssetId,
+        url: sourceUrl,
         isCloudinary,
         isReplicate
       });
@@ -98,59 +98,19 @@ export const handler: Handler = async (event) => {
     if (!REPLICATE_API_TOKEN) {
       console.error('❌ [NeoGlitch] REPLICATE_API_TOKEN not configured');
       return json({ 
-        error: 'Replicate API not configured' 
+        error: 'REPLICATE_API_TOKEN not configured' 
       }, { status: 500 });
     }
 
     console.log('🎭 [NeoGlitch] Starting Replicate generation:', {
-      glitchId,
+      userId,
       presetKey,
       runId,
-      hasSource: !!sourceAssetId,
-      sourceUrl: sourceAssetId || 'none'
+      hasSource: !!sourceUrl,
+      sourceUrl: sourceUrl || 'none'
     });
 
-    const sql = neon(process.env.NETLIFY_DATABASE_URL!);
-
-    // Verify the glitch record exists and belongs to the user
-    const glitchRecord = await sql`
-      SELECT id, user_id, status, prompt, preset_key, source_asset_id
-      FROM media_assets_glitch 
-      WHERE id = ${glitchId} AND user_id = ${userId}
-      LIMIT 1
-    `;
-
-    if (!glitchRecord || glitchRecord.length === 0) {
-      return json({ 
-        error: 'Glitch record not found or access denied' 
-      }, { status: 404 });
-    }
-
-    const record = glitchRecord[0];
-    console.log('🎭 [NeoGlitch] Found glitch record:', {
-      id: record.id,
-      status: record.status,
-      prompt: record.prompt.substring(0, 50) + '...'
-    });
-
-    // Check if already processing or completed
-    if (record.status === 'processing' || record.status === 'completed') {
-      return json({
-        error: `Generation already ${record.status}`,
-        status: record.status
-      }, { status: 400 });
-    }
-
-    // Update status to processing
-    await sql`
-      UPDATE media_assets_glitch 
-      SET status = 'processing', updated_at = NOW()
-      WHERE id = ${glitchId}
-    `;
-
-    console.log('✅ [NeoGlitch] Status updated to processing');
-
-    // Prepare Replicate API request
+    // Start Replicate generation directly (no intermediate table needed)
     const replicatePayload = {
       version: NEO_TOKYO_GLITCH_MODEL,
       input: {
@@ -159,22 +119,20 @@ export const handler: Handler = async (event) => {
         strength: 0.75,
         guidance_scale: 7.5,
         num_inference_steps: 50,
-        ...(sourceAssetId && { image: sourceAssetId }) // sourceAssetId should already be the full Cloudinary URL
+        ...(sourceUrl && { image: sourceUrl }) // sourceUrl should already be the full Cloudinary URL
       }
     };
 
     console.log('🚀 [NeoGlitch] Calling Replicate API with payload:', {
       model: NEO_TOKYO_GLITCH_MODEL,
       prompt: prompt.substring(0, 50) + '...',
-      hasSourceImage: !!sourceAssetId,
-      sourceAssetId: sourceAssetId,
+      hasSourceImage: !!sourceUrl,
+      sourceUrl: sourceUrl,
       fullPayload: replicatePayload,
       replicateUrl: REPLICATE_API_URL,
-      hasToken: !!REPLICATE_API_TOKEN,
-      payloadSize: JSON.stringify(replicatePayload).length
+      hasToken: !!REPLICATE_API_TOKEN
     });
 
-    // Call Replicate API
     const replicateResponse = await fetch(REPLICATE_API_URL, {
       method: 'POST',
       headers: {
@@ -188,17 +146,7 @@ export const handler: Handler = async (event) => {
       const errorText = await replicateResponse.text();
       console.error('❌ [NeoGlitch] Replicate API error:', replicateResponse.status, errorText);
       
-      // Log failure reason in database with proper error handling
-      await sql`
-        UPDATE media_assets_glitch 
-        SET 
-          status = 'failed',
-          error_message = ${errorText},
-          updated_at = NOW()
-        WHERE id = ${glitchId}
-      `;
-
-      return json({ 
+      return json({
         error: 'Replicate API call failed',
         details: errorText,
         status: 'failed'
@@ -208,23 +156,9 @@ export const handler: Handler = async (event) => {
     const replicateResult = await replicateResponse.json();
     console.log('✅ [NeoGlitch] Replicate generation started:', {
       predictionId: replicateResult.id,
-      status: replicateResult.status
+      status: replicateResult.status,
+      urls: replicateResult.urls
     });
-
-    // Store Replicate prediction ID in meta
-    await sql`
-      UPDATE media_assets_glitch 
-      SET 
-        meta = jsonb_set(
-          COALESCE(meta, '{}'::jsonb), 
-          '{replicate_prediction_id}', 
-          ${replicateResult.id}::jsonb
-        ),
-        updated_at = NOW()
-      WHERE id = ${glitchId}
-    `;
-
-    console.log('✅ [NeoGlitch] Replicate prediction ID stored in meta');
 
     return json({
       success: true,
@@ -235,36 +169,9 @@ export const handler: Handler = async (event) => {
 
   } catch (error: any) {
     console.error('💥 [NeoGlitch] Generation error:', error);
-    console.error('💥 [NeoGlitch] Error stack:', error.stack);
-    console.error('💥 [NeoGlitch] Error details:', {
-      name: error.name,
-      message: error.message,
-      code: error.code,
-      cause: error.cause
-    });
     
     if (error.message === 'NO_BEARER') {
       return json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    }
-
-    // Log any other errors to database if we have a glitchId
-    try {
-      if (event.body) {
-        const body = JSON.parse(event.body);
-        if (body.glitchId) {
-          const sql = neon(process.env.NETLIFY_DATABASE_URL!);
-          await sql`
-            UPDATE media_assets_glitch 
-            SET 
-              status = 'failed',
-              error_message = ${error.message || 'Unknown error occurred'},
-              updated_at = NOW()
-            WHERE id = ${body.glitchId}
-          `;
-        }
-      }
-    } catch (dbError) {
-      console.error('❌ [NeoGlitch] Failed to log error to database:', dbError);
     }
     
     return json({ 

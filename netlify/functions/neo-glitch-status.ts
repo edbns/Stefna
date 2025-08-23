@@ -1,9 +1,8 @@
 // Neo Tokyo Glitch Status Function
-// Checks the status of a Replicate generation and updates the local record
-// Handles status polling and result processing
+// Checks the status of a Replicate generation using dedicated architecture
+// Direct Replicate API polling - no intermediate table lookup needed
 
 import type { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
 import { requireAuth } from './lib/auth';
 import { json } from './_lib/http';
 
@@ -26,7 +25,7 @@ export const handler: Handler = async (event) => {
 
   if (event.httpMethod !== 'POST') {
     return {
-      statusCode: 200,
+      statusCode: 405,
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
@@ -38,12 +37,12 @@ export const handler: Handler = async (event) => {
     console.log('🎭 [NeoGlitch] User authenticated for status check:', userId);
 
     const body = JSON.parse(event.body || '{}');
-    const { glitchId } = body;
+    const { replicateJobId } = body;
 
-    // Validate required fields
-    if (!glitchId) {
+    // Validate required fields for new architecture
+    if (!replicateJobId) {
       return json({ 
-        error: 'Missing required field: glitchId is required' 
+        error: 'Missing required field: replicateJobId is required' 
       }, { status: 400 });
     }
 
@@ -51,85 +50,14 @@ export const handler: Handler = async (event) => {
     if (!REPLICATE_API_TOKEN) {
       console.error('❌ [NeoGlitch] REPLICATE_API_TOKEN not configured');
       return json({ 
-        error: 'Replicate API not configured' 
+        error: 'REPLICATE_API_TOKEN not configured' 
       }, { status: 500 });
     }
 
-    console.log('🔍 [NeoGlitch] Checking status for glitch:', glitchId);
+    console.log('🔍 [NeoGlitch] Checking status for Replicate job:', replicateJobId);
 
-    const sql = neon(process.env.NETLIFY_DATABASE_URL!);
-
-    // Get the glitch record
-    const glitchRecord = await sql`
-      SELECT id, user_id, status, prompt, preset_key, source_asset_id, meta
-      FROM media_assets_glitch 
-      WHERE id = ${glitchId} AND user_id = ${userId}
-      LIMIT 1
-    `;
-
-    if (!glitchRecord || glitchRecord.length === 0) {
-      return json({ 
-        error: 'Glitch record not found or access denied' 
-      }, { status: 404 });
-    }
-
-    const record = glitchRecord[0];
-    console.log('🎭 [NeoGlitch] Found glitch record:', {
-      id: record.id,
-      status: record.status,
-      hasReplicateId: !!(record.meta?.replicate_prediction_id)
-    });
-
-    // If already completed, return the current status
-    if (record.status === 'completed') {
-      const completedRecord = await sql`
-        SELECT id, status, cloudinary_url, replicate_url, meta, created_at, updated_at
-        FROM media_assets_glitch 
-        WHERE id = ${glitchId}
-      `;
-
-      return json({
-        id: completedRecord[0].id,
-        status: 'completed',
-        cloudinaryUrl: completedRecord[0].cloudinary_url,
-        replicateUrl: completedRecord[0].replicate_url,
-        meta: completedRecord[0].meta,
-        createdAt: completedRecord[0].created_at,
-        updatedAt: completedRecord[0].updated_at
-      });
-    }
-
-    // If failed, return the current status
-    if (record.status === 'failed') {
-      const failedRecord = await sql`
-        SELECT id, status, meta, created_at, updated_at
-        FROM media_assets_glitch 
-        WHERE id = ${glitchId}
-      `;
-
-      return json({
-        id: failedRecord[0].id,
-        status: 'failed',
-        error: failedRecord[0].meta?.error || 'Generation failed',
-        meta: failedRecord[0].meta,
-        createdAt: failedRecord[0].created_at,
-        updatedAt: failedRecord[0].updated_at
-      });
-    }
-
-    // Check Replicate API for current status
-    const replicatePredictionId = record.meta?.replicate_prediction_id;
-    if (!replicatePredictionId) {
-      console.error('❌ [NeoGlitch] No Replicate prediction ID found in meta');
-      return json({ 
-        error: 'No Replicate prediction ID found' 
-      }, { status: 400 });
-    }
-
-    console.log('🔍 [NeoGlitch] Checking Replicate API for prediction:', replicatePredictionId);
-
-    // Call Replicate API to get current status
-    const replicateResponse = await fetch(`${REPLICATE_API_URL}/${replicatePredictionId}`, {
+    // Check Replicate API directly for job status
+    const replicateResponse = await fetch(`${REPLICATE_API_URL}/${replicateJobId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Token ${REPLICATE_API_TOKEN}`,
@@ -141,89 +69,72 @@ export const handler: Handler = async (event) => {
       const errorText = await replicateResponse.text();
       console.error('❌ [NeoGlitch] Replicate API error:', replicateResponse.status, errorText);
       
-      // Mark as failed if we can't reach Replicate
-      await sql`
-        UPDATE media_assets_glitch 
-        SET 
-          status = 'failed',
-          meta = jsonb_set(
-            COALESCE(meta, '{}'::jsonb), 
-            '{error}', 
-            ${`Replicate API error: ${replicateResponse.status}`}::jsonb
-          ),
-          updated_at = NOW()
-        WHERE id = ${glitchId}
-      `;
-
-      return json({ 
-        error: 'Failed to check Replicate status',
-        details: errorText
+      return json({
+        error: 'Failed to check Replicate job status',
+        details: errorText,
+        status: 'failed'
       }, { status: replicateResponse.status });
     }
 
     const replicateResult = await replicateResponse.json();
-    console.log('🔍 [NeoGlitch] Replicate status:', {
-      predictionId: replicateResult.id,
+    console.log('✅ [NeoGlitch] Replicate status retrieved:', {
+      id: replicateResult.id,
       status: replicateResult.status,
       hasOutput: !!replicateResult.output
     });
 
-    // Update local status based on Replicate response
-    let newStatus = record.status;
-    let replicateUrl = null;
-    let errorMessage = null;
+    // Map Replicate status to our status
+    let status: string;
+    let replicateUrl: string | null = null;
+    let sourceUrl: string | null = null;
+    let generationMeta: any = {};
 
-    if (replicateResult.status === 'succeeded' && replicateResult.output) {
-      newStatus = 'completed';
-      replicateUrl = Array.isArray(replicateResult.output) ? replicateResult.output[0] : replicateResult.output;
-      console.log('✅ [NeoGlitch] Generation completed, Replicate URL:', replicateUrl);
-    } else if (replicateResult.status === 'failed') {
-      newStatus = 'failed';
-      errorMessage = replicateResult.error || 'Replicate generation failed';
-      console.error('❌ [NeoGlitch] Generation failed:', errorMessage);
-    } else if (replicateResult.status === 'processing') {
-      newStatus = 'processing';
-      console.log('🔄 [NeoGlitch] Still processing...');
+    switch (replicateResult.status) {
+      case 'starting':
+      case 'processing':
+        status = 'processing';
+        break;
+      case 'succeeded':
+        status = 'completed';
+        // Extract the output URL (first image in array)
+        if (replicateResult.output && Array.isArray(replicateResult.output) && replicateResult.output.length > 0) {
+          replicateUrl = replicateResult.output[0];
+        }
+        // Extract input parameters for metadata
+        if (replicateResult.input) {
+          generationMeta = {
+            prompt: replicateResult.input.prompt,
+            strength: replicateResult.input.strength,
+            guidance_scale: replicateResult.input.guidance_scale,
+            num_inference_steps: replicateResult.input.num_inference_steps
+          };
+        }
+        break;
+      case 'failed':
+        status = 'failed';
+        generationMeta = {
+          error: replicateResult.error || 'Unknown error occurred'
+        };
+        break;
+      case 'canceled':
+        status = 'failed';
+        generationMeta = {
+          error: 'Generation was canceled'
+        };
+        break;
+      default:
+        status = 'processing';
     }
 
-    // Update the local record if status changed
-    if (newStatus !== record.status) {
-      const updateData: any = {
-        status: newStatus,
-        updated_at: new Date()
-      };
-
-      if (replicateUrl) {
-        updateData.replicate_url = replicateUrl;
-      }
-
-      if (errorMessage) {
-        updateData.meta = sql`jsonb_set(
-          COALESCE(meta, '{}'::jsonb), 
-          '{error}', 
-          ${errorMessage}::jsonb
-        )`;
-      }
-
-      await sql`
-        UPDATE media_assets_glitch 
-        SET ${sql(updateData)}
-        WHERE id = ${glitchId}
-      `;
-
-      console.log('✅ [NeoGlitch] Status updated to:', newStatus);
-    }
-
-    // Return current status
     return json({
-      id: record.id,
-      status: newStatus,
-      replicateUrl: replicateUrl,
-      cloudinaryUrl: null, // Will be set by backup function
-      error: errorMessage,
-      meta: record.meta,
-      createdAt: record.created_at,
-      updatedAt: new Date()
+      id: replicateResult.id,
+      status,
+      replicateUrl,
+      sourceUrl,
+      generationMeta,
+      replicateStatus: replicateResult.status,
+      createdAt: replicateResult.created_at,
+      updatedAt: replicateResult.updated_at
     });
 
   } catch (error: any) {
@@ -235,7 +146,8 @@ export const handler: Handler = async (event) => {
     
     return json({ 
       error: 'STATUS_CHECK_FAILED',
-      message: error.message 
+      message: error.message,
+      status: 'failed'
     }, { status: 500 });
   }
 };

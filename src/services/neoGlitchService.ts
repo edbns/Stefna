@@ -93,12 +93,12 @@ class NeoGlitchService {
   /**
    * Check the status of a Neo Tokyo Glitch generation
    */
-  async checkStatus(glitchId: string): Promise<NeoGlitchStatus> {
+  async checkStatus(replicateJobId: string): Promise<NeoGlitchStatus> {
     try {
       const response = await authenticatedFetch('/.netlify/functions/neo-glitch-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ glitchId })
+        body: JSON.stringify({ replicateJobId })
       });
 
       if (!response.ok) {
