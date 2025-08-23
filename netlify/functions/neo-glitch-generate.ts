@@ -10,7 +10,7 @@ import { json } from './_lib/http';
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 const REPLICATE_API_URL = 'https://api.replicate.com/v1/predictions';
 
-// Neo Tokyo Glitch model configuration
+// Neo Tokyo Glitch model configuration - using more recent and reliable model
 const NEO_TOKYO_GLITCH_MODEL = 'stability-ai/stable-diffusion-img2img:30c1d0b916a6f8efce20493f5d61ee27491ab2a6045c87d3d92bc3a208f1337d4';
 
 export const handler: Handler = async (event) => {
@@ -129,7 +129,8 @@ export const handler: Handler = async (event) => {
       sourceUrl: sourceUrl,
       fullPayload: replicatePayload,
       replicateUrl: REPLICATE_API_URL,
-      hasToken: !!REPLICATE_API_TOKEN
+      hasToken: !!REPLICATE_API_TOKEN,
+      tokenPreview: REPLICATE_API_TOKEN ? `${REPLICATE_API_TOKEN.substring(0, 10)}...` : 'none'
     });
 
     const replicateResponse = await fetch(REPLICATE_API_URL, {
@@ -143,12 +144,23 @@ export const handler: Handler = async (event) => {
 
     if (!replicateResponse.ok) {
       const errorText = await replicateResponse.text();
-      console.error('❌ [NeoGlitch] Replicate API error:', replicateResponse.status, errorText);
+      console.error('❌ [NeoGlitch] Replicate API error:', {
+        status: replicateResponse.status,
+        statusText: replicateResponse.statusText,
+        errorText: errorText,
+        url: REPLICATE_API_URL,
+        payload: replicatePayload,
+        headers: {
+          'Authorization': `Token ${REPLICATE_API_TOKEN ? '***' : 'missing'}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       return json({
         error: 'Replicate API call failed',
         details: errorText,
-        status: 'failed'
+        status: 'failed',
+        replicateStatus: replicateResponse.status
       }, { status: replicateResponse.status });
     }
 

@@ -1800,10 +1800,10 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
             
             // Set the result URL from Cloudinary (permanent)
             replicateResultUrl = finalStatus.cloudinaryUrl;
-            replicateAllResultUrls = [replicateResultUrl];
-            replicateVariationsGenerated = 1;
-            skipAimlApi = true;
-            
+          replicateAllResultUrls = [replicateResultUrl];
+          replicateVariationsGenerated = 1;
+          skipAimlApi = true;
+          
             console.log('🎭 [NeoGlitch] Using permanent Cloudinary URL, skipping aimlApi');
           } else {
             throw new Error(`Generation failed or incomplete: ${finalStatus.status} - ${finalStatus.error || 'Unknown error'}`);
