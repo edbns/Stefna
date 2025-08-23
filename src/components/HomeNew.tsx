@@ -2238,23 +2238,23 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         let assetId: string | null = null;
         
         if (composerState.mode !== 'neotokyoglitch' && composerState.mode !== 'ghiblireact') {
-          const assetResult = await createAsset({
-            sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
-            mediaType: 'image', // Default to image for now
+        const assetResult = await createAsset({
+          sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
+          mediaType: 'image', // Default to image for now
             presetKey: selectedPreset,
-            prompt: effectivePrompt,
-          });
+              prompt: effectivePrompt,
+        });
 
-          if (!assetResult.ok) {
-            console.error('Failed to create asset:', assetResult.error);
-            notifyError({ title: 'Something went wrong', message: 'Failed to create asset record' });
-            endGeneration(genId);
-            setNavGenerating(false);
-            return;
-          }
+        if (!assetResult.ok) {
+          console.error('Failed to create asset:', assetResult.error);
+          notifyError({ title: 'Something went wrong', message: 'Failed to create asset record' });
+          endGeneration(genId);
+          setNavGenerating(false);
+          return;
+        }
 
           assetId = assetResult.data.id;
-          console.log('✅ Asset created:', assetId);
+        console.log('✅ Asset created:', assetId);
         } else {
           console.log(`🎭 ${composerState.mode} mode - skipping createAsset, will use save-media directly`);
         }
@@ -2375,10 +2375,10 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                   console.log(`✅ ${composerState.mode} media saved to user profile successfully:`, saveBody);
                   
                   // Refresh user media to show the new image
-                  setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                    detail: { count: 1, runId: genId } 
+              setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                detail: { count: 1, runId: genId } 
                   })), 800);
-                } else {
+            } else {
                   console.error(`❌ ${composerState.mode} media save failed:`, saveRes.status, saveBody || saveText);
                   notifyError({ title: 'Save failed', message: saveBody?.error || `Failed to save ${composerState.mode} media to profile` });
                 }
@@ -2437,39 +2437,39 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
               console.log(`🎭 ${composerState.mode} mode - multiple variations (${allResultUrls.length}), using unified save-media`);
               
               try {
-                const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
-                  method: 'POST',
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Idempotency-Key': genId // prevents double-saves on retries
-                  },
-                  body: JSON.stringify({
-                    variations: variations.map((url, index) => ({
-                      image_url: url,
-                      prompt: prompt?.trim() || 'AI Generated Content',
-                      media_type: 'image',
-                      meta: {
-                        variation_index: index,
-                        mode: composerState.mode,
-                        run_id: genId
-                      }
-                    })),
-                    runId: genId
-                  })
-                });
-                
-                const saveText = await saveRes.text();
-                let saveBody: any = {};
-                try { saveBody = JSON.parse(saveText); } catch {}
-                
+              const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'X-Idempotency-Key': genId // prevents double-saves on retries
+                },
+                body: JSON.stringify({
+                  variations: variations.map((url, index) => ({
+                    image_url: url,
+                    prompt: prompt?.trim() || 'AI Generated Content',
+                    media_type: 'image',
+                    meta: {
+                      variation_index: index,
+                      mode: composerState.mode,
+                      run_id: genId
+                    }
+                  })),
+                  runId: genId
+                })
+              });
+              
+              const saveText = await saveRes.text();
+              let saveBody: any = {};
+              try { saveBody = JSON.parse(saveText); } catch {}
+              
                 if (saveRes.ok && saveBody?.success) {
                   console.log(`✅ ${composerState.mode} batch save successful:`, saveBody);
-                  
+                
                   // Refresh user media to show the new images
-                  setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
                     detail: { count: saveBody.count || allResultUrls.length, runId: genId } 
-                  })), 800);
-                } else {
+                })), 800);
+              } else {
                   console.warn(`⚠️ ${composerState.mode} batch save failed, falling back to individual saves:`, saveRes.status, saveBody || saveText);
                   
                   // 🧪 FALLBACK: Try saving each variation individually
