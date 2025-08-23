@@ -44,59 +44,28 @@ class NeoGlitchService {
   }
 
   /**
-   * Start a Neo Tokyo Glitch generation
-   * Creates the initial record and starts Replicate generation
+   * Start a Neo Tokyo Glitch generation using dedicated architecture
+   * Creates record in neo_glitch_media and starts Replicate generation
    */
   async startGeneration(request: NeoGlitchGenerationRequest): Promise<NeoGlitchGenerationResult> {
     try {
-      console.log('🎭 [NeoGlitch] Starting generation:', {
+      console.log('🎭 [NeoGlitch] Starting generation with dedicated architecture:', {
         presetKey: request.presetKey,
         runId: request.runId,
         hasSource: !!request.sourceAssetId
       });
 
-      // Calculate input hash for deduplication
-      const inputHash = await this.generateInputHash(
-        request.prompt,
-        request.presetKey,
-        request.sourceAssetId
-      );
-
-      console.log('🎭 [NeoGlitch] Input hash generated:', inputHash);
-
-      // Create the initial glitch record
-      const createRes = await authenticatedFetch('/.netlify/functions/neo-glitch-create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: request.prompt,
-          presetKey: request.presetKey,
-          sourceAssetId: request.sourceAssetId,
-          userId: request.userId,
-          runId: request.runId,
-          inputHash: inputHash,
-          meta: request.meta || {}
-        })
-      });
-
-      if (!createRes.ok) {
-        const error = await createRes.json().catch(() => ({}));
-        throw new Error(error.error || `Failed to create glitch record: ${createRes.status}`);
-      }
-
-      const result = await createRes.json();
-      console.log('✅ [NeoGlitch] Generation record created:', result.id);
-
-      // Start the actual Replicate generation
+      // Start Replicate generation directly (no intermediate table)
       const replicateRes = await authenticatedFetch('/.netlify/functions/neo-glitch-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          glitchId: result.id,
           prompt: request.prompt,
           presetKey: request.presetKey,
-          sourceAssetId: request.sourceAssetId,
-          runId: request.runId
+          sourceUrl: request.sourceAssetId, // Use sourceUrl for clarity
+          userId: request.userId,
+          runId: request.runId,
+          generationMeta: request.meta || {}
         })
       });
 
@@ -109,10 +78,10 @@ class NeoGlitchService {
       console.log('🚀 [NeoGlitch] Replicate generation started:', replicateResult.predictionId);
 
       return {
-        id: result.id,
+        id: replicateResult.predictionId, // Use Replicate job ID as identifier
         status: 'pending',
         runId: request.runId,
-        inputHash: inputHash
+        replicateJobId: replicateResult.predictionId
       };
 
     } catch (error) {
@@ -146,38 +115,38 @@ class NeoGlitchService {
   }
 
   /**
-   * Poll for completion of a Neo Tokyo Glitch generation
+   * Poll for completion of a Neo Tokyo Glitch generation using dedicated architecture
    */
-  async pollForCompletion(glitchId: string, maxAttempts: number = 60): Promise<NeoGlitchStatus> {
-    console.log('🔄 [NeoGlitch] Polling for completion:', glitchId);
+  async pollForCompletion(replicateJobId: string, maxAttempts: number = 60): Promise<NeoGlitchStatus> {
+    console.log('🔄 [NeoGlitch] Polling for completion with dedicated architecture:', replicateJobId);
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        const status = await this.checkStatus(glitchId);
+        const status = await this.checkStatus(replicateJobId);
         
         console.log(`🔍 [NeoGlitch] Poll attempt ${attempt}/${maxAttempts}:`, status.status);
 
         if (status.status === 'completed') {
           console.log('✅ [NeoGlitch] Generation completed successfully');
           
-          // If we have a Replicate URL, backup to Cloudinary using existing function
+          // Use dedicated save function for complete workflow
           if (status.replicateUrl) {
-            console.log('🔄 [NeoGlitch] Backing up Replicate URL to Cloudinary...');
+            console.log('🔄 [NeoGlitch] Using dedicated save function...');
             try {
-              const backupResult = await this.backupToCloudinary(glitchId, status.replicateUrl);
-              if (backupResult.success) {
-                console.log('✅ [NeoGlitch] Cloudinary backup successful:', backupResult.permanentUrl);
+              const saveResult = await this.saveNeoGlitchMedia(replicateJobId, status);
+              if (saveResult.success) {
+                console.log('✅ [NeoGlitch] Media saved successfully:', saveResult.cloudinaryUrl);
                 return {
                   ...status,
-                  cloudinaryUrl: backupResult.permanentUrl
+                  cloudinaryUrl: saveResult.cloudinaryUrl,
+                  mediaId: saveResult.mediaId
                 };
               } else {
-                console.warn('⚠️ [NeoGlitch] Cloudinary backup failed:', backupResult.error);
-                // Return status without Cloudinary URL if backup fails
+                console.warn('⚠️ [NeoGlitch] Media save failed:', saveResult.error);
                 return status;
               }
-            } catch (backupError) {
-              console.error('❌ [NeoGlitch] Cloudinary backup error:', backupError);
+            } catch (saveError) {
+              console.error('❌ [NeoGlitch] Media save error:', saveError);
               return status;
             }
           }
@@ -206,29 +175,32 @@ class NeoGlitchService {
   }
 
   /**
-   * Backup Replicate URL to Cloudinary using existing backup function
+   * Save Neo Tokyo Glitch media using dedicated save function
    */
-  private async backupToCloudinary(glitchId: string, replicateUrl: string): Promise<any> {
+  private async saveNeoGlitchMedia(replicateJobId: string, status: NeoGlitchStatus): Promise<any> {
     try {
-      const response = await authenticatedFetch('/.netlify/functions/backup-replicate-image', {
+      const response = await authenticatedFetch('/.netlify/functions/save-neo-glitch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          replicateUrl,
-          mediaId: glitchId,
-          userId: await this.getCurrentUserId()
+          userId: await this.getCurrentUserId(),
+          presetKey: 'neotokyoglitch', // Default preset key
+          sourceUrl: status.sourceUrl || '',
+          replicateUrl: status.replicateUrl,
+          replicateJobId,
+          generationMeta: status.generationMeta || {}
         })
       });
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || `Backup failed: ${response.status}`);
+        throw new Error(error.error || `Save failed: ${response.status}`);
       }
 
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('❌ [NeoGlitch] Cloudinary backup failed:', error);
+      console.error('❌ [NeoGlitch] Media save failed:', error);
       throw error;
     }
   }
