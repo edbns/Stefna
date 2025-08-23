@@ -195,23 +195,30 @@ export const handler: Handler = async (event) => {
 
     if (!replicateResponse.ok) {
       const errorText = await replicateResponse.text();
+
       console.error('❌ [NeoGlitch] Replicate API error:', {
         status: replicateResponse.status,
         statusText: replicateResponse.statusText,
-        errorText: errorText
+        errorText
       });
-      
+
       return {
         statusCode: replicateResponse.status,
         headers: { 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({
           error: 'REPLICATE_API_FAILED',
           message: 'Failed to start Replicate generation',
-          details: errorText,
+          details: (() => {
+            try {
+              return JSON.parse(errorText); // Parse if JSON error
+            } catch {
+              return errorText; // Otherwise return raw text
+            }
+          })(),
           replicateStatus: replicateResponse.status,
-          replicatePayload, // Add this to debug exactly what was sent
           sourceUrl,
-          base64ImageSample: base64Image?.substring(0, 100) + '...'
+          base64Preview: base64Image?.substring?.(0, 120) + '...',
+          payload: replicatePayload
         })
       };
     }
