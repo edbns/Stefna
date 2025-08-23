@@ -1,7 +1,18 @@
 import type { Handler } from "@netlify/functions";
-import { getDb } from "./_lib/db";
+import { PrismaClient } from '@prisma/client';
 import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
+
+// ============================================================================
+// VERSION: 6.0 - PRISMA MIGRATION
+// ============================================================================
+// This function has been migrated to use Prisma instead of raw SQL
+// - Replaced getDb() with PrismaClient
+// - Removed dependency on non-existent database functions
+// - Implemented actual credit refund logic
+// ============================================================================
+
+const prisma = new PrismaClient();
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -51,180 +62,126 @@ export const handler: Handler = async (event) => {
       return json({ ok: false, error: 'Invalid disposition - must be "commit" or "refund"' }, { status: 400 });
     }
 
-    const db = getDb();
-    console.log('💰 Database connection obtained:', !!db);
-    
     try {
-      // Test database connection
-      const { rows: testRows } = await db.query('SELECT NOW() as current_time');
-      console.log('💰 Database connection test successful:', testRows[0]);
-      
-      // Check if app.finalize_credits function exists
-      try {
-        const { rows: funcCheck } = await db.query(`
-          SELECT 
-            n.nspname AS schema,
-            p.proname AS function,
-            pg_catalog.pg_get_function_arguments(p.oid) AS args
-          FROM pg_catalog.pg_proc p
-          JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
-          WHERE p.proname = 'finalize_credits' AND n.nspname = 'app'
-        `);
-        console.log('💰 Function check result:', funcCheck[0]);
-        
-        if (!funcCheck[0]) {
-          console.error('❌ app.finalize_credits function not found!');
-          return json({ 
-            ok: false, 
-            error: "DB_FUNCTION_MISSING",
-            message: "app.finalize_credits function not found in database"
-          }, { status: 500 });
-        }
-      } catch (funcError) {
-        console.error('❌ Function check failed:', funcError);
+      // Find the credit transaction
+      const creditTransaction = await prisma.creditTransaction.findUnique({
+        where: { requestId: request_id }
+      });
+
+      if (!creditTransaction) {
+        console.error("❌ Credit transaction not found:", request_id);
         return json({ 
           ok: false, 
-          error: "DB_FUNCTION_CHECK_FAILED",
-          message: funcError?.message
-        }, { status: 500 });
+          error: "TRANSACTION_NOT_FOUND",
+          message: "Credit transaction not found"
+        }, { status: 404 });
       }
-      
-      // Finalize credits using the new system
-      console.log('💰 finalize_credits inputs:', {
-        userId,
-        request_id,
-        disposition,
-        userIdType: typeof userId,
-        requestIdType: typeof request_id,
-        dispositionType: typeof disposition
+
+      // Verify the transaction belongs to this user
+      if (creditTransaction.userId !== userId) {
+        console.error("❌ Transaction belongs to different user:", {
+          transactionUserId: creditTransaction.userId,
+          requestUserId: userId
+        });
+        return json({ 
+          ok: false, 
+          error: "UNAUTHORIZED",
+          message: "Transaction belongs to different user"
+        }, { status: 403 });
+      }
+
+      // Verify the transaction is still pending
+      if (creditTransaction.status !== 'pending') {
+        console.error("❌ Transaction already processed:", creditTransaction.status);
+        return json({ 
+          ok: false, 
+          error: "ALREADY_PROCESSED",
+          message: "Transaction already processed"
+        }, { status: 400 });
+      }
+
+      console.log('💰 Processing credit transaction:', {
+        id: creditTransaction.id,
+        amount: creditTransaction.amount,
+        status: creditTransaction.status,
+        disposition
       });
-      
-      // Convert disposition to the format expected by SQL function
-      const status = disposition === 'commit' ? 'commit' : 'refund';
-      
-      const sqlQuery = "SELECT app.finalize_credits($1::uuid, $2::uuid, $3::text)";
-      const params = [userId, request_id, status];
-      console.log('💰 SQL Query:', sqlQuery);
-      console.log('💰 Parameters:', params);
-      
-      try {
-        await db.query(sqlQuery, params);
-        console.log('💰 Credits finalized successfully:', { disposition, status });
+
+      if (disposition === 'refund') {
+        // REFUND: Restore credits to user
+        console.log('💰 Processing credit refund...');
         
-        // 📧 NEW: Check if we should send low credit warning after finalization
-        if (disposition === 'commit') {
-          try {
-            console.log('📧 Checking if low credit warning email should be sent...');
-            
-            // Get current daily usage after this commit
-            const { rows: dailyUsageRows } = await db.query(`
-              SELECT COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) as daily_used
-              FROM credits_ledger 
-              WHERE user_id = $1::uuid 
-              AND status = 'committed' 
-              AND created_at >= (now() AT TIME ZONE 'UTC')::date
-            `, [userId]);
-            
-            const dailyUsed = dailyUsageRows[0]?.daily_used || 0;
-            const dailyCap = 30; // Default daily cap
-            const usagePercentage = (dailyUsed / dailyCap) * 100;
-            
-            console.log('📧 Daily usage after finalization:', { dailyUsed, dailyCap, usagePercentage: usagePercentage.toFixed(1) + '%' });
-            
-            // Send warning emails at 80% and 90% thresholds
-            if (usagePercentage >= 80 && usagePercentage < 90) {
-              console.log('📧 Triggering 80% low credit warning email after finalization...');
-              
-              // Get user email
-              const { rows: userRows } = await db.query(
-                "SELECT email FROM auth.users WHERE id = $1::uuid",
-                [userId]
-              );
-              
-              const userEmail = userRows[0]?.email;
-              if (userEmail) {
-                // Send warning email asynchronously
-                fetch('/.netlify/functions/send-credit-warning', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    to: userEmail,
-                    usagePercentage: Math.round(usagePercentage),
-                    dailyUsed,
-                    dailyCap,
-                    remainingCredits: dailyCap - dailyUsed
-                  })
-                }).catch(emailError => {
-                  console.warn('📧 Low credit warning email failed after finalization (non-blocking):', emailError);
-                });
-              }
-            } else if (usagePercentage >= 90) {
-              console.log('📧 Triggering 90% critical low credit warning email after finalization...');
-              
-              const { rows: userRows } = await db.query(
-                "SELECT email FROM auth.users WHERE id = $1::uuid",
-                [userId]
-              );
-              
-              const userEmail = userRows[0]?.email;
-              if (userEmail) {
-                // Send critical warning email
-                fetch('/.netlify/functions/send-credit-warning', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    to: userEmail,
-                    usagePercentage: Math.round(usagePercentage),
-                    dailyUsed,
-                    dailyCap,
-                    remainingCredits: dailyCap - dailyUsed,
-                    isCritical: true
-                  })
-                }).catch(emailError => {
-                  console.warn('📧 Critical low credit warning email failed after finalization (non-blocking):', emailError);
-                });
-              }
+        // Update transaction status to refunded
+        await prisma.creditTransaction.update({
+          where: { id: creditTransaction.id },
+          data: { status: 'refunded' }
+        });
+
+        // Restore credits to user balance
+        const userCredits = await prisma.userCredits.findUnique({
+          where: { userId: userId }
+        });
+
+        if (userCredits) {
+          const refundAmount = Math.abs(creditTransaction.amount); // Convert negative to positive
+          const newBalance = userCredits.balance + refundAmount;
+          
+          await prisma.userCredits.update({
+            where: { userId: userId },
+            data: { 
+              balance: newBalance,
+              updatedAt: new Date()
             }
-          } catch (emailError) {
-            console.warn('📧 Failed to check/send low credit warning email after finalization (non-blocking):', emailError);
-          }
+          });
+
+          console.log('✅ Credits refunded successfully:', {
+            refundAmount,
+            oldBalance: userCredits.balance,
+            newBalance
+          });
+
+          return json({
+            ok: true,
+            disposition: 'refund',
+            refundAmount,
+            newBalance,
+            message: 'Credits refunded successfully'
+          });
+        } else {
+          console.error('❌ User credits record not found for refund');
+          return json({ 
+            ok: false, 
+            error: "USER_CREDITS_NOT_FOUND",
+            message: "User credits record not found"
+          }, { status: 500 });
         }
+
+      } else if (disposition === 'commit') {
+        // COMMIT: Mark transaction as completed
+        console.log('💰 Processing credit commit...');
         
-        // Get current balance for response
-        const { rows: balanceRows } = await db.query(
-          "SELECT balance FROM app.user_credits WHERE user_id = $1::uuid",
-          [userId]
-        );
-        
-        const currentBalance = balanceRows[0]?.balance || 0;
-        console.log('💰 Current balance after finalization:', currentBalance);
-        
-        // Return success
+        // Update transaction status to completed
+        await prisma.creditTransaction.update({
+          where: { id: creditTransaction.id },
+          data: { status: 'completed' }
+        });
+
+        console.log('✅ Credits committed successfully');
+
         return json({
           ok: true,
-          request_id: request_id,
-          disposition: disposition,
-          status: status,
-          balance: currentBalance
-        }, { status: 200 });
-        
-      } catch (dbError) {
-        console.error("❌ finalize_credits() call failed:", dbError);
-        return json({
-          ok: false,
-          error: "DB_FINALIZE_CREDITS_FAILED",
-          message: dbError?.message,
-          stack: dbError?.stack,
-        }, { status: 500 });
+          disposition: 'commit',
+          message: 'Credits committed successfully'
+        });
       }
-      
+
     } catch (dbError) {
       console.error("💥 DB finalization failed:", dbError);
       return json({ 
         ok: false, 
-        error: "Failed to finalize credits", 
-        details: dbError?.message,
-        stack: dbError?.stack 
+        error: "DB_FINALIZATION_FAILED",
+        message: dbError instanceof Error ? dbError.message : String(dbError),
+        stack: dbError instanceof Error ? dbError.stack : undefined
       }, { status: 500 });
     }
     
@@ -233,8 +190,10 @@ export const handler: Handler = async (event) => {
     return json({
       ok: false,
       error: "Internal server error",
-      details: error?.message,
-      stack: error?.stack
+      details: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 };
