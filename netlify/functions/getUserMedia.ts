@@ -22,7 +22,7 @@ async function getUserMedia(ownerId: string) {
           END
         ) AS url,
         cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
-      FROM assets 
+      FROM media_assets 
       WHERE user_id = ${ownerId}::uuid
       ORDER BY created_at DESC
     `;
@@ -58,7 +58,7 @@ export const handler: Handler = async (event) => {
 
     const isSelf = user?.id === ownerId;
 
-    // Get user media with visibility filtering
+    // Get user media with visibility filtering from media_assets table
     const media = await sql`
       SELECT 
         id, user_id, is_public, allow_remix, created_at, prompt,
@@ -70,7 +70,7 @@ export const handler: Handler = async (event) => {
           END
         ) AS url,
         cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
-      FROM assets 
+      FROM media_assets 
       WHERE user_id = ${ownerId}::uuid
       ${isSelf ? sql`` : sql`AND is_public = true`}
       ORDER BY created_at DESC
