@@ -72,7 +72,7 @@ SELECT
   mag.status,
   mag.meta,
   mag.created_at,
-  u.username,
+  u.name as username,
   u.avatar_url
 FROM media_assets_glitch mag
 JOIN users u ON mag.user_id = u.id
