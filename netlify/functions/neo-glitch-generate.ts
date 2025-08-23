@@ -213,49 +213,55 @@ async function attemptStabilityGeneration(
 
   const config = presetConfigs[presetKey as keyof typeof presetConfigs] || presetConfigs.visor;
 
-  // Download the source image to convert to base64
+  // Download the source image and convert to Buffer
   const imageResponse = await fetch(sourceUrl);
   if (!imageResponse.ok) {
     throw new Error(`Failed to download source image: ${imageResponse.status}`);
   }
   
   const imageBuffer = await imageResponse.arrayBuffer();
-  const base64Image = Buffer.from(imageBuffer).toString('base64');
+  const imageData = Buffer.from(imageBuffer);
 
-  const payload = {
-    text_prompts: [
-      {
-        text: prompt,
-        weight: 1
-      },
-      {
-        text: "blurry, low quality, distorted, ugly, bad anatomy, watermark, text",
-        weight: -1
-      }
-    ],
-    init_image: base64Image,
-    init_image_mode: "IMAGE_TO_IMAGE",
+  // Create FormData for multipart/form-data submission
+  const formData = new FormData();
+  
+  // Append the image as a file - convert Buffer to Blob for FormData
+  const imageBlob = new Blob([imageData], { type: 'image/jpeg' });
+  formData.append('init_image', imageBlob, 'input.jpg');
+  
+  // Append text prompts
+  formData.append('text_prompts[0][text]', prompt);
+  formData.append('text_prompts[0][weight]', '1');
+  formData.append('text_prompts[1][text]', 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text');
+  formData.append('text_prompts[1][weight]', '-1');
+  
+  // Append other parameters
+  formData.append('init_image_mode', 'IMAGE_TO_IMAGE');
+  formData.append('image_strength', config.strength.toString());
+  formData.append('cfg_scale', config.guidance_scale.toString());
+  formData.append('steps', config.steps.toString());
+  formData.append('samples', '1');
+  formData.append('aspect_ratio', '1:1');
+
+  console.log('🧪 [NeoGlitch] Attempting Stability.ai generation with SD3 using FormData');
+  console.log('📦 [NeoGlitch] Stability.ai FormData parameters:', {
+    prompt,
+    negativePrompt: 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text',
     image_strength: config.strength,
     cfg_scale: config.guidance_scale,
     steps: config.steps,
     samples: 1,
-    aspect_ratio: "1:1"
-  };
-
-  console.log('🧪 [NeoGlitch] Attempting Stability.ai generation with SD3');
-  console.log('📦 [NeoGlitch] Stability.ai payload:', JSON.stringify({
-    ...payload,
-    init_image: '[BASE64_IMAGE_DATA]' // Don't log the actual image data
-  }, null, 2));
+    aspect_ratio: '1:1'
+  });
 
   const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/sd3', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiToken}`,
-      'Content-Type': 'application/json',
       'Accept': 'application/json'
+      // Don't set Content-Type - let the browser set it with boundary for FormData
     },
-    body: JSON.stringify(payload)
+    body: formData
   });
 
   if (!response.ok) {
