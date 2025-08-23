@@ -18,7 +18,7 @@ async function getUserMedia(ownerId: string) {
           CASE 
             WHEN cloudinary_public_id ~~ 'stefna/%'::text THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id)
             WHEN cloudinary_public_id IS NOT NULL AND cloudinary_public_id !~ '^stefna/' THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/stefna/'::text || cloudinary_public_id)
-            ELSE NULL::text 
+            ELSE final_url::text 
           END
         ) AS url,
         cloudinary_public_id, media_type, status, source_asset_id, preset_key, meta
@@ -66,7 +66,7 @@ export const handler: Handler = async (event) => {
           CASE 
             WHEN cloudinary_public_id ~~ 'stefna/%'::text THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/'::text || cloudinary_public_id)
             WHEN cloudinary_public_id IS NOT NULL AND cloudinary_public_id !~ '^stefna/' THEN ('https://res.cloudinary.com/dw2xaqjmg/image/upload/v1/stefna/'::text || cloudinary_public_id)
-            ELSE NULL::text 
+            ELSE final_url::text 
           END
         ) AS url,
         cloudinary_public_id, media_type, status, source_asset_id, preset_key, meta
@@ -78,19 +78,33 @@ export const handler: Handler = async (event) => {
     `;
 
     // Transform to match frontend expectations
-    const items = (media ?? []).map((m: any) => ({
-      id: m.id,
-      userId: m.user_id,
-      type: m.media_type === 'video' ? 'video' : 'photo',
-      cloudinary_public_id: m.cloudinary_public_id,
-      url: m.url,
-      prompt: m.prompt ?? null,
-      is_public: m.is_public,
-      created_at: m.created_at,
-      meta: m.meta,
-      // Add result_url for backward compatibility with ProfileScreen
-      result_url: m.url
-    }));
+    const items = (media ?? []).map((m: any) => {
+      // 🛡️ Ensure Neo Glitch items always have a valid download URL
+      let downloadUrl = m.url;
+      if (!downloadUrl && m.preset_key === 'neotokyoglitch') {
+        // For Neo Glitch items, if URL is missing, try to construct from meta or use a fallback
+        if (m.meta && m.meta.finalUrl) {
+          downloadUrl = m.meta.finalUrl;
+        } else if (m.meta && m.meta.url) {
+          downloadUrl = m.meta.url;
+        }
+        console.log(`🔧 Neo Glitch item ${m.id}: URL fallback applied:`, downloadUrl);
+      }
+      
+      return {
+        id: m.id,
+        userId: m.user_id,
+        type: m.media_type === 'video' ? 'video' : 'photo',
+        cloudinary_public_id: m.cloudinary_public_id,
+        url: downloadUrl,
+        prompt: m.prompt ?? null,
+        is_public: m.is_public,
+        created_at: m.created_at,
+        meta: m.meta,
+        // Add result_url for backward compatibility with ProfileScreen
+        result_url: downloadUrl
+      };
+    });
 
     // Ensure user exists in users table
     try {
