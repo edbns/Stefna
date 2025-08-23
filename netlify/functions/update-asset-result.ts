@@ -2,7 +2,7 @@
 // Updates asset with final generation result (URL, status, etc.)
 // Uses Prisma for consistent database access
 
-import type { Handler } from '@netlify/functions';
+import { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
@@ -17,22 +17,15 @@ export const handler: Handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      }
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+      },
+      body: ''
     };
   }
 
   try {
-    // Debug: Log all headers to see what we're receiving
-    console.log('[update-asset-result] All headers:', event.headers);
-    console.log('[update-asset-result] Authorization header:', event.headers?.authorization);
-    console.log('[update-asset-result] Authorization header type:', typeof event.headers?.authorization);
-    
-    // Authenticate user
-    console.log('[update-asset-result] About to call requireAuth...');
-    console.log('[update-asset-result] requireAuth function:', typeof requireAuth);
-    console.log('[update-asset-result] requireAuth.toString():', requireAuth.toString().substring(0, 200));
-    
+    // Verify authentication
     const authHeader = event.headers.authorization || event.headers.Authorization;
     if (!authHeader) {
       return json({ error: 'Missing Authorization header' }, { status: 401 });
@@ -112,14 +105,6 @@ export const handler: Handler = async (event) => {
 
   } catch (error: any) {
     console.error('[update-asset-result] Error:', error);
-    return json({ ok: false, error: 'INTERNAL_ERROR' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
-  }
-};
-
-  } catch (error: any) {
-    console.error('[update-asset-result] Error:', error);
     
     if (error.message === 'NO_BEARER') {
       return json({ ok: false, error: 'UNAUTHORIZED' }, { status: 401 });
@@ -130,5 +115,7 @@ export const handler: Handler = async (event) => {
       error: 'UPDATE_FAILED',
       message: error.message 
     }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 };
