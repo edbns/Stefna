@@ -757,19 +757,54 @@ const ProfileScreen: React.FC = () => {
 
   const handleDownload = async (media: UserMedia) => {
     try {
-      const resp = await fetch(media.url, { mode: 'cors' })
-      const blob = await resp.blob()
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      const ext = media.type === 'video' ? 'mp4' : 'jpg'
-      link.download = `stefna-${media.id}.${ext}`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      console.log('🔍 [Download] Starting download for media:', {
+        id: media.id,
+        type: media.type,
+        url: media.url,
+        urlType: media.url?.includes('replicate.delivery') ? 'replicate' : 'other'
+      });
+
+      // Check if this is a Replicate URL (Neo Tokyo Glitch)
+      if (media.url?.includes('replicate.delivery')) {
+        console.log('🎭 [Download] Neo Tokyo Glitch/Replicate URL detected, using direct download');
+        
+        // For Replicate URLs, try direct download without CORS fetch
+        const link = document.createElement('a');
+        link.href = media.url;
+        const ext = media.type === 'video' ? 'mp4' : 'jpg';
+        link.download = `stefna-${media.id}.${ext}`;
+        link.target = '_blank'; // Open in new tab if direct download fails
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log('✅ [Download] Neo Tokyo Glitch direct download initiated');
+        return;
+      }
+
+      // For other URLs (Cloudinary, etc.), use the original CORS fetch method
+      console.log('🔍 [Download] Using CORS fetch for non-Replicate URL');
+      const resp = await fetch(media.url, { mode: 'cors' });
+      
+      if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+      }
+      
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const ext = media.type === 'video' ? 'mp4' : 'jpg';
+      link.download = `stefna-${media.id}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      console.log('✅ [Download] CORS fetch download completed successfully');
     } catch (e) {
-      addNotification('Download failed', 'Unable to download file', 'error')
+      console.error('❌ [Download] Download failed:', e);
+      addNotification('Download failed', 'Unable to download file', 'error');
     }
   }
 
