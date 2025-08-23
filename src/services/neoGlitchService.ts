@@ -75,13 +75,13 @@ class NeoGlitchService {
       }
 
       const replicateResult = await replicateRes.json();
-      console.log('🚀 [NeoGlitch] Replicate generation started:', replicateResult.predictionId);
+      console.log('🚀 [NeoGlitch] Replicate generation started:', replicateResult.replicateJobId);
 
       return {
-        id: replicateResult.predictionId, // Use Replicate job ID as identifier
+        id: replicateResult.replicateJobId, // Use Replicate job ID as identifier
         status: 'pending',
         runId: request.runId,
-        replicateJobId: replicateResult.predictionId
+        replicateJobId: replicateResult.replicateJobId
       };
 
     } catch (error) {
