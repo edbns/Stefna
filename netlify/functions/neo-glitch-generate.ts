@@ -163,16 +163,16 @@ export const handler: Handler = async (event) => {
       base64Length: base64Image.length
     });
 
-    // Create Replicate payload with base64 image
+    // Create Replicate payload with correct field names for stability-ai/stable-diffusion-img2img
     const replicatePayload = {
       version: NEO_TOKYO_GLITCH_MODEL,
       input: {
         prompt: prompt,
-        negative_prompt: "blurry, low quality, distorted, ugly, bad anatomy",
-        strength: 0.75,
+        image: base64Image,
+        prompt_strength: 0.5,  // Use prompt_strength, not strength
+        num_outputs: 1,
         guidance_scale: 7.5,
-        num_inference_steps: 50,
-        image: base64Image
+        num_inference_steps: 50
       }
     };
 
@@ -182,6 +182,10 @@ export const handler: Handler = async (event) => {
       sourceUrl,
       hasToken: !!REPLICATE_API_TOKEN
     });
+
+    // 🧪 DEBUG: Log exact Replicate model and input for debugging
+    console.log('🧪 [NeoGlitch] Replicate model:', NEO_TOKYO_GLITCH_MODEL);
+    console.log('📦 [NeoGlitch] Replicate input:', replicatePayload.input);
 
     // Call Replicate API
     const replicateResponse = await fetch(REPLICATE_API_URL, {
