@@ -54,6 +54,11 @@ export default defineConfig({
   server: {
     hmr: {
       overlay: false // Disable error overlay in dev for better performance
-    }
+    },
+    allowedHosts: [
+      'devserver-main--stefna.netlify.app',
+      'localhost',
+      '127.0.0.1'
+    ]
   }
 }) 
