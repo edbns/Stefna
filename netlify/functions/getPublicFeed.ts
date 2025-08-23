@@ -36,27 +36,34 @@ export const handler: Handler = async (event) => {
         AND ma.status = 'ready'
         AND ma.created_at IS NOT NULL
         AND ma.final_url IS NOT NULL
+        -- Note: Now including all images since we have auto-backup for Replicate images
       ORDER BY ma.created_at DESC
       LIMIT ${limit}
     `;
 
     const data = media.map((item: any) => {
-      // Determine provider and construct proper URL
+      // Determine provider and use proper URL
       let url: string | null = null;
-      let provider: 'cloudinary' | 'replicate' | 'unknown' = 'unknown';
+      let provider: 'cloudinary' | 'replicate' | 'aiml' | 'unknown' = 'unknown';
       
-      if (item.final_url && item.final_url.includes('replicate.delivery')) {
-        // Replicate image - use final_url directly
+      if (item.final_url) {
+        // Always use final_url as the primary source of truth
         url = item.final_url;
-        provider = 'replicate';
+        
+        // Determine provider based on URL
+        if (item.final_url.includes('replicate.delivery')) {
+          provider = 'replicate';
+        } else if (item.final_url.includes('cdn.aimlapi.com')) {
+          provider = 'aiml';
+        } else if (item.final_url.includes('cloudinary.com')) {
+          provider = 'cloudinary';
+        } else {
+          provider = 'unknown';
+        }
       } else if (item.cloudinary_public_id) {
-        // Cloudinary image - construct URL
+        // Fallback: construct Cloudinary URL if no final_url
         url = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${item.cloudinary_public_id}`;
         provider = 'cloudinary';
-      } else if (item.final_url) {
-        // Fallback: use final_url if available
-        url = item.final_url;
-        provider = 'unknown';
       }
       
       // Extract preset info from meta or preset fields
@@ -103,6 +110,7 @@ export const handler: Handler = async (event) => {
         provider_breakdown: {
           replicate: data.filter(item => item.provider === 'replicate').length,
           cloudinary: data.filter(item => item.provider === 'cloudinary').length,
+          aiml: data.filter(item => item.provider === 'aiml').length,
           unknown: data.filter(item => item.provider === 'unknown').length
         }
       })

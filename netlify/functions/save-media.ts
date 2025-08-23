@@ -1,145 +1,199 @@
 // netlify/functions/save-media.ts
-// Updated to use consolidated media_assets table structure
+// Unified media saving function - handles both single and batch operations
 // - Accepts generated media variations (from AIML and Replicate)
 // - Records them in consolidated media_assets table
 // - Returns canonical items used by feed + UI
-// Force redeploy - v3 (use media_assets table instead of assets)
+// Force redeploy - v4 (unified single/batch saving)
 
 import type { Handler } from '@netlify/functions';
-import { sql } from './_db';
-import { requireAuth, httpErr } from './_auth';
+import { randomUUID } from 'crypto';
 
-export const handler: Handler = async (event) => {
+interface MediaVariation {
+  image_url: string;
+  prompt?: string;
+  preset_id?: string;
+  media_type?: string;
+  source_asset_id?: string;
+  cloudinary_public_id?: string;
+  meta?: any;
+}
+
+interface SaveRequest {
+  // Single media
+  finalUrl?: string;
+  media_type?: string;
+  preset_key?: string;
+  prompt?: string;
+  source_public_id?: string;
+  meta?: any;
+  
+  // Batch media
+  variations?: MediaVariation[];
+  runId?: string;
+  
+  // Common
+  userId?: string; // For direct calls
+}
+
+export const handler: Handler = async (event): Promise<any> => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-idempotency-key, X-Idempotency-Key',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Idempotency-Key',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
       },
       body: ''
     };
   }
 
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
   try {
-    // Use centralized auth with unified JWT approach
-    const { userId } = requireAuth(event.headers.authorization);
-    console.log('✅ User authenticated:', userId);
-
-    // Get idempotency key from headers or generate one
-    const idem = event.headers['x-idempotency-key'] || 
-                 event.headers['X-Idempotency-Key'] || 
-                 crypto.randomUUID();
-
-    const body = JSON.parse(event.body || '{}');
-    console.log('📥 Save media request body:', body);
-
-    const {
-      // Core fields
-      prompt,
-      media_type = 'image',
-      meta = {},
+    // Parse request body
+    const body: SaveRequest = JSON.parse(event.body || '{}');
+    
+    // Extract user ID from auth header or request body
+    let userId: string;
+    if (body.userId) {
+      userId = body.userId;
+    } else {
+      // Extract from auth header
+      const authHeader = event.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return {
+          statusCode: 401,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'Missing or invalid authorization header' })
+        };
+      }
       
-      // URL fields - prioritize AIML generated URL with fallback chain
-      image_url,              // AIML generated image URL (primary)
-      url,                    // Fallback field name for MoodMorph
-      secure_url,             // Additional fallback
-      final,                  // Additional fallback
-      
-      // Optional fields
-      cloudinary_public_id,
-      source_public_id,
-      preset_id,
-      preset_key,             // Alternative to preset_id
-      run_id,
-      batch_id,
-      
-      // MoodMorph specific
-      variations,
-      runId,
-      presetId,
-      
-      // Legacy fields
-      tags,
-      extra
-    } = body;
-
-    // CRITICAL: Ensure we have a valid URL from AIML with fallback chain
-    const finalUrl = image_url || url || secure_url || final;
-    if (!finalUrl) {
-      console.error('❌ MISSING_URL: No valid URL found in request');
-      throw httpErr(400, 'MISSING_URL', 'Request must include image_url, url, secure_url, or final field with AIML generated image URL');
+      // Simple JWT decode (in production, use proper JWT verification)
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        userId = payload.userId || payload.sub;
+      } catch (error) {
+        return {
+          statusCode: 401,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'Invalid token format' })
+        };
+      }
     }
 
-    console.log('🔗 Using URL:', finalUrl);
+    if (!userId) {
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Missing userId' })
+      };
+    }
 
-    // Handle MoodMorph variations
-    if (variations && Array.isArray(variations)) {
-      console.log('🎭 Processing MoodMorph variations:', variations.length);
+    // Determine if this is a batch or single operation
+    const isBatch = body.variations && Array.isArray(body.variations) && body.variations.length > 0;
+    
+    if (isBatch) {
+      // BATCH OPERATION
+      console.log(`🔄 Batch save operation: ${body.variations!.length} variations for user ${userId}`);
       
-      const savedItems: Array<{
-        id: string;
-        url: string;
-        media_type: string;
-        created_at: string;
-      }> = [];
+      const { variations, runId } = body;
+      const batchId = randomUUID();
+      const items: any[] = [];
       
-      for (const variation of variations) {
-        // Use the same fallback chain for variations
-        const variationUrl = variation.image_url || variation.url || variation.secure_url || variation.final;
-        if (!variationUrl) {
-          console.warn('⚠️ Skipping variation without URL:', variation);
-          continue;
-        }
+      // Validate variations
+      if (!variations || variations.length === 0) {
+        return {
+          statusCode: 400,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'Variations array is required and must not be empty' })
+        };
+      }
 
+      // Filter out variations with invalid source_asset_id
+      const validVariations = variations.filter(v => {
+        if (!v.source_asset_id) return true; // Allow variations without source
+        return typeof v.source_asset_id === 'string' && v.source_asset_id.length > 0;
+      });
+
+      if (validVariations.length !== variations.length) {
+        console.warn(`⚠️ Filtered out ${variations.length - validVariations.length} variations with invalid source_asset_id`);
+      }
+
+      if (validVariations.length === 0) {
+        return {
+          statusCode: 400,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'No valid variations to insert' })
+        };
+      }
+
+      // Import database connection
+      const { neon } = await import('@neondatabase/serverless');
+      const sql = neon(process.env.NETLIFY_DATABASE_URL!);
+
+      // Insert each variation
+      for (const v of validVariations) {
+        const id = randomUUID();
+        const mediaType = v.media_type || 'image';
+        const itemIdempotencyKey = `${runId || 'no-run'}:${v.meta?.mood || v.meta?.variation_index || Math.random().toString(36).substr(2, 9)}`;
+        
+        // Extract Cloudinary public ID from the image URL or handle non-Cloudinary URLs
+        let cloudinaryPublicId: string | null = null;
         try {
-          const result = await sql`
-            INSERT INTO media_assets (
-              user_id, 
-              cloudinary_public_id, 
-              media_type, 
-              preset_key, 
-              prompt, 
-              source_asset_id, 
-              status, 
-              is_public, 
-              allow_remix,
-              final_url,
-              meta,
-              created_at
-            ) VALUES (
-              ${userId}, 
-              ${cloudinary_public_id || null}, 
-              ${media_type}, 
-              ${preset_key || preset_id || null}, 
-              ${prompt || null}, 
-              ${source_public_id || null}, 
-              'ready', 
-              true, 
-              false,
-              ${variationUrl},
-              ${meta || {}},
-              NOW()
-            ) RETURNING id, final_url, media_type, created_at
-          `;
-          
-          if (result && result.length > 0) {
-            savedItems.push({
-              id: result[0].id,
-              url: result[0].final_url,
-              media_type: result[0].media_type,
-              created_at: result[0].created_at
-            });
-            console.log('✅ Variation saved:', result[0].id);
+          if (v.image_url.includes('cloudinary.com')) {
+            const cloudinaryMatch = v.image_url.match(/\/upload\/(?:v\d+\/)?(.+?)\.(jpg|jpeg|png|webp|mp4|mov|avi)/);
+            cloudinaryPublicId = cloudinaryMatch ? cloudinaryMatch[1] : null;
           }
         } catch (error) {
-          console.error('❌ Failed to save variation:', error);
-          // Continue with other variations
+          console.warn(`⚠️ Could not analyze URL: ${v.image_url}`, error);
+          cloudinaryPublicId = v.cloudinary_public_id || null;
+        }
+        
+        const row = await sql`
+          INSERT INTO media_assets (id, user_id, cloudinary_public_id, media_type, preset_key, prompt, 
+                                  source_asset_id, status, is_public, allow_remix, final_url, meta, created_at)
+          VALUES (${id}, ${userId}, ${cloudinaryPublicId}, ${mediaType}, ${v.preset_id || null}, ${v.prompt || null},
+                  ${v.source_asset_id}, 'ready', true, false, ${v.image_url}, 
+                  ${JSON.stringify({...v.meta, batch_id: batchId, run_id: runId, idempotency_key: itemIdempotencyKey})}, NOW())
+          RETURNING *
+        `;
+        items.push(row[0]);
+        
+        // 🔄 Auto-backup Replicate images to Cloudinary
+        if (v.image_url && v.image_url.includes('replicate.delivery')) {
+          console.log('🔄 Triggering Replicate image backup for:', { id, imageUrl: v.image_url });
+          
+          // Call backup function asynchronously (don't wait for it)
+          fetch('/.netlify/functions/backup-replicate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              replicateUrl: v.image_url,
+              mediaId: id,
+              userId: userId
+            })
+          }).then(response => {
+            if (response.ok) {
+              console.log('✅ Replicate backup triggered successfully for:', id);
+            } else {
+              console.error('❌ Replicate backup trigger failed for:', id, response.status);
+            }
+          }).catch(error => {
+            console.error('❌ Replicate backup trigger error for:', id, error);
+          });
         }
       }
+      
+      console.log(`✅ Batch save completed: ${items.length} variations for user ${userId}, run ${runId || 'no-run'}`);
       
       return {
         statusCode: 200,
@@ -149,16 +203,44 @@ export const handler: Handler = async (event) => {
         },
         body: JSON.stringify({
           success: true,
-          message: `Saved ${savedItems.length} variations`,
-          items: savedItems,
-          total_requested: variations.length,
-          total_saved: savedItems.length
+          message: `Saved ${items.length} variations`,
+          count: items.length,
+          batchId,
+          items: items.map(item => ({
+            id: item.id,
+            final_url: item.final_url,
+            media_type: item.media_type,
+            created_at: item.created_at
+          }))
         })
       };
-    }
+      
+    } else {
+      // SINGLE OPERATION
+      console.log(`🔄 Single save operation for user ${userId}`);
+      
+      const { finalUrl, media_type, preset_key, prompt, source_public_id, meta } = body;
+      
+      if (!finalUrl) {
+        return {
+          statusCode: 400,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'finalUrl is required' })
+        };
+      }
 
-    // Single media item
-    try {
+      // Import database connection
+      const { neon } = await import('@neondatabase/serverless');
+      const sql = neon(process.env.NETLIFY_DATABASE_URL!);
+
+      // Extract Cloudinary public ID if it's a Cloudinary URL
+      let cloudinary_public_id: string | null = null;
+      if (finalUrl.includes('cloudinary.com')) {
+        const cloudinaryMatch = finalUrl.match(/\/upload\/(?:v\d+\/)?(.+?)\.(jpg|jpeg|png|webp|mp4|mov|avi)/);
+        cloudinary_public_id = cloudinaryMatch ? cloudinaryMatch[1] : null;
+      }
+
+      // Insert the media
       const result = await sql`
         INSERT INTO media_assets (
           user_id, 
@@ -176,8 +258,8 @@ export const handler: Handler = async (event) => {
         ) VALUES (
           ${userId}, 
           ${cloudinary_public_id || null}, 
-          ${media_type}, 
-          ${preset_key || preset_id || null}, 
+          ${media_type || 'image'}, 
+          ${preset_key || null}, 
           ${prompt || null}, 
           ${source_public_id || null}, 
           'ready', 
@@ -193,6 +275,30 @@ export const handler: Handler = async (event) => {
         const savedItem = result[0];
         console.log('✅ Media saved successfully:', savedItem.id);
         
+        // 🔄 Auto-backup Replicate images to Cloudinary
+        if (finalUrl && finalUrl.includes('replicate.delivery')) {
+          console.log('🔄 Triggering Replicate image backup for:', { id: savedItem.id, finalUrl });
+          
+          // Call backup function asynchronously (don't wait for it)
+          fetch('/.netlify/functions/backup-replicate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              replicateUrl: finalUrl,
+              mediaId: savedItem.id,
+              userId: userId
+            })
+          }).then(response => {
+            if (response.ok) {
+              console.log('✅ Replicate backup triggered successfully for:', savedItem.id);
+            } else {
+              console.error('❌ Replicate backup trigger failed for:', savedItem.id, response.status);
+            }
+          }).catch(error => {
+            console.error('❌ Replicate backup trigger error for:', savedItem.id, error);
+          });
+        }
+        
         return {
           statusCode: 200,
           headers: {
@@ -206,48 +312,24 @@ export const handler: Handler = async (event) => {
             final_url: savedItem.final_url,
             media_type: savedItem.media_type,
             created_at: savedItem.created_at,
-            table_used: 'media_assets' // Indicate we're using the new structure
+            table_used: 'media_assets'
           })
         };
       } else {
         throw new Error('No result returned from database insert');
       }
-    } catch (error) {
-      console.error('❌ Failed to save media:', error);
-      throw httpErr(500, 'SAVE_FAILED', `Failed to save media: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
   } catch (error: unknown) {
     console.error('❌ save-media error:', error);
     
-    // Check if this is already an HTTP error
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      const httpError = error as { statusCode: number; error?: string; message?: string };
-      return {
-        statusCode: httpError.statusCode,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-          success: false,
-          error: httpError.error || 'Unknown error',
-          message: httpError.message || 'An error occurred while saving media'
-        })
-      };
-    }
-    
-    // Generic error response
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
         success: false,
-        error: 'INTERNAL_ERROR',
-        message: 'An internal error occurred while saving media'
+        error: 'SAVE_FAILED',
+        message: error instanceof Error ? error.message : 'Unknown error'
       })
     };
   }

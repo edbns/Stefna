@@ -2358,18 +2358,27 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                 console.warn(`⚠️ Cannot update ${composerState.mode} asset: missing result URL or asset ID`);
               }
             } else if (allResultUrls.length > 1) {
-              // Multiple variations - use save-media-batch
-              console.log(`🎭 ${composerState.mode} mode - multiple variations (${allResultUrls.length}), using save-media-batch`);
+              // Multiple variations - use unified save-media
+              console.log(`🎭 ${composerState.mode} mode - multiple variations (${allResultUrls.length}), using unified save-media`);
               
-              const saveRes = await authenticatedFetch('/.netlify/functions/save-media-batch', {
+              const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
                 method: 'POST',
                 headers: { 
                   'Content-Type': 'application/json',
                   'X-Idempotency-Key': genId // prevents double-saves on retries
                 },
                 body: JSON.stringify({
-                  runId: genId,
-                  variations
+                  variations: variations.map((url, index) => ({
+                    image_url: url,
+                    prompt: prompt?.trim() || 'AI Generated Content',
+                    media_type: 'image',
+                    meta: {
+                      variation_index: index,
+                      mode: composerState.mode,
+                      run_id: genId
+                    }
+                  })),
+                  runId: genId
                 })
               });
               
@@ -2377,7 +2386,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
               let saveBody: any = {};
               try { saveBody = JSON.parse(saveText); } catch {}
               
-              if (saveRes.ok && saveBody?.ok && saveBody.count > 0) {
+              if (saveRes.ok && saveBody?.success && saveBody.count > 0) {
                 console.log(`✅ All ${saveBody.count} ${composerState.mode} variations saved successfully:`, saveBody);
                 
                 // Only refresh when we actually saved something
