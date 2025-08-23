@@ -1775,7 +1775,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
             prompt: effectivePrompt,
             presetKey: 'neotokyoglitch',
             sourceAssetId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
-            userId: user?.id || '',
+            userId: authService.getCurrentUser()?.id || '',
             runId: genId,
             meta: {
               mode: 'neotokyoglitch',
