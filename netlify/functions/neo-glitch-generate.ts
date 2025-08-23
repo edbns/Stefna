@@ -112,27 +112,54 @@ export const handler: Handler = async (event) => {
     // Smart Replicate Generation with Retry Logic
     const replicateResult = await smartReplicateGeneration(sourceUrl, normalizedPrompt, presetKey);
 
-    // Update record with Replicate job ID
+    // Update record with provider-specific job ID
+    const updateData: any = {
+      status: 'generating'
+    };
+
+    if (replicateResult.strategy?.startsWith('replicate')) {
+      updateData.replicateJobId = replicateResult.replicateJobId;
+    } else if (replicateResult.strategy === 'aiml_fallback') {
+      updateData.aimlPredictionId = replicateResult.replicateJobId; // Store AIML ID in same field for now
+    }
+
     await db.neoGlitchMedia.update({
       where: { id: initialRecord.id },
-      data: { 
-        status: 'generating',
-        replicateJobId: replicateResult.replicateJobId 
-      }
+      data: updateData
     });
 
-    console.log('🚀 [NeoGlitch] Generation started successfully:', replicateResult.replicateJobId);
+    console.log('🚀 [NeoGlitch] Generation started successfully:', {
+      strategy: replicateResult.strategy,
+      jobId: replicateResult.replicateJobId,
+      model: replicateResult.model
+    });
+
+    // Return provider-aware response
+    const responseBody: any = {
+      success: true,
+      message: 'Neo Tokyo Glitch generation started',
+      runId: runId.toString(),
+      status: 'generating',
+      provider: replicateResult.strategy?.startsWith('replicate') ? 'replicate' : 'aiml',
+      strategy: replicateResult.strategy
+    };
+
+    // Only include replicateJobId for Replicate strategies
+    if (replicateResult.strategy?.startsWith('replicate')) {
+      responseBody.replicateJobId = replicateResult.replicateJobId;
+    } else if (replicateResult.strategy === 'aiml_fallback') {
+      responseBody.aimlPredictionId = replicateResult.replicateJobId;
+      // For AIML, we might get the result immediately or need to poll differently
+      if (replicateResult.urls && replicateResult.urls.length > 0) {
+        responseBody.imageUrl = replicateResult.urls[0];
+        responseBody.status = 'completed';
+      }
+    }
 
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        success: true,
-        message: 'Neo Tokyo Glitch generation started',
-        runId: runId.toString(),
-        replicateJobId: replicateResult.replicateJobId,
-        status: 'generating'
-      })
+      body: JSON.stringify(responseBody)
     };
 
   } catch (error) {
@@ -180,7 +207,7 @@ async function smartReplicateGeneration(sourceUrl: string, prompt: string, prese
         prompt,
         presetKey
       );
-      return { ...result, strategy: 'replicate_latest' };
+      return { ...result, strategy: 'replicate' };
     } catch (error: any) {
       console.log('⚠️ [NeoGlitch] Strategy 1 failed:', error.message);
     }
@@ -198,7 +225,7 @@ async function smartReplicateGeneration(sourceUrl: string, prompt: string, prese
         prompt,
         presetKey
       );
-      return { ...result, strategy: 'replicate_fallback' };
+      return { ...result, strategy: 'replicate_versioned' };
     } catch (error: any) {
       console.log('⚠️ [NeoGlitch] Strategy 2 failed:', error.message);
     }
@@ -283,7 +310,8 @@ async function attemptReplicateGeneration(
   return {
     replicateJobId: result.id,
     model: model,
-    strategy: isSDXL ? 'SDXL Fallback' : 'Img2Img'
+    strategy: isSDXL ? 'replicate_sdxl' : 'replicate',
+    urls: result.output || undefined // Add urls property for consistency
   };
 }
 
