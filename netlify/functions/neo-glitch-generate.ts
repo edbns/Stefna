@@ -235,6 +235,13 @@ export const handler: Handler = async (event) => {
 
   } catch (error: any) {
     console.error('💥 [NeoGlitch] Generation error:', error);
+    console.error('💥 [NeoGlitch] Error stack:', error.stack);
+    console.error('💥 [NeoGlitch] Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      cause: error.cause
+    });
     
     if (error.message === 'NO_BEARER') {
       return json({ error: 'UNAUTHORIZED' }, { status: 401 });
