@@ -2319,46 +2319,21 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
               console.warn('⚠️ Cannot update Emotion Mask asset: missing result URL or asset ID');
             }
           } else if (composerState.mode === 'ghiblireact' || composerState.mode === 'neotokyoglitch') {
-            console.log(`🎭 ${composerState.mode} mode - saving to media_assets table for public feed visibility`);
+            console.log(`🎭 ${composerState.mode} mode - generation pipeline handles saving automatically`);
             
-            // For Ghibli Reaction and Neo Tokyo Glitch, save to media_assets table for public feed visibility
+            // For Ghibli Reaction and Neo Tokyo Glitch, the generation pipeline 
+            // already calls save-media, so we don't need to call it again here
+            // This prevents duplicate saves and feed duplication
+            
             if (allResultUrls.length > 0) {
-              const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
-                method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json',
-                  'X-Idempotency-Key': genId // prevents double-saves on retries
-                },
-                body: JSON.stringify({
-                  finalUrl: allResultUrls[0], // The generated image URL
-                  media_type: 'image',
-                  preset_key: composerState.mode === 'neotokyoglitch' ? 'neotokyoglitch' : selectedPreset,
-                  prompt: effectivePrompt,
-                  meta: {
-                    mode: composerState.mode,
-                    presetId: composerState.mode === 'neotokyoglitch' ? 'neotokyoglitch' : selectedPreset,
-                    runId: genId
-                  }
-                })
-              });
+              console.log(`✅ ${composerState.mode} generation completed - saving handled by pipeline`);
               
-              const saveText = await saveRes.text();
-              let saveBody: any = {};
-              try { saveBody = JSON.parse(saveText); } catch {}
-              
-              if (saveRes.ok && saveBody?.success) {
-                console.log(`✅ ${composerState.mode} saved to media_assets successfully:`, saveBody);
-                
-                // Refresh user media to show the new image
-                setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                  detail: { count: 1, runId: genId } 
-                })), 800);
-              } else {
-                console.error(`❌ ${composerState.mode} save failed:`, saveRes.status, saveBody || saveText);
-                notifyError({ title: 'Save failed', message: saveBody?.error || `Failed to save ${composerState.mode} media` });
-              }
+              // Refresh user media to show the new image (after pipeline save completes)
+              setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                detail: { count: 1, runId: genId } 
+              })), 1200); // Slightly longer delay to ensure pipeline save completes
             } else {
-              console.warn(`⚠️ Cannot save ${composerState.mode} media: missing result URL`);
+              console.warn(`⚠️ Cannot refresh ${composerState.mode} media: missing result URL`);
             }
           } else if (composerState.mode === 'preset' || composerState.mode === 'custom') {
             console.log(`🎭 ${composerState.mode} mode - checking variation count: ${allResultUrls.length}`);

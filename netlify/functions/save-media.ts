@@ -64,6 +64,12 @@ export const handler: Handler = async (event): Promise<any> => {
     // Extract idempotency key from header
     const idempotencyKey = event.headers['x-idempotency-key'] || event.headers['X-Idempotency-Key'];
     
+    // 🔍 DUPLICATION INVESTIGATION: Log all save-media calls
+    console.log('🔍 [save-media] Called with body:', JSON.stringify(body, null, 2));
+    console.log('🔍 [save-media] Idempotency key:', idempotencyKey);
+    console.log('🔍 [save-media] Timestamp:', new Date().toISOString());
+    console.log('🔍 [save-media] Request ID:', Math.random().toString(36).substr(2, 9));
+    
     // Extract user ID from auth header or request body
     let userId: string;
     if (body.userId) {
@@ -243,7 +249,7 @@ export const handler: Handler = async (event): Promise<any> => {
 
       // 🛡️ IDEMPOTENCY CHECK: Prevent duplicate saves
       if (idempotencyKey) {
-        console.log(`🔍 Checking idempotency for key: ${idempotencyKey}`);
+        console.log(`🔍 [save-media] Checking idempotency for key: ${idempotencyKey}`);
         
         // Check if an item with this idempotency key already exists
         const existingItem = await sql`
@@ -254,7 +260,7 @@ export const handler: Handler = async (event): Promise<any> => {
         `;
         
         if (existingItem && existingItem.length > 0) {
-          console.log(`✅ Idempotency check: Item already exists with key ${idempotencyKey}`);
+          console.log(`✅ [save-media] Idempotency check: Item already exists with key ${idempotencyKey}`);
           const item = existingItem[0];
           
           return {
@@ -275,6 +281,40 @@ export const handler: Handler = async (event): Promise<any> => {
             })
           };
         }
+      } else {
+        console.log(`⚠️ [save-media] No idempotency key provided - potential duplicate risk`);
+      }
+
+      // 🛡️ ADDITIONAL DUPLICATE PREVENTION: Check for existing URL
+      console.log(`🔍 [save-media] Checking for existing URL: ${finalUrl}`);
+      const existingUrlCheck = await sql`
+        SELECT id, user_id, created_at 
+        FROM media_assets 
+        WHERE final_url = ${finalUrl}
+        LIMIT 1
+      `;
+      
+      if (existingUrlCheck && existingUrlCheck.length > 0) {
+        const existingItem = existingUrlCheck[0];
+        console.log(`⚠️ [save-media] URL already exists in database: ${existingItem.id}`);
+        console.log(`⚠️ [save-media] User: ${existingItem.user_id}, Created: ${existingItem.created_at}`);
+        
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({
+            success: true,
+            message: 'URL already exists in database',
+            id: existingItem.id,
+            final_url: finalUrl,
+            created_at: existingItem.created_at,
+            table_used: 'media_assets',
+            duplicate_prevention: true
+          })
+        };
       }
 
       // Extract Cloudinary public ID if it's a Cloudinary URL
@@ -285,6 +325,9 @@ export const handler: Handler = async (event): Promise<any> => {
       }
 
       // Insert the media
+      console.log(`🔍 [save-media] Inserting media with finalUrl: ${finalUrl}`);
+      console.log(`🔍 [save-media] User ID: ${userId}, Preset: ${preset_key}`);
+      
       const result = await sql`
         INSERT INTO media_assets (
           id,
