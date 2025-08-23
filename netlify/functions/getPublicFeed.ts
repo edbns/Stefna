@@ -52,29 +52,51 @@ export const handler: Handler = async (event) => {
       where.userId = userId;
     }
 
-    // Fetch public media using Prisma
-    const publicMedia = await prisma.mediaAsset.findMany({
-      where,
-      include: {
-        owner: {
-          select: {
-            id: true,
-            email: true,
-            name: true
+    // Fetch both types of public media using Prisma
+    const [publicMedia, neoGlitchMedia] = await Promise.all([
+      prisma.mediaAsset.findMany({
+        where,
+        include: {
+          owner: {
+            select: {
+              id: true,
+              email: true,
+              name: true
+            }
           }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: limit,
-      skip: offset
-    });
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: limit,
+        skip: offset
+      }),
+      prisma.neoGlitchMedia.findMany({
+        where: {
+          status: 'completed'
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: limit,
+        skip: offset
+      })
+    ]);
 
     console.log('✅ [getPublicFeed] Retrieved public media:', publicMedia.length);
+    console.log('✅ [getPublicFeed] Retrieved Neo Tokyo Glitch media:', neoGlitchMedia.length);
 
-    // Transform to feed format
-    const feedItems = publicMedia.map(item => ({
+    // Transform main media assets to feed format
+    const mainFeedItems = publicMedia.map(item => ({
       id: item.id,
       userId: item.userId,
       user: item.owner,
@@ -86,6 +108,28 @@ export const handler: Handler = async (event) => {
       createdAt: item.createdAt,
       type: 'media-asset' // Identify as main media asset
     }));
+
+    // Transform Neo Tokyo Glitch media to feed format
+    const glitchFeedItems = neoGlitchMedia.map(item => ({
+      id: item.id,
+      userId: item.userId,
+      user: item.user,
+      finalUrl: item.imageUrl, // Neo Tokyo Glitch uses imageUrl
+      mediaType: 'image',
+      prompt: item.prompt,
+      presetKey: item.preset,
+      status: item.status,
+      createdAt: item.createdAt,
+      type: 'neo-glitch' // Identify as Neo Tokyo Glitch
+    }));
+
+    // Combine and sort by creation date
+    const allFeedItems = [...mainFeedItems, ...glitchFeedItems].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    // Apply limit and offset to combined results
+    const feedItems = allFeedItems.slice(offset, offset + limit);
 
     return {
       statusCode: 200,

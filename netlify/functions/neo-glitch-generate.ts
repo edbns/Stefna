@@ -53,9 +53,16 @@ export const handler: Handler = async (event) => {
     const finalSourceUrl = sourceUrl || sourceAssetId;
 
     // Validate required fields for new architecture
-    if (!prompt || !presetKey || !runId) {
+    if (!prompt || !presetKey) {
       return json({ 
-        error: 'Missing required fields: prompt, presetKey, and runId are required' 
+        error: 'Missing required fields: prompt and presetKey are required' 
+      }, { status: 400 });
+    }
+
+    // Validate runId (can be any value, just needs to exist)
+    if (runId === undefined || runId === null) {
+      return json({ 
+        error: 'Missing runId field' 
       }, { status: 400 });
     }
 
