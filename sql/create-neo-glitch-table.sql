@@ -18,13 +18,7 @@ CREATE TABLE IF NOT EXISTS media_assets_glitch (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   
   -- Ensure unique constraint for deduplication
-  UNIQUE (user_id, input_hash),
-  
-  -- Indexes for performance
-  INDEX idx_media_assets_glitch_user_id (user_id),
-  INDEX idx_media_assets_glitch_run_id (run_id),
-  INDEX idx_media_assets_glitch_status (status),
-  INDEX idx_media_assets_glitch_created_at (created_at)
+  UNIQUE (user_id, input_hash)
 );
 
 -- Add comment for documentation
@@ -44,6 +38,13 @@ CREATE TRIGGER trigger_media_assets_glitch_updated_at
   BEFORE UPDATE ON media_assets_glitch
   FOR EACH ROW
   EXECUTE FUNCTION update_media_assets_glitch_updated_at();
+
+-- Create indexes for performance
+CREATE INDEX idx_media_assets_glitch_user_id ON media_assets_glitch(user_id);
+CREATE INDEX idx_media_assets_glitch_run_id ON media_assets_glitch(run_id);
+CREATE INDEX idx_media_assets_glitch_status ON media_assets_glitch(status);
+CREATE INDEX idx_media_assets_glitch_created_at ON media_assets_glitch(created_at);
+CREATE INDEX idx_media_assets_glitch_input_hash ON media_assets_glitch(input_hash);
 
 -- Create function to generate input hash
 CREATE OR REPLACE FUNCTION generate_glitch_input_hash(
