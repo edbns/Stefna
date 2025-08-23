@@ -1,21 +1,21 @@
 import type { Handler } from "@netlify/functions";
-import { neon } from '@neondatabase/serverless';
+import { PrismaClient } from '@prisma/client';
 import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
 import { randomUUID } from "crypto";
 
 // ============================================================================
-// VERSION: 5.0 - COMPLETE TOKEN SYSTEM OVERHAUL
+// VERSION: 6.0 - PRISMA MIGRATION
 // ============================================================================
-// This function has been completely rewritten to fix the token system
-// - Removed localStorage dependency
-// - Fixed database schema references
-// - Added proper error handling
-// - Force Netlify to completely rebuild this function
+// This function has been migrated to use Prisma instead of raw SQL
+// - Replaced neon client with PrismaClient
+// - Removed dependency on non-existent database functions
+// - Simplified credit reservation logic
 // ============================================================================
 
+const prisma = new PrismaClient();
+
 export const handler: Handler = async (event) => {
-  // Force redeploy - v2
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -31,7 +31,6 @@ export const handler: Handler = async (event) => {
   console.log('[credits-reserve] Starting credits reservation...');
   console.log('[credits-reserve] Method:', event.httpMethod);
   console.log('[credits-reserve] Authorization header present:', !!event.headers.authorization);
-  console.log('[credits-reserve] Authorization header preview:', event.headers.authorization ? `${event.headers.authorization.substring(0, 20)}...` : 'none');
   
   try {
     if (event.httpMethod !== 'POST') {
@@ -56,58 +55,13 @@ export const handler: Handler = async (event) => {
     
     const body = event.body ? JSON.parse(event.body) : {};
     console.log("📦 Request body parsed:", body);
-    console.log("🔍 reserve_credits payload:", { 
-      user_id: body.userId || body.user_id, 
-      mode: body.action || body.mode, 
-      asset_id: body.assetId || body.asset_id,
-      cost: body.cost,
-      request_id: body.request_id || body.requestId
-    });
     
-    // Get dynamic configuration from app_config table
-    let config;
-    try {
-      const sql = neon(process.env.NETLIFY_DATABASE_URL!);
-      // Read values individually to avoid array/IN binding issues
-      const imageCostRows = await sql`SELECT (value::text)::int AS v FROM app_config WHERE key='image_cost'`;
-      const dailyCapRows  = await sql`SELECT (value::text)::int AS v FROM app_config WHERE key='daily_cap'`;
-
-      const image_cost = imageCostRows?.[0]?.v;
-      const daily_cap  = dailyCapRows?.[0]?.v;
-
-      config = {
-        image_cost: typeof image_cost === 'number' && !Number.isNaN(image_cost) ? image_cost : 2,
-        daily_cap: typeof daily_cap === 'number' && !Number.isNaN(daily_cap) ? daily_cap : 30,
-      };
-      console.log('💰 App config resolved:', config);
-    } catch (configError) {
-      console.error('💰 Failed to load app config, using defaults:', configError);
-      config = { image_cost: 2, daily_cap: 30 };
-    }
-    
-    const cost = body.cost || body.amount || config.image_cost || 2;
+    const cost = body.cost || body.amount || 1; // Default to 1 credit
     const action = body.action || body.intent || "image.gen";
     const request_id = body.request_id || body.requestId || randomUUID();
 
     console.log("[credits-reserve] Parsed:", { userId, request_id, action, cost });
-    console.log('[credits-reserve] Credits reservation params:', {
-      userId,
-      cost,
-      action,
-      request_id,
-      config: { image_cost: config.image_cost, daily_cap: config.daily_cap }
-    });
     
-    // 🔍 Debug: Log the exact action value and type
-    console.log('🔍 Action debug:', {
-      action,
-      actionType: typeof action,
-      actionLength: action?.length,
-      actionTrimmed: action?.trim?.(),
-      actionLower: action?.toLowerCase?.(),
-      isValidAction: false // Will validate after allowedActions is declared
-    });
-
     // Validation
     if (!userId) {
       console.error("❌ userId is missing or undefined");
@@ -128,48 +82,32 @@ export const handler: Handler = async (event) => {
     const allowedActions = ['image.gen', 'video.gen', 'mask.gen', 'emotionmask', 'preset', 'presets', 'custom', 'ghiblireact', 'neotokyoglitch'];
     if (!allowedActions.includes(action)) {
       console.error("❌ Invalid action:", action, "Allowed:", allowedActions);
-      return json({ ok: false, error: `Invalid action: ${action}. Allowed: ${allowedActions.join(', ')}` }, { status: 400 });
+      return json({ ok: false, error: `Invalid action: ${action}. Allowed: ${allowedActions.join(', ')}` }, { status: 500 });
     }
 
-    const sql = neon(process.env.NETLIFY_DATABASE_URL!);
-    console.log('💰 Neon database connection obtained');
-    
-    let rows: any[] = [];
     try {
-      // Test database connection
-      const testRows = await sql`SELECT NOW() as current_time`;
-      console.log('💰 Database connection test successful:', testRows[0]);
-      
-      // Function check removed - we know app.reserve_credits exists
-      console.log('💰 Skipping function check - app.reserve_credits is confirmed to exist');
-      
-      // 🔍 DEBUG: Check user's current credit balance before reservation
+      // Check user's current credit balance
       console.log('🔍 Checking user credit balance before reservation...');
       
-      // Use the proper user_credits table for balance tracking
-      const balanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
-      console.log('🔍 Current credit balance:', balanceCheck[0]?.balance || 'No balance record found');
+      let userCredits = await prisma.userCredits.findUnique({
+        where: { userId: userId }
+      });
       
-      // 💰 AUTO-INITIALIZE: Create user credits if they don't exist
-      if (balanceCheck.length === 0 || !balanceCheck[0]?.balance) {
+      // Initialize user credits if they don't exist
+      if (!userCredits) {
         console.log('💰 No credit balance found - initializing new user with starter credits...');
         
         try {
-          // Get starter grant amount from app_config
-          const starterRows = await sql`SELECT (value::text)::int AS v FROM app_config WHERE key='starter_grant'`;
-          const STARTER_GRANT = starterRows[0]?.v ?? 30;
+          // Create new user credits record with starter balance
+          userCredits = await prisma.userCredits.create({
+            data: {
+              userId: userId,
+              balance: 30, // Default starter credits
+              updatedAt: new Date()
+            }
+          });
           
-          console.log(`💰 Creating user_credits row with ${STARTER_GRANT} starter credits...`);
-          
-          // Use the proper app.grant_credits function
-          await sql`SELECT app.grant_credits(${userId}::uuid, ${STARTER_GRANT}, 'starter_grant', '{"reason": "starter"}'::jsonb)`;
-          
-          console.log(`✅ Successfully initialized user with ${STARTER_GRANT} starter credits`);
-          
-          // Refresh balance check after initialization
-          const refreshBalanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
-          console.log('💰 Balance after initialization:', refreshBalanceCheck[0]?.balance || 'Still no balance');
-          
+          console.log(`✅ Successfully initialized user with 30 starter credits`);
         } catch (initError) {
           console.error('❌ Failed to initialize user credits:', initError);
           return json({
@@ -181,89 +119,10 @@ export const handler: Handler = async (event) => {
         }
       }
       
-      // Final balance verification before proceeding
-      const finalBalanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
-      if (!finalBalanceCheck[0]?.balance) {
-        console.error('❌ User still has no credits after initialization');
-        return json({ 
-          ok: false, 
-          error: "USER_CREDITS_INIT_FAILED", 
-          message: "Failed to initialize user credits properly" 
-        }, { status: 500 });
-      }
+      const currentBalance = userCredits.balance || 0;
+      console.log('💰 Current balance:', currentBalance, 'credits, requesting:', cost, 'credits');
       
-      console.log('💰 Final balance verification successful:', finalBalanceCheck[0].balance);
-      console.log('💰 User has', finalBalanceCheck[0].balance, 'credits, requesting', cost, 'credits');
-      
-      // 🔒 ENFORCE DAILY CAP: Check if user has exceeded daily limit (UPDATED)
-      console.log('🔒 Checking daily usage against daily cap...');
-      
-      // Use proper credits_ledger table for daily usage check
-      const dailyUsageCheck = await sql`SELECT 
-        COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) as daily_used
-        FROM credits_ledger 
-        WHERE user_id = ${userId}::uuid 
-        AND status = 'committed' 
-        AND created_at >= (now() AT TIME ZONE 'UTC')::date`;
-      
-      // Ensure dailyUsed is a number and handle type conversion
-      const dailyUsed = Number(dailyUsageCheck[0]?.daily_used) || 0;
-      const dailyCap = config.daily_cap;
-      
-      console.log('🔒 Daily usage check:', { 
-        dailyUsed, 
-        dailyUsedType: typeof dailyUsed, 
-        dailyCap, 
-        remaining: dailyCap - dailyUsed,
-        calculation: `${dailyUsed} + ${cost} <= ${dailyCap} = ${dailyUsed + cost <= dailyCap}`
-      });
-      
-      // BLOCK generation if daily cap is exceeded
-      if (dailyUsed >= dailyCap) {
-        console.log('🔒 Daily cap exceeded:', dailyUsed, '>=', dailyCap, '- blocking generation');
-        return json({ 
-          ok: false, 
-          error: "DAILY_CAP_EXCEEDED",
-          message: "You have reached your daily credit limit. Please wait until tomorrow for new credits.",
-          dailyUsed,
-          dailyCap,
-          remainingCredits: 0
-        }, { status: 429 });
-      }
-      
-      // Check if this request would exceed daily cap
-      if (dailyUsed + cost > dailyCap) {
-        console.log('🔒 Request would exceed daily cap:', dailyUsed, '+', cost, '>', dailyCap, '- blocking generation');
-        return json({ 
-          ok: false, 
-          error: "DAILY_CAP_WOULD_EXCEED",
-          message: `This request would exceed your daily limit. You have ${dailyCap - dailyUsed} credits remaining today.`,
-          dailyUsed,
-          dailyCap,
-          remainingCredits: dailyCap - dailyUsed,
-          requestedCredits: cost
-        }, { status: 429 });
-      }
-      
-      console.log('🔒 Daily cap check passed:', dailyUsed, '+', cost, '<=', dailyCap);
-      
-      // 🔒 NEW: Check if user has negative balance and block until 24h reset
-      console.log('🔒 Checking user credit balance for negative balance blocking...');
-      const currentBalanceCheck = await sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`;
-      const currentBalance = currentBalanceCheck[0]?.balance || 0;
-      
-      if (currentBalance < 0) {
-        console.log('🔒 User has negative balance:', currentBalance, '- blocking generation until 24h reset');
-        return json({ 
-          ok: false, 
-          error: "NEGATIVE_BALANCE_BLOCKED",
-          message: "You have exceeded your daily credit limit. Please wait until tomorrow for new credits.",
-          currentBalance: currentBalance,
-          blockedUntil: "24 hours from now"
-        }, { status: 403 });
-      }
-      
-      // 🔒 NEW: Check if user has insufficient credits for this request
+      // Check if user has insufficient credits
       if (currentBalance < cost) {
         console.log('🔒 Insufficient credits:', currentBalance, '<', cost, '- blocking generation');
         return json({ 
@@ -278,123 +137,47 @@ export const handler: Handler = async (event) => {
       
       console.log('🔒 Credit balance check passed:', currentBalance, '>=', cost);
       
-      // 📧 Check daily usage and trigger low credit warning emails (using variables from earlier check)
-      console.log('📧 Checking daily usage for low credit warnings...');
-      const usagePercentage = (dailyUsed / dailyCap) * 100;
+             // Create credit transaction record
+       const creditTransaction = await prisma.creditTransaction.create({
+         data: {
+           userId: userId,
+           requestId: request_id,
+           action: action,
+           amount: -cost, // Negative amount for credit usage
+           status: 'pending',
+           meta: { type: 'reservation' },
+           createdAt: new Date()
+         }
+       });
       
-      console.log('📧 Daily usage check:', { dailyUsed, dailyCap, usagePercentage: usagePercentage.toFixed(1) + '%' });
+      console.log('💰 Credit transaction created:', creditTransaction.id);
       
-      // Trigger low credit warning emails at 80% and 90% thresholds
-      if (usagePercentage >= 80 && usagePercentage < 90) {
-        console.log('📧 Triggering 80% low credit warning email...');
-        try {
-          // Get user email from auth.users table
-          const userEmailCheck = await sql`SELECT email FROM auth.users WHERE id = ${userId}::uuid`;
-          const userEmail = userEmailCheck[0]?.email;
-          
-          if (userEmail) {
-            // Send warning email asynchronously (don't block the reservation)
-            fetch('/.netlify/functions/send-credit-warning', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                to: userEmail,
-                usagePercentage: Math.round(usagePercentage),
-                dailyUsed,
-                dailyCap,
-                remainingCredits: dailyCap - dailyUsed
-              })
-            }).catch(emailError => {
-              console.warn('📧 Low credit warning email failed (non-blocking):', emailError);
-            });
-          }
-        } catch (emailError) {
-          console.warn('📧 Failed to send low credit warning email (non-blocking):', emailError);
+      // Update user credits balance
+      const updatedCredits = await prisma.userCredits.update({
+        where: { userId: userId },
+        data: {
+          balance: currentBalance - cost,
+          updatedAt: new Date()
         }
-      } else if (usagePercentage >= 90) {
-        console.log('📧 Triggering 90% critical low credit warning email...');
-        try {
-          const userEmailCheck = await sql`SELECT email FROM auth.users WHERE id = ${userId}::uuid`;
-          const userEmail = userEmailCheck[0]?.email;
-          
-          if (userEmail) {
-            // Send critical warning email
-            fetch('/.netlify/functions/send-credit-warning', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                to: userEmail,
-                usagePercentage: Math.round(usagePercentage),
-                dailyUsed,
-                dailyCap,
-                remainingCredits: dailyCap - dailyUsed,
-                isCritical: true
-              })
-            }).catch(emailError => {
-              console.warn('📧 Critical low credit warning email failed (non-blocking):', emailError);
-            });
-          }
-        } catch (emailError) {
-          console.warn('📧 Failed to send critical low credit warning email (non-blocking):', emailError);
-        }
-      }
-      
-      // Reserve credits using the proper app.reserve_credits function
-      console.log('💰 reserve_credits inputs:', {
-        userId,
-        request_id,
-        action,
-        cost,
-        userIdType: typeof userId,
-        requestIdType: typeof request_id,
-        actionType: typeof action,
-        costType: typeof cost
       });
       
-      console.log('💰 Calling app.reserve_credits with Neon tagged template');
+      console.log('💰 Balance updated:', updatedCredits.balance);
       
-      try {
-        const result = await sql`SELECT * FROM app.reserve_credits(${userId}::uuid, ${request_id}::uuid, ${action}::text, ${cost}::int)`;
-        rows = result;
-        console.log('💰 Credits reserved successfully:', rows[0]);
-        
-        // Validate the return structure matches our SQL function
-        if (!rows[0] || typeof rows[0].balance !== 'number') {
-          console.error('❌ Unexpected return structure:', rows[0]);
-          return json({
-            ok: false,
-            error: "DB_UNEXPECTED_RETURN_STRUCTURE",
-            message: `Expected {balance: number}, got: ${JSON.stringify(rows[0])}`,
-          }, { status: 500 });
-        }
-        
-        console.log('💰 Balance after reservation:', rows[0].balance);
-        
-        // Return success with request_id for finalization
-        return json({
-          ok: true,
-          request_id: request_id,
-          balance: rows[0].balance,
-          cost: cost,
-          action: action
-        }, { status: 200 });
-        
-      } catch (dbError) {
-        console.error("❌ reserve_credits() call failed:", dbError);
-        return json({
-          ok: false,
-          error: "DB_RESERVE_CREDITS_FAILED",
-          message: dbError instanceof Error ? dbError.message : String(dbError),
-          stack: dbError instanceof Error ? dbError.stack : undefined,
-        }, { status: 500 });
-      }
+      // Return success with request_id for finalization
+      return json({
+        ok: true,
+        request_id: request_id,
+        balance: updatedCredits.balance,
+        cost: cost,
+        action: action
+      }, { status: 200 });
       
     } catch (dbError) {
       console.error("💥 DB reservation failed:", dbError);
       return json({ 
         ok: false, 
-        error: "Failed to reserve credits", 
-        details: dbError instanceof Error ? dbError.message : String(dbError),
+        error: "DB_RESERVATION_FAILED",
+        message: dbError instanceof Error ? dbError.message : String(dbError),
         stack: dbError instanceof Error ? dbError.stack : undefined
       }, { status: 500 });
     }
@@ -407,5 +190,7 @@ export const handler: Handler = async (event) => {
       details: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
-}
+};
