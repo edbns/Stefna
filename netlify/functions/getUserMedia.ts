@@ -21,9 +21,9 @@ async function getUserMedia(ownerId: string) {
             ELSE NULL::text 
           END
         ) AS url,
-        cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
+        cloudinary_public_id, media_type, status, source_asset_id, preset_key, meta
       FROM media_assets 
-      WHERE user_id = ${ownerId}::uuid
+      WHERE user_id = ${ownerId}
       ORDER BY created_at DESC
     `;
     
@@ -69,9 +69,9 @@ export const handler: Handler = async (event) => {
             ELSE NULL::text 
           END
         ) AS url,
-        cloudinary_public_id, media_type, status, published_at, source_asset_id, preset_key, meta
+        cloudinary_public_id, media_type, status, source_asset_id, preset_key, meta
       FROM media_assets 
-      WHERE user_id = ${ownerId}::uuid
+      WHERE user_id = ${ownerId}
       ${isSelf ? sql`` : sql`AND is_public = true`}
       ORDER BY created_at DESC
       LIMIT ${limit}
