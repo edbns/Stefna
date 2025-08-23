@@ -64,10 +64,34 @@ export const handler: Handler = async (event) => {
     }
 
     // Validate source image URL if provided
-    if (sourceAssetId && !sourceAssetId.startsWith('http')) {
-      return json({ 
-        error: 'Invalid source image URL format' 
-      }, { status: 400 });
+    if (sourceAssetId) {
+      // Log the URL for debugging
+      console.log('🔍 [NeoGlitch] Validating source image URL:', sourceAssetId);
+      
+      // Accept Cloudinary URLs (more flexible validation)
+      const isCloudinary = sourceAssetId.includes('res.cloudinary.com');
+      const isReplicate = sourceAssetId.includes('replicate.delivery');
+      const isValidUrl = sourceAssetId.startsWith('http');
+      
+      if (!isValidUrl) {
+        console.warn('⚠️ [NeoGlitch] Rejected image URL - not HTTP:', sourceAssetId);
+        return json({ 
+          error: 'Invalid source image URL: must be a valid HTTP URL' 
+        }, { status: 400 });
+      }
+      
+      if (!isCloudinary && !isReplicate) {
+        console.warn('⚠️ [NeoGlitch] Rejected image URL - not Cloudinary or Replicate:', sourceAssetId);
+        return json({ 
+          error: 'Invalid source image URL: must be Cloudinary or Replicate hosted' 
+        }, { status: 400 });
+      }
+      
+      console.log('✅ [NeoGlitch] Source image URL validation passed:', {
+        url: sourceAssetId,
+        isCloudinary,
+        isReplicate
+      });
     }
 
     // Validate Replicate API token
@@ -82,7 +106,8 @@ export const handler: Handler = async (event) => {
       glitchId,
       presetKey,
       runId,
-      hasSource: !!sourceAssetId
+      hasSource: !!sourceAssetId,
+      sourceUrl: sourceAssetId || 'none'
     });
 
     const sql = neon(process.env.NETLIFY_DATABASE_URL!);
@@ -145,7 +170,8 @@ export const handler: Handler = async (event) => {
       sourceAssetId: sourceAssetId,
       fullPayload: replicatePayload,
       replicateUrl: REPLICATE_API_URL,
-      hasToken: !!REPLICATE_API_TOKEN
+      hasToken: !!REPLICATE_API_TOKEN,
+      payloadSize: JSON.stringify(replicatePayload).length
     });
 
     // Call Replicate API
