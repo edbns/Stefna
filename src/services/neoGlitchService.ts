@@ -159,6 +159,29 @@ class NeoGlitchService {
 
         if (status.status === 'completed') {
           console.log('✅ [NeoGlitch] Generation completed successfully');
+          
+          // If we have a Replicate URL, backup to Cloudinary using existing function
+          if (status.replicateUrl) {
+            console.log('🔄 [NeoGlitch] Backing up Replicate URL to Cloudinary...');
+            try {
+              const backupResult = await this.backupToCloudinary(glitchId, status.replicateUrl);
+              if (backupResult.success) {
+                console.log('✅ [NeoGlitch] Cloudinary backup successful:', backupResult.permanentUrl);
+                return {
+                  ...status,
+                  cloudinaryUrl: backupResult.permanentUrl
+                };
+              } else {
+                console.warn('⚠️ [NeoGlitch] Cloudinary backup failed:', backupResult.error);
+                // Return status without Cloudinary URL if backup fails
+                return status;
+              }
+            } catch (backupError) {
+              console.error('❌ [NeoGlitch] Cloudinary backup error:', backupError);
+              return status;
+            }
+          }
+          
           return status;
         }
 
@@ -180,6 +203,49 @@ class NeoGlitchService {
     }
 
     throw new Error('Generation timed out');
+  }
+
+  /**
+   * Backup Replicate URL to Cloudinary using existing backup function
+   */
+  private async backupToCloudinary(glitchId: string, replicateUrl: string): Promise<any> {
+    try {
+      const response = await authenticatedFetch('/.netlify/functions/backup-replicate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          replicateUrl,
+          mediaId: glitchId,
+          userId: await this.getCurrentUserId()
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `Backup failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('❌ [NeoGlitch] Cloudinary backup failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get current user ID from auth service
+   */
+  private async getCurrentUserId(): Promise<string> {
+    // Import auth service dynamically to avoid circular dependencies
+    const { default: authService } = await import('../lib/auth');
+    const user = authService.getCurrentUser();
+    
+    if (!user?.id) {
+      throw new Error('User not authenticated or no user ID available');
+    }
+    
+    return user.id;
   }
 
   /**
