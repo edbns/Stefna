@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS media_assets_glitch (
   prompt TEXT NOT NULL,
   replicate_url TEXT, -- Temporary Replicate URL
   cloudinary_url TEXT, -- Permanent Cloudinary URL (canonical)
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+          status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'ready')),
+        error_message TEXT NULL,
   meta JSONB DEFAULT '{}',
   input_hash TEXT NOT NULL, -- SHA256 hash for deduplication
   source_asset_id TEXT, -- Reference to source image

@@ -56,6 +56,20 @@ export const handler: Handler = async (event) => {
       }, { status: 400 });
     }
 
+    // Validate prompt content
+    if (!prompt.trim() || prompt.trim().length < 10) {
+      return json({ 
+        error: 'Prompt must be at least 10 characters long' 
+      }, { status: 400 });
+    }
+
+    // Validate source image URL if provided
+    if (sourceAssetId && !sourceAssetId.startsWith('http')) {
+      return json({ 
+        error: 'Invalid source image URL format' 
+      }, { status: 400 });
+    }
+
     // Validate Replicate API token
     if (!REPLICATE_API_TOKEN) {
       console.error('❌ [NeoGlitch] REPLICATE_API_TOKEN not configured');
@@ -129,7 +143,9 @@ export const handler: Handler = async (event) => {
       prompt: prompt.substring(0, 50) + '...',
       hasSourceImage: !!sourceAssetId,
       sourceAssetId: sourceAssetId,
-      fullPayload: replicatePayload
+      fullPayload: replicatePayload,
+      replicateUrl: REPLICATE_API_URL,
+      hasToken: !!REPLICATE_API_TOKEN
     });
 
     // Call Replicate API
@@ -146,16 +162,20 @@ export const handler: Handler = async (event) => {
       const errorText = await replicateResponse.text();
       console.error('❌ [NeoGlitch] Replicate API error:', replicateResponse.status, errorText);
       
-      // Revert status to pending on failure
+      // Log failure reason in database with proper error handling
       await sql`
         UPDATE media_assets_glitch 
-        SET status = 'pending', updated_at = NOW()
+        SET 
+          status = 'failed',
+          error_message = ${errorText},
+          updated_at = NOW()
         WHERE id = ${glitchId}
       `;
 
       return json({ 
         error: 'Replicate API call failed',
-        details: errorText
+        details: errorText,
+        status: 'failed'
       }, { status: replicateResponse.status });
     }
 
@@ -193,10 +213,31 @@ export const handler: Handler = async (event) => {
     if (error.message === 'NO_BEARER') {
       return json({ error: 'UNAUTHORIZED' }, { status: 401 });
     }
+
+    // Log any other errors to database if we have a glitchId
+    try {
+      if (event.body) {
+        const body = JSON.parse(event.body);
+        if (body.glitchId) {
+          const sql = neon(process.env.NETLIFY_DATABASE_URL!);
+          await sql`
+            UPDATE media_assets_glitch 
+            SET 
+              status = 'failed',
+              error_message = ${error.message || 'Unknown error occurred'},
+              updated_at = NOW()
+            WHERE id = ${body.glitchId}
+          `;
+        }
+      }
+    } catch (dbError) {
+      console.error('❌ [NeoGlitch] Failed to log error to database:', dbError);
+    }
     
     return json({ 
       error: 'GENERATION_FAILED',
-      message: error.message 
+      message: error.message,
+      status: 'failed'
     }, { status: 500 });
   }
 };
