@@ -1894,6 +1894,33 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         throw new Error('No request_id returned from credits reservation');
       }
 
+      // Add credit finalization tracking
+      let creditsFinalized = false;
+      const finalizeCredits = async (disposition: 'commit' | 'refund') => {
+        if (creditsFinalized) return; // Prevent double finalization
+        
+        try {
+          const finalizeResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              request_id: requestId,
+              disposition
+            })
+          });
+
+          if (finalizeResponse.ok) {
+            const finalizeResult = await finalizeResponse.json();
+            console.log(`✅ Credits ${disposition}ed successfully. New balance: ${finalizeResult.newBalance}`);
+            creditsFinalized = true;
+          } else {
+            console.warn(`⚠️ Failed to ${disposition} credits: ${finalizeResponse.status}`);
+          }
+        } catch (error) {
+          console.error(`❌ Error finalizing credits (${disposition}):`, error);
+        }
+      };
+
       // Video pathway → use start-v2v + poll-v2v
       if (isVideoPreview) {
         const jwt = authService.getToken();
@@ -2931,6 +2958,10 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           console.log('🎬 V2V job started:', body.job_id || 'unknown');
         } else if (body.status === 'completed') {
           notifyReady({ title: 'Your media is ready', message: 'Tap to open' });
+          // Finalize credits as committed since generation was successful
+          if (typeof finalizeCredits === 'function') {
+            await finalizeCredits('commit');
+          }
           // Clear all options after successful generation
           clearAllOptionsAfterGeneration();
               // Refresh user media to show the new video
@@ -2985,6 +3016,11 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       }
       
       notifyError({ title: 'Error! Please try again', message: errorMessage });
+      
+      // Refund credits since generation failed
+      if (typeof finalizeCredits === 'function') {
+        await finalizeCredits('refund');
+      }
       
       // Clear all options after generation failure
       clearAllOptionsAfterGeneration();
