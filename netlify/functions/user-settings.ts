@@ -42,7 +42,7 @@ export const handler: Handler = async (event) => {
 
         // Return default settings if none exist
         const defaultSettings = {
-          shareToFeed: true,  // Default to sharing
+          shareToFeed: false,  // 🔒 PRIVACY FIRST: Default to private
           updatedAt: null
         }
 
@@ -57,7 +57,7 @@ export const handler: Handler = async (event) => {
         console.error('❌ Get settings error:', dbError)
         // Return default settings on error
         return json({
-          shareToFeed: true,
+          shareToFeed: false,  // 🔒 PRIVACY FIRST: Default to private
           updatedAt: null
         })
       }

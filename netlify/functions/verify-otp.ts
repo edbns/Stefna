@@ -1,6 +1,6 @@
 import type { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4, v4 as randomUUID } from 'uuid';
 import * as jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
 
@@ -138,6 +138,19 @@ export const handler: Handler = async (event) => {
       });
       
       console.log(`New user created with ${starterAmount} starter credits`);
+      
+      // 🔒 CREATE PRIVATE USER SETTINGS FOR NEW USERS
+      await prisma.userSettings.create({
+        data: {
+          id: `settings-${userId}`,
+          userId: userId,
+          shareToFeed: false,  // 🔒 PRIVACY FIRST: New users start private
+          allowRemix: true,
+          updatedAt: now
+        }
+      });
+      
+      console.log(`🔒 New user privacy settings created: shareToFeed=false (private by default)`);
       
       // Process referral if provided
       if (referrerEmail) {

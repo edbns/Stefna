@@ -846,7 +846,7 @@ const ProfileScreen: React.FC = () => {
         },
         body: JSON.stringify({
           asset_id: media.id,
-          shareToFeed: false
+          shareToFeed: false  // 🔒 PRIVACY FIRST: Default to private
         })
       })
 

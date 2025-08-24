@@ -38,13 +38,13 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
         const savedProfile = localStorage.getItem('userProfile')
         if (savedProfile) {
           const profile = JSON.parse(savedProfile)
-          setShareToFeed(profile.shareToFeed ?? true)  // Default to true
+          setShareToFeed(profile.shareToFeed ?? false)  // 🔒 PRIVACY FIRST: Default to private
           // allowRemix removed
         }
       } catch (error) {
         console.warn('Failed to load user settings:', error)
         // Use defaults
-        setShareToFeed(true)
+        setShareToFeed(false)  // 🔒 PRIVACY FIRST: Default to private
         // allowRemix removed
       }
     }

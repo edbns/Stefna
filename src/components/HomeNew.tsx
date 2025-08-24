@@ -1215,7 +1215,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       if (savedProfile) {
         const profile = JSON.parse(savedProfile)
         return {
-          shareToFeed: profile.shareToFeed || false,
+          shareToFeed: profile.shareToFeed ?? false,  // 🔒 PRIVACY FIRST: Default to private
           // allowRemix removed
         }
       }
