@@ -1,5 +1,5 @@
 import type { Handler } from "@netlify/functions";
-import { neon } from '@neondatabase/serverless';
+import { PrismaClient } from '@prisma/client';
 import { requireAuth } from "./_auth";
 import { json } from "./_lib/http";
 
@@ -23,18 +23,27 @@ export const handler: Handler = async (event) => {
     
     const { sub: userId, email } = requireAuth(event.headers.authorization);
     console.log('[get-user-profile] User:', userId, 'Email:', email);
-    const sql = neon(process.env.NETLIFY_DATABASE_URL!);
+    
+    const prisma = new PrismaClient();
 
     // Simple profile fetch - no complex table operations
     try {
       // Just get basic user info and credits
       const [userCredits, appConfig] = await Promise.all([
-        sql`SELECT balance FROM user_credits WHERE user_id = ${userId}`,
-        sql`SELECT (value::text)::int AS v FROM app_config WHERE key = 'daily_cap'`
+        prisma.userCredits.findUnique({
+          where: { user_id: userId },
+          select: { balance: true }
+        }),
+        prisma.appConfig.findUnique({
+          where: { key: 'daily_cap' },
+          select: { value: true }
+        })
       ]);
 
-      const balance = userCredits[0]?.balance ?? 0;
-      const dailyCap = appConfig[0]?.v ?? 30;
+      const balance = userCredits?.balance ?? 0;
+      const dailyCap = appConfig?.value ? parseInt(appConfig.value as string) : 30;
+
+      await prisma.$disconnect();
 
       return json({
         ok: true,
@@ -44,6 +53,7 @@ export const handler: Handler = async (event) => {
       });
     } catch (dbError) {
       console.error('❌ Database error in get-user-profile:', dbError);
+      await prisma.$disconnect();
       // Return safe defaults if database fails
       return json({
         ok: true,

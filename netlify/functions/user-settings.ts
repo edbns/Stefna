@@ -1,10 +1,10 @@
 import type { Handler } from "@netlify/functions";
-import { neon } from '@neondatabase/serverless';
+import { PrismaClient } from '@prisma/client';
 import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
 
 // ---- Database connection ----
-const sql = neon(process.env.NETLIFY_DATABASE_URL!);
+const prisma = new PrismaClient();
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -35,24 +35,23 @@ export const handler: Handler = async (event) => {
       console.log(`📥 Getting settings for user: ${userId}`)
       
       try {
-        const settings = await sql`
-          SELECT share_to_feed, updated_at
-          FROM user_settings
-          WHERE user_id = ${userId}
-        `;
+        const settings = await prisma.userSettings.findUnique({
+          where: { userId },
+          select: { shareToFeed: true, updatedAt: true }
+        });
 
         // Return default settings if none exist
         const defaultSettings = {
-          share_to_feed: true,  // Default to sharing
-          updated_at: null
+          shareToFeed: true,  // Default to sharing
+          updatedAt: null
         }
 
-        const result = settings.length > 0 ? settings[0] : defaultSettings
+        const result = settings || defaultSettings
         console.log(`✅ Retrieved settings for user ${userId}:`, result)
 
         return json({
-          shareToFeed: result.share_to_feed,
-          updatedAt: result.updated_at
+          shareToFeed: result.shareToFeed,
+          updatedAt: result.updatedAt
         })
       } catch (dbError) {
         console.error('❌ Get settings error:', dbError)
@@ -77,21 +76,26 @@ export const handler: Handler = async (event) => {
 
       try {
         // Upsert settings (create if doesn't exist, update if it does)
-        const updated = await sql`
-          INSERT INTO user_settings (user_id, share_to_feed, updated_at)
-          VALUES (${userId}, ${shareToFeed}, NOW())
-          ON CONFLICT (user_id) DO UPDATE SET 
-            share_to_feed = EXCLUDED.share_to_feed,
-            updated_at = NOW()
-          RETURNING share_to_feed, updated_at
-        `;
+        const updated = await prisma.userSettings.upsert({
+          where: { userId },
+          update: { 
+            shareToFeed,
+            updatedAt: new Date()
+          },
+          create: {
+            id: `settings-${userId}`,
+            userId,
+            shareToFeed,
+            allowRemix: true, // Default value
+            updatedAt: new Date()
+          }
+        });
 
-        const result = updated[0]
-        console.log(`✅ Updated settings for user ${userId}:`, result)
+        console.log(`✅ Updated settings for user ${userId}:`, updated)
 
         return json({
-          shareToFeed: result.share_to_feed,
-          updatedAt: result.updated_at
+          shareToFeed: updated.shareToFeed,
+          updatedAt: updated.updatedAt
         })
       } catch (dbError) {
         console.error('❌ Update settings error:', dbError)
@@ -99,8 +103,13 @@ export const handler: Handler = async (event) => {
       }
     }
 
+    // This should never be reached, but TypeScript needs it
+    return json({ error: 'Method not implemented' }, { status: 501 })
+
   } catch (e) {
     console.error('❌ user-settings error:', e)
     return json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await prisma.$disconnect();
   }
 }

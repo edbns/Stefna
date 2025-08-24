@@ -1,12 +1,8 @@
 import { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
+import { PrismaClient } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
-import * as crypto from 'crypto';
 
 const jwtSecret = process.env.JWT_SECRET!;
-
-// ---- Database connection ----
-const sql = neon(process.env.NETLIFY_DATABASE_URL!)
 
 interface UpdateProfileRequest {
   username?: string;
@@ -71,51 +67,68 @@ export const handler: Handler = async (event, context) => {
     const body: UpdateProfileRequest = JSON.parse(event.body || '{}');
     console.log('📝 Update profile request:', { uid, body });
 
-    // FIRST: Ensure user exists in users table by upserting
-    // This prevents the "User ID not found in users table" error
+    const prisma = new PrismaClient();
+
     try {
-      await sql`
-        INSERT INTO users (id, email, external_id, created_at, updated_at)
-        VALUES (${uid}, ${email || `user-${uid}@placeholder.com`}, ${email || `user-${uid}@placeholder.com`}, now(), now())
-        ON CONFLICT (id) DO UPDATE SET 
-          email = EXCLUDED.email,
-          external_id = EXCLUDED.external_id,
-          updated_at = now()
-      `;
+      // FIRST: Ensure user exists in users table by upserting
+      // This prevents the "User ID not found in users table" error
+      const user = await prisma.user.upsert({
+        where: { id: uid },
+        update: { 
+          email: email || `user-${uid}@placeholder.com`,
+          updatedAt: new Date()
+        },
+        create: {
+          id: uid,
+          email: email || `user-${uid}@placeholder.com`,
+          name: body.username || `User ${uid}`,
+          tier: 'registered',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
       
       console.log('✅ User upserted successfully');
-    } catch (userUpsertError) {
-      console.error('Failed to upsert user in users table:', userUpsertError);
+
+      // SECOND: Initialize user credits if they don't exist
+      try {
+        await prisma.userCredits.upsert({
+          where: { user_id: uid },
+          update: {}, // Don't update if exists
+          create: {
+            user_id: uid,
+            balance: 30,
+            updated_at: new Date()
+          }
+        });
+        
+        console.log('✅ User credits initialized successfully');
+      } catch (creditsError) {
+        console.error('Failed to initialize user credits:', creditsError);
+        // Don't fail the request for credits errors
+      }
+
+      await prisma.$disconnect();
+
+      // Return success response
+      return resp(200, {
+        ok: true,
+        message: 'Profile updated successfully',
+        user: {
+          id: uid,
+          email,
+          username: body.username || `User ${uid}`
+        }
+      });
+
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      await prisma.$disconnect();
       return resp(500, { 
-        error: 'Failed to create/update user record',
-        details: String(userUpsertError)
+        error: 'Failed to update profile',
+        details: String(dbError)
       });
     }
-
-    // SECOND: Initialize user credits if they don't exist
-    try {
-      await sql`
-        INSERT INTO user_credits (user_id, balance, updated_at)
-        VALUES (${uid}, 30, now())
-        ON CONFLICT (user_id) DO NOTHING
-      `;
-      
-      console.log('✅ User credits initialized successfully');
-    } catch (creditsError) {
-      console.error('Failed to initialize user credits:', creditsError);
-      // Don't fail the request for credits errors
-    }
-
-    // Return success response
-    return resp(200, {
-      ok: true,
-      message: 'Profile updated successfully',
-      user: {
-        id: uid,
-        email,
-        username: body.username || `User ${uid}`
-      }
-    });
 
   } catch (error) {
     console.error('Handler error:', error);
@@ -124,4 +137,4 @@ export const handler: Handler = async (event, context) => {
       details: String(error)
     });
   }
-};
+}

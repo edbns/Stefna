@@ -2,7 +2,7 @@
 // Returns notifications for the authenticated user
 
 import { Handler } from '@netlify/functions';
-import { sql } from '../lib/db';
+import { PrismaClient } from '@prisma/client';
 import { requireUser } from '../lib/auth';
 
 export const handler: Handler = async (event) => {
@@ -34,73 +34,81 @@ export const handler: Handler = async (event) => {
 
     const { limit = '20', offset = '0', unread_only = 'false' } = event.queryStringParameters || {};
 
-    // Create notifications table if it doesn't exist
-    await sql`
-      CREATE TABLE IF NOT EXISTS notifications (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id TEXT NOT NULL,
-        kind TEXT NOT NULL,
-        media_id UUID,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        read BOOLEAN DEFAULT FALSE,
-        metadata JSONB
-      )
-    `;
+    const prisma = new PrismaClient();
 
-    // Build query for notifications
-    let query = sql`
-      SELECT id, kind, media_id, created_at, read, metadata
-      FROM notifications
-      WHERE user_id = ${user.id}
-      ORDER BY created_at DESC
-      LIMIT ${parseInt(limit)}
-      OFFSET ${parseInt(offset)}
-    `;
+    try {
+      // Build query for notifications
+      let whereClause: any = { userId: user.id };
+      
+      if (unread_only === 'true') {
+        whereClause.read = false;
+      }
 
-    // Filter for unread only if requested
-    if (unread_only === 'true') {
-      query = sql`
-        SELECT id, kind, media_id, created_at, read, metadata
-        FROM notifications
-        WHERE user_id = ${user.id} AND read = FALSE
-        ORDER BY created_at DESC
-        LIMIT ${parseInt(limit)}
-        OFFSET ${parseInt(offset)}
-      `;
+      const notifications = await prisma.notification.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          type: true,
+          title: true,
+          message: true,
+          read: true,
+          createdAt: true
+        },
+        orderBy: { createdAt: 'desc' },
+        take: parseInt(limit),
+        skip: parseInt(offset)
+      });
+
+      // Get unread count
+      const unreadCount = await prisma.notification.count({
+        where: { 
+          userId: user.id, 
+          read: false 
+        }
+      });
+
+      await prisma.$disconnect();
+
+      // Format notifications for UI
+      const formattedNotifications = notifications.map((notification: any) => ({
+        id: notification.id,
+        kind: notification.type,
+        mediaId: null, // Notifications don't have media_id in current schema
+        createdAt: notification.createdAt,
+        read: notification.read,
+        metadata: {} // No metadata field in current schema
+      }));
+
+      console.log(`✅ Returning ${formattedNotifications.length} notifications for user ${user.id}`);
+
+      return {
+        statusCode: 200,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          ok: true,
+          notifications: formattedNotifications,
+          unreadCount: unreadCount,
+          hasMore: formattedNotifications.length >= parseInt(limit)
+        })
+      };
+
+    } catch (dbError) {
+      console.error('❌ Database error in get-notifications:', dbError);
+      await prisma.$disconnect();
+      
+      // Return empty notifications instead of error for better UX
+      return {
+        statusCode: 200,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          ok: true,
+          notifications: [],
+          unreadCount: 0,
+          hasMore: false,
+          error: 'Failed to load notifications'
+        })
+      };
     }
-
-    const notifications = await query;
-
-    // Get unread count
-    const unreadCountResult = await sql`
-      SELECT COUNT(*) as count
-      FROM notifications
-      WHERE user_id = ${user.id} AND read = FALSE
-    `;
-    const unreadCount = unreadCountResult[0]?.count || 0;
-
-    // Format notifications for UI
-    const formattedNotifications = notifications.map((notification: any) => ({
-      id: notification.id,
-      kind: notification.kind,
-      mediaId: notification.media_id,
-      createdAt: notification.created_at,
-      read: notification.read,
-      metadata: notification.metadata || {}
-    }));
-
-    console.log(`✅ Returning ${formattedNotifications.length} notifications for user ${user.id}`);
-
-    return {
-      statusCode: 200,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        ok: true,
-        notifications: formattedNotifications,
-        unreadCount: parseInt(unreadCount),
-        hasMore: formattedNotifications.length >= parseInt(limit)
-      })
-    };
 
   } catch (error: any) {
     console.error('❌ Error in get-notifications:', error);
@@ -116,6 +124,6 @@ export const handler: Handler = async (event) => {
         hasMore: false,
         error: error.message || 'Failed to load notifications'
       })
-    };
+    });
   }
-};
+}
