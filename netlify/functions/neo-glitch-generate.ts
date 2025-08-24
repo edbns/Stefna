@@ -1,5 +1,6 @@
 import { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
+import { v4 as uuidv4 } from 'uuid';
 
 const db = new PrismaClient();
 
@@ -21,7 +22,7 @@ export const handler: Handler = async (event) => {
       prompt,
       userId,
       presetKey,
-      runId = Date.now().toString(),
+      runId = body.runId || uuidv4(),
       sourceAssetId,
       sourceUrl = sourceAssetId,
       generationMeta = {}
@@ -53,12 +54,19 @@ export const handler: Handler = async (event) => {
     });
 
     if (existingRun) {
-      console.log('🔄 [NeoGlitch] Run already exists, returning existing result');
-      return {
-        statusCode: 200,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify(existingRun)
-      };
+      if (existingRun.status === 'completed' && existingRun.imageUrl) {
+        console.log('🔄 [NeoGlitch] Run already completed, returning cached result');
+        return {
+          statusCode: 200,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify(existingRun)
+        };
+      } else {
+        console.warn('⚠️ [NeoGlitch] Run exists but incomplete, cleaning up and retrying');
+        // Delete old failed/incomplete record to retry clean
+        await db.neoGlitchMedia.delete({ where: { id: existingRun.id } });
+        console.log('🧹 [NeoGlitch] Cleaned up incomplete run, proceeding with new generation');
+      }
     }
 
     // Validate preset key
