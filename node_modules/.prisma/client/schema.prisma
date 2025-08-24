@@ -146,3 +146,16 @@ model user_credits {
 
   @@index([user_id], map: "idx_user_credits_user_id")
 }
+
+model AuthOtp {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  used      Boolean  @default(false)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email, code])
+  @@index([expiresAt])
+  @@map("auth_otps")
+}
