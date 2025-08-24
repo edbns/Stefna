@@ -1,3 +1,13 @@
+// netlify/functions/neo-glitch-generate.ts
+// Neo Tokyo Glitch Generation Handler
+// 
+// 🎯 GENERATION STRATEGY:
+// 1. PRIMARY: Use Stability.ai Core (SD3) for all NeoGlitch generations
+// 2. FALLBACK: Only use AIML API if Stability.ai succeeds but returns no usable image
+// 3. CREDITS: Charge 1 credit total (either Stability.ai success OR AIML fallback)
+// 
+// ⚠️ IMPORTANT: This is NOT "Stability.ai + AIML fallback" - it's "Stability.ai with AIML emergency fallback"
+// The misleading message has been removed to prevent confusion about billing and generation flow.
 import { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -608,15 +618,34 @@ async function attemptStabilityGeneration(
   let imageUrl = null;
   let stabilityJobId = result.id || `stability_${Date.now()}`;
   
-  // Structure 1: artifacts array with base64
+  // ✅ IMPROVED ARTIFACT DETECTION (Your Solution)
+  console.log('🔍 [NeoGlitch] Analyzing Stability.ai response for artifacts...');
+  console.log('🔍 [NeoGlitch] Response keys:', Object.keys(result));
+  console.log('🔍 [NeoGlitch] Artifacts present:', !!result.artifacts);
+  console.log('🔍 [NeoGlitch] Artifacts length:', result.artifacts?.length || 0);
+  
+  // Structure 1: artifacts array with base64 (Primary path)
   if (result.artifacts && Array.isArray(result.artifacts) && result.artifacts.length > 0) {
+    console.log('🎨 [NeoGlitch] Found artifacts array, analyzing first artifact...');
+    console.log('🎨 [NeoGlitch] First artifact structure:', JSON.stringify(result.artifacts[0], null, 2));
+    
     const artifact = result.artifacts[0];
-    if (artifact.base64 && artifact.finishReason === 'SUCCESS') {
-      console.log('🎨 [NeoGlitch] Found successful generation with base64 image (Structure 1)');
+    
+    // ✅ BETTER ARTIFACT VALIDATION (Your Solution)
+    if (!artifact.base64) {
+      console.warn('⚠️ [NeoGlitch] Artifact array present but no usable base64 found:', {
+        artifactKeys: Object.keys(artifact),
+        hasBase64: !!artifact.base64,
+        finishReason: artifact.finishReason
+      });
+    } else if (artifact.finishReason !== 'SUCCESS') {
+      console.warn('⚠️ [NeoGlitch] Artifact has base64 but finishReason is not SUCCESS:', artifact.finishReason);
+    } else {
+      console.log('✅ [NeoGlitch] Found valid artifact with base64 and SUCCESS status');
       try {
         const cloudinaryUrl = await uploadBase64ToCloudinary(artifact.base64);
         imageUrl = cloudinaryUrl;
-        console.log('☁️ [NeoGlitch] Image uploaded to Cloudinary:', cloudinaryUrl);
+        console.log('☁️ [NeoGlitch] Image successfully uploaded to Cloudinary:', cloudinaryUrl);
       } catch (uploadError: any) {
         console.error('❌ [NeoGlitch] Cloudinary upload failed:', uploadError);
         throw new Error(`Failed to upload generated image: ${uploadError.message}`);
@@ -648,9 +677,10 @@ async function attemptStabilityGeneration(
     imageUrl = result.data[0].url || result.data[0];
   }
   
-  // If we found a valid image URL, return success
+  // ✅ IMPROVED SUCCESS CHECK (Your Solution)
   if (imageUrl) {
     console.log('✅ [NeoGlitch] Successfully extracted image URL from Stability.ai response');
+    console.log('✅ [NeoGlitch] Final image URL:', imageUrl);
     return {
       stabilityJobId,
       model: 'core',
@@ -661,16 +691,19 @@ async function attemptStabilityGeneration(
     };
   }
   
-  // Only fallback to AIML if we truly have no image from Stability.ai
-  console.log('⚠️ [NeoGlitch] No valid image found in Stability.ai response, attempting AIML fallback');
-  console.log('🔍 [NeoGlitch] Stability.ai response keys:', Object.keys(result));
-  console.log('🔍 [NeoGlitch] Stability.ai response structure:', JSON.stringify(result, null, 2));
+  // ✅ BETTER FALLBACK LOGIC (Your Solution)
+  // Only fallback to AIML if we truly have no usable artifacts from Stability.ai
+  console.log('⚠️ [NeoGlitch] No usable image found in Stability.ai response');
+  console.log('🔍 [NeoGlitch] Stability.ai response analysis complete');
+  console.log('🔍 [NeoGlitch] Artifacts were present but not usable for image generation');
+  
+  // ✅ IMPROVED FALLBACK MESSAGE (Your Solution)
+  console.log('🔄 [NeoGlitch] Stability.ai succeeded but no usable image - falling back to AIML API');
   
   try {
-    console.log('🔄 [NeoGlitch] Falling back to AIML API for image generation');
     return await attemptAIMLFallback(sourceUrl, prompt, presetKey, userId, runId);
   } catch (fallbackError: any) {
     console.error('❌ [NeoGlitch] AIML fallback also failed:', fallbackError);
-    throw new Error(`Both Stability.ai and AIML fallback failed. Stability.ai: No valid image found, AIML: ${fallbackError.message}`);
+    throw new Error(`Stability.ai succeeded but no usable image, and AIML fallback failed: ${fallbackError.message}`);
   }
 }
