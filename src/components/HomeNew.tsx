@@ -1438,7 +1438,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         return;
       }
       
-      // Map preset ID to Replicate preset name
+      // Map preset ID to Stability.ai preset key
       const presetMap: { [key: string]: 'base' | 'visor' | 'tattoos' | 'scanlines' } = {
         'neo_tokyo_base': 'base',
         'neo_tokyo_visor': 'visor',
@@ -1446,9 +1446,9 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         'neo_tokyo_scanlines': 'scanlines'
       };
       
-      const replicatePreset = presetMap[neoTokyoGlitchPresetId];
-      if (!replicatePreset) {
-        console.error('❌ Unknown Neo Tokyo Glitch preset for Replicate:', neoTokyoGlitchPresetId);
+      const presetKey = presetMap[neoTokyoGlitchPresetId];
+      if (!presetKey) {
+        console.error('❌ Unknown Neo Tokyo Glitch preset:', neoTokyoGlitchPresetId);
         notifyError({ title: 'Unknown preset', message: 'Please select a valid Neo Tokyo Glitch preset' });
         endGeneration(genId);
         setNavGenerating(false);
@@ -1456,20 +1456,20 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       }
       
       effectivePrompt = neoTokyoGlitchPreset.prompt;
-              generationMeta = { 
-          mode: 'neotokyoglitch', 
-          neoTokyoGlitchPresetId, 
-          neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
-        model: "replicate/stability-ai/stable-diffusion-img2img", // Use Replicate for maximum glitch
-        strength: 0.5, // Replicate preset strength
-        guidance_scale: 6, // Replicate preset guidance
-          cfg_scale: 7.0, // Balanced creativity vs adherence
-        denoising_strength: 0.5, // Match Replicate preset strength
-          features: neoTokyoGlitchPreset.features,
-        generation_type: "neo_tokyo_replicate_glitch", // Mark as Replicate glitch transformation
-        replicatePreset // Store which Replicate preset to use
-        };
-      console.log('🎭 NEO TOKYO GLITCH MODE: Using REPLICATE integration:', neoTokyoGlitchPreset.label, 'Preset:', replicatePreset);
+      generationMeta = { 
+        mode: 'neotokyoglitch', 
+        neoTokyoGlitchPresetId, 
+        neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
+        model: "stability-ai/stable-diffusion-img2img", // Use Stability.ai for Neo Tokyo Glitch
+        strength: 0.5, // Stability.ai preset strength
+        guidance_scale: 6, // Stability.ai preset guidance
+        cfg_scale: 7.0, // Balanced creativity vs adherence
+        denoising_strength: 0.5, // Match Stability.ai preset strength
+        features: neoTokyoGlitchPreset.features,
+        generation_type: "neo_tokyo_stability_glitch", // Mark as Stability.ai glitch transformation
+        presetKey // Store which preset to use
+      };
+      console.log('🎭 NEO TOKYO GLITCH MODE: Using Stability.ai + AIML fallback:', neoTokyoGlitchPreset.label, 'Preset:', presetKey);
       
     } else {
       console.error('❌ Unknown generation kind:', kind);
@@ -1555,7 +1555,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           body: JSON.stringify({
             prompt: effectivePrompt,
             userId: authService.getCurrentUser()?.id,
-            presetKey: generationMeta?.replicatePreset || 'base',
+            presetKey: generationMeta?.presetKey || 'base',
             sourceUrl,
             runId: genId
           })
@@ -1573,23 +1573,50 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           // Generation completed immediately
           console.log('🎉 [NeoGlitch] Generation completed successfully');
           
-          // Create the result object
-          const result = {
-            id: neoGlitchResult.stabilityJobId || genId,
-            status: 'completed',
-            runId: genId,
-            provider: neoGlitchResult.provider || 'stability',
-            imageUrl: neoGlitchResult.imageUrl,
-            model: neoGlitchResult.model,
-            strategy: neoGlitchResult.strategy
-          };
+          // Save the generated media to user profile
+          try {
+            const mediaToSave = {
+              userId: authService.getCurrentUser()?.id || '',
+              type: 'photo' as const,
+              url: neoGlitchResult.imageUrl,
+              thumbnailUrl: neoGlitchResult.imageUrl, // Use same URL for thumbnail
+              prompt: effectivePrompt,
+              aspectRatio: 1, // Default to 1:1 for Neo Tokyo Glitch
+              width: 1024, // Default dimensions
+              height: 1024,
+              tokensUsed: 1, // Default token usage
+              isPublic: true, // Share to feed by default
+              tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+              metadata: {
+                quality: 'high' as const,
+                generationTime: Date.now(),
+                modelVersion: neoGlitchResult.model || 'stability-ai',
+                presetId: generationMeta?.neoTokyoGlitchPresetId,
+                mode: 'i2i' as const,
+                group: null
+              }
+            };
+            
+            await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
+            console.log('✅ [NeoGlitch] Media saved successfully');
+          } catch (error) {
+            console.error('❌ [NeoGlitch] Failed to save media:', error);
+          }
           
           // End generation successfully
           endGeneration(genId);
           setNavGenerating(false);
           
-          // Show success notification
-          notifyReady({ title: 'Neo Tokyo Glitch Complete!', message: 'Your cyberpunk transformation is ready' });
+          // Show unified toast with thumbnail
+          notifyReady({ 
+            title: 'Your media is ready', 
+            message: 'Tap to open',
+            thumbUrl: neoGlitchResult.imageUrl,
+            onClickThumb: () => {
+              // Open the generated image in a new tab
+              window.open(neoGlitchResult.imageUrl, '_blank');
+            }
+          });
           
           return;
         } else if (neoGlitchResult.status === 'generating') {
@@ -1614,12 +1641,50 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                   console.log('🎉 [NeoGlitch] Polling completed successfully');
                   clearInterval(pollInterval);
                   
+                  // Save the generated media to user profile
+                  try {
+                    const mediaToSave = {
+                      userId: authService.getCurrentUser()?.id || '',
+                      type: 'photo' as const,
+                      url: statusResult.imageUrl,
+                      thumbnailUrl: statusResult.imageUrl, // Use same URL for thumbnail
+                      prompt: effectivePrompt,
+                      aspectRatio: 1, // Default to 1:1 for Neo Tokyo Glitch
+                      width: 1024, // Default dimensions
+                      height: 1024,
+                      tokensUsed: 1, // Default token usage
+                      isPublic: true, // Share to feed by default
+                      tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+                      metadata: {
+                        quality: 'high' as const,
+                        generationTime: Date.now(),
+                        modelVersion: statusResult.model || 'stability-ai',
+                        presetId: generationMeta?.neoTokyoGlitchPresetId,
+                        mode: 'i2i' as const,
+                        group: null
+                      }
+                    };
+                    
+                    await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
+                    console.log('✅ [NeoGlitch] Media saved successfully from polling');
+                  } catch (error) {
+                    console.error('❌ [NeoGlitch] Failed to save media from polling:', error);
+                  }
+                  
                   // End generation successfully
                   endGeneration(genId);
                   setNavGenerating(false);
                   
-                            // Show success notification
-          notifyReady({ title: 'Neo Tokyo Glitch Complete!', message: 'Your cyberpunk transformation is ready' });
+                  // Show unified toast with thumbnail
+                  notifyReady({ 
+                    title: 'Your media is ready', 
+                    message: 'Tap to open',
+                    thumbUrl: statusResult.imageUrl,
+                    onClickThumb: () => {
+                      // Open the generated image in a new tab
+                      window.open(statusResult.imageUrl, '_blank');
+                    }
+                  });
                 }
               }
             } catch (error) {
