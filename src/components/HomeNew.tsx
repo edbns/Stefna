@@ -2210,13 +2210,12 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
             console.log(`🔒 IPA check failed (${generationMeta?.mode || 'unknown'} mode) - similarity: ${ipaResult.similarity.toFixed(3)}`);
             
             // Show user feedback for identity check failure
-            if (generationMeta?.mode === 'emotionmask') {
-              toast.info('Identity check failed, retrying with lower strength...', { duration: 3000 });
-            }
+            toast.info('Identity check failed, retrying with lower strength...', { duration: 3000 });
             
             // Retry with lower strength for better identity preservation
-            // More aggressive for Emotion Mask to preserve identity
-            const retryMultiplier = generationMeta?.mode === 'emotionmask' ? 0.4 : 0.6;
+            // Adaptive strength reduction based on preset type
+            const retryMultiplier = generationMeta?.mode === 'emotionmask' ? 0.4 : 
+                                  generationMeta?.mode === 'ghiblireact' ? 0.5 : 0.6;
             const retryPayload = {
               ...payload,
               strength: Math.min(payload.strength * retryMultiplier, 0.25),
@@ -2250,18 +2249,14 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                   finalResultUrl = retryUrl;
                 } else {
                   // Attempt face blending as final fallback
-                  if (generationMeta?.mode === 'emotionmask') {
-                    toast.info('Enabling face blending fallback...', { duration: 3000 });
-                  }
+                  toast.info('Enabling face blending fallback...', { duration: 3000 });
                   
                   try {
                     const { blendOriginalFace } = await import('../hooks/useIPAFaceCheck');
                     const blendedResult = await blendOriginalFace(sourceUrl, retryUrl, 16);
                     finalResultUrl = blendedResult;
                     
-                    if (generationMeta?.mode === 'emotionmask') {
-                      toast.success('Face blending completed - identity preserved!', { duration: 4000 });
-                    }
+                    toast.success('Face blending completed - identity preserved!', { duration: 4000 });
                   } catch (blendError) {
                     console.log('🔒 Face blending failed, trying identity-safe generation fallback...');
                     
@@ -2269,9 +2264,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                     try {
                       const { runIdentitySafeFallback } = await import('../utils/identitySafeGeneration');
                       
-                      if (generationMeta?.mode === 'emotionmask') {
-                        toast.info('Trying identity-safe generation...', { duration: 3000 });
-                      }
+                      toast.info('Trying identity-safe generation...', { duration: 3000 });
                       
                       const fallbackResult = await runIdentitySafeFallback(
                         payload.prompt,
@@ -2281,9 +2274,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                       
                       finalResultUrl = fallbackResult.outputUrl;
                       
-                      if (generationMeta?.mode === 'emotionmask') {
-                        toast.success('Identity-safe generation completed!', { duration: 4000 });
-                      }
+                      toast.success('Identity-safe generation completed!', { duration: 4000 });
                       
                       console.log('✅ Identity-safe fallback successful:', {
                         predictionId: fallbackResult.predictionId,
@@ -4315,6 +4306,22 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                     )}
                   </div>
 
+                  {/* Identity Lock Toggle - available for ALL generation modes */}
+                  {isAuthenticated && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15">
+                      <input
+                        type="checkbox"
+                        id="identity-lock-global"
+                        checked={identityLock}
+                        onChange={(e) => setIdentityLock(e.target.checked)}
+                        className="rounded border-white/30 bg-transparent"
+                      />
+                      <label htmlFor="identity-lock-global" className="cursor-pointer select-none">
+                        Identity Lock
+                      </label>
+                    </div>
+                  )}
+
                   {/* MoodMorph removed - replaced with Anime Filters */}
 
                   {/* Emotion Mask™ button - SINGLE BUTTON with dropdown */}
@@ -4387,18 +4394,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                         </div>
                       )}
                       
-                      {/* Identity Lock Toggle - show when in Emotion Mask mode */}
-                      {composerState.mode === 'emotionmask' && (
-                        <div className="flex items-center gap-2 mt-2 p-2 bg-gray-50 rounded-lg">
-                          <input
-                            type="checkbox"
-                            id="identity-lock-emotion"
-                            checked={identityLock}
-                            onChange={(e) => setIdentityLock(e.target.checked)}
-                            className="rounded border-gray-300"
-                          />
-                        </div>
-                      )}
+
                   </div>
 
                   {/* Studio Ghibli Reaction™ button - SINGLE BUTTON with dropdown */}

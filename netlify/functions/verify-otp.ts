@@ -120,18 +120,19 @@ export const handler: Handler = async (event) => {
       
       await prisma.userCredits.create({
         data: {
-          userId: userId,
+          user_id: userId,
           balance: starterAmount,
-          updatedAt: now
+          updated_at: now
         }
       });
       
       await prisma.creditTransaction.create({
         data: {
           userId: userId,
-          reason: 'starter_grant',
+          requestId: uuidv4(),
+          action: 'starter_grant',
+          status: 'committed',
           amount: starterAmount,
-          env: 'production',
           createdAt: now
         }
       });
@@ -151,11 +152,12 @@ export const handler: Handler = async (event) => {
             // Insert referral record
             await prisma.referralSignup.create({
               data: {
-                referrerUserId: referrerId,
-                newUserId: userId,
-                referrerEmail: referrerEmail.toLowerCase(),
-                newUserEmail: email.toLowerCase(),
-                createdAt: now
+                id: uuidv4(),
+                referrer_user_id: referrerId,
+                new_user_id: userId,
+                referrer_email: referrerEmail.toLowerCase(),
+                new_user_email: email.toLowerCase(),
+                created_at: now
               }
             });
             
@@ -174,10 +176,10 @@ export const handler: Handler = async (event) => {
             await prisma.creditTransaction.create({
               data: {
                 userId: referrerId,
-                reason: 'referral_referrer',
+                requestId: randomUUID(),
+                action: 'referral_referrer',
                 status: 'committed',
                 amount: refBonusAmount,
-                env: 'production',
                 createdAt: now
               }
             });
@@ -186,21 +188,22 @@ export const handler: Handler = async (event) => {
             await prisma.creditTransaction.create({
               data: {
                 userId: userId,
-                reason: 'referral_new',
+                requestId: randomUUID(),
+                action: 'referral_new',
+                status: 'committed',
                 amount: newBonusAmount,
-                env: 'production',
                 createdAt: now
               }
             });
             
             // Update balances
             await prisma.userCredits.update({
-              where: { userId: referrerId },
+              where: { user_id: referrerId },
               data: { balance: { increment: refBonusAmount } }
             });
             
             await prisma.userCredits.update({
-              where: { userId: userId },
+              where: { user_id: userId },
               data: { balance: { increment: newBonusAmount } }
             });
             
