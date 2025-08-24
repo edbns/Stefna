@@ -285,7 +285,10 @@ async function attemptStabilityGeneration(
   const imageBlob = new Blob([imageData], { type: 'image/jpeg' });
   formData.append('init_image', imageBlob, 'input.jpg');
   
-  // Append text prompts
+  // ✅ REQUIRED: Top-level prompt field (Stability.ai API requirement)
+  formData.append('prompt', prompt);
+  
+  // Append weighted text prompts (optional but provides better control)
   formData.append('text_prompts[0][text]', prompt);
   formData.append('text_prompts[0][weight]', '1');
   formData.append('text_prompts[1][text]', 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text');
@@ -302,6 +305,7 @@ async function attemptStabilityGeneration(
   console.log('🧪 [NeoGlitch] Attempting Stability.ai generation with SD3 using FormData');
   console.log('📦 [NeoGlitch] Stability.ai FormData parameters:', {
     prompt,
+    topLevelPrompt: prompt, // Required by Stability.ai API
     negativePrompt: 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text',
     image_strength: config.strength,
     cfg_scale: config.guidance_scale,
