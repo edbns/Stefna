@@ -208,7 +208,7 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
       prompt,
       presetKey
     );
-    return { ...result, strategy: 'stability_sd3' };
+    return { ...result, strategy: 'stability_core' };
   } catch (error: any) {
     console.error('❌ [NeoGlitch] Stability.ai generation failed:', error.message);
     throw new Error(`Stability.ai generation failed: ${error.message}`);
@@ -373,7 +373,7 @@ async function attemptStabilityGeneration(
   formData.append('samples', '1');
   formData.append('aspect_ratio', '1:1');
 
-  console.log('🧪 [NeoGlitch] Attempting Stability.ai generation with SD3 using FormData');
+  console.log('🧪 [NeoGlitch] Attempting Stability.ai generation with Core using FormData');
   console.log('📦 [NeoGlitch] Stability.ai FormData parameters:', {
     prompt,
     topLevelPrompt: prompt, // Required by Stability.ai API
@@ -385,7 +385,7 @@ async function attemptStabilityGeneration(
     aspect_ratio: '1:1'
   });
 
-  const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/sd3', {
+  const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiToken}`,
@@ -434,8 +434,8 @@ async function attemptStabilityGeneration(
         
         return {
           stabilityJobId: result.id || `stability_${Date.now()}`,
-          model: 'sd3',
-          strategy: 'stability_sd3',
+          model: 'core',
+          strategy: 'stability_core',
           imageUrl: cloudinaryUrl,
           status: 'completed'
         };
