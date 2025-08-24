@@ -122,12 +122,14 @@ model NeoGlitchMedia {
   @@map("neo_glitch_media")
 }
 
-model app_config {
+model AppConfig {
   key   String @id
   value Json?
+
+  @@map("app_config")
 }
 
-model referral_signups {
+model ReferralSignup {
   id               String    @id
   referrer_user_id String
   new_user_id      String    @unique
@@ -137,25 +139,27 @@ model referral_signups {
 
   @@index([new_user_id], map: "idx_referral_signups_new_user")
   @@index([referrer_user_id], map: "idx_referral_signups_referrer")
+  @@map("referral_signups")
 }
 
-model user_credits {
+model UserCredits {
   user_id    String    @id
   balance    Int?      @default(0)
   updated_at DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([user_id], map: "idx_user_credits_user_id")
+  @@map("user_credits")
 }
 
 model AuthOtp {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   email     String
   code      String
-  used      Boolean  @default(false)
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  used      Boolean?  @default(false)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  @@index([email, code])
-  @@index([expiresAt])
+  @@index([email, code], map: "idx_auth_otps_email_code")
+  @@index([expiresAt], map: "idx_auth_otps_expires_at")
   @@map("auth_otps")
 }

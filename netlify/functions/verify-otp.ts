@@ -150,21 +150,21 @@ export const handler: Handler = async (event) => {
             const referrerId = referrer.id;
             
             // Insert referral record
-            await prisma.referral_signups.create({
+            await prisma.referralSignup.create({
               data: {
-                referrer_user_id: referrerId,
-                new_user_id: userId,
-                referrer_email: referrerEmail.toLowerCase(),
-                new_user_email: email.toLowerCase(),
-                created_at: now
+                referrerUserId: referrerId,
+                newUserId: userId,
+                referrerEmail: referrerEmail.toLowerCase(),
+                newUserEmail: email.toLowerCase(),
+                createdAt: now
               }
             });
             
             // Award referral bonuses
-            const refBonus = await prisma.app_config.findUnique({
+            const refBonus = await prisma.appConfig.findUnique({
               where: { key: 'referral_referrer_bonus' }
             });
-            const newBonus = await prisma.app_config.findUnique({
+            const newBonus = await prisma.appConfig.findUnique({
               where: { key: 'referral_new_bonus' }
             });
             
@@ -198,13 +198,13 @@ export const handler: Handler = async (event) => {
             });
             
             // Update balances
-            await prisma.user_credits.update({
-              where: { user_id: referrerId },
+            await prisma.userCredits.update({
+              where: { userId: referrerId },
               data: { balance: { increment: refBonusAmount } }
             });
             
-            await prisma.user_credits.update({
-              where: { user_id: userId },
+            await prisma.userCredits.update({
+              where: { userId: userId },
               data: { balance: { increment: newBonusAmount } }
             });
             
