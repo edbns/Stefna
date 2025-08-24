@@ -521,18 +521,18 @@ const ProfileScreen: React.FC = () => {
               
               return {
                 id: item.id,
-                userId: item.user_id,
-                type: item.resource_type === 'video' ? 'video' : 'photo',
-                url: toAbsoluteCloudinaryUrl(item.result_url) || toAbsoluteCloudinaryUrl(item.url) || item.result_url || item.url,
+                userId: item.userId,
+                type: item.mediaType === 'video' ? 'video' : 'photo',
+                url: toAbsoluteCloudinaryUrl(item.finalUrl) || item.finalUrl,
                 prompt: item.prompt || 'AI Generated Content',
                 aspectRatio: 4/3, // Default aspect ratio
                 width: 800,
                 height: 600,
-                timestamp: item.created_at,
+                timestamp: item.createdAt,
                 tokensUsed: 2, // Default token usage
                 likes: 0, // Will be updated when we implement likes
                 remixCount: 0, // Will be updated when we implement remix counts
-                isPublic: item.visibility === 'public',
+                isPublic: item.isPublic || false,
                 tags: [],
                 metadata: {
                   quality: 'high',
