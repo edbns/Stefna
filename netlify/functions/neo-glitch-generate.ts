@@ -118,7 +118,7 @@ export const handler: Handler = async (event) => {
     console.log('✅ [NeoGlitch] Initial record created:', initialRecord.id);
 
     // Start Stability.ai generation
-    const stabilityResult = await startStabilityGeneration(sourceUrl, normalizedPrompt, presetKey);
+    const stabilityResult = await startStabilityGeneration(sourceUrl, normalizedPrompt, presetKey, userId);
 
     // Update record with Stability.ai job ID
     const updateData: any = {
@@ -186,7 +186,7 @@ export const handler: Handler = async (event) => {
 };
 
 // Stability.ai Generation Function
-async function startStabilityGeneration(sourceUrl: string, prompt: string, presetKey: string) {
+async function startStabilityGeneration(sourceUrl: string, prompt: string, presetKey: string, userId: string) {
   const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
 
   if (!STABILITY_API_KEY) {
@@ -206,7 +206,8 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
       STABILITY_API_KEY,
       sourceUrl,
       prompt,
-      presetKey
+      presetKey,
+      userId
     );
     return { ...result, strategy: 'stability_core' };
   } catch (error: any) {
@@ -215,8 +216,39 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
   }
 }
 
+// Credit Deduction Function
+async function deductCredits(userId: string, provider: 'stability' | 'aiml') {
+  try {
+    const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-reserve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.JWT_SECRET}` // Use JWT secret for internal calls
+      },
+      body: JSON.stringify({
+        userId,
+        request_id: `neo_glitch_${Date.now()}`,
+        action: 'image.gen',
+        cost: 1
+      })
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`✅ [NeoGlitch] Reserved 1 credit for ${provider} after successful generation. New balance: ${result.newBalance}`);
+      return true;
+    } else {
+      console.warn(`⚠️ [NeoGlitch] Failed to reserve credit for ${provider}: ${response.status}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`❌ [NeoGlitch] Error reserving credit for ${provider}:`, error);
+    return false;
+  }
+}
+
 // AIML Fallback Function
-async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey: string) {
+async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey: string, userId: string) {
   const AIML_API_URL = process.env.AIML_API_URL || 'https://api.aimlapi.com';
   const AIML_API_KEY = process.env.AIML_API_KEY;
 
@@ -244,7 +276,8 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
         prompt,
         image_url: sourceUrl, // AIML expects 'image_url' field
         strength: 0.75,
-        num_variations: 1
+        num_variations: 1,
+        seed: Math.floor(Math.random() * 1000000) // Add randomization to prevent cache hits
       })
     });
 
@@ -273,12 +306,21 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
       throw new Error('AIML fallback succeeded but no image URL found in response');
     }
 
+    // Add randomization to prevent cache hits
+    const randomSeed = Math.floor(Math.random() * 1000000);
+    
+    // Deduct credits for successful AIML fallback generation
+    const userId = process.env.TEST_USER_ID || 'default'; // Get from context or use default
+    await deductCredits(userId, 'aiml');
+    
     return {
       stabilityJobId: `aiml_${Date.now()}`,
       model: 'stable-diffusion-v35-large', // Neo Tokyo Glitch specific model
       strategy: 'aiml_fallback',
+      provider: 'aiml', // Explicitly mark as AIML fallback
       imageUrl,
-      status: 'completed'
+      status: 'completed',
+      seed: randomSeed
     };
   } catch (error: any) {
     console.error('❌ [NeoGlitch] AIML fallback error:', error);
@@ -328,7 +370,8 @@ async function attemptStabilityGeneration(
   apiToken: string,
   sourceUrl: string,
   prompt: string,
-  presetKey: string
+  presetKey: string,
+  userId: string
 ) {
   // Preset-specific parameters for Stability.ai (adjusted for better artifact generation)
   const presetConfigs = {
@@ -431,22 +474,26 @@ async function attemptStabilityGeneration(
     if (artifact.base64 && artifact.finishReason === 'SUCCESS') {
       console.log('🎨 [NeoGlitch] Found successful generation with base64 image');
       
-      // Upload base64 image to Cloudinary
-      try {
-        const cloudinaryUrl = await uploadBase64ToCloudinary(artifact.base64);
-        console.log('☁️ [NeoGlitch] Image uploaded to Cloudinary:', cloudinaryUrl);
-        
-        return {
-          stabilityJobId: result.id || `stability_${Date.now()}`,
-          model: 'core',
-          strategy: 'stability_core',
-          imageUrl: cloudinaryUrl,
-          status: 'completed'
-        };
-      } catch (uploadError: any) {
-        console.error('❌ [NeoGlitch] Cloudinary upload failed:', uploadError);
-        throw new Error(`Failed to upload generated image: ${uploadError.message}`);
-      }
+              // Upload base64 image to Cloudinary
+        try {
+          const cloudinaryUrl = await uploadBase64ToCloudinary(artifact.base64);
+          console.log('☁️ [NeoGlitch] Image uploaded to Cloudinary:', cloudinaryUrl);
+          
+          // Deduct credits for successful Stability.ai generation
+          await deductCredits(userId, 'stability');
+          
+          return {
+            stabilityJobId: result.id || `stability_${Date.now()}`,
+            model: 'core',
+            strategy: 'stability_core',
+            provider: 'stability', // Explicitly mark as Stability.ai
+            imageUrl: cloudinaryUrl,
+            status: 'completed'
+          };
+        } catch (uploadError: any) {
+          console.error('❌ [NeoGlitch] Cloudinary upload failed:', uploadError);
+          throw new Error(`Failed to upload generated image: ${uploadError.message}`);
+        }
     } else {
       console.log('⚠️ [NeoGlitch] Generation completed but no valid image:', {
         hasBase64: !!artifact.base64,
@@ -459,7 +506,7 @@ async function attemptStabilityGeneration(
     
     try {
       console.log('🔄 [NeoGlitch] Falling back to AIML API for image generation');
-      return await attemptAIMLFallback(sourceUrl, prompt, presetKey);
+      return await attemptAIMLFallback(sourceUrl, prompt, presetKey, userId);
     } catch (fallbackError: any) {
       console.error('❌ [NeoGlitch] AIML fallback also failed:', fallbackError);
       throw new Error(`Both Stability.ai and AIML fallback failed. Stability.ai: No artifacts, AIML: ${fallbackError.message}`);
