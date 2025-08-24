@@ -1548,7 +1548,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         console.log('🚀 [NeoGlitch] Starting generation with Stability.ai + AIML fallback');
         
         // Upload source image to Cloudinary
-      const uploadResult = await uploadSourceToCloudinary({
+        const uploadResult = await uploadSourceToCloudinary({
           file: selectedFile || undefined,
           url: undefined
         });
