@@ -398,7 +398,7 @@ async function deductCredits(userId: string, provider: 'stability' | 'aiml', run
         'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
       },
       body: JSON.stringify({
-        userId,
+        user_id: userId,
         request_id: runId,
         action: 'image.gen',
         cost: 1
@@ -417,7 +417,7 @@ async function deductCredits(userId: string, provider: 'stability' | 'aiml', run
           'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
         },
         body: JSON.stringify({
-          userId,
+          user_id: userId,
           request_id: runId,
           disposition: 'commit'
         })
@@ -453,7 +453,7 @@ async function refundCredits(userId: string, requestId: string, userToken: strin
         'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
       },
       body: JSON.stringify({
-        userId,
+        user_id: userId,
         request_id: requestId,
         disposition: 'refund'
       })
@@ -485,7 +485,7 @@ async function finalizeCreditsOnce(userId: string, runId: string, success: boole
             'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
           },
         body: JSON.stringify({
-          userId,
+          user_id: userId,
           request_id: runId,
           action: 'image.gen',
           cost: 1

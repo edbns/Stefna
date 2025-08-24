@@ -17,11 +17,14 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    if (!event.headers?.authorization && !event.headers?.Authorization) {
+    // Normalize header name (handle both authorization and Authorization)
+    const authHeader = event.headers?.authorization || event.headers?.Authorization;
+    
+    if (!authHeader) {
       return json({ ok: false, error: 'NO_BEARER' }, { status: 401 });
     }
     
-    const { sub: userId, email } = requireAuth(event.headers.authorization);
+    const { sub: userId, email } = requireAuth(authHeader);
     console.log('[get-user-profile] User:', userId, 'Email:', email);
     
     const prisma = new PrismaClient();
@@ -31,7 +34,7 @@ export const handler: Handler = async (event) => {
       // Get user info, credits, and media assets
       const [userCredits, appConfig, userMedia, userNeoGlitch] = await Promise.all([
         prisma.userCredits.findUnique({
-          where: { userId: userId },
+          where: { user_id: userId },
           select: { balance: true }
         }),
         prisma.appConfig.findUnique({
