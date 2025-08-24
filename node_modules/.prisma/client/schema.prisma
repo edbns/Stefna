@@ -82,11 +82,10 @@ model CreditTransaction {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
   amount    Int
-  env       String   @default("production")
   createdAt DateTime @default(now()) @map("created_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, env, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("credits_ledger")
 }
 

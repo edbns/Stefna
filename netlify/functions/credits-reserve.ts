@@ -142,7 +142,6 @@ export const handler: Handler = async (event) => {
          data: {
            userId: userId,
            amount: -cost, // Negative amount for credit usage
-           env: 'production',
            createdAt: new Date()
          }
        });
