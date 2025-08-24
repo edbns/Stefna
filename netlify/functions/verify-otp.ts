@@ -108,7 +108,6 @@ export const handler: Handler = async (event) => {
         data: {
           id: userId,
           email: email.toLowerCase(),
-          externalId: email.toLowerCase(),
           createdAt: now
         }
       });
@@ -175,7 +174,6 @@ export const handler: Handler = async (event) => {
             await prisma.creditTransaction.create({
               data: {
                 userId: referrerId,
-                requestId: `referral_referrer_${referrerId}_${Date.now()}`,
                 reason: 'referral_referrer',
                 status: 'committed',
                 amount: refBonusAmount,
@@ -188,9 +186,7 @@ export const handler: Handler = async (event) => {
             await prisma.creditTransaction.create({
               data: {
                 userId: userId,
-                requestId: `referral_new_${userId}_${Date.now()}`,
                 reason: 'referral_new',
-                status: 'committed',
                 amount: newBonusAmount,
                 env: 'production',
                 createdAt: now
