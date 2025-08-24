@@ -1,6 +1,7 @@
 import type { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
 import { Resend } from 'resend';
+import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
 
@@ -81,6 +82,7 @@ export const handler: Handler = async (event) => {
       console.log('=== INSERTING OTP WITH PRISMA ===');
       const insertResult = await prisma.authOtp.create({
         data: {
+          id: uuidv4(),
           email: email.toLowerCase(),
           code: otp,
           expiresAt: expiresAt
