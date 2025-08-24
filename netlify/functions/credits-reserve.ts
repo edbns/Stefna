@@ -141,9 +141,6 @@ export const handler: Handler = async (event) => {
        const creditTransaction = await prisma.creditTransaction.create({
          data: {
            userId: userId,
-           requestId: request_id, // Add missing requestId
-           reason: action,
-           status: 'pending', // Add missing status
            amount: -cost, // Negative amount for credit usage
            env: 'production',
            createdAt: new Date()
@@ -154,10 +151,10 @@ export const handler: Handler = async (event) => {
       
       // Update user credits balance
       const updatedCredits = await prisma.userCredits.update({
-        where: { userId: userId },
+        where: { user_id: userId },
         data: {
           balance: currentBalance - cost,
-          updatedAt: new Date()
+          updated_at: new Date()
         }
       });
       
@@ -167,7 +164,7 @@ export const handler: Handler = async (event) => {
         return json({
           ok: true,
           request_id: request_id,
-        balance: updatedCredits.balance,
+          balance: updatedCredits.balance,
           cost: cost,
           action: action
         }, { status: 200 });

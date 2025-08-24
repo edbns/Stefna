@@ -54,7 +54,7 @@ export const handler: Handler = async (event) => {
     const [userMedia, neoGlitchMedia] = await Promise.all([
       prisma.mediaAsset.findMany({
         where: {
-          ownerId: userId
+          userId: userId
         },
         orderBy: {
           createdAt: 'desc'
@@ -82,7 +82,7 @@ export const handler: Handler = async (event) => {
     // Transform regular media assets
     const regularMediaItems = userMedia.map(item => ({
       id: item.id,
-      userId: item.ownerId,
+      userId: item.userId,
       finalUrl: item.url,
       mediaType: item.resourceType,
       prompt: item.prompt,

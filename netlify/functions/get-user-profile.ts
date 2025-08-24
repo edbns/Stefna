@@ -24,7 +24,7 @@ export const handler: Handler = async (event) => {
       return json({ ok: false, error: 'NO_BEARER' }, { status: 401 });
     }
     
-    const { sub: userId, email } = requireAuth(authHeader);
+    const { userId, email } = requireAuth(authHeader);
     console.log('[get-user-profile] User:', userId, 'Email:', email);
     
     const prisma = new PrismaClient();

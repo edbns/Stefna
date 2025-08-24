@@ -82,15 +82,11 @@ model CreditTransaction {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
   amount    Int
-  reason    String
   env       String   @default("production")
   createdAt DateTime @default(now()) @map("created_at")
-  requestId String?  @unique @map("request_id")
-  status    String   @default("pending")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, env, createdAt(sort: Desc)])
-  @@index([requestId], map: "idx_credits_ledger_request_id")
   @@map("credits_ledger")
 }
 
