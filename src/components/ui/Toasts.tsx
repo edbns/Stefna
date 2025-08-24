@@ -23,7 +23,7 @@ type ToastKind = "queue" | "ready" | "error";
 
 type ToastBase = {
   id: string;
-  kind: ToastKind;
+  kind: "queue" | "ready" | "error" | "success";
   title: string;
   message?: string;
   // When provided, a small thumbnail is shown and is clickable
@@ -35,11 +35,12 @@ type ToastBase = {
 // Toast Context
 // ---------------------------------------------
 
-type ToastContextValue = {
-  notifyQueue: (opts: { title?: string; message?: string }) => void;
+export interface ToastContextValue {
+  notifyQueue: (opts?: { title?: string; message?: string }) => void;
   notifyReady: (opts: { title?: string; message?: string; thumbUrl?: string; onClickThumb?: () => void }) => void;
   notifyError: (opts: { title?: string; message?: string }) => void;
-};
+  notifySuccess: (opts: { title?: string; message?: string }) => void;
+}
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
@@ -109,7 +110,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     enqueue({ id: crypto.randomUUID(), kind: "error", title, message });
   }, [enqueue]);
 
-  const value = useMemo(() => ({ notifyQueue, notifyReady, notifyError }), [notifyQueue, notifyReady, notifyError]);
+  const notifySuccess = useCallback<ToastContextValue["notifySuccess"]>(({ title = "Success!", message = "Operation completed successfully." } = {}) => {
+    enqueue({ id: crypto.randomUUID(), kind: "success", title, message });
+  }, [enqueue]);
+
+  const value = useMemo(() => ({ notifyQueue, notifyReady, notifyError, notifySuccess }), [notifyQueue, notifyReady, notifyError, notifySuccess]);
 
   return (
     <ToastContext.Provider value={value}>
@@ -145,6 +150,8 @@ function ToastCard({ toast, onClose }: { toast: ToastBase; onClose: () => void }
       ? "border-white/20"
       : tone === "ready"
       ? "border-white/20"
+      : tone === "success"
+      ? "border-white/20"
       : "border-white/20";
 
   return (
@@ -154,6 +161,7 @@ function ToastCard({ toast, onClose }: { toast: ToastBase; onClose: () => void }
           {toast.kind === "queue" && <Loader2 className="h-5 w-5 animate-spin" />}
           {toast.kind === "ready" && <CheckCircle2 className="h-5 w-5" />}
           {toast.kind === "error" && <AlertTriangle className="h-5 w-5" />}
+          {toast.kind === "success" && <CheckCircle2 className="h-5 w-5" />}
         </div>
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold">{toast.title}</div>

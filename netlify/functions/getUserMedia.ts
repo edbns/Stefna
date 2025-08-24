@@ -50,22 +50,37 @@ export const handler: Handler = async (event) => {
       offset
     });
 
-    // Fetch user's media using Prisma
-    const userMedia = await prisma.mediaAsset.findMany({
-      where: {
-        ownerId: userId
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: limit,
-      skip: offset
+    // Fetch user's media using Prisma - both regular media assets and NeoGlitch media
+    const [userMedia, neoGlitchMedia] = await Promise.all([
+      prisma.mediaAsset.findMany({
+        where: {
+          ownerId: userId
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: limit,
+        skip: offset
+      }),
+      prisma.neoGlitchMedia.findMany({
+        where: {
+          userId: userId
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: limit,
+        skip: offset
+      })
+    ]);
+
+    console.log('✅ [getUserMedia] Retrieved user media:', {
+      regularMedia: userMedia.length,
+      neoGlitchMedia: neoGlitchMedia.length
     });
 
-    console.log('✅ [getUserMedia] Retrieved user media:', userMedia.length);
-
-    // Transform to media format
-    const mediaItems = userMedia.map(item => ({
+    // Transform regular media assets
+    const regularMediaItems = userMedia.map(item => ({
       id: item.id,
       userId: item.ownerId,
       finalUrl: item.url,
@@ -79,6 +94,26 @@ export const handler: Handler = async (event) => {
       type: 'media-asset'
     }));
 
+    // Transform NeoGlitch media
+    const neoGlitchItems = neoGlitchMedia.map(item => ({
+      id: item.id,
+      userId: item.userId,
+      finalUrl: item.imageUrl,
+      mediaType: 'image',
+      prompt: item.prompt,
+      presetKey: item.preset,
+      status: 'ready',
+      isPublic: false, // NeoGlitch media is always private by default
+      allowRemix: false, // NeoGlitch doesn't support remixing
+      createdAt: item.createdAt,
+      type: 'neo-glitch'
+    }));
+
+    // Combine and sort by creation date
+    const allMediaItems = [...regularMediaItems, ...neoGlitchItems]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+
     return {
       statusCode: 200,
       headers: {
@@ -87,9 +122,9 @@ export const handler: Handler = async (event) => {
       },
       body: JSON.stringify({
         success: true,
-        items: mediaItems,
-        total: mediaItems.length,
-        hasMore: mediaItems.length === limit
+        items: allMediaItems,
+        total: allMediaItems.length,
+        hasMore: allMediaItems.length === limit
       })
     };
 
@@ -98,7 +133,10 @@ export const handler: Handler = async (event) => {
     
     return {
       statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ 
         error: 'MEDIA_FETCH_FAILED',
         message: error.message,
