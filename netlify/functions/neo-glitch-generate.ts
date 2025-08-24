@@ -24,6 +24,10 @@ export const handler: Handler = async (event) => {
   }
 
   try {
+    // Extract user's JWT token for internal credit calls
+    const userToken = event.headers.authorization?.replace('Bearer ', '') || '';
+    console.log('🔍 [NeoGlitch] User token extracted for credit calls');
+    
     const body = JSON.parse(event.body || '{}');
     console.log('🔍 [NeoGlitch] RAW INCOMING PAYLOAD:', JSON.stringify(body, null, 2));
 
@@ -174,7 +178,7 @@ export const handler: Handler = async (event) => {
             });
             
             // Finalize credits for AIML fallback (this will charge the expensive AIML rate)
-            await finalizeCreditsOnce(userId, runId, true);
+            await finalizeCreditsOnce(userId, runId, true, userToken);
             
             return {
               statusCode: 200,
@@ -205,7 +209,7 @@ export const handler: Handler = async (event) => {
           });
           
           // Refund credits since both Stability.ai and AIML failed
-          await finalizeCreditsOnce(userId, runId, false);
+          await finalizeCreditsOnce(userId, runId, false, userToken);
           
           return {
             statusCode: 500,
@@ -276,7 +280,7 @@ export const handler: Handler = async (event) => {
       console.log('🎉 [NeoGlitch] Generation completed successfully with image URL');
       
       // Finalize credits only once after successful generation
-      await finalizeCreditsOnce(userId, runId, true);
+              await finalizeCreditsOnce(userId, runId, true, userToken);
     }
 
     return {
@@ -384,14 +388,14 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
 }
 
 // Credit Deduction Function
-async function deductCredits(userId: string, provider: 'stability' | 'aiml', runId: string) {
+async function deductCredits(userId: string, provider: 'stability' | 'aiml', runId: string, userToken: string) {
   try {
     // First reserve the credits
     const reserveResponse = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-reserve`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.JWT_SECRET}` // Use JWT secret for internal calls
+        'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
       },
       body: JSON.stringify({
         userId,
@@ -410,7 +414,7 @@ async function deductCredits(userId: string, provider: 'stability' | 'aiml', run
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.JWT_SECRET}` // Use JWT secret for internal calls
+          'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
         },
         body: JSON.stringify({
           userId,
@@ -426,7 +430,7 @@ async function deductCredits(userId: string, provider: 'stability' | 'aiml', run
       } else {
         console.warn(`⚠️ [NeoGlitch] Failed to commit credit for ${provider}: ${commitResponse.status}`);
         // Try to refund since commit failed
-        await refundCredits(userId, runId);
+        await refundCredits(userId, runId, userToken);
         return false;
       }
     } else {
@@ -440,13 +444,13 @@ async function deductCredits(userId: string, provider: 'stability' | 'aiml', run
 }
 
 // Credit Refund Function
-async function refundCredits(userId: string, requestId: string) {
+async function refundCredits(userId: string, requestId: string, userToken: string) {
   try {
     const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-finalize`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.JWT_SECRET}` // Use JWT secret for internal calls
+        'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
       },
       body: JSON.stringify({
         userId,
@@ -470,16 +474,16 @@ async function refundCredits(userId: string, requestId: string) {
 }
 
 // Single Credit Deduction Function - Only call this once at the end
-async function finalizeCreditsOnce(userId: string, runId: string, success: boolean) {
+async function finalizeCreditsOnce(userId: string, runId: string, success: boolean, userToken: string) {
   try {
     if (success) {
       // Reserve and commit credits only once for successful generation
-      const reserveResponse = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-reserve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.JWT_SECRET}` // Use JWT secret for internal calls
-        },
+              const reserveResponse = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-reserve`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
+          },
         body: JSON.stringify({
           userId,
           request_id: runId,
@@ -497,7 +501,7 @@ async function finalizeCreditsOnce(userId: string, runId: string, success: boole
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.JWT_SECRET}` // Use JWT secret for internal calls
+            'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
           },
           body: JSON.stringify({
             userId,
