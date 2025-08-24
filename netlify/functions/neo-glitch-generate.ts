@@ -391,12 +391,12 @@ async function attemptStabilityGeneration(
   presetKey: string,
   userId: string
 ) {
-  // Preset-specific parameters for Stability.ai (adjusted for better artifact generation)
+  // Preset-specific parameters for Stability.ai (optimized for face preservation)
   const presetConfigs = {
-    'visor': { strength: 0.65, guidance_scale: 7.5, steps: 40 }, // Reduced strength and steps
-    'base': { strength: 0.60, guidance_scale: 7.0, steps: 35 }, // More conservative
-    'tattoos': { strength: 0.70, guidance_scale: 8.0, steps: 45 }, // Reduced strength
-    'scanlines': { strength: 0.65, guidance_scale: 7.5, steps: 40 } // More conservative
+    'visor': { strength: 0.35, guidance_scale: 5.5, steps: 40 }, // Much lower strength for face preservation
+    'base': { strength: 0.30, guidance_scale: 5.0, steps: 35 }, // Conservative for face preservation
+    'tattoos': { strength: 0.40, guidance_scale: 6.0, steps: 45 }, // Lower strength for face preservation
+    'scanlines': { strength: 0.35, guidance_scale: 5.5, steps: 40 } // Lower strength for face preservation
   };
 
   const config = presetConfigs[presetKey as keyof typeof presetConfigs] || presetConfigs.visor;
@@ -420,10 +420,10 @@ async function attemptStabilityGeneration(
   // ✅ REQUIRED: Top-level prompt field (Stability.ai API requirement)
   formData.append('prompt', prompt);
   
-  // Append weighted text prompts (optional but provides better control)
-  formData.append('text_prompts[0][text]', prompt);
+  // Append weighted text prompts with face preservation
+  formData.append('text_prompts[0][text]', `${prompt}, preserve facial identity, maintain original face structure`);
   formData.append('text_prompts[0][weight]', '1');
-  formData.append('text_prompts[1][text]', 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text');
+  formData.append('text_prompts[1][text]', 'face distortion, facial deformation, identity loss, different person, face morphing, blurry, low quality, distorted, ugly, bad anatomy, watermark, text');
   formData.append('text_prompts[1][weight]', '-1');
   
   // Append other parameters

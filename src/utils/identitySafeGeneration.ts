@@ -1,86 +1,59 @@
-// Client-side utility for identity-safe generation using Replicate
+// Client-side utility for identity-safe generation using AIML API
+// This replaces the old Replicate-based system with AIML API integration
+
 export interface IdentitySafeGenerationRequest {
   prompt: string;
   imageUrl: string;
   strength?: number;
   guidance?: number;
-}
-
-export interface NeoTokyoGlitchRequest {
-  imageUrl: string;
-  preset?: 'base' | 'visor' | 'tattoos' | 'scanlines';
-  customPrompt?: string;
+  mode?: 'identity-safe' | 'neo-tokyo-glitch' | 'check-status';
+  preset?: string;
 }
 
 export interface IdentitySafeGenerationResponse {
+  success: boolean;
   id: string;
   status: string;
   created_at: string;
   urls?: {
-    get?: string;
-    cancel?: string;
+    get: string;
+    cancel: string;
   };
+  output?: string[];
   message: string;
 }
 
-export interface ReplicatePredictionStatus {
+export interface PredictionStatus {
   id: string;
   status: 'starting' | 'processing' | 'succeeded' | 'failed' | 'canceled';
+  created_at: string;
+  completed_at?: string;
   output?: string[];
   error?: string;
   logs?: string;
 }
 
-// Start Neo Tokyo Glitch generation
-export async function startNeoTokyoGlitchGeneration(
-  request: NeoTokyoGlitchRequest
-): Promise<IdentitySafeGenerationResponse> {
-  try {
-    console.log('🚀 Starting Neo Tokyo Glitch generation:', {
-      preset: request.preset || 'base',
-      imageUrl: request.imageUrl.substring(0, 100) + '...',
-      customPrompt: request.customPrompt ? 'Custom prompt provided' : 'Using preset prompt'
-    });
-
-    const response = await fetch('/.netlify/functions/identity-safe-generation', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        mode: 'neo-tokyo-glitch',
-        ...request
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const result: IdentitySafeGenerationResponse = await response.json();
-    
-    console.log('✅ Neo Tokyo Glitch generation started:', {
-      predictionId: result.id,
-      status: result.status,
-      message: result.message
-    });
-
-    return result;
-  } catch (error) {
-    console.error('❌ Neo Tokyo Glitch generation failed:', error);
-    throw error;
-  }
+// Check if identity-safe generation is available
+export function isIdentitySafeGenerationAvailable(): boolean {
+  // Check if AIML API is configured
+  const hasAimlKey = !!import.meta.env.VITE_AIML_API_KEY;
+  
+  console.log('🔍 Identity-safe generation availability:', {
+    hasAimlKey,
+    available: hasAimlKey
+  });
+  
+  return hasAimlKey;
 }
 
-// Start identity-safe generation
+// Start identity-safe generation with AIML API
 export async function startIdentitySafeGeneration(
   request: IdentitySafeGenerationRequest
 ): Promise<IdentitySafeGenerationResponse> {
   try {
     console.log('🚀 Starting identity-safe generation:', {
-      prompt: request.prompt.substring(0, 100) + (request.prompt.length > 100 ? '...' : ''),
-      imageUrl: request.imageUrl.substring(0, 100) + '...',
+      mode: request.mode || 'identity-safe',
+      preset: request.preset,
       strength: request.strength,
       guidance: request.guidance
     });
@@ -99,26 +72,25 @@ export async function startIdentitySafeGeneration(
     }
 
     const result: IdentitySafeGenerationResponse = await response.json();
-    
+
     console.log('✅ Identity-safe generation started:', {
-      predictionId: result.id,
+      id: result.id,
       status: result.status,
-      message: result.message
+      hasOutput: !!result.output
     });
 
     return result;
-  } catch (error) {
+
+  } catch (error: any) {
     console.error('❌ Identity-safe generation failed:', error);
-    throw error;
+    throw new Error(`Identity-safe generation failed: ${error.message}`);
   }
 }
 
-// Check prediction status
-export async function checkPredictionStatus(predictionId: string): Promise<ReplicatePredictionStatus> {
+// Check prediction status (for compatibility - AIML is synchronous)
+export async function checkPredictionStatus(predictionId: string): Promise<PredictionStatus> {
   try {
-    console.log('🔍 Checking prediction status:', predictionId);
-    
-    // Call our Netlify function to check Replicate status
+    // Call our Netlify function to check status
     const response = await fetch('/.netlify/functions/identity-safe-generation', {
       method: 'POST',
       headers: {
@@ -126,171 +98,142 @@ export async function checkPredictionStatus(predictionId: string): Promise<Repli
       },
       body: JSON.stringify({
         mode: 'check-status',
-        predictionId,
-        retryCount: 0,
-        originalRequest: { imageUrl: '', preset: 'base' } // Will be filled by backend
+        predictionId
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    console.log('📡 Status check response:', {
-      id: data.id,
-      status: data.status,
-      output: data.output,
-      error: data.error,
-      logs: data.logs
-    });
-
+    const result = await response.json();
+    
+    // Convert to expected format
     return {
-      id: data.id,
-      status: data.status,
-      output: data.output,
-      error: data.error,
-      logs: data.logs
+      id: predictionId,
+      status: 'succeeded', // AIML is synchronous, so always succeeded if we get here
+      created_at: result.created_at,
+      completed_at: result.created_at,
+      output: result.output || []
     };
-  } catch (error) {
-    console.error('❌ Failed to check prediction status:', error);
-    throw error;
+
+  } catch (error: any) {
+    console.error('❌ Status check failed:', error);
+    return {
+      id: predictionId,
+      status: 'failed',
+      created_at: new Date().toISOString(),
+      error: error.message
+    };
   }
 }
 
-// Wait for prediction completion with polling
+// Wait for prediction completion (for compatibility - AIML is synchronous)
 export async function waitForPredictionCompletion(
   predictionId: string,
-  pollInterval: number = 2000,
-  maxWaitTime: number = 300000 // 5 minutes
-): Promise<ReplicatePredictionStatus> {
+  maxWaitTime: number = 120000 // 2 minutes
+): Promise<PredictionStatus> {
   const startTime = Date.now();
   
   while (Date.now() - startTime < maxWaitTime) {
     try {
       const status = await checkPredictionStatus(predictionId);
       
-      if (status.status === 'succeeded') {
-        console.log('🎉 Identity-safe generation completed successfully:', predictionId);
+      if (status.status === 'succeeded' || status.status === 'failed') {
+        if (status.status === 'succeeded' && status.output && status.output.length > 0) {
+          console.log('🎉 Identity-safe generation completed successfully:', predictionId);
+        }
         return status;
       }
       
-      if (status.status === 'failed' || status.status === 'canceled') {
-        throw new Error(`Generation ${status.status}: ${status.error || 'Unknown error'}`);
-      }
-      
-      // Still processing, wait before next poll
-      console.log('⏳ Generation still processing, waiting...', {
-        predictionId,
-        status: status.status,
-        elapsed: Math.round((Date.now() - startTime) / 1000) + 's'
-      });
-      
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      // Wait before next check (though AIML is synchronous)
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
     } catch (error) {
-      console.error('❌ Error while waiting for prediction:', error);
-      throw error;
+      console.error('❌ Error checking prediction status:', error);
+      await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
   
-  throw new Error(`Generation timed out after ${maxWaitTime / 1000}s`);
-}
-
-// Complete Neo Tokyo Glitch generation workflow
-export async function runNeoTokyoGlitchGeneration(
-  imageUrl: string,
-  preset: 'base' | 'visor' | 'tattoos' | 'scanlines' = 'base',
-  customPrompt?: string
-): Promise<{ outputUrl: string; predictionId: string }> {
-  try {
-    console.log('🔄 Running Neo Tokyo Glitch generation...', { preset, customPrompt: !!customPrompt });
-    
-    // Start generation
-    const startResult = await startNeoTokyoGlitchGeneration({
-      imageUrl,
-      preset,
-      customPrompt
-    });
-    
-    // Wait for completion
-    const finalStatus = await waitForPredictionCompletion(startResult.id);
-    
-    if (!finalStatus.output || finalStatus.output.length === 0) {
-      throw new Error('Generation completed but no output received');
-    }
-    
-    const outputUrl = finalStatus.output[0];
-    
-    console.log('✅ Neo Tokyo Glitch generation completed:', {
-      predictionId: startResult.id,
-      outputUrl: outputUrl.substring(0, 100) + '...',
-      preset
-    });
-    
-    return {
-      outputUrl,
-      predictionId: startResult.id
-    };
-    
-  } catch (error) {
-    console.error('💥 Neo Tokyo Glitch generation failed:', error);
-    throw error;
-  }
+  // Timeout
+  return {
+    id: predictionId,
+    status: 'failed',
+    created_at: new Date().toISOString(),
+    error: 'Timeout waiting for completion'
+  };
 }
 
 // Complete identity-safe generation workflow
 export async function runIdentitySafeFallback(
   prompt: string,
   imageUrl: string,
-  options: { strength?: number; guidance?: number } = {}
+  options: {
+    strength?: number;
+    guidance?: number;
+    mode?: 'identity-safe' | 'neo-tokyo-glitch';
+    preset?: string;
+  } = {}
 ): Promise<{ outputUrl: string; predictionId: string }> {
   try {
     console.log('🔄 Running identity-safe fallback generation...');
-    
+
     // Start generation
     const startResult = await startIdentitySafeGeneration({
       prompt,
       imageUrl,
-      strength: options.strength || 0.7,
-      guidance: options.guidance || 7.5
+      strength: options.strength || 0.4,
+      guidance: options.guidance || 6.0,
+      mode: options.mode || 'identity-safe',
+      preset: options.preset
     });
-    
-    // Wait for completion
-    const finalStatus = await waitForPredictionCompletion(startResult.id);
-    
-    if (!finalStatus.output || finalStatus.output.length === 0) {
-      throw new Error('Generation completed but no output received');
+
+    // Since AIML is synchronous, we should have the result immediately
+    if (startResult.output && startResult.output.length > 0) {
+      console.log('✅ Identity-safe fallback completed:', {
+        outputUrl: startResult.output[0],
+        predictionId: startResult.id
+      });
+
+      return {
+        outputUrl: startResult.output[0],
+        predictionId: startResult.id
+      };
     }
+
+    // If no immediate output, wait for completion (shouldn't happen with AIML)
+    const finalResult = await waitForPredictionCompletion(startResult.id);
     
-    const outputUrl = finalStatus.output[0];
-    
-    console.log('✅ Identity-safe fallback completed:', {
-      predictionId: startResult.id,
-      outputUrl: outputUrl.substring(0, 100) + '...'
-    });
-    
+    if (finalResult.status !== 'succeeded' || !finalResult.output || finalResult.output.length === 0) {
+      throw new Error(finalResult.error || 'Generation failed to produce output');
+    }
+
     return {
-      outputUrl,
-      predictionId: startResult.id
+      outputUrl: finalResult.output[0],
+      predictionId: finalResult.id
     };
-    
-  } catch (error) {
+
+  } catch (error: any) {
     console.error('💥 Identity-safe fallback failed:', error);
-    throw error;
+    throw new Error(`Identity-safe fallback failed: ${error.message}`);
   }
 }
 
 // Utility to check if identity-safe generation is available
 export function isIdentitySafeGenerationAvailable(): boolean {
-  // In production, you might check if the Netlify function is accessible
-  // For now, assume it's available
-  return true;
-}
-
-// Utility to check if Neo Tokyo Glitch generation is available
-export function isNeoTokyoGlitchAvailable(): boolean {
-  // In production, you might check if the Netlify function is accessible
-  // For now, assume it's available
-  return true;
+  try {
+    // Check if we have the required environment variables
+    const hasAimlKey = !!import.meta.env.VITE_AIML_API_KEY;
+    
+    console.log('🔍 Checking identity-safe generation availability:', {
+      hasAimlKey,
+      available: hasAimlKey
+    });
+    
+    return hasAimlKey;
+  } catch (error) {
+    console.warn('⚠️ Could not check identity-safe generation availability:', error);
+    return false;
+  }
 }
