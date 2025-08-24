@@ -145,7 +145,7 @@ const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefin
 }
 
 const HomeNew: React.FC = () => {
-  const { notifyQueue, notifyReady, notifyError, notifySuccess } = useToasts()
+  const { notifyQueue, notifyReady, notifyError } = useToasts()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
   const location = useLocation() as any
@@ -1589,7 +1589,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           setNavGenerating(false);
           
           // Show success notification
-          notifySuccess({ title: 'Neo Tokyo Glitch Complete!', message: 'Your cyberpunk transformation is ready' });
+          notifyReady({ title: 'Neo Tokyo Glitch Complete!', message: 'Your cyberpunk transformation is ready' });
           
           return;
         } else if (neoGlitchResult.status === 'generating') {
@@ -1618,8 +1618,8 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                   endGeneration(genId);
                   setNavGenerating(false);
                   
-                  // Show success notification
-                  notifySuccess({ title: 'Neo Tokyo Glitch Complete!', message: 'Your cyberpunk transformation is ready' });
+                            // Show success notification
+          notifyReady({ title: 'Neo Tokyo Glitch Complete!', message: 'Your cyberpunk transformation is ready' });
                 }
               }
             } catch (error) {
