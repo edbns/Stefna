@@ -82,7 +82,7 @@ export const handler: Handler = async (event) => {
 
   } catch (error) {
     console.error('❌ [NeoGlitch] Status check failed:', error);
-    return json({
+    return json({ 
       error: 'Failed to check job status',
       details: error instanceof Error ? error.message : 'Unknown error',
       status: 'failed'

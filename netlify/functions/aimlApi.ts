@@ -1,12 +1,12 @@
 import type { Handler } from "@netlify/functions";
 import { json } from "./_lib/http";
 
-// --- ANIME FILTERS - AIML API INTEGRATION (SINGLE IMAGE PIPELINE ONLY) ---
-// This covers: Preset Definitions, Custom Prompt Override, Model Routing, and Credit Handling
+// --- INDEPENDENT PRESET SYSTEMS - AIML API INTEGRATION ---
+// Each system works independently with its own models and workflows
 
 // --- PRESET DEFINITIONS ---
-export const ANIME_PRESETS = [
-  {
+export const PRESET_SYSTEMS = {
+  ghibli_reaction: {
     id: 'ghibli_reaction',
     label: 'Studio Ghibli Reaction',
     kind: 'ghibli',
@@ -14,7 +14,7 @@ export const ANIME_PRESETS = [
     defaultPrompt: 'Anime-style reaction portrait with glistening tears, shocked face, sparkle overlays. Inspired by Studio Ghibli expressions.',
     credits: 3,
   },
-  {
+  neo_tokyo_glitch: {
     id: 'neo_tokyo_glitch',
     label: 'Neo Tokyo Glitch',
     kind: 'tokyo',
@@ -22,12 +22,12 @@ export const ANIME_PRESETS = [
     defaultPrompt: 'Cyberpunk anime portrait with cel shading, neon colors, scanlines, tech tattoos and glitch overlays. Digital dystopian city backdrop.',
     credits: 5,
   }
-];
+};
 
 // --- PROMPT + MODEL BUILDER ---
-export function buildAnimeFilterPayload({ presetId, image_url, customPrompt }) {
-  const preset = ANIME_PRESETS.find(p => p.id === presetId);
-  if (!preset) throw new Error('Unknown anime preset');
+export function buildPresetPayload({ presetId, image_url, customPrompt }) {
+  const preset = PRESET_SYSTEMS[presetId];
+  if (!preset) throw new Error(`Unknown preset: ${presetId}`);
 
   return {
     model: preset.model,
@@ -42,13 +42,13 @@ export function buildAnimeFilterPayload({ presetId, image_url, customPrompt }) {
 }
 
 // --- CREDIT RESERVATION STRUCTURE ---
-export function getAnimeCreditPayload({ presetId }) {
-  const preset = ANIME_PRESETS.find(p => p.id === presetId);
-  if (!preset) throw new Error('Unknown anime preset');
+export function getPresetCreditPayload({ presetId }) {
+  const preset = PRESET_SYSTEMS[presetId];
+  if (!preset) throw new Error(`Unknown preset: ${presetId}`);
 
   return {
     kind: preset.kind,
-    mode: 'anime_filter',
+    mode: preset.id, // Use the actual preset ID instead of generic 'anime_filter'
     creditsNeeded: preset.credits,
   };
 }

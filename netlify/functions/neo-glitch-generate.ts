@@ -56,7 +56,7 @@ export const handler: Handler = async (event) => {
     });
 
     console.log('🔍 [NeoGlitch] Checking for existing run with runId:', runId.toString());
-    
+
     // Check for existing run
     const existingRun = await db.neoGlitchMedia.findUnique({
       where: { runId: runId.toString() }
@@ -72,11 +72,11 @@ export const handler: Handler = async (event) => {
       
       if (existingRun.status === 'completed' && existingRun.imageUrl) {
         console.log('🔄 [NeoGlitch] Run already completed, returning cached result');
-        return {
-          statusCode: 200,
-          headers: { 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify(existingRun)
-        };
+      return {
+        statusCode: 200,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify(existingRun)
+      };
       } else {
         console.warn('⚠️ [NeoGlitch] Run exists but incomplete, cleaning up and retrying');
         // Delete old failed/incomplete record to retry clean
@@ -499,8 +499,8 @@ async function attemptStabilityGeneration(
           
           // Deduct credits for successful Stability.ai generation
           await deductCredits(userId, 'stability');
-          
-          return {
+  
+  return {
             stabilityJobId: result.id || `stability_${Date.now()}`,
             model: 'core',
             strategy: 'stability_core',

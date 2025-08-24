@@ -1472,19 +1472,19 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       }
       
       effectivePrompt = neoTokyoGlitchPreset.prompt;
-      generationMeta = { 
-        mode: 'neotokyoglitch', 
-        neoTokyoGlitchPresetId, 
-        neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
+              generationMeta = { 
+          mode: 'neotokyoglitch', 
+          neoTokyoGlitchPresetId, 
+          neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
         model: "stability-ai/stable-diffusion-img2img", // Use Stability.ai for Neo Tokyo Glitch
         strength: 0.5, // Stability.ai preset strength
         guidance_scale: 6, // Stability.ai preset guidance
-        cfg_scale: 7.0, // Balanced creativity vs adherence
+          cfg_scale: 7.0, // Balanced creativity vs adherence
         denoising_strength: 0.5, // Match Stability.ai preset strength
-        features: neoTokyoGlitchPreset.features,
+          features: neoTokyoGlitchPreset.features,
         generation_type: "neo_tokyo_stability_glitch", // Mark as Stability.ai glitch transformation
         presetKey // Store which preset to use
-      };
+        };
       console.log('🎭 NEO TOKYO GLITCH MODE: Using Stability.ai + AIML fallback:', neoTokyoGlitchPreset.label, 'Preset:', presetKey);
       
     } else {
@@ -1548,7 +1548,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         console.log('🚀 [NeoGlitch] Starting generation with Stability.ai + AIML fallback');
         
         // Upload source image to Cloudinary
-        const uploadResult = await uploadSourceToCloudinary({
+      const uploadResult = await uploadSourceToCloudinary({
           file: selectedFile || undefined,
           url: undefined
         });

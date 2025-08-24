@@ -44,12 +44,11 @@ export const handler: Handler = async (event) => {
 
     // Build query conditions
     const where: any = {
-      isPublic: true,
-      status: 'ready'
+      visibility: 'public', // Changed from isPublic: true to visibility: 'public'
     };
 
     if (userId) {
-      where.userId = userId;
+      where.ownerId = userId; // Changed from userId to ownerId to match schema
     }
 
     // Fetch both types of public media using Prisma
@@ -98,13 +97,13 @@ export const handler: Handler = async (event) => {
     // Transform main media assets to feed format
     const mainFeedItems = publicMedia.map(item => ({
       id: item.id,
-      userId: item.userId,
+      userId: item.ownerId, // Changed from item.userId to item.ownerId
       user: item.owner,
-      finalUrl: item.finalUrl,
-      mediaType: item.mediaType,
+      finalUrl: item.url, // Changed from item.finalUrl to item.url (schema has 'url' not 'finalUrl')
+      mediaType: item.resourceType, // Changed from item.mediaType to item.resourceType
       prompt: item.prompt,
-      presetKey: item.presetKey,
-      status: item.status,
+      presetKey: item.prompt, // Using prompt as presetKey since schema doesn't have presetKey
+      status: 'ready', // MediaAsset doesn't have status, so default to 'ready'
       createdAt: item.createdAt,
       type: 'media-asset' // Identify as main media asset
     }));
