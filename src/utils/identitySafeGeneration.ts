@@ -220,20 +220,4 @@ export async function runIdentitySafeFallback(
   }
 }
 
-// Utility to check if identity-safe generation is available
-export function isIdentitySafeGenerationAvailable(): boolean {
-  try {
-    // Check if we have the required environment variables
-    const hasAimlKey = !!import.meta.env.VITE_AIML_API_KEY;
-    
-    console.log('🔍 Checking identity-safe generation availability:', {
-      hasAimlKey,
-      available: hasAimlKey
-    });
-    
-    return hasAimlKey;
-  } catch (error) {
-    console.warn('⚠️ Could not check identity-safe generation availability:', error);
-    return false;
-  }
-}
+
