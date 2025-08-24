@@ -186,16 +186,12 @@ export const handler: Handler = async (event): Promise<any> => {
         const row = await prisma.mediaAsset.create({
           data: {
             id,
-            userId,
-            cloudinaryPublicId,
-            mediaType,
-            presetKey: v.preset_id || null,
+            ownerId: userId,
+            resourceType: mediaType,
             prompt: v.prompt || null,
-            sourceAssetId: v.source_asset_id,
-            status: 'ready',
-            isPublic: true,
+            url: v.image_url,
+            visibility: 'public',
             allowRemix: false,
-            finalUrl: v.image_url,
             meta: {...v.meta, batch_id: batchId, run_id: runId, idempotency_key: itemIdempotencyKey}
           }
         });
@@ -241,8 +237,8 @@ export const handler: Handler = async (event): Promise<any> => {
           batchId,
           items: items.map(item => ({
             id: item.id,
-            final_url: item.final_url,
-            media_type: item.media_type,
+            final_url: item.url,
+            media_type: item.resourceType,
             created_at: item.created_at
           }))
         })
@@ -276,8 +272,8 @@ export const handler: Handler = async (event): Promise<any> => {
           },
           select: {
             id: true,
-            finalUrl: true,
-            mediaType: true,
+            url: true, // Changed from finalUrl
+            resourceType: true, // Changed from mediaType
             createdAt: true
           }
         });
@@ -295,8 +291,8 @@ export const handler: Handler = async (event): Promise<any> => {
               success: true,
               message: 'Item already exists (idempotency)',
               id: existingItem.id,
-              final_url: existingItem.finalUrl,
-              media_type: existingItem.mediaType,
+              final_url: existingItem.url, // Changed from finalUrl
+              media_type: existingItem.resourceType, // Changed from mediaType
               created_at: existingItem.createdAt,
               table_used: 'media_assets',
               idempotency: true
@@ -310,17 +306,17 @@ export const handler: Handler = async (event): Promise<any> => {
       // 🛡️ ADDITIONAL DUPLICATE PREVENTION: Check for existing URL
       console.log(`🔍 [save-media] Checking for existing URL: ${finalUrl}`);
       const existingUrlCheck = await prisma.mediaAsset.findFirst({
-        where: { finalUrl },
+        where: { url: finalUrl },
         select: {
           id: true,
-          userId: true,
+          ownerId: true,
           createdAt: true
         }
       });
       
       if (existingUrlCheck) {
         console.log(`⚠️ [save-media] URL already exists in database: ${existingUrlCheck.id}`);
-        console.log(`⚠️ [save-media] User: ${existingUrlCheck.userId}, Created: ${existingUrlCheck.createdAt}`);
+        console.log(`⚠️ [save-media] User: ${existingUrlCheck.ownerId}, Created: ${existingUrlCheck.createdAt}`);
         
         return {
           statusCode: 200,
@@ -347,113 +343,54 @@ export const handler: Handler = async (event): Promise<any> => {
         cloudinary_public_id = cloudinaryMatch ? cloudinaryMatch[1] : null;
       }
 
-      // Insert the media
-      console.log(`🔍 [save-media] Inserting media with finalUrl: ${finalUrl}`);
-      console.log(`🔍 [save-media] User ID: ${userId}, Preset: ${preset_key}`);
-      
       // 🧠 DEBUG: Special logging for Neo Tokyo Glitch mode
       if (meta?.mode === 'neotokyoglitch') {
         console.log('🎭 [save-media] NEO TOKYO GLITCH MODE DETECTED');
         console.log('🎭 [save-media] Meta details:', JSON.stringify(meta, null, 2));
         console.log('🎭 [save-media] This should link media to user profile');
       }
+
+      // Insert the media
+      console.log(`🔍 [save-media] Inserting media with finalUrl: ${finalUrl}`);
+      console.log(`🔍 [save-media] User ID: ${userId}, Preset: ${preset_key}`);
       
       const savedItem = await prisma.mediaAsset.create({
         data: {
           id: randomUUID(),
-          userId,
-          cloudinaryPublicId: cloudinary_public_id || null,
-          mediaType: media_type || 'image',
-          presetKey: preset_key || null,
+          ownerId: userId,
+          resourceType: media_type || 'image',
           prompt: prompt || null,
-          sourceAssetId: source_public_id || null,
-          status: 'ready',
-          isPublic: true,
+          url: finalUrl,
+          visibility: 'public',
           allowRemix: false,
-          finalUrl: finalUrl,
           meta: { ...(meta || {}), idempotency_key: idempotencyKey || null }
         },
         select: {
           id: true,
-          finalUrl: true,
-          mediaType: true,
+          url: true,
+          resourceType: true,
           createdAt: true
         }
       });
-    
-      if (savedItem) {
-        console.log('✅ Media saved successfully:', savedItem.id);
-        
-        // 🧠 DEBUG: Confirm user linking for Neo Tokyo Glitch
-        if (meta?.mode === 'neotokyoglitch') {
-          console.log('🎭 [save-media] NEO TOKYO GLITCH: Media successfully linked to user profile');
-          console.log('🎭 [save-media] User ID:', userId, 'Media ID:', savedItem.id);
-          console.log('🎭 [save-media] This should now appear in user profile');
-        }
-        
-        // 🔄 Auto-backup Replicate images to Cloudinary IMMEDIATELY
-        if (finalUrl && finalUrl.includes('replicate.delivery')) {
-          console.log('🔄 Starting IMMEDIATE Replicate image backup for:', { id: savedItem.id, finalUrl });
-          
-          try {
-            // Import backup logic directly to avoid serverless function call issues
-            const { backupReplicateImage } = await import('./backup-replicate-image');
-            
-            // Call backup function directly (synchronously)
-            const backupResult = await backupReplicateImage({
-              replicateUrl: finalUrl,
-              mediaId: savedItem.id,
-              userId: userId
-            });
-            
-            if (backupResult.success) {
-              console.log('✅ Replicate backup completed successfully for:', savedItem.id);
-              
-              // Update the saved item with the new Cloudinary URL
-              const updatedResult = await prisma.mediaAsset.update({
-                where: { id: savedItem.id },
-                data: {
-                  finalUrl: backupResult.permanentUrl,
-                  cloudinaryPublicId: backupResult.cloudinaryPublicId
-                },
-                select: {
-                  id: true,
-                  finalUrl: true
-                }
-              });
-              
-              if (updatedResult) {
-                console.log('✅ Database updated with Cloudinary URL for:', savedItem.id);
-                // Update the return value to reflect the new URL
-                savedItem.finalUrl = updatedResult.finalUrl;
-              }
-            } else {
-              console.error('❌ Replicate backup failed for:', savedItem.id, backupResult.error);
-            }
-          } catch (error) {
-            console.error('❌ Replicate backup error for:', savedItem.id, error);
-          }
-        }
-        
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            success: true,
-            message: 'Media saved successfully',
-            id: savedItem.id,
-            final_url: savedItem.finalUrl,
-            media_type: savedItem.mediaType,
-            created_at: savedItem.createdAt,
-            table_used: 'media_assets'
-          })
-        };
-      } else {
-        throw new Error('No result returned from database insert');
-      }
+
+      console.log(`✅ [save-media] Media saved successfully with ID: ${savedItem.id}`);
+      
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          success: true,
+          message: 'Media saved successfully',
+          id: savedItem.id,
+          final_url: savedItem.url,
+          media_type: savedItem.resourceType,
+          created_at: savedItem.createdAt,
+          table_used: 'media_assets'
+        })
+      };
     }
 
   } catch (error: unknown) {
