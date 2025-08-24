@@ -53,8 +53,7 @@ export const handler: Handler = async (event) => {
     // Fetch user's media using Prisma
     const userMedia = await prisma.mediaAsset.findMany({
       where: {
-        userId,
-        status: 'ready'
+        ownerId: userId
       },
       orderBy: {
         createdAt: 'desc'
@@ -68,13 +67,13 @@ export const handler: Handler = async (event) => {
     // Transform to media format
     const mediaItems = userMedia.map(item => ({
       id: item.id,
-      userId: item.userId,
-      finalUrl: item.finalUrl,
-      mediaType: item.mediaType,
+      userId: item.ownerId,
+      finalUrl: item.url,
+      mediaType: item.resourceType,
       prompt: item.prompt,
-      presetKey: item.presetKey,
-      status: item.status,
-      isPublic: item.isPublic,
+      presetKey: item.prompt,
+      status: 'ready',
+      isPublic: item.visibility === 'public',
       allowRemix: item.allowRemix,
       createdAt: item.createdAt,
       type: 'media-asset'

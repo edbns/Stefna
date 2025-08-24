@@ -1615,6 +1615,9 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
             
             await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
             console.log('✅ [NeoGlitch] Media saved successfully');
+            
+            // Refresh the public feed to show new media
+            loadFeed();
           } catch (error) {
             console.error('❌ [NeoGlitch] Failed to save media:', error);
           }
@@ -1683,6 +1686,9 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                     
                     await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
                     console.log('✅ [NeoGlitch] Media saved successfully from polling');
+                    
+                    // Refresh the public feed to show new media
+                    loadFeed();
                   } catch (error) {
                     console.error('❌ [NeoGlitch] Failed to save media from polling:', error);
                   }
