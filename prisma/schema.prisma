@@ -54,7 +54,6 @@ model MediaAsset {
   height         Int?
   duration       Int?
   prompt         String?
-  negativePrompt String?  @map("negative_prompt")
   model          String?
   mode           String?
   visibility     String   @default("private")
