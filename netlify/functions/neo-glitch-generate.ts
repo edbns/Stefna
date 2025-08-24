@@ -232,7 +232,7 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
   
   try {
     // Use AIML's img2img endpoint as fallback
-    const response = await fetch(`${AIML_API_URL}/v1/sd-img2img`, {
+    const response = await fetch(`${AIML_API_URL}/v1/img2img`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
