@@ -2042,6 +2042,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       let allResultUrls: string[];
       let variationsGenerated: number;
       let body: any;
+      let res: Response | null = null; // Declare res at top level
 
       // 🧪 DEBUG: Log complete payload before API call
       console.log('🧪 DEBUG: Complete aimlApi payload:', {
@@ -2094,54 +2095,50 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         
         // Continue to result processing
       } else {
-      // Add timeout guard to prevent 504 errors
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.warn('⚠️ Request timeout approaching, aborting to prevent 504');
-        controller.abort();
-      }, 24000); // 24s cushion before Netlify's 26s limit
+        // Add timeout guard to prevent 504 errors
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          console.warn('⚠️ Request timeout approaching, aborting to prevent 504');
+          controller.abort();
+        }, 24000); // 24s cushion before Netlify's 26s limit
 
-      // Declare variables outside try block so they can be used later
-      let res: Response;
-      let body: any;
+        try {
+          res = await authenticatedFetch('/.netlify/functions/aimlApi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId); // Clear timeout if request completes
 
-      try {
-        res = await authenticatedFetch('/.netlify/functions/aimlApi', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId); // Clear timeout if request completes
-
-        console.info('aimlApi status', res.status);
-        body = await res.json().catch(() => ({}));
-        console.info('aimlApi body', body);
-      } catch (error) {
-        clearTimeout(timeoutId); // Clear timeout on error
-        if (error.name === 'AbortError') {
-          console.warn('⚠️ Request aborted due to timeout');
-          throw new Error('Request timed out. Please try again with a smaller image or different prompt.');
+          console.info('aimlApi status', res.status);
+          body = await res.json().catch(() => ({}));
+          console.info('aimlApi body', body);
+        } catch (error) {
+          clearTimeout(timeoutId); // Clear timeout on error
+          if (error.name === 'AbortError') {
+            console.warn('⚠️ Request aborted due to timeout');
+            throw new Error('Request timed out. Please try again with a smaller image or different prompt.');
+          }
+          throw error; // Re-throw other errors
         }
-        throw error; // Re-throw other errors
-      }
 
         // Process aimlApi results
-      if (!res.ok) {
-        // Handle different error types
-        if (res.status === 501 && isVideoPreview) {
-          notifyQueue({ title: 'Added to queue', message: 'We will start processing shortly.' });
-          // Don't return - let the processing continue
-        } else if (res.status === 429) {
-          notifyError({ title: 'Something went wrong', message: 'Rate limited' });
-          endGeneration(genId);
-          setNavGenerating(false);
-          return;
-        } else {
-          throw new Error(body?.error || `aimlApi ${res.status}`);
+        if (res && !res.ok) {
+          // Handle different error types
+          if (res.status === 501 && isVideoPreview) {
+            notifyQueue({ title: 'Added to queue', message: 'We will start processing shortly.' });
+            // Don't return - let the processing continue
+          } else if (res.status === 429) {
+            notifyError({ title: 'Something went wrong', message: 'Rate limited' });
+            endGeneration(genId);
+            setNavGenerating(false);
+            return;
+          } else {
+            throw new Error(body?.error || `aimlApi ${res.status}`);
+          }
         }
-      }
 
         // Extract result URLs from aimlApi response
         resultUrl = body?.image_url || body?.image_urls?.[0] || null;
