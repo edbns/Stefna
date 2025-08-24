@@ -1527,15 +1527,132 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       // Just close the composer; keep using outer genId
       setIsComposerOpen(false);
 
-      // Enforce server-side quota and generate via aimlApi
-      // Use new uploadSource service - pass File object, not blob URL
-      const uploadResult = await uploadSourceToCloudinary({
-        file: selectedFile,    // Pass the File object directly
-        url: undefined         // Don't pass preview URL
-      })
-      const sourceUrl = uploadResult.secureUrl
+      // For Neo Tokyo Glitch, use our new Stability.ai + AIML fallback system
+      if (kind === 'neotokyoglitch') {
+        console.log('🚀 [NeoGlitch] Starting generation with Stability.ai + AIML fallback');
+        
+        // Upload source image to Cloudinary
+        const uploadResult = await uploadSourceToCloudinary({
+          file: selectedFile || undefined,
+          url: undefined
+        });
+        const sourceUrl = uploadResult.secureUrl;
+        
+        // Validate source URL
+        try {
+          assertIsSourceUrl(sourceUrl);
+        } catch (error) {
+          console.error('❌ Source URL validation failed:', error);
+          notifyError({ title: 'Invalid source', message: 'Please use an original photo, not a generated image' });
+          endGeneration(genId);
+          setNavGenerating(false);
+          return;
+        }
+        
+        // Call our new neo-glitch-generate function
+        const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-generate', {
+          method: 'POST',
+          body: JSON.stringify({
+            prompt: effectivePrompt,
+            userId: authService.getCurrentUser()?.id,
+            presetKey: generationMeta?.replicatePreset || 'base',
+            sourceUrl,
+            runId: genId
+          })
+        });
+        
+        if (!neoGlitchResponse.ok) {
+          throw new Error(`Neo Glitch generation failed: ${neoGlitchResponse.status}`);
+        }
+        
+        const neoGlitchResult = await neoGlitchResponse.json();
+        console.log('✅ [NeoGlitch] Generation result:', neoGlitchResult);
+        
+        // Handle the response based on status
+        if (neoGlitchResult.status === 'completed' && neoGlitchResult.imageUrl) {
+          // Generation completed immediately
+          console.log('🎉 [NeoGlitch] Generation completed successfully');
+          
+          // Create the result object
+          const result = {
+            id: neoGlitchResult.stabilityJobId || genId,
+            status: 'completed',
+            runId: genId,
+            provider: neoGlitchResult.provider || 'stability',
+            imageUrl: neoGlitchResult.imageUrl,
+            model: neoGlitchResult.model,
+            strategy: neoGlitchResult.strategy
+          };
+          
+          // End generation successfully
+          endGeneration(genId);
+          setNavGenerating(false);
+          
+          // Show success notification
+          notifySuccess({ title: 'Neo Tokyo Glitch Complete!', message: 'Your cyberpunk transformation is ready' });
+          
+          return;
+        } else if (neoGlitchResult.status === 'generating') {
+          // Generation is in progress, start polling
+          console.log('🔄 [NeoGlitch] Generation in progress, starting polling');
+          
+          // Start polling for completion
+          const pollInterval = setInterval(async () => {
+            try {
+              const statusResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-status', {
+                method: 'POST',
+                body: JSON.stringify({
+                  stabilityJobId: neoGlitchResult.stabilityJobId,
+                  runId: genId
+                })
+              });
+              
+              if (statusResponse.ok) {
+                const statusResult = await statusResponse.json();
+                
+                if (statusResult.status === 'completed' && statusResult.imageUrl) {
+                  console.log('🎉 [NeoGlitch] Polling completed successfully');
+                  clearInterval(pollInterval);
+                  
+                  // End generation successfully
+                  endGeneration(genId);
+                  setNavGenerating(false);
+                  
+                  // Show success notification
+                  notifySuccess({ title: 'Neo Tokyo Glitch Complete!', message: 'Your cyberpunk transformation is ready' });
+                }
+              }
+            } catch (error) {
+              console.error('❌ [NeoGlitch] Polling error:', error);
+            }
+          }, 2000); // Poll every 2 seconds
+          
+          // Set timeout for polling (2 minutes)
+          setTimeout(() => {
+            clearInterval(pollInterval);
+            console.error('❌ [NeoGlitch] Polling timeout');
+            notifyError({ title: 'Generation timeout', message: 'Please try again' });
+            endGeneration(genId);
+            setNavGenerating(false);
+          }, 120000);
+          
+          return;
+        } else {
+          throw new Error(`Unexpected Neo Glitch response: ${JSON.stringify(neoGlitchResult)}`);
+        }
+      }
       
-      // Validate source URL to prevent using generated images as source
+      // For other modes, use the existing AIML API flow
+      console.log('🚀 Using existing AIML API flow for mode:', kind);
+      
+      // Upload source image to Cloudinary
+      const uploadResult = await uploadSourceToCloudinary({
+        file: selectedFile,
+        url: undefined
+      });
+      const sourceUrl = uploadResult.secureUrl;
+      
+      // Validate source URL
       try {
         assertIsSourceUrl(sourceUrl);
       } catch (error) {
@@ -1619,6 +1736,8 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       // Include preset data if applicable
       if (selectedPreset && PRESETS[selectedPreset]) {
         const preset = PRESETS[selectedPreset];
+        if (preset.negative_prompt) payload.negative_prompt = preset.negative_prompt;
+        if (typeof preset.strength === 'number') payload.strength = preset.strength;
         if (preset.negative_prompt) payload.negative_prompt = preset.negative_prompt;
         if (typeof preset.strength === 'number') payload.strength = preset.strength;
         payload.presetName = selectedPreset;
