@@ -4274,7 +4274,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
 
           {/* Bottom composer bar - compact, horizontally 70% */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
-            <div className="bg-black border border-[#333333] rounded-2xl px-4 py-3 shadow-2xl transition-all duration-300">
+            <div className="bg-[#333333] border border-white/20 rounded-2xl px-4 py-3 shadow-2xl transition-all duration-300">
               
 
               
@@ -4289,7 +4289,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                       ? "Describe your vision... (click ✨ to enhance your prompt)"
                       : "Custom prompt (optional) - will be combined with selected preset"
                     }
-                    className="w-full px-3 py-2 pr-10 bg-white/5 border border-[#333333] rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors h-20 text-sm"
+                    className="w-full px-3 py-2 pr-10 bg-white/5 border border-white/20 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors h-20 text-sm"
                     disabled={isGenerating}
                   />
                   {/* Magic Wand Enhancement Button - only show for custom mode */}
@@ -4351,25 +4351,6 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                       <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
                         {/* Preset options - all visible, no scrolling */}
                         <div className="space-y-1">
-                          {/* None option */}
-                          <button
-                            onClick={() => {
-                              requestClearPreset('user clicked clear')
-                              setPresetsOpen(false)
-                            }}
-                            className={(() => {
-                              const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm';
-                              const activeClass = 'bg-white/20 text-white';
-                              const inactiveClass = 'text-white/80 hover:text-white hover:bg-white/10';
-                              return `${baseClass} ${!selectedPreset ? activeClass : inactiveClass}`;
-                            })()}
-                          >
-                            <span>None</span>
-                            {!selectedPreset && (
-                              <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
-                            )}
-                          </button>
-                          
                           {/* Preset options */}
                           {weeklyPresetNames.map((name) => (
                             <button

@@ -19,22 +19,6 @@ export function GhibliReactionPicker({
   return (
     <div className={`bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 ${className}`}>
       <div className="space-y-1">
-        {/* None option - matches presets exactly */}
-        <button
-          onClick={() => onChange(null)}
-          className={(() => {
-            const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm';
-            const activeClass = 'bg-white/20 text-white';
-            const inactiveClass = 'text-white/80 hover:text-white hover:bg-white/10';
-            return `${baseClass} ${!value ? activeClass : inactiveClass}`;
-          })()}
-        >
-          <span>None</span>
-          {!value && (
-            <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
-          )}
-        </button>
-        
         {/* Ghibli Reaction preset options - matches presets exactly */}
         {presets.map((preset) => (
           <button
