@@ -217,30 +217,34 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
 
 // AIML Fallback Function
 async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey: string) {
+  const AIML_API_URL = process.env.AIML_API_URL || 'https://api.aimlapi.com';
   const AIML_API_KEY = process.env.AIML_API_KEY;
 
   if (!AIML_API_KEY) {
     throw new Error('AIML_API_KEY not configured for fallback');
   }
+  if (!AIML_API_URL) {
+    throw new Error('AIML_API_URL not configured for fallback');
+  }
 
   console.log('🔄 [NeoGlitch] Attempting AIML fallback generation');
+  console.log('🌐 [NeoGlitch] Using AIML API endpoint:', AIML_API_URL);
   
   try {
-    // Use AIML's smart generation as fallback
-    const response = await fetch('https://api.aiml.services/v1/smart-generation', {
+    // Use AIML's img2img endpoint as fallback
+    const response = await fetch(`${AIML_API_URL}/v1/sd-img2img`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${AIML_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AIML_API_KEY}`
       },
       body: JSON.stringify({
         prompt,
-        negative_prompt: 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text',
-        image_url: sourceUrl,
-        strength: 0.7, // Conservative strength for fallback
-        guidance_scale: 7.5,
-        num_inference_steps: 30,
-        model: 'stable-diffusion-v1-5'
+        source_url: sourceUrl,
+        model: 'stable-diffusion-v35-large', // Use the best available model
+        preset: presetKey,
+        strength: 0.75,
+        guidance_scale: 8
       })
     });
 
@@ -252,17 +256,17 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
     const result = await response.json();
     console.log('✅ [NeoGlitch] AIML fallback generation successful');
     
-    if (result.image_url) {
-      return {
-        stabilityJobId: `aiml_fallback_${Date.now()}`,
-        model: 'stable-diffusion-v1-5',
-        strategy: 'aiml_fallback',
-        imageUrl: result.image_url,
-        status: 'completed'
-      };
-    } else {
-      throw new Error('AIML fallback returned no image URL');
+    if (!result.image_url) {
+      throw new Error('AIML fallback succeeded but no image_url returned');
     }
+
+    return {
+      stabilityJobId: `aiml_${Date.now()}`,
+      model: 'stable-diffusion-v35-large',
+      strategy: 'aiml_fallback',
+      imageUrl: result.image_url,
+      status: 'completed'
+    };
   } catch (error: any) {
     console.error('❌ [NeoGlitch] AIML fallback error:', error);
     throw error;
