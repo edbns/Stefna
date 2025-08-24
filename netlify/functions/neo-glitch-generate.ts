@@ -146,7 +146,90 @@ export const handler: Handler = async (event) => {
     console.log('✅ [NeoGlitch] Initial record created:', initialRecord.id);
 
     // Start Stability.ai generation
-    const stabilityResult = await startStabilityGeneration(sourceUrl, normalizedPrompt, presetKey, userId, runId);
+    let stabilityResult;
+    try {
+      stabilityResult = await startStabilityGeneration(sourceUrl, normalizedPrompt, presetKey, userId, runId);
+    } catch (stabilityError: any) {
+      console.error('❌ [NeoGlitch] Stability.ai generation failed:', stabilityError);
+      
+      // 🚨 CHECK IF ALL STABILITY.AI TIERS FAILED - Implement AIML fallback
+      if (stabilityError.message.includes('All Stability.ai tiers failed')) {
+        console.log('🔄 [NeoGlitch] All Stability.ai tiers failed, attempting AIML fallback...');
+        
+        try {
+          // Attempt AIML fallback
+          const aimlResult = await attemptAIMLFallback(sourceUrl, normalizedPrompt, presetKey, userId, runId);
+          
+          if (aimlResult && aimlResult.imageUrl) {
+            console.log('✅ [NeoGlitch] AIML fallback succeeded!');
+            
+            // Update database record with AIML result
+            await db.neoGlitchMedia.update({
+              where: { id: initialRecord.id },
+              data: {
+                status: 'completed',
+                imageUrl: aimlResult.imageUrl,
+                stabilityJobId: `aiml_${runId}` // Mark as AIML generation
+              }
+            });
+            
+            // Finalize credits for AIML fallback (this will charge the expensive AIML rate)
+            await finalizeCreditsOnce(userId, runId, true);
+            
+            return {
+              statusCode: 200,
+              headers: { 'Access-Control-Allow-Origin': '*' },
+              body: JSON.stringify({
+                success: true,
+                message: 'Neo Tokyo Glitch generation completed with AIML fallback',
+                runId: runId.toString(),
+                status: 'completed',
+                provider: 'aiml',
+                strategy: 'aiml_fallback',
+                imageUrl: aimlResult.imageUrl
+              })
+            };
+          } else {
+            throw new Error('AIML fallback failed to return valid image');
+          }
+        } catch (aimlError: any) {
+          console.error('❌ [NeoGlitch] AIML fallback also failed:', aimlError);
+          
+          // Update database record with failed status
+          await db.neoGlitchMedia.update({
+            where: { id: initialRecord.id },
+            data: {
+              status: 'failed',
+              imageUrl: sourceUrl // Keep source URL
+            }
+          });
+          
+          // Refund credits since both Stability.ai and AIML failed
+          await finalizeCreditsOnce(userId, runId, false);
+          
+          return {
+            statusCode: 500,
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({
+              error: 'GENERATION_FAILED',
+              message: 'All generation methods failed: Stability.ai (3 tiers) + AIML fallback',
+              details: `Stability.ai tiers failed, AIML fallback error: ${aimlError.message}`
+            })
+          };
+        }
+      } else {
+        // Regular Stability.ai error (not tier exhaustion)
+        return {
+          statusCode: 500,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({
+            error: 'STABILITY_AI_ERROR',
+            message: 'Stability.ai generation failed',
+            details: stabilityError.message
+          })
+        };
+      }
+    }
 
     // Update record with Stability.ai job ID
     const updateData: any = {
@@ -203,14 +286,14 @@ export const handler: Handler = async (event) => {
     };
 
   } catch (error) {
-    console.error('❌ [NeoGlitch] Error:', error);
+    console.error('❌ [NeoGlitch] Unexpected error:', error);
     
     return {
       statusCode: 500,
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
         error: 'INTERNAL_ERROR',
-        message: 'Failed to start generation',
+        message: 'Unexpected error occurred',
         details: error instanceof Error ? error.message : 'Unknown error'
       })
     };
@@ -225,7 +308,7 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
     throw new Error('STABILITY_API_KEY not configured');
   }
 
-  console.log('🚀 [NeoGlitch] Starting Stability.ai generation:', {
+  console.log('🚀 [NeoGlitch] Starting 3-tier Stability.ai generation strategy:', {
     hasStabilityToken: !!STABILITY_API_KEY,
     sourceUrl,
     promptLength: prompt.length,
@@ -233,16 +316,67 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
   });
 
   try {
-    console.log('🎯 [NeoGlitch] Using Stability.ai SD3 model');
-    const result = await attemptStabilityGeneration(
-      STABILITY_API_KEY,
-      sourceUrl,
-      prompt,
-      presetKey,
-      userId,
-      runId
-    );
-    return { ...result, strategy: 'stability_core' };
+    // 🎯 3-TIER STABILITY.AI FALLBACK STRATEGY
+    console.log('🎯 [NeoGlitch] Attempting 3-tier Stability.ai fallback: Ultra → Core → SD3');
+    
+    // Tier 1: Ultra (highest quality)
+    try {
+      console.log('🖼️ [NeoGlitch] Tier 1: Attempting Stable Image Ultra...');
+      const ultraResult = await attemptStabilityGeneration(
+        STABILITY_API_KEY,
+        sourceUrl,
+        prompt,
+        presetKey,
+        userId,
+        runId,
+        'ultra'
+      );
+      console.log('✅ [NeoGlitch] Ultra succeeded! Using Ultra result');
+      return { ...ultraResult, strategy: 'stability_ultra' };
+    } catch (ultraError: any) {
+      console.log('⚠️ [NeoGlitch] Ultra failed, trying Core...', ultraError.message);
+    }
+    
+    // Tier 2: Core (fast and affordable)
+    try {
+      console.log('⚡ [NeoGlitch] Tier 2: Attempting Stable Image Core...');
+      const coreResult = await attemptStabilityGeneration(
+        STABILITY_API_KEY,
+        sourceUrl,
+        prompt,
+        presetKey,
+        userId,
+        runId,
+        'core'
+      );
+      console.log('✅ [NeoGlitch] Core succeeded! Using Core result');
+      return { ...coreResult, strategy: 'stability_core' };
+    } catch (coreError: any) {
+      console.log('⚠️ [NeoGlitch] Core failed, trying SD3...', coreError.message);
+    }
+    
+    // Tier 3: SD3 (balanced)
+    try {
+      console.log('🎨 [NeoGlitch] Tier 3: Attempting Stable Diffusion 3...');
+      const sd3Result = await attemptStabilityGeneration(
+        STABILITY_API_KEY,
+        sourceUrl,
+        prompt,
+        presetKey,
+        userId,
+        runId,
+        'sd3'
+      );
+      console.log('✅ [NeoGlitch] SD3 succeeded! Using SD3 result');
+      return { ...sd3Result, strategy: 'stability_sd3' };
+    } catch (sd3Error: any) {
+      console.log('⚠️ [NeoGlitch] SD3 failed, all Stability.ai tiers exhausted', sd3Error.message);
+    }
+    
+    // 🚨 ALL STABILITY.AI FAILED - Fallback to AIML
+    console.log('❌ [NeoGlitch] All 3 Stability.ai tiers failed, falling back to AIML');
+    throw new Error('All Stability.ai tiers failed - proceeding to AIML fallback');
+    
   } catch (error: any) {
     console.error('❌ [NeoGlitch] Stability.ai generation failed:', error.message);
     throw new Error(`Stability.ai generation failed: ${error.message}`);
@@ -518,7 +652,8 @@ async function attemptStabilityGeneration(
   prompt: string,
   presetKey: string,
   userId: string,
-  runId: string
+  runId: string,
+  modelType: 'ultra' | 'core' | 'sd3' = 'core' // Added modelType parameter
 ) {
   // Preset-specific parameters for Stability.ai (optimized for face preservation)
   const presetConfigs = {
@@ -529,6 +664,21 @@ async function attemptStabilityGeneration(
   };
 
   const config = presetConfigs[presetKey as keyof typeof presetConfigs] || presetConfigs.visor;
+
+  // 🎯 MODEL-SPECIFIC ENDPOINT SELECTION
+  const modelEndpoints = {
+    'ultra': 'https://api.stability.ai/v2beta/stable-image/generate/ultra',
+    'core': 'https://api.stability.ai/v2beta/stable-image/generate/core',
+    'sd3': 'https://api.stability.ai/v2beta/stable-image/generate/sd3'
+  };
+
+  const endpoint = modelEndpoints[modelType];
+  if (!endpoint) {
+    throw new Error(`Invalid model type: ${modelType}`);
+  }
+
+  console.log(`🧪 [NeoGlitch] Attempting Stability.ai ${modelType.toUpperCase()} generation`);
+  console.log(`🔗 [NeoGlitch] Using endpoint: ${endpoint}`);
 
   // Download the source image and convert to Buffer
   const imageResponse = await fetch(sourceUrl);
@@ -563,8 +713,10 @@ async function attemptStabilityGeneration(
   formData.append('samples', '1');
   formData.append('aspect_ratio', '1:1');
 
-  console.log('🧪 [NeoGlitch] Attempting Stability.ai generation with Core using FormData');
+  console.log(`🧪 [NeoGlitch] Attempting Stability.ai ${modelType.toUpperCase()} generation with FormData`);
   console.log('📦 [NeoGlitch] Stability.ai FormData parameters:', {
+    modelType,
+    endpoint,
     prompt,
     topLevelPrompt: prompt, // Required by Stability.ai API
     negativePrompt: 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text',
@@ -575,7 +727,7 @@ async function attemptStabilityGeneration(
     aspect_ratio: '1:1'
   });
 
-  const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiToken}`,
@@ -677,14 +829,14 @@ async function attemptStabilityGeneration(
     imageUrl = result.data[0].url || result.data[0];
   }
   
-  // ✅ IMPROVED SUCCESS CHECK (Your Solution)
+  // If we found a valid image URL, return success
   if (imageUrl) {
-    console.log('✅ [NeoGlitch] Successfully extracted image URL from Stability.ai response');
+    console.log(`✅ [NeoGlitch] Successfully extracted image URL from Stability.ai ${modelType.toUpperCase()} response`);
     console.log('✅ [NeoGlitch] Final image URL:', imageUrl);
     return {
       stabilityJobId,
-      model: 'core',
-      strategy: 'stability_core',
+      model: modelType,
+      strategy: `stability_${modelType}`,
       provider: 'stability',
       imageUrl,
       status: 'completed'
