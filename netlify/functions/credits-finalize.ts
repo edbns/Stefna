@@ -90,8 +90,8 @@ export const handler: Handler = async (event) => {
         }, { status: 403 });
       }
 
-      // Verify the transaction is still pending
-      if (creditTransaction.status !== 'pending') {
+      // Verify the transaction is still reserved
+      if (creditTransaction.status !== 'reserved') {
         console.error("❌ Transaction already processed:", creditTransaction.status);
         return json({ 
           ok: false, 
@@ -127,10 +127,10 @@ export const handler: Handler = async (event) => {
           const newBalance = userCredits.balance + refundAmount;
           
           await prisma.userCredits.update({
-            where: { userId: userId },
+            where: { user_id: userId },
             data: { 
               balance: newBalance,
-              updatedAt: new Date()
+              updated_at: new Date()
             }
           });
 

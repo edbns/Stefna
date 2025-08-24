@@ -79,13 +79,18 @@ model MediaAsset {
 }
 
 model CreditTransaction {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  amount    Int
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  requestId  String   @map("request_id") @unique
+  action     String?
+  amount     Int
+  status     String   @default("reserved")
+  meta       Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
+  @@index([requestId])
   @@map("credits_ledger")
 }
 
