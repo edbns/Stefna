@@ -26,17 +26,25 @@ export const handler: Handler = async (event) => {
     
     const prisma = new PrismaClient();
 
-    // Simple profile fetch - no complex table operations
+    // Fetch user profile with media assets
     try {
-      // Just get basic user info and credits
-      const [userCredits, appConfig] = await Promise.all([
+      // Get user info, credits, and media assets
+      const [userCredits, appConfig, userMedia, userNeoGlitch] = await Promise.all([
         prisma.userCredits.findUnique({
-          where: { user_id: userId },
+          where: { userId: userId },
           select: { balance: true }
         }),
         prisma.appConfig.findUnique({
           where: { key: 'daily_cap' },
           select: { value: true }
+        }),
+        prisma.mediaAsset.findMany({
+          where: { userId: userId },
+          select: { id: true, prompt: true, visibility: true, createdAt: true }
+        }),
+        prisma.neoGlitchMedia.findMany({
+          where: { userId: userId },
+          select: { id: true, prompt: true, status: true, createdAt: true }
         })
       ]);
 
@@ -50,6 +58,14 @@ export const handler: Handler = async (event) => {
         user: { id: userId, email },
         daily_cap: dailyCap,
         credits: { balance },
+        media: {
+          count: userMedia.length,
+          items: userMedia
+        },
+        neoGlitch: {
+          count: userNeoGlitch.length,
+          items: userNeoGlitch
+        }
       });
     } catch (dbError) {
       console.error('❌ Database error in get-user-profile:', dbError);
