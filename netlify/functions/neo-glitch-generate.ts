@@ -215,6 +215,60 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
   }
 }
 
+// AIML Fallback Function
+async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey: string) {
+  const AIML_API_KEY = process.env.AIML_API_KEY;
+
+  if (!AIML_API_KEY) {
+    throw new Error('AIML_API_KEY not configured for fallback');
+  }
+
+  console.log('🔄 [NeoGlitch] Attempting AIML fallback generation');
+  
+  try {
+    // Use AIML's smart generation as fallback
+    const response = await fetch('https://api.aiml.services/v1/smart-generation', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${AIML_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt,
+        negative_prompt: 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text',
+        image_url: sourceUrl,
+        strength: 0.7, // Conservative strength for fallback
+        guidance_scale: 7.5,
+        num_inference_steps: 30,
+        model: 'stable-diffusion-v1-5'
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`AIML API failed (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ [NeoGlitch] AIML fallback generation successful');
+    
+    if (result.image_url) {
+      return {
+        stabilityJobId: `aiml_fallback_${Date.now()}`,
+        model: 'stable-diffusion-v1-5',
+        strategy: 'aiml_fallback',
+        imageUrl: result.image_url,
+        status: 'completed'
+      };
+    } else {
+      throw new Error('AIML fallback returned no image URL');
+    }
+  } catch (error: any) {
+    console.error('❌ [NeoGlitch] AIML fallback error:', error);
+    throw error;
+  }
+}
+
 // Cloudinary Upload Function
 async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
   const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
@@ -259,12 +313,12 @@ async function attemptStabilityGeneration(
   prompt: string,
   presetKey: string
 ) {
-  // Preset-specific parameters for Stability.ai
+  // Preset-specific parameters for Stability.ai (adjusted for better artifact generation)
   const presetConfigs = {
-    'visor': { strength: 0.75, guidance_scale: 7.5, steps: 50 },
-    'base': { strength: 0.65, guidance_scale: 7.0, steps: 40 },
-    'tattoos': { strength: 0.80, guidance_scale: 8.0, steps: 60 },
-    'scanlines': { strength: 0.70, guidance_scale: 7.5, steps: 45 }
+    'visor': { strength: 0.65, guidance_scale: 7.5, steps: 40 }, // Reduced strength and steps
+    'base': { strength: 0.60, guidance_scale: 7.0, steps: 35 }, // More conservative
+    'tattoos': { strength: 0.70, guidance_scale: 8.0, steps: 45 }, // Reduced strength
+    'scanlines': { strength: 0.65, guidance_scale: 7.5, steps: 40 } // More conservative
   };
 
   const config = presetConfigs[presetKey as keyof typeof presetConfigs] || presetConfigs.visor;
@@ -380,7 +434,14 @@ async function attemptStabilityGeneration(
       throw new Error(`Generation completed but no valid image output. Finish reason: ${artifact.finishReason}`);
     }
   } else {
-    console.log('⚠️ [NeoGlitch] No artifacts returned from Stability.ai');
-    throw new Error('No image artifacts returned from Stability.ai');
+    console.log('⚠️ [NeoGlitch] No artifacts returned from Stability.ai, attempting AIML fallback');
+    
+    try {
+      console.log('🔄 [NeoGlitch] Falling back to AIML API for image generation');
+      return await attemptAIMLFallback(sourceUrl, prompt, presetKey);
+    } catch (fallbackError: any) {
+      console.error('❌ [NeoGlitch] AIML fallback also failed:', fallbackError);
+      throw new Error(`Both Stability.ai and AIML fallback failed. Stability.ai: No artifacts, AIML: ${fallbackError.message}`);
+    }
   }
 }
