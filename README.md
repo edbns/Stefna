@@ -6,7 +6,7 @@ A modern, React-based AI photo generation platform with **five distinct generati
 
 ### **🎨 Editing Modes**
 
-1. **Presets Mode** - 26 professional AI style presets with auto-generation
+1. **Presets Mode** - 25 professional AI style presets with auto-generation
 2. **Emotion Mask Mode** - 5 emotional variants with cinematic styling
 3. **Studio Ghibli Reaction Mode** - 3 facial emotion enhancements
 4. **Neo Tokyo Glitch Mode** - 4 cyberpunk aesthetic overlays
@@ -24,7 +24,7 @@ A modern, React-based AI photo generation platform with **five distinct generati
 - **Real-time Updates**: Live generation status and notifications
 - **Responsive Design**: Mobile-first, modern UI with Tailwind CSS
 
-## 🎉 **Major Milestone: Q4 2024 - Complete Preset System Overhaul**
+## 🎉 **Major Milestone: Q3 2025 - Complete Preset System Overhaul**
 
 ### **🏆 What We've Accomplished**
 
@@ -246,7 +246,7 @@ SITE_URL=your_site_url
 - **Purpose**: Professional AI style presets with auto-generation
 - **Auto-Run**: ✅ Enabled when file uploaded + preset selected
 - **Credits**: 1 credit per generation
-- **UI**: Preset dropdown (26 options) + auto-generation
+- **UI**: Preset dropdown (25 options) + auto-generation
 - **Output**: Single generated image with preset styling
 - **Behavior**: Starts immediately after preset selection
 

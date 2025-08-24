@@ -183,14 +183,20 @@ export const handler: Handler = async (event): Promise<any> => {
           cloudinaryPublicId = v.cloudinary_public_id || null;
         }
         
+        // 🔒 RESPECT USER VISIBILITY PREFERENCE FOR BATCH OPERATIONS
+        const userWantsPublic = v.meta?.shareNow !== undefined ? v.meta.shareNow : true;
+        const visibility = userWantsPublic ? 'public' : 'private';
+        
+        console.log(`🔒 [save-media] Batch item ${id} visibility: ${userWantsPublic ? 'public' : 'private'}`);
+        
         const row = await prisma.mediaAsset.create({
           data: {
             id,
-            ownerId: userId,
+            userId: userId, // Fixed: use userId not ownerId
             resourceType: mediaType,
             prompt: v.prompt || null,
             url: v.image_url,
-            visibility: 'public',
+            visibility: visibility, // Use user preference instead of hardcoded 'public'
             allowRemix: false,
             meta: {...v.meta, batch_id: batchId, run_id: runId, idempotency_key: itemIdempotencyKey}
           }
@@ -309,14 +315,14 @@ export const handler: Handler = async (event): Promise<any> => {
         where: { url: finalUrl },
         select: {
           id: true,
-          ownerId: true,
+          userId: true, // Fixed: use userId not ownerId
           createdAt: true
         }
       });
       
       if (existingUrlCheck) {
         console.log(`⚠️ [save-media] URL already exists in database: ${existingUrlCheck.id}`);
-        console.log(`⚠️ [save-media] User: ${existingUrlCheck.ownerId}, Created: ${existingUrlCheck.createdAt}`);
+        console.log(`⚠️ [save-media] User: ${existingUrlCheck.userId}, Created: ${existingUrlCheck.createdAt}`);
         
         return {
           statusCode: 200,
@@ -354,14 +360,21 @@ export const handler: Handler = async (event): Promise<any> => {
       console.log(`🔍 [save-media] Inserting media with finalUrl: ${finalUrl}`);
       console.log(`🔍 [save-media] User ID: ${userId}, Preset: ${preset_key}`);
       
+      // 🔒 RESPECT USER VISIBILITY PREFERENCE
+      // Check if user wants to share to feed (from meta.shareNow or default to public)
+      const userWantsPublic = meta?.shareNow !== undefined ? meta.shareNow : true;
+      const visibility = userWantsPublic ? 'public' : 'private';
+      
+      console.log(`🔒 [save-media] User visibility preference: ${userWantsPublic ? 'public' : 'private'}`);
+      
       const savedItem = await prisma.mediaAsset.create({
         data: {
           id: randomUUID(),
-          ownerId: userId,
+          userId: userId, // Fixed: use userId not ownerId
           resourceType: media_type || 'image',
           prompt: prompt || null,
           url: finalUrl,
-          visibility: 'public',
+          visibility: visibility, // Use user preference instead of hardcoded 'public'
           allowRemix: false,
           meta: { ...(meta || {}), idempotency_key: idempotencyKey || null }
         },
