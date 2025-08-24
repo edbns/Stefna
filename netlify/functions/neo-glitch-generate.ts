@@ -231,21 +231,20 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
   console.log('🌐 [NeoGlitch] Using AIML API endpoint:', AIML_API_URL);
   
   try {
-    // Use AIML's img2img endpoint as fallback
-    const response = await fetch(`${AIML_API_URL}/v2/img2img`, {
+    // Use AIML's working endpoint for image generation
+    const response = await fetch(`${AIML_API_URL}/v1/images/generations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${AIML_API_KEY}`
+        'Authorization': `Bearer ${AIML_API_KEY}`,
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
+        model: 'flux/dev/image-to-image',
         prompt,
-        negative_prompt: 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text',
-        image: sourceUrl, // AIML expects 'image' field
+        image_url: sourceUrl, // AIML expects 'image_url' field
         strength: 0.75,
-        guidance_scale: 8,
-        steps: 40,
-        model: 'stable-diffusion-v35-large'
+        num_variations: 1
       })
     });
 
@@ -257,15 +256,28 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
     const result = await response.json();
     console.log('✅ [NeoGlitch] AIML fallback generation successful');
     
-    if (!result.image_url) {
-      throw new Error('AIML fallback succeeded but no image_url returned');
+    // AIML API returns different response formats, handle multiple possibilities
+    let imageUrl = null;
+    
+    if (result.image_url) {
+      imageUrl = result.image_url;
+    } else if (result.images && Array.isArray(result.images) && result.images[0]?.url) {
+      imageUrl = result.images[0].url;
+    } else if (result.output && Array.isArray(result.output) && result.output[0]?.url) {
+      imageUrl = result.output[0].url;
+    } else if (result.data && Array.isArray(result.data) && result.data[0]?.url) {
+      imageUrl = result.data[0].url;
+    }
+    
+    if (!imageUrl) {
+      throw new Error('AIML fallback succeeded but no image URL found in response');
     }
 
     return {
       stabilityJobId: `aiml_${Date.now()}`,
-      model: 'stable-diffusion-v35-large',
+      model: 'flux/dev/image-to-image',
       strategy: 'aiml_fallback',
-      imageUrl: result.image_url,
+      imageUrl,
       status: 'completed'
     };
   } catch (error: any) {
