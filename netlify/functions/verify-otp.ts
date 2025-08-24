@@ -117,7 +117,7 @@ export const handler: Handler = async (event) => {
       const starterGrant = await prisma.appConfig.findUnique({
         where: { key: 'starter_grant' }
       });
-      const starterAmount = starterGrant?.value ? parseInt(starterGrant.value) : 30;
+      const starterAmount = starterGrant?.value ? parseInt(String(starterGrant.value)) : 30;
       
       await prisma.userCredits.create({
         data: {
@@ -130,11 +130,9 @@ export const handler: Handler = async (event) => {
       await prisma.creditTransaction.create({
         data: {
           userId: userId,
-          requestId: uuidv4(),
-          action: 'starter_grant',
+          reason: 'starter_grant',
           amount: starterAmount,
-          status: 'granted',
-          meta: { reason: 'starter' },
+          env: 'production',
           createdAt: now
         }
       });
@@ -170,18 +168,16 @@ export const handler: Handler = async (event) => {
               where: { key: 'referral_new_bonus' }
             });
             
-            const refBonusAmount = refBonus?.value ? parseInt(refBonus.value) : 50;
-            const newBonusAmount = newBonus?.value ? parseInt(newBonus.value) : 25;
+            const refBonusAmount = refBonus?.value ? parseInt(String(refBonus.value)) : 50;
+            const newBonusAmount = newBonus?.value ? parseInt(String(newBonus.value)) : 25;
             
             // Award referrer
             await prisma.creditTransaction.create({
               data: {
                 userId: referrerId,
-                requestId: uuidv4(),
-                action: 'referral_referrer',
+                reason: 'referral_referrer',
                 amount: refBonusAmount,
-                status: 'granted',
-                meta: { reason: 'referral_referrer', newUserId: userId },
+                env: 'production',
                 createdAt: now
               }
             });
@@ -190,11 +186,9 @@ export const handler: Handler = async (event) => {
             await prisma.creditTransaction.create({
               data: {
                 userId: userId,
-                requestId: uuidv4(),
-                action: 'referral_new',
+                reason: 'referral_new',
                 amount: newBonusAmount,
-                status: 'granted',
-                meta: { reason: 'referral_new', referrerUserId: referrerId },
+                env: 'production',
                 createdAt: now
               }
             });
