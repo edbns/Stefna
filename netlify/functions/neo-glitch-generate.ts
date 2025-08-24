@@ -149,10 +149,69 @@ export const handler: Handler = async (event) => {
 
     console.log('✅ [NeoGlitch] Initial record created:', initialRecord.id);
 
+    // 🔄 ASYNC PROCESSING: Start job and return immediately to prevent 504 timeout
+    // The actual generation will happen in the background
+    console.log('🚀 [NeoGlitch] Starting async generation process...');
+    
+    // Start the generation process asynchronously (don't await)
+    processGenerationAsync(initialRecord.id, sourceUrl, normalizedPrompt, presetKey, userId, runId, userToken)
+      .catch(error => {
+        console.error('❌ [NeoGlitch] Async generation failed:', error);
+        // Update status to failed in database
+        db.neoGlitchMedia.update({
+          where: { id: initialRecord.id },
+          data: { 
+            status: 'failed'
+          }
+        }).catch(dbError => console.error('❌ [NeoGlitch] Failed to update status to failed:', dbError));
+      });
+
+    // Return immediately with job ID to prevent 504 timeout
+    console.log('✅ [NeoGlitch] Job started successfully, returning job ID immediately');
+    return {
+      statusCode: 202, // Accepted - processing
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        message: 'Generation started successfully',
+        jobId: initialRecord.id,
+        runId: runId.toString(),
+        status: 'processing',
+        pollUrl: '/.netlify/functions/neo-glitch-status'
+      })
+    };
+
+  } catch (error) {
+    console.error('❌ [NeoGlitch] Unexpected error:', error);
+    
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        error: 'INTERNAL_ERROR',
+        message: 'Unexpected error occurred',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      })
+    };
+  }
+};
+
+// 🔄 ASYNC GENERATION PROCESSOR
+async function processGenerationAsync(
+  recordId: string, 
+  sourceUrl: string, 
+  prompt: string, 
+  presetKey: string, 
+  userId: string, 
+  runId: string, 
+  userToken: string
+) {
+  try {
+    console.log('🚀 [NeoGlitch] Starting async generation for record:', recordId);
+    
     // Start Stability.ai generation
     let stabilityResult;
     try {
-      stabilityResult = await startStabilityGeneration(sourceUrl, normalizedPrompt, presetKey, userId, runId);
+      stabilityResult = await startStabilityGeneration(sourceUrl, prompt, presetKey, userId, runId);
     } catch (stabilityError: any) {
       console.error('❌ [NeoGlitch] Stability.ai generation failed:', stabilityError);
       
@@ -162,14 +221,14 @@ export const handler: Handler = async (event) => {
         
         try {
           // Attempt AIML fallback
-          const aimlResult = await attemptAIMLFallback(sourceUrl, normalizedPrompt, presetKey, userId, runId);
+          const aimlResult = await attemptAIMLFallback(sourceUrl, prompt, presetKey, userId, runId);
           
           if (aimlResult && aimlResult.imageUrl) {
             console.log('✅ [NeoGlitch] AIML fallback succeeded!');
             
             // Update database record with AIML result
             await db.neoGlitchMedia.update({
-              where: { id: initialRecord.id },
+              where: { id: recordId },
               data: {
                 status: 'completed',
                 imageUrl: aimlResult.imageUrl,
@@ -180,19 +239,8 @@ export const handler: Handler = async (event) => {
             // Finalize credits for AIML fallback (this will charge the expensive AIML rate)
             await finalizeCreditsOnce(userId, runId, true, userToken);
             
-            return {
-              statusCode: 200,
-              headers: { 'Access-Control-Allow-Origin': '*' },
-              body: JSON.stringify({
-                success: true,
-                message: 'Neo Tokyo Glitch generation completed with AIML fallback',
-                runId: runId.toString(),
-                status: 'completed',
-                provider: 'aiml',
-                strategy: 'aiml_fallback',
-                imageUrl: aimlResult.imageUrl
-              })
-            };
+            console.log('✅ [NeoGlitch] Async generation completed with AIML fallback');
+            return;
           } else {
             throw new Error('AIML fallback failed to return valid image');
           }
@@ -201,7 +249,7 @@ export const handler: Handler = async (event) => {
           
           // Update database record with failed status
           await db.neoGlitchMedia.update({
-            where: { id: initialRecord.id },
+            where: { id: recordId },
             data: {
               status: 'failed',
               imageUrl: sourceUrl // Keep source URL
@@ -211,27 +259,23 @@ export const handler: Handler = async (event) => {
           // Refund credits since both Stability.ai and AIML failed
           await finalizeCreditsOnce(userId, runId, false, userToken);
           
-          return {
-            statusCode: 500,
-            headers: { 'Access-Control-Allow-Origin': '*' },
-            body: JSON.stringify({
-              error: 'GENERATION_FAILED',
-              message: 'All generation methods failed: Stability.ai (3 tiers) + AIML fallback',
-              details: `Stability.ai tiers failed, AIML fallback error: ${aimlError.message}`
-            })
-          };
+          console.error('❌ [NeoGlitch] All generation methods failed');
+          return;
         }
       } else {
         // Regular Stability.ai error (not tier exhaustion)
-        return {
-          statusCode: 500,
-          headers: { 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({
-            error: 'STABILITY_AI_ERROR',
-            message: 'Stability.ai generation failed',
-            details: stabilityError.message
-          })
-        };
+        console.error('❌ [NeoGlitch] Stability.ai error:', stabilityError.message);
+        
+        // Update database record with failed status
+        await db.neoGlitchMedia.update({
+          where: { id: recordId },
+          data: {
+            status: 'failed',
+            imageUrl: sourceUrl // Keep source URL
+          }
+        });
+        
+        return;
       }
     }
 
@@ -242,7 +286,7 @@ export const handler: Handler = async (event) => {
     };
 
     await db.neoGlitchMedia.update({
-      where: { id: initialRecord.id },
+      where: { id: recordId },
       data: updateData
     });
 
@@ -270,7 +314,7 @@ export const handler: Handler = async (event) => {
       
       // Update database record with completed status and image URL
       await db.neoGlitchMedia.update({
-        where: { id: initialRecord.id },
+        where: { id: recordId },
         data: {
           status: 'completed',
           imageUrl: stabilityResult.imageUrl
@@ -280,29 +324,26 @@ export const handler: Handler = async (event) => {
       console.log('🎉 [NeoGlitch] Generation completed successfully with image URL');
       
       // Finalize credits only once after successful generation
-              await finalizeCreditsOnce(userId, runId, true, userToken);
+      await finalizeCreditsOnce(userId, runId, true, userToken);
     }
 
-    return {
-      statusCode: 200,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify(responseBody)
-    };
-
+    console.log('✅ [NeoGlitch] Async generation completed successfully');
   } catch (error) {
-    console.error('❌ [NeoGlitch] Unexpected error:', error);
+    console.error('❌ [NeoGlitch] Async generation failed:', error);
     
-    return {
-      statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        error: 'INTERNAL_ERROR',
-        message: 'Unexpected error occurred',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      })
-    };
+    // Update database record with failed status
+    await db.neoGlitchMedia.update({
+      where: { id: recordId },
+      data: {
+        status: 'failed',
+        imageUrl: sourceUrl // Keep source URL
+      }
+    });
+    
+    // Refund credits since generation failed
+    await finalizeCreditsOnce(userId, runId, false, userToken);
   }
-};
+}
 
 // Stability.ai Generation Function
 async function startStabilityGeneration(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
