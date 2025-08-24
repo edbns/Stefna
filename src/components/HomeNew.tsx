@@ -954,14 +954,14 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       if (res.ok) {
         const resp = await res.json()
         console.log('📊 Raw feed response:', resp)
-        console.log('📥 Feed items received:', resp.ok ? 'success' : 'failed')
+        console.log('📥 Feed items received:', resp.success ? 'success' : 'failed')
         
-        if (!resp.ok) {
+        if (!resp.success) {
           console.error('❌ Feed API error:', resp.error)
           return
         }
         
-        const { data: media, hasMore } = resp
+        const { items: media, hasMore } = resp
         console.log('📊 Raw feed data:', media)
         console.log('📊 Feed length:', media?.length || 0)
         console.log('📊 Has more:', hasMore)
@@ -988,10 +988,10 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           
           return ({
             id: item.id,
-            userId: item.user_id || '', // Use actual user ID or empty string to hide tooltip
-            userAvatar: item.user_avatar || undefined, // Use actual user avatar if available
-            userTier: item.user_tier || undefined, // Use actual user tier if available
-            type: item.media_type === 'video' ? 'video' : 'photo',
+            userId: item.userId || '', // Use actual user ID or empty string to hide tooltip
+            userAvatar: item.user?.avatar || undefined, // Use actual user avatar if available
+            userTier: item.user?.tier || undefined, // Use actual user tier if available
+            type: item.mediaType === 'video' ? 'video' : 'photo',
             url: mediaUrl,
             thumbnailUrl: mediaUrl, // Use same URL for thumbnail
             prompt: item.prompt || 'AI Generated Content', // Use actual prompt or fallback
@@ -999,18 +999,16 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
             aspectRatio: 4/3, // Default aspect ratio
             width: 800, // Default width
             height: 600, // Default height
-            timestamp: item.published_at,
-            originalMediaId: item.source_asset_id || undefined,
-            tokensUsed: item.media_type === 'video' ? 5 : 2,
-            likes: 0, // Not exposed in public_feed_v2
-            remixCount: 0, // Not exposed in public_feed_v2
+            timestamp: item.createdAt,
+            originalMediaId: item.sourceAssetId || undefined,
+            tokensUsed: item.mediaType === 'video' ? 5 : 2,
+            likes: 0, // Not exposed in public feed
             isPublic: true,
-            // allowRemix removed
             tags: [],
             metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
-            // Store additional fields needed for remix functionality
-            cloudinaryPublicId: item.cloudinary_public_id,
-            mediaType: item.media_type,
+            // Store additional fields needed for functionality
+            cloudinaryPublicId: item.cloudinaryPublicId,
+            mediaType: item.mediaType,
           })
         })
           .filter((item): item is UserMedia => item !== null) // Filter out null items
