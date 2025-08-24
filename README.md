@@ -6,7 +6,7 @@ A modern, React-based AI photo generation platform with **five distinct generati
 
 ### **🎨 Editing Modes**
 
-1. **Presets Mode** - 26 professional AI style presets with auto-generation
+1. **Presets Mode** - 25 professional AI style presets with auto-generation
 2. **Emotion Mask Mode** - 5 emotional variants with cinematic styling
 3. **Studio Ghibli Reaction Mode** - 3 facial emotion enhancements
 4. **Neo Tokyo Glitch Mode** - 4 cyberpunk aesthetic overlays
