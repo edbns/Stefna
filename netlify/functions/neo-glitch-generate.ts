@@ -415,10 +415,14 @@ async function attemptStabilityGeneration(
 
   const result = await response.json();
   console.log('✅ [NeoGlitch] Stability.ai generation completed successfully');
-  console.log('📦 [NeoGlitch] Stability.ai response:', JSON.stringify({
-    ...result,
-    artifacts: result.artifacts ? `${result.artifacts.length} artifacts returned` : 'no artifacts'
-  }, null, 2));
+  console.log('📦 [NeoGlitch] Stability.ai Core response structure:', {
+    hasArtifacts: !!result.artifacts,
+    artifactsLength: result.artifacts?.length || 0,
+    hasId: !!result.id,
+    hasStatus: !!result.status,
+    responseKeys: Object.keys(result),
+    fullResponse: JSON.stringify(result, null, 2)
+  });
   
   // Check if we have a completed generation with artifacts
   if (result.artifacts && result.artifacts.length > 0) {
