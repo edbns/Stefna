@@ -90,7 +90,7 @@ export const handler: Handler = async (event) => {
       console.log('🔍 Checking user credit balance before reservation...');
       
       let userCredits = await prisma.userCredits.findUnique({
-        where: { userId: userId }
+        where: { user_id: userId }
       });
       
       // Initialize user credits if they don't exist
@@ -101,9 +101,9 @@ export const handler: Handler = async (event) => {
           // Create new user credits record with starter balance
           userCredits = await prisma.userCredits.create({
             data: {
-              userId: userId,
+              user_id: userId,
               balance: 30, // Default starter credits
-              updatedAt: new Date()
+              updated_at: new Date()
             }
           });
           
