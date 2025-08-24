@@ -124,6 +124,6 @@ export const handler: Handler = async (event) => {
         hasMore: false,
         error: error.message || 'Failed to load notifications'
       })
-    });
+    };
   }
 }
