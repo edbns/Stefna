@@ -121,3 +121,28 @@ model NeoGlitchMedia {
   @@index([stabilityJobId])
   @@map("neo_glitch_media")
 }
+
+model app_config {
+  key   String @id
+  value Json?
+}
+
+model referral_signups {
+  id               String    @id
+  referrer_user_id String
+  new_user_id      String    @unique
+  referrer_email   String?
+  new_user_email   String?
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([new_user_id], map: "idx_referral_signups_new_user")
+  @@index([referrer_user_id], map: "idx_referral_signups_referrer")
+}
+
+model user_credits {
+  user_id    String    @id
+  balance    Int?      @default(0)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id], map: "idx_user_credits_user_id")
+}
