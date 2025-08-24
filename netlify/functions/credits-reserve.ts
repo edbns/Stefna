@@ -141,11 +141,9 @@ export const handler: Handler = async (event) => {
        const creditTransaction = await prisma.creditTransaction.create({
          data: {
            userId: userId,
-           requestId: request_id,
-           action: action,
+           reason: action,
            amount: -cost, // Negative amount for credit usage
-           status: 'pending',
-           meta: { type: 'reservation' },
+           env: 'production',
            createdAt: new Date()
          }
        });
