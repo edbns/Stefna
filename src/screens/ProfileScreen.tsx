@@ -493,7 +493,7 @@ const ProfileScreen: React.FC = () => {
           setUserMedia(allMedia);
         } else {
           // Authenticated user: fetch from server with JWT
-          const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?ownerId=${userId}&limit=50`, {
+          const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=50`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json'

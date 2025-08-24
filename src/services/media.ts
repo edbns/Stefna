@@ -104,7 +104,7 @@ export async function getPublicMediaWithProfiles(limit: number = 50): Promise<Me
 export async function getUserMediaWithProfile(userId: string): Promise<MediaItem[]> {
   try {
     // Get user's media from our new Netlify function
-    const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?ownerId=${userId}`, {
+          const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}`, {
       method: 'GET'
     });
 

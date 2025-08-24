@@ -972,17 +972,28 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
             let mediaUrl: string;
             let provider = item.provider || 'unknown';
             
-            if (item.url && item.url.startsWith('http')) {
-              // Use the URL provided by the backend (this should be the correct one)
-              mediaUrl = item.url;
+            // Check for finalUrl (main media assets) or imageUrl (Neo Tokyo Glitch)
+            if (item.finalUrl && item.finalUrl.startsWith('http')) {
+              mediaUrl = item.finalUrl;
               console.log(`🔗 URL mapping for item ${item.id}:`, {
                 provider: provider,
-                url: item.url,
-                source: 'backend_url'
+                url: item.finalUrl,
+                source: 'finalUrl'
+              });
+            } else if (item.imageUrl && item.imageUrl.startsWith('http')) {
+              mediaUrl = item.imageUrl;
+              console.log(`🔗 URL mapping for item ${item.id}:`, {
+                provider: provider,
+                url: item.imageUrl,
+                source: 'imageUrl'
               });
             } else {
               // Skip items without valid URLs - the backend should provide them
-              console.warn(`⚠️ Skipping item ${item.id}: no valid URL from backend`);
+              console.warn(`⚠️ Skipping item ${item.id}: no valid URL from backend`, {
+                finalUrl: item.finalUrl,
+                imageUrl: item.imageUrl,
+                hasUrl: !!item.url
+              });
               return null;
             }
           
@@ -2341,7 +2352,35 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
 
       console.info(`Generated ${variationsGenerated} variation(s):`, allResultUrls);
 
-
+      // Save the generated media to user profile and feed
+      try {
+        const mediaToSave = {
+          userId: authService.getCurrentUser()?.id || '',
+          type: 'photo' as const,
+          url: finalResultUrl,
+          thumbnailUrl: finalResultUrl, // Use same URL for thumbnail
+          prompt: effectivePrompt,
+          aspectRatio: 4/3, // Default aspect ratio
+          width: 800, // Default dimensions
+          height: 600,
+          tokensUsed: variationsGenerated, // Use actual variations generated
+          isPublic: true, // Share to feed by default
+          tags: [generationMeta?.mode || 'ai-generated', 'generated'],
+          metadata: {
+            quality: 'high' as const,
+            generationTime: Date.now(),
+            modelVersion: body?.model || 'aiml-api',
+            presetId: generationMeta?.presetId || generationMeta?.ghibliReactionPresetId || generationMeta?.emotionMaskPresetId,
+            mode: generationMeta?.mode || 'custom',
+            group: null
+          }
+        };
+        
+        await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
+        console.log('✅ [Media] Saved successfully to profile and feed');
+      } catch (error) {
+        console.error('❌ [Media] Failed to save media:', error);
+      }
 
       // Show the final result (original or retry) with cache busting
       const cacheBustedResultUrl = `${finalResultUrl}${finalResultUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
