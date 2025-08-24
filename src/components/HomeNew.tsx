@@ -206,12 +206,19 @@ const HomeNew: React.FC = () => {
   
   // Generation lifecycle functions
   function startGeneration() {
-    genIdRef.current += 1
+    // Generate a unique ID using timestamp + increment to prevent duplicates
+    const timestamp = Date.now();
+    const increment = genIdRef.current + 1;
+    genIdRef.current = increment;
+    
+    const uniqueId = `${timestamp}_${increment}`;
+    console.log('🆔 [Generation] Generated unique ID:', uniqueId, { timestamp, increment });
+    
     setIsGenerating(true)
-    return genIdRef.current
+    return uniqueId
   }
 
-  function endGeneration(id: number) {
+  function endGeneration(id: string | number) {
     // only end if this is the latest job
     if (id === genIdRef.current) {
       setIsGenerating(false)

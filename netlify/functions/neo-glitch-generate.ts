@@ -46,14 +46,30 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    console.log('✅ [NeoGlitch] Normalized fields:', { prompt, runId, sourceUrl, presetKey, userId });
+    console.log('✅ [NeoGlitch] Normalized fields:', { 
+      prompt: prompt.substring(0, 100) + '...', 
+      runId: runId.toString(), 
+      runIdType: typeof runId,
+      sourceUrl, 
+      presetKey, 
+      userId 
+    });
 
+    console.log('🔍 [NeoGlitch] Checking for existing run with runId:', runId.toString());
+    
     // Check for existing run
     const existingRun = await db.neoGlitchMedia.findUnique({
       where: { runId: runId.toString() }
     });
 
     if (existingRun) {
+      console.log('🔄 [NeoGlitch] Found existing run:', {
+        id: existingRun.id,
+        status: existingRun.status,
+        hasImageUrl: !!existingRun.imageUrl,
+        createdAt: existingRun.createdAt
+      });
+      
       if (existingRun.status === 'completed' && existingRun.imageUrl) {
         console.log('🔄 [NeoGlitch] Run already completed, returning cached result');
         return {
@@ -67,6 +83,8 @@ export const handler: Handler = async (event) => {
         await db.neoGlitchMedia.delete({ where: { id: existingRun.id } });
         console.log('🧹 [NeoGlitch] Cleaned up incomplete run, proceeding with new generation');
       }
+    } else {
+      console.log('✅ [NeoGlitch] No existing run found, proceeding with new generation');
     }
 
     // Validate preset key

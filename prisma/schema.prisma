@@ -147,7 +147,7 @@ model NeoGlitchMedia {
   sourceUrl       String
   prompt          String
   preset          String
-  runId           String   @unique
+  runId           String
   stabilityJobId  String?  @map("stability_job_id")
   createdAt       DateTime @default(now()) @map("created_at")
   status          String   @default("completed")
