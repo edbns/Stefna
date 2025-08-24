@@ -240,7 +240,7 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
         'Accept': 'application/json'
       },
       body: JSON.stringify({
-        model: 'flux/dev/image-to-image',
+        model: 'stable-diffusion-v35-large', // Neo Tokyo Glitch specific model
         prompt,
         image_url: sourceUrl, // AIML expects 'image_url' field
         strength: 0.75,
@@ -275,7 +275,7 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
 
     return {
       stabilityJobId: `aiml_${Date.now()}`,
-      model: 'flux/dev/image-to-image',
+      model: 'stable-diffusion-v35-large', // Neo Tokyo Glitch specific model
       strategy: 'aiml_fallback',
       imageUrl,
       status: 'completed'
