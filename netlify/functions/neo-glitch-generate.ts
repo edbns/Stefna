@@ -232,7 +232,7 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
   
   try {
     // Use AIML's img2img endpoint as fallback
-    const response = await fetch(`${AIML_API_URL}/v1/img2img`, {
+    const response = await fetch(`${AIML_API_URL}/v2/img2img`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -240,11 +240,12 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
       },
       body: JSON.stringify({
         prompt,
-        source_url: sourceUrl,
-        model: 'stable-diffusion-v35-large', // Use the best available model
-        preset: presetKey,
+        negative_prompt: 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text',
+        image: sourceUrl, // AIML expects 'image' field
         strength: 0.75,
-        guidance_scale: 8
+        guidance_scale: 8,
+        steps: 40,
+        model: 'stable-diffusion-v35-large'
       })
     });
 

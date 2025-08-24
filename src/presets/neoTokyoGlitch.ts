@@ -19,18 +19,7 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
-    prompt: `Stylized cyberpunk portrait inspired by Neo Tokyo aesthetics. 
-Face should retain core features of the subject, but allow for glitch-induced distortion, color shifts, and futuristic exaggerations.
-Let facial structure adapt to stylized overlays — ethnic identity may shift slightly as part of the transformation.
-
-Use cel-shaded anime detail and high-fashion sci-fi energy. Add glowing holographic elements, glitch FX, particle trails, and neon shimmer.
-Stylize with soft glitch effects, digital particles, and cyberpunk background. Keep lighting dramatic but not overpowering. Use ambient reflections and subtle neon shimmer.
-
-Background: vertical city lights, violet haze, soft scanlines. 
-Color palette: exaggerated and vivid — electric pink, cyan, sapphire blue, ultraviolet, black. 
-Inspired by Akira, Ghost in the Shell, and glitch fashion photography.
-
-This is your chaotic glitch-self in a surreal Neo Tokyo future.`,
+    prompt: `Cyberpunk portrait with Neo Tokyo aesthetics. Face retains core features with glitch distortion and color shifts. Cel-shaded anime style with holographic elements, glitch effects, and neon shimmer. Background: vertical city lights, violet haze, soft scanlines. Colors: electric pink, cyan, sapphire blue, ultraviolet, black. Inspired by Akira and Ghost in the Shell.`,
     negative_prompt: `blurry, distorted face, ugly, deformed, bad anatomy, extra limbs, photorealism, dull style, low contrast, 
 nudity, cleavage, merged face, artifacts, realistic texture, boring lighting`,
     strength: 0.45,
@@ -46,16 +35,7 @@ nudity, cleavage, merged face, artifacts, realistic texture, boring lighting`,
   {
     id: 'neo_tokyo_visor',
     label: 'Glitch Visor',
-    prompt: `Stylized cyberpunk portrait with a PROMINENT glowing glitch visor covering the eyes.
-Face should retain core features of the subject, but allow for glitch-induced distortion, color shifts, and futuristic exaggerations.
-Add flickering holographic UI overlays and digital reflection in the visor.
-Use neon glitch bloom, chromatic aberration, and techno-chaotic lighting.
-
-Background: animated signs, deep contrast, vertical noise.
-Color theme: exaggerated and vivid — magenta visor glow, cyan-blue reflections, violet haze, black backdrop.
-Inspired by cyberpunk anime and digital fashion.
-
-This is your chaotic glitch-self in a surreal Neo Tokyo future.`,
+    prompt: `Cyberpunk portrait with a glowing glitch visor covering the eyes. Face retains core features with glitch distortion and color shifts. Add flickering holographic overlays, visor reflections, and neon lighting. Background: animated signs, deep contrast, vertical noise. Colors: vivid magenta visor, cyan-blue reflections, violet haze, black backdrop.`,
     negative_prompt: `small visor, invisible visor, blurry, distorted eyes, mutated face, 
 nudity, dull colors, flat lighting, weak glitch effects, minimal transformation`,
     strength: 0.45,
@@ -71,16 +51,7 @@ nudity, dull colors, flat lighting, weak glitch effects, minimal transformation`
   {
     id: 'neo_tokyo_tattoos',
     label: 'Tech Tattoos',
-    prompt: `Stylized cyberpunk portrait with glowing cyber tattoos.
-Face should retain core features of the subject, but allow for glitch-induced distortion, color shifts, and futuristic exaggerations.
-Add glowing cyan and magenta cyber tattoos over face and neck, designed as holographic circuits. Tattoos should be layered, not replace the face.
-Enhance with glowing facial circuit patterns while keeping recognizable emotional expression.
-
-Add glitch overlays, datamosh FX, and soft neon ambient lighting.
-Background: chaotic digital Tokyo, broken signage, animated overlays.
-Color theme: glowing tattoos with exaggerated and vivid blend — pink, blue, cyan, neon over dark backdrop.
-
-This is your chaotic glitch-self in a surreal Neo Tokyo future.`,
+    prompt: `Cyberpunk portrait with glowing cyber tattoos. Face retains core features with glitch distortion and color shifts. Add glowing cyan and magenta cyber tattoos over face and neck as holographic circuits. Tattoos are layered, not replacing the face. Add glitch overlays, datamosh effects, and neon lighting. Background: chaotic digital Tokyo, broken signage, animated overlays. Colors: glowing pink, blue, cyan neon over dark backdrop.`,
     negative_prompt: `small tattoos, faint markings, weak glow, blurry face, merged features, 
 nudity, boring style, unflattering, bad anatomy, pose change`,
     strength: 0.48,
@@ -96,15 +67,7 @@ nudity, boring style, unflattering, bad anatomy, pose change`,
   {
     id: 'neo_tokyo_scanlines',
     label: 'Scanline FX',
-    prompt: `Stylized cyberpunk portrait with CRT scanline effects.
-Face should retain core features of the subject, but allow for glitch-induced distortion, color shifts, and futuristic exaggerations.
-Overlay intense CRT scanlines and VHS noise. Simulate broken holographic monitor interface over the background.
-Use high-contrast neon hues. Add cel-shaded highlights, neon reflections, and subtle chromatic aberration on skin edges.
-
-Background: corrupted cityscape viewed through broken CRT monitor.
-Color palette: exaggerated and vivid — pink, cyan, ultraviolet, blue, black.
-
-This is your chaotic glitch-self in a surreal Neo Tokyo future.`,
+    prompt: `Cyberpunk portrait with CRT scanline effects. Face retains core features with glitch distortion and color shifts. Overlay intense CRT scanlines and VHS noise. Simulate broken holographic monitor interface. Use high-contrast neon hues with cel-shaded highlights and neon reflections. Background: corrupted cityscape through broken CRT monitor. Colors: vivid pink, cyan, ultraviolet, blue, black.`,
     negative_prompt: `clean image, no scanlines, no distortion, realistic look, distorted face, 
 photorealistic, minimal transformation, low noise, soft glitch, muted color, bad lighting`,
     strength: 0.45,

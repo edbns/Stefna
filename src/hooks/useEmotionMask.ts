@@ -189,7 +189,7 @@ export function useEmotionMask() {
     return generateMaskFromImage(image, options);
   };
 
-  return {
+  return { 
     generateMaskFromImage,
     generateSimpleMask,
     generateFullFaceMask,
