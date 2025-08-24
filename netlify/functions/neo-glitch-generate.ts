@@ -181,6 +181,16 @@ export const handler: Handler = async (event) => {
       });
       
       console.log('🎉 [NeoGlitch] Generation completed successfully with image URL');
+      
+      // Finalize credits only once after successful generation
+      await finalizeCreditsOnce(userId, runId, true);
+    }
+
+    // Finalize credits for the entire generation process
+    // This ensures credits are only charged once, regardless of which provider succeeded
+    if (stabilityResult.status === 'completed') {
+      console.log('💰 [NeoGlitch] Finalizing credits for completed generation');
+      await finalizeCreditsOnce(userId, runId, true);
     }
 
     return {
@@ -191,6 +201,7 @@ export const handler: Handler = async (event) => {
 
   } catch (error) {
     console.error('❌ [NeoGlitch] Error:', error);
+    
     return {
       statusCode: 500,
       headers: { 'Access-Control-Allow-Origin': '*' },
@@ -321,6 +332,66 @@ async function refundCredits(userId: string, requestId: string) {
   }
 }
 
+// Single Credit Deduction Function - Only call this once at the end
+async function finalizeCreditsOnce(userId: string, runId: string, success: boolean) {
+  try {
+    if (success) {
+      // Reserve and commit credits only once for successful generation
+      const reserveResponse = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-reserve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.JWT_SECRET}` // Use JWT secret for internal calls
+        },
+        body: JSON.stringify({
+          userId,
+          request_id: runId,
+          action: 'image.gen',
+          cost: 1
+        })
+      });
+
+      if (reserveResponse.ok) {
+        const reserveResult = await reserveResponse.json();
+        console.log(`✅ [NeoGlitch] Reserved 1 credit for successful generation. New balance: ${reserveResult.newBalance}`);
+        
+        // Now commit the credits since generation was successful
+        const commitResponse = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-finalize`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.JWT_SECRET}` // Use JWT secret for internal calls
+          },
+          body: JSON.stringify({
+            userId,
+            request_id: runId,
+            disposition: 'commit'
+          })
+        });
+
+        if (commitResponse.ok) {
+          const commitResult = await commitResponse.json();
+          console.log(`✅ [NeoGlitch] Committed 1 credit after successful generation. Final balance: ${commitResult.newBalance}`);
+          return true;
+        } else {
+          console.warn(`⚠️ [NeoGlitch] Failed to commit credit: ${commitResponse.status}`);
+          return false;
+        }
+      } else {
+        console.warn(`⚠️ [NeoGlitch] Failed to reserve credit: ${reserveResponse.status}`);
+        return false;
+      }
+    } else {
+      // No credits charged for failed generation
+      console.log(`ℹ️ [NeoGlitch] No credits charged for failed generation`);
+      return true;
+    }
+  } catch (error) {
+    console.error(`❌ [NeoGlitch] Error processing credits:`, error);
+    return false;
+  }
+}
+
 // AIML Fallback Function
 async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
   const AIML_API_URL = process.env.AIML_API_URL || 'https://api.aimlapi.com';
@@ -383,8 +454,7 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
     // Add randomization to prevent cache hits
     const randomSeed = Math.floor(Math.random() * 1000000);
     
-    // Deduct credits for successful AIML fallback generation
-    await deductCredits(userId, 'aiml', runId);
+    // REMOVED: Individual credit deduction - will be handled at the end
     
     return {
       stabilityJobId: `aiml_${Date.now()}`,
@@ -553,10 +623,9 @@ async function attemptStabilityGeneration(
           const cloudinaryUrl = await uploadBase64ToCloudinary(artifact.base64);
           console.log('☁️ [NeoGlitch] Image uploaded to Cloudinary:', cloudinaryUrl);
           
-          // Deduct credits for successful Stability.ai generation
-          await deductCredits(userId, 'stability', runId);
+          // REMOVED: Individual credit deduction - will be handled at the end
   
-  return {
+          return {
             stabilityJobId: result.id || `stability_${Date.now()}`,
             model: 'core',
             strategy: 'stability_core',
