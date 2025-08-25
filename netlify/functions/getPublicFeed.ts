@@ -116,6 +116,21 @@ export const handler: Handler = async (event) => {
 
       console.log('✅ [getPublicFeed] Retrieved public media:', publicMedia.length);
       console.log('✅ [getPublicFeed] Retrieved Neo Tokyo Glitch media:', neoGlitchMedia.length);
+      
+      // 🚨 DEBUG: Check for potential duplicates
+      const allImageUrls = [
+        ...publicMedia.map(item => ({ url: item.url || item.finalUrl, source: 'mediaAsset', id: item.id })),
+        ...neoGlitchMedia.map(item => ({ url: item.imageUrl, source: 'neoGlitchMedia', id: item.id }))
+      ];
+      
+      const duplicateUrls = allImageUrls.filter((item, index, array) => 
+        array.findIndex(other => other.url === item.url) !== index
+      );
+      
+      if (duplicateUrls.length > 0) {
+        console.log('🚨 [getPublicFeed] POTENTIAL DUPLICATES DETECTED:', duplicateUrls);
+        console.log('🚨 [getPublicFeed] These URLs appear in multiple tables and may cause feed duplicates');
+      }
 
       // Transform main media assets to feed format
       const mainFeedItems = publicMedia.map(item => ({
@@ -150,8 +165,25 @@ export const handler: Handler = async (event) => {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
-      // ✅ FIXED: Apply pagination to the combined, sorted results
-      const feedItems = allFeedItems.slice(offsetNum, offsetNum + limitNum);
+      // 🚨 CRITICAL FIX: Deduplicate by image URL to prevent Neo Tokyo Glitch duplicates
+      const uniqueFeedItems = allFeedItems.filter((item, index, array) => {
+        // Find the first occurrence of this image URL
+        const firstIndex = array.findIndex(otherItem => 
+          otherItem.finalUrl === item.finalUrl
+        );
+        
+        // Keep only the first occurrence (most recent)
+        return index === firstIndex;
+      });
+
+      console.log('🔍 [getPublicFeed] Deduplication results:', {
+        before: allFeedItems.length,
+        after: uniqueFeedItems.length,
+        duplicatesRemoved: allFeedItems.length - uniqueFeedItems.length
+      });
+
+      // ✅ FIXED: Apply pagination to the deduplicated, sorted results
+      const feedItems = uniqueFeedItems.slice(offsetNum, offsetNum + limitNum);
 
       await prisma.$disconnect();
 
