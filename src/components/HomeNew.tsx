@@ -244,6 +244,8 @@ const HomeNew: React.FC = () => {
     setSelectedMode(null)
   }
 
+
+
   // Clear all options after generation (success or failure)
   const clearAllOptionsAfterGeneration = () => {
     console.log('🎭 Clearing all options after generation')
@@ -307,6 +309,25 @@ const HomeNew: React.FC = () => {
       ensureDefault(activePresets)
     }
   }, [PROFESSIONAL_PRESETS, ensureDefault])
+
+  // Close all dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      
+      // Check if click is outside all dropdown areas
+      if (!target.closest('[data-presets-dropdown]') &&
+          !target.closest('[data-emotionmask-dropdown]') &&
+          !target.closest('[data-ghiblireact-dropdown]') &&
+          !target.closest('[data-neotokyoglitch-dropdown]') &&
+          !target.closest('[data-profile-dropdown]')) {
+        closeAllDropdowns()
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Debug preset changes
   useEffect(() => {
@@ -570,11 +591,15 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
     }
   }, [filterOpen, userMenu, presetsOpen])
 
-  // Function to close all dropdowns
+  // Function to close all dropdowns (updated to use the main function)
   const closeAllDropdowns = () => {
     setFilterOpen(false)
     setUserMenu(false)
     setPresetsOpen(false)
+    setEmotionMaskDropdownOpen(false)
+    setGhibliReactionDropdownOpen(false)
+    setNeoTokyoGlitchDropdownOpen(false)
+    setProfileDropdownOpen(false)
   }
 
   const handleUploadClick = () => {
@@ -3981,7 +4006,10 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         ) : (
           <div className="relative">
             <button
-              onClick={() => setProfileDropdownOpen(prev => !prev)}
+                                  onClick={() => {
+                      closeAllDropdowns()
+                      setProfileDropdownOpen(prev => !prev)
+                    }}
               className="w-12 h-12 bg-white/10 text-white rounded-full border border-white/20 transition-all duration-300 flex items-center justify-center hover:bg-white/20 hover:scale-105"
               aria-label="Profile"
             >
@@ -4191,8 +4219,8 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                             navigate('/auth')
                             return
                           }
-                          // Close emotion mask dropdown when presets are clicked
-                          setEmotionMaskDropdownOpen(false)
+                          // Close all other dropdowns and toggle presets
+                          closeAllDropdowns()
                           setPresetsOpen((v) => !v)
                         }}
                       className={(() => {
@@ -4257,9 +4285,11 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                         
                         if (composerState.mode === 'emotionmask') {
                           // Already in Emotion Mask mode - toggle dropdown
+                          closeAllDropdowns()
                           setEmotionMaskDropdownOpen((v) => !v)
                         } else {
                           // Switch to Emotion Mask mode AND show dropdown immediately
+                          closeAllDropdowns()
                           setComposerState(s => ({ ...s, mode: 'emotionmask' }))
                           setSelectedMode('presets') // Set selectedMode to match the new system
                           setSelectedEmotionMaskPreset(emotionMaskPreset)
@@ -4331,9 +4361,11 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                         
                         if (composerState.mode === 'ghiblireact') {
                           // Already in Ghibli Reaction mode - toggle dropdown
+                          closeAllDropdowns()
                           setGhibliReactionDropdownOpen((v) => !v)
                         } else {
                           // Switch to Ghibli Reaction mode AND show dropdown immediately
+                          closeAllDropdowns()
                           setComposerState(s => ({ ...s, mode: 'ghiblireact' }))
                           setSelectedMode('presets') // Set selectedMode to match the new system
                           setSelectedGhibliReactionPreset(null)
@@ -4405,6 +4437,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                         
                         if (composerState.mode === 'neotokyoglitch') {
                           // Already in Neo Tokyo Glitch mode - toggle dropdown
+                          closeAllDropdowns()
                           setNeoTokyoGlitchDropdownOpen((v) => !v)
                         } else {
                           // Check if user has agreed to disclaimer
@@ -4415,6 +4448,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                             setShowNeoTokyoGlitchDisclaimer(true)
                           } else {
                             // User has agreed - switch to Neo Tokyo Glitch mode AND show dropdown immediately
+                            closeAllDropdowns()
                             setComposerState(s => ({ ...s, mode: 'neotokyoglitch' }))
                             setSelectedMode('presets') // Set selectedMode to match the new system
                             setSelectedNeoTokyoGlitchPreset(null)
