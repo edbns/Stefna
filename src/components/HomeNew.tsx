@@ -1196,7 +1196,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     // 🛡️ Runtime Guard (For Safety) - Prevent unknown modes from crashing the app
     if (!['preset', 'custom', 'emotionmask', 'ghiblireact', 'neotokyoglitch'].includes(kind)) {
       console.warn("[dispatchGenerate] Unknown mode: ", kind);
-      notifyError({ title: 'Unsupported generation mode', message: 'This generation mode is not supported.' });
+              notifyError({ title: 'Failed', message: 'Try again' });
       return;
     }
     
@@ -1213,7 +1213,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
   const validateModel = (model: string) => {
     if (!ALLOWED_MODELS.includes(model)) {
       console.error("🚫 Invalid model:", model);
-      notifyError({ title: 'Model Error', message: `Model '${model}' is not supported. Using fallback.` });
+              notifyError({ title: 'Failed', message: 'Try again' });
       return "flux/dev/image-to-image"; // Fallback to known working model
     }
     return model;
@@ -1292,7 +1292,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       const presetId = options?.presetId || selectedPreset;
       if (!presetId || !PRESETS[presetId]) {
         console.error('❌ Invalid preset:', presetId);
-        notifyError({ title: 'Invalid preset', message: 'Please select a valid style preset' });
+        notifyError({ title: 'Failed', message: 'Try again' });
         endGeneration(genId);
         setNavGenerating(false);
         return;
@@ -3279,8 +3279,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     // 🚀 IMMEDIATE GENERATION - No unnecessary delays
     console.log('🚀 Auto-generating with preset:', presetName)
     
-    // Show immediate feedback that preset was applied
-    notifySuccess({ title: 'Preset applied', message: `Using ${presetName} style` })
+            // Preset applied silently - no toast notification
     
     try {
       await dispatchGenerate('preset', {
@@ -3687,9 +3686,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         setPrompt(enhancedPrompt)
         console.log('✨ Prompt enhanced successfully:', enhancedPrompt)
         // Show success feedback - with safety check
-        if (typeof notifySuccess === 'function') {
-        notifySuccess({ title: 'Prompt enhanced!', message: 'Your prompt has been enhanced with AI' })
-        }
+                // Prompt enhanced silently - no toast notification
       }
     } catch (error) {
       console.error('❌ Magic Wand enhancement failed:', error)

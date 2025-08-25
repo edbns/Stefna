@@ -509,7 +509,7 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
 
       // Show success toast
       window.dispatchEvent(new CustomEvent('generation-success', { 
-        detail: { message: 'Preset applied!', resultUrl: result.resultUrl, timestamp: Date.now() } 
+        detail: { resultUrl: result.resultUrl, timestamp: Date.now() } 
       }))
 
       // 💰 Finalize credits (commit) after successful generation

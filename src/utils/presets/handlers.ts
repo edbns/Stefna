@@ -94,7 +94,7 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
 
     // Happy path only below
     console.info(`✅ [${runId}] Generation completed successfully`);
-    showToast('success', `${preset.label} applied!`);
+            // Preset applied silently - no toast notification
     return result;
 
   } catch (error) {
