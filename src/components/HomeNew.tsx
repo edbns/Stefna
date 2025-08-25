@@ -275,15 +275,8 @@ const HomeNew: React.FC = () => {
     // Reset HiddenUploader component by dispatching a custom event
     window.dispatchEvent(new CustomEvent('reset-hidden-uploader'))
     
-    // Clear any file input elements
-    const fileInputs = document.querySelectorAll('input[type="file"]')
-    fileInputs.forEach((input) => {
-      if (input instanceof HTMLInputElement) {
-        input.value = ''
-        // Force remount by updating key attribute
-        input.setAttribute('key', String(Date.now()))
-      }
-    })
+    // Reset HiddenUploader component by dispatching a custom event
+    window.dispatchEvent(new CustomEvent('reset-hidden-uploader'))
     
     console.log('🎭 All options cleared, HiddenUploader reset triggered')
   }
@@ -638,8 +631,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     useGenerationStore.getState().setSelectedFile(file)                    // keep the File object
     useGenerationStore.getState().setSelectedFileName(file.name)           // separate field for UI
     useGenerationStore.getState().setPreviewUrl(preview)
-    useGenerationStore.getState().setPreviewDataUrl(undefined)
-    useGenerationStore.getState().setPreviewBlob(undefined)
+    useGenerationStore.getState().setPreviewDataUrl(null)
+    useGenerationStore.getState().setPreviewBlob(null)
     
     console.log('✅ File state updated, opening composer')
     setIsComposerOpen(true)
@@ -667,31 +660,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     }
   }, [isComposerOpen, previewUrl])
 
-  // Handle remix navigation payload from profile
-  useEffect(() => {
-    const state = location?.state
-    if (state && (state.remixUrl || state.remixPrompt)) {
-      const url = state.remixUrl as string
-      setPreviewUrl(url)
-      setIsVideoPreview(/\.(mp4|webm|mov|mkv)(\?|$)/i.test(url))
-      setSelectedFile(null)
-      
-      // Update composer state for remix mode
-      setComposerState(s => ({
-        ...s,
-        mode: 'custom', // remix mode removed
-        file: null,
-        sourceUrl: url,
-        status: 'idle',
-        error: null,
-        runOnOpen: false
-      }))
-      
-      setIsComposerOpen(true)
-      if (state.remixPrompt) setPrompt(state.remixPrompt)
-      // Don't clear selectedPreset - it should persist for remix generation
-    }
-  }, [location])
+
 
   // Debug composer state
   useEffect(() => {
@@ -741,9 +710,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         timestamp: new Date().toISOString(),
         tokensUsed: 2,
         likes: 0,
-        remixCount: 0,
         isPublic: false,
-        allowRemix: false,
         tags: record.meta?.tags || record.tags || [],
         metadata: {
           quality: 'high',
@@ -769,19 +736,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       
       console.log('✅ UI updated successfully with new media:', newMedia)
       
-      // Clear composer state immediately after generation completes
-      console.log('🧹 Clearing composer state immediately after generation completion')
+      // Clear composer state after generation completes
+      console.log('🧹 Clearing composer state after generation completion')
       handleClearComposerState()
-      
-      // Force immediate UI refresh
-      setTimeout(() => {
-        console.log('🔄 Forcing immediate UI refresh...')
-        // Force a re-render by updating state
-        setSelectedFile(null)
-        setPreviewUrl(null)
-        setPrompt('')
-        setIsComposerOpen(false)
-      }, 100) // Very fast refresh
       
       // Refresh the feed and user media after generation completes
       setTimeout(() => {
@@ -800,15 +757,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       console.log('✅ Generation success:', message, 'Mode:', mode)
       // The toast is already handled by the generation pipeline
       
-      // Clear composer state immediately after successful generation
+      // Clear composer state after successful generation
       console.log('🧹 Clearing composer state after generation success')
       handleClearComposerState()
-      
-      // Force additional clearing for stubborn cases
-      setTimeout(() => {
-        console.log('🧹 Force clearing composer after generation success (delayed)');
-        handleClearComposerState();
-      }, 300);
     }
 
     const handleGenerationError = (event: CustomEvent) => {
@@ -816,15 +767,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       console.log('❌ Generation error:', message)
       notifyError({ title: 'Media failed', message: 'Try again' })
       
-      // Clear composer state immediately after generation error
+      // Clear composer state after generation error
       console.log('🧹 Clearing composer state after generation error')
       handleClearComposerState()
-      
-      // Force additional clearing for stubborn cases
-      setTimeout(() => {
-        console.log('🧹 Force clearing composer after generation error (delayed)');
-        handleClearComposerState();
-      }, 300);
     }
 
     const handleUserMediaUpdated = () => {
@@ -837,12 +782,6 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       // Clear composer state after user media update (for MoodMorph and other modes)
       console.log('🧹 Clearing composer state after user media update')
       handleClearComposerState()
-      
-      // Force additional composer clearing for stubborn cases
-      setTimeout(() => {
-        console.log('🧹 Force clearing composer after user media update (delayed)');
-        handleClearComposerState();
-      }, 300);
     }
 
     const handleRefreshUserMedia = () => {
@@ -882,14 +821,6 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         error: null,
         runOnOpen: false
       })
-      
-      // Clear any file input
-      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-      if (fileInput) {
-        fileInput.value = ''
-        // Force remount if needed
-        fileInput.setAttribute('key', String(Date.now()))
-      }
       
       // Clear composer open state
       setIsComposerOpen(false)
@@ -1953,7 +1884,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       if (kind === 'ghiblireact' || kind === 'neotokyoglitch') {
         creditsNeeded = 1; // Single generation for new modes
       } else {
-        creditsNeeded = 1; // Single generation (preset, custom single, emotionmask, remix)
+        creditsNeeded = 1; // Single generation (preset, custom single, emotionmask)
       }
       
       console.log(`💰 Reserving ${creditsNeeded} credits before generation...`);
@@ -2085,9 +2016,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 timestamp: new Date().toISOString(),
                 tokensUsed: 0,
                 likes: 0,
-                remixCount: 0,
                 isPublic: shareToFeed,
-                allowRemix: false,
                 tags: [],
                 metadata: { quality: 'high', generationTime: 0, modelVersion: 'pending' }
               }
@@ -2477,9 +2406,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             timestamp: new Date().toISOString(),
             tokensUsed: 2,
             likes: 0,
-            remixCount: 0,
-            isPublic: false,
-            allowRemix: false,
+                    isPublic: false,
             tags: [],
             metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
           }]);
@@ -2517,9 +2444,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 timestamp: new Date().toISOString(),
                 tokensUsed: 0,
                 likes: 0,
-                remixCount: 0,
                 isPublic: shareToFeed,
-                allowRemix: false,
                 tags: [],
                 metadata: { quality: 'high', generationTime: 0, modelVersion: 'pending' }
               }
@@ -2533,7 +2458,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               userId,
               presetKey: selectedPreset ?? null,
               sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : null,
-              allowRemix: false,
+
               shareNow: !!shareToFeed,
               mediaTypeHint: 'image',
             })
@@ -3114,7 +3039,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         resource_type: shouldBeVideo ? 'video' : 'image',
         source: 'custom',
         visibility: shareToFeed ? 'public' : 'private',
-        allow_remix: false, // Remix functionality removed - focus on personal creativity
+
         num_variations: 1, // Single generation only
       }
       
@@ -3549,7 +3474,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       body: JSON.stringify({ 
         asset_id: media.id, 
         shareToFeed: false, 
-        allowRemix: false 
+ 
       }),
     })
     
@@ -3713,9 +3638,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         timestamp: new Date().toISOString(),
         tokensUsed: 0,
         likes: 0,
-        remixCount: 0,
         isPublic: false,
-        allowRemix: false,
         tags: [],
         metadata: { quality: 'high' as const, generationTime: 0, modelVersion: 'draft' }
       }
@@ -4007,7 +3930,6 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           <div className="relative">
             <button
                                   onClick={() => {
-                      closeAllDropdowns()
                       setProfileDropdownOpen(prev => !prev)
                     }}
               className="w-12 h-12 bg-white/10 text-white rounded-full border border-white/20 transition-all duration-300 flex items-center justify-center hover:bg-white/20 hover:scale-105"
@@ -4113,7 +4035,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             <X size={20} />
           </button>
           
-          {/* Remix mode UI removed - focus on personal creativity */}
+  
           
           {/* Media preview area - centered above prompt */}
           <div className="absolute inset-0 flex items-center justify-center pb-48">
@@ -4151,7 +4073,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
                       {/* Bottom composer bar - compact, horizontally 70% */}
             <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
-            <div className="bg-[#333333]/80 backdrop-blur-sm rounded-2xl px-4 py-3 transition-all duration-300">
+            <div className="bg-[#333333]/95 backdrop-blur-sm rounded-2xl px-4 py-3 transition-all duration-300">
               
 
               
@@ -4292,7 +4214,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                           closeAllDropdowns()
                           setComposerState(s => ({ ...s, mode: 'emotionmask' }))
                           setSelectedMode('presets') // Set selectedMode to match the new system
-                          setSelectedEmotionMaskPreset(emotionMaskPreset)
+                          setSelectedEmotionMaskPreset(null)
                           setEmotionMaskDropdownOpen(true) // Show dropdown immediately
                         }
                       }}
@@ -4542,7 +4464,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                         // Custom mode - use custom generation
                         console.log('🎨 Custom mode - calling generateCustom')
                         await generateCustom()
-                                                     // Remix mode removed - focus on personal creativity
+                                             
                       } else if (composerState.mode === 'emotionmask') {
                         // Emotion Mask mode - use Emotion Mask generation
                         console.log('🎭 Emotion Mask mode - calling generateEmotionMask')

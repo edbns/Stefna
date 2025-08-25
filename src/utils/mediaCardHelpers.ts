@@ -28,15 +28,7 @@ export function getCardChips(r: UserMedia | any) {
   return { modeChip: 'AI Generated', detailChip: 'Media' };
 }
 
-export function formatRemixCount(count?: number): string {
-  if (!count || count === 0) return '';
-  return `Remixed · ${count}`;
-}
 
-// Helper to determine if a media item is a remix
-export function isRemix(media: any): boolean {
-  return !!(media.parentId || media.originalMediaId);
-}
 
 // Helper to get clean option labels for display
 export function formatOptionLabel(optionKey: string): string {

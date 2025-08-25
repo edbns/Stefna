@@ -6,22 +6,14 @@ import { NavigateFunction } from 'react-router-dom'
 export const navigateToEditor = (
   navigate: NavigateFunction,
   mediaUrl?: string,
-  prompt?: string,
-  mode: 'edit' | 'remix' = 'edit'
+  prompt?: string
 ) => {
   const state: any = {}
   
   if (mediaUrl) {
-    if (mode === 'remix') {
-      state.remixUrl = mediaUrl
-      if (prompt) {
-        state.remixPrompt = prompt
-      }
-    } else {
-      state.editUrl = mediaUrl
-      if (prompt) {
-        state.editPrompt = prompt
-      }
+    state.editUrl = mediaUrl
+    if (prompt) {
+      state.editPrompt = prompt
     }
   }
 

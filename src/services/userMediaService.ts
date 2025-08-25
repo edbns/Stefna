@@ -7,7 +7,7 @@ export interface UserMedia {
   userAvatar?: string
   userUsername?: string // New: display name from profiles table
   userTier?: string
-  type: 'photo' | 'video' | 'remix'
+  type: 'photo' | 'video'
   url: string
   thumbnailUrl?: string
   // Optional generation status for in-flight items
