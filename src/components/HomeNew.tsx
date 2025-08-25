@@ -2561,6 +2561,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
       // Save the generated media to user profile and feed
       try {
+        // First save to local userMediaService for profile display
         const mediaToSave = {
           userId: authService.getCurrentUser()?.id || '',
           type: 'photo' as const,
@@ -2584,7 +2585,33 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         };
         
         await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
-        console.log('✅ [Media] Saved successfully to profile and feed');
+        console.log('✅ [Media] Saved successfully to local profile');
+        
+        // Then save to backend database for feed visibility
+        const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            finalUrl: finalResultUrl,
+            media_type: 'image',
+            preset_key: generationMeta?.presetId || generationMeta?.ghibliReactionPresetId || generationMeta?.emotionMaskPresetId,
+            prompt: effectivePrompt,
+            meta: {
+              mode: generationMeta?.mode || 'custom',
+              shareNow: true,
+              generation_type: generationMeta?.generation_type || 'custom',
+              model: body?.model || 'aiml-api'
+            }
+          })
+        });
+        
+        if (saveRes.ok) {
+          const saveBody = await saveRes.json();
+          console.log('✅ [Media] Saved successfully to backend database:', saveBody);
+        } else {
+          console.warn('⚠️ [Media] Backend save failed, but local save succeeded');
+        }
+        
       } catch (error) {
         console.error('❌ [Media] Failed to save media:', error);
       }
