@@ -1645,7 +1645,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
               const statusResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-status', {
                 method: 'POST',
                 body: JSON.stringify({
-                  stabilityJobId: neoGlitchResult.stabilityJobId,
+                  stabilityJobId: neoGlitchResult.jobId, // Use jobId instead of stabilityJobId
                   runId: genId
                 })
               });
@@ -1733,13 +1733,13 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
             // Start polling for completion using the new format
             const pollInterval = setInterval(async () => {
               try {
-                const statusResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-status', {
-                  method: 'POST',
-                  body: JSON.stringify({
-                    stabilityJobId: neoGlitchResult.jobId,
-                    runId: genId
-                  })
-                });
+                              const statusResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-status', {
+                method: 'POST',
+                body: JSON.stringify({
+                  stabilityJobId: neoGlitchResult.jobId, // Use jobId instead of stabilityJobId
+                  runId: genId
+                })
+              });
                 
                 if (statusResponse.ok) {
                   const statusResult = await statusResponse.json();
