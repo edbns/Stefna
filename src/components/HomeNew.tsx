@@ -507,7 +507,7 @@ const HomeNew: React.FC = () => {
   const [ghibliReactionDropdownOpen, setGhibliReactionDropdownOpen] = useState(false)
   const [selectedNeoTokyoGlitchPreset, setSelectedNeoTokyoGlitchPreset] = useState<string | null>(null)
 const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(false)
-const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState(false)
+
   
 
 
@@ -4440,20 +4440,12 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                           closeAllDropdowns()
                           setNeoTokyoGlitchDropdownOpen((v) => !v)
                         } else {
-                          // Check if user has agreed to disclaimer
-                          const hasAgreed = localStorage.getItem('neoTokyoGlitchAgreed') === 'true'
-                          
-                          if (!hasAgreed) {
-                            // Show disclaimer popup first
-                            setShowNeoTokyoGlitchDisclaimer(true)
-                          } else {
-                            // User has agreed - switch to Neo Tokyo Glitch mode AND show dropdown immediately
-                            closeAllDropdowns()
-                            setComposerState(s => ({ ...s, mode: 'neotokyoglitch' }))
-                            setSelectedMode('presets') // Set selectedMode to match the new system
-                            setSelectedNeoTokyoGlitchPreset(null)
-                            setNeoTokyoGlitchDropdownOpen(true) // Show dropdown immediately
-                          }
+                          // Switch to Neo Tokyo Glitch mode AND show dropdown immediately
+                          closeAllDropdowns()
+                          setComposerState(s => ({ ...s, mode: 'neotokyoglitch' }))
+                          setSelectedMode('presets') // Set selectedMode to match the new system
+                          setSelectedNeoTokyoGlitchPreset(null)
+                          setNeoTokyoGlitchDropdownOpen(true) // Show dropdown immediately
                         }
                       }}
                       className={
@@ -4617,6 +4609,13 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                 </div>
               </div>
             </div>
+            
+            {/* Clean disclaimer row under composer */}
+            <div className="mt-3 text-center">
+              <p className="text-xs text-white/60">
+                Disclaimer: AI Magic Zone, Neo Tokyo, Ghibli Reaction, Emotion Mask, and others are powered by AI. Fun, wild, sometimes a bit off — mistakes can happen.
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -4630,84 +4629,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         title="Share Your Creation"
       />
 
-      {/* Neo Tokyo Glitch Disclaimer Popup */}
-      {showNeoTokyoGlitchDisclaimer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          {/* Glitchy Background Overlay */}
-          <div className="absolute inset-0 overflow-hidden">
-            {/* Animated scanlines */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-pink-500/10 to-transparent animate-pulse"></div>
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/10 to-transparent animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-            
-            {/* Floating particles */}
-            <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-pink-400 rounded-full animate-bounce"></div>
-            <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
-            <div className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.7s' }}></div>
-          </div>
 
-          {/* Main Popup */}
-          <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-black border-2 border-pink-500/50 rounded-2xl p-8 max-w-lg mx-4 shadow-2xl backdrop-blur-md">
-            {/* Enhanced Glitchy Border Effect */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/30 via-cyan-500/30 via-purple-500/30 via-yellow-500/20 to-pink-500/30 animate-pulse"></div>
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-transparent via-blue-500/20 to-transparent animate-pulse" style={{ animationDelay: '0.3s' }}></div>
-            
-            {/* Close Button */}
-            <button
-              onClick={() => setShowNeoTokyoGlitchDisclaimer(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
-            >
-              <X size={20} />
-            </button>
-
-            {/* Content */}
-            <div className="relative z-10">
-              {/* Title with enhanced glitch effect */}
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-cyan-400 via-yellow-300 via-blue-400 to-purple-400 animate-pulse">
-                  ⚠️ NEO TOKYO GLITCH DISCLAIMER
-                </h2>
-                {/* Additional neon glow effect */}
-                <div className="absolute inset-0 blur-sm bg-gradient-to-r from-pink-500/50 via-cyan-500/50 via-yellow-400/50 via-blue-500/50 to-purple-500/50 rounded-lg"></div>
-              </div>
-
-              {/* Disclaimer text */}
-              <div className="text-gray-300 text-sm leading-relaxed mb-8 space-y-3">
-                <p>
-                  This preset transforms you into a future self in a Neo Tokyo glitch — 
-                  expect chaos, color, and surprises.
-                </p>
-                <p>
-                  By proceeding, you acknowledge that:
-                </p>
-                <ul className="list-disc list-inside space-y-1 ml-4 text-pink-300">
-                  <li>Results may vary significantly from your original image</li>
-                  <li>Identity features may be artistically transformed</li>
-                  <li>This is for creative/entertainment purposes only</li>
-                </ul>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    localStorage.setItem('neoTokyoGlitchAgreed', 'true')
-                    setShowNeoTokyoGlitchDisclaimer(false)
-                  }}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 via-purple-500 via-blue-500 to-cyan-500 hover:from-pink-600 hover:via-purple-600 hover:via-blue-600 hover:to-cyan-600 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-pink-500/25 animate-pulse border border-pink-400/50"
-                >
-                  I AGREE - LET'S GET GLITCHY! ⚡
-                </button>
-                <button
-                  onClick={() => setShowNeoTokyoGlitchDisclaimer(false)}
-                  className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Video Job Status Display removed in favor of unified toasts */}
 
