@@ -34,11 +34,13 @@ interface SafeMasonryGridProps {
   feed: UserMedia[]
   handleMediaClick: (media: UserMedia) => void
   // handleRemix removed - no more remix functionality
+  onLastItemRef?: (ref: HTMLDivElement | null) => void
 }
 
 const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   feed,
   handleMediaClick,
+  onLastItemRef,
   // handleRemix removed
 }) => {
   try {
@@ -50,6 +52,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         // onRemix removed - no more remix functionality
         showActions={true}
         className="pb-24 w-full"
+        onLastItemRef={onLastItemRef}
       />
     )
   } catch (error) {
@@ -58,7 +61,11 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
     return (
       <div className="grid grid-cols-4 gap-1 pb-24 w-full">
         {feed.slice(0, 16).map((item, index) => (
-          <div key={item.id} className="aspect-square bg-gray-200 rounded overflow-hidden">
+          <div 
+            key={item.id} 
+            className="aspect-square bg-gray-200 rounded overflow-hidden"
+            ref={index === feed.length - 1 ? onLastItemRef : undefined}
+          >
             <img 
               src={item.url} 
               alt=""
@@ -903,24 +910,143 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     }
   }, [])
 
-  // Load more feed items (for infinite scroll)
+  // 🚀 HIGH-END INFINITE SCROLL: Progressive loading with intersection observer
+  const [isIntersecting, setIsIntersecting] = useState(false)
+  const [lastItemRef, setLastItemRef] = useState<HTMLDivElement | null>(null)
+  const [feedBuffer, setFeedBuffer] = useState<UserMedia[]>([])
+  const [isBuffering, setIsBuffering] = useState(false)
+  
+  // Progressive loading: Load more items when user approaches the end
   const loadMoreFeed = async () => {
-    if (!hasMoreFeed || isLoadingMore) return
-    await loadFeed(false)
+    if (!hasMoreFeed || isLoadingMore || isBuffering) return
+    
+    try {
+      setIsBuffering(true)
+      console.log('🚀 [InfiniteScroll] Progressive loading triggered')
+      
+      // Load a smaller batch for smoother experience
+      const batchSize = 10
+      const currentTotal = feed.length + feedBuffer.length
+      const offset = currentTotal
+      
+      console.log('🔍 [InfiniteScroll] Loading batch:', {
+        batchSize,
+        currentTotal,
+        offset,
+        expectedRange: `${offset}-${offset + batchSize - 1}`
+      })
+      
+      const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${batchSize}&offset=${offset}`)
+      
+      if (res.ok) {
+        const resp = await res.json()
+        
+        if (resp.success && resp.items?.length > 0) {
+          const newItems = resp.items
+            .map((item: any): UserMedia | null => {
+              // Same mapping logic as before
+              let mediaUrl: string;
+              if (item.finalUrl && item.finalUrl.startsWith('http')) {
+                mediaUrl = item.finalUrl;
+              } else if (item.imageUrl && item.imageUrl.startsWith('http')) {
+                mediaUrl = item.imageUrl;
+              } else {
+                return null;
+              }
+              
+              return {
+                id: item.id,
+                userId: item.userId || '',
+                userAvatar: item.user?.avatar || undefined,
+                userTier: item.user?.tier || undefined,
+                type: item.mediaType === 'video' ? 'video' : 'photo',
+                url: mediaUrl,
+                thumbnailUrl: mediaUrl,
+                prompt: item.prompt || 'AI Generated Content',
+                style: undefined,
+                aspectRatio: 4/3,
+                width: 800,
+                height: 600,
+                timestamp: item.createdAt,
+                originalMediaId: item.sourceAssetId || undefined,
+                tokensUsed: item.mediaType === 'video' ? 5 : 2,
+                likes: 0,
+                isPublic: true,
+                tags: [],
+                metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
+                cloudinaryPublicId: item.cloudinaryPublicId,
+                mediaType: item.mediaType,
+              }
+            })
+            .filter((item: UserMedia | null): item is UserMedia => item !== null)
+          
+          console.log('✅ [InfiniteScroll] New items loaded:', newItems.length)
+          
+          // Add to buffer for smooth rendering
+          setFeedBuffer(prev => [...prev, ...newItems])
+          
+          // Update hasMore flag
+          setHasMoreFeed(resp.hasMore !== false)
+          
+          // If this was the last batch, merge buffer into main feed
+          if (!resp.hasMore || newItems.length < batchSize) {
+            setTimeout(() => {
+              setFeed(prev => [...prev, ...feedBuffer])
+              setFeedBuffer([])
+              console.log('🔄 [InfiniteScroll] Buffer merged into main feed')
+            }, 100) // Small delay for smooth transition
+          }
+        } else {
+          setHasMoreFeed(false)
+        }
+      }
+    } catch (error) {
+      console.error('❌ [InfiniteScroll] Progressive loading failed:', error)
+    } finally {
+      setIsBuffering(false)
+    }
   }
 
-  // Scroll detection for infinite scroll
+  // Intersection Observer for smooth infinite scroll
+  useEffect(() => {
+    if (!lastItemRef) return
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        setIsIntersecting(entry.isIntersecting)
+        
+        if (entry.isIntersecting && hasMoreFeed && !isLoadingMore && !isBuffering) {
+          console.log('👁️ [InfiniteScroll] Last item visible, triggering load')
+          loadMoreFeed()
+        }
+      },
+      {
+        rootMargin: '200px', // Start loading when 200px away from last item
+        threshold: 0.1
+      }
+    )
+    
+    observer.observe(lastItemRef)
+    
+    return () => {
+      if (lastItemRef) observer.unobserve(lastItemRef)
+    }
+  }, [lastItemRef, hasMoreFeed, isLoadingMore, isBuffering])
+
+  // Legacy scroll handler as fallback (can be removed once intersection observer is proven)
   useEffect(() => {
     const handleScroll = () => {
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1000) {
-        // User is near bottom, load more
-        loadMoreFeed()
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 500) {
+        if (hasMoreFeed && !isLoadingMore && !isBuffering) {
+          loadMoreFeed()
+        }
       }
     }
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [hasMoreFeed, isLoadingMore])
+  }, [hasMoreFeed, isLoadingMore, isBuffering])
 
   // Load public feed on mount
   const loadFeed = async (isInitial = true) => {
@@ -4095,9 +4221,55 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               <SafeMasonryGrid 
                 feed={feed}
                 handleMediaClick={handleMediaClick}
+                onLastItemRef={setLastItemRef}
                 // handleRemix removed
               />
               
+              {/* 🚀 High-end infinite scroll: Show buffer items and loading states */}
+              {feedBuffer.length > 0 && (
+                <div className="mt-4">
+                  <div className="grid grid-cols-4 gap-1">
+                    {feedBuffer.map((item) => (
+                      <div key={item.id} className="aspect-square bg-white/5 rounded overflow-hidden animate-pulse">
+                        <img 
+                          src={item.url} 
+                          alt=""
+                          className="w-full h-full object-cover opacity-70"
+                          loading="lazy"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Loading indicator for infinite scroll */}
+              {isBuffering && hasMoreFeed && (
+                <div className="flex justify-center py-8">
+                  <div className="flex items-center space-x-3 text-white/60">
+                    <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    <span className="text-sm">Loading more...</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* End of feed indicator */}
+              {!hasMoreFeed && feed.length > 0 && (
+                <div className="text-center py-8 text-white/40 text-sm">
+                  ✨ You've reached the end of the feed
+                </div>
+              )}
+              
+              {/* 🚀 Infinite scroll debug info */}
+              {import.meta.env.DEV && (
+                <div className="fixed bottom-4 right-4 bg-black/80 text-white text-xs p-2 rounded backdrop-blur-sm z-50">
+                  <div>📊 Feed: {feed.length}</div>
+                  <div>🔄 Buffer: {feedBuffer.length}</div>
+                  <div>👁️ Intersecting: {isIntersecting ? 'Yes' : 'No'}</div>
+                  <div>📡 Has More: {hasMoreFeed ? 'Yes' : 'No'}</div>
+                  <div>⏳ Buffering: {isBuffering ? 'Yes' : 'No'}</div>
+                </div>
+              )}
 
             </>
           ) : (

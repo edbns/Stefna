@@ -16,6 +16,8 @@ interface MasonryMediaGridProps {
   onGenerateCaption?: (media: UserMedia) => void
   showActions?: boolean
   className?: string
+  // Infinite scroll support
+  onLastItemRef?: (ref: HTMLDivElement | null) => void
   // Selection props
   isSelectionMode?: boolean
   selectedMediaIds?: Set<string>
@@ -36,6 +38,8 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   onDelete,
   showActions = true,
   className = '',
+  // Infinite scroll support
+  onLastItemRef,
   // Selection props
   isSelectionMode = false,
   selectedMediaIds = new Set(),
@@ -102,12 +106,18 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
       >
         {masonryColumns.map((column, columnIndex) => (
           <div key={columnIndex} className="flex-1 flex flex-col gap-1 min-w-0">
-            {column.map((item) => (
-              <div
-                key={item.id}
-                className="relative group cursor-pointer bg-white/5 overflow-hidden"
-                onClick={() => onMediaClick?.(item)}
-              >
+            {column.map((item, itemIndex) => {
+              // Find if this is the last item across all columns
+              const isLastItem = columnIndex === masonryColumns.length - 1 && 
+                                itemIndex === column.length - 1
+              
+              return (
+                <div
+                  key={item.id}
+                  className="relative group cursor-pointer bg-white/5 overflow-hidden"
+                  onClick={() => onMediaClick?.(item)}
+                  ref={isLastItem ? onLastItemRef : undefined}
+                >
                 {/* Media Container - No fixed aspect ratio, let content determine height */}
                 <div className="relative w-full overflow-hidden">
                   {/* Selection Checkbox */}
@@ -246,7 +256,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   })()}
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         ))}
       </div>
