@@ -17,15 +17,31 @@ export const handler: Handler = async (event) => {
   }
 
   try {
+    // Debug: Log all headers to see what's being received
+    console.log('🔍 [get-user-profile] Headers received:', {
+      allHeaders: event.headers,
+      authorization: event.headers?.authorization,
+      Authorization: event.headers?.Authorization,
+      contentType: event.headers?.['content-type'],
+      userAgent: event.headers?.['user-agent']
+    });
+    
     // Normalize header name (handle both authorization and Authorization)
     const authHeader = event.headers?.authorization || event.headers?.Authorization;
     
     if (!authHeader) {
+      console.error('❌ [get-user-profile] No Authorization header found');
       return json({ ok: false, error: 'NO_BEARER' }, { status: 401 });
     }
     
+    console.log('🔍 [get-user-profile] Auth header found:', {
+      headerLength: authHeader.length,
+      headerPreview: authHeader.substring(0, 50) + '...',
+      startsWithBearer: authHeader.startsWith('Bearer ')
+    });
+    
     const { userId, email } = requireAuth(authHeader);
-    console.log('[get-user-profile] User:', userId, 'Email:', email);
+    console.log('✅ [get-user-profile] User authenticated:', userId, 'Email:', email);
     
     const prisma = new PrismaClient();
 

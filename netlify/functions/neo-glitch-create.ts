@@ -4,7 +4,7 @@
 
 import type { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
-import { requireAuth } from './lib/auth';
+import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
 
 export const handler: Handler = async (event) => {

@@ -1,7 +1,7 @@
-import { requireAuth, verifyBearer } from "./lib/auth";
+import { requireAuth } from "./_lib/auth";
 
 // Re-export the unified auth functions
-export { requireAuth, verifyBearer };
+export { requireAuth };
 
 export function httpErr(status: number, code: string, extra: any = {}) {
   const err: any = new Error(code);

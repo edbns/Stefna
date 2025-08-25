@@ -3,7 +3,7 @@
 // Direct Stability.ai API polling - no intermediate table lookup needed
 
 import type { Handler } from '@netlify/functions';
-import { requireAuth } from './lib/auth';
+import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
 import { PrismaClient } from '@prisma/client';
 
