@@ -56,6 +56,13 @@ export const handler: Handler = async (event) => {
       }, { status: 400 });
     }
 
+    // Check if the stabilityJobId looks like a database ID (cuid format) vs Stability.ai job ID
+    const isLikelyDatabaseId = stabilityJobId.length > 20 && stabilityJobId.includes('-');
+    if (isLikelyDatabaseId) {
+      console.warn('⚠️ [NeoGlitch] Frontend sent what appears to be a database ID instead of Stability.ai job ID');
+      console.warn('⚠️ [NeoGlitch] This suggests the frontend is using the wrong ID for polling');
+    }
+
     // Validate Stability.ai API key
     if (!STABILITY_API_KEY) {
       console.error('❌ [NeoGlitch] STABILITY_API_KEY not configured');
@@ -119,12 +126,46 @@ export const handler: Handler = async (event) => {
           message: 'Generation failed',
           stabilityJobId: jobRecord.stabilityJobId
         });
-      } else {
-        // Still processing
+      } else if (jobRecord.status === 'processing' && !jobRecord.stabilityJobId) {
+        // Check if job has been stuck too long (more than 5 minutes)
+        const jobAge = Date.now() - new Date(jobRecord.createdAt).getTime();
+        const maxAge = 5 * 60 * 1000; // 5 minutes
+        
+        if (jobAge > maxAge) {
+          // Job is stuck - mark as failed
+          await prisma.neoGlitchMedia.update({
+            where: { id: jobRecord.id },
+            data: { 
+              status: 'failed',
+              imageUrl: null
+            }
+          });
+          
+          return json({
+            id: jobRecord.id,
+            status: 'failed',
+            message: 'Job failed due to timeout - Stability.ai never started processing',
+            stabilityJobId: null,
+            error: 'TIMEOUT_ERROR',
+            details: 'Job was stuck in initialization for more than 5 minutes'
+          });
+        }
+        
+        // Special case: Job is processing but no Stability.ai ID yet
         return json({
           id: jobRecord.id,
           status: 'processing',
-          message: 'Job is still being processed',
+          message: 'Job is being initialized - waiting for Stability.ai to start',
+          stabilityJobId: null,
+          warning: 'This job may be stuck in initialization. Consider retrying the generation.',
+          jobAge: Math.round(jobAge / 1000) + 's'
+        });
+      } else {
+        // Still processing with Stability.ai
+        return json({
+          id: jobRecord.id,
+          status: 'processing',
+          message: 'Job is being processed by Stability.ai',
           stabilityJobId: jobRecord.stabilityJobId
         });
       }
