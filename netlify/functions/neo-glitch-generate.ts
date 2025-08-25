@@ -149,12 +149,12 @@ export const handler: Handler = async (event) => {
 
     console.log('✅ [NeoGlitch] Initial record created:', initialRecord.id);
 
-    // 🔄 ASYNC PROCESSING: Start job and return immediately to prevent 504 timeout
-    // The actual generation will happen in the background
-    console.log('🚀 [NeoGlitch] Starting async generation process...');
+    // 🔄 GENERATION PROCESSING: Start Stability.ai generation immediately
+    // Stability.ai returns images synchronously, so we process in the same request
+    console.log('🚀 [NeoGlitch] Starting Stability.ai generation process...');
     
-    // Start the generation process asynchronously (don't await)
-    processGenerationAsync(initialRecord.id, sourceUrl, normalizedPrompt, presetKey, userId, runId, userToken)
+    // Process the generation immediately (Stability.ai is synchronous)
+    const generationResult = await processGenerationAsync(initialRecord.id, sourceUrl, normalizedPrompt, presetKey, userId, runId, userToken)
       .catch(error => {
         console.error('❌ [NeoGlitch] Async generation failed:', error);
         // Update status to failed in database

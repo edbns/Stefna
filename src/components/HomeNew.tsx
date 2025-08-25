@@ -133,6 +133,18 @@ const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefin
   return `https://res.cloudinary.com/${cloud}/image/upload/${maybeUrl.replace(/^\/+/, '')}`
 }
 
+// Global utility function to reset composer state from anywhere
+export const resetComposerState = () => {
+  console.log('🧹 Global composer state reset called')
+  window.dispatchEvent(new CustomEvent('clear-composer-state'))
+}
+
+// Global utility function to reset HiddenUploader specifically
+export const resetHiddenUploader = () => {
+  console.log('🔄 Global HiddenUploader reset called')
+  window.dispatchEvent(new CustomEvent('reset-hidden-uploader'))
+}
+
 const HomeNew: React.FC = () => {
   const { notifyQueue, notifyReady, notifyError, notifySuccess } = useToasts()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -791,7 +803,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
     const handleClearComposerState = () => {
       console.log('🧹 Clearing composer state...')
-      // Clear all composer-related state
+      
+      // Clear all local state variables
       setSelectedFile(null)
       setPreviewUrl(null)
       setPrompt('')
@@ -801,6 +814,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       setSelectedNeoTokyoGlitchPreset(null)
       setSelectedMode(null)
       setIsVideoPreview(false)
+      setIsGenerating(false)
+      setIsEnhancing(false)
       
       // Clear composer state completely
       setComposerState({
@@ -817,8 +832,39 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         runOnOpen: false
       })
       
+      // Clear generation store state
+      import('../stores/generationStore').then(({ useGenerationStore }) => {
+        useGenerationStore.getState().clearAll()
+      })
+      
+      // Clear intent queue state
+      import('../state/intentQueue').then(({ useIntentQueue }) => {
+        useIntentQueue.getState().clearIntent()
+        useIntentQueue.getState().setSourceUrl(null)
+        useIntentQueue.getState().setIsUploading(false)
+        useIntentQueue.getState().setIsGenerating(false)
+      })
+      
+      // Reset HiddenUploader by dispatching reset event
+      window.dispatchEvent(new CustomEvent('reset-hidden-uploader'))
+      
+      // Clear any global file references
+      if (window.__lastSelectedFile) {
+        delete window.__lastSelectedFile
+      }
+      
+      // Revoke any blob URLs to prevent memory leaks
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+      
+      // Force file input reset by incrementing key
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      
       // Keep composer open for continued use
-      console.log('🧹 Composer state cleared but kept open for continued use')
+      console.log('🧹 Composer state completely cleared - ready for new uploads')
     }
 
     window.addEventListener('generation-complete', handleGenerationComplete as EventListener)
@@ -1975,6 +2021,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 }
               });
               
+              // Reset composer state for next upload
+              resetComposerState();
+              
               return; // Don't start polling if already complete
             } catch (error) {
               console.error('❌ [NeoGlitch] Failed to save media:', error);
@@ -2038,17 +2087,26 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                       window.open(finalStatus.cloudinaryUrl, '_blank');
                     }
                   });
+                  
+                  // Reset composer state for next upload
+                  resetComposerState();
                 } catch (error) {
                   console.error('❌ [NeoGlitch] Failed to save media:', error);
                   notifyError({ title: 'Failed', message: 'Please try again' });
                   endGeneration(genId);
                   setNavGenerating(false);
+                  
+                  // Reset composer state even on failure
+                  resetComposerState();
                 }
               } else {
                 console.error('❌ [NeoGlitch] Generation failed:', finalStatus.error);
                 notifyError({ title: 'Failed', message: 'Please try again' });
                 endGeneration(genId);
                 setNavGenerating(false);
+                
+                // Reset composer state even on failure
+                resetComposerState();
               }
             })
             .catch(error => {
@@ -2056,6 +2114,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               notifyError({ title: 'Failed', message: 'Please try again' });
               endGeneration(genId);
               setNavGenerating(false);
+              
+              // Reset composer state even on failure
+              resetComposerState();
             });
           
           // Don't wait for completion - let it happen in the background
@@ -2080,6 +2141,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           notifyError({ title: 'Failed', message: 'Please try again' });
           endGeneration(genId);
           setNavGenerating(false);
+          
+          // Reset composer state even on failure
+          resetComposerState();
           return;
         }
       }
@@ -2888,8 +2952,12 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           }
           // Clear all options after successful generation
           clearAllOptionsAfterGeneration();
-              // Refresh user media to show the new video
-              // TODO: Implement user media refresh
+          
+          // Reset composer state for next upload
+          resetComposerState();
+          
+          // Refresh user media to show the new video
+          // TODO: Implement user media refresh
         }
       }
 
@@ -2948,6 +3016,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       
       // Clear all options after generation failure
       clearAllOptionsAfterGeneration();
+      
+      // Reset composer state even on failure
+      resetComposerState();
       
       endGeneration(genId);
       setNavGenerating(false);
@@ -3534,6 +3605,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               console.warn('V2V done but missing resultUrl/publicId')
             }
             notifyReady({ title: 'Your media is ready', message: 'Tap to open' })
+            
+            // Reset composer state for next upload
+            resetComposerState();
+            
             window.dispatchEvent(new CustomEvent('refreshFeed'))
             window.dispatchEvent(new Event('userMediaUpdated'))
           } else if (jobStatus && (jobStatus.status === 'failed' || jobStatus.status === 'timeout')) {
@@ -3541,6 +3616,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             setVideoJobPolling(null)
             setCurrentVideoJob(null)
             notifyError({ title: 'Failed', message: jobStatus.error || (jobStatus.status === 'timeout' ? 'Timed out' : 'Video processing failed') })
+            
+            // Reset composer state even on failure
+            resetComposerState();
             try {
               // mark any optimistic placeholder as failed so the tile shows red briefly
               const user = authService.getCurrentUser()
@@ -3878,6 +3956,18 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-black/80"></div>
           </div>
         </button>
+
+        {/* Manual Reset Button - for testing composer state reset */}
+        {isAuthenticated && (
+          <button
+            onClick={resetComposerState}
+            className="w-10 h-10 rounded-full bg-gray-600/20 text-white border border-gray-500/30 transition-all duration-300 flex items-center justify-center hover:bg-gray-600/30 hover:scale-105"
+            aria-label="Reset Composer"
+            title="Reset composer state (for testing)"
+          >
+            <X size={16} className="transition-transform duration-200" />
+          </button>
+        )}
 
         {/* Login/Profile Button */}
         {!isAuthenticated ? (
