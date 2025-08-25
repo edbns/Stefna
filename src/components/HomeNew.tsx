@@ -4123,7 +4123,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
 
           {/* Bottom composer bar - compact, horizontally 70% */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
-            <div className="bg-black/30 backdrop-blur-sm rounded-2xl px-4 py-3 transition-all duration-300">
+            <div className="bg-[#333333]/80 backdrop-blur-sm rounded-2xl px-4 py-3 transition-all duration-300">
               
 
               
@@ -4211,7 +4211,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                     
                     {/* Presets dropdown - clean and simple */}
                     {presetsOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-black/40 backdrop-blur-sm rounded-xl p-3 w-80 z-50">
+                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333]/80 backdrop-blur-sm rounded-xl p-3 w-80 z-50">
                         {/* Preset options - all visible, no scrolling */}
                         <div className="space-y-1">
                           {/* Preset options */}
