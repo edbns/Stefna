@@ -1229,7 +1229,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     setNavGenerating(true);
       
       // Show "Add to queue" notification for all generation modes
-      notifyQueue({ title: 'Add to queue', message: 'We will start processing shortly.' });
+              notifyQueue({ title: 'Add to queue', message: 'We\'ll start processing shortly.' });
 
     // Get current profile settings from context (real-time state)
     // Note: profileData is already available from the top-level useProfile() hook
@@ -1590,10 +1590,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           
           // Don't start frontend polling - the service handles it
           // Just show a message that generation is in progress
-          notifyReady({ 
-            title: 'Generation started', 
-            message: 'Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.',
-            thumbUrl: undefined
+          notifyQueue({ 
+            title: 'Add to queue', 
+            message: 'Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.'
           });
           
           return;
@@ -1606,13 +1605,12 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           if (neoGlitchResult.jobId && neoGlitchResult.status === 'processing') {
             console.log('🔄 [NeoGlitch] Detected new async response format, service will handle polling');
             
-            // Don't start frontend polling - the service handles it
-            // Just show a message that generation is in progress
-            notifyReady({ 
-              title: 'Generation started', 
-              message: 'Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.',
-              thumbUrl: undefined
-            });
+                      // Don't start frontend polling - the service handles it
+          // Just show a message that generation is in progress
+          notifyQueue({ 
+            title: 'Add to queue', 
+            message: 'Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.'
+          });
             
             return;
           }
@@ -1984,20 +1982,20 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                   });
                 } catch (error) {
                   console.error('❌ [NeoGlitch] Failed to save media:', error);
-                  notifyError({ title: 'Failed to save media', message: 'Please try again' });
+                  notifyError({ title: 'Failed', message: 'Please try again' });
                   endGeneration(genId);
                   setNavGenerating(false);
                 }
               } else {
                 console.error('❌ [NeoGlitch] Generation failed:', finalStatus.error);
-                notifyError({ title: 'Generation failed', message: finalStatus.error || 'Please try again' });
+                notifyError({ title: 'Failed', message: 'Please try again' });
                 endGeneration(genId);
                 setNavGenerating(false);
               }
             })
             .catch(error => {
               console.error('❌ [NeoGlitch] Polling failed:', error);
-              notifyError({ title: 'Generation failed', message: error.message || 'Please try again' });
+              notifyError({ title: 'Failed', message: 'Please try again' });
               endGeneration(genId);
               setNavGenerating(false);
             });
@@ -2021,7 +2019,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           
         } catch (error) {
           console.error('❌ [NeoGlitch] Generation failed:', error);
-          notifyError({ title: 'Neo Tokyo Glitch generation failed', message: error.message || 'Please try again' });
+          notifyError({ title: 'Failed', message: 'Please try again' });
           endGeneration(genId);
           setNavGenerating(false);
           return;
@@ -2123,7 +2121,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             notifyQueue({ title: 'Added to queue', message: 'We will start processing shortly.' });
             // Don't return - let the processing continue
           } else if (res.status === 429) {
-            notifyError({ title: 'Something went wrong', message: 'Rate limited' });
+            notifyError({ title: 'Failed', message: 'Please try again' });
             endGeneration(genId);
             setNavGenerating(false);
             return;
@@ -2140,7 +2138,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
       // Handle video job creation (status 202) - only for aimlApi responses
       if (!skipAimlApi && res?.status === 202 && body?.job_id && isVideoPreview) {
-          notifyQueue({ title: 'Add to queue', message: 'Processing will begin shortly.' })
+          notifyQueue({ title: 'Add to queue', message: 'We\'ll start processing shortly.' })
         setCurrentVideoJob({ id: body.job_id, status: 'queued' })
         startVideoJobPolling(body.job_id, body.model, effectivePrompt)
         endGeneration(genId)
