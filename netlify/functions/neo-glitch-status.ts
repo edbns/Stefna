@@ -34,7 +34,7 @@ export const handler: Handler = async (event) => {
 
   try {
     // Authenticate user
-    const { sub: userId } = requireAuth(event);
+    const { userId } = requireAuth(event.headers?.authorization || event.headers?.Authorization);
     console.log('🎭 [NeoGlitch] User authenticated for status check:', userId);
 
     const body = JSON.parse(event.body || '{}');

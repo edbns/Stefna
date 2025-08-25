@@ -4,7 +4,7 @@ import { requireAuth } from "./_lib/auth";
 export function withAuth(fn: (e: any, u: any) => Promise<any> | any): Handler {
   return async (event) => {
     try {
-      const user = requireAuth(event);
+      const user = requireAuth(event.headers?.authorization || event.headers?.Authorization);
       return await fn(event, user);
     } catch (err: any) {
       // Normalize common auth failures
