@@ -4335,9 +4335,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
                 {/* Bottom-centered composer */}
           {isComposerOpen && (
-            <div className="fixed inset-0 z-[9999] bg-black navbar-stable">
+            <div className="fixed inset-0 z-[99999] bg-black navbar-stable">
           {/* Close button */}
-          <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-[9999] pointer-events-auto text-white/80 hover:text-white transition-colors bg-black/60 hover:bg-black/80 rounded-full p-2 backdrop-blur-sm" aria-label="Close">
+          <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-[99999] pointer-events-auto text-white/80 hover:text-white transition-colors bg-black/60 hover:bg-black/80 rounded-full p-2 backdrop-blur-sm" aria-label="Close">
             <X size={20} />
           </button>
           
@@ -4379,7 +4379,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
                       {/* Bottom composer bar - compact, horizontally 70% */}
             <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
-            <div className="bg-gray-700 rounded-2xl px-4 py-3 transition-all duration-300">
+            <div className="bg-gray-700 border-2 border-white rounded-2xl px-4 py-3 transition-all duration-300">
               
 
               
@@ -4397,7 +4397,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                       ? "Describe your vision... (click ✨ to enhance your prompt)"
                       : "Custom prompt (optional) - will be combined with selected preset"
                     }
-                    className="w-full px-3 py-2 pr-10 bg-white text-gray-900 placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-200 h-20 text-sm border-2 border-gray-300 hover:border-gray-400"
+                    className="w-full px-3 py-2 pr-10 bg-black text-white placeholder-white/60 resize-none focus:outline-none focus:ring-2 focus:ring-white focus:bg-black transition-all duration-200 h-20 text-sm border-2 border-white hover:border-white/80 rounded-xl"
                     disabled={false}
                     data-testid="custom-prompt-input"
                   />
