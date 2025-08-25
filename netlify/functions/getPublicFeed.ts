@@ -259,6 +259,17 @@ export const handler: Handler = async (event) => {
       // ✅ FIXED: Apply pagination to the deduplicated, sorted results
       const feedItems = uniqueFeedItems.slice(offsetNum, offsetNum + limitNum);
 
+      // 🚨 DEBUG: Log pagination details to verify it's working
+      console.log('🔍 [getPublicFeed] Pagination details:', {
+        totalAvailable: uniqueFeedItems.length,
+        offset: offsetNum,
+        limit: limitNum,
+        startIndex: offsetNum,
+        endIndex: offsetNum + limitNum,
+        itemsReturned: feedItems.length,
+        hasMore: (offsetNum + feedItems.length) < uniqueFeedItems.length
+      });
+
       await prisma.$disconnect();
 
       // 🚀 ENHANCED: Provide detailed response metadata for debugging and optimization
@@ -266,7 +277,7 @@ export const handler: Handler = async (event) => {
         success: true,
         items: feedItems,
         total: feedItems.length,
-        hasMore: feedItems.length === limitNum,
+        hasMore: (offsetNum + feedItems.length) < uniqueFeedItems.length,
         // 🆕 NEW: Detailed breakdown for debugging
         breakdown: {
           totalMediaAssets: publicMedia.length,
