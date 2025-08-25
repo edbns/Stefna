@@ -257,7 +257,7 @@ const HomeNew: React.FC = () => {
     setPreviewUrl(null)
     setComposerState(s => ({
       ...s,
-      mode: 'custom',
+      mode: 'preset', // Reset to preset mode instead of custom for cleaner state
       file: null,
       sourceUrl: null,
       selectedPresetId: null,
