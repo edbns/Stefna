@@ -1940,18 +1940,14 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         return;
       }
 
-      // 🎭 NEO TOKYO GLITCH: Use Replicate integration for maximum glitch intensity
+      // 🎭 NEO TOKYO GLITCH: Follow Ghibli's exact pattern but with Stability.ai backend
       let skipAimlApi = false;
-      let replicateResultUrl: string | null = null;
-      let replicateAllResultUrls: string[] = [];
-      let replicateVariationsGenerated = 1;
       
-      if (kind === 'neotokyoglitch' && generationMeta?.replicatePreset) {
-        console.log('🚀 NEO TOKYO GLITCH: Using new first-class generation pipeline');
-        console.log('🎭 Replicate preset:', generationMeta.replicatePreset);
+      if (kind === 'neotokyoglitch') {
+        console.log('🚀 [NeoGlitch] Starting generation following Ghibli pattern');
         
         try {
-          // Use the new NeoGlitchService for complete pipeline management
+          // Call Neo Tokyo Glitch backend (similar to how Ghibli calls AIML API)
           const neoGlitchService = NeoGlitchService.getInstance();
           
           // Start the complete Neo Tokyo Glitch generation
