@@ -46,7 +46,7 @@ export const handler: Handler = async (event) => {
             visibility: 'public'
           },
           include: {
-            owner: {
+            user: {
               select: {
                 id: true,
                 email: true,
@@ -87,15 +87,15 @@ export const handler: Handler = async (event) => {
       // Transform main media assets to feed format
       const mainFeedItems = publicMedia.map(item => ({
         id: item.id,
-        userId: item.userId, // Using userId field from schema
-        user: item.owner,
-        finalUrl: item.url, // Using url field from schema
-        mediaType: item.resourceType, // Using resourceType field from schema
+        userId: item.userId,
+        user: item.user, // Now using 'user' instead of 'owner'
+        finalUrl: item.url,
+        mediaType: item.resourceType,
         prompt: item.prompt,
-        presetKey: item.prompt, // Using prompt as presetKey since presetKey doesn't exist
-        status: 'ready', // Default status since MediaAsset doesn't have status field
+        presetKey: item.presetKey, // Using the actual presetKey field
+        status: item.status || 'ready',
         createdAt: item.createdAt,
-        type: 'media-asset' // Identify as main media asset
+        type: 'media-asset'
       }));
 
       // Transform Neo Tokyo Glitch media to feed format
