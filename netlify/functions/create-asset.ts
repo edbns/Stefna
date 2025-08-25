@@ -81,7 +81,8 @@ export const handler: Handler = async (event) => {
           prompt: input.prompt ?? null,
           sourceAssetId: input.sourceAssetId ?? null,
           status: 'queued',
-          allowRemix: false
+          allowRemix: false,
+          visibility: 'public' // Set visibility to public so it appears in feed
         }
       });
       

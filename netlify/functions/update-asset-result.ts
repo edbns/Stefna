@@ -71,6 +71,7 @@ export const handler: Handler = async (event) => {
         prompt: prompt || undefined,
         meta: meta,
         isPublic: true,
+        visibility: 'public', // Ensure visibility is set to public
         updatedAt: new Date()
       },
       select: {
@@ -78,6 +79,7 @@ export const handler: Handler = async (event) => {
         finalUrl: true,
         status: true,
         isPublic: true,
+        visibility: true,
         updatedAt: true
       }
     });
