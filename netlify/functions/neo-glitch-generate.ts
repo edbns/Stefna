@@ -296,19 +296,30 @@ async function processGenerationAsync(
       responseBody.imageUrl = stabilityResult.imageUrl;
       responseBody.status = 'completed';
       
-      // Update database record with completed status and image URL
+      // 🔒 CRITICAL FIX: Update database record IMMEDIATELY with completed status
+      console.log('🎉 [NeoGlitch] Stability.ai returned immediate result, updating database...');
+      
       await db.neoGlitchMedia.update({
         where: { id: recordId },
         data: {
           status: 'completed',
-          imageUrl: stabilityResult.imageUrl
+          imageUrl: stabilityResult.imageUrl,
+          stabilityJobId: stabilityResult.stabilityJobId
         }
       });
       
+      console.log('✅ [NeoGlitch] Database updated with completed status and image URL');
       console.log('🎉 [NeoGlitch] Generation completed successfully with Stability.ai');
       
       // 🔒 CRITICAL FIX: Only charge credits ONCE for Stability.ai success (no double billing)
       await finalizeCreditsOnce(userId, runId, true, userToken);
+      
+      // 🚨 IMPORTANT: Return completed status so frontend knows it's done
+      return {
+        status: 'completed',
+        imageUrl: stabilityResult.imageUrl,
+        stabilityJobId: stabilityResult.stabilityJobId
+      };
     }
 
     console.log('✅ [NeoGlitch] Async generation completed successfully');

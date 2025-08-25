@@ -1927,7 +1927,65 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           
           console.log('✅ [NeoGlitch] Generation started successfully:', generationResult);
           
-          // Start polling for completion (don't wait for it to complete)
+          // 🔍 CHECK IF GENERATION IS ALREADY COMPLETE (Stability.ai returns immediately)
+          if (generationResult.status === 'completed' && generationResult.cloudinaryUrl) {
+            console.log('🎉 [NeoGlitch] Generation completed immediately with Stability.ai!');
+            
+            // Save the generated media to user profile
+            try {
+              const mediaToSave = {
+                userId: authService.getCurrentUser()?.id || '',
+                type: 'photo' as const,
+                url: generationResult.cloudinaryUrl,
+                thumbnailUrl: generationResult.cloudinaryUrl,
+                prompt: effectivePrompt,
+                aspectRatio: 1,
+                width: 1024,
+                height: 1024,
+                tokensUsed: 1,
+                isPublic: true,
+                tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+                metadata: {
+                  quality: 'high' as const,
+                  generationTime: Date.now(),
+                  modelVersion: 'stability-ai',
+                  presetId: generationMeta?.neoTokyoGlitchPresetId,
+                  mode: 'i2i' as const,
+                  group: null
+                }
+              };
+              
+              userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
+              console.log('✅ [NeoGlitch] Media saved successfully');
+              
+              // Refresh the public feed to show new media
+              loadFeed();
+              
+              // End generation successfully
+              endGeneration(genId);
+              setNavGenerating(false);
+              
+              // Show unified toast with thumbnail
+              notifyReady({ 
+                title: 'Your media is ready', 
+                message: 'Tap to open',
+                thumbUrl: generationResult.cloudinaryUrl,
+                onClickThumb: () => {
+                  window.open(generationResult.cloudinaryUrl, '_blank');
+                }
+              });
+              
+              return; // Don't start polling if already complete
+            } catch (error) {
+              console.error('❌ [NeoGlitch] Failed to save media:', error);
+              notifyError({ title: 'Failed', message: 'Please try again' });
+              endGeneration(genId);
+              setNavGenerating(false);
+              return;
+            }
+          }
+          
+          // Start polling for completion (only if not already complete)
           console.log('🔄 [NeoGlitch] Starting async polling for completion...');
           
           // Start the polling in the background

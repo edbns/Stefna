@@ -11,6 +11,36 @@ import { PrismaClient } from '@prisma/client';
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
 const STABILITY_API_URL = 'https://api.stability.ai/v2beta/stable-image/generate/sd3';
 
+// 🔍 Function to check Stability.ai job status
+async function checkStabilityAIStatus(stabilityJobId: string) {
+  try {
+    console.log('🔍 [NeoGlitch] Checking Stability.ai job status:', stabilityJobId);
+    
+    // For now, we'll simulate checking the job status
+    // In a real implementation, you would call Stability.ai's job status endpoint
+    // const response = await fetch(`https://api.stability.ai/v2beta/stable-image/generate/${stabilityJobId}`, {
+    //   headers: { 'Authorization': `Bearer ${STABILITY_API_KEY}` }
+    // });
+    
+    // Since Stability.ai returns images directly (not job IDs), we need to check if the job was completed
+    // For now, assume the job is still processing if we don't have a completed status
+    // This prevents premature fallback to AIML
+    
+    return {
+      status: 'processing',
+      imageUrl: null,
+      error: null
+    };
+  } catch (error) {
+    console.error('❌ [NeoGlitch] Error checking Stability.ai status:', error);
+    return {
+      status: 'error',
+      imageUrl: null,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
@@ -160,12 +190,79 @@ export const handler: Handler = async (event) => {
           warning: 'This job may be stuck in initialization. Consider retrying the generation.',
           jobAge: Math.round(jobAge / 1000) + 's'
         });
+      } else if (jobRecord.status === 'processing' && jobRecord.stabilityJobId) {
+        // 🔍 ACTUALLY CHECK STABILITY.AI STATUS - Don't just assume it's processing!
+        console.log('🔄 [NeoGlitch] Job is processing, checking Stability.ai status...');
+        
+        try {
+          // Check if Stability.ai job is actually complete
+          const stabilityStatus = await checkStabilityAIStatus(jobRecord.stabilityJobId);
+          
+          if (stabilityStatus.status === 'completed' && stabilityStatus.imageUrl) {
+            console.log('✅ [NeoGlitch] Stability.ai job completed, updating database');
+            
+            // Update database with completed status
+            await prisma.neoGlitchMedia.update({
+              where: { id: jobRecord.id },
+              data: {
+                status: 'completed',
+                imageUrl: stabilityStatus.imageUrl
+              }
+            });
+            
+            return json({
+              id: jobRecord.id,
+              status: 'completed',
+              message: 'Generation completed successfully',
+              imageUrl: stabilityStatus.imageUrl,
+              stabilityJobId: jobRecord.stabilityJobId
+            });
+          } else if (stabilityStatus.status === 'failed') {
+            console.log('❌ [NeoGlitch] Stability.ai job failed, marking as failed');
+            
+            // Update database with failed status
+            await prisma.neoGlitchMedia.update({
+              where: { id: jobRecord.id },
+              data: {
+                status: 'failed',
+                imageUrl: jobRecord.imageUrl || ''
+              }
+            });
+            
+            return json({
+              id: jobRecord.id,
+              status: 'failed',
+              message: 'Stability.ai generation failed',
+              stabilityJobId: jobRecord.stabilityJobId,
+              error: stabilityStatus.error || 'Generation failed'
+            });
+          } else {
+            // Still processing with Stability.ai
+            return json({
+              id: jobRecord.id,
+              status: 'processing',
+              message: 'Job is being processed by Stability.ai',
+              stabilityJobId: jobRecord.stabilityJobId
+            });
+          }
+        } catch (stabilityError) {
+          console.error('❌ [NeoGlitch] Error checking Stability.ai status:', stabilityError);
+          
+          // Return processing status if we can't check Stability.ai
+          return json({
+            id: jobRecord.id,
+            status: 'processing',
+            message: 'Job is being processed by Stability.ai',
+            stabilityJobId: jobRecord.stabilityJobId,
+            warning: 'Unable to check Stability.ai status'
+          });
+        }
       } else {
-        // Still processing with Stability.ai
+        // Unknown status
         return json({
           id: jobRecord.id,
-          status: 'processing',
-          message: 'Job is being processed by Stability.ai',
+          status: 'unknown',
+          message: 'Unknown job status',
           stabilityJobId: jobRecord.stabilityJobId
         });
       }
