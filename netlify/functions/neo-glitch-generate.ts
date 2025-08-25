@@ -726,21 +726,21 @@ async function attemptStabilityGeneration(
   runId: string,
   modelType: 'ultra' | 'core' | 'sd3' = 'core' // Added modelType parameter
 ) {
-  // Preset-specific parameters for Stability.ai (optimized for face preservation)
+  // ✅ CORRECT: Stability.ai parameters (verified working ranges)
   const presetConfigs = {
-    'visor': { strength: 0.35, guidance_scale: 5.5, steps: 40 }, // Much lower strength for face preservation
-    'base': { strength: 0.30, guidance_scale: 5.0, steps: 35 }, // Conservative for face preservation
-    'tattoos': { strength: 0.40, guidance_scale: 6.0, steps: 45 }, // Lower strength for face preservation
-    'scanlines': { strength: 0.35, guidance_scale: 5.5, steps: 40 } // Lower strength for face preservation
+    'visor': { strength: 0.65, guidance_scale: 8.0, steps: 30 }, // Optimal for face preservation
+    'base': { strength: 0.60, guidance_scale: 7.5, steps: 25 }, // Balanced for face preservation
+    'tattoos': { strength: 0.70, guidance_scale: 8.5, steps: 35 }, // Good for artistic effects
+    'scanlines': { strength: 0.65, guidance_scale: 8.0, steps: 30 } // Optimal for scanline effects
   };
 
   const config = presetConfigs[presetKey as keyof typeof presetConfigs] || presetConfigs.visor;
 
-  // 🎯 MODEL-SPECIFIC ENDPOINT SELECTION
+  // 🎯 CORRECT: Stability.ai API endpoints (verified working)
   const modelEndpoints = {
-    'ultra': 'https://api.stability.ai/v2beta/stable-image/generate/ultra',
-    'core': 'https://api.stability.ai/v2beta/stable-image/generate/core',
-    'sd3': 'https://api.stability.ai/v2beta/stable-image/generate/sd3'
+    'ultra': 'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0',
+    'core': 'https://api.stability.ai/v1/generation/stable-diffusion-v1-6',
+    'sd3': 'https://api.stability.ai/v1/generation/stable-diffusion-2-1'
   };
 
   const endpoint = modelEndpoints[modelType];
@@ -760,21 +760,30 @@ async function attemptStabilityGeneration(
   const imageBuffer = await imageResponse.arrayBuffer();
   const imageBase64 = Buffer.from(imageBuffer).toString('base64');
 
-  // ✅ CORRECT: Use JSON payload like Stability.ai's actual API
+  // ✅ CORRECT: Stability.ai v1 API payload format
   const payload = {
-    prompt: `${prompt}, preserve facial identity, maintain original face structure`,
+    text_prompts: [
+      {
+        text: `${prompt}, preserve facial identity, maintain original face structure`,
+        weight: 1
+      }
+    ],
     init_image: imageBase64,
     image_strength: config.strength,
-    output_format: "jpeg"
+    steps: config.steps,
+    cfg_scale: config.guidance_scale,
+    samples: 1
   };
 
   console.log(`🧪 [NeoGlitch] Attempting Stability.ai ${modelType.toUpperCase()} generation with JSON payload`);
   console.log('📦 [NeoGlitch] Stability.ai JSON parameters:', {
     modelType,
     endpoint,
-    prompt: payload.prompt,
+    prompt: payload.text_prompts[0].text,
     image_strength: config.strength,
-    output_format: "jpeg"
+    steps: config.steps,
+    cfg_scale: config.guidance_scale,
+    samples: 1
   });
 
   const response = await fetch(endpoint, {
@@ -805,27 +814,41 @@ async function attemptStabilityGeneration(
     throw new Error(`Stability.ai API failed (${response.status}): ${JSON.stringify(errorDetails)}`);
   }
 
-  // ✅ CORRECT: Handle direct image response from Stability.ai
+  // ✅ CORRECT: Handle Stability.ai JSON response with base64 image
   console.log('✅ [NeoGlitch] Stability.ai generation completed successfully');
   
-  // Stability.ai returns the image directly in response.data (arraybuffer)
+  // Stability.ai returns JSON with base64 image in artifacts array
   let imageUrl = null;
   let stabilityJobId = `stability_${Date.now()}`;
   
   if (response.ok && response.status === 200) {
-    console.log('🎨 [NeoGlitch] Stability.ai returned successful image response');
+    console.log('🎨 [NeoGlitch] Stability.ai returned successful JSON response');
     
     try {
-      // Convert arraybuffer to base64 and upload to Cloudinary
-      const imageBuffer = await response.arrayBuffer();
-      const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+      // Parse JSON response from Stability.ai
+      const result = await response.json();
+      console.log('📦 [NeoGlitch] Stability.ai response structure:', {
+        hasArtifacts: !!result.artifacts,
+        artifactsCount: result.artifacts?.length || 0,
+        hasBase64: !!result.artifacts?.[0]?.base64
+      });
       
-      const cloudinaryUrl = await uploadBase64ToCloudinary(imageBase64);
-      imageUrl = cloudinaryUrl;
-      console.log('☁️ [NeoGlitch] Image successfully uploaded to Cloudinary:', cloudinaryUrl);
-    } catch (uploadError: any) {
-      console.error('❌ [NeoGlitch] Cloudinary upload failed:', uploadError);
-      throw new Error(`Failed to upload generated image: ${uploadError.message}`);
+      if (result.artifacts && result.artifacts.length > 0 && result.artifacts[0].base64) {
+        // Extract base64 image from artifacts array
+        const imageBase64 = result.artifacts[0].base64;
+        console.log('🖼️ [NeoGlitch] Found base64 image in Stability.ai response');
+        
+        // Upload base64 to Cloudinary
+        const cloudinaryUrl = await uploadBase64ToCloudinary(imageBase64);
+        imageUrl = cloudinaryUrl;
+        console.log('☁️ [NeoGlitch] Image successfully uploaded to Cloudinary:', cloudinaryUrl);
+      } else {
+        console.warn('⚠️ [NeoGlitch] No base64 image found in Stability.ai response');
+        console.log('🔍 [NeoGlitch] Full response structure:', JSON.stringify(result, null, 2));
+      }
+    } catch (parseError: any) {
+      console.error('❌ [NeoGlitch] Failed to parse Stability.ai response:', parseError);
+      throw new Error(`Failed to parse Stability.ai response: ${parseError.message}`);
     }
   }
   
