@@ -38,8 +38,8 @@ export const handler: Handler = async (event) => {
       ? toCloudinaryFrame(sourceUrl, body.frameSecond ?? 0, 1024)
       : sourceUrl;
 
-    // Choose tier based on plan or query param (default to standard)
-    const model = (body.tier === 'pro') ? MODELS.I2V_PRO : MODELS.I2V_STD;
+    // Use standard model (tier system removed)
+    const model = MODELS.I2V_STD;
 
     console.log(`[start-gen] I2V generation:`, {
       sourceUrl: sourceUrl.substring(0, 60) + '...',

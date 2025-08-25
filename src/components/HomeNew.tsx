@@ -1987,8 +1987,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               duration: 3,  // I2V default duration
               fps: 24,
               stabilization: false,
-              frameSecond: 0,  // Extract frame at start (TODO: add UI slider)
-              tier: 'standard'  // TODO: add pro tier selection
+              frameSecond: 0  // Extract frame at start (TODO: add UI slider)
             })
           });
           const startJson = await startRes.json().catch(() => ({}));

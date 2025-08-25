@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { User, Zap, Clock, AlertCircle } from 'lucide-react'
-import tokenService, { UserTier, TokenUsage } from '../services/tokenService'
+import tokenService, { TokenUsage } from '../services/tokenService'
 import { authenticatedFetch } from '../utils/apiClient'
 
 interface TokenUsageDisplayProps {
   userId: string
-  userTier: UserTier
   className?: string
 }
 
 const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({ 
   userId, 
-  userTier, 
   className = '' 
 }) => {
   const [usage, setUsage] = useState<TokenUsage | null>(null)
@@ -48,30 +46,12 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
     }
   }
 
-  const getTierColor = (tier: UserTier) => {
-    switch (tier) {
-      case UserTier.REGISTERED:
-        return 'text-blue-400'
-      case UserTier.VERIFIED:
-        return 'text-purple-400'
-      case UserTier.CONTRIBUTOR:
-        return 'text-yellow-400'
-      default:
-        return 'text-white'
-    }
+  const getStatusColor = () => {
+    return 'text-blue-400'
   }
 
-  const getTierName = (tier: UserTier) => {
-    switch (tier) {
-      case UserTier.REGISTERED:
-        return 'Registered'
-      case UserTier.VERIFIED:
-        return 'Verified'
-      case UserTier.CONTRIBUTOR:
-        return 'Contributor'
-      default:
-        return 'Unknown'
-    }
+  const getStatusName = () => {
+    return 'Active'
   }
 
   const getUsagePercentage = () => {
@@ -105,12 +85,12 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
 
   return (
     <div className={`bg-white/5 backdrop-blur-md rounded-lg p-4 border border-white/10 ${className}`}>
-      {/* Tier and Status */}
+      {/* Status */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
-          <User size={16} className={getTierColor(userTier)} />
-          <span className={`text-sm font-medium ${getTierColor(userTier)}`}>
-            {getTierName(userTier)}
+          <User size={16} className={getStatusColor()} />
+          <span className={`text-sm font-medium ${getStatusColor()}`}>
+            {getStatusName()}
           </span>
         </div>
         

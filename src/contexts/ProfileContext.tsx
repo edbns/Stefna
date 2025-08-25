@@ -10,7 +10,6 @@ interface ProfileData {
   shareToFeed: boolean
   // allowRemix removed
   onboarding_completed?: boolean
-  tier?: string
   createdAt?: string
 }
 
@@ -29,7 +28,6 @@ const defaultProfileData: ProfileData = {
   avatar: '',
   shareToFeed: true, // 🔓 SHARING FIRST: Default to public so users can share their generations
   onboarding_completed: false,
-  tier: 'registered',
   createdAt: new Date().toISOString()
 }
 
@@ -96,7 +94,6 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
             shareToFeed: shareToFeed,
             // allowRemix removed
             onboarding_completed: userData.onboarding_completed || false,
-            tier: userData.tier || 'registered',
             createdAt: userData.createdAt
           }
           

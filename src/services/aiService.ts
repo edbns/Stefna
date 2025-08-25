@@ -30,7 +30,7 @@ export interface CreativePrompt {
 }
 
 // Import the advanced token service and content moderation
-import tokenService, { UserTier } from './tokenService'
+import tokenService from './tokenService'
 import contentModerationService from './contentModerationService'
 
 class AIService {
@@ -39,22 +39,22 @@ class AIService {
   }
 
   // Get token usage using the advanced system
-  public async getTokenUsage(userId: string, userTier: UserTier = UserTier.REGISTERED) {
+  public async getTokenUsage(userId: string) {
     return await tokenService.getUserUsage(userId)
   }
 
   // Check if user can use AI with advanced token system
-  public async canUseAI(userId: string, userTier: UserTier = UserTier.REGISTERED, type: 'photo' | 'video' = 'photo', quality: 'standard' | 'high' = 'standard') {
-    const result = await tokenService.canGenerate(userId, userTier, type, quality)
+  public async canUseAI(userId: string, type: 'photo' | 'video' = 'photo', quality: 'standard' | 'high' = 'standard') {
+    const result = await tokenService.canGenerate(userId, type, quality)
     return result.canGenerate
   }
 
   // Increment usage with advanced tracking
-  public async incrementUsage(userId: string, userTier: UserTier, type: 'photo' | 'video', quality: 'standard' | 'high', prompt: string) {
+  public async incrementUsage(userId: string, type: 'photo' | 'video', quality: 'standard' | 'high', prompt: string) {
     const deviceId = this.getDeviceId()
     const ipAddress = await this.getIPAddress()
     
-    return await tokenService.generateContent(userId, userTier, type, quality, prompt, ipAddress, deviceId)
+    return await tokenService.generateContent(userId, type, quality, prompt, ipAddress, deviceId)
   }
 
   // Get device ID for tracking
@@ -232,8 +232,7 @@ class AIService {
     
     // Get user info for token tracking
     const userId = localStorage.getItem('userId') || 'guest'
-    const userTier = UserTier.REGISTERED // Default tier
-    await this.incrementUsage(userId, userTier, 'photo', 'standard', customPrompt || brush.style)
+            await this.incrementUsage(userId, 'photo', 'standard', customPrompt || brush.style)
     
     // Create a processed version by adding a filter effect
     const canvas = document.createElement('canvas')

@@ -82,7 +82,6 @@ export const handler: Handler = async (event, context) => {
           id: uid,
           email: email || `user-${uid}@placeholder.com`,
           name: body.username || `User ${uid}`,
-          tier: 'registered',
           createdAt: new Date(),
           updatedAt: new Date()
         }
