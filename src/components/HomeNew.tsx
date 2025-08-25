@@ -1621,13 +1621,13 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               }
             };
             
-            await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
-            console.log('✅ [NeoGlitch] Media saved successfully');
+            // 🚨 CRITICAL FIX: Don't save here - backend already saved it!
+            console.log('✅ [NeoGlitch] Backend already saved media, skipping duplicate save');
             
             // Refresh the public feed to show new media
             loadFeed();
           } catch (error) {
-            console.error('❌ [NeoGlitch] Failed to save media:', error);
+            console.error('❌ [NeoGlitch] Error in post-generation flow:', error);
           }
           
           // End generation successfully
@@ -1996,8 +1996,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 }
               };
               
-              await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
-              console.log('✅ [NeoGlitch] Media saved successfully');
+              // 🚨 CRITICAL FIX: Don't save here - backend already saved it!
+              console.log('✅ [NeoGlitch] Backend already saved media, skipping duplicate save');
               
               // Refresh the public feed to show new media (following Ghibli pattern)
               loadFeed();
@@ -2090,8 +2090,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                       }
                     };
                     
-                    await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
-                    console.log('✅ [NeoGlitch] Media saved successfully');
+                    // 🚨 CRITICAL FIX: Don't save here - backend already saved it!
+                    console.log('✅ [NeoGlitch] Backend already saved media, skipping duplicate save');
                     
                     // Refresh the public feed (following Ghibli pattern)
                     loadFeed();
