@@ -574,7 +574,7 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
   console.log('🌐 [NeoGlitch] Using AIML API endpoint:', AIML_API_URL);
   
   try {
-    // Use AIML's working endpoint for image generation
+    // Use AIML's working endpoint for image generation (v1 - proven to work)
     const response = await fetch(`${AIML_API_URL}/v1/images/generations`, {
       method: 'POST',
       headers: {
@@ -585,9 +585,11 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
       body: JSON.stringify({
         model: 'stable-diffusion-v35-large', // Neo Tokyo Glitch specific model
         prompt,
-        image_url: sourceUrl, // AIML expects 'image_url' field
-        strength: 0.75,
-        num_variations: 1,
+        init_image: sourceUrl, // ✅ Correct v1 parameter for image-to-image
+        image_strength: 0.75, // ✅ Correct parameter name for v1
+        num_images: 1, // ✅ Correct parameter name for v1
+        guidance_scale: 7.5, // ✅ Add guidance scale for better control
+        num_inference_steps: 30, // ✅ Add inference steps for quality
         seed: Math.floor(Math.random() * 1000000) // Add randomization to prevent cache hits
       })
     });
@@ -600,17 +602,27 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
     const result = await response.json();
     console.log('✅ [NeoGlitch] AIML fallback generation successful');
     
-    // AIML API returns different response formats, handle multiple possibilities
+    // AIML v1 API response format for stable-diffusion-v35-large
     let imageUrl = null;
     
-    if (result.image_url) {
+    // Handle v1 response format: result.output.choices[0].image_base64
+    if (result.output && result.output.choices && result.output.choices[0]?.image_base64) {
+      console.log('✅ [NeoGlitch] Found v1 response format with base64 image');
+      try {
+        // Convert base64 to Cloudinary URL
+        const cloudinaryUrl = await uploadBase64ToCloudinary(result.output.choices[0].image_base64);
+        imageUrl = cloudinaryUrl;
+        console.log('☁️ [NeoGlitch] Image successfully uploaded to Cloudinary:', cloudinaryUrl);
+      } catch (uploadError: any) {
+        console.error('❌ [NeoGlitch] Cloudinary upload failed:', uploadError);
+        throw new Error(`Failed to upload generated image: ${uploadError.message}`);
+      }
+    } else if (result.image_url) {
+      // Fallback to direct URL if present
       imageUrl = result.image_url;
     } else if (result.images && Array.isArray(result.images) && result.images[0]?.url) {
+      // Fallback to images array if present
       imageUrl = result.images[0].url;
-    } else if (result.output && Array.isArray(result.output) && result.output[0]?.url) {
-      imageUrl = result.output[0].url;
-    } else if (result.data && Array.isArray(result.data) && result.data[0]?.url) {
-      imageUrl = result.data[0].url;
     }
     
     if (!imageUrl) {
@@ -709,61 +721,40 @@ async function attemptStabilityGeneration(
   console.log(`🧪 [NeoGlitch] Attempting Stability.ai ${modelType.toUpperCase()} generation`);
   console.log(`🔗 [NeoGlitch] Using endpoint: ${endpoint}`);
 
-  // Download the source image and convert to Buffer
+  // Download the source image and convert to base64
   const imageResponse = await fetch(sourceUrl);
   if (!imageResponse.ok) {
     throw new Error(`Failed to download source image: ${imageResponse.status}`);
   }
   
   const imageBuffer = await imageResponse.arrayBuffer();
-  const imageData = Buffer.from(imageBuffer);
+  const imageBase64 = Buffer.from(imageBuffer).toString('base64');
 
-  // Create FormData for multipart/form-data submission
-  const formData = new FormData();
-  
-  // Append the image as a file - convert Buffer to Blob for FormData
-  const imageBlob = new Blob([imageData], { type: 'image/jpeg' });
-  formData.append('init_image', imageBlob, 'input.jpg');
-  
-  // ✅ REQUIRED: Top-level prompt field (Stability.ai API requirement)
-  formData.append('prompt', prompt);
-  
-  // Append weighted text prompts with face preservation
-  formData.append('text_prompts[0][text]', `${prompt}, preserve facial identity, maintain original face structure`);
-  formData.append('text_prompts[0][weight]', '1');
-  formData.append('text_prompts[1][text]', 'face distortion, facial deformation, identity loss, different person, face morphing, blurry, low quality, distorted, ugly, bad anatomy, watermark, text');
-  formData.append('text_prompts[1][weight]', '-1');
-  
-  // Append other parameters
-  formData.append('init_image_mode', 'IMAGE_TO_IMAGE');
-  formData.append('image_strength', config.strength.toString());
-  formData.append('cfg_scale', config.guidance_scale.toString());
-  formData.append('steps', config.steps.toString());
-  formData.append('samples', '1');
-  formData.append('aspect_ratio', '1:1');
+  // ✅ CORRECT: Use JSON payload like Stability.ai's actual API
+  const payload = {
+    prompt: `${prompt}, preserve facial identity, maintain original face structure`,
+    init_image: imageBase64,
+    image_strength: config.strength,
+    output_format: "jpeg"
+  };
 
-  console.log(`🧪 [NeoGlitch] Attempting Stability.ai ${modelType.toUpperCase()} generation with FormData`);
-  console.log('📦 [NeoGlitch] Stability.ai FormData parameters:', {
+  console.log(`🧪 [NeoGlitch] Attempting Stability.ai ${modelType.toUpperCase()} generation with JSON payload`);
+  console.log('📦 [NeoGlitch] Stability.ai JSON parameters:', {
     modelType,
     endpoint,
-    prompt,
-    topLevelPrompt: prompt, // Required by Stability.ai API
-    negativePrompt: 'blurry, low quality, distorted, ugly, bad anatomy, watermark, text',
+    prompt: payload.prompt,
     image_strength: config.strength,
-    cfg_scale: config.guidance_scale,
-    steps: config.steps,
-    samples: 1,
-    aspect_ratio: '1:1'
+    output_format: "jpeg"
   });
 
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiToken}`,
-      'Accept': 'application/json'
-      // Don't set Content-Type - let the browser set it with boundary for FormData
+      'Content-Type': 'application/json',
+      'Accept': 'image/*'
     },
-    body: formData
+    body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
@@ -784,79 +775,28 @@ async function attemptStabilityGeneration(
     throw new Error(`Stability.ai API failed (${response.status}): ${JSON.stringify(errorDetails)}`);
   }
 
-  const result = await response.json();
+  // ✅ CORRECT: Handle direct image response from Stability.ai
   console.log('✅ [NeoGlitch] Stability.ai generation completed successfully');
-  console.log('📦 [NeoGlitch] Stability.ai Core response structure:', {
-    hasArtifacts: !!result.artifacts,
-    artifactsLength: result.artifacts?.length || 0,
-    hasId: !!result.id,
-    hasStatus: !!result.status,
-    responseKeys: Object.keys(result),
-    fullResponse: JSON.stringify(result, null, 2)
-  });
   
-  // Check multiple possible response structures from Stability.ai
+  // Stability.ai returns the image directly in response.data (arraybuffer)
   let imageUrl = null;
-  let stabilityJobId = result.id || `stability_${Date.now()}`;
+  let stabilityJobId = `stability_${Date.now()}`;
   
-  // ✅ IMPROVED ARTIFACT DETECTION (Your Solution)
-  console.log('🔍 [NeoGlitch] Analyzing Stability.ai response for artifacts...');
-  console.log('🔍 [NeoGlitch] Response keys:', Object.keys(result));
-  console.log('🔍 [NeoGlitch] Artifacts present:', !!result.artifacts);
-  console.log('🔍 [NeoGlitch] Artifacts length:', result.artifacts?.length || 0);
-  
-  // Structure 1: artifacts array with base64 (Primary path)
-  if (result.artifacts && Array.isArray(result.artifacts) && result.artifacts.length > 0) {
-    console.log('🎨 [NeoGlitch] Found artifacts array, analyzing first artifact...');
-    console.log('🎨 [NeoGlitch] First artifact structure:', JSON.stringify(result.artifacts[0], null, 2));
+  if (response.ok && response.status === 200) {
+    console.log('🎨 [NeoGlitch] Stability.ai returned successful image response');
     
-    const artifact = result.artifacts[0];
-    
-    // 🔒 CRITICAL FIX: Treat missing/invalid artifacts as HARD FAILURE to prevent double billing
-    if (!artifact.base64 || artifact.base64 === "" || artifact.base64 === null) {
-      console.error('❌ [NeoGlitch] Stability.ai returned empty/invalid base64 - treating as hard failure');
-      throw new Error(`Stability.ai returned invalid artifact: missing base64 data`);
-    }
-    
-    if (artifact.finishReason !== 'SUCCESS') {
-      console.error('❌ [NeoGlitch] Stability.ai returned non-SUCCESS finishReason - treating as hard failure');
-      throw new Error(`Stability.ai returned invalid artifact: finishReason = ${artifact.finishReason}`);
-    }
-    
-    // ✅ VALID ARTIFACT FOUND - process normally
-    console.log('✅ [NeoGlitch] Found valid artifact with base64 and SUCCESS status');
     try {
-      const cloudinaryUrl = await uploadBase64ToCloudinary(artifact.base64);
+      // Convert arraybuffer to base64 and upload to Cloudinary
+      const imageBuffer = await response.arrayBuffer();
+      const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+      
+      const cloudinaryUrl = await uploadBase64ToCloudinary(imageBase64);
       imageUrl = cloudinaryUrl;
       console.log('☁️ [NeoGlitch] Image successfully uploaded to Cloudinary:', cloudinaryUrl);
     } catch (uploadError: any) {
       console.error('❌ [NeoGlitch] Cloudinary upload failed:', uploadError);
       throw new Error(`Failed to upload generated image: ${uploadError.message}`);
     }
-  }
-  
-  // Structure 2: direct image URL in response
-  if (!imageUrl && result.image_url) {
-    console.log('🎨 [NeoGlitch] Found successful generation with direct image URL (Structure 2)');
-    imageUrl = result.image_url;
-  }
-  
-  // Structure 3: images array
-  if (!imageUrl && result.images && Array.isArray(result.images) && result.images.length > 0) {
-    console.log('🎨 [NeoGlitch] Found successful generation with images array (Structure 3)');
-    imageUrl = result.images[0].url || result.images[0];
-  }
-  
-  // Structure 4: output array
-  if (!imageUrl && result.output && Array.isArray(result.output) && result.output.length > 0) {
-    console.log('🎨 [NeoGlitch] Found successful generation with output array (Structure 4)');
-    imageUrl = result.output[0].url || result.output[0];
-  }
-  
-  // Structure 5: data array
-  if (!imageUrl && result.data && Array.isArray(result.data) && result.data.length > 0) {
-    console.log('🎨 [NeoGlitch] Found successful generation with data array (Structure 5)');
-    imageUrl = result.data[0].url || result.data[0];
   }
   
   // If we found a valid image URL, return success
