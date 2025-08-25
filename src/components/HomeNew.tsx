@@ -4335,9 +4335,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
                 {/* Bottom-centered composer */}
           {isComposerOpen && (
-            <div className="fixed inset-0 z-[99999] bg-black navbar-stable">
+            <div className="fixed inset-0 z-[999999] bg-black" style={{ zIndex: 999999 }}>
           {/* Close button */}
-          <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-[99999] pointer-events-auto text-white/80 hover:text-white transition-colors bg-black/60 hover:bg-black/80 rounded-full p-2 backdrop-blur-sm" aria-label="Close">
+          <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-[999999] pointer-events-auto text-white/80 hover:text-white transition-colors bg-black/60 hover:bg-black/80 rounded-full p-2 backdrop-blur-sm" aria-label="Close">
             <X size={20} />
           </button>
           
@@ -4379,7 +4379,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
                       {/* Bottom composer bar - compact, horizontally 70% */}
             <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
-            <div className="bg-gray-700 border-2 border-white rounded-2xl px-4 py-3 transition-all duration-300">
+            <div className="bg-black border-2 border-white rounded-2xl px-4 py-3 transition-all duration-300">
               
 
               
@@ -4471,7 +4471,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                     
                     {/* Presets dropdown - clean and simple */}
                     {presetsOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-gray-700 rounded-xl p-3 w-80 z-50">
+                                             <div className="absolute bottom-full left-0 mb-2 bg-black border-2 border-white rounded-xl p-3 w-80 z-50">
                         {/* Preset options - all visible, no scrolling */}
                         <div className="space-y-1">
                           {/* Preset options */}
