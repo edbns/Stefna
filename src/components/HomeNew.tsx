@@ -1947,56 +1947,29 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         console.log('🚀 [NeoGlitch] Starting generation following Ghibli pattern');
         
         try {
-          // Call Neo Tokyo Glitch backend (similar to how Ghibli calls AIML API)
-          const neoGlitchService = NeoGlitchService.getInstance();
+          // Call Neo Tokyo Glitch backend directly (like Ghibli calls AIML API)
           
-          // Start the complete Neo Tokyo Glitch generation
-          const generationRequest = {
-            prompt: effectivePrompt,
-            presetKey: generationMeta.replicatePreset, // Use the actual preset key (visor, base, etc.)
-            sourceAssetId: sourceUrl || '',
-            userId: authService.getCurrentUser()?.id || '',
-            runId: genId,
-            meta: {
-              mode: 'neotokyoglitch',
-              presetId: selectedPreset,
-              replicatePreset: generationMeta.replicatePreset,
-              features: generationMeta.features
-            }
-          };
-          
-          console.log('🎭 [NeoGlitch] Starting generation with request:', generationRequest);
-          
-          // 🧪 DEBUG: Log the exact payload being sent to the backend
-          console.log('🧪 [NeoGlitch] DEBUG - Payload validation:', {
-            hasPrompt: !!generationRequest.prompt,
-            promptLength: generationRequest.prompt?.length,
-            hasUserId: !!generationRequest.userId,
-            hasPresetKey: !!generationRequest.presetKey,
-            presetKeyValue: generationRequest.presetKey,
-            hasSourceAssetId: !!generationRequest.sourceAssetId,
-            sourceAssetIdValue: generationRequest.sourceAssetId,
-            hasRunId: !!generationRequest.runId,
-            runIdValue: generationRequest.runId
+          // Call Neo Tokyo Glitch backend directly (like Ghibli calls AIML API)
+          const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: effectivePrompt,
+              presetKey: generationMeta.presetKey,
+              sourceUrl: sourceUrl,
+              runId: genId
+            })
           });
           
-          // 🔍 CRITICAL DEBUG: Log before calling neoGlitchService
-          console.log('🚀 [NeoGlitch] About to call neoGlitchService.startGeneration...');
+          if (!neoGlitchResponse.ok) {
+            throw new Error(`Neo Tokyo Glitch generation failed: ${neoGlitchResponse.status}`);
+          }
           
-          // Create the initial glitch record and start Replicate generation
-          const generationResult = await neoGlitchService.startGeneration(generationRequest);
+          const neoGlitchBody = await neoGlitchResponse.json();
+          console.log('✅ [NeoGlitch] Backend response:', neoGlitchBody);
           
-          console.log('✅ [NeoGlitch] Generation started successfully:', generationResult);
-          console.log('🔍 [NeoGlitch] Generation result details:', {
-            status: generationResult.status,
-            hasCloudinaryUrl: !!generationResult.cloudinaryUrl,
-            cloudinaryUrl: generationResult.cloudinaryUrl,
-            id: generationResult.id,
-            provider: generationResult.provider
-          });
-          
-          // 🔍 CHECK IF GENERATION IS ALREADY COMPLETE (Stability.ai returns immediately)
-          if (generationResult.status === 'completed' && generationResult.cloudinaryUrl) {
+          // Handle immediate completion (Stability.ai returns immediately - like Ghibli)
+          if (neoGlitchBody.status === 'completed' && neoGlitchBody.imageUrl) {
             console.log('🎉 [NeoGlitch] Generation completed immediately with Stability.ai!');
             
             // Save the generated media to user profile
