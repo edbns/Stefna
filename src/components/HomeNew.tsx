@@ -934,7 +934,18 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       
       console.log(`🔄 Loading public feed ${isInitial ? '(initial)' : '(more)'}...`)
       const pageSize = 20
-      const offset = isInitial ? 0 : feedPage * pageSize
+      // 🚨 CRITICAL FIX: Calculate offset correctly for pagination
+      // For initial load: offset = 0
+      // For subsequent loads: offset = (current page + 1) * pageSize
+      const offset = isInitial ? 0 : (feedPage + 1) * pageSize
+      
+      console.log('🔍 [Pagination Debug]', {
+        isInitial,
+        feedPage,
+        pageSize,
+        calculatedOffset: offset,
+        expectedItems: `${offset}-${offset + pageSize - 1}`
+      })
       
       const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${pageSize}&offset=${offset}`)
       console.log('📡 Feed response status:', res.status)
