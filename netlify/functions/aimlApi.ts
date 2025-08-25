@@ -230,7 +230,7 @@ export const handler: Handler = async (event) => {
     });
 
     // Make request to AIML API - use correct endpoint for image generation
-    const response = await fetch(`${BASE}/v2/generate/image/flux/generation`, {
+    const response = await fetch(`${BASE}/v1/images/generations`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
