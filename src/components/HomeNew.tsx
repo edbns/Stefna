@@ -1972,13 +1972,13 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           if (neoGlitchBody.status === 'completed' && neoGlitchBody.imageUrl) {
             console.log('🎉 [NeoGlitch] Generation completed immediately with Stability.ai!');
             
-            // Save the generated media to user profile
+            // Save the generated media to user profile (following Ghibli pattern exactly)
             try {
               const mediaToSave = {
                 userId: authService.getCurrentUser()?.id || '',
                 type: 'photo' as const,
-                url: generationResult.cloudinaryUrl,
-                thumbnailUrl: generationResult.cloudinaryUrl,
+                url: neoGlitchBody.imageUrl,
+                thumbnailUrl: neoGlitchBody.imageUrl,
                 prompt: effectivePrompt,
                 aspectRatio: 1,
                 width: 1024,
@@ -1996,28 +1996,49 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 }
               };
               
-              userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
+              await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
               console.log('✅ [NeoGlitch] Media saved successfully');
               
-              // Refresh the public feed to show new media
+              // Refresh the public feed to show new media (following Ghibli pattern)
               loadFeed();
               
-              // End generation successfully
-              endGeneration(genId);
-              setNavGenerating(false);
-              
-              // Show unified toast with thumbnail
+              // Show unified toast with thumbnail (following Ghibli pattern exactly)
               notifyReady({ 
                 title: 'Your media is ready', 
                 message: 'Tap to open',
-                thumbUrl: generationResult.cloudinaryUrl,
+                thumbUrl: neoGlitchBody.imageUrl,
                 onClickThumb: () => {
-                  window.open(generationResult.cloudinaryUrl, '_blank');
+                  // Open the media viewer to show the generated image (following Ghibli pattern)
+                  setViewerMedia([{
+                    id: 'generated-' + Date.now(),
+                    userId: 'current-user',
+                    type: 'photo',
+                    url: neoGlitchBody.imageUrl,
+                    prompt: effectivePrompt,
+                    aspectRatio: 1,
+                    width: 1024,
+                    height: 1024,
+                    timestamp: new Date().toISOString(),
+                    tokensUsed: 1,
+                    likes: 0,
+                    isPublic: true,
+                    tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+                    metadata: { quality: 'high', generationTime: Date.now(), modelVersion: 'stability-ai' }
+                  }]);
+                  setViewerStartIndex(0);
+                  setViewerOpen(true);
                 }
               });
               
-              // Reset composer state for next upload
-              resetComposerState();
+              // End generation successfully (following Ghibli pattern)
+              endGeneration(genId);
+              setNavGenerating(false);
+              
+              // Clear composer after a delay so user can see their result (following Ghibli pattern)
+              setTimeout(() => {
+                console.log('🧹 [NeoGlitch] Clearing composer after generation completion');
+                resetComposerState();
+              }, 3000); // 3 seconds delay
               
               return; // Don't start polling if already complete
             } catch (error) {
@@ -2029,110 +2050,118 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             }
           }
           
-          // Start polling for completion (only if not already complete)
-          console.log('🔄 [NeoGlitch] Starting async polling for completion...');
-          
-          // Show processing toast for Neo Tokyo Glitch when it's not immediate
-          notifyQueue({ title: 'Add to queue', message: 'Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.' });
-          
-          // Start the polling in the background
-          console.log('🔄 [NeoGlitch] Starting service polling for job:', generationResult.id);
-          neoGlitchService.pollForCompletion(generationResult.id)
-            .then(finalStatus => {
-              if (finalStatus.status === 'completed' && finalStatus.cloudinaryUrl) {
-                console.log('✅ [NeoGlitch] Generation completed with Cloudinary URL:', finalStatus.cloudinaryUrl);
-                
-                // Save the generated media to user profile
-                try {
-                  const mediaToSave = {
-                    userId: authService.getCurrentUser()?.id || '',
-                    type: 'photo' as const,
-                    url: finalStatus.cloudinaryUrl,
-                    thumbnailUrl: finalStatus.cloudinaryUrl,
-                    prompt: effectivePrompt,
-                    aspectRatio: 1,
-                    width: 1024,
-                    height: 1024,
-                    tokensUsed: 1,
-                    isPublic: true,
-                    tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
-                    metadata: {
-                      quality: 'high' as const,
-                      generationTime: Date.now(),
-                      modelVersion: 'stability-ai',
-                      presetId: generationMeta?.neoTokyoGlitchPresetId,
-                      mode: 'i2i' as const,
-                      group: null
-                    }
-                  };
+                    // Handle processing status (needs polling - simple, not complex service)
+          if (neoGlitchBody.status === 'processing') {
+            console.log('🔄 [NeoGlitch] Generation in progress, starting simple polling...');
+            
+            // Show processing toast (following Ghibli pattern)
+            notifyQueue({ title: 'Add to queue', message: 'Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.' });
+            
+            // Start simple polling for completion (not complex service)
+            const pollForCompletion = async () => {
+              try {
+                const statusResponse = await authenticatedFetch(`/.netlify/functions/neo-glitch-status?jobId=${neoGlitchBody.jobId}`);
+                if (statusResponse.ok) {
+                  const statusBody = await statusResponse.json();
                   
-                  userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
-                  console.log('✅ [NeoGlitch] Media saved successfully');
+                  if (statusBody.status === 'completed' && statusBody.imageUrl) {
+                    console.log('✅ [NeoGlitch] Polling completed successfully!');
+                    
+                    // Save the generated media (following Ghibli pattern)
+                    const mediaToSave = {
+                      userId: authService.getCurrentUser()?.id || '',
+                      type: 'photo' as const,
+                      url: statusBody.imageUrl,
+                      thumbnailUrl: statusBody.imageUrl,
+                      prompt: effectivePrompt,
+                      aspectRatio: 1,
+                      width: 1024,
+                      height: 1024,
+                      tokensUsed: 1,
+                      isPublic: true,
+                      tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+                      metadata: {
+                        quality: 'high' as const,
+                        generationTime: Date.now(),
+                        modelVersion: 'stability-ai',
+                        presetId: generationMeta?.neoTokyoGlitchPresetId,
+                        mode: 'i2i' as const,
+                        group: null
+                      }
+                    };
+                    
+                    await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
+                    console.log('✅ [NeoGlitch] Media saved successfully');
+                    
+                    // Refresh the public feed (following Ghibli pattern)
+                    loadFeed();
+                    
+                    // Show unified toast with thumbnail (following Ghibli pattern)
+                    notifyReady({ 
+                      title: 'Your media is ready', 
+                      message: 'Tap to open',
+                      thumbUrl: statusBody.imageUrl,
+                      onClickThumb: () => {
+                        setViewerMedia([{
+                          id: 'generated-' + Date.now(),
+                          userId: 'current-user',
+                          type: 'photo',
+                          url: statusBody.imageUrl,
+                          prompt: effectivePrompt,
+                          aspectRatio: 1,
+                          width: 1024,
+                          height: 1024,
+                          timestamp: new Date().toISOString(),
+                          tokensUsed: 1,
+                          likes: 0,
+                          isPublic: true,
+                          tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+                          metadata: { quality: 'high', generationTime: Date.now(), modelVersion: 'stability-ai' }
+                        }]);
+                        setViewerStartIndex(0);
+                        setViewerOpen(true);
+                      }
+                    });
+                    
+                    // End generation successfully (following Ghibli pattern)
+                    endGeneration(genId);
+                    setNavGenerating(false);
+                    
+                    // Clear composer after delay (following Ghibli pattern)
+                    setTimeout(() => {
+                      console.log('🧹 [NeoGlitch] Clearing composer after polling completion');
+                      resetComposerState();
+                    }, 3000);
+                    
+                    return;
+                  } else if (statusBody.status === 'failed') {
+                    throw new Error(statusBody.error || 'Generation failed');
+                  }
                   
-                  // Refresh the public feed to show new media
-                  loadFeed();
-                  
-                  // End generation successfully
-                  endGeneration(genId);
-                  setNavGenerating(false);
-                  
-                  // Show unified toast with thumbnail
-                  notifyReady({ 
-                    title: 'Your media is ready', 
-                    message: 'Tap to open',
-                    thumbUrl: finalStatus.cloudinaryUrl,
-                    onClickThumb: () => {
-                      window.open(finalStatus.cloudinaryUrl, '_blank');
-                    }
-                  });
-                  
-                  // Reset composer state for next upload
-                  resetComposerState();
-                } catch (error) {
-                  console.error('❌ [NeoGlitch] Failed to save media:', error);
-                  notifyError({ title: 'Failed', message: 'Please try again' });
-                  endGeneration(genId);
-                  setNavGenerating(false);
-                  
-                  // Reset composer state even on failure
-                  resetComposerState();
+                  // Still processing, continue polling
+                  setTimeout(pollForCompletion, 2000);
+                } else {
+                  throw new Error(`Status check failed: ${statusResponse.status}`);
                 }
-              } else {
-                console.error('❌ [NeoGlitch] Generation failed:', finalStatus.error);
+              } catch (error) {
+                console.error('❌ [NeoGlitch] Polling failed:', error);
                 notifyError({ title: 'Failed', message: 'Please try again' });
                 endGeneration(genId);
                 setNavGenerating(false);
-                
-                // Reset composer state even on failure
                 resetComposerState();
               }
-            })
-            .catch(error => {
-              console.error('❌ [NeoGlitch] Polling failed:', error);
-              notifyError({ title: 'Failed', message: 'Please try again' });
-              endGeneration(genId);
-              setNavGenerating(false);
-              
-              // Reset composer state even on failure
-              resetComposerState();
-            });
+            };
+            
+            // Start polling
+            pollForCompletion();
+            
+            // Skip the regular AIML API call for Neo Tokyo Glitch
+            skipAimlApi = true;
+            return;
+          }
           
-          // Don't wait for completion - let it happen in the background
-          // Set a reasonable timeout for the UI
-          setTimeout(() => {
-            if (isGenerating) {
-              console.log('⏰ [NeoGlitch] UI timeout reached, but polling continues in background');
-              // Don't end generation here - let the service handle it
-            }
-          }, 300000); // 5 minutes UI timeout
-          
-          // DON'T clear state here - let the polling callbacks handle it
-          // The state will be cleared when:
-          // 1. Generation completes successfully (.then callback)
-          // 2. Generation fails (.catch callback)
-          // 3. User manually cancels
-          console.log('🔄 [NeoGlitch] Polling started, keeping state active until completion');
-          return;
+          // Handle other statuses
+          throw new Error(`Unexpected Neo Tokyo Glitch status: ${neoGlitchBody.status}`);
           
         } catch (error) {
           console.error('❌ [NeoGlitch] Generation failed:', error);
