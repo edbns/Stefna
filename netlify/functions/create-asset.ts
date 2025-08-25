@@ -1,6 +1,6 @@
 import type { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
-import type { CreateAssetInput, ApiResult, Asset } from '../lib/types';
+import type { CreateAssetInput, ApiResult, Asset, MediaType } from '../../src/lib/types';
 import { json } from './_lib/http';
 
 // Initialize Prisma client
@@ -72,13 +72,15 @@ export const handler: Handler = async (event) => {
       const result = await prisma.mediaAsset.create({
         data: {
           userId,
+          url: `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${input.sourcePublicId}`, // Construct URL from Cloudinary public ID
+          publicId: input.sourcePublicId ?? null, // Map to publicId field
+          resourceType: mediaType, // Map to resourceType field
           cloudinaryPublicId: input.sourcePublicId ?? null,
           mediaType,
           presetKey: input.presetKey ?? null,
           prompt: input.prompt ?? null,
           sourceAssetId: input.sourceAssetId ?? null,
           status: 'queued',
-          isPublic: false,
           allowRemix: false
         }
       });
@@ -88,7 +90,7 @@ export const handler: Handler = async (event) => {
       error = null;
     } catch (prismaError) {
       console.error('❌ Prisma create failed:', prismaError);
-      return json({ ok: false, error: `Database insert failed: ${prismaError.message}` }, { status: 500 });
+      return json({ ok: false, error: `Database insert failed: ${prismaError instanceof Error ? prismaError.message : 'Unknown error'}` }, { status: 500 });
     }
 
     console.log('🔍 Database insert result:', { data, error });
@@ -103,7 +105,7 @@ export const handler: Handler = async (event) => {
 
     if (error) {
       console.error('❌ Database insert error:', error);
-      return json({ ok: false, error: error.message }, { status: 500 });
+      return json({ ok: false, error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 
     if (!data) {
@@ -124,7 +126,22 @@ export const handler: Handler = async (event) => {
       timestamp: new Date().toISOString()
     });
     
-    return json({ ok: true, data: data as Asset });
+    // Map Prisma result to Asset type
+    const assetData: Asset = {
+      id: data.id,
+      user_id: data.userId,
+      cloudinary_public_id: data.cloudinaryPublicId,
+      media_type: data.mediaType as MediaType,
+      status: data.status as 'queued' | 'processing' | 'ready' | 'failed',
+      is_public: false,
+      published_at: null,
+      source_asset_id: data.sourceAssetId,
+      preset_key: data.presetKey,
+      prompt: data.prompt,
+      created_at: data.createdAt.toISOString()
+    };
+    
+    return json({ ok: true, data: assetData });
   } catch (e: any) {
     return json({ ok: false, error: e.message || 'create-asset error' }, { status: 500 });
   }
