@@ -137,7 +137,7 @@ export const handler: Handler = async (event) => {
             where: { id: jobRecord.id },
             data: { 
               status: 'failed',
-              imageUrl: null
+              imageUrl: jobRecord.imageUrl || '' // Keep existing imageUrl or use empty string as fallback
             }
           });
           
