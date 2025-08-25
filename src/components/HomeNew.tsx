@@ -4116,7 +4116,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           {/* Remix mode UI removed - focus on personal creativity */}
           
           {/* Media preview area - centered above prompt */}
-          <div className="absolute inset-0 flex items-center justify-center pb-32">
+          <div className="absolute inset-0 flex items-center justify-center pb-40">
             <div className="relative w-full max-w-2xl px-6">
               <div ref={containerRef} className="w-full flex items-center justify-center">
                 {isVideoPreview ? (
@@ -4612,8 +4612,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             
             {/* Clean disclaimer row under composer */}
             <div className="mt-3 text-center">
-              <p className="text-xs text-white/60 whitespace-nowrap overflow-hidden text-ellipsis">
-                Disclaimer: AI Magic Zone, Neo Tokyo, Ghibli Reaction, Emotion Mask, and others are powered by AI. Fun, wild, sometimes a bit off — mistakes can happen.
+              <p className="text-xs text-white/60">
+                <span className="font-bold">Disclaimer:</span> AI Magic Zone, Neo Tokyo, Ghibli Reaction, Emotion Mask, and others are powered by AI. Fun, wild, sometimes a bit off — mistakes can happen.
               </p>
             </div>
           </div>
