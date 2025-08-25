@@ -23,10 +23,14 @@ interface ProfileContextType {
 }
 
 const defaultProfileData: ProfileData = {
-  name: 'User Name',
-  avatar: null,
-  shareToFeed: false,
-  // allowRemix removed
+  id: '',
+  name: '',
+  username: '',
+  avatar: '',
+  shareToFeed: true, // 🔓 SHARING FIRST: Default to public so users can share their generations
+  onboarding_completed: false,
+  tier: 'registered',
+  createdAt: new Date().toISOString()
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined)
@@ -69,7 +73,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
           console.log('✅ Loaded profile from database:', userData)
           
           // Also load user settings to get the latest shareToFeed preference
-          let shareToFeed = false // 🔒 PRIVACY FIRST: Default to private
+          let shareToFeed = true // 🔓 SHARING FIRST: Default to public so users can share their generations
           try {
             const settingsResponse = await authenticatedFetch('/.netlify/functions/user-settings', {
               method: 'GET'
@@ -81,7 +85,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
             }
           } catch (settingsError) {
             console.warn('⚠️ Failed to load user settings, using profile data:', settingsError)
-            shareToFeed = userData.share_to_feed !== undefined ? userData.share_to_feed : false
+            shareToFeed = userData.share_to_feed !== undefined ? userData.share_to_feed : true
           }
           
           const profileData = {
