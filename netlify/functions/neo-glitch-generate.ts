@@ -230,6 +230,55 @@ async function processGenerationAsync(
     let stabilityResult;
     try {
       stabilityResult = await startStabilityGeneration(sourceUrl, prompt, presetKey, userId, runId);
+      
+      // 🔍 CRITICAL FIX: Check if Stability.ai returned immediate result
+      if (stabilityResult && stabilityResult.imageUrl && stabilityResult.status === 'completed') {
+        console.log('🎉 [NeoGlitch] Stability.ai returned immediate result!');
+        
+        // Update database record with completed status
+        await db.neoGlitchMedia.update({
+          where: { id: recordId },
+          data: {
+            status: 'completed',
+            imageUrl: stabilityResult.imageUrl,
+            stabilityJobId: stabilityResult.stabilityJobId
+          }
+        });
+        
+        console.log('✅ [NeoGlitch] Database updated with completed status and image URL');
+        
+        // Return completed status so frontend gets immediate result
+        return {
+          status: 'completed',
+          imageUrl: stabilityResult.imageUrl,
+          stabilityJobId: stabilityResult.stabilityJobId
+        };
+      }
+      
+      // Stability.ai returned job ID (needs polling)
+      console.log('🔄 [NeoGlitch] Stability.ai returned job ID, will need polling');
+      
+      // Update record with Stability.ai job ID
+      await db.neoGlitchMedia.update({
+        where: { id: recordId },
+        data: {
+          status: 'generating',
+          stabilityJobId: stabilityResult.stabilityJobId
+        }
+      });
+      
+      console.log('🚀 [NeoGlitch] Generation started successfully:', {
+        strategy: stabilityResult.strategy,
+        jobId: stabilityResult.stabilityJobId,
+        model: stabilityResult.model
+      });
+      
+      // Return processing status for ongoing jobs
+      return {
+        status: 'processing',
+        stabilityJobId: stabilityResult.stabilityJobId
+      };
+      
     } catch (stabilityError: any) {
       console.error('❌ [NeoGlitch] Stability.ai generation failed:', stabilityError);
       
@@ -257,7 +306,11 @@ async function processGenerationAsync(
           await finalizeCreditsOnce(userId, runId, true, userToken);
           
           console.log('✅ [NeoGlitch] Async generation completed with AIML fallback');
-          return;
+          return {
+            status: 'completed',
+            imageUrl: aimlResult.imageUrl,
+            stabilityJobId: `aiml_${runId}`
+          };
         } else {
           throw new Error('AIML fallback failed to return valid image');
         }
@@ -277,76 +330,12 @@ async function processGenerationAsync(
         await finalizeCreditsOnce(userId, runId, false, userToken);
         
         console.error('❌ [NeoGlitch] All generation methods failed');
-        return;
+        return {
+          status: 'failed',
+          error: aimlError.message || 'All generation methods failed'
+        };
       }
     }
-
-    // Update record with Stability.ai job ID
-    const updateData: any = {
-      status: 'generating',
-      stabilityJobId: stabilityResult.stabilityJobId
-    };
-
-    await db.neoGlitchMedia.update({
-      where: { id: recordId },
-      data: updateData
-    });
-
-    console.log('🚀 [NeoGlitch] Generation started successfully:', {
-      strategy: stabilityResult.strategy,
-      jobId: stabilityResult.stabilityJobId,
-      model: stabilityResult.model
-    });
-
-    // Return Stability.ai-focused response
-    const responseBody: any = {
-      success: true,
-      message: 'Neo Tokyo Glitch generation started with Stability.ai',
-      runId: runId.toString(),
-      status: 'generating',
-      provider: 'stability',
-      strategy: stabilityResult.strategy,
-      stabilityJobId: stabilityResult.stabilityJobId
-    };
-
-    // Check if Stability.ai returned immediate result
-    if (stabilityResult.imageUrl && stabilityResult.status === 'completed') {
-      responseBody.imageUrl = stabilityResult.imageUrl;
-      responseBody.status = 'completed';
-      
-      // 🔒 CRITICAL FIX: Update database record IMMEDIATELY with completed status
-      console.log('🎉 [NeoGlitch] Stability.ai returned immediate result, updating database...');
-      
-      await db.neoGlitchMedia.update({
-        where: { id: recordId },
-        data: {
-          status: 'completed',
-          imageUrl: stabilityResult.imageUrl,
-          stabilityJobId: stabilityResult.stabilityJobId
-        }
-      });
-      
-      console.log('✅ [NeoGlitch] Database updated with completed status and image URL');
-      console.log('🎉 [NeoGlitch] Generation completed successfully with Stability.ai');
-      
-      // 🔒 CRITICAL FIX: Only charge credits ONCE for Stability.ai success (no double billing)
-      await finalizeCreditsOnce(userId, runId, true, userToken);
-      
-      // 🚨 IMPORTANT: Return completed status so frontend knows it's done
-      return {
-        status: 'completed',
-        imageUrl: stabilityResult.imageUrl,
-        stabilityJobId: stabilityResult.stabilityJobId
-      };
-    }
-
-    console.log('✅ [NeoGlitch] Async generation completed successfully');
-    
-    // Return processing status for ongoing jobs
-    return {
-      status: 'processing',
-      stabilityJobId: stabilityResult.stabilityJobId
-    };
   } catch (error) {
     console.error('❌ [NeoGlitch] Async generation failed:', error);
     
