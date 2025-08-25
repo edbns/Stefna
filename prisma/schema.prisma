@@ -43,38 +43,51 @@ model UserSettings {
 }
 
 model MediaAsset {
-  id             String   @id @default(cuid())
+  id             String   @id @default(uuid())
   userId         String   @map("user_id")
   url            String
+  resultUrl      String?  @map("result_url")
+  sourceUrl      String?  @map("source_url")
   publicId       String?  @unique @map("public_id")
   resourceType   String   @map("resource_type")
   folder         String?
   bytes          Int?
   width          Int?
   height         Int?
-  duration       Int?
-  prompt         String?
+  duration       Float?
+  prompt         String   @default("")
+  negativePrompt String?  @map("negative_prompt")
   model          String?
   mode           String?
   visibility     String   @default("private")
   allowRemix     Boolean  @default(false) @map("allow_remix")
   env            String   @default("production")
+  runId          String?  @map("run_id")
+  presetId       String?  @map("preset_id")
+  parentAssetId  String?  @map("parent_asset_id")
+  strength       Float?
+  tags           String[]
   meta           Json?
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
   
-  // Add missing fields that functions need
+  // Fields that functions need
   cloudinaryPublicId String? @map("cloudinary_public_id")
   mediaType         String? @map("media_type")
   presetKey         String? @map("preset_key")
   sourceAssetId     String? @map("source_asset_id")
-  status            String  @default("pending")
+  status            String  @default("ready")
+  isPublic          Boolean @default(false) @map("is_public")
+  finalUrl          String? @map("final_url")
   
-  owner          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([visibility, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
   @@index([publicId])
+  @@index([status])
+  @@index([cloudinaryPublicId])
+  @@index([finalUrl])
   @@map("media_assets")
 }
 
