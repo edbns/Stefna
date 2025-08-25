@@ -4335,9 +4335,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
                 {/* Bottom-centered composer */}
           {isComposerOpen && (
-            <div className="fixed inset-0 z-50 bg-black navbar-stable">
+            <div className="fixed inset-0 z-[9999] bg-black navbar-stable">
           {/* Close button */}
-          <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-50 pointer-events-auto text-white/80 hover:text-white transition-colors bg-black/60 hover:bg-black/80 rounded-full p-2 backdrop-blur-sm" aria-label="Close">
+          <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-[9999] pointer-events-auto text-white/80 hover:text-white transition-colors bg-black/60 hover:bg-black/80 rounded-full p-2 backdrop-blur-sm" aria-label="Close">
             <X size={20} />
           </button>
           
@@ -4397,7 +4397,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                       ? "Describe your vision... (click ✨ to enhance your prompt)"
                       : "Custom prompt (optional) - will be combined with selected preset"
                     }
-                    className="w-full px-3 py-2 pr-10 bg-gray-700 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:bg-gray-600 transition-colors h-20 text-sm"
+                    className="w-full px-3 py-2 pr-10 bg-white text-gray-900 placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-200 h-20 text-sm border-2 border-gray-300 hover:border-gray-400"
                     disabled={false}
                     data-testid="custom-prompt-input"
                   />
