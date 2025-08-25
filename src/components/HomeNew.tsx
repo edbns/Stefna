@@ -5,6 +5,8 @@ import { authenticatedFetch, signedFetch } from '../utils/apiClient'
 import authService from '../services/authService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import MasonryMediaGrid from './MasonryMediaGrid'
+import SkeletonGrid from './SkeletonGrid'
+import BufferSkeleton from './BufferSkeleton'
 import interactionService from '../services/interactionService'
 import type { UserMedia } from '../services/userMediaService'
 import NotificationBell from './NotificationBell'
@@ -4209,12 +4211,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         <div className="pt-0">
           {isLoadingFeed ? (
             <div className="w-full">
-              {/* Media loading skeleton - 3 columns */}
-              <div className="grid grid-cols-3 gap-1 w-full">
-                {[...Array(12)].map((_, index) => (
-                  <div key={index} className="aspect-[4/3] bg-gradient-to-br from-white/5 to-white/10 rounded-xl animate-pulse"></div>
-                ))}
-              </div>
+              {/* 🎨 Engaging skeleton loading inspired by Sora's aesthetic */}
+              <SkeletonGrid columns={4} rows={6} />
             </div>
           ) : feed.length > 0 ? (
             <>
@@ -4225,22 +4223,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 // handleRemix removed
               />
               
-              {/* 🚀 High-end infinite scroll: Show buffer items and loading states */}
+              {/* 🚀 High-end infinite scroll: Show buffer items with engaging skeleton */}
               {feedBuffer.length > 0 && (
-                <div className="mt-4">
-                  <div className="grid grid-cols-4 gap-1">
-                    {feedBuffer.map((item) => (
-                      <div key={item.id} className="aspect-square bg-white/5 rounded overflow-hidden animate-pulse">
-                        <img 
-                          src={item.url} 
-                          alt=""
-                          className="w-full h-full object-cover opacity-70"
-                          loading="lazy"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <BufferSkeleton items={feedBuffer} />
               )}
               
               {/* Loading indicator for infinite scroll */}
