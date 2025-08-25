@@ -1933,6 +1933,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           console.log('🔄 [NeoGlitch] Starting async polling for completion...');
           
           // Start the polling in the background
+          console.log('🔄 [NeoGlitch] Starting service polling for job:', generationResult.id);
           neoGlitchService.pollForCompletion(generationResult.id)
             .then(finalStatus => {
               if (finalStatus.status === 'completed' && finalStatus.cloudinaryUrl) {
@@ -2010,9 +2011,12 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             }
           }, 300000); // 5 minutes UI timeout
           
-          // Return early - don't proceed to AIML API
-          endGeneration(genId);
-          setNavGenerating(false);
+          // DON'T clear state here - let the polling callbacks handle it
+          // The state will be cleared when:
+          // 1. Generation completes successfully (.then callback)
+          // 2. Generation fails (.catch callback)
+          // 3. User manually cancels
+          console.log('🔄 [NeoGlitch] Polling started, keeping state active until completion');
           return;
           
         } catch (error) {
