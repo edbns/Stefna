@@ -3320,46 +3320,22 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       return
     }
     
+    // 🚀 IMMEDIATE GENERATION - No unnecessary delays
+    console.log('🚀 Auto-generating with preset:', presetName)
+    
+    // Show immediate feedback that preset was applied
+    notifySuccess({ title: 'Preset applied', message: `Using ${presetName} style` })
+    
     try {
-      // Check Cloudinary signer
-      const jwt = await authService.getToken()
-      if (!jwt) {
-        console.log('❌ Not authenticated, cannot generate with preset')
-        return
-      }
-      
-      // Test Cloudinary signer
-      const signRes = await authenticatedFetch('/.netlify/functions/cloudinary-sign', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ folder: 'stefna/sources' })
-      })
-      
-      if (!signRes.ok) {
-        console.log('❌ Cloudinary signer failed, cannot generate with preset')
-        return
-      }
-      
-      const sig = await signRes.json()
-      if (!sig.cloudName) {
-        console.log('❌ Cloudinary misconfigured, cannot generate with preset')
-        return
-      }
-      
-      // All checks passed - auto-generate with preset
-      console.log('🚀 Auto-generating with preset:', presetName)
       await dispatchGenerate('preset', {
         presetId: presetName,
         presetData: PRESETS[presetName]
       })
-      
     } catch (error) {
-      console.log('❌ Auto-run check failed:', error)
+      console.log('❌ Preset generation failed:', error)
       notifyError({ title: 'Media failed', message: 'Try again' })
       // Clear all options after preset generation failure
       clearAllOptionsAfterGeneration();
-      // Don't proceed with generation if Cloudinary signer fails
-      return
     }
   }
 
@@ -3425,7 +3401,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
     // Clear composer after successful generation
     setTimeout(() => {
       clearAllOptionsAfterGeneration()
-    }, 500)
+    }, 200) // Reduced delay for faster response
   }
   
   // 2. PRESET MODE GENERATION - Only uses selected preset
@@ -3456,7 +3432,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
     // Clear composer after successful generation
     setTimeout(() => {
       clearAllOptionsAfterGeneration()
-    }, 500)
+    }, 200) // Reduced delay for faster response
   }
   
 
@@ -3492,7 +3468,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
     // Clear composer after successful generation
     setTimeout(() => {
       clearAllOptionsAfterGeneration()
-    }, 500)
+    }, 200) // Reduced delay for faster response
   }
 
 
