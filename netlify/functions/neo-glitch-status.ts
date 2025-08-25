@@ -5,6 +5,7 @@
 import type { Handler } from '@netlify/functions';
 import { requireAuth } from './lib/auth';
 import { json } from './_lib/http';
+import { PrismaClient } from '@prisma/client';
 
 // Stability.ai API configuration
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
@@ -65,29 +66,73 @@ export const handler: Handler = async (event) => {
 
     console.log('🔍 [NeoGlitch] Checking status for Stability.ai job:', stabilityJobId);
 
-    // For now, Stability.ai doesn't have a separate status endpoint for img2img
-    // We'll need to implement a different approach. For now, return a basic status
-    // In a real implementation, you might store job status in your database
+    // 🔍 ACTUALLY CHECK THE DATABASE for real job status
+    const prisma = new PrismaClient();
     
-    // Check if this is a real job ID or a temporary one
-    if (stabilityJobId.startsWith('stability_')) {
-      // This is a temporary job ID, check database for status
-      return json({
-        id: stabilityJobId,
-        status: 'processing',
-        message: 'Job is being processed by Stability.ai'
+    try {
+      // Find the job in the database
+      const jobRecord = await prisma.neoGlitchMedia.findFirst({
+        where: {
+          OR: [
+            { id: stabilityJobId },
+            { stabilityJobId: stabilityJobId }
+          ]
+        },
+        select: {
+          id: true,
+          status: true,
+          imageUrl: true,
+          stabilityJobId: true,
+          createdAt: true,
+          updatedAt: true
+        }
       });
-    }
 
-    // For now, assume completed since Stability.ai img2img is usually synchronous
-    // In a real implementation, you'd check your database or implement webhook handling
-    return json({
-      id: stabilityJobId,
-      status: 'completed',
-      message: 'Stability.ai generation completed',
-      // You would typically get the actual image URL from your database
-      // or from the initial generation response
-    });
+      if (!jobRecord) {
+        console.warn('⚠️ [NeoGlitch] Job not found in database:', stabilityJobId);
+        return json({
+          id: stabilityJobId,
+          status: 'not_found',
+          message: 'Job not found in database'
+        });
+      }
+
+      console.log('✅ [NeoGlitch] Found job in database:', {
+        id: jobRecord.id,
+        status: jobRecord.status,
+        hasImage: !!jobRecord.imageUrl,
+        stabilityJobId: jobRecord.stabilityJobId
+      });
+
+      // Return the actual status from the database
+      if (jobRecord.status === 'completed' && jobRecord.imageUrl) {
+        return json({
+          id: jobRecord.id,
+          status: 'completed',
+          message: 'Generation completed successfully',
+          imageUrl: jobRecord.imageUrl,
+          stabilityJobId: jobRecord.stabilityJobId
+        });
+      } else if (jobRecord.status === 'failed') {
+        return json({
+          id: jobRecord.id,
+          status: 'failed',
+          message: 'Generation failed',
+          stabilityJobId: jobRecord.stabilityJobId
+        });
+      } else {
+        // Still processing
+        return json({
+          id: jobRecord.id,
+          status: 'processing',
+          message: 'Job is still being processed',
+          stabilityJobId: jobRecord.stabilityJobId
+        });
+      }
+
+    } finally {
+      await prisma.$disconnect();
+    }
 
   } catch (error) {
     console.error('❌ [NeoGlitch] Status check failed:', error);
