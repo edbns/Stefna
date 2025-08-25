@@ -1739,7 +1739,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                 const statusResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-status', {
                   method: 'POST',
                   body: JSON.stringify({
-                    jobId: neoGlitchResult.jobId,
+                    stabilityJobId: neoGlitchResult.jobId,
                     runId: genId
                   })
                 });
