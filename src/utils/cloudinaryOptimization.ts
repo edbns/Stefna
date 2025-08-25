@@ -11,6 +11,15 @@ export interface CloudinaryOptions {
   dpr?: 'auto' | number
   blur?: number
   sharpen?: boolean
+  progressive?: boolean
+  placeholder?: boolean
+}
+
+export interface ProgressiveImageUrls {
+  placeholder: string    // Blurry, tiny, fast loading
+  thumbnail: string      // Small, clear, medium loading  
+  preview: string        // Medium size, good quality
+  full: string           // Full size, best quality
 }
 
 export interface ResponsiveImageSet {
@@ -40,7 +49,8 @@ export function optimizeCloudinaryUrl(
     gravity = 'auto',
     dpr = 'auto',
     blur,
-    sharpen = false
+    sharpen = false,
+    progressive = true
   } = options
 
   try {
@@ -67,7 +77,9 @@ export function optimizeCloudinaryUrl(
     if (sharpen) transformations.push('e_sharpen')
 
     // Auto-optimize for best performance
-    transformations.push('fl_progressive') // Progressive JPEG
+    if (progressive !== false) { // Default to progressive unless explicitly disabled
+      transformations.push('fl_progressive') // Progressive JPEG
+    }
     transformations.push('fl_immutable_cache') // Better caching
 
     const transformationString = transformations.join(',')
@@ -212,4 +224,115 @@ export function optimizeVideoThumbnail(
     console.warn('Failed to optimize video thumbnail:', error)
     return videoUrl
   }
+}
+
+/**
+ * 🚀 PROGRESSIVE ENHANCEMENT: Generate multiple quality levels for progressive loading
+ * Perfect for poor network conditions - users see something immediately!
+ */
+export function generateProgressiveImageUrls(
+  url: string,
+  options: CloudinaryOptions = {}
+): ProgressiveImageUrls {
+  if (!url.includes('cloudinary.com')) {
+    return {
+      placeholder: url,
+      thumbnail: url,
+      preview: url,
+      full: url
+    }
+  }
+
+  const baseOptions = { format: 'auto' as const, ...options }
+
+  return {
+    // 🚀 PLACEHOLDER: Blurry, tiny, loads in ~100ms
+    placeholder: optimizeCloudinaryUrl(url, {
+      ...baseOptions,
+      quality: 10,
+      width: 50,
+      blur: 1000,
+      progressive: true
+    }),
+
+    // 🚀 THUMBNAIL: Small, clear, loads in ~200ms  
+    thumbnail: optimizeCloudinaryUrl(url, {
+      ...baseOptions,
+      quality: 40,
+      width: 600,
+      progressive: true
+    }),
+
+    // 🚀 PREVIEW: Medium size, good quality, loads in ~500ms
+    preview: optimizeCloudinaryUrl(url, {
+      ...baseOptions,
+      quality: 70,
+      width: 800,
+      progressive: true
+    }),
+
+    // 🚀 FULL: Full size, best quality, loads in ~1000ms
+    full: optimizeCloudinaryUrl(url, {
+      ...baseOptions,
+      quality: 80,
+      width: 1024,
+      progressive: true
+    })
+  }
+}
+
+/**
+ * 🚀 SMART LOADING: Progressive image loader with automatic enhancement
+ * Loads images progressively: placeholder → thumbnail → preview → full
+ */
+export async function loadProgressiveImage(
+  url: string,
+  options: CloudinaryOptions = {},
+  onProgress?: (stage: 'placeholder' | 'thumbnail' | 'preview' | 'full') => void
+): Promise<HTMLImageElement> {
+  const urls = generateProgressiveImageUrls(url, options)
+  
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    
+    // 🚀 STAGE 1: Load placeholder immediately
+    img.src = urls.placeholder
+    onProgress?.('placeholder')
+    
+    img.onload = () => {
+      // 🚀 STAGE 2: Load thumbnail
+      img.src = urls.thumbnail
+      onProgress?.('thumbnail')
+      
+      img.onload = () => {
+        // 🚀 STAGE 3: Load preview
+        img.src = urls.preview
+        onProgress?.('preview')
+        
+        img.onload = () => {
+          // 🚀 STAGE 4: Load full quality
+          img.src = urls.full
+          onProgress?.('full')
+          
+          img.onload = () => {
+            resolve(img)
+          }
+          
+          img.onerror = reject
+        }
+        
+        img.onerror = () => {
+          // If preview fails, use thumbnail as final
+          resolve(img)
+        }
+      }
+      
+      img.onerror = () => {
+        // If thumbnail fails, use placeholder as final
+        resolve(img)
+      }
+    }
+    
+    img.onerror = reject
+  })
 }
