@@ -1309,9 +1309,10 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       // Show "Add to queue" notification for all generation modes
       notifyQueue({ title: 'Add to queue', message: 'We will start processing shortly.' });
 
-    // Get current profile settings
-    const { shareToFeed } = await getUserProfileSettings() // allowRemix removed
-    console.log('🔧 Using profile settings:', { shareToFeed }) // allowRemix removed
+    // Get current profile settings from context (real-time state)
+    const { profileData } = useProfile()
+    const shareToFeed = profileData.shareToFeed
+    console.log('🔧 Using profile context settings:', { shareToFeed }) // allowRemix removed
 
     // Sanity check - log current state
     console.table({
@@ -3142,8 +3143,9 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
     setIsComposerOpen(false)
     setNavGenerating(true)
     try {
-      // Get current profile settings
-      const { shareToFeed } = await getUserProfileSettings() // allowRemix removed
+      // Get current profile settings from context (real-time state)
+      const { profileData } = useProfile()
+      const shareToFeed = profileData.shareToFeed
       
       // Enforce server-side quota and generate via aimlApi
       // Use new uploadSource service - never fetch blob URLs
