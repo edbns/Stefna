@@ -4165,6 +4165,20 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                     className="w-full px-3 py-2 pr-10 bg-white/5 border border-white/20 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors h-20 text-sm"
                     disabled={isGenerating}
                   />
+                  {/* Custom Mode Button - show when user types in prompt */}
+                  {prompt.trim() && composerState.mode !== 'custom' && (
+                    <button
+                      onClick={() => {
+                        setComposerState(s => ({ ...s, mode: 'custom' }))
+                        setSelectedMode('presets') // Set selectedMode to match the new system
+                      }}
+                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors"
+                      title="Switch to custom mode"
+                    >
+                      <span className="text-sm">🎨</span>
+                    </button>
+                  )}
+                  
                   {/* Magic Wand Enhancement Button - only show for custom mode */}
                   {composerState.mode === 'custom' && (
                     <button
