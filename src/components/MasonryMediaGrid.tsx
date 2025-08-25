@@ -1,5 +1,6 @@
 import React, { useRef, useMemo } from 'react'
 import { UserMedia } from '../services/userMediaService'
+import PresetTag from './PresetTag'
 // RemixIcon removed - no more remix functionality
 import { MediaCard as SpinnerCard } from './ui/Toasts'
 // LazyImage removed - using simple img tags for better performance
@@ -191,6 +192,17 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   {(() => {
                     return (
                       <>
+
+                        {/* Preset Tag - Bottom Left */}
+                        {item.metadata?.presetKey && (
+                          <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <PresetTag 
+                              presetKey={item.metadata.presetKey} 
+                              type={item.metadata.presetType}
+                              size="sm"
+                            />
+                          </div>
+                        )}
 
                         {/* Actions - Bottom */}
                         {showActions && (

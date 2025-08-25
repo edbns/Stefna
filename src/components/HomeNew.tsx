@@ -975,7 +975,13 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 likes: 0,
                 isPublic: true,
                 tags: [],
-                metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
+                metadata: { 
+                  quality: 'high', 
+                  generationTime: 0, 
+                  modelVersion: '1.0',
+                  presetKey: item.presetKey, // Add preset key
+                  presetType: item.type // Add preset type (neo-glitch, media-asset, etc.)
+                },
                 cloudinaryPublicId: item.cloudinaryPublicId,
                 mediaType: item.mediaType,
               }
@@ -1143,7 +1149,13 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             likes: 0, // Not exposed in public feed
             isPublic: true,
             tags: [],
-            metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' },
+            metadata: { 
+              quality: 'high', 
+              generationTime: 0, 
+              modelVersion: '1.0',
+              presetKey: item.presetKey, // Add preset key from backend
+              presetType: item.type // Add preset type from backend
+            },
             // Store additional fields needed for functionality
             cloudinaryPublicId: item.cloudinaryPublicId,
             mediaType: item.mediaType,

@@ -33,6 +33,8 @@ export interface UserMedia {
     seed?: number
     // New metadata fields for generation tracking
     presetId?: string;              // Preset['id']
+    presetKey?: string;             // Preset key (e.g., 'visor', 'ghibli_sparkle')
+    presetType?: string;            // Preset type (e.g., 'neo-glitch', 'ghibli', 'emotion')
     mode?: 'i2i'|'txt2img'|'story';
     group?: 'story'|null;
     optionKey?: string | null;     // e.g. 'vhs_1980s', 'four_seasons/spring', 'colorize_bw'
