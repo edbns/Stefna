@@ -25,8 +25,8 @@ export const PRESET_SYSTEMS = {
 };
 
 // --- PROMPT + MODEL BUILDER ---
-export function buildPresetPayload({ presetId, image_url, customPrompt }) {
-  const preset = PRESET_SYSTEMS[presetId];
+export function buildPresetPayload({ presetId, image_url, customPrompt }: { presetId: string; image_url: string; customPrompt?: string }) {
+  const preset = PRESET_SYSTEMS[presetId as keyof typeof PRESET_SYSTEMS];
   if (!preset) throw new Error(`Unknown preset: ${presetId}`);
 
   return {
@@ -42,8 +42,8 @@ export function buildPresetPayload({ presetId, image_url, customPrompt }) {
 }
 
 // --- CREDIT RESERVATION STRUCTURE ---
-export function getPresetCreditPayload({ presetId }) {
-  const preset = PRESET_SYSTEMS[presetId];
+export function getPresetCreditPayload({ presetId }: { presetId: string }) {
+  const preset = PRESET_SYSTEMS[presetId as keyof typeof PRESET_SYSTEMS];
   if (!preset) throw new Error(`Unknown preset: ${presetId}`);
 
   return {
@@ -230,7 +230,7 @@ export const handler: Handler = async (event) => {
     });
 
     // Make request to AIML API - use correct endpoint for image generation
-    const response = await fetch(`${BASE}/v1/images/generations`, {
+    const response = await fetch(`${BASE}/v2/generate/image/flux/generation`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,

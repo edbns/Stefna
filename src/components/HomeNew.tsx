@@ -23,16 +23,11 @@ import { useGenerationMode } from '../stores/generationMode'
 import { EmotionMaskPicker } from './EmotionMaskPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
-
-// Identity-safe generation fallback system (integrated with IPA)
-// Uses Replicate's face-preserving models when primary generation fails
-
 import { paramsForI2ISharp } from '../services/infer-params'
 // import { clampStrength } from '../lib/strengthPolicy' // REMOVED - drama file deleted
 
-
-
-
+// Identity-safe generation fallback system (integrated with IPA)
+// Uses Replicate's face-preserving models when primary generation fails
 
 // Safe wrapper for MasonryMediaGrid with fallback
 interface SafeMasonryGridProps {
@@ -77,14 +72,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   }
 }
 
-
-  
-
-
-// Import from the new professional presets system
 import { PROFESSIONAL_PRESETS, ProfessionalPresetConfig } from '../config/professional-presets'
-
-// Import the actual preset files
 import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
 import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
 import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
@@ -121,9 +109,9 @@ const getPresetPrompt = (presetId: string): string => {
   return preset?.promptAdd || 'Transform this image'
 }
 
-// import { validateModeMappings } from '../utils/validateMappings' // REMOVED - complex drama file
 import FullScreenMediaViewer from './FullScreenMediaViewer'
 import ShareModal from './ShareModal'
+// import { validateModeMappings } from '../utils/validateMappings' // REMOVED - complex drama file
 
 
 // import { requireUserIntent } from '../utils/generationGuards' // REMOVED - complex drama file
@@ -188,7 +176,7 @@ const HomeNew: React.FC = () => {
 
   
   // New preset runner system - MUST be declared before use
-  const { queuePreset, runPending, busy: presetRunnerBusy, hasPending } = usePresetRunner()
+  const presetRunner = usePresetRunner()
   const { selectedPreset: stickySelectedPreset, setSelectedPreset: setStickySelectedPreset, ensureDefault } = useSelectedPreset()
   
   // Selected preset using sticky store instead of local state
@@ -298,7 +286,7 @@ const HomeNew: React.FC = () => {
   // Initialize sticky preset system when PROFESSIONAL_PRESETS are loaded
   useEffect(() => {
     if (Object.keys(PROFESSIONAL_PRESETS).length > 0) {
-      const activePresets = Object.keys(PROFESSIONAL_PRESETS)
+      const activePresets = Object.keys(PROFESSIONAL_PRESETS) as (keyof typeof PROFESSIONAL_PRESETS)[]
       ensureDefault(activePresets)
     }
   }, [PROFESSIONAL_PRESETS, ensureDefault])
@@ -963,7 +951,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             mediaType: item.mediaType,
           })
         })
-          .filter((item): item is UserMedia => item !== null) // Filter out null items
+          .filter((item: UserMedia | null): item is UserMedia => item !== null) // Filter out null items
         
         console.log('🎯 Mapped feed items:', mapped.length)
         
@@ -1048,15 +1036,15 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
   // Restore preset selection from localStorage on mount
   useEffect(() => {
-    const savedPreset = localStorage.getItem('selectedPreset') as keyof typeof PRESETS | null
-    if (savedPreset && PRESETS[savedPreset]) {
+    const savedPreset = localStorage.getItem('selectedPreset') as keyof typeof PROFESSIONAL_PRESETS | null
+    if (savedPreset && PROFESSIONAL_PRESETS[savedPreset]) {
       console.log('🔄 Restoring preset from localStorage:', savedPreset)
       setSelectedPreset(savedPreset)
-    } else if (savedPreset && !PRESETS[savedPreset]) {
+    } else if (savedPreset && !PROFESSIONAL_PRESETS[savedPreset]) {
       console.warn('⚠️ Invalid preset in localStorage, clearing:', savedPreset)
       localStorage.removeItem('selectedPreset')
     }
-  }, [PRESETS]) // Add PRESETS as dependency so it runs when presets are loaded
+  }, [PROFESSIONAL_PRESETS]) // Add PROFESSIONAL_PRESETS as dependency so it runs when presets are loaded
 
   useEffect(() => {
     loadFeed()
@@ -1672,14 +1660,14 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             }
           }, 2000); // Poll every 2 seconds
           
-          // Set timeout for polling (2 minutes)
+          // Set timeout for polling (10 minutes - Neo Tokyo Glitch can take longer)
           setTimeout(() => {
             clearInterval(pollInterval);
             console.error('❌ [NeoGlitch] Polling timeout');
             notifyError({ title: 'Generation timeout', message: 'Please try again' });
             endGeneration(genId);
             setNavGenerating(false);
-          }, 120000);
+          }, 600000);
           
           return;
         } else {
@@ -1762,14 +1750,14 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               }
             }, 2000); // Poll every 2 seconds
             
-            // Set timeout for async polling (2 minutes)
+            // Set timeout for async polling (10 minutes - Neo Tokyo Glitch can take longer)
             setTimeout(() => {
               clearInterval(pollInterval);
               console.error('❌ [NeoGlitch] Async polling timeout');
               notifyError({ title: 'Generation timeout', message: 'Please try again' });
               endGeneration(genId);
               setNavGenerating(false);
-            }, 120000);
+            }, 600000);
             
             return;
           }
@@ -1784,7 +1772,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       
       // Upload source image to Cloudinary
       const uploadResult = await uploadSourceToCloudinary({
-        file: selectedFile,
+        file: selectedFile || undefined,
         url: undefined
       });
       const sourceUrl = uploadResult.secureUrl;
@@ -1840,7 +1828,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       };
 
       // Build AIML API payload for non-Neo-Glitch presets (flux/dev + flux/pro fallback)
-      const payload = {
+      const payload: any = {
         mode: kind,
         prompt: effectivePrompt, // server will prepend the identity prelude
         image_url: sourceUrl,
@@ -2086,22 +2074,91 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           
           console.log('✅ [NeoGlitch] Generation started successfully:', generationResult);
           
-          // Poll for completion
-          const finalStatus = await neoGlitchService.pollForCompletion(generationResult.id);
+          // Start polling for completion (don't wait for it to complete)
+          console.log('🔄 [NeoGlitch] Starting async polling for completion...');
           
-          if (finalStatus.status === 'completed' && finalStatus.cloudinaryUrl) {
-            console.log('✅ [NeoGlitch] Generation completed with Cloudinary URL:', finalStatus.cloudinaryUrl);
-            
-            // Set the result URL from Cloudinary (permanent)
-            replicateResultUrl = finalStatus.cloudinaryUrl;
-          replicateAllResultUrls = [replicateResultUrl];
-          replicateVariationsGenerated = 1;
-          skipAimlApi = true;
+          // Start the polling in the background
+          neoGlitchService.pollForCompletion(generationResult.id)
+            .then(finalStatus => {
+              if (finalStatus.status === 'completed' && finalStatus.cloudinaryUrl) {
+                console.log('✅ [NeoGlitch] Generation completed with Cloudinary URL:', finalStatus.cloudinaryUrl);
+                
+                // Save the generated media to user profile
+                try {
+                  const mediaToSave = {
+                    userId: authService.getCurrentUser()?.id || '',
+                    type: 'photo' as const,
+                    url: finalStatus.cloudinaryUrl,
+                    thumbnailUrl: finalStatus.cloudinaryUrl,
+                    prompt: effectivePrompt,
+                    aspectRatio: 1,
+                    width: 1024,
+                    height: 1024,
+                    tokensUsed: 1,
+                    isPublic: true,
+                    tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+                    metadata: {
+                      quality: 'high' as const,
+                      generationTime: Date.now(),
+                      modelVersion: 'stability-ai',
+                      presetId: generationMeta?.neoTokyoGlitchPresetId,
+                      mode: 'i2i' as const,
+                      group: null
+                    }
+                  };
+                  
+                  userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
+                  console.log('✅ [NeoGlitch] Media saved successfully');
+                  
+                  // Refresh the public feed to show new media
+                  loadFeed();
+                  
+                  // End generation successfully
+                  endGeneration(genId);
+                  setNavGenerating(false);
+                  
+                  // Show unified toast with thumbnail
+                  notifyReady({ 
+                    title: 'Your media is ready', 
+                    message: 'Tap to open',
+                    thumbUrl: finalStatus.cloudinaryUrl,
+                    onClickThumb: () => {
+                      window.open(finalStatus.cloudinaryUrl, '_blank');
+                    }
+                  });
+                } catch (error) {
+                  console.error('❌ [NeoGlitch] Failed to save media:', error);
+                  notifyError({ title: 'Failed to save media', message: 'Please try again' });
+                  endGeneration(genId);
+                  setNavGenerating(false);
+                }
+              } else {
+                console.error('❌ [NeoGlitch] Generation failed:', finalStatus.error);
+                notifyError({ title: 'Generation failed', message: finalStatus.error || 'Please try again' });
+                endGeneration(genId);
+                setNavGenerating(false);
+              }
+            })
+            .catch(error => {
+              console.error('❌ [NeoGlitch] Polling failed:', error);
+              notifyError({ title: 'Generation failed', message: error.message || 'Please try again' });
+              endGeneration(genId);
+              setNavGenerating(false);
+            });
           
-            console.log('🎭 [NeoGlitch] Using permanent Cloudinary URL, skipping aimlApi');
-          } else {
-            throw new Error(`Generation failed or incomplete: ${finalStatus.status} - ${finalStatus.error || 'Unknown error'}`);
-          }
+          // Don't wait for completion - let it happen in the background
+          // Set a reasonable timeout for the UI
+          setTimeout(() => {
+            if (isGenerating) {
+              console.log('⏰ [NeoGlitch] UI timeout reached, but polling continues in background');
+              // Don't end generation here - let the service handle it
+            }
+          }, 300000); // 5 minutes UI timeout
+          
+          // Return early - don't proceed to AIML API
+          endGeneration(genId);
+          setNavGenerating(false);
+          return;
           
         } catch (error) {
           console.error('❌ [NeoGlitch] Generation failed:', error);
@@ -2324,22 +2381,11 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             console.log('✅ Ghibli Reaction FX applied successfully');
           }
           
-          // Apply Emotion Mask FX (subtle enhancement)
+          // Apply Emotion Mask FX (subtle enhancement) - DISABLED: function not implemented
           else if (generationMeta.mode === 'emotionmask' && selectedEmotionMaskPreset) {
-            console.log('🎭 Applying Emotion Mask FX...');
-            const { applyEmotionMaskFX } = await import('../hooks/useEmotionMask');
-            
-            const fxOptions = {
-              enableCinematicLighting: true,
-              enableSkinEnhancement: true,
-              enableExpressionBoost: true,
-              lightingIntensity: 0.6,
-              skinSmoothing: 0.4,
-              expressionIntensity: 0.7
-            };
-            
-            fxProcessedUrl = await applyEmotionMaskFX(finalResultUrl, fxOptions);
-            console.log('✅ Emotion Mask FX applied successfully');
+            console.log('🎭 Emotion Mask FX disabled - function not implemented');
+            // TODO: Implement applyEmotionMaskFX function in useEmotionMask hook
+            fxProcessedUrl = finalResultUrl; // Use original result for now
           }
           
           // Update final result with FX processing
@@ -3029,7 +3075,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       // Enforce server-side quota and generate via aimlApi
       // Use new uploadSource service - never fetch blob URLs
       const uploadResult = await uploadSourceToCloudinary({
-        file: selectedFile,
+        file: selectedFile || undefined,
         url: undefined  // Don't pass preview URL - use File object directly
       })
       const sourceUrl = uploadResult.secureUrl
