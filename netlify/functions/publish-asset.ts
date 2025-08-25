@@ -1,6 +1,6 @@
 import type { Handler } from '@netlify/functions';
-import { neonAdmin } from '../lib/neonAdmin';
-import type { PublishAssetInput, ApiResult } from '../lib/types';
+import { neonAdmin } from './_lib/neonAdmin';
+import type { PublishAssetInput, ApiResult } from './_lib/types';
 import { json } from './_lib/http';
 
 export const handler: Handler = async (event) => {

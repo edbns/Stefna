@@ -1,7 +1,7 @@
 // /.netlify/functions/video-job-status.ts
 import type { Handler } from '@netlify/functions';
-import { sql } from '../lib/db';
-import { getAuthedUser } from '../lib/auth';
+import { sql } from './_lib/db';
+import { getAuthedUser } from './_lib/auth';
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'GET') {

@@ -1,5 +1,5 @@
 import type { Handler } from "@netlify/functions";
-import { requireAuth } from "../lib/auth";
+import { requireAuth } from "./_lib/auth";
 
 export function withAuth(fn: (e: any, u: any) => Promise<any> | any): Handler {
   return async (event) => {

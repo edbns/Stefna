@@ -1,7 +1,7 @@
 import type { Handler } from '@netlify/functions';
-import { neonAdmin } from '../lib/neonAdmin';
-import { cloudinary } from '../lib/cloudinary';
-import type { ProcessAssetPayload, ApiResult } from '../lib/types';
+import { neonAdmin } from './_lib/neonAdmin';
+import { cloudinary } from './_lib/cloudinary';
+import type { ProcessAssetPayload, ApiResult } from './_lib/types';
 import { json } from './_lib/http';
 
 // pretend AI call

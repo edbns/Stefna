@@ -1,6 +1,6 @@
 import type { Handler } from '@netlify/functions';
-import { sql } from '../lib/db';
-import { requireUser } from '../lib/auth';
+import { sql } from './_lib/db';
+import { requireUser } from './_lib/auth';
 
 export const handler: Handler = async (event) => {
   // Handle CORS

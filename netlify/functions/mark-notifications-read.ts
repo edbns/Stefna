@@ -2,7 +2,7 @@
 // Marks notifications as read for the authenticated user
 
 import { Handler } from '@netlify/functions';
-import { neonAdmin } from '../lib/neonAdmin';
+import { neonAdmin } from './_lib/neonAdmin';
 import * as jwt from 'jsonwebtoken';
 
 function getUserIdFromToken(auth?: string): string | null {

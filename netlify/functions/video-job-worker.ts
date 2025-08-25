@@ -1,6 +1,6 @@
 // /.netlify/functions/video-job-worker.ts
 import type { Handler } from '@netlify/functions';
-import { sql } from '../lib/db';
+import { sql } from './_lib/db';
 import { initCloudinary } from './_cloudinary';
 
 const AIML_API_KEY = process.env.AIML_API_KEY!;

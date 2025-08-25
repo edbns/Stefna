@@ -3,7 +3,7 @@
 
 import { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
-import { requireUser } from '../lib/auth';
+import { requireUser } from './_lib/auth';
 
 export const handler: Handler = async (event) => {
   // Handle CORS
