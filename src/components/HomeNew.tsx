@@ -829,10 +829,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         runOnOpen: false
       })
       
-      // Clear composer open state
-      setIsComposerOpen(false)
-      
-      console.log('🧹 Composer state completely cleared')
+      // Keep composer open for continued use
+      console.log('🧹 Composer state cleared but kept open for continued use')
     }
 
     window.addEventListener('generation-complete', handleGenerationComplete as EventListener)
