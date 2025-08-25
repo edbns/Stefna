@@ -39,7 +39,7 @@ export const handler: Handler = async (event) => {
     const prisma = new PrismaClient();
 
     try {
-      // Fetch public media assets and Neo Tokyo Glitch media
+      // 🚨 CRITICAL FIX: Get ALL items from both tables, then combine and paginate properly
       const [publicMedia, neoGlitchMedia] = await Promise.all([
         prisma.mediaAsset.findMany({
           where: {
@@ -56,9 +56,8 @@ export const handler: Handler = async (event) => {
           },
           orderBy: {
             createdAt: 'desc'
-          },
-          take: limitNum,
-          skip: offsetNum
+          }
+          // ❌ REMOVED: take and skip - we'll get ALL items first
         }),
         prisma.neoGlitchMedia.findMany({
           where: {
@@ -75,9 +74,8 @@ export const handler: Handler = async (event) => {
           },
           orderBy: {
             createdAt: 'desc'
-          },
-          take: limitNum,
-          skip: offsetNum
+          }
+          // ❌ REMOVED: take and skip - we'll get ALL items first
         })
       ]);
 
@@ -112,12 +110,12 @@ export const handler: Handler = async (event) => {
         type: 'neo-glitch' // Identify as Neo Tokyo Glitch
       }));
 
-      // Combine and sort by creation date
+      // ✅ FIXED: Combine ALL items first, then sort, then apply pagination
       const allFeedItems = [...mainFeedItems, ...glitchFeedItems].sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
-      // Apply limit and offset to combined results
+      // ✅ FIXED: Apply pagination to the combined, sorted results
       const feedItems = allFeedItems.slice(offsetNum, offsetNum + limitNum);
 
       await prisma.$disconnect();
