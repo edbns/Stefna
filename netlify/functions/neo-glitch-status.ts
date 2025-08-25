@@ -37,12 +37,21 @@ export const handler: Handler = async (event) => {
     console.log('🎭 [NeoGlitch] User authenticated for status check:', userId);
 
     const body = JSON.parse(event.body || '{}');
+    console.log('🔍 [NeoGlitch] Received request body:', JSON.stringify(body, null, 2));
+    console.log('🔍 [NeoGlitch] Body keys:', Object.keys(body));
+    console.log('🔍 [NeoGlitch] stabilityJobId value:', body.stabilityJobId);
+    console.log('🔍 [NeoGlitch] stabilityJobId type:', typeof body.stabilityJobId);
+    
     const { stabilityJobId } = body;
 
     // Validate required fields for new architecture
     if (!stabilityJobId) {
+      console.error('❌ [NeoGlitch] Missing stabilityJobId in request body');
+      console.error('❌ [NeoGlitch] Full body received:', JSON.stringify(body, null, 2));
       return json({ 
-        error: 'Missing required field: stabilityJobId is required' 
+        error: 'Missing required field: stabilityJobId is required',
+        receivedBody: body,
+        receivedKeys: Object.keys(body)
       }, { status: 400 });
     }
 

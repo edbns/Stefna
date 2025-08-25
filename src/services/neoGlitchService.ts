@@ -82,7 +82,8 @@ class NeoGlitchService {
         provider: stabilityResult.provider,
         strategy: stabilityResult.strategy,
         stabilityJobId: stabilityResult.stabilityJobId,
-        imageUrl: stabilityResult.imageUrl
+        imageUrl: stabilityResult.imageUrl,
+        fullResponse: stabilityResult
       });
 
       // Handle Stability.ai response
@@ -90,8 +91,10 @@ class NeoGlitchService {
         if (stabilityResult.imageUrl && stabilityResult.status === 'completed') {
           // Stability.ai returned immediate result
           console.log('✅ [NeoGlitch] Stability.ai generation completed immediately:', stabilityResult.imageUrl);
+          const resultId = stabilityResult.stabilityJobId || `stability_${request.runId}`;
+          console.log('🔍 [NeoGlitch] Using result ID:', resultId);
           return {
-            id: stabilityResult.stabilityJobId || `stability_${request.runId}`,
+            id: resultId,
             status: 'completed',
             runId: request.runId,
             cloudinaryUrl: stabilityResult.imageUrl,
@@ -100,8 +103,10 @@ class NeoGlitchService {
         } else {
           // Stability.ai is processing
           console.log('🔄 [NeoGlitch] Stability.ai generation in progress:', stabilityResult.stabilityJobId);
+          const resultId = stabilityResult.stabilityJobId || `stability_${request.runId}`;
+          console.log('🔍 [NeoGlitch] Using result ID for pending:', resultId);
           return {
-            id: stabilityResult.stabilityJobId || `stability_${request.runId}`,
+            id: resultId,
             status: 'pending',
             runId: request.runId,
             provider: 'stability'
@@ -131,6 +136,8 @@ class NeoGlitchService {
     try {
       const endpoint = '/.netlify/functions/neo-glitch-status';
       const body = { stabilityJobId: jobId };
+      
+      console.log('🔍 [NeoGlitch] checkStatus called with:', { jobId, provider, body });
 
       const response = await authenticatedFetch(endpoint, {
         method: 'POST',
@@ -140,6 +147,7 @@ class NeoGlitchService {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
+        console.error('❌ [NeoGlitch] Status check failed with response:', { status: response.status, error });
         throw new Error(error.error || `Failed to check status: ${response.status}`);
       }
 
@@ -156,6 +164,8 @@ class NeoGlitchService {
    */
   async pollForCompletion(stabilityJobId: string, maxAttempts: number = 60): Promise<NeoGlitchStatus> {
     console.log('🔄 [NeoGlitch] Polling for completion with dedicated architecture:', stabilityJobId);
+    console.log('🔍 [NeoGlitch] stabilityJobId type:', typeof stabilityJobId);
+    console.log('🔍 [NeoGlitch] stabilityJobId value:', stabilityJobId);
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
