@@ -4271,7 +4271,8 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                         } else {
                           // Switch to Emotion Mask mode AND show dropdown immediately
                           setComposerState(s => ({ ...s, mode: 'emotionmask' }))
-                          setSelectedEmotionMaskPreset(null)
+                          setSelectedMode('presets') // Set selectedMode to match the new system
+                          setSelectedEmotionMaskPreset(emotionMaskPreset)
                           setEmotionMaskDropdownOpen(true) // Show dropdown immediately
                         }
                       }}
@@ -4344,6 +4345,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                         } else {
                           // Switch to Ghibli Reaction mode AND show dropdown immediately
                           setComposerState(s => ({ ...s, mode: 'ghiblireact' }))
+                          setSelectedMode('presets') // Set selectedMode to match the new system
                           setSelectedGhibliReactionPreset(null)
                           setGhibliReactionDropdownOpen(true) // Show dropdown immediately
                         }
@@ -4424,6 +4426,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                           } else {
                             // User has agreed - switch to Neo Tokyo Glitch mode AND show dropdown immediately
                             setComposerState(s => ({ ...s, mode: 'neotokyoglitch' }))
+                            setSelectedMode('presets') // Set selectedMode to match the new system
                             setSelectedNeoTokyoGlitchPreset(null)
                             setNeoTokyoGlitchDropdownOpen(true) // Show dropdown immediately
                           }
