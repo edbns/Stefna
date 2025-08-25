@@ -133,32 +133,52 @@ export const handler: Handler = async (event) => {
       }
 
       // Transform main media assets to feed format
-      const mainFeedItems = publicMedia.map(item => ({
-        id: item.id,
-        userId: item.userId,
-        user: item.user, // Now using 'user' instead of 'owner'
-        finalUrl: item.url,
-        mediaType: item.resourceType,
-        prompt: item.prompt,
-        presetKey: item.presetKey, // Using the actual presetKey field
-        status: item.status || 'ready',
-        createdAt: item.createdAt,
-        type: 'media-asset'
-      }));
+      const mainFeedItems = publicMedia.map(item => {
+        const finalUrl = item.url || item.finalUrl;
+        console.log('🔍 [getPublicFeed] MediaAsset item:', {
+          id: item.id,
+          url: item.url,
+          finalUrl: item.finalUrl,
+          mappedFinalUrl: finalUrl,
+          type: 'media-asset'
+        });
+        
+        return {
+          id: item.id,
+          userId: item.userId,
+          user: item.user, // Now using 'user' instead of 'owner'
+          finalUrl: finalUrl,
+          mediaType: item.resourceType,
+          prompt: item.prompt,
+          presetKey: item.presetKey, // Using the actual presetKey field
+          status: item.status || 'ready',
+          createdAt: item.createdAt,
+          type: 'media-asset'
+        };
+      });
 
       // Transform Neo Tokyo Glitch media to feed format
-      const glitchFeedItems = neoGlitchMedia.map(item => ({
-        id: item.id,
-        userId: item.userId,
-        user: item.user,
-        finalUrl: item.imageUrl, // Neo Tokyo Glitch uses imageUrl
-        mediaType: 'image',
-        prompt: item.prompt,
-        presetKey: item.preset,
-        status: item.status,
-        createdAt: item.createdAt,
-        type: 'neo-glitch' // Identify as Neo Tokyo Glitch
-      }));
+      const glitchFeedItems = neoGlitchMedia.map(item => {
+        console.log('🔍 [getPublicFeed] NeoGlitchMedia item:', {
+          id: item.id,
+          imageUrl: item.imageUrl,
+          mappedFinalUrl: item.imageUrl,
+          type: 'neo-glitch'
+        });
+        
+        return {
+          id: item.id,
+          userId: item.userId,
+          user: item.user,
+          finalUrl: item.imageUrl, // Neo Tokyo Glitch uses imageUrl
+          mediaType: 'image',
+          prompt: item.prompt,
+          presetKey: item.preset,
+          status: item.status,
+          createdAt: item.createdAt,
+          type: 'neo-glitch' // Identify as Neo Tokyo Glitch
+        };
+      });
 
       // ✅ FIXED: Combine ALL items first, then sort, then apply pagination
       const allFeedItems = [...mainFeedItems, ...glitchFeedItems].sort((a, b) => 
@@ -167,13 +187,31 @@ export const handler: Handler = async (event) => {
 
       // 🚨 CRITICAL FIX: Deduplicate by image URL to prevent Neo Tokyo Glitch duplicates
       const uniqueFeedItems = allFeedItems.filter((item, index, array) => {
+        // Skip items without valid URLs
+        if (!item.finalUrl) {
+          console.log('⚠️ [getPublicFeed] Skipping item without finalUrl:', item);
+          return false;
+        }
+        
         // Find the first occurrence of this image URL
         const firstIndex = array.findIndex(otherItem => 
-          otherItem.finalUrl === item.finalUrl
+          otherItem.finalUrl && otherItem.finalUrl === item.finalUrl
         );
         
         // Keep only the first occurrence (most recent)
-        return index === firstIndex;
+        const isFirst = index === firstIndex;
+        
+        if (!isFirst) {
+          console.log('🚨 [getPublicFeed] Removing duplicate:', {
+            duplicateUrl: item.finalUrl,
+            duplicateIndex: index,
+            firstIndex: firstIndex,
+            duplicateType: item.type,
+            firstType: array[firstIndex]?.type
+          });
+        }
+        
+        return isFirst;
       });
 
       console.log('🔍 [getPublicFeed] Deduplication results:', {
