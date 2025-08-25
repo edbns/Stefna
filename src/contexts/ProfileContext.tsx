@@ -161,10 +161,27 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
 
   // Load profile on mount and when auth state changes
   useEffect(() => {
+    // Wait for auth state to be fully initialized before trying to load profile
+    const checkAuthAndLoad = () => {
+      if (authService.isAuthenticated() && authService.getToken()) {
+        loadProfile()
+      } else {
+        // If not authenticated, just load from localStorage
+        const savedProfile = localStorage.getItem('userProfile')
+        if (savedProfile) {
+          try {
+            const parsedProfile = JSON.parse(savedProfile)
+            setProfileData(prev => ({ ...prev, ...parsedProfile }))
+            console.log('✅ Loaded profile from localStorage (not authenticated):', parsedProfile)
+          } catch (parseError) {
+            console.error('Failed to parse localStorage profile:', parseError)
+          }
+        }
+      }
+    }
+
     // Add a small delay to ensure auth state is fully loaded
-    const timer = setTimeout(() => {
-      loadProfile()
-    }, 100)
+    const timer = setTimeout(checkAuthAndLoad, 200)
     
     return () => clearTimeout(timer)
   }, [])

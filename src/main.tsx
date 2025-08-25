@@ -68,9 +68,9 @@ validateAll().catch(console.error)
 if (import.meta.env.DEV) {
   // Add debug helper for save-media testing
   window.testSaveMedia = async () => {
-    const token = localStorage.getItem('jwt_token');
+    const token = localStorage.getItem('auth_token');
     if (!token) {
-      console.error('No JWT token found');
+      console.error('No auth token found');
       return;
     }
     
