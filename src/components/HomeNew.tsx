@@ -4084,13 +4084,17 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 <div className="relative">
                   <textarea
                     value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
+                    onChange={(e) => {
+                      console.log('🎯 Prompt input changed:', e.target.value);
+                      setPrompt(e.target.value);
+                    }}
                     placeholder={composerState.mode === 'custom' 
                       ? "Describe your vision... (click ✨ to enhance your prompt)"
                       : "Custom prompt (optional) - will be combined with selected preset"
                     }
                     className="w-full px-3 py-2 pr-10 bg-white/10 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:bg-white/20 transition-colors h-20 text-sm"
-                    disabled={isGenerating}
+                    disabled={false}
+                    data-testid="custom-prompt-input"
                   />
                   {/* Custom Mode Button - show when user types in prompt */}
                   {prompt.trim() && composerState.mode !== 'custom' && (
