@@ -4149,8 +4149,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             </div>
           </div>
 
-          {/* Bottom composer bar - compact, horizontally 70% */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
+                      {/* Bottom composer bar - compact, horizontally 70% */}
+            <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
             <div className="bg-[#333333]/80 backdrop-blur-sm rounded-2xl px-4 py-3 transition-all duration-300">
               
 
@@ -4612,7 +4612,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             
             {/* Clean disclaimer row under composer */}
             <div className="mt-3 text-center">
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-white/60 whitespace-nowrap overflow-hidden text-ellipsis">
                 Disclaimer: AI Magic Zone, Neo Tokyo, Ghibli Reaction, Emotion Mask, and others are powered by AI. Fun, wild, sometimes a bit off — mistakes can happen.
               </p>
             </div>
