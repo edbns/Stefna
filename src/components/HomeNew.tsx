@@ -12,6 +12,7 @@ import { useToasts } from './ui/Toasts'
 import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
 import { usePresetRunner } from '../hooks/usePresetRunner'
+import { IdentityPreservationService } from '../services/identityPreservationService'
 import { useSelectedPreset } from '../stores/selectedPreset'
 import { HiddenUploader } from './HiddenUploader'
 
@@ -145,7 +146,7 @@ const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefin
 }
 
 const HomeNew: React.FC = () => {
-  const { notifyQueue, notifyReady, notifyError } = useToasts()
+  const { notifyQueue, notifyReady, notifyError, notifySuccess } = useToasts()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
   const location = useLocation() as any
@@ -165,7 +166,7 @@ const HomeNew: React.FC = () => {
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null)
   
   // Identity lock state
-  const [identityLock, setIdentityLock] = useState(false)
+  // Identity Lock removed - IPA now runs automatically based on preset type
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
@@ -688,35 +689,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
     }
   }, [isComposerOpen, previewUrl, selectedFile, isVideoPreview, composerState.mode, composerState.status])
 
-  // Add global debug functions for identity-safe generation
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).checkIdentitySafeGeneration = async () => {
-        try {
-          const { isIdentitySafeGenerationAvailable } = await import('../utils/identitySafeGeneration');
-          const isAvailable = isIdentitySafeGenerationAvailable();
-          console.log('🔍 Identity-safe generation available:', isAvailable);
-          return isAvailable;
-        } catch (error) {
-          console.error('❌ Failed to check identity-safe generation:', error);
-          return false;
-        }
-      };
 
-      (window as any).testIdentitySafeGeneration = async (prompt: string, imageUrl: string) => {
-        try {
-          const { runIdentitySafeFallback } = await import('../utils/identitySafeGeneration');
-          console.log('🧪 Testing identity-safe generation...');
-          const result = await runIdentitySafeFallback(prompt, imageUrl);
-          console.log('✅ Test successful:', result);
-          return result;
-        } catch (error) {
-          console.error('❌ Test failed:', error);
-          throw error;
-        }
-      };
-    }
-  }, []);
 
   // Handle generation completion events from the pipeline
   useEffect(() => {
@@ -1310,8 +1283,8 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       notifyQueue({ title: 'Add to queue', message: 'We will start processing shortly.' });
 
     // Get current profile settings from context (real-time state)
-    const { profileData } = useProfile()
-    const shareToFeed = profileData.shareToFeed
+    // Note: profileData is already available from the top-level useProfile() hook
+    const shareToFeed = profileData?.shareToFeed ?? false
     console.log('🔧 Using profile context settings:', { shareToFeed }) // allowRemix removed
 
     // Sanity check - log current state
@@ -1341,7 +1314,14 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
     if (kind === 'custom') {
       // CUSTOM MODE: Use ONLY the user's typed prompt
       effectivePrompt = options?.customPrompt || prompt?.trim() || 'Transform this image';
-      generationMeta = { mode: 'custom', source: 'user_prompt' };
+      generationMeta = { 
+        mode: 'custom', 
+        source: 'user_prompt',
+        generation_type: "custom_balanced_ipa", // Balanced identity preservation
+        ipaThreshold: 0.65, // Balanced similarity required
+        ipaRetries: 2, // Moderate fallback
+        ipaBlocking: true // Must pass to proceed
+      };
       console.log('🎨 CUSTOM MODE: Using user prompt only:', effectivePrompt);
       
     } else if (kind === 'preset') {
@@ -1355,7 +1335,15 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         return;
       }
       effectivePrompt = PRESETS[presetId].prompt;
-      generationMeta = { mode: 'preset', presetId, presetLabel: PRESETS[presetId].label };
+      generationMeta = { 
+        mode: 'preset', 
+        presetId, 
+        presetLabel: PRESETS[presetId].label,
+        generation_type: "preset_moderate_ipa", // Moderate identity preservation
+        ipaThreshold: 0.65, // Balanced similarity required
+        ipaRetries: 2, // Moderate fallback
+        ipaBlocking: true // Must pass to proceed
+      };
       console.log('🎯 PRESET MODE: Using preset only:', effectivePrompt);
       
     // Remix mode removed - focus on personal creativity
@@ -1385,21 +1373,23 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       // NO MORE SYNTHETIC PROMPT GENERATION - preserve emotional intent
       effectivePrompt = emotionMaskPreset.prompt;
       
-      // Apply identity lock adjustments - more aggressive for Emotion Mask
-      const adjustedStrength = identityLock ? Math.min(emotionMaskPreset.strength * 0.5, 0.32) : emotionMaskPreset.strength;
+            // Emotion Mask uses strict IPA (threshold: 0.7) - no manual control needed
+      const adjustedStrength = emotionMaskPreset.strength;
       
-              generationMeta = { 
-          mode: 'emotionmask', 
-          emotionMaskPresetId, 
+      generationMeta = { 
+        mode: 'emotionmask', 
+        emotionMaskPresetId, 
         emotionMaskPresetLabel: emotionMaskPreset.label,
-          model: "flux/dev/image-to-image", // Use known working model
-        strength: adjustedStrength, // Adjusted for identity lock
-          guidance_scale: 7.5, // Standard guidance for consistency
-          cfg_scale: 7.0, // Balanced creativity vs adherence
-        denoising_strength: adjustedStrength, // Match adjusted strength
-        generation_type: identityLock ? "emotion_mask_identity_preserved" : "emotion_mask_standard",
-        identityLock: identityLock // Track identity lock state
-        };
+        model: "flux/dev/image-to-image", // Use known working model
+        strength: adjustedStrength, // Use preset strength
+        guidance_scale: 7.5, // Standard guidance for consistency
+        cfg_scale: 7.0, // Balanced creativity vs adherence
+        denoising_strength: adjustedStrength, // Match preset strength
+        generation_type: "emotion_mask_strict_ipa", // Strict identity preservation
+        ipaThreshold: 0.7, // High similarity required
+        ipaRetries: 3, // Aggressive fallback
+        ipaBlocking: true // Must pass to proceed
+      };
       console.log('🎭 EMOTION MASK MODE: Using ORIGINAL prompt:', emotionMaskPreset.label, effectivePrompt);
     } else if (kind === 'ghiblireact') {
       // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
@@ -1431,7 +1421,10 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           guidance_scale: 7.5, // Standard guidance for consistency
           cfg_scale: 7.0, // Balanced creativity vs adherence
           denoising_strength: ghibliReactionPreset.strength, // Match preset strength
-          generation_type: "ghibli_reaction_balanced" // Mark as balanced transformation
+          generation_type: "ghibli_reaction_moderate_ipa", // Moderate identity preservation
+          ipaThreshold: 0.6, // Medium similarity required
+          ipaRetries: 2, // Moderate fallback
+          ipaBlocking: true // Must pass to proceed
         };
               console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: flux/dev/image-to-image');
       
@@ -1483,7 +1476,10 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
           cfg_scale: 7.0, // Balanced creativity vs adherence
         denoising_strength: 0.5, // Match Stability.ai preset strength
           features: neoTokyoGlitchPreset.features,
-        generation_type: "neo_tokyo_stability_glitch", // Mark as Stability.ai glitch transformation
+        generation_type: "neo_tokyo_relaxed_ipa", // Relaxed identity preservation
+        ipaThreshold: 0.4, // Low similarity allowed (creative freedom)
+        ipaRetries: 1, // Minimal fallback
+        ipaBlocking: false, // Don't block, just warn
         presetKey // Store which preset to use
         };
       console.log('🎭 NEO TOKYO GLITCH MODE: Using Stability.ai + AIML fallback:', neoTokyoGlitchPreset.label, 'Preset:', presetKey);
@@ -1544,9 +1540,9 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       // Just close the composer; keep using outer genId
       setIsComposerOpen(false);
 
-      // For Neo Tokyo Glitch, use our new Stability.ai + AIML fallback system
+      // 🎭 NEO TOKYO GLITCH: Use Stability.ai (3-tier) + AIML fallback
       if (kind === 'neotokyoglitch') {
-        console.log('🚀 [NeoGlitch] Starting generation with Stability.ai + AIML fallback');
+        console.log('🚀 [NeoGlitch] Starting generation with Stability.ai (3-tier) + AIML fallback');
         
         // Upload source image to Cloudinary
         const uploadResult = await uploadSourceToCloudinary({
@@ -1822,8 +1818,8 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         }
       }
       
-      // For other modes, use the existing AIML API flow
-      console.log('🚀 Using existing AIML API flow for mode:', kind);
+      // 🎨 ALL OTHER PRESETS: Use AIML API with flux/dev + flux/pro fallback (NO Stability.ai)
+      console.log('🚀 Using AIML API flow for mode:', kind);
       
       // Upload source image to Cloudinary
       const uploadResult = await uploadSourceToCloudinary({
@@ -1860,18 +1856,19 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                      /\/video\/upload\//.test(sourceUrl || '') ||
                      /\.(mp4|mov|webm|m4v)(\?|$)/i.test(sourceUrl || '');
 
-      // Model normalization function with Flux Dev as primary, Flux Pro as fallback
+      // Model normalization function - AIML API only (NO Stability.ai for non-Neo-Glitch)
       const normalizeModel = (model?: string, mode?: string) => {
-        // 🎯 CONSISTENT MODEL STRATEGY: Use flux/dev for all modes, flux-pro as fallback
-        // This ensures consistent style and identity preservation across all generations
+        // 🎯 AIML-ONLY STRATEGY: Use flux/dev for all non-Neo-Glitch modes
+        // Neo Glitch uses Stability.ai (3-tier) + AIML fallback
+        // All other presets use AIML API only
         
-        // Primary model for ALL modes (consistent style, reliable identity preservation)
+        // Primary model for ALL non-Neo-Glitch modes
         const primaryModel = 'flux/dev/image-to-image';
         
         // Fallback model if primary fails (higher quality, different approach)
         const fallbackModel = 'flux-pro/v1.1-ultra';
         
-        // For now, always use primary model to fix the "6 different results" issue
+        // For now, always use primary model to ensure consistency
         // Fallback logic can be added later when we implement retry mechanisms
         // 
         // FALLBACK STRATEGY (Future Implementation):
@@ -1881,13 +1878,13 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         return primaryModel;
       };
 
-      // Build payload with correct URL key based on media type
+      // Build AIML API payload for non-Neo-Glitch presets (flux/dev + flux/pro fallback)
       const payload = {
         mode: kind,
         prompt: effectivePrompt, // server will prepend the identity prelude
         image_url: sourceUrl,
-        strength: generationMeta?.strength || 0.85, // No drama clamping - use simple values
-        model: normalizeModel(generationMeta?.model || 'flux/dev', kind),
+        strength: generationMeta?.strength || 0.85, // Use preset strength or default
+        model: normalizeModel(generationMeta?.model || 'flux/dev', kind), // AIML models only
         num_variations: 1,
         seed: Date.now(), // Fixed seed for consistency - same input = same output
         single_image: true, // Force single output to prevent variations
@@ -1923,7 +1920,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         payload.presetName = selectedPreset;
       }
 
-      console.info('aimlApi payload', payload);
+      console.info('🎯 AIML API payload for non-Neo-Glitch preset:', payload);
 
       // Reserve credits before generation - dynamically calculate based on variations
       let creditsNeeded = 1; // Default for single generation
@@ -2177,7 +2174,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         full_payload: payload
       });
 
-      // Skip aimlApi if we already have Replicate results
+      // Skip aimlApi if we already have Replicate results (Neo Glitch only)
       if (skipAimlApi && replicateResultUrl) {
         console.log('🎭 Skipping aimlApi - using Replicate results');
         resultUrl = replicateResultUrl;
@@ -2223,6 +2220,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         }, 24000); // 24s cushion before Netlify's 26s limit
 
         try {
+          // 🎯 Call AIML API for non-Neo-Glitch presets (flux/dev + flux/pro fallback)
           res = await authenticatedFetch('/.netlify/functions/aimlApi', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2282,118 +2280,45 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         throw new Error('No result URL in API response');
       }
       
-      // 🔒 IDENTITY PRESERVATION CHECK - if identity lock is enabled
+      // 🔒 IDENTITY PRESERVATION CHECK - automatic based on preset type
       let finalResultUrl = resultUrl;
 
-      
-      if (identityLock && sourceUrl) {
-
+      if (generationMeta?.generation_type && sourceUrl) {
         try {
-          const { checkIdentityPreservation } = await import('../hooks/useIPAFaceCheck');
+          console.log('🔒 [IPA] Starting identity preservation check for:', generationMeta.generation_type);
           
-          const ipaResult = await checkIdentityPreservation({
-            originalUrl: sourceUrl,
-            generatedUrl: resultUrl,
-            threshold: 0.38, // Slightly higher than default for stricter identity preservation
-          });
-          
-
-          
-          if (!ipaResult.passed) {
-            console.log(`🔒 IPA check failed (${generationMeta?.mode || 'unknown'} mode) - similarity: ${ipaResult.similarity.toFixed(3)}`);
-            
-            // Show user feedback for identity check failure
-            toast.info('Identity check failed, retrying with lower strength...', { duration: 3000 });
-            
-            // Retry with lower strength for better identity preservation
-            // Adaptive strength reduction based on preset type
-            const retryMultiplier = generationMeta?.mode === 'emotionmask' ? 0.4 : 
-                                  generationMeta?.mode === 'ghiblireact' ? 0.5 : 0.6;
-            const retryPayload = {
-              ...payload,
-              strength: Math.min(payload.strength * retryMultiplier, 0.25),
-            };
-            
-            console.log(`🔒 Retry with ${retryMultiplier}x strength: ${payload.strength} → ${retryPayload.strength}`);
-            
-
-            
-            const retryRes = await authenticatedFetch('/.netlify/functions/aimlApi', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(retryPayload),
-              signal: controller.signal
-            });
-            
-            if (retryRes.ok) {
-              const retryBody = await retryRes.json();
-              const retryUrl = retryBody?.image_url || retryBody?.image_urls?.[0];
-              
-              if (retryUrl) {
-
-                
-                const retryIpaResult = await checkIdentityPreservation({
-                  originalUrl: sourceUrl,
-                  generatedUrl: retryUrl,
-                  threshold: 0.38,
-                });
-                
-                if (retryIpaResult.passed) {
-                  finalResultUrl = retryUrl;
-                } else {
-                  // Attempt face blending as final fallback
-                  toast.info('Enabling face blending fallback...', { duration: 3000 });
-                  
-                  try {
-                    const { blendOriginalFace } = await import('../hooks/useIPAFaceCheck');
-                    const blendedResult = await blendOriginalFace(sourceUrl, retryUrl, 16);
-                    finalResultUrl = blendedResult;
-                    
-                    toast.success('Face blending completed - identity preserved!', { duration: 4000 });
-                  } catch (blendError) {
-                    console.log('🔒 Face blending failed, trying identity-safe generation fallback...');
-                    
-                    // Final fallback: Identity-safe generation with Replicate
-                    try {
-                      const { runIdentitySafeFallback } = await import('../utils/identitySafeGeneration');
-                      
-                      toast.info('Trying identity-safe generation...', { duration: 3000 });
-                      
-                      const fallbackResult = await runIdentitySafeFallback(
-                        payload.prompt,
-                        sourceUrl,
-                        { strength: 0.5, guidance: 8.0 } // Conservative settings for identity preservation
-                      );
-                      
-                      finalResultUrl = fallbackResult.outputUrl;
-                      
-                      toast.success('Identity-safe generation completed!', { duration: 4000 });
-                      
-                      console.log('✅ Identity-safe fallback successful:', {
-                        predictionId: fallbackResult.predictionId,
-                        outputUrl: fallbackResult.outputUrl.substring(0, 100) + '...'
-                      });
-                      
-                    } catch (fallbackError) {
-                      console.error('❌ Identity-safe fallback also failed:', fallbackError);
-                      finalResultUrl = retryUrl; // Use retry result as final fallback
-                      
-                      if (generationMeta?.mode === 'emotionmask') {
-                        toast.warning('All identity preservation methods failed, using retry result', { duration: 4000 });
-                      }
-                    }
-                  }
-                }
-                              } else {
-                  finalResultUrl = resultUrl;
-                }
-              } else {
-                finalResultUrl = resultUrl;
-              }
+          const ipaResult = await IdentityPreservationService.runIPA(
+            sourceUrl,
+            resultUrl,
+            {
+              ipaThreshold: generationMeta.ipaThreshold || 0.5,
+              ipaRetries: generationMeta.ipaRetries || 1,
+              ipaBlocking: generationMeta.ipaBlocking || false,
+              generation_type: generationMeta.generation_type
             }
-          } catch (ipaError) {
-            finalResultUrl = resultUrl;
+          );
+          
+          console.log('🔒 [IPA] Result:', {
+            similarity: ipaResult.similarity,
+            passed: ipaResult.passed,
+            retryCount: ipaResult.retryCount,
+            strategy: ipaResult.strategy
+          });
+
+          if (ipaResult.passed) {
+            finalResultUrl = ipaResult.finalUrl;
+            console.log('✅ [IPA] Identity preservation passed');
+          } else if (generationMeta.ipaBlocking) {
+            console.log('❌ [IPA] Identity preservation failed and blocking enabled');
+            throw new Error(`IPA failed: ${(ipaResult.similarity * 100).toFixed(1)}% similarity < ${((generationMeta.ipaThreshold || 0.5) * 100).toFixed(1)}% threshold`);
+          } else {
+            finalResultUrl = ipaResult.finalUrl;
+            console.log('⚠️ [IPA] Identity preservation failed but non-blocking, using best result');
           }
+        } catch (ipaError) {
+          console.error('❌ [IPA] Error during identity preservation check:', ipaError);
+          finalResultUrl = resultUrl; // Fallback to original result
+        }
       }
 
       // 🎨 FX POST-PROCESSING - Apply visual effects based on generation mode
@@ -3144,8 +3069,8 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
     setNavGenerating(true)
     try {
       // Get current profile settings from context (real-time state)
-      const { profileData } = useProfile()
-      const shareToFeed = profileData.shareToFeed
+      // Note: profileData is already available from the top-level useProfile() hook
+      const shareToFeed = profileData?.shareToFeed ?? false
       
       // Enforce server-side quota and generate via aimlApi
       // Use new uploadSource service - never fetch blob URLs
@@ -3227,7 +3152,8 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
         full_payload: body
       });
 
-      const res = await authenticatedFetch('/.netlify/functions/aimlApi', {
+              // 🎯 Call AIML API for custom generation (flux/dev + flux/pro fallback)
+        const res = await authenticatedFetch('/.netlify/functions/aimlApi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -3922,7 +3848,8 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
       // 🧪 DEBUG: Log prompt enhancement payload
       console.log('🧪 DEBUG: Prompt enhancement payload:', enhancementPayload);
       
-      const response = await authenticatedFetch('/.netlify/functions/aimlApi', {
+              // 🎯 Call AIML API for preset generation (flux/dev + flux/pro fallback)
+        const response = await authenticatedFetch('/.netlify/functions/aimlApi', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -4381,21 +4308,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                     )}
                   </div>
 
-                  {/* Identity Lock Toggle - available for ALL generation modes */}
-                  {isAuthenticated && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl text-xs border transition-colors bg-white/10 text-white border-white/20 hover:bg-white/15">
-                      <input
-                        type="checkbox"
-                        id="identity-lock-global"
-                        checked={identityLock}
-                        onChange={(e) => setIdentityLock(e.target.checked)}
-                        className="rounded border-white/30 bg-transparent"
-                      />
-                      <label htmlFor="identity-lock-global" className="cursor-pointer select-none">
-                        Identity Lock
-                      </label>
-                    </div>
-                  )}
+                  {/* Identity Lock removed - IPA now runs automatically based on preset type */}
 
                   {/* MoodMorph removed - replaced with Anime Filters */}
 
