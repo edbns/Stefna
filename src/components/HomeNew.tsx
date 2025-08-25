@@ -4123,7 +4123,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
 
           {/* Bottom composer bar - compact, horizontally 70% */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
-            <div className="bg-[#333333] border border-white/20 rounded-2xl px-4 py-3 shadow-2xl transition-all duration-300">
+            <div className="bg-black/30 backdrop-blur-sm rounded-2xl px-4 py-3 transition-all duration-300">
               
 
               
@@ -4138,7 +4138,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                       ? "Describe your vision... (click ✨ to enhance your prompt)"
                       : "Custom prompt (optional) - will be combined with selected preset"
                     }
-                    className="w-full px-3 py-2 pr-10 bg-white/5 border border-white/20 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-white/40 focus:bg-white/10 transition-colors h-20 text-sm"
+                    className="w-full px-3 py-2 pr-10 bg-white/10 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:bg-white/20 transition-colors h-20 text-sm"
                     disabled={isGenerating}
                   />
                   {/* Custom Mode Button - show when user types in prompt */}
@@ -4211,7 +4211,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
                     
                     {/* Presets dropdown - clean and simple */}
                     {presetsOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 z-50">
+                      <div className="absolute bottom-full left-0 mb-2 bg-black/40 backdrop-blur-sm rounded-xl p-3 w-80 z-50">
                         {/* Preset options - all visible, no scrolling */}
                         <div className="space-y-1">
                           {/* Preset options */}
