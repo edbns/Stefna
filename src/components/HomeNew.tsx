@@ -4333,9 +4333,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         onShowAuth={() => navigate('/auth')}
       />
 
-      {/* Bottom-centered composer */}
-      {isComposerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm navbar-stable">
+                {/* Bottom-centered composer */}
+          {isComposerOpen && (
+            <div className="fixed inset-0 z-50 bg-black navbar-stable">
           {/* Close button */}
           <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-50 pointer-events-auto text-white/80 hover:text-white transition-colors bg-black/60 hover:bg-black/80 rounded-full p-2 backdrop-blur-sm" aria-label="Close">
             <X size={20} />
@@ -4379,7 +4379,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
                       {/* Bottom composer bar - compact, horizontally 70% */}
             <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
-            <div className="bg-[#333333]/95 backdrop-blur-sm rounded-2xl px-4 py-3 transition-all duration-300">
+            <div className="bg-gray-700 rounded-2xl px-4 py-3 transition-all duration-300">
               
 
               
@@ -4397,7 +4397,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                       ? "Describe your vision... (click ✨ to enhance your prompt)"
                       : "Custom prompt (optional) - will be combined with selected preset"
                     }
-                    className="w-full px-3 py-2 pr-10 bg-white/10 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:bg-white/20 transition-colors h-20 text-sm"
+                    className="w-full px-3 py-2 pr-10 bg-gray-700 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:bg-gray-600 transition-colors h-20 text-sm"
                     disabled={false}
                     data-testid="custom-prompt-input"
                   />
@@ -4471,7 +4471,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                     
                     {/* Presets dropdown - clean and simple */}
                     {presetsOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-[#333333]/80 backdrop-blur-sm rounded-xl p-3 w-80 z-50">
+                      <div className="absolute bottom-full left-0 mb-2 bg-gray-700 rounded-xl p-3 w-80 z-50">
                         {/* Preset options - all visible, no scrolling */}
                         <div className="space-y-1">
                           {/* Preset options */}
