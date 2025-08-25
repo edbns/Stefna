@@ -83,8 +83,7 @@ export const handler: Handler = async (event) => {
           status: true,
           imageUrl: true,
           stabilityJobId: true,
-          createdAt: true,
-          updatedAt: true
+          createdAt: true
         }
       });
 
