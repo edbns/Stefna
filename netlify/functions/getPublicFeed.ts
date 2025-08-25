@@ -80,6 +80,42 @@ export const handler: Handler = async (event) => {
         mediaAssetWhere.id = 'nonexistent'; // Force empty result
       }
       
+      // 🚨 CRITICAL FIX: Exclude source images used for Neo Tokyo Glitch generation
+      // This prevents showing both the source image AND the generated result
+      let sourceUrlsToExclude: string[] = [];
+      
+      if (type === 'all' || type === 'media-asset') {
+        try {
+          const glitchSourceUrls = await prisma.neoGlitchMedia.findMany({
+            select: { sourceUrl: true },
+            where: { 
+              status: 'completed',
+              sourceUrl: { not: '' }
+            }
+          });
+          
+          sourceUrlsToExclude = glitchSourceUrls
+            .map(item => item.sourceUrl)
+            .filter(Boolean) as string[];
+          
+          console.log('🔍 [getPublicFeed] Excluding source images used for Neo Tokyo Glitch:', {
+            totalSourceUrls: sourceUrlsToExclude.length,
+            sourceUrls: sourceUrlsToExclude.slice(0, 3) // Log first 3 for debugging
+          });
+          
+          // Add exclusion filter to mediaAsset query - exclude by URL
+          if (sourceUrlsToExclude.length > 0) {
+            mediaAssetWhere.OR = [
+              { url: { notIn: sourceUrlsToExclude } },
+              { finalUrl: { notIn: sourceUrlsToExclude } }
+            ];
+          }
+        } catch (error) {
+          console.warn('⚠️ [getPublicFeed] Could not fetch Neo Tokyo Glitch source URLs:', error);
+          // Continue without exclusion if there's an error
+        }
+      }
+      
       // 🚨 CRITICAL FIX: Get ALL items from both tables with filters, then combine and paginate properly
       const [publicMedia, neoGlitchMedia] = await Promise.all([
         prisma.mediaAsset.findMany({
