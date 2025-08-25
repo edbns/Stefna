@@ -295,45 +295,9 @@ class NeoGlitchService {
     }
   }
 
-  /**
-   * Get Neo Tokyo Glitch media by ID
-   */
-  async getNeoGlitchMedia(mediaId: string): Promise<any> {
-    try {
-      const response = await authenticatedFetch(`/.netlify/functions/getNeoGlitchFeed?mediaId=${mediaId}`);
-      
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || `Failed to get media: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error('❌ [NeoGlitch] Get media failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get Neo Tokyo Glitch feed
-   */
-  async getNeoGlitchFeed(limit: number = 20, offset: number = 0): Promise<any[]> {
-    try {
-      const response = await authenticatedFetch(`/.netlify/functions/getNeoGlitchFeed?limit=${limit}&offset=${offset}`);
-      
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || `Failed to get feed: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error('❌ [NeoGlitch] Get feed failed:', error);
-      throw error;
-    }
-  }
+  // 🚨 REMOVED: getNeoGlitchMedia and getNeoGlitchFeed methods
+  // These are no longer needed since getPublicFeed now handles all media types
+  // This eliminates duplicate logic and provides a unified feed experience
 }
 
 export default NeoGlitchService;

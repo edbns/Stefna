@@ -1,6 +1,7 @@
 // netlify/functions/getPublicFeed.ts
-// Public feed function - fetches public media assets using Prisma
-// Provides feed data for the main application
+// 🚀 UNIFIED FEED FUNCTION - The single source of truth for all public media
+// Handles: Ghibli, Emotion Mask, Presets, Custom, AND Neo Tokyo Glitch
+// Provides consistent, deduplicated feed data for the main application
 
 import { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
@@ -27,24 +28,62 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const { limit = '20', offset = '0' } = event.queryStringParameters || {};
+    // 🚀 ENHANCED: Support for filtering and advanced querying
+    const { 
+      limit = '20', 
+      offset = '0',
+      type = 'all',           // 'all', 'media-asset', 'neo-glitch'
+      preset = 'all',         // 'all', 'ghibli', 'emotionmask', 'neotokyoglitch', etc.
+      userId = 'all'          // 'all' or specific user ID
+    } = event.queryStringParameters || {};
+    
     const limitNum = parseInt(limit as string);
     const offsetNum = parseInt(offset as string);
 
-    console.log('🔍 [getPublicFeed] Fetching public feed:', {
+    console.log('🔍 [getPublicFeed] Fetching unified feed with filters:', {
       limit: limitNum,
-      offset: offsetNum
+      offset: offsetNum,
+      type,
+      preset,
+      userId: userId === 'all' ? 'all' : userId.substring(0, 8) + '...'
     });
 
     const prisma = new PrismaClient();
 
     try {
-      // 🚨 CRITICAL FIX: Get ALL items from both tables, then combine and paginate properly
+      // 🚀 UNIFIED: Build dynamic where clauses for advanced filtering
+      const mediaAssetWhere: any = { visibility: 'public' };
+      const neoGlitchWhere: any = { status: 'completed' };
+      
+      // Apply preset filtering
+      if (preset !== 'all') {
+        if (preset === 'neotokyoglitch') {
+          // Only get Neo Tokyo Glitch items
+          mediaAssetWhere.id = 'nonexistent'; // Force empty result
+        } else {
+          // Only get specific preset items
+          mediaAssetWhere.presetKey = preset;
+          neoGlitchWhere.id = 'nonexistent'; // Force empty result
+        }
+      }
+      
+      // Apply user filtering
+      if (userId !== 'all') {
+        mediaAssetWhere.userId = userId;
+        neoGlitchWhere.userId = userId;
+      }
+      
+      // Apply type filtering
+      if (type === 'media-asset') {
+        neoGlitchWhere.id = 'nonexistent'; // Force empty result
+      } else if (type === 'neo-glitch') {
+        mediaAssetWhere.id = 'nonexistent'; // Force empty result
+      }
+      
+      // 🚨 CRITICAL FIX: Get ALL items from both tables with filters, then combine and paginate properly
       const [publicMedia, neoGlitchMedia] = await Promise.all([
         prisma.mediaAsset.findMany({
-          where: {
-            visibility: 'public'
-          },
+          where: mediaAssetWhere,
           include: {
             user: {
               select: {
@@ -57,12 +96,9 @@ export const handler: Handler = async (event) => {
           orderBy: {
             createdAt: 'desc'
           }
-          // ❌ REMOVED: take and skip - we'll get ALL items first
         }),
         prisma.neoGlitchMedia.findMany({
-          where: {
-            status: 'completed'
-          },
+          where: neoGlitchWhere,
           include: {
             user: {
               select: {
@@ -75,7 +111,6 @@ export const handler: Handler = async (event) => {
           orderBy: {
             createdAt: 'desc'
           }
-          // ❌ REMOVED: take and skip - we'll get ALL items first
         })
       ]);
 
@@ -120,18 +155,45 @@ export const handler: Handler = async (event) => {
 
       await prisma.$disconnect();
 
+      // 🚀 ENHANCED: Provide detailed response metadata for debugging and optimization
+      const responseMetadata = {
+        success: true,
+        items: feedItems,
+        total: feedItems.length,
+        hasMore: feedItems.length === limitNum,
+        // 🆕 NEW: Detailed breakdown for debugging
+        breakdown: {
+          totalMediaAssets: publicMedia.length,
+          totalNeoGlitch: neoGlitchMedia.length,
+          combinedBeforePagination: allFeedItems.length,
+          paginatedResult: feedItems.length,
+          filters: {
+            type,
+            preset,
+            userId: userId === 'all' ? 'all' : userId.substring(0, 8) + '...'
+          }
+        },
+        // 🆕 NEW: Pagination info
+        pagination: {
+          limit: limitNum,
+          offset: offsetNum,
+          totalAvailable: allFeedItems.length
+        }
+      };
+
+      console.log('✅ [getPublicFeed] Unified feed response:', {
+        totalItems: feedItems.length,
+        hasMore: responseMetadata.hasMore,
+        breakdown: responseMetadata.breakdown
+      });
+
       return {
         statusCode: 200,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         },
-        body: JSON.stringify({
-          success: true,
-          items: feedItems,
-          total: feedItems.length,
-          hasMore: feedItems.length === limitNum
-        })
+        body: JSON.stringify(responseMetadata)
       };
 
     } catch (dbError) {
