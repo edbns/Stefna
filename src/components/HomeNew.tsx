@@ -1287,8 +1287,11 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     const genId = startGeneration();
     setNavGenerating(true);
       
-      // Show "Add to queue" notification for all generation modes
-              notifyQueue({ title: 'Add to queue', message: 'We\'ll start processing shortly.' });
+      // 🔍 CRITICAL FIX: Only show "Add to queue" for modes that actually queue
+      // Neo Tokyo Glitch and other immediate modes don't need this toast
+      if (kind !== 'neotokyoglitch') {
+        notifyQueue({ title: 'Add to queue', message: 'We\'ll start processing shortly.' });
+      }
 
     // Get current profile settings from context (real-time state)
     // Note: profileData is already available from the top-level useProfile() hook
@@ -2059,6 +2062,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           
           // Start polling for completion (only if not already complete)
           console.log('🔄 [NeoGlitch] Starting async polling for completion...');
+          
+          // Show processing toast for Neo Tokyo Glitch when it's not immediate
+          notifyQueue({ title: 'Add to queue', message: 'Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.' });
           
           // Start the polling in the background
           console.log('🔄 [NeoGlitch] Starting service polling for job:', generationResult.id);
@@ -3004,7 +3010,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       
       // Map technical errors to user-friendly messages
       if (e instanceof Error) {
-        if (e.message.includes('cloud_name is disabled') || e.message.includes('cloud_name')) {
+        if (e.message.includes('Insufficient credits') || e.message.includes('credits but only have')) {
+          errorMessage = 'Not enough credits. Please wait for daily reset or upgrade your plan.';
+        } else if (e.message.includes('cloud_name is disabled') || e.message.includes('cloud_name')) {
           errorMessage = 'Upload service temporarily unavailable';
         } else if (e.message.includes('Invalid api_key') || e.message.includes('api_key')) {
           errorMessage = 'Upload service temporarily unavailable';
@@ -3240,6 +3248,21 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     } catch (e) {
       console.error('Generate error', e)
       
+      // 🔍 CRITICAL FIX: Handle credit errors with user-friendly messages
+      let errorMessage = 'Please try again';
+      if (e instanceof Error) {
+        if (e.message.includes('Insufficient credits') || e.message.includes('credits but only have')) {
+          errorMessage = 'Not enough credits. Please wait for daily reset or upgrade your plan.';
+        } else if (e.message.includes('Daily cap reached')) {
+          errorMessage = 'Daily limit reached. Please try again tomorrow.';
+        } else if (e.message.includes('Generation blocked')) {
+          errorMessage = 'Generation blocked. Please wait until tomorrow for new credits.';
+        }
+      }
+      
+      // Show user-friendly error message
+      notifyError({ title: 'Failed', message: errorMessage });
+      
       // 💰 Refund credits if generation failed
       if (creditsResult?.request_id) {
         try {
@@ -3263,6 +3286,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           console.error('❌ Alt path: Credits refund error:', refundError);
         }
       }
+      
+      // Clear composer state even on failure
+      resetComposerState();
       
       endGeneration(genId)
       setNavGenerating(false)
