@@ -78,7 +78,8 @@ class NeoGlitchService {
       }
 
       const stabilityResult = await stabilityRes.json();
-      console.log('🚀 [NeoGlitch] Stability.ai generation started:', {
+      console.log('🚀 [NeoGlitch] Stability.ai generation response:', {
+        status: stabilityResult.status,
         provider: stabilityResult.provider,
         strategy: stabilityResult.strategy,
         stabilityJobId: stabilityResult.stabilityJobId,
@@ -86,42 +87,45 @@ class NeoGlitchService {
         fullResponse: stabilityResult
       });
 
-      // Handle Stability.ai response
-      if (stabilityResult.provider === 'stability') {
-        if (stabilityResult.imageUrl && stabilityResult.status === 'completed') {
-          // Stability.ai returned immediate result
-          console.log('✅ [NeoGlitch] Stability.ai generation completed immediately:', stabilityResult.imageUrl);
-          const resultId = stabilityResult.stabilityJobId || `stability_${request.runId}`;
-          console.log('🔍 [NeoGlitch] Using result ID:', resultId);
-          return {
-            id: resultId,
-            status: 'completed',
-            runId: request.runId,
-            cloudinaryUrl: stabilityResult.imageUrl,
-            provider: 'stability'
-          };
-        } else {
-          // Stability.ai is processing
-          console.log('🔄 [NeoGlitch] Stability.ai generation in progress:', stabilityResult.stabilityJobId);
-          const resultId = stabilityResult.stabilityJobId || `stability_${request.runId}`;
-          console.log('🔍 [NeoGlitch] Using result ID for pending:', resultId);
-          return {
-            id: resultId,
-            status: 'pending',
-            runId: request.runId,
-            provider: 'stability'
-          };
-        }
-      } else {
-        // Fallback for unexpected provider
-        console.warn('⚠️ [NeoGlitch] Unexpected provider:', stabilityResult.provider);
+      // 🔍 CRITICAL FIX: Handle immediate completion from backend
+      if (stabilityResult.status === 'completed' && stabilityResult.imageUrl) {
+        console.log('🎉 [NeoGlitch] Backend returned immediate completion:', stabilityResult.imageUrl);
+        const resultId = stabilityResult.stabilityJobId || `stability_${request.runId}`;
         return {
-          id: stabilityResult.stabilityJobId || `unknown_${request.runId}`,
-          status: 'pending',
+          id: resultId,
+          status: 'completed',
           runId: request.runId,
-          provider: 'unknown'
+          cloudinaryUrl: stabilityResult.imageUrl,
+          provider: 'stability'
         };
       }
+
+      // Handle processing status
+      if (stabilityResult.status === 'processing' || stabilityResult.status === 'generating') {
+        console.log('🔄 [NeoGlitch] Generation in progress:', stabilityResult.stabilityJobId);
+        const resultId = stabilityResult.stabilityJobId || `stability_${request.runId}`;
+        return {
+          id: resultId,
+          status: 'pending',
+          runId: request.runId,
+          provider: 'stability'
+        };
+      }
+
+      // Handle failed status
+      if (stabilityResult.status === 'failed') {
+        console.error('❌ [NeoGlitch] Generation failed:', stabilityResult.error);
+        throw new Error(stabilityResult.error || 'Generation failed');
+      }
+
+      // Fallback for unexpected status
+      console.warn('⚠️ [NeoGlitch] Unexpected status:', stabilityResult.status);
+      return {
+        id: stabilityResult.stabilityJobId || `unknown_${request.runId}`,
+        status: 'pending',
+        runId: request.runId,
+        provider: 'unknown'
+      };
 
     } catch (error) {
       console.error('❌ [NeoGlitch] Start generation failed:', error);

@@ -166,8 +166,26 @@ export const handler: Handler = async (event) => {
         }).catch(dbError => console.error('❌ [NeoGlitch] Failed to update status to failed:', dbError));
       });
 
-    // Return immediately with job ID to prevent 504 timeout
-    console.log('✅ [NeoGlitch] Job started successfully, returning job ID immediately');
+    // 🔍 CRITICAL FIX: Check if generation completed immediately
+    if (generationResult && generationResult.status === 'completed' && generationResult.imageUrl) {
+      console.log('🎉 [NeoGlitch] Generation completed immediately! Returning completed status');
+      return {
+        statusCode: 200, // OK - completed
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          message: 'Generation completed successfully',
+          jobId: initialRecord.id,
+          runId: runId.toString(),
+          status: 'completed',
+          imageUrl: generationResult.imageUrl,
+          stabilityJobId: generationResult.stabilityJobId,
+          provider: 'stability'
+        })
+      };
+    }
+
+    // Return processing status only if generation is still in progress
+    console.log('🔄 [NeoGlitch] Generation in progress, returning processing status');
     return {
       statusCode: 202, // Accepted - processing
       headers: { 'Access-Control-Allow-Origin': '*' },
@@ -323,6 +341,12 @@ async function processGenerationAsync(
     }
 
     console.log('✅ [NeoGlitch] Async generation completed successfully');
+    
+    // Return processing status for ongoing jobs
+    return {
+      status: 'processing',
+      stabilityJobId: stabilityResult.stabilityJobId
+    };
   } catch (error) {
     console.error('❌ [NeoGlitch] Async generation failed:', error);
     
@@ -337,6 +361,12 @@ async function processGenerationAsync(
     
     // Refund credits since generation failed
     await finalizeCreditsOnce(userId, runId, false, userToken);
+    
+    // Return failed status
+    return {
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
   }
 }
 

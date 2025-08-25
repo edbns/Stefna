@@ -754,9 +754,14 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         }))
       }, 500) // Reduced from 1000ms to 500ms for faster feedback
       
-      // Clear composer state after generation completes
-      console.log('🧹 Clearing composer state after generation completion')
-      handleClearComposerState()
+      // 🔍 CRITICAL FIX: Only clear composer state if this is NOT a Neo Tokyo Glitch generation
+      // Neo Tokyo Glitch handles its own state clearing after completion
+      if (record.meta?.mode !== 'neotokyoglitch') {
+        console.log('🧹 Clearing composer state after generation completion (non-NeoGlitch)')
+        handleClearComposerState()
+      } else {
+        console.log('🔄 [NeoGlitch] Skipping composer state clear - will be handled by NeoGlitch flow')
+      }
     }
 
     const handleGenerationSuccess = (event: CustomEvent) => {
@@ -764,19 +769,27 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       console.log('✅ Generation success:', message, 'Mode:', mode)
       // The toast is already handled by the generation pipeline
       
-      // Clear composer state after successful generation
-      console.log('🧹 Clearing composer state after generation success')
-      handleClearComposerState()
+      // 🔍 CRITICAL FIX: Only clear composer state if this is NOT a Neo Tokyo Glitch generation
+      if (mode !== 'neotokyoglitch') {
+        console.log('🧹 Clearing composer state after generation success (non-NeoGlitch)')
+        handleClearComposerState()
+      } else {
+        console.log('🔄 [NeoGlitch] Skipping composer state clear - will be handled by NeoGlitch flow')
+      }
     }
 
     const handleGenerationError = (event: CustomEvent) => {
-      const { message } = event.detail
-      console.log('❌ Generation error:', message)
+      const { message, mode } = event.detail
+      console.log('❌ Generation error:', message, 'Mode:', mode)
       notifyError({ title: 'Media failed', message: 'Try again' })
       
-      // Clear composer state after generation error
-      console.log('🧹 Clearing composer state after generation error')
-      handleClearComposerState()
+      // 🔍 CRITICAL FIX: Only clear composer state if this is NOT a Neo Tokyo Glitch generation
+      if (mode !== 'neotokyoglitch') {
+        console.log('🧹 Clearing composer state after generation error (non-NeoGlitch)')
+        handleClearComposerState()
+      } else {
+        console.log('🔄 [NeoGlitch] Skipping composer state clear - will be handled by NeoGlitch flow')
+      }
     }
 
     const handleUserMediaUpdated = () => {
@@ -1968,10 +1981,20 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             runIdValue: generationRequest.runId
           });
           
+          // 🔍 CRITICAL DEBUG: Log before calling neoGlitchService
+          console.log('🚀 [NeoGlitch] About to call neoGlitchService.startGeneration...');
+          
           // Create the initial glitch record and start Replicate generation
           const generationResult = await neoGlitchService.startGeneration(generationRequest);
           
           console.log('✅ [NeoGlitch] Generation started successfully:', generationResult);
+          console.log('🔍 [NeoGlitch] Generation result details:', {
+            status: generationResult.status,
+            hasCloudinaryUrl: !!generationResult.cloudinaryUrl,
+            cloudinaryUrl: generationResult.cloudinaryUrl,
+            id: generationResult.id,
+            provider: generationResult.provider
+          });
           
           // 🔍 CHECK IF GENERATION IS ALREADY COMPLETE (Stability.ai returns immediately)
           if (generationResult.status === 'completed' && generationResult.cloudinaryUrl) {
