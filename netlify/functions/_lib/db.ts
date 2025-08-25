@@ -1,7 +1,15 @@
 import { Pool } from "pg";
-const { DATABASE_URL } = process.env;
-if (!DATABASE_URL) throw new Error("DATABASE_URL is not set");
+import { neon } from '@neondatabase/serverless';
 
+const { DATABASE_URL, NETLIFY_DATABASE_URL, NEON_DATABASE_URL } = process.env;
+
+// Neon database connection (preferred)
+const neonUrl = NETLIFY_DATABASE_URL || NEON_DATABASE_URL || DATABASE_URL;
+if (!neonUrl) throw new Error('Missing NETLIFY_DATABASE_URL/NEON_DATABASE_URL/DATABASE_URL');
+
+export const sql = neon(neonUrl); // tagged template: sql`select 1`;
+
+// PostgreSQL pool connection (fallback)
 let pool: Pool;
 export function getDb() {
   if (!pool) {
