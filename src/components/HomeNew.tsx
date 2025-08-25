@@ -4116,7 +4116,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           {/* Remix mode UI removed - focus on personal creativity */}
           
           {/* Media preview area - centered above prompt */}
-          <div className="absolute inset-0 flex items-center justify-center pb-40">
+          <div className="absolute inset-0 flex items-center justify-center pb-32">
             <div className="relative w-full max-w-2xl px-6">
               <div ref={containerRef} className="w-full flex items-center justify-center">
                 {isVideoPreview ? (
@@ -4150,7 +4150,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           </div>
 
                       {/* Bottom composer bar - compact, horizontally 70% */}
-            <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
+            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
             <div className="bg-[#333333]/80 backdrop-blur-sm rounded-2xl px-4 py-3 transition-all duration-300">
               
 
