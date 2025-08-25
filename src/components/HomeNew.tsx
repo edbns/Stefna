@@ -736,9 +736,12 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       
       console.log('✅ UI updated successfully with new media:', newMedia)
       
-      // Clear composer state after generation completes
-      console.log('🧹 Clearing composer state after generation completion')
-      handleClearComposerState()
+      // Show the result in viewer
+      setViewerMedia([newMedia])
+      setViewerStartIndex(0)
+      setViewerOpen(true)
+      
+      console.log('✅ UI updated successfully with new media:', newMedia)
       
       // Refresh the feed and user media after generation completes
       setTimeout(() => {
@@ -750,6 +753,18 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           detail: { count: 1, runId: record.meta?.runId || 'unknown' } 
         }))
       }, 500) // Reduced from 1000ms to 500ms for faster feedback
+      
+      // Delay composer clearing to allow user to see results and make additional generations
+      setTimeout(() => {
+        console.log('🧹 Delayed composer clearing after generation completion')
+        handleClearComposerState()
+      }, 10000) // Give user 10 seconds to see results and make additional generations
+      
+      // Show a toast notification about the delayed clearing
+      notifySuccess({ 
+        title: 'Generation complete!', 
+        message: 'Composer will auto-clear in 10 seconds. Use the Clear button to close manually.' 
+      })
     }
 
     const handleGenerationSuccess = (event: CustomEvent) => {
@@ -757,9 +772,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       console.log('✅ Generation success:', message, 'Mode:', mode)
       // The toast is already handled by the generation pipeline
       
-      // Clear composer state after successful generation
-      console.log('🧹 Clearing composer state after generation success')
-      handleClearComposerState()
+      // Don't clear composer state immediately - let user see results and make additional generations
+      console.log('✅ Generation success - keeping composer open for additional generations')
     }
 
     const handleGenerationError = (event: CustomEvent) => {
@@ -779,9 +793,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       // Dispatch event to refresh user profile if it's mounted
       window.dispatchEvent(new CustomEvent('refreshUserProfile'))
       
-      // Clear composer state after user media update (for MoodMorph and other modes)
-      console.log('🧹 Clearing composer state after user media update')
-      handleClearComposerState()
+      // Don't clear composer state immediately - let user continue working
+      console.log('✅ User media updated - keeping composer open for continued use')
     }
 
     const handleRefreshUserMedia = () => {
