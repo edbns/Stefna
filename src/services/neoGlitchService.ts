@@ -161,66 +161,100 @@ class NeoGlitchService {
 
   /**
    * Poll for completion of a Neo Tokyo Glitch generation using dedicated architecture
+   * with exponential backoff and timeout fallback
    */
   async pollForCompletion(stabilityJobId: string, maxAttempts: number = 60): Promise<NeoGlitchStatus> {
     console.log('🔄 [NeoGlitch] Polling for completion with dedicated architecture:', stabilityJobId);
     console.log('🔍 [NeoGlitch] stabilityJobId type:', typeof stabilityJobId);
     console.log('🔍 [NeoGlitch] stabilityJobId value:', stabilityJobId);
 
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        const status = await this.checkStatus(stabilityJobId);
-        
-        console.log(`🔍 [NeoGlitch] Poll attempt ${attempt}/${maxAttempts}:`, status.status);
+    let completed = false;
+    let delay = 2000; // Start with 2 seconds
+    const maxDelay = 10000; // Maximum delay of 10 seconds
+    
+    // 🚨 TIMEOUT FALLBACK: 30 seconds total timeout
+    const timeoutId = setTimeout(() => {
+      if (!completed) {
+        console.log('⏰ [NeoGlitch] Polling timed out after 30 seconds');
+        completed = true;
+        throw new Error('Generation polling timed out after 30 seconds');
+      }
+    }, 30000);
 
-        if (status.status === 'completed') {
-          console.log('✅ [NeoGlitch] Generation completed successfully');
+    try {
+      for (let attempt = 1; attempt <= maxAttempts && !completed; attempt++) {
+        try {
+          const status = await this.checkStatus(stabilityJobId);
           
-          // Use dedicated save function for complete workflow
-          if (status.cloudinaryUrl) {
-            console.log('🔄 [NeoGlitch] Using dedicated save function...');
-            try {
-              const saveResult = await this.saveNeoGlitchMedia(stabilityJobId, status);
-              if (saveResult.success) {
-                console.log('✅ [NeoGlitch] Media saved successfully:', saveResult.cloudinaryUrl);
-                return {
-                  ...status,
-                  cloudinaryUrl: saveResult.cloudinaryUrl,
-                  mediaId: saveResult.mediaId
-                };
-              } else {
-                console.warn('⚠️ [NeoGlitch] Media save failed:', saveResult.error);
+          console.log(`🔍 [NeoGlitch] Poll attempt ${attempt}/${maxAttempts}:`, status.status);
+
+          if (status.status === 'completed') {
+            console.log('✅ [NeoGlitch] Generation completed successfully');
+            completed = true;
+            
+            // Use dedicated save function for complete workflow
+            if (status.cloudinaryUrl) {
+              console.log('🔄 [NeoGlitch] Using dedicated save function...');
+              try {
+                const saveResult = await this.saveNeoGlitchMedia(stabilityJobId, status);
+                if (saveResult.success) {
+                  console.log('✅ [NeoGlitch] Media saved successfully:', saveResult.cloudinaryUrl);
+                  return {
+                    ...status,
+                    cloudinaryUrl: saveResult.cloudinaryUrl,
+                    mediaId: saveResult.mediaId
+                  };
+                } else {
+                  console.warn('⚠️ [NeoGlitch] Media save failed:', saveResult.error);
+                  return status;
+                }
+              } catch (saveError) {
+                console.error('❌ [NeoGlitch] Save media error:', saveError);
                 return status;
               }
-            } catch (saveError) {
-              console.error('❌ [NeoGlitch] Media save error:', saveError);
-              return status;
             }
+            
+            return status;
+          }
+
+          if (status.status === 'failed') {
+            console.error('❌ [NeoGlitch] Generation failed:', status.error);
+            completed = true;
+            throw new Error(status.error || 'Generation failed');
+          }
+
+          // 🚀 EXPONENTIAL BACKOFF: Increase delay progressively
+          console.log(`⏱️ [NeoGlitch] Waiting ${delay}ms before next poll attempt`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          // Increase delay with exponential backoff (1.5x), but cap at maxDelay
+          delay = Math.min(delay * 1.5, maxDelay);
+          
+        } catch (error) {
+          console.error(`❌ [NeoGlitch] Poll attempt ${attempt} failed:`, error);
+          
+          if (attempt === maxAttempts || completed) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error(`Generation polling failed after ${attempt} attempts: ${errorMessage}`);
           }
           
-          return status;
+          // 🚀 EXPONENTIAL BACKOFF: Increase delay on errors too
+          console.log(`⏱️ [NeoGlitch] Error recovery - waiting ${delay}ms before retry`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay = Math.min(delay * 1.5, maxDelay);
         }
-
-        if (status.status === 'failed') {
-          console.error('❌ [NeoGlitch] Generation failed:', status.error);
-          throw new Error(status.error || 'Generation failed');
-        }
-
-        // Wait before next poll attempt
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } catch (error) {
-        console.error(`❌ [NeoGlitch] Poll attempt ${attempt} failed:`, error);
-        
-        if (attempt === maxAttempts) {
-          throw new Error(`Generation polling failed after ${maxAttempts} attempts`);
-        }
-        
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 2000));
       }
-    }
 
-    throw new Error(`Generation did not complete within ${maxAttempts} attempts`);
+      if (!completed) {
+        throw new Error(`Generation did not complete within ${maxAttempts} attempts`);
+      }
+      
+    } finally {
+      // Always clear the timeout
+      clearTimeout(timeoutId);
+    }
+    
+    throw new Error('Polling completed unexpectedly');
   }
 
   /**
