@@ -1,8 +1,6 @@
 // src/runner/kick.ts
 import { useIntentQueue, hasHttpsUrl } from '../state/intentQueue';
-import { PRESETS, OPTION_GROUPS } from '../utils/presets/types';
-import { resolvePreset } from '../utils/presets/types';
-import { runPreset } from '../utils/presets/handlers';
+import { PROFESSIONAL_PRESETS } from '../config/professional-presets';
 
 function getHttpsSourceOrThrow(): string {
   const { sourceUrl } = useIntentQueue.getState();
@@ -33,15 +31,19 @@ export async function kickRunIfReady(): Promise<void> {
     // Determine if we need a source and get HTTPS source or throw
     const needsSource = pending.kind !== 'preset'
       ? true
-      : PRESETS[pending.presetId as keyof typeof PRESETS]?.requiresSource ?? false;
+      : PROFESSIONAL_PRESETS[pending.presetId as keyof typeof PROFESSIONAL_PRESETS]?.requiresSource ?? false;
 
     const src = needsSource ? getHttpsSourceOrThrow() : null;
 
     console.info('🚀 Running intent:', pending.kind, 'with source:', src);
 
     if (pending.kind === 'preset') {
-      const preset = resolvePreset(pending.presetId as keyof typeof PRESETS);
-      await runPreset(preset, src ?? undefined);
+      // For now, just log that we would run the preset
+      // The actual generation is handled by the HomeNew component
+      console.info('🎯 Would run preset:', pending.presetId);
+      
+      // Clear the intent since we're not actually running it here
+      clearIntent();
     }
     
     console.info('✅ Intent completed successfully');

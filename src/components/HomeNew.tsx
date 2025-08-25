@@ -188,7 +188,7 @@ const HomeNew: React.FC = () => {
 
   
   // New preset runner system - MUST be declared before use
-        const { queuePreset, queueOption, onSourceReady, clearQueue, busy: presetRunnerBusy } = usePresetRunner()
+  const { queuePreset, runPending, busy: presetRunnerBusy, hasPending } = usePresetRunner()
   const { selectedPreset: stickySelectedPreset, setSelectedPreset: setStickySelectedPreset, ensureDefault } = useSelectedPreset()
   
   // Selected preset using sticky store instead of local state
@@ -3495,63 +3495,7 @@ const [showNeoTokyoGlitchDisclaimer, setShowNeoTokyoGlitchDisclaimer] = useState
     }, 500)
   }
 
-  // Mode handlers for one-click generation
-          const handleModeClick = async (mode: 'time_machine'|'restore', option: string) => {
-    console.log('🎯 handleModeClick called with:', { mode, option })
-    
-    // Check authentication first
-    if (!isAuthenticated) {
-      console.log('❌ User not authenticated, redirecting to auth')
-      navigate('/auth')
-      return
-    }
-    
-    if (!previewUrl) {
-      console.log('❌ No previewUrl available, cannot generate')
-      notifyError({ title: 'Upload a photo first', message: 'Please upload a photo to use this mode' })
-      return
-    }
-    
-    // Close composer immediately and show immediate feedback that button was clicked
-    setIsComposerOpen(false)
-    setNavGenerating(true)
-    
-    try {
-      // Import the new utility
-      const { prepareSourceAsset } = await import('../utils/prepareSourceAsset')
-      
-      // Always prefer the File object - never fall back to blob URL
-      if (!selectedFile) {
-        notifyError({ title: 'File required', message: 'Please select a file to continue' });
-        setNavGenerating(false);
-        return;
-      }
-      const source = selectedFile;
-      const { url: remoteUrl, resource_type } = await prepareSourceAsset(source)
-      if (resource_type !== 'image') { 
-        notifyError({ title: 'Photo required', message: 'Time Machine / Restore need a photo' })
-        setNavGenerating(false)
-        return
-      }
 
-      // Set UI state
-      setSelectedMode(mode)
-      
-      // Use bulletproof handlers
-      if (mode === 'time_machine') {
-        await onTimeMachineClick(option, remoteUrl)
-      } else if (mode === 'restore') {
-        // For restore, we can use time machine handler with restore mapping
-        await onTimeMachineClick(option, remoteUrl)
-      }
-      
-    } catch (error) {
-      console.error('❌ Mode generation failed:', error)
-      notifyError({ title: 'Generation failed', message: 'Please try another photo or style.' })
-    } finally {
-      setNavGenerating(false)
-    }
-  }
 
 
 

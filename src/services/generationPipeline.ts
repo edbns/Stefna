@@ -20,14 +20,14 @@ const isFileLike = (x: unknown): x is File | Blob =>
   typeof x === "object" && x !== null && "size" in (x as any) && "type" in (x as any)
 
 export type GenerateJob = {
-  mode: "i2i" | "t2i" | "story" | "time_machine" | "restore"
+  mode: "i2i" | "t2i" | "story"
   presetId: string
   prompt: string
   params: Record<string, unknown>
   source?: { url?: string, file?: File }
   runId?: string
   // New metadata fields for tracking generation context
-  group?: 'story'|'time_machine'|'restore'|null;
+  group?: 'story'|null;
   optionKey?: string | null;     // e.g. 'vhs_1980s', 'four_seasons/spring', 'colorize_bw'
   storyKey?: string | null;      // e.g. 'four_seasons'
   storyLabel?: string | null;    // e.g. 'Spring'

@@ -1,19 +1,17 @@
 // utils/presets/validate.ts
-import type { Preset } from './types';
-import { PRESETS, OPTION_GROUPS } from './types';
+import { PROFESSIONAL_PRESETS, ProfessionalPresetConfig } from '../../config/professional-presets';
 import { presetsStore } from '../../stores/presetsStore';
 
-const ALLOWED: Record<Preset['mode'], { input: Preset['input'][]; requiresSource: boolean }> = {
-  i2i:     { input: ['image','video'], requiresSource: true },
-  txt2img: { input: ['image'],         requiresSource: false },
+const ALLOWED: Record<ProfessionalPresetConfig['mode'], { input: ProfessionalPresetConfig['input'][]; requiresSource: boolean }> = {
+  i2i: { input: ['image'], requiresSource: true },
 };
 
-export function validatePresets(reg: Record<string, Preset>) {
+export function validatePresets(reg: Record<string, ProfessionalPresetConfig>) {
   const errs: string[] = [];
   for (const [id, p] of Object.entries(reg)) {
     if (!p.id || id !== p.id) errs.push(`[${id}] id must exist and match key`);
     if (!p.label) errs.push(`[${id}] label required`);
-    if (!p.prompt) errs.push(`[${id}] prompt required`);
+    if (!p.promptAdd) errs.push(`[${id}] promptAdd required`);
     if (!ALLOWED[p.mode]) errs.push(`[${id}] invalid mode ${p.mode}`);
     else {
       const rule = ALLOWED[p.mode];
@@ -32,46 +30,27 @@ export function validatePresets(reg: Record<string, Preset>) {
   return errs;
 }
 
-export function validateOptions(
-  groups: typeof OPTION_GROUPS,
-  reg: typeof PRESETS
-) {
-  const errs: string[] = [];
-  const keys = new Set(Object.keys(reg));
-  for (const [group, entries] of Object.entries(groups)) {
-    for (const [key, ref] of Object.entries(entries ?? {})) {
-      if (!keys.has(String(ref.use))) errs.push(`[${group}/${key}] references missing preset "${String(ref.use)}"`);
-      
-      // Validate overrides if present
-      if (ref.overrides) {
-        if (ref.overrides.strength !== undefined && 
-            (ref.overrides.strength < 0 || ref.overrides.strength > 1)) {
-          errs.push(`[${group}/${key}] override strength must be between 0 and 1`);
-        }
-      }
-    }
-  }
-  if (errs.length) console.warn(`validateOptions: ${errs.length} issue(s)`, errs);
-  else console.info('✅ validateOptions: OK');
-  return errs;
+export function validateOptions(): string[] {
+  // No more OPTION_GROUPS in new system
+  console.info('✅ validateOptions: OK (no options to validate)');
+  return [];
 }
 
 // UI configuration checks
-export function isConfigured<G extends keyof typeof OPTION_GROUPS>(group: G, key: string): boolean {
-  return Boolean(OPTION_GROUPS[group]?.[key]);
+export function isConfigured(group: string, key: string): boolean {
+  // No more OPTION_GROUPS in new system
+  return false;
 }
 
-export function getConfiguredOptions<G extends keyof typeof OPTION_GROUPS>(group: G): string[] {
-  const groupOptions = OPTION_GROUPS[group];
-  return groupOptions ? Object.keys(groupOptions) : [];
+export function getConfiguredOptions(group: string): string[] {
+  // No more OPTION_GROUPS in new system
+  return [];
 }
 
 export function validateUIConfiguration(): string[] {
   const errs: string[] = [];
   
-  // Check that presets group has configured options
-  // Note: OPTION_GROUPS.presets is intentionally empty since presets are loaded dynamically
-  // This validation is not applicable for the current architecture
+  // Check that presets are available
   const configuredOptions = getConfiguredOptions('presets');
   if (configuredOptions.length === 0) {
     // This is expected - presets are loaded from API, not from OPTION_GROUPS
@@ -101,25 +80,29 @@ export function validateUIConfigurationWhenReady(): string[] {
       return [];
     }
     
-    // Check that presets group has configured options
-    const configuredOptions = Object.keys(byId);
-    if (configuredOptions.length === 0) {
-      return ['Presets group has no configured options'];
+    // Validate that all professional presets are available
+    const presetIds = Object.keys(byId);
+    const expectedIds = Object.keys(PROFESSIONAL_PRESETS);
+    
+    const missingIds = expectedIds.filter(id => !presetIds.includes(id));
+    if (missingIds.length > 0) {
+      console.warn(`⚠️ Missing presets: ${missingIds.join(', ')}`);
+      return [`Missing presets: ${missingIds.join(', ')}`];
     }
     
-    console.info('✅ validateUIConfigurationWhenReady: OK');
+    console.log('✅ validateUIConfigurationWhenReady: OK');
     return [];
   } catch (error) {
-    console.warn('⚠️ Error during UI validation:', error);
-    return [];
+    console.error('❌ UI validation failed:', error);
+    return ['UI validation failed'];
   }
 }
 
 // Call once on startup
 export async function validateAll() {
   console.info('🔍 Validating preset system...');
-  const presetErrors = validatePresets(PRESETS);
-  const optionErrors = validateOptions(OPTION_GROUPS, PRESETS);
+  const presetErrors = validatePresets(PROFESSIONAL_PRESETS);
+  const optionErrors = validateOptions();
   const uiErrors = validateUIConfiguration();
   
   const totalErrors = presetErrors.length + optionErrors.length + uiErrors.length;
@@ -135,8 +118,8 @@ export async function validateAll() {
 // Synchronous version for immediate validation
 export function validateAllSync() {
   console.info('🔍 Validating preset system (sync)...');
-  const presetErrors = validatePresets(PRESETS);
-  const optionErrors = validateOptions(OPTION_GROUPS, PRESETS);
+  const presetErrors = validatePresets(PROFESSIONAL_PRESETS);
+  const optionErrors = validateOptions();
   const uiErrors = validateUIConfiguration();
   
   const totalErrors = presetErrors.length + optionErrors.length + uiErrors.length;

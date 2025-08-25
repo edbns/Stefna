@@ -1,21 +1,11 @@
-export type GenerateJob = {
-  mode: 'i2i' | 't2i' | 'story' | 'time_machine' | 'restore'
-  presetId: string
-  prompt: string
-  params: Record<string, unknown>
-  source?: { url: string }
-  runId?: string
-  // New metadata fields for tracking generation context
-  group?: 'story'|'time_machine'|'restore'|null;
-  optionKey?: string | null;     // e.g. 'vhs_1980s', 'four_seasons/spring', 'colorize_bw'
-  storyKey?: string | null;      // e.g. 'four_seasons'
-  storyLabel?: string | null;    // e.g. 'Spring'
-  parentId?: string | null;      // if this is a remix, points to original media
-}
+export type GenerationMode = 'i2i' | 't2i' | 'story';
 
-export type GenerationResult = {
-  success: boolean
-  resultUrl?: string
-  error?: string
-  runId?: string
+export interface GenerationMetadata {
+  mode: GenerationMode;
+  prompt?: string;
+  negative_prompt?: string;
+  strength?: number;
+  guidance_scale?: number;
+  num_inference_steps?: number;
+  group?: 'story'|null;
 }

@@ -1,19 +1,19 @@
 // stores/selectedPreset.ts
 import { create } from 'zustand';
-import { PRESETS } from '../utils/presets/types';
+import { PROFESSIONAL_PRESETS } from '../config/professional-presets';
 
-type PresetId = keyof typeof PRESETS;
+export type PresetKey = keyof typeof PROFESSIONAL_PRESETS;
 
 type SelState = {
-  selectedPreset: PresetId | null;
-  setSelectedPreset: (id: PresetId | null) => void;
-  ensureDefault: (actives: PresetId[]) => void;
+  selectedPreset: PresetKey | null;
+  setSelectedPreset: (id: PresetKey | null) => void;
+  ensureDefault: (actives: PresetKey[]) => void;
   resetToDefault: () => void;
-  getDefaultPreset: () => PresetId | null;
+  getDefaultPreset: () => PresetKey | null;
 };
 
 // Default preset - null means "None" selected
-const DEFAULT_PRESET: PresetId | null = null;
+const DEFAULT_PRESET: PresetKey | null = null;
 
 export const useSelectedPreset = create<SelState>((set, get) => ({
   // Make selectedPreset resilient to store reloads/preset refresh
@@ -32,9 +32,9 @@ export const useSelectedPreset = create<SelState>((set, get) => ({
       localStorage.removeItem('selectedPreset');
       return null;
     }
-    if (stored && stored in PRESETS) {
+    if (stored && stored in PROFESSIONAL_PRESETS) {
       console.log('🎯 Restored selectedPreset from localStorage:', stored);
-      return stored as PresetId;
+      return stored as PresetKey;
     }
     console.log('🎯 Using boot default preset: None');
     return DEFAULT_PRESET;

@@ -1,5 +1,5 @@
 export type MediaType = 'image' | 'video';
-export type Mode = 'i2i'|'txt2img'|'restore'|'story';
+export type Mode = 'i2i'|'txt2img'|'story';
 
 export type MediaRecord = {
   id: string;
@@ -9,8 +9,8 @@ export type MediaRecord = {
   // remixCount removed - no more remix functionality
   meta: {
     presetId: string;              // Preset['id']
-    mode: Mode;                    // 'i2i' | 'txt2img' | 'restore' | 'story'
-    group?: 'story'|'time_machine'|'restore'|null;
+    mode: Mode;                    // 'i2i' | 'txt2img' | 'story'
+    group?: 'story'|null;
     optionKey?: string | null;     // e.g. 'vhs_1980s', 'four_seasons/spring', 'colorize_bw'
     storyKey?: string | null;      // e.g. 'four_seasons'
     storyLabel?: string | null;    // e.g. 'Spring'

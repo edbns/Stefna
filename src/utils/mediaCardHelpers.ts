@@ -1,10 +1,10 @@
 // Media Card Helper Functions
 // Utilities for displaying media card information without social features
 
-import { MediaRecord } from '../lib/types'
-import { PRESETS } from './presets/types'
+import { UserMedia } from '../services/userMediaService';
+import { PROFESSIONAL_PRESETS, ProfessionalPresetKey } from '../config/professional-presets';
 
-export function getCardChips(r: MediaRecord | any) {
+export function getCardChips(r: UserMedia | any) {
   // Handle both MediaRecord and UserMedia types
   const meta = r.meta || r.metadata || {};
   
@@ -14,8 +14,8 @@ export function getCardChips(r: MediaRecord | any) {
   }
   
   // For presets, show the actual preset name
-  if (meta.presetId && PRESETS[meta.presetId]) {
-    const preset = PRESETS[meta.presetId];
+  if (meta.presetId && PROFESSIONAL_PRESETS[meta.presetId as ProfessionalPresetKey]) {
+    const preset = PROFESSIONAL_PRESETS[meta.presetId as ProfessionalPresetKey];
     return { modeChip: preset.label, detailChip: preset.category };
   }
   
@@ -56,8 +56,25 @@ export function getMediaLabel(media: any): string {
   }
   
   // For presets, show the actual preset name
-  if (meta.presetId && PRESETS[meta.presetId]) {
-    return PRESETS[meta.presetId].label;
+  if (meta.presetId && PROFESSIONAL_PRESETS[meta.presetId as ProfessionalPresetKey]) {
+    return PROFESSIONAL_PRESETS[meta.presetId as ProfessionalPresetKey].label;
+  }
+  
+  // For custom prompts, show "Custom Prompt"
+  if (meta.presetId === 'custom' || (!meta.presetId && meta.prompt)) {
+    return 'Custom Prompt';
+  }
+  
+  // Default fallback
+  return 'AI Generated';
+}
+
+export function getPresetLabel(r: UserMedia | any): string {
+  const meta = r.meta || r.metadata || {};
+  
+  // For presets, show the actual preset name
+  if (meta.presetId && PROFESSIONAL_PRESETS[meta.presetId as ProfessionalPresetKey]) {
+    return PROFESSIONAL_PRESETS[meta.presetId as ProfessionalPresetKey].label;
   }
   
   // For custom prompts, show "Custom Prompt"

@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
 import { validateAllSync, validateAll, validateUIConfigurationWhenReady } from './utils/presets/validate'
-import { PRESETS } from './utils/presets/types'
 import { presetsStore } from './stores/presetsStore'
 
 // 🔍 IMMEDIATE DEBUG: Verify bundle execution
@@ -32,13 +31,6 @@ if (!presetsStore) {
 declare global {
   interface Window {
     testSaveMedia?: () => Promise<void>
-  }
-}
-
-// Sanity check: ensure preset keys match preset.id
-for (const [key, preset] of Object.entries(PRESETS)) {
-  if (key !== preset.id) {
-    console.warn(`⚠️ Preset key/id mismatch: ${key} !== ${preset.id}`);
   }
 }
 
@@ -72,14 +64,8 @@ validateAllSync()
 // Async validation for story themes
 validateAll().catch(console.error)
 
-// Import test in development
+// Import test in development - REMOVED: old test files no longer exist
 if (import.meta.env.DEV) {
-  import('./utils/presets/test')
-  // Run system tests
-  import('./utils/presets/test-system').then(({ logTestResults }) => {
-    logTestResults();
-  }).catch(console.error);
-  
   // Add debug helper for save-media testing
   window.testSaveMedia = async () => {
     const token = localStorage.getItem('jwt_token');

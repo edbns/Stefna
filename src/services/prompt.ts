@@ -16,16 +16,19 @@ export const NEG_SURFER_DRIFT =
 export const SUBJECT_LOCK_NEG =
   "deformed subject, new faces, age change, child, baby, extra people, different subject, face swap, plastic skin, waxy skin, heavy smoothing";
 
-export interface PromptBuildOptions {
-  base?: string;            // presetDef?.prompt
-  user?: string;            // user custom prompt (optional)
-  detail: DetailLevel;      // "soft" | "medium" | "hard"
-  lockSurfer?: boolean;     // add POS/NEG guards for surfer
-  mode?: "story" | "time_machine" | "restore";
-  extraNeg?: string;        // presetDef?.negative_prompt
+export interface PromptOptions {
+  mode?: "story";
+  prompt?: string;
+  negative_prompt?: string;
+  strength?: number;
+  guidance_scale?: number;
+  num_inference_steps?: number;
 }
 
-export function buildEffectivePrompt(opts: PromptBuildOptions) {
+export function buildPrompt(opts: PromptOptions): string {
+  const basePrompt = opts.prompt || '';
+  const subjectLock = opts.mode === "story" ? SUBJECT_LOCK_NEG : "";
+  
   const clarity =
     opts.detail === "hard" ? CLARITY_BOOST_HARD :
     opts.detail === "medium" ? CLARITY_BOOST_MEDIUM :

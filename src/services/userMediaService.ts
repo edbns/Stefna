@@ -33,8 +33,8 @@ export interface UserMedia {
     seed?: number
     // New metadata fields for generation tracking
     presetId?: string;              // Preset['id']
-    mode?: 'i2i'|'txt2img'|'restore'|'story';
-    group?: 'story'|'time_machine'|'restore'|null;
+    mode?: 'i2i'|'txt2img'|'story';
+    group?: 'story'|null;
     optionKey?: string | null;     // e.g. 'vhs_1980s', 'four_seasons/spring', 'colorize_bw'
     storyKey?: string | null;      // e.g. 'four_seasons'
     storyLabel?: string | null;    // e.g. 'Spring'
@@ -48,7 +48,6 @@ export interface UserMedia {
 
 export interface UserMediaStats {
   totalCreations: number
-  totalRemixes: number
   totalLikes: number
   totalViews: number
   tokensUsed: number
@@ -285,11 +284,6 @@ class UserMediaService {
     return media
   }
 
-  // Get user remixes (for "Remixed" tab)
-  async getUserRemixes(userId: string): Promise<UserMedia[]> {
-    return this.getUserMedia(userId, 'remix')
-  }
-
   // Get media that a user has liked
   async getUserLikedMedia(userId: string): Promise<UserMedia[]> {
     const likedMedia: UserMedia[] = []
@@ -319,8 +313,7 @@ class UserMediaService {
   async getUserStats(userId: string): Promise<UserMediaStats> {
     const userMedia = this.mediaStorage.get(userId) || []
     
-    const totalCreations = userMedia.filter(m => m.type !== 'remix').length
-    const totalRemixes = userMedia.filter(m => m.type === 'remix').length
+    const totalCreations = userMedia.length
     const totalLikes = userMedia.reduce((sum, m) => sum + m.likes, 0)
     const totalViews = userMedia.length * 10 // Mock view count
     const tokensUsed = userMedia.reduce((sum, m) => sum + m.tokensUsed, 0)
@@ -329,7 +322,6 @@ class UserMediaService {
 
     return {
       totalCreations,
-      totalRemixes,
       totalLikes,
       totalViews,
       tokensUsed,

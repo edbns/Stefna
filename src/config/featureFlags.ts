@@ -2,8 +2,6 @@
 
 export interface FeatureFlags {
   storyMode: boolean;
-  timeMachine: boolean;
-  restore: boolean;
   presetRotation: boolean;
   advancedPresets: boolean;
 }
@@ -11,8 +9,6 @@ export interface FeatureFlags {
 // Default feature flags - can be overridden by environment variables
 const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   storyMode: true,
-  timeMachine: true,
-  restore: true,
   presetRotation: true,
   advancedPresets: true,
 };
@@ -20,8 +16,6 @@ const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
 // Environment variable overrides
 const ENV_FEATURE_FLAGS: Partial<FeatureFlags> = {
   storyMode: import.meta.env.VITE_ENABLE_STORY_MODE !== 'false',
-  timeMachine: import.meta.env.VITE_ENABLE_TIME_MACHINE !== 'false',
-  restore: import.meta.env.VITE_ENABLE_RESTORE !== 'false',
   presetRotation: import.meta.env.VITE_ENABLE_PRESET_ROTATION !== 'false',
   advancedPresets: import.meta.env.VITE_ENABLE_ADVANCED_PRESETS !== 'false',
 };
