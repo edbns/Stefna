@@ -1905,7 +1905,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         return primaryModel;
       };
 
-      // Build AIML API payload for non-Neo-Glitch presets (flux/dev + flux/pro fallback)
+      // Build AIML API payload for standard presets (flux/dev + flux/pro fallback)
       const payload: any = {
         mode: kind,
         prompt: effectivePrompt, // server will prepend the identity prelude
@@ -1947,7 +1947,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         payload.presetName = selectedPreset;
       }
 
-      console.info('🎯 AIML API payload for non-Neo-Glitch preset:', payload);
+      console.info(`🎯 AIML API payload for preset: ${kind}`, payload);
+      
+      // Enhanced logging for clarity
+      console.log(`[AIML] Invoking image-to-image for mode: ${kind} using model: ${payload.model || 'flux/dev'}`);
 
       // Reserve credits before generation - dynamically calculate based on variations
       let creditsNeeded = 2; // Default for single generation (premium images)
@@ -2404,7 +2407,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         }, 24000); // 24s cushion before Netlify's 26s limit
 
         try {
-          // 🎯 Call AIML API for non-Neo-Glitch presets (flux/dev + flux/pro fallback)
+          // 🎯 Call AIML API for standard presets (flux/dev + flux/pro fallback)
           res = await authenticatedFetch('/.netlify/functions/aimlApi', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
