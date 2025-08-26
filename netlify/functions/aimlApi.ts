@@ -182,8 +182,47 @@ export const handler: Handler = async (event) => {
         };
       }
       
-      // Return enhanced prompt (simplified for now)
-      const enhancedPrompt = requestBody.prompt + ', professional photography style, high quality, sharp details, 8K resolution, enhanced contrast, vibrant colors';
+      // Intelligent prompt enhancement based on content analysis
+      const userPrompt = requestBody.prompt.toLowerCase();
+      let enhancedPrompt = requestBody.prompt;
+      
+      // Analyze the prompt and add relevant enhancements
+      if (userPrompt.includes('portrait') || userPrompt.includes('face') || userPrompt.includes('person')) {
+        // Portrait-specific enhancements
+        enhancedPrompt += ', sharp facial features, natural skin texture, professional portrait lighting, high detail eyes and hair';
+      } else if (userPrompt.includes('landscape') || userPrompt.includes('nature') || userPrompt.includes('outdoor')) {
+        // Landscape-specific enhancements
+        enhancedPrompt += ', dramatic lighting, enhanced depth of field, rich natural colors, atmospheric perspective';
+      } else if (userPrompt.includes('architecture') || userPrompt.includes('building') || userPrompt.includes('city')) {
+        // Architecture-specific enhancements
+        enhancedPrompt += ', clean geometric lines, architectural detail, strong composition, urban atmosphere';
+      } else if (userPrompt.includes('product') || userPrompt.includes('object') || userPrompt.includes('still life')) {
+        // Product/Object-specific enhancements
+        enhancedPrompt += ', studio lighting, clean background, sharp focus, professional product photography';
+      } else if (userPrompt.includes('abstract') || userPrompt.includes('art') || userPrompt.includes('creative')) {
+        // Creative/Abstract enhancements
+        enhancedPrompt += ', artistic composition, vibrant colors, creative lighting, high artistic quality';
+      } else {
+        // General quality enhancements for unknown content
+        enhancedPrompt += ', professional photography, enhanced details, optimal lighting, high resolution';
+      }
+      
+      // Add quality improvements based on enhancement type
+      if (requestBody.enhancement_type === 'cinematic') {
+        enhancedPrompt += ', cinematic color grading, dramatic shadows, film-like quality, professional cinematography';
+      } else if (requestBody.enhancement_type === 'vibrant') {
+        enhancedPrompt += ', vibrant saturated colors, enhanced contrast, punchy look, eye-catching visuals';
+      } else if (requestBody.enhancement_type === 'soft') {
+        enhancedPrompt += ', soft natural lighting, gentle contrast, warm tones, elegant aesthetic';
+      } else if (requestBody.enhancement_type === 'sharp') {
+        enhancedPrompt += ', ultra-sharp details, crisp edges, enhanced clarity, maximum definition';
+      }
+      
+      console.log('🎯 Magic Wand enhanced prompt:', {
+        original: requestBody.prompt,
+        enhanced: enhancedPrompt,
+        enhancementType: requestBody.enhancement_type
+      });
       
       return {
         statusCode: 200,
