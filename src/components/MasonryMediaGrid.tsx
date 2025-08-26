@@ -195,7 +195,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
 
                         {/* Preset Tag - Bottom Left */}
                         {item.metadata?.presetKey && (
-                          <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="absolute bottom-2 left-2">
                             <PresetTag 
                               presetKey={item.metadata.presetKey} 
                               type={item.metadata.presetType}

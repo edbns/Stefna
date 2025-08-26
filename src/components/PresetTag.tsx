@@ -14,7 +14,28 @@ const PresetTag: React.FC<PresetTagProps> = ({
   className = '', 
   size = 'md' 
 }) => {
-  if (!presetKey) return null
+  if (!presetKey) {
+    // Handle custom prompts
+    if (type === 'custom') {
+      return (
+        <div 
+          className={`
+            ${sizeClasses[size]}
+            ${typeStyles.custom}
+            border rounded-full font-medium
+            shadow-sm backdrop-blur-sm
+            transition-all duration-200
+            hover:scale-105 hover:shadow-md
+            ${className}
+          `}
+          title="Generated with custom prompt"
+        >
+          Custom
+        </div>
+      )
+    }
+    return null
+  }
   
   const displayName = getPresetDisplayName(presetKey, type)
   const presetType = getPresetType(presetKey, type)
