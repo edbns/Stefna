@@ -17,7 +17,7 @@ Stefna is a cutting-edge AI photo editing platform that transforms your photos u
 - **Ghibli Reaction**: Anime-style transformations with AIML API
 - **Emotion Mask**: Emotional expression overlays with AIML API
 - **Custom Presets**: Professional-grade transformations with AIML API
-- **Video-to-Video**: Advanced video generation with Replicate
+- **Custom Prompt**: User-defined transformations with AIML API
 
 ### **🔒 Identity Preservation**
 - **Automatic IPA**: Built-in face preservation without user intervention
@@ -53,7 +53,6 @@ Stefna is a cutting-edge AI photo editing platform that transforms your photos u
 ### **AI Services**
 - **Stability.ai**: Primary provider for Neo Tokyo Glitch
 - **AIML API**: Fallback provider and primary for other presets
-- **Replicate**: Video generation capabilities
 
 ---
 
