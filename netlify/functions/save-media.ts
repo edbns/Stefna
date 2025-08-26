@@ -139,14 +139,15 @@ export const handler: Handler = async (event): Promise<any> => {
     };
   }
   
-  // 🔒 DEDUPLICATION: Check for duplicate requests using runId
+  // 🔒 ENHANCED DEDUPLICATION: Check for duplicate requests using multiple methods
   const body = JSON.parse(event.body || '{}');
   const runId = body.runId;
+  const variations = body.variations || [];
   
+  // Method 1: Check runId duplicates
   if (runId) {
     console.log('🔍 [Save Media] Checking for duplicate runId:', runId);
     
-    // Check if this runId was already processed recently
     const existingMedia = await prisma.mediaAsset.findFirst({
       where: {
         meta: {
@@ -169,6 +170,54 @@ export const handler: Handler = async (event): Promise<any> => {
         })
       };
     }
+  }
+  
+  // Method 2: Check for duplicate image URLs (catches Ghibli duplicates)
+  if (variations.length > 0) {
+    const imageUrls = variations.map((v: any) => v.image_url).filter(Boolean);
+    
+    if (imageUrls.length > 0) {
+      console.log('🔍 [Save Media] Checking for duplicate image URLs:', imageUrls.length);
+      
+      const existingDuplicates = await prisma.mediaAsset.findMany({
+        where: {
+          url: { in: imageUrls }
+        }
+      });
+      
+      if (existingDuplicates.length > 0) {
+        console.log('⚠️ [Save Media] Duplicate image URLs detected, returning existing media:', existingDuplicates.length);
+        return {
+          statusCode: 200,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({
+            success: true,
+            message: 'Images already saved (duplicate request)',
+            results: existingDuplicates,
+            duplicate: true
+          })
+        };
+      }
+    }
+  }
+  
+  // Method 3: Check for recent duplicates (within last 30 seconds) - catches race conditions
+  const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
+  const recentDuplicates = await prisma.mediaAsset.findMany({
+    where: {
+      createdAt: {
+        gte: thirtySecondsAgo
+      },
+      userId: body.userId || 'unknown'
+    }
+  });
+  
+  if (recentDuplicates.length > 0) {
+    console.log('🔍 [Save Media] Found recent media items:', recentDuplicates.length);
+    // Log recent items for debugging
+    recentDuplicates.forEach((item, index) => {
+      console.log(`  ${index + 1}. ID: ${item.id}, URL: ${item.url?.substring(0, 60)}..., Created: ${item.createdAt}`);
+    });
   }
 
   if (event.httpMethod !== 'POST') {
