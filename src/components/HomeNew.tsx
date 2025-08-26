@@ -4471,7 +4471,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                     
                     {/* Presets dropdown - clean and simple */}
                     {presetsOpen && (
-                                             <div className="absolute bottom-full left-0 mb-2 bg-white/10 backdrop-blur-xl rounded-xl p-3 w-80 z-50 shadow-2xl shadow-black/20">
+                                             <div className="absolute bottom-full left-0 mb-2 bg-gray-700 rounded-xl p-3 w-80 z-50 shadow-2xl shadow-black/20">
                         {/* Preset options - all visible, no scrolling */}
                         <div className="space-y-1">
                           {/* Preset options */}

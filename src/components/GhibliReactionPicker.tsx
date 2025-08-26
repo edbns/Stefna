@@ -17,7 +17,7 @@ export function GhibliReactionPicker({
   className = ''
 }: GhibliReactionPickerProps) {
   return (
-    <div className={`bg-white/10 backdrop-blur-xl rounded-xl shadow-2xl p-3 w-80 ${className}`}>
+    <div className={`bg-gray-700 rounded-xl shadow-2xl p-3 w-80 ${className}`}>
       <div className="space-y-1">
         {/* Ghibli Reaction preset options - matches presets exactly */}
         {presets.map((preset) => (

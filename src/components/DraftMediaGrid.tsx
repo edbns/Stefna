@@ -11,6 +11,8 @@ interface DraftMediaGridProps {
   onShare?: (media: UserMedia) => void
   showActions?: boolean
   className?: string
+  // Loading states for actions
+  deletingMediaIds?: Set<string>
 }
 
 const DraftMediaGrid: React.FC<DraftMediaGridProps> = ({
@@ -21,7 +23,8 @@ const DraftMediaGrid: React.FC<DraftMediaGridProps> = ({
   onDelete,
   onShare,
   showActions = true,
-  className = ''
+  className = '',
+  deletingMediaIds = new Set()
 }) => {
   const [hoveredMedia, setHoveredMedia] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
@@ -120,8 +123,13 @@ const DraftMediaGrid: React.FC<DraftMediaGridProps> = ({
                           onClick={(e) => handleAction(() => onDelete?.(item), e)}
                           className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 btn-optimized"
                           title="Delete"
+                          disabled={deletingMediaIds.has(item.id)}
                         >
-                          <Trash2 size={16} />
+                          {deletingMediaIds.has(item.id) ? (
+                            <div className="w-4 h-4 border border-white/30 border-t-white rounded-full animate-spin"></div>
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
                         </button>
                       </div>
                     </div>

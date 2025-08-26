@@ -893,6 +893,8 @@ const ProfileScreen: React.FC = () => {
 
 
   // Deletion handled in specific grid handlers
+  const [isDeleting, setIsDeleting] = useState<string | null>(null) // Track which media is being deleted
+  
   const handleDeleteMedia = (media: UserMedia) => {
     setConfirm({ open: true, media })
   }
@@ -1311,6 +1313,8 @@ const ProfileScreen: React.FC = () => {
                 isSelectionMode={isSelectionMode}
                 selectedMediaIds={selectedMediaIds}
                 onToggleSelection={toggleMediaSelection}
+                // Loading states for actions
+                deletingMediaIds={isDeleting ? new Set([isDeleting]) : new Set()}
               />
             )}
           </div>
@@ -1350,6 +1354,7 @@ const ProfileScreen: React.FC = () => {
                 onShare={handleShare}
                 showActions={true}
                 className="pb-20"
+                deletingMediaIds={isDeleting ? new Set([isDeleting]) : new Set()}
               />
             )}
           </div>
@@ -1614,6 +1619,9 @@ const ProfileScreen: React.FC = () => {
               console.log('🗑️ Deleting single media:', mediaToDelete.id)
               
               try {
+                // Set loading state for this media
+                setIsDeleting(mediaToDelete.id)
+                
                 // Delete from server first
                 const jwt = authService.getToken()
                 let serverDeleteSuccess = false
@@ -1621,9 +1629,12 @@ const ProfileScreen: React.FC = () => {
                 if (jwt) {
                   try {
                     const r = await authenticatedFetch('/.netlify/functions/delete-media', {
-                      method: 'POST',
+                      method: 'DELETE',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ id: mediaToDelete.id })
+                      body: JSON.stringify({ 
+                        mediaId: mediaToDelete.id, 
+                        userId: currentUserId 
+                      })
                     })
                     
                     if (r.ok) {
@@ -1665,6 +1676,9 @@ const ProfileScreen: React.FC = () => {
                 
               } catch (error) {
                 console.error('❌ Delete operation failed:', error)
+              } finally {
+                // Clear loading state
+                setIsDeleting(null)
               }
             }
           }

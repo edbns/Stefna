@@ -56,7 +56,7 @@ class AdvancedAIService {
       name: 'Anime Diffusion',
       description: 'Specialized for anime and manga style',
       category: 'anime',
-      cost: 1,
+      cost: 2,
       maxResolution: '768x768',
       features: ['anime', 'manga', 'cartoon']
     },
@@ -65,7 +65,7 @@ class AdvancedAIService {
       name: 'Artistic Style',
       description: 'Oil painting, watercolor, and artistic styles',
       category: 'art',
-      cost: 1,
+      cost: 2,
       maxResolution: '1024x1024',
       features: ['oil-painting', 'watercolor', 'impressionist']
     },
@@ -74,7 +74,7 @@ class AdvancedAIService {
       name: 'Photo Enhancement',
       description: 'Professional photography enhancements',
       category: 'photography',
-      cost: 1,
+      cost: 2,
       maxResolution: '2048x2048',
       features: ['portrait', 'landscape', 'professional']
     },
@@ -83,7 +83,7 @@ class AdvancedAIService {
       name: 'Abstract Art',
       description: 'Modern abstract and conceptual art',
       category: 'abstract',
-      cost: 1,
+      cost: 2,
       maxResolution: '1024x1024',
       features: ['abstract', 'conceptual', 'modern']
     }
