@@ -78,8 +78,8 @@ INSERT INTO ghibli_reaction_media (
     status
 )
 SELECT 
-    ma.id,
-    ma.user_id,
+    ma.id::text,
+    ma.user_id::text,
     ma.url as image_url,
     COALESCE(ma.source_asset_id, ma.url) as source_url,
     ma.prompt,
@@ -88,8 +88,8 @@ SELECT
         WHEN ma.meta->>'mode' = 'ghiblireact' THEN 'ghibli_default'
         ELSE 'ghibli_unknown'
     END as preset,
-    ma.id as run_id, -- Use media_assets id as run_id
-    ma.id as aiml_job_id, -- Use media_assets id as aiml_job_id
+    ma.id::text as run_id, -- Use media_assets id as run_id
+    ma.id::text as aiml_job_id, -- Use media_assets id as aiml_job_id
     ma.created_at,
     'completed' as status
 FROM media_assets ma
@@ -98,7 +98,7 @@ WHERE
     OR ma.meta->>'mode' = 'ghiblireact'
     OR ma.meta->>'generation_type' LIKE '%ghibli%')
     AND NOT EXISTS (
-        SELECT 1 FROM ghibli_reaction_media grm WHERE grm.id = ma.id
+        SELECT 1 FROM ghibli_reaction_media grm WHERE grm.id = ma.id::text
     );
 
 -- Verify Ghibli migration
@@ -124,8 +124,8 @@ INSERT INTO emotion_mask_media (
     status
 )
 SELECT 
-    ma.id,
-    ma.user_id,
+    ma.id::text,
+    ma.user_id::text,
     ma.url as image_url,
     COALESCE(ma.source_asset_id, ma.url) as source_url,
     ma.prompt,
@@ -136,8 +136,8 @@ SELECT
         WHEN ma.meta->>'mode' = 'emotionmask' THEN 'emotion_default'
         ELSE ma.preset_key
     END as preset,
-    ma.id as run_id,
-    ma.id as aiml_job_id,
+    ma.id::text as run_id,
+    ma.id::text as aiml_job_id,
     ma.created_at,
     'completed' as status
 FROM media_assets ma
@@ -146,7 +146,7 @@ WHERE
     OR ma.meta->>'mode' = 'emotionmask'
     OR ma.meta->>'generation_type' LIKE '%emotion%')
     AND NOT EXISTS (
-        SELECT 1 FROM emotion_mask_media emm WHERE emm.id = ma.id
+        SELECT 1 FROM emotion_mask_media emm WHERE emm.id = ma.id::text
     );
 
 -- Verify Emotion Mask migration
@@ -172,8 +172,8 @@ INSERT INTO presets_media (
     status
 )
 SELECT 
-    ma.id,
-    ma.user_id,
+    ma.id::text,
+    ma.user_id::text,
     ma.url as image_url,
     COALESCE(ma.source_asset_id, ma.url) as source_url,
     ma.prompt,
@@ -186,8 +186,8 @@ SELECT
         WHEN ma.meta->>'mode' = 'preset' THEN 'professional_default'
         ELSE ma.preset_key
     END as preset,
-    ma.id as run_id,
-    ma.id as aiml_job_id,
+    ma.id::text as run_id,
+    ma.id::text as aiml_job_id,
     ma.created_at,
     'completed' as status
 FROM media_assets ma
@@ -196,7 +196,7 @@ WHERE
     OR ma.meta->>'mode' = 'preset'
     OR ma.meta->>'generation_type' LIKE '%preset%')
     AND NOT EXISTS (
-        SELECT 1 FROM presets_media pm WHERE pm.id = ma.id
+        SELECT 1 FROM presets_media pm WHERE pm.id = ma.id::text
     );
 
 -- Verify Presets migration
@@ -222,8 +222,8 @@ INSERT INTO custom_prompt_media (
     status
 )
 SELECT 
-    ma.id,
-    ma.user_id,
+    ma.id::text,
+    ma.user_id::text,
     ma.url as image_url,
     COALESCE(ma.source_asset_id, ma.url) as source_url,
     ma.prompt,
@@ -232,8 +232,8 @@ SELECT
         WHEN ma.meta->>'mode' = 'custom' THEN 'user_custom'
         ELSE 'user_custom'
     END as preset,
-    ma.id as run_id,
-    ma.id as aiml_job_id,
+    ma.id::text as run_id,
+    ma.id::text as aiml_job_id,
     ma.created_at,
     'completed' as status
 FROM media_assets ma
@@ -242,7 +242,7 @@ WHERE
     OR ma.meta->>'mode' = 'custom'
     OR ma.meta->>'generation_type' LIKE '%custom%')
     AND NOT EXISTS (
-        SELECT 1 FROM custom_prompt_media cpm WHERE cpm.id = ma.id
+        SELECT 1 FROM custom_prompt_media cpm WHERE cpm.id = ma.id::text
     );
 
 -- Verify Custom Prompt migration
