@@ -1159,21 +1159,21 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         
         // 🔍 DEBUG: Check preset data in feed items
         if (mapped.length > 0) {
-          console.log('🔍 [DEBUG] First feed item preset data:', {
+          console.log('🔍 [DEBUG] First feed item preset data:', JSON.stringify({
             id: mapped[0]?.id,
             presetKey: mapped[0]?.presetKey,
             metadata: mapped[0]?.metadata,
             type: mapped[0]?.type
-          });
+          }, null, 2));
           
           // Check a few more items
           mapped.slice(0, 3).forEach((item, index) => {
-            console.log(`🔍 [DEBUG] Item ${index + 1} preset data:`, {
+            console.log(`🔍 [DEBUG] Item ${index + 1} preset data:`, JSON.stringify({
               id: item.id,
               presetKey: item.presetKey,
               metadata: item.metadata,
               type: item.type
-            });
+            }, null, 2));
           });
         }
         
