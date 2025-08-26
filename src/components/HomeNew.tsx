@@ -2321,8 +2321,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             // Start polling
             pollForCompletion();
             
-            // Skip the regular AIML API call for Neo Tokyo Glitch
-            skipAimlApi = true;
+            // 🔧 FIX: Don't skip AIML API for Neo Glitch - let it fallback through IPA system
+            // This ensures identity preservation when Stability.ai fails and AIML fallback happens
+            console.log('🎭 [NeoGlitch] Starting polling, but allowing AIML fallback through IPA system');
             return;
           }
           

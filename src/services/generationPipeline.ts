@@ -431,10 +431,47 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
   }
 
   try {
-    // Use the new unified save-media endpoint
+    // 🔧 FIX: Determine proper presetKey and presetType for all media types including Neo Glitch
+    let presetKey: string | null = null;
+    let presetType: string = 'custom';
+    
+    // Map generation mode to proper preset information
+    if (job.mode === 'i2i' && job.presetId) {
+      // For image-to-image modes, use the preset ID
+      presetKey = job.presetId;
+      presetType = 'professional';
+    } else if (job.mode === 't2i') {
+      presetKey = job.presetId || 'text-to-image';
+      presetType = 'text-to-image';
+    } else if (job.mode === 'story') {
+      presetKey = job.presetId || 'story';
+      presetType = 'story';
+    } else {
+      // Fallback for unknown modes
+      presetKey = job.presetId || job.mode || 'unknown';
+      presetType = 'custom';
+    }
+
+    // 🔧 SPECIAL HANDLING: If this is Neo Glitch (detected by presetId or job metadata)
+    if (job.presetId?.includes('neo_tokyo') || job.presetId?.includes('visor') || job.presetId?.includes('tattoos') || job.presetId?.includes('scanlines')) {
+      presetKey = job.presetId;
+      presetType = 'neo-tokyo';
+      console.log('🎭 [GenerationPipeline] Neo Glitch detected, setting preset type:', presetType);
+    }
+
+    console.log('🔧 [GenerationPipeline] Preset mapping:', {
+      mode: job.mode,
+      presetId: job.presetId,
+      mappedPresetKey: presetKey,
+      mappedPresetType: presetType
+    });
+
+    // Use the new unified save-media endpoint with proper preset data
     const savePayload = {
       runId: job.runId,
       presetId: job.presetId,
+      presetKey: presetKey, // ✅ Add explicit presetKey
+      presetType: presetType, // ✅ Add explicit presetType
       allowPublish: true, // TODO: get from user settings
       source: job.source,
       variations: [{
@@ -442,6 +479,8 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
         type: 'image', // TODO: detect from result
         meta: {
           presetId: job.presetId,
+          presetKey: presetKey, // ✅ Pass presetKey in meta
+          presetType: presetType, // ✅ Pass presetType in meta
           mode: job.mode,
           group: job.group || null,
           optionKey: job.optionKey || null,
@@ -451,14 +490,20 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
           source_url: job.source?.url,
         }
       }],
-      tags: ['transformed', `preset:${job.presetId}`, `mode:${job.mode}`],
+      tags: ['transformed', `preset:${presetKey}`, `mode:${job.mode}`],
       extra: {
         source: 'generation',
         timestamp: new Date().toISOString()
       }
     }
 
-    console.log('💾 Saving generation result via save-media:', savePayload)
+    console.log('💾 [GenerationPipeline] Saving generation result via save-media:', {
+      ...savePayload,
+      variations: savePayload.variations.map(v => ({
+        ...v,
+        image_url: v.image_url.substring(0, 60) + '...' // Truncate for logging
+      }))
+    });
     
     try {
       const response = await fetchWithAuth('/.netlify/functions/save-media', {
@@ -472,7 +517,7 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
       }
 
       const saveResult = await response.json()
-      console.log('✅ Generation saved via save-media:', saveResult)
+      console.log('✅ [GenerationPipeline] Generation saved via save-media:', saveResult)
 
       // If this is a remix (has parentId), send anonymous notification
       if (job.parentId) {
