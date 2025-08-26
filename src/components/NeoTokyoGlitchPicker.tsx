@@ -16,7 +16,7 @@ export function NeoTokyoGlitchPicker({
   className = ''
 }: NeoTokyoGlitchPickerProps) {
   return (
-    <div className={`bg-[#333333] border border-white/20 rounded-xl shadow-2xl p-3 w-80 ${className}`}>
+    <div className={`bg-white/10 backdrop-blur-xl rounded-xl shadow-2xl p-3 w-80 ${className}`}>
       <div className="space-y-1">
         {/* Neo Tokyo Glitch preset options - matches presets exactly */}
         {presets.map((preset) => (
@@ -25,7 +25,7 @@ export function NeoTokyoGlitchPicker({
             onClick={() => onChange(preset.id)}
             className={(() => {
               const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm';
-              const activeClass = 'bg-white/20 text-white';
+              const activeClass = 'bg-white/20 backdrop-blur-md text-white';
               const inactiveClass = 'text-white/80 hover:text-white hover:bg-white/10';
               return `${baseClass} ${value === preset.id ? activeClass : inactiveClass}`;
             })()}

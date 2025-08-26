@@ -4484,7 +4484,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                               }}
                               className={(() => {
                                 const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm';
-                                const activeClass = 'bg-white text-black';
+                                const activeClass = 'bg-white/90 backdrop-blur-md text-black';
                                 const inactiveClass = 'text-white hover:text-white hover:bg-white/20';
                                 return `${baseClass} ${selectedPreset === name ? activeClass : inactiveClass}`;
                               })()}
