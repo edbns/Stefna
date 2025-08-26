@@ -138,6 +138,38 @@ export const handler: Handler = async (event): Promise<any> => {
       body: ''
     };
   }
+  
+  // 🔒 DEDUPLICATION: Check for duplicate requests using runId
+  const body = JSON.parse(event.body || '{}');
+  const runId = body.runId;
+  
+  if (runId) {
+    console.log('🔍 [Save Media] Checking for duplicate runId:', runId);
+    
+    // Check if this runId was already processed recently
+    const existingMedia = await prisma.mediaAsset.findFirst({
+      where: {
+        meta: {
+          path: ['run_id'],
+          equals: runId
+        }
+      }
+    });
+    
+    if (existingMedia) {
+      console.log('⚠️ [Save Media] Duplicate runId detected, returning existing media:', existingMedia.id);
+      return {
+        statusCode: 200,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          success: true,
+          message: 'Media already saved (duplicate request)',
+          results: [existingMedia],
+          duplicate: true
+        })
+      };
+    }
+  }
 
   if (event.httpMethod !== 'POST') {
     return {
@@ -244,6 +276,28 @@ export const handler: Handler = async (event): Promise<any> => {
       }
 
       console.log(`✅ [Batch Save] Proceeding with ${validVariations.length} valid variations`);
+
+      // 🔒 ADDITIONAL DEDUPLICATION: Check for duplicate variations using image URLs
+      const imageUrls = validVariations.map(v => v.image_url);
+      const existingVariations = await prisma.mediaAsset.findMany({
+        where: {
+          url: { in: imageUrls }
+        }
+      });
+      
+      if (existingVariations.length > 0) {
+        console.log('⚠️ [Batch Save] Duplicate image URLs detected, returning existing media');
+        return {
+          statusCode: 200,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({
+            success: true,
+            message: 'Images already processed (duplicate request)',
+            results: existingVariations,
+            duplicate: true
+          })
+        };
+      }
 
       // Insert each variation using Prisma
       for (const v of validVariations) {
