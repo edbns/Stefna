@@ -325,6 +325,107 @@ const ProfileScreen: React.FC = () => {
 
   // Add loading state for delete operations
   const [isDeletingSelected, setIsDeletingSelected] = useState(false)
+  const [isDeletingAll, setIsDeletingAll] = useState(false)
+
+  // Add delete all functionality
+  const deleteAllMedia = async () => {
+    if (userMedia.length === 0) return
+
+    try {
+      const token = authService.getToken()
+      if (!token) {
+        addNotification('Delete Failed', 'Authentication required', 'error')
+        return
+      }
+
+      // Show confirmation modal for delete all
+      setConfirm({ 
+        open: true, 
+        media: { 
+          id: 'delete-all', 
+          userId: '', 
+          type: 'photo', 
+          url: '', 
+          prompt: '', 
+          aspectRatio: 1, 
+          width: 0, 
+          height: 0, 
+          timestamp: '', 
+          tokensUsed: 0, 
+          likes: 0, 
+          remixCount: 0, 
+          isPublic: false, 
+          tags: [], 
+          metadata: { quality: 'standard', generationTime: 0, modelVersion: '1.0' }
+        } as UserMedia 
+      })
+    } catch (error) {
+      console.error('❌ Delete all error:', error)
+      addNotification('Delete Failed', 'Network or server error', 'error')
+    }
+  }
+
+  // Handle delete all functionality
+  const handleConfirmDeleteAll = async () => {
+    if (userMedia.length === 0) return
+    
+    setIsDeletingAll(true)
+    try {
+      // Delete all media items
+      const deletePromises = userMedia.map(async (media) => {
+        const token = authService.getToken()
+        if (!token) throw new Error('Authentication required')
+        
+        const response = await fetch('/.netlify/functions/delete-media', {
+          method: 'DELETE',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ 
+            mediaId: media.id,
+            userId: authService.getCurrentUser()?.id || ''
+          })
+        })
+        
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}))
+          throw new Error(error.message || `Failed to delete media ${media.id}`)
+        }
+        
+        return { success: true, mediaId: media.id }
+      })
+      
+      const results = await Promise.allSettled(deletePromises)
+      const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length
+      const failed = results.length - successful
+
+      if (successful > 0) {
+        addNotification(
+          'Delete All Complete', 
+          `Successfully deleted ${successful} media items${failed > 0 ? `, ${failed} failed` : ''}`, 
+          'success'
+        )
+        
+        // Clear all media from local state
+        setUserMedia([])
+        setDraftMedia([])
+        
+        // Force refresh to ensure UI updates
+        setTimeout(() => {
+          loadUserMedia()
+        }, 100)
+      } else {
+        addNotification('Delete Failed', 'No media items were deleted', 'error')
+      }
+    } catch (error) {
+      console.error('❌ Delete all error:', error)
+      addNotification('Delete Failed', error instanceof Error ? error.message : 'Network or server error', 'error')
+    } finally {
+      setIsDeletingAll(false)
+      setConfirm({ open: false, media: null })
+    }
+  }
 
   const deleteSelectedMedia = async () => {
     if (selectedMediaIds.size === 0) return
@@ -407,10 +508,6 @@ const ProfileScreen: React.FC = () => {
       setConfirm({ open: false, media: null })
     }
   }
-
-
-
-
 
   // Load user media from database using new Netlify Function
   const loadUserMedia = async () => {
@@ -1251,20 +1348,36 @@ const ProfileScreen: React.FC = () => {
                 </div>
                 
                 {isSelectionMode && selectedMediaIds.size > 0 && (
-                  <button
-                    onClick={deleteSelectedMedia}
-                    className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/80 text-white hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={isDeletingSelected}
-                  >
-                    {isDeletingSelected ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>Deleting...</span>
-                      </div>
-                    ) : (
-                      `Delete Selected (${selectedMediaIds.size})`
-                    )}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={deleteSelectedMedia}
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/80 text-white hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isDeletingSelected}
+                    >
+                      {isDeletingSelected ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          <span>Deleting...</span>
+                        </div>
+                      ) : (
+                        `Delete Selected (${selectedMediaIds.size})`
+                      )}
+                    </button>
+                    <button
+                      onClick={deleteAllMedia}
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600/80 text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isDeletingAll}
+                    >
+                      {isDeletingAll ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          <span>Deleting All...</span>
+                        </div>
+                      ) : (
+                        'Delete All'
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -1534,85 +1647,30 @@ const ProfileScreen: React.FC = () => {
       {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={confirm.open}
-        title={confirm.media?.id === 'bulk-delete' ? `Delete ${selectedMediaIds.size} selected media?` : "Delete media?"}
+        title={confirm.media?.id === 'bulk-delete' ? `Delete ${selectedMediaIds.size} selected media?` : 
+               confirm.media?.id === 'delete-all' ? `Delete all ${userMedia.length} media?` :
+               "Delete media?"}
         message={confirm.media?.id === 'bulk-delete' ? 
           `Are you sure you want to delete ${selectedMediaIds.size} media items? This action cannot be undone.` : 
+          confirm.media?.id === 'delete-all' ?
+          `Are you sure you want to delete ALL ${userMedia.length} media items? This action cannot be undone.` :
           "This action cannot be undone."
         }
-        confirmText={confirm.media?.id === 'bulk-delete' ? `Delete ${selectedMediaIds.size} Items` : "Delete"}
+        confirmText={confirm.media?.id === 'bulk-delete' ? `Delete ${selectedMediaIds.size} Items` : 
+                    confirm.media?.id === 'delete-all' ? `Delete All ${userMedia.length} Items` :
+                    "Delete"}
         cancelText="Cancel"
         onClose={() => setConfirm({ open: false })}
         onConfirm={async () => {
-          if (confirm.media) {
-            if (confirm.media.id === 'bulk-delete') {
-              // Handle bulk delete
-              console.log('🗑️ Bulk deleting media:', selectedMediaIds.size, 'items')
-              
-              try {
-                const token = authService.getToken()
-                if (!token) {
-                  addNotification('Delete Failed', 'Authentication required', 'error')
-                  return
-                }
-
-                // Delete each selected media item
-                const deletePromises = Array.from(selectedMediaIds).map(async (mediaId) => {
-                  try {
-                    const response = await authenticatedFetch(`/.netlify/functions/delete-media`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify({ id: mediaId })
-                    })
-                    
-                    if (!response.ok) {
-                      const errorText = await response.text()
-                      throw new Error(`Failed to delete media ${mediaId}: ${response.status} ${errorText}`)
-                    }
-                    
-                    return { success: true, mediaId }
-                  } catch (error) {
-                    console.error(`Failed to delete media ${mediaId}:`, error)
-                    return { success: false, mediaId, error }
-                  }
-                })
-
-                const results = await Promise.allSettled(deletePromises)
-                const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length
-                const failed = results.length - successful
-
-                if (successful > 0) {
-                  addNotification(
-                    'Bulk Delete Complete', 
-                    `Successfully deleted ${successful} media items${failed > 0 ? `, ${failed} failed` : ''}`, 
-                    'success'
-                  )
-                  
-                  // Clear selection and refresh media
-                  setSelectedMediaIds(new Set())
-                  setIsSelectionMode(false)
-                  
-                  // Immediately remove deleted items from local state for better UX
-                  const successfulIds = results
-                    .filter(r => r.status === 'fulfilled' && r.value.success)
-                    .map(r => (r as PromiseFulfilledResult<{ success: boolean; mediaId: string }>).value.mediaId)
-                  
-                  setUserMedia(prev => prev.filter(item => !successfulIds.includes(item.id)))
-                  setDraftMedia(prev => prev.filter(item => !successfulIds.includes(item.id)))
-                  
-                  // Force refresh to ensure UI updates
-                  setTimeout(() => {
-                    loadUserMedia()
-                  }, 100)
-                } else {
-                  addNotification('Delete Failed', 'No media items were deleted', 'error')
-                }
-
-              } catch (error) {
-                console.error('❌ Bulk delete error:', error)
-                addNotification('Delete Failed', 'Network or server error', 'error')
-              }
+                      if (confirm.media) {
+              if (confirm.media.id === 'bulk-delete') {
+                // Handle bulk delete
+                console.log('🗑️ Bulk deleting media:', selectedMediaIds.size, 'items')
+                await handleConfirmDeleteSelected()
+              } else if (confirm.media.id === 'delete-all') {
+                // Handle delete all
+                console.log('🗑️ Deleting all media items')
+                await handleConfirmDeleteAll()
             } else {
               // Handle single delete
               const mediaToDelete = confirm.media
