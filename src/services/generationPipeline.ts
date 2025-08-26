@@ -32,6 +32,8 @@ export type GenerateJob = {
   storyKey?: string | null;      // e.g. 'four_seasons'
   storyLabel?: string | null;    // e.g. 'Spring'
   parentId?: string | null;      // if this is a remix, points to original media
+  // 🔧 NEW: Track the actual generation type for preset mapping
+  generationType?: 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | null;
 }
 
 export type GenerationResult = {

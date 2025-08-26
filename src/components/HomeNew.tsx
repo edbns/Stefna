@@ -2613,6 +2613,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             prompt: effectivePrompt,
             meta: {
               mode: generationMeta?.mode || 'custom',
+              generationType: generationMeta?.mode || 'custom', // 🔧 Add generationType for preset mapping
               shareNow: true,
               generation_type: generationMeta?.generation_type || 'custom',
               model: body?.model || 'aiml-api'

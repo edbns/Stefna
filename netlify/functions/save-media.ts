@@ -24,8 +24,8 @@ function extractPresetInfo(imageUrl: string, meta?: any, presetKey?: string): { 
   if (meta?.presetId || meta?.presetKey || presetKey) {
     const extractedPresetKey = meta?.presetId || meta?.presetKey || presetKey || null;
     
-    // Map the mode to specific preset types that PresetTag expects
-    let presetType = 'professional'; // default
+    // 🔧 FIX: Map the generation type to specific preset types that PresetTag expects
+    let presetType = 'custom'; // default
     
     if (meta?.mode) {
       switch (meta.mode) {
@@ -45,9 +45,37 @@ function extractPresetInfo(imageUrl: string, meta?: any, presetKey?: string): { 
           presetType = 'professional';
           break;
         default:
+          presetType = 'custom';
+      }
+    } else if (meta?.generationType) {
+      // 🔧 NEW: Use generationType if mode is not available
+      switch (meta.generationType) {
+        case 'emotionmask':
+          presetType = 'emotion';
+          break;
+        case 'ghiblireact':
+          presetType = 'ghibli';
+          break;
+        case 'neotokyoglitch':
+          presetType = 'neo-tokyo';
+          break;
+        case 'custom':
+          presetType = 'custom';
+          break;
+        case 'preset':
           presetType = 'professional';
+          break;
+        default:
+          presetType = 'custom';
       }
     }
+    
+    console.log('🔧 [save-media] Extracted preset info:', {
+      presetKey: extractedPresetKey,
+      presetType: presetType,
+      meta: meta,
+      fallbackPresetKey: presetKey
+    });
     
     return {
       presetKey: extractedPresetKey,
@@ -61,6 +89,7 @@ function extractPresetInfo(imageUrl: string, meta?: any, presetKey?: string): { 
     const urlMatch = imageUrl.match(/\/files\/([^\/]+)\//);
     if (urlMatch) {
       const detectedPreset = urlMatch[1];
+      console.log('🔧 [save-media] Detected preset from AIML URL:', detectedPreset);
       return {
         presetKey: detectedPreset,
         presetType: 'professional' // Default to professional for AIML API
@@ -69,8 +98,9 @@ function extractPresetInfo(imageUrl: string, meta?: any, presetKey?: string): { 
   }
   
   // Priority 3: Default fallback
+  console.log('🔧 [save-media] Using default fallback preset info');
   return {
-    presetKey: null,
+    presetKey: 'unknown',
     presetType: 'custom'
   };
 }
@@ -446,7 +476,7 @@ export const handler: Handler = async (event): Promise<any> => {
             url: finalImageUrl, // ✅ Use Cloudinary URL instead of original AIML URL
             visibility: visibility, // Use user preference instead of hardcoded 'public'
             allowRemix: false,
-            presetKey: presetInfo.presetKey, // ✅ Store extracted preset info for tags
+            presetKey: presetInfo.presetKey || undefined, // ✅ Store extracted preset info for tags
             presetId: v.meta?.presetId || null, // ✅ Store actual preset ID
             parentAssetId: v.source_asset_id || null, // ✅ Link to source image
             meta: {
@@ -682,7 +712,7 @@ export const handler: Handler = async (event): Promise<any> => {
           url: finalImageUrl, // ✅ Use Cloudinary URL instead of original AIML URL
           visibility: visibility, // Use user preference instead of hardcoded 'public'
           allowRemix: false,
-          presetKey: presetInfo.presetKey, // ✅ Store extracted preset info for tags
+          presetKey: presetInfo.presetKey || undefined, // ✅ Store extracted preset info for tags
           presetId: meta?.presetId || null, // ✅ Store actual preset ID
           parentAssetId: source_public_id || null, // ✅ Link to source image
           meta: { 
