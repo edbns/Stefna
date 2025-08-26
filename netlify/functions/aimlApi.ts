@@ -12,7 +12,7 @@ export const PRESET_SYSTEMS = {
     kind: 'ghibli',
     model: 'flux/dev/image-to-image',
     defaultPrompt: 'Anime-style reaction portrait with glistening tears, shocked face, sparkle overlays. Inspired by Studio Ghibli expressions.',
-    credits: 3,
+    credits: 2,
   },
   neo_tokyo_glitch: {
     id: 'neo_tokyo_glitch',
@@ -20,7 +20,7 @@ export const PRESET_SYSTEMS = {
     kind: 'tokyo',
     model: 'stable-diffusion-v35-large',
     defaultPrompt: 'Cyberpunk anime portrait with cel shading, neon colors, scanlines, tech tattoos and glitch overlays. Digital dystopian city backdrop.',
-    credits: 5,
+    credits: 2,
   }
 };
 
