@@ -177,6 +177,8 @@ export const handler: Handler = async (event) => {
             resourceType: true,
             prompt: true,
             presetKey: true, // ✅ FIXED: Explicitly select presetKey field
+            presetId: true,  // 🔍 DEBUG: Also check presetId
+            meta: true,      // 🔍 DEBUG: Also check meta
             status: true,
             createdAt: true,
             user: {
@@ -234,7 +236,10 @@ export const handler: Handler = async (event) => {
           url: item.url,
           finalUrl: item.finalUrl,
           mappedFinalUrl: finalUrl,
-          type: 'media-asset'
+          type: 'media-asset',
+          presetKey: item.presetKey, // 🔍 DEBUG: Check what's in presetKey
+          presetId: item.presetId,   // 🔍 DEBUG: Check if presetId exists
+          meta: item.meta            // 🔍 DEBUG: Check if meta has preset info
         });
         
         return {
