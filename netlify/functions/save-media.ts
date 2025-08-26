@@ -22,9 +22,36 @@ cloudinary.config({
 function extractPresetInfo(imageUrl: string, meta?: any, presetKey?: string): { presetKey: string | null; presetType: string } {
   // Priority 1: Use explicit preset information from meta
   if (meta?.presetId || meta?.presetKey || presetKey) {
+    const extractedPresetKey = meta?.presetId || meta?.presetKey || presetKey || null;
+    
+    // Map the mode to specific preset types that PresetTag expects
+    let presetType = 'professional'; // default
+    
+    if (meta?.mode) {
+      switch (meta.mode) {
+        case 'emotionmask':
+          presetType = 'emotion';
+          break;
+        case 'ghiblireact':
+          presetType = 'ghibli';
+          break;
+        case 'neotokyoglitch':
+          presetType = 'neo-tokyo';
+          break;
+        case 'custom':
+          presetType = 'custom';
+          break;
+        case 'preset':
+          presetType = 'professional';
+          break;
+        default:
+          presetType = 'professional';
+      }
+    }
+    
     return {
-      presetKey: meta?.presetId || meta?.presetKey || presetKey || null,
-      presetType: meta?.mode || meta?.presetType || 'preset'
+      presetKey: extractedPresetKey,
+      presetType: presetType
     };
   }
   
@@ -36,7 +63,7 @@ function extractPresetInfo(imageUrl: string, meta?: any, presetKey?: string): { 
       const detectedPreset = urlMatch[1];
       return {
         presetKey: detectedPreset,
-        presetType: 'aiml-generated'
+        presetType: 'professional' // Default to professional for AIML API
       };
     }
   }
@@ -44,7 +71,7 @@ function extractPresetInfo(imageUrl: string, meta?: any, presetKey?: string): { 
   // Priority 3: Default fallback
   return {
     presetKey: null,
-    presetType: 'unknown'
+    presetType: 'custom'
   };
 }
 
@@ -420,6 +447,8 @@ export const handler: Handler = async (event): Promise<any> => {
             visibility: visibility, // Use user preference instead of hardcoded 'public'
             allowRemix: false,
             presetKey: presetInfo.presetKey, // ✅ Store extracted preset info for tags
+            presetId: v.meta?.presetId || null, // ✅ Store actual preset ID
+            parentAssetId: v.source_asset_id || null, // ✅ Link to source image
             meta: {
               ...v.meta, 
               batch_id: batchId, 
@@ -649,6 +678,8 @@ export const handler: Handler = async (event): Promise<any> => {
           visibility: visibility, // Use user preference instead of hardcoded 'public'
           allowRemix: false,
           presetKey: presetInfo.presetKey, // ✅ Store extracted preset info for tags
+          presetId: meta?.presetId || null, // ✅ Store actual preset ID
+          parentAssetId: source_public_id || null, // ✅ Link to source image
           meta: { 
             ...(meta || {}), 
             idempotency_key: idempotencyKey || null,
