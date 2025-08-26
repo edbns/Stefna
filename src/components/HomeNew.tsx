@@ -2430,28 +2430,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           // New system already processed - skip old system logic
           console.log('🆕 [New System] Skipping old system processing');
         } else {
-          // Process aimlApi results (old system)
-          if (res && !res.ok) {
-            // Handle different error types
-            if (res.status === 501 && isVideoPreview) {
-              notifyQueue({ title: 'Added to queue', message: 'We will start processing shortly.' });
-              // Don't return - let the processing continue
-            } else if (res.status === 429) {
-              notifyError({ title: 'Failed', message: 'Please try again' });
-              endGeneration(genId);
-              setNavGenerating(false);
-              return;
-            } else {
-              throw new Error(body?.error || `aimlApi ${res.status}`);
-            }
-          }
-
-          // Extract result URLs from aimlApi response
-          resultUrl = body?.image_url || body?.image_urls?.[0] || null;
-          allResultUrls = body.result_urls || [resultUrl];
-          variationsGenerated = body.variations_generated || 1;
+          // Process aimlApi results (old system) - but this should never happen now
+          console.warn('⚠️ [GenerationPipeline] Unexpected old system path - this should not happen');
+          throw new Error('Unexpected old system path - all generation should use new system');
         }
-      }
 
       // Handle video job creation (status 202) - only for old system responses
       if (body?.system !== 'new' && res?.status === 202 && body?.job_id && isVideoPreview) {
