@@ -11,6 +11,7 @@ import { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
+import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -251,13 +252,14 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Reserve credits first
+    // Reserve credits first with token refresh
     console.log('💰 [EmotionMask] Reserving 1 credit for generation...');
+    const freshToken = await getFreshToken(userToken);
     const creditReservation = await fetch(`${process.env.URL}/.netlify/functions/credits-reserve`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userToken}`
+        'Authorization': `Bearer ${freshToken}`
       },
       body: JSON.stringify({
         userId,
@@ -334,12 +336,12 @@ export const handler: Handler = async (event) => {
         
         console.log('✅ [EmotionMask] Database updated with completed status');
         
-        // Finalize credits
+        // Finalize credits with fresh token
         await fetch(`${process.env.URL}/.netlify/functions/credits-finalize`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`
+            'Authorization': `Bearer ${freshToken}`
           },
           body: JSON.stringify({
             userId,
@@ -378,12 +380,12 @@ export const handler: Handler = async (event) => {
         }
       });
       
-      // Refund credits since generation failed
+      // Refund credits since generation failed with fresh token
       await fetch(`${process.env.URL}/.netlify/functions/credits-finalize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userToken}`
+          'Authorization': `Bearer ${freshToken}`
         },
         body: JSON.stringify({
           userId,
@@ -406,8 +408,22 @@ export const handler: Handler = async (event) => {
       };
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [EmotionMask] Unexpected error:', error);
+    
+    // Check if it's a token expiration error
+    if (isTokenExpiredError(error.message)) {
+      return {
+        statusCode: 401,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          error: 'TOKEN_EXPIRED',
+          message: 'Your session has expired. Please refresh the page and try again.',
+          details: 'Authentication token expired during generation',
+          suggestion: 'Refresh your browser page to get a new session'
+        })
+      };
+    }
     
     return {
       statusCode: 500,

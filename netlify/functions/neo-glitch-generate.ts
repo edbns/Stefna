@@ -53,6 +53,9 @@ async function uploadAIMLToCloudinary(imageUrl: string, presetKey: string): Prom
   }
 }
 
+// Import shared token refresh utility
+import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
+
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
@@ -65,7 +68,31 @@ export const handler: Handler = async (event) => {
   try {
     // Extract user's JWT token for internal credit calls
     const userToken = event.headers.authorization?.replace('Bearer ', '') || '';
+    
+    if (!userToken) {
+      return {
+        statusCode: 401,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ 
+          error: 'AUTH_REQUIRED',
+          message: 'Authorization token required' 
+        })
+      };
+    }
+    
     console.log('🔍 [NeoGlitch] User token extracted for credit calls');
+    
+    // Validate token format (basic check)
+    if (userToken.split('.').length !== 3) {
+      return {
+        statusCode: 401,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ 
+          error: 'INVALID_TOKEN_FORMAT',
+          message: 'Invalid JWT token format' 
+        })
+      };
+    }
     
     const body = JSON.parse(event.body || '{}');
     console.log('🔍 [NeoGlitch] RAW INCOMING PAYLOAD:', JSON.stringify(body, null, 2));
@@ -111,9 +138,15 @@ export const handler: Handler = async (event) => {
     console.log('🔍 [NeoGlitch] Checking for existing run with runId:', runId.toString());
 
     // Check for existing run
-    const existingRun = await db.neoGlitchMedia.findUnique({
-      where: { runId: runId.toString() }
-    });
+    let existingRun;
+    try {
+      existingRun = await db.neoGlitchMedia.findUnique({
+        where: { runId: runId.toString() }
+      });
+    } catch (dbError: any) {
+      console.warn('⚠️ [NeoGlitch] Database check failed, proceeding with generation:', dbError.message);
+      existingRun = null;
+    }
 
     if (existingRun) {
       console.log('🔄 [NeoGlitch] Found existing run:', {
@@ -237,8 +270,22 @@ export const handler: Handler = async (event) => {
       })
     };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [NeoGlitch] Unexpected error:', error);
+    
+    // Check if it's a token expiration error
+    if (isTokenExpiredError(error.message)) {
+      return {
+        statusCode: 401,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          error: 'TOKEN_EXPIRED',
+          message: 'Your session has expired. Please refresh the page and try again.',
+          details: 'Authentication token expired during generation',
+          suggestion: 'Refresh your browser page to get a new session'
+        })
+      };
+    }
     
     return {
       statusCode: 500,
@@ -509,15 +556,18 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
   }
 }
 
-// Credit Deduction Function
+// Credit Deduction Function with token refresh
 async function deductCredits(userId: string, provider: 'stability' | 'aiml', runId: string, userToken: string) {
   try {
+    // Refresh token before making credit calls
+    const freshToken = await getFreshToken(userToken);
+    
     // First reserve the credits
     const reserveResponse = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-reserve`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
+        'Authorization': `Bearer ${freshToken}` // Use refreshed token
       },
       body: JSON.stringify({
         user_id: userId,
@@ -536,7 +586,7 @@ async function deductCredits(userId: string, provider: 'stability' | 'aiml', run
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
+          'Authorization': `Bearer ${freshToken}` // Use refreshed token
         },
         body: JSON.stringify({
           user_id: userId,
@@ -552,7 +602,7 @@ async function deductCredits(userId: string, provider: 'stability' | 'aiml', run
       } else {
         console.warn(`⚠️ [NeoGlitch] Failed to commit credit for ${provider}: ${commitResponse.status}`);
         // Try to refund since commit failed
-        await refundCredits(userId, runId, userToken);
+        await refundCredits(userId, runId, freshToken);
         return false;
       }
     } else {
@@ -565,14 +615,17 @@ async function deductCredits(userId: string, provider: 'stability' | 'aiml', run
   }
 }
 
-// Credit Refund Function
+// Credit Refund Function with token refresh
 async function refundCredits(userId: string, requestId: string, userToken: string) {
   try {
+    // Refresh token before making credit calls
+    const freshToken = await getFreshToken(userToken);
+    
     const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-finalize`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
+        'Authorization': `Bearer ${freshToken}` // Use refreshed token
       },
       body: JSON.stringify({
         user_id: userId,
@@ -590,7 +643,7 @@ async function refundCredits(userId: string, requestId: string, userToken: strin
       return false;
     }
   } catch (error) {
-    console.error(`❌ [NeoGlitch] Error refunding credit:`, error);
+    console.error('❌ [NeoGlitch] Error refunding credit:', error);
     return false;
   }
 }
