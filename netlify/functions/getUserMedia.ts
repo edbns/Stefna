@@ -79,6 +79,15 @@ export const handler: Handler = async (event) => {
       neoGlitchMedia: neoGlitchMedia.length
     });
 
+    // 🔍 DEBUG: Log the actual presetKey values from database
+    if (userMedia.length > 0) {
+      console.log('🔍 [getUserMedia] Regular media presetKey values:', userMedia.map(item => ({
+        id: item.id,
+        presetKey: item.presetKey,
+        prompt: item.prompt?.substring(0, 50) + '...'
+      })));
+    }
+
     // Transform regular media assets
     const regularMediaItems = userMedia.map(item => ({
       id: item.id,
