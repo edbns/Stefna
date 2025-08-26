@@ -233,33 +233,9 @@ export async function createMediaItem(mediaData: {
   parent_media_id?: string; // For remixes
 }): Promise<MediaItem> {
   try {
-    // Use our new Netlify function for creating media
-    const response = await authenticatedFetch('/.netlify/functions/save-media', {
-      method: 'POST',
-      body: JSON.stringify({
-        url: mediaData.url,
-        prompt: mediaData.prompt,
-        type: mediaData.type,
-        visibility: mediaData.visibility || 'private',
-        allow_remix: mediaData.allow_remix || false,
-        parent_asset_id: mediaData.parent_media_id
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to create media: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    const createdMedia = result.results?.[0] || result;
-    
-    return {
-      ...createdMedia,
-      owner_id: createdMedia.owner_id || createdMedia.user_id,
-      type: createdMedia.resource_type || createdMedia.type,
-      visibility: createdMedia.visibility || mediaData.visibility || 'private',
-      allow_remix: createdMedia.allow_remix || mediaData.allow_remix || false
-    };
+    // 🆕 [New System] All media creation now goes through dedicated generation functions
+    console.log('🆕 [New System] Media creation handled by dedicated functions - no old save-media needed');
+    throw new Error('Direct media creation is deprecated - use dedicated generation functions');
   } catch (error) {
     console.error('Failed to create media item:', error);
     throw error;

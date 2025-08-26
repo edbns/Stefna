@@ -53,44 +53,9 @@ export async function saveMedia(params: {
   shareNow?: boolean;
   mediaTypeHint?: 'image' | 'video';
 }) {
-  // Convert to the new save-media format with variations array
-  const savePayload = {
-    runId: crypto.randomUUID(), // Use global crypto object
-    presetId: params.presetKey,
-    allowPublish: params.shareNow || false,
-    source: params.sourcePublicId ? { url: params.sourcePublicId } : undefined,
-    variations: [{
-      url: params.resultUrl,
-      type: params.mediaTypeHint || 'image',
-      meta: {
-        presetKey: params.presetKey,
-        userId: params.userId,
-        // allowRemix removed
-        shareNow: params.shareNow,
-        source: 'database'
-      }
-    }],
-    tags: ['transformed', 'database'],
-    extra: {
-      source: 'database',
-      timestamp: new Date().toISOString(),
-      userId: params.userId
-    }
-  };
-
-  const res = await fetch(`/.netlify/functions/save-media`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(savePayload),
-  });
-  const text = await res.text();
-  let body: any = {};
-  try { body = JSON.parse(text); } catch { /* leave as text */ }
-  if (!res.ok || body?.ok === false) {
-    const msg = (body && body.error) ? body.error : (text || 'save-media failed');
-    throw new Error(msg);
-  }
-  return (body?.data ?? {}) as { public_id: string; resource_type: string; url: string; created_at: string };
+  // 🆕 [New System] All media saving now goes through dedicated generation functions
+  console.log('🆕 [New System] Media saving handled by dedicated functions - no old save-media needed');
+  throw new Error('Direct media saving is deprecated - use dedicated generation functions');
 }
 
 export async function togglePublish(publicId: string, publish: boolean) {

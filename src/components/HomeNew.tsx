@@ -2047,64 +2047,12 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           navigate('/auth');
           return;
         }
-        try {
-          const startRes = await fetch('/.netlify/functions/start-gen', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
-            body: JSON.stringify({
-              video_url: sourceUrl,  // Will be converted to frame on server
-              prompt: effectivePrompt,
-              duration: 3,  // I2V default duration
-              fps: 24,
-              stabilization: false,
-              frameSecond: 0  // Extract frame at start (TODO: add UI slider)
-            })
-          });
-          const startJson = await startRes.json().catch(() => ({}));
-          if (!startRes.ok || !startJson?.job_id) {
-            throw new Error(startJson?.error || 'start-v2v failed');
-          }
-          notifyQueue({ title: 'Added to queue', message: 'We\'ll start processing shortly.' })
-          setCurrentVideoJob({ id: startJson.job_id, status: 'queued' });
-          startVideoJobPolling(startJson.job_id, startJson.model, effectivePrompt);
-          // Optimistic placeholder in Profile: show processing tile
-          try {
-            const user = authService.getCurrentUser()
-            if (user?.id) {
-              const placeholder: UserMedia = {
-                id: `job-${startJson.job_id}`,
-                userId: user.id,
-                type: 'video',
-                url: sourceUrl!,
-                thumbnailUrl: sourceUrl!,
-                status: 'processing',
-                prompt: effectivePrompt,
-                aspectRatio: 4/3,
-                width: 800,
-                height: 600,
-                timestamp: new Date().toISOString(),
-                tokensUsed: 0,
-                likes: 0,
-                isPublic: shareToFeed,
-                tags: [],
-                metadata: { quality: 'high', generationTime: 0, modelVersion: 'pending' }
-              }
-              // Don't dispatch userMediaUpdated during generation - it clears the composer!
-              // The profile will refresh when the actual save completes
-            }
-          } catch {}
-        } catch (err:any) {
-          console.error('start-v2v error', err);
-          notifyError({ title: 'Failed', message: err?.message || 'Video job failed to start' });
-        }
-        endGeneration(genId);
-        setNavGenerating(false);
-        return;
+        // 🆕 [New System] All generation now goes through GenerationPipeline - no direct start-gen calls
+        console.log('🆕 [New System] Video generation handled by GenerationPipeline');
+        throw new Error('Direct start-gen calls are deprecated - use GenerationPipeline');
       }
 
       // 🎭 NEO TOKYO GLITCH: Follow Ghibli's exact pattern but with Stability.ai backend
-      let skipAimlApi = false;
-      
       if (kind === 'neotokyoglitch') {
         console.log('🚀 [NeoGlitch] Starting generation following Ghibli pattern');
         
@@ -3301,34 +3249,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       const creditsResult = await creditsResponse.json();
       console.log(`✅ Alt path: Credits reserved successfully. New balance: ${creditsResult.balance}`);
       
-      // 🧪 DEBUG: Log complete payload before second aimlApi call
-      console.log('🧪 DEBUG: Second aimlApi payload:', {
-        prompt: body.prompt || 'default',
-        image_url: body.image_url || body.init_image,
-        model: body.model || 'default',
-        strength: body.strength || 'default',
-        guidance_scale: body.guidance_scale || 'default',
-        cfg_scale: body.cfg_scale || 'default',
-        denoising_strength: body.denoising_strength || 'default',
-        full_payload: body
-      });
-
-              // 🎯 Call AIML API for custom generation (flux/dev + flux/pro fallback)
-        const res = await authenticatedFetch('/.netlify/functions/aimlApi', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        console.error('Generation failed', err)
-        endGeneration(genId)
-        setNavGenerating(false)
-        return
-      }
-      // Success: stop progress
-      endGeneration(genId)
-      setNavGenerating(false)
+      // 🎯 All generation now goes through GenerationPipeline - no direct aimlApi calls
+      console.log('🆕 [New System] All generation goes through GenerationPipeline');
+      throw new Error('Direct aimlApi calls are deprecated - use GenerationPipeline');
       
       // Keep preset selected for user convenience (stateless generation doesn't need clearing)
       
@@ -3974,41 +3897,12 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
       console.log('🚀 Calling AIML API for prompt enhancement...')
       
-      // Call AIML API for text enhancement (free)
-      const enhancementPayload = {
-        action: 'enhance_prompt',
-        prompt: originalPrompt,
-        enhancement_type: 'artistic_photography'
-      };
-      
-      // 🧪 DEBUG: Log prompt enhancement payload
-      console.log('🧪 DEBUG: Prompt enhancement payload:', enhancementPayload);
-      
-              // 🎯 Call AIML API for preset generation (flux/dev + flux/pro fallback)
-        const response = await authenticatedFetch('/.netlify/functions/aimlApi', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(enhancementPayload)
-      })
-
-      if (!response.ok) {
-        throw new Error(`AIML API error: ${response.status}`)
-      }
-
-      const data = await response.json()
-      
-      if (data.enhanced_prompt) {
-        return data.enhanced_prompt
-      } else {
-        // Fallback enhancement if AIML doesn't return expected format
-        return enhancePromptLocally(originalPrompt)
-      }
+      // 🎯 All generation now goes through GenerationPipeline - no direct aimlApi calls
+      console.log('🆕 [New System] All generation goes through GenerationPipeline');
+      return enhancePromptLocally(originalPrompt);
     } catch (error) {
-      console.error('❌ AIML API enhancement failed, using local fallback:', error)
-      // Use local enhancement as fallback
-      return enhancePromptLocally(originalPrompt)
+      console.error('❌ Prompt enhancement failed, using local fallback:', error);
+      return enhancePromptLocally(originalPrompt);
     }
   }
 

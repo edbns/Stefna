@@ -64,45 +64,9 @@ validateAllSync()
 // Async validation for story themes
 validateAll().catch(console.error)
 
-// Import test in development - REMOVED: old test files no longer exist
+// Development mode - all old test functions removed
 if (import.meta.env.DEV) {
-  // Add debug helper for save-media testing
-  window.testSaveMedia = async () => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      console.error('No auth token found');
-      return;
-    }
-    
-    console.log('🧪 Testing save-media with minimal payload...');
-    try {
-      const res = await fetch('/.netlify/functions/save-media', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          kind: 'image', 
-          url: 'https://picsum.photos/512' 
-        })
-      });
-      
-      const text = await res.text();
-      console.log(`📡 save-media response: ${res.status} ${res.statusText}`);
-      console.log('📄 Response body:', text);
-      
-      if (!res.ok) {
-        console.error(`❌ save-media failed: ${res.status} ${text}`);
-      } else {
-        console.log('✅ save-media succeeded!');
-      }
-    } catch (error) {
-      console.error('🚨 save-media test error:', error);
-    }
-  };
-  
-  console.log('🔧 Development mode: Use window.testSaveMedia() to test save-media endpoint');
+  console.log('🔧 Development mode: All generation now uses dedicated functions');
 }
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 

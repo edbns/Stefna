@@ -138,49 +138,9 @@ export async function runPresetI2I(asset, presetName, opts = {}) {
     }
   );
   
-  const res = await signedFetch("/.netlify/functions/aimlApi", {
-    method: "POST",
-    body: JSON.stringify({
-      // Force I2I via presence of image_url
-      image_url: asset.url,      // original URL, no downscale
-      width: w, 
-      height: h,                 // exact (or clamped only if over hard limits)
-      prompt: preset.prompt,
-      negative_prompt: preset.negative,
-      strength: 0.8,             // crank it so changes are obvious
-      steps: DEFAULTS.STEPS,
-      guidance_scale: DEFAULTS.GUIDANCE
-    }),
-  });
-  
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || "Generation failed");
-  }
-  
-  const result = await res.json();
-  
-  console.log("AIML echo:", result.echo);  // Debug what actually happened
-  
-  if (!result.result_url) {
-    console.warn("No result_url from server");
-    throw new Error("Generation failed - no result URL");
-  }
-  
-  if (result.result_url === result.source_url) {
-    console.warn("Result equals source (not transformed). Try strength 0.9.");
-    throw new Error("Generation didn't change much. Try a higher strength or another preset.");
-  }
-
-  // Add cache-buster to ensure fresh display
-  const displayUrl = `${result.result_url}${result.result_url.includes("?") ? "&" : "?"}t=${Date.now()}`;
-  
-  return {
-    image_url: displayUrl,       // Use cache-busted result URL
-    original_asset: asset,
-    mode: result.mode,
-    source_url: result.source_url
-  };
+  // 🆕 [New System] All generation now goes through dedicated functions
+  console.log('🆕 [New System] Generation handled by dedicated functions - no old aimlApi needed');
+  throw new Error('Direct aimlApi calls are deprecated - use dedicated generation functions');
 }
 
 // Legacy I2I function for backward compatibility
@@ -194,41 +154,9 @@ export async function runI2I(file, prompt, opts = {}) {
   const width = asset.width || 1024;
   const height = asset.height || 1024;
   
-  const res = await signedFetch("/.netlify/functions/aimlApi", {
-    method: "POST",
-    body: JSON.stringify({
-      mode: "i2i",
-      prompt,
-      width,
-      height,
-      steps: opts.steps || 40,
-      guidance_scale: opts.guidance_scale || 7.5,
-      negative_prompt: opts.negative_prompt || "photorealistic, realistic skin, film grain, frame, border, watermark, text, caption, vignette",
-      image_url: asset.url,
-      strength: opts.strength || 0.85,  // Bump to 0.85 for stronger stylization
-    }),
-  });
-  
-  if (!res.ok) throw new Error("Generation failed");
-  const result = await res.json();
-  
-  console.log('🔍 Backend response for I2I:', result);
-  console.log('🔍 Available keys:', Object.keys(result));
-  
-  // Handle new response format
-  const image_url = result.result_url || result.image_url;
-  
-  // Guard: if backend accidentally sent the same URL, alert user
-  if (!image_url || (result.source_url && image_url === result.source_url)) {
-    throw new Error("Generation didn't change much. Try a higher strength (e.g., 0.65) or another preset.");
-  }
-  
-  return {
-    image_url,
-    original_asset: asset,
-    mode: result.mode,
-    source_url: result.source_url
-  };
+  // 🆕 [New System] All generation now goes through dedicated functions
+  console.log('🆕 [New System] Generation handled by dedicated functions - no old aimlApi needed');
+  throw new Error('Direct aimlApi calls are deprecated - use dedicated generation functions');
 }
 
 // High-res VIDEO-TO-VIDEO with preset support
