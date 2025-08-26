@@ -170,7 +170,7 @@ class GenerationPipeline {
         success: false,
         status: 'failed',
         error: error instanceof Error ? error.message : 'Unknown error',
-        system: 'old',
+        system: 'new', // All systems now use new architecture
         type: request.type
       };
     }

@@ -2371,50 +2371,13 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         full_payload: payload
       });
 
-      // Skip aimlApi if we already have Replicate results (Neo Glitch only)
-      if (skipAimlApi && replicateResultUrl) {
-        console.log('🎭 Skipping aimlApi - using Replicate results');
-        resultUrl = replicateResultUrl;
-        allResultUrls = replicateAllResultUrls;
-        variationsGenerated = replicateVariationsGenerated;
-        body = { success: true, image_url: resultUrl };
-        
-        // Ensure allResultUrls is properly set for Neo Tokyo Glitch
-        if (kind === 'neotokyoglitch' && (!allResultUrls || allResultUrls.length === 0)) {
-          allResultUrls = [replicateResultUrl];
-          console.log('🎭 Fixed Neo Tokyo Glitch allResultUrls:', allResultUrls);
-        }
-        
-        // Debug logging for Neo Tokyo Glitch URL handling
-        if (kind === 'neotokyoglitch') {
-          console.log('🎭 Neo Tokyo Glitch URL Debug:', {
-            replicateResultUrl,
-            replicateAllResultUrls,
-            allResultUrls,
-            resultUrl,
-            body
-          });
-        }
-        
-        // For Neo Tokyo Glitch, ensure we have a proper body structure for asset creation
-        if (kind === 'neotokyoglitch') {
-          body = {
-            success: true,
-            image_url: resultUrl,
-            modeMeta: generationMeta,
-            prompt: effectivePrompt
-          };
-          console.log('🎭 Neo Tokyo Glitch body prepared for asset creation:', body);
-        }
-        
-        // Continue to result processing
-      } else {
-        // Add timeout guard to prevent 504 errors
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-          console.warn('⚠️ Request timeout approaching, aborting to prevent 504');
-          controller.abort();
-        }, 24000); // 24s cushion before Netlify's 26s limit
+      // All generation now uses the new GenerationPipeline system
+      // Add timeout guard to prevent 504 errors
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.warn('⚠️ Request timeout approaching, aborting to prevent 504');
+        controller.abort();
+      }, 24000); // 24s cushion before Netlify's 26s limit
 
         try {
           // 🆕 Use NEW GenerationPipeline for rock-solid stability
@@ -2449,19 +2412,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             // New system is processing
             throw new Error('Generation in progress - please wait');
           } else {
-            // New system failed, fall back to old system
-            console.warn('⚠️ [GenerationPipeline] New system failed, falling back to old aimlApi');
-            
-            res = await authenticatedFetch('/.netlify/functions/aimlApi', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-              signal: controller.signal
-            });
-            
-            body = await res.json().catch(() => ({}));
-            console.info('🔄 [Fallback] aimlApi status', res.status);
-            console.info('🔄 [Fallback] aimlApi body', body);
+            // New system failed - no fallback to old system
+            console.error('❌ [GenerationPipeline] New system failed:', generationResult.error);
+            throw new Error(generationResult.error || 'Generation failed');
           }
         } catch (error) {
           clearTimeout(timeoutId); // Clear timeout on error
