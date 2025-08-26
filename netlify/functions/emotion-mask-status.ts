@@ -11,12 +11,11 @@
 import { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
 
-// Initialize Prisma client inside handler to avoid bundling issues
-let db: PrismaClient;
+// Prisma client will be initialized inside handler
 
 export const handler: Handler = async (event) => {
   // Initialize Prisma client inside handler to avoid bundling issues
-  db = new PrismaClient();
+  const db = new PrismaClient();
   
   if (event.httpMethod !== 'POST') {
     return {

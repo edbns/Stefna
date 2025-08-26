@@ -20,8 +20,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Initialize Prisma client inside handler to avoid bundling issues
-let db: PrismaClient;
+// Prisma client will be initialized inside handler
 
 // Helper function to upload AIML results to Cloudinary
 async function uploadAIMLToCloudinary(imageUrl: string, presetKey: string): Promise<{ url: string; publicId: string }> {
@@ -139,7 +138,7 @@ async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey:
 
 export const handler: Handler = async (event) => {
   // Initialize Prisma client inside handler to avoid bundling issues
-  db = new PrismaClient();
+  const db = new PrismaClient();
   
   if (event.httpMethod !== 'POST') {
     return {
