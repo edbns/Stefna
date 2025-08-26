@@ -11,8 +11,47 @@
 import { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const db = new PrismaClient();
+
+// Helper function to upload AIML results to Cloudinary
+async function uploadAIMLToCloudinary(imageUrl: string, presetKey: string): Promise<{ url: string; publicId: string }> {
+  try {
+    console.log('☁️ [NeoGlitch] Uploading AIML result to Cloudinary:', imageUrl.substring(0, 60) + '...');
+    
+    const result = await cloudinary.uploader.upload(imageUrl, {
+      resource_type: 'image',
+      tags: ['neo-glitch', 'aiml-fallback', `preset:${presetKey}`],
+      folder: 'neo-glitch',
+      transformation: [
+        { quality: 'auto:good', fetch_format: 'auto' },
+        { width: 1024, height: 1024, crop: 'limit' }
+      ]
+    });
+    
+    console.log('✅ [NeoGlitch] Cloudinary upload successful:', {
+      publicId: result.public_id,
+      url: result.secure_url,
+      size: result.bytes
+    });
+    
+    return {
+      url: result.secure_url,
+      publicId: result.public_id
+    };
+  } catch (error) {
+    console.error('❌ [NeoGlitch] Cloudinary upload failed:', error);
+    throw new Error(`Cloudinary upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -235,22 +274,36 @@ async function processGenerationAsync(
       if (stabilityResult && stabilityResult.imageUrl && stabilityResult.status === 'completed') {
         console.log('🎉 [NeoGlitch] Stability.ai returned immediate result!');
         
-        // Update database record with completed status
+        // 🚀 UNIFIED CLOUDINARY PIPELINE: Upload Stability.ai result to Cloudinary
+        let finalImageUrl = stabilityResult.imageUrl;
+        let cloudinaryPublicId: string | null = null;
+        
+        try {
+          const cloudinaryResult = await uploadAIMLToCloudinary(stabilityResult.imageUrl, presetKey);
+          finalImageUrl = cloudinaryResult.url;
+          cloudinaryPublicId = cloudinaryResult.publicId;
+          console.log('✅ [NeoGlitch] Stability.ai result uploaded to Cloudinary successfully');
+        } catch (cloudinaryError) {
+          console.warn('⚠️ [NeoGlitch] Cloudinary upload failed, using original Stability.ai URL:', cloudinaryError);
+          // Fallback to original URL if Cloudinary fails
+        }
+        
+        // Update database record with Cloudinary URL (or fallback to Stability.ai URL)
         await db.neoGlitchMedia.update({
           where: { id: recordId },
           data: {
             status: 'completed',
-            imageUrl: stabilityResult.imageUrl,
+            imageUrl: finalImageUrl, // ✅ Use Cloudinary URL instead of Stability.ai URL
             stabilityJobId: stabilityResult.stabilityJobId
           }
         });
         
-        console.log('✅ [NeoGlitch] Database updated with completed status and image URL');
+        console.log('✅ [NeoGlitch] Database updated with completed status and Cloudinary URL');
         
         // Return completed status so frontend gets immediate result
         return {
           status: 'completed',
-          imageUrl: stabilityResult.imageUrl,
+          imageUrl: finalImageUrl, // ✅ Return Cloudinary URL
           stabilityJobId: stabilityResult.stabilityJobId
         };
       }
@@ -292,12 +345,26 @@ async function processGenerationAsync(
         if (aimlResult && aimlResult.imageUrl) {
           console.log('✅ [NeoGlitch] AIML fallback succeeded!');
           
-          // Update database record with AIML result
+          // 🚀 UNIFIED CLOUDINARY PIPELINE: Upload AIML result to Cloudinary
+          let finalImageUrl = aimlResult.imageUrl;
+          let cloudinaryPublicId: string | null = null;
+          
+          try {
+            const cloudinaryResult = await uploadAIMLToCloudinary(aimlResult.imageUrl, presetKey);
+            finalImageUrl = cloudinaryResult.url;
+            cloudinaryPublicId = cloudinaryResult.publicId;
+            console.log('✅ [NeoGlitch] AIML result uploaded to Cloudinary successfully');
+          } catch (cloudinaryError) {
+            console.warn('⚠️ [NeoGlitch] Cloudinary upload failed, using original AIML URL:', cloudinaryError);
+            // Fallback to original URL if Cloudinary fails
+          }
+          
+          // Update database record with Cloudinary URL (or fallback to AIML URL)
           await db.neoGlitchMedia.update({
             where: { id: recordId },
             data: {
               status: 'completed',
-              imageUrl: aimlResult.imageUrl,
+              imageUrl: finalImageUrl, // ✅ Use Cloudinary URL instead of AIML URL
               stabilityJobId: `aiml_${runId}` // Mark as AIML generation
             }
           });
@@ -308,7 +375,7 @@ async function processGenerationAsync(
           console.log('✅ [NeoGlitch] Async generation completed with AIML fallback');
           return {
             status: 'completed',
-            imageUrl: aimlResult.imageUrl,
+            imageUrl: finalImageUrl, // ✅ Return Cloudinary URL instead of AIML URL
             stabilityJobId: `aiml_${runId}`
           };
         } else {
