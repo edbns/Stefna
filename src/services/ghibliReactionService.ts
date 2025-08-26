@@ -1,0 +1,270 @@
+// src/services/ghibliReactionService.ts
+// Ghibli Reaction Service - Following NeoGlitch pattern for rock-solid stability
+// 
+// 🎯 SERVICE STRATEGY:
+// 1. Clean, focused service for Ghibli Reaction only
+// 2. Same pattern as NeoGlitchService (which works perfectly)
+// 3. Handles generation, status checking, and media management
+// 4. Integrates with new ghibli_reaction_media table
+
+import { authenticatedFetch } from '../utils/apiClient';
+
+export interface GhibliReactionGenerationRequest {
+  prompt: string;
+  presetKey: string;
+  sourceAssetId: string;
+  userId: string;
+  runId: string;
+  meta?: any;
+}
+
+export interface GhibliReactionGenerationResult {
+  success: boolean;
+  jobId?: string;
+  runId?: string;
+  status: 'completed' | 'processing' | 'failed';
+  imageUrl?: string;
+  aimlJobId?: string;
+  provider?: string;
+  error?: string;
+}
+
+export interface GhibliReactionStatus {
+  id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  imageUrl?: string;
+  aimlJobId?: string;
+  createdAt: Date;
+  preset: string;
+  prompt: string;
+}
+
+class GhibliReactionService {
+  private static instance: GhibliReactionService;
+
+  private constructor() {}
+
+  static getInstance(): GhibliReactionService {
+    if (!GhibliReactionService.instance) {
+      GhibliReactionService.instance = new GhibliReactionService();
+    }
+    return GhibliReactionService.instance;
+  }
+
+  /**
+   * Start a Ghibli Reaction generation using AIML API
+   * Creates record in ghibli_reaction_media and starts AIML generation
+   */
+  async startGeneration(request: GhibliReactionGenerationRequest): Promise<GhibliReactionGenerationResult> {
+    try {
+      console.log('🎭 [GhibliReaction] Starting generation with AIML API:', {
+        presetKey: request.presetKey,
+        runId: request.runId,
+        hasSource: !!request.sourceAssetId
+      });
+
+      // Start AIML generation directly
+      const aimlRes = await authenticatedFetch('/.netlify/functions/ghibli-reaction-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: request.prompt,
+          presetKey: request.presetKey,
+          sourceUrl: request.sourceAssetId, // Use sourceUrl for clarity
+          userId: request.userId,
+          runId: request.runId,
+          generationMeta: request.meta || {}
+        })
+      });
+
+      if (!aimlRes.ok) {
+        const error = await aimlRes.json().catch(() => ({}));
+        throw new Error(error.error || `Failed to start AIML generation: ${aimlRes.status}`);
+      }
+
+      const aimlResult = await aimlRes.json();
+      console.log('🚀 [GhibliReaction] AIML generation response:', {
+        status: aimlResult.status,
+        provider: aimlResult.provider,
+        jobId: aimlResult.jobId,
+        imageUrl: aimlResult.imageUrl,
+        fullResponse: aimlResult
+      });
+
+      // Handle immediate completion from backend
+      if (aimlResult.status === 'completed' && aimlResult.imageUrl) {
+        console.log('🎉 [GhibliReaction] Generation completed immediately!');
+        return {
+          success: true,
+          jobId: aimlResult.jobId,
+          runId: aimlResult.runId,
+          status: 'completed',
+          imageUrl: aimlResult.imageUrl,
+          aimlJobId: aimlResult.aimlJobId,
+          provider: aimlResult.provider
+        };
+      }
+
+      // Handle processing status
+      if (aimlResult.status === 'processing' || aimlResult.status === 'pending') {
+        console.log('🔄 [GhibliReaction] Generation in progress, will need polling');
+        return {
+          success: true,
+          jobId: aimlResult.jobId,
+          runId: aimlResult.runId,
+          status: 'processing',
+          aimlJobId: aimlResult.aimlJobId,
+          provider: aimlResult.provider
+        };
+      }
+
+      // Handle failed status
+      if (aimlResult.status === 'failed') {
+        console.error('❌ [GhibliReaction] Generation failed:', aimlResult);
+        return {
+          success: false,
+          status: 'failed',
+          error: aimlResult.error || 'Generation failed'
+        };
+      }
+
+      // Unexpected response
+      console.warn('⚠️ [GhibliReaction] Unexpected response status:', aimlResult.status);
+      return {
+        success: false,
+        status: 'failed',
+        error: `Unexpected status: ${aimlResult.status}`
+      };
+
+    } catch (error) {
+      console.error('❌ [GhibliReaction] Start generation failed:', error);
+      return {
+        success: false,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Poll for generation completion
+   * Since AIML returns immediately, this is mainly for status checking
+   */
+  async pollForCompletion(aimlJobId: string, maxAttempts: number = 10): Promise<GhibliReactionStatus> {
+    try {
+      console.log('🔍 [GhibliReaction] Polling for completion:', aimlJobId);
+      
+      // For Ghibli Reaction, AIML usually returns immediately
+      // This polling is mainly for status verification
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        console.log(`🔍 [GhibliReaction] Poll attempt ${attempt}/${maxAttempts}`);
+        
+        try {
+          // Check status by querying the database directly
+          const statusRes = await authenticatedFetch('/.netlify/functions/ghibli-reaction-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ aimlJobId })
+          });
+
+          if (statusRes.ok) {
+            const status = await statusRes.json();
+            console.log('✅ [GhibliReaction] Status check successful:', status);
+            
+            if (status.status === 'completed' && status.imageUrl) {
+              return {
+                id: status.id,
+                status: 'completed',
+                imageUrl: status.imageUrl,
+                aimlJobId: status.aimlJobId,
+                createdAt: new Date(status.createdAt),
+                preset: status.preset,
+                prompt: status.prompt
+              };
+            }
+            
+            if (status.status === 'failed') {
+              throw new Error('Generation failed');
+            }
+          }
+        } catch (pollError) {
+          console.warn(`⚠️ [GhibliReaction] Poll attempt ${attempt} failed:`, pollError);
+        }
+        
+        // Wait before next attempt
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+      throw new Error('Polling completed unexpectedly');
+    } catch (error) {
+      console.error('❌ [GhibliReaction] Polling failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get Ghibli Reaction media for a user
+   */
+  async getUserGhibliReactionMedia(userId: string, limit: number = 50): Promise<GhibliReactionStatus[]> {
+    try {
+      console.log('🔍 [GhibliReaction] Getting user media:', userId);
+      
+      const response = await authenticatedFetch('/.netlify/functions/getUserMedia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, limit, type: 'ghibli-reaction' })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get user media: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.items || [];
+    } catch (error) {
+      console.error('❌ [GhibliReaction] Get user media failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete Ghibli Reaction media
+   */
+  async deleteMedia(mediaId: string, userId: string): Promise<boolean> {
+    try {
+      console.log('🗑️ [GhibliReaction] Deleting media:', mediaId);
+      
+      const response = await authenticatedFetch('/.netlify/functions/delete-media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mediaId, userId })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete media: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.success || false;
+    } catch (error) {
+      console.error('❌ [GhibliReaction] Delete media failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get available Ghibli Reaction presets
+   */
+  getAvailablePresets(): string[] {
+    return ['ghibli_reaction'];
+  }
+
+  /**
+   * Validate preset key
+   */
+  isValidPreset(presetKey: string): boolean {
+    return this.getAvailablePresets().includes(presetKey);
+  }
+}
+
+export default GhibliReactionService;

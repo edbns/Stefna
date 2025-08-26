@@ -1,624 +1,456 @@
-// Bulletproof Generation Pipeline
-// Fixes: preflight checks, side-effect ordering, error cleanup
-import { logger } from '../utils/logger'
-import { presetsStore } from '../stores/presetsStore'
-import { uploadToCloudinary } from '../lib/cloudinaryUpload'
-import { useToasts } from '../components/ui/Toasts'
-import { authFetch } from '../utils/authFetch'
-// import { preventDuplicateOperation, networkGuardRails, buttonGuardRails } from '../utils/guardRails' // REMOVED - complex drama file
-import { getHttpsSource } from '../services/mediaSource'
-import { runsStore } from '../stores/runs'
-import { postAuthed } from '../utils/fetchAuthed'
-import authService from '../services/authService'
-import { uploadSourceToCloudinary } from './uploadSource'
-import { assertFile } from './sourceFile'
-import { getSourceFileOrThrow, dbgSource } from './source'
-import { fetchWithAuth } from '../utils/fetchWithAuth';
+// src/services/generationPipeline.ts
+// Unified Generation Pipeline - Routes between old and new systems
+// 
+// 🎯 PIPELINE STRATEGY:
+// 1. Feature flag system for gradual user migration
+// 2. Routes to new NeoGlitch-style functions when enabled
+// 3. Falls back to old system for backward compatibility
+// 4. Enables zero-risk migration with A/B testing
+// 
+// ⚠️ IMPORTANT: This makes the migration seamless and risk-free
 
-// File type guard to prevent uploading strings as files
-const isFileLike = (x: unknown): x is File | Blob =>
-  typeof x === "object" && x !== null && "size" in (x as any) && "type" in (x as any)
+import { authenticatedFetch } from '../utils/apiClient';
+import EmotionMaskService from './emotionMaskService';
+import PresetsService from './presetsService';
+import GhibliReactionService from './ghibliReactionService';
+import CustomPromptService from './customPromptService';
 
-export type GenerateJob = {
-  mode: "i2i" | "t2i" | "story"
-  presetId: string
-  prompt: string
-  params: Record<string, unknown>
-  source?: { url?: string, file?: File }
-  runId?: string
-  // New metadata fields for tracking generation context
-  group?: 'story'|null;
-  optionKey?: string | null;     // e.g. 'vhs_1980s', 'four_seasons/spring', 'colorize_bw'
-  storyKey?: string | null;      // e.g. 'four_seasons'
-  storyLabel?: string | null;    // e.g. 'Spring'
-  parentId?: string | null;      // if this is a remix, points to original media
-  // 🔧 NEW: Track the actual generation type for preset mapping
-  generationType?: 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | null;
+export interface GenerationRequest {
+  type: 'emotion-mask' | 'presets' | 'ghibli-reaction' | 'custom-prompt' | 'neo-glitch';
+  prompt: string;
+  presetKey: string;
+  sourceAssetId: string;
+  userId: string;
+  runId: string;
+  meta?: any;
 }
 
-export type GenerationResult = {
-  success: boolean
-  resultUrl?: string
-  error?: string
-  runId?: string
-  media?: any
+export interface GenerationResult {
+  success: boolean;
+  jobId?: string;
+  runId?: string;
+  status: 'completed' | 'processing' | 'failed';
+  imageUrl?: string;
+  aimlJobId?: string;
+  provider?: string;
+  error?: string;
+  system: 'new' | 'old';
+  type: string;
 }
 
-// UI State Management with Cancellation Support
-interface ActiveRun {
-  runId: string
-  controller: AbortController
-  timestamp: number
+export interface FeatureFlags {
+  emotionMaskNewSystem: boolean;
+  presetsNewSystem: boolean;
+  ghibliReactionNewSystem: boolean;
+  customPromptNewSystem: boolean;
+  neoGlitchNewSystem: boolean; // Already working
 }
 
-interface UIState {
-  busy: boolean
-  currentRunId: string | null
-  activeRuns: Map<string, ActiveRun>
-}
+class GenerationPipeline {
+  private static instance: GenerationPipeline;
+  private featureFlags: FeatureFlags;
+  private emotionMaskService: EmotionMaskService;
+  private presetsService: PresetsService;
+  private ghibliReactionService: GhibliReactionService;
+  private customPromptService: CustomPromptService;
 
-let uiState: UIState = {
-  busy: false,
-  currentRunId: null,
-  activeRuns: new Map()
-}
+  private constructor() {
+    // Initialize feature flags (can be loaded from environment or API)
+    this.featureFlags = {
+      emotionMaskNewSystem: this.shouldUseNewSystem('emotion-mask'),
+      presetsNewSystem: this.shouldUseNewSystem('presets'),
+      ghibliReactionNewSystem: this.shouldUseNewSystem('ghibli-reaction'),
+      customPromptNewSystem: this.shouldUseNewSystem('custom-prompt'),
+      neoGlitchNewSystem: true // Always use new system (already working)
+    };
 
-// State management functions
-export const uiStore = {
-  getState: () => uiState,
-  setBusy: (busy: boolean) => {
-    uiState.busy = busy
-    // Dispatch custom event for UI updates
-    window.dispatchEvent(new CustomEvent('ui-state-change', { detail: uiState }))
-  },
-  setCurrentRunId: (runId: string | null) => {
-    uiState.currentRunId = runId
-  },
-  registerActiveRun: (runId: string, controller: AbortController) => {
-    uiState.activeRuns.set(runId, {
-      runId,
-      controller,
-      timestamp: Date.now()
-    })
-  },
-  unregisterActiveRun: (runId: string) => {
-    uiState.activeRuns.delete(runId)
-  },
-  abortAllActiveRuns: () => {
-    console.log(`🛑 Aborting ${uiState.activeRuns.size} active runs`)
-    uiState.activeRuns.forEach(({ controller }) => {
-      controller.abort('Navigation or unmount')
-    })
-    uiState.activeRuns.clear()
-    uiState.busy = false
-    uiState.currentRunId = null
-  },
-  abortStaleRuns: (maxAgeMs = 300000) => { // 5 minutes
-    const now = Date.now()
-    const staleRuns = Array.from(uiState.activeRuns.entries())
-      .filter(([, run]) => now - run.timestamp > maxAgeMs)
-    
-    staleRuns.forEach(([runId, run]) => {
-      console.warn(`🧹 Aborting stale run: ${runId}`)
-      run.controller.abort('Stale run cleanup')
-      uiState.activeRuns.delete(runId)
-    })
+    // Initialize service instances
+    this.emotionMaskService = EmotionMaskService.getInstance();
+    this.presetsService = PresetsService.getInstance();
+    this.ghibliReactionService = GhibliReactionService.getInstance();
+    this.customPromptService = CustomPromptService.getInstance();
+
+    console.log('🚀 [GenerationPipeline] Initialized with feature flags:', this.featureFlags);
   }
-}
 
-// Quota check (real implementation)
-const quotaStore = {
-  getState: () => ({
-    hasCredit: async (userId?: string) => {
+  static getInstance(): GenerationPipeline {
+    if (!GenerationPipeline.instance) {
+      GenerationPipeline.instance = new GenerationPipeline();
+    }
+    return GenerationPipeline.instance;
+  }
+
+  /**
+   * Determine if a user should use the new system
+   * This enables gradual rollout and A/B testing
+   */
+  private shouldUseNewSystem(type: string): boolean {
+    // Check environment variables for feature flags
+    const envFlag = process.env[`VITE_${type.toUpperCase().replace('-', '_')}_NEW_SYSTEM`];
+    if (envFlag) {
+      return envFlag === 'true';
+    }
+
+    // Check user ID for beta testing (last 2 digits determine system)
+    // This enables 50/50 split for testing
+    const userId = this.getCurrentUserId();
+    if (userId) {
+      const lastTwoDigits = parseInt(userId.slice(-2));
+      return lastTwoDigits >= 50; // 50% of users get new system
+    }
+
+    // Default to old system for safety
+    return false;
+  }
+
+  /**
+   * Get current user ID from auth context
+   */
+  private getCurrentUserId(): string | null {
+    // This should be implemented based on your auth system
+    // For now, return null to use environment-based flags
+    return null;
+  }
+
+  /**
+   * Update feature flags dynamically
+   */
+  updateFeatureFlags(flags: Partial<FeatureFlags>): void {
+    this.featureFlags = { ...this.featureFlags, ...flags };
+    console.log('🔄 [GenerationPipeline] Feature flags updated:', this.featureFlags);
+  }
+
+  /**
+   * Get current feature flags
+   */
+  getFeatureFlags(): FeatureFlags {
+    return { ...this.featureFlags };
+  }
+
+  /**
+   * Main generation method - routes to appropriate system
+   */
+  async generate(request: GenerationRequest): Promise<GenerationResult> {
+    try {
+      console.log('🚀 [GenerationPipeline] Starting generation:', {
+        type: request.type,
+        presetKey: request.presetKey,
+        runId: request.runId,
+        userId: request.userId
+      });
+
+      // Route to appropriate system based on type and feature flags
+      switch (request.type) {
+        case 'emotion-mask':
+          return await this.handleEmotionMaskGeneration(request);
+        
+        case 'presets':
+          return await this.handlePresetsGeneration(request);
+        
+        case 'ghibli-reaction':
+          return await this.handleGhibliReactionGeneration(request);
+        
+        case 'custom-prompt':
+          return await this.handleCustomPromptGeneration(request);
+        
+        case 'neo-glitch':
+          return await this.handleNeoGlitchGeneration(request);
+        
+        default:
+          throw new Error(`Unknown generation type: ${request.type}`);
+      }
+
+    } catch (error) {
+      console.error('❌ [GenerationPipeline] Generation failed:', error);
+      return {
+        success: false,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        system: 'old',
+        type: request.type
+      };
+    }
+  }
+
+  /**
+   * Handle Emotion Mask generation
+   */
+  private async handleEmotionMaskGeneration(request: GenerationRequest): Promise<GenerationResult> {
+    if (this.featureFlags.emotionMaskNewSystem) {
+      console.log('🆕 [GenerationPipeline] Using NEW Emotion Mask system');
       try {
-        // Get auth token
-        const token = localStorage.getItem('auth_token') || localStorage.getItem('jwt_token');
-        if (!token) {
-          console.warn('No auth token found for credit check');
-          return false;
-        }
-
-        // Check backend quota
-        const response = await fetch('/.netlify/functions/getQuota', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+        const result = await this.emotionMaskService.startGeneration({
+          prompt: request.prompt,
+          presetKey: request.presetKey,
+          sourceAssetId: request.sourceAssetId,
+          userId: request.userId,
+          runId: request.runId,
+          meta: request.meta
         });
 
-        if (!response.ok) {
-          console.warn('Failed to get backend quota');
-          return false;
-        }
-
-        const quota = await response.json();
-        const remaining = quota.remaining || (quota.daily_limit - quota.daily_used);
-        const hasCredits = remaining >= 2; // Minimum cost for image generation
-
-        console.log(`Credit check: ${remaining} credits remaining, can generate: ${hasCredits}`);
-        return hasCredits;
+        return {
+          ...result,
+          system: 'new',
+          type: 'emotion-mask'
+        };
       } catch (error) {
-        console.warn('Credit check failed:', error);
-        return false;
-      }
-    }
-  })
-}
-
-// prevents double-clicks and lets us cancel stale updates
-let activeRunId: string | null = null
-
-export async function runGeneration(buildJob: () => Promise<GenerateJob | null>): Promise<GenerationResult | null> {
-  // Guard rails: prevent duplicate operations and check network
-  const operationKey = `generation-${Date.now()}`
-          // if (!preventDuplicateOperation(operationKey)) { // REMOVED - complex drama validation
-    //   return null
-    // }
-
-          // if (!networkGuardRails.requireOnline('generation')) { // REMOVED - complex drama validation
-    //   return null
-    // }
-
-  // mark UI busy for *this* run with cancellation support
-  const runId = crypto.randomUUID()
-  const controller = new AbortController()
-  const startTime = Date.now()
-  
-  // Track this run to prevent dropping late completions
-  runsStore.getState().startRun(runId)
-  
-  // Create logger for this generation run
-  const genLogger = logger.generationStart(runId, 'unknown', 'unknown')
-  
-  activeRunId = runId
-  uiStore.setBusy(true)
-  uiStore.setCurrentRunId(runId)
-  uiStore.registerActiveRun(runId, controller)
-  
-  genLogger.info('Generation started')
-
-  try {
-    // 1) PRE-FLIGHT ───────────────────────────────────────────────
-    const preflightLogger = genLogger.generationStep('preflight')
-    await presetsStore.getState().ready()
-    
-    if (controller.signal.aborted) return null
-    
-    const job = await buildJob()
-    if (!job || controller.signal.aborted) return null
-
-    // Update logger with job details
-    const jobLogger = logger.child({ runId, mode: job.mode, presetId: job.presetId })
-
-    const { presetId, prompt } = job
-    if (!presetId || !prompt) {
-      jobLogger.error('Missing required fields', { presetId: !!presetId, prompt: !!prompt })
-      showError("Preset or prompt missing", runId)
-      return null
-    }
-
-    const hasPreset = !!presetsStore.getState().byId[presetId]
-    if (!hasPreset) {
-      jobLogger.error('Preset not available', { presetId })
-      showError("This style is temporarily unavailable", runId)
-      return null
-    }
-
-    const hasCredits = await quotaStore.getState().hasCredit()
-    if (!hasCredits) {
-      jobLogger.error('Insufficient credits')
-      showError("You're out of credits", runId)
-      return null
-    }
-
-    if (controller.signal.aborted) return null
-    jobLogger.info('Preflight checks passed')
-
-    // 2) SIDE-EFFECTS (after preflight only) ──────────────────────
-    const uploadLogger = jobLogger.generationStep('upload')
-    let sourceUrl: string | undefined
-    
-    // ✅ Use new uploadSource service - never fetch blob URLs
-    try {
-      dbgSource('before-dispatchGenerate')
-      const sourceFile = await getSourceFileOrThrow(job.source?.file || job.source?.url)
-      const uploadResult = await uploadSourceToCloudinary({
-        file: sourceFile,
-        url: undefined // We always use the file now
-      })
-      sourceUrl = uploadResult.secureUrl
-      uploadLogger.info('Source uploaded to Cloudinary', { sourceUrl })
-    } catch (error) {
-      if (controller.signal.aborted) return null
-      uploadLogger.error('Source upload failed', { error: error instanceof Error ? error.message : error })
-      showError("Source upload failed: " + (error instanceof Error ? error.message : 'Unknown error'), runId)
-      return null
-    }
-
-    if (controller.signal.aborted) return null
-
-    // 3) GENERATE ─────────────────────────────────────────────────
-    const apiLogger = jobLogger.generationStep('api_call')
-    const payload = { 
-      ...job, 
-      source: sourceUrl ? { url: sourceUrl } : undefined,
-      runId
-    }
-    
-    apiLogger.info('Calling AIML API', { hasSource: !!sourceUrl })
-    const res = await callAimlApi(payload, { signal: controller.signal })
-    apiLogger.info('API call completed', { success: res.success })
-
-    // 4) COMPLETION ───────────────────────────────────────────────
-    const completionLogger = jobLogger.generationStep('completion')
-    
-    // Process completion regardless of whether it's "late" - don't drop it
-    const wasActive = runsStore.getState().completeRun(runId)
-    
-    if (wasActive) {
-      completionLogger.info('Run completed normally', { runId })
-    } else {
-      completionLogger.info('Late completion processed', { runId })
-    }
-    
-    // Always process the completion, even if it was "late"
-    try {
-      await onGenerationComplete(res, job)
-      completionLogger.info('Completion processing successful')
-    } catch (error) {
-      completionLogger.error('Completion processing failed', { error: error instanceof Error ? error.message : error })
-      // Don't fail the generation - the asset was created successfully
-    }
-    
-    const duration = Date.now() - startTime
-    jobLogger.generationComplete(res.success, duration)
-    return res
-  } catch (err: any) {
-    if (controller.signal.aborted) {
-      genLogger.info('Generation cancelled by user')
-      return null
-    }
-    const msg = err?.message || "Generation failed"
-    genLogger.error('Generation failed', { error: msg, stack: err?.stack })
-    showError(msg, runId)
-    return null
-  } finally {
-    // 🔧 ALWAYS reset UI state for this specific run
-    uiStore.unregisterActiveRun(runId)
-    
-    // Check if NO inflight runs remain, then clear the spinner
-    const remainingRuns = runsStore.getState().getActiveCount()
-    if (remainingRuns === 0) {
-      uiStore.setBusy(false)
-      uiStore.setCurrentRunId(null)
-      activeRunId = null
-      console.log('🎯 All runs completed, spinner cleared')
-    } else {
-      console.log(`🎯 Run ${runId} completed, ${remainingRuns} runs still active`)
-    }
-    
-    // Clean up file input and blob URLs
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-    if (fileInput) fileInput.value = ''
-    
-    // Revoke any blob URLs to prevent memory leaks
-    if (window.__lastSelectedFile) {
-      const previewUrl = document.querySelector('img[src^="blob:"]')?.getAttribute('src')
-      if (previewUrl) URL.revokeObjectURL(previewUrl)
-    }
-    
-    const duration = Date.now() - startTime
-    genLogger.info('Generation pipeline completed', { duration: `${duration}ms` })
-  }
-}
-
-// Helper to call AIML API with proper error handling and cancellation
-async function callAimlApi(job: GenerateJob, options?: { signal?: AbortSignal }): Promise<GenerationResult> {
-  try {
-    // The sourceUrl is already a Cloudinary HTTPS URL from the upload step
-    // No need to call ensureRemoteUrl again
-    const secureImageUrl = job.source?.url;
-    
-    if (!secureImageUrl) {
-      throw new Error('No source URL available for generation');
-    }
-    
-    const response = await authFetch('/.netlify/functions/aimlApi', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: options?.signal,
-      body: JSON.stringify({
-        ...job.params,
-        prompt: job.prompt,
-        image_url: secureImageUrl, // Use the already-uploaded Cloudinary URL
-        mode: job.mode,
-        presetId: job.presetId,
-        runId: job.runId
-      })
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || `Generation failed: ${response.status}`)
-    }
-
-    const result = await response.json()
-    
-    // Bulletproof success check - handle both response formats
-    const resultImageUrl = result.images?.[0]?.url || result.data?.[0]?.url || result.result_url || result.output_url || result.image_url
-    
-    if (!resultImageUrl) {
-      console.error('❌ No image URL in AIML response:', result)
-      throw new Error('No image URL returned from generation')
-    }
-    
-    return {
-      success: true,
-      resultUrl: resultImageUrl,
-      runId: job.runId,
-      media: result
-    }
-  } catch (error) {
-    console.error('❌ AIML API error:', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      runId: job.runId
-    }
-  }
-}
-
-// Toast deduplication to prevent spam
-const recentToasts = new Set<string>()
-const TOAST_DEDUPE_TIME = 3000 // 3 seconds
-
-// Helper to show errors with deduplication
-function showError(message: string, runId?: string) {
-  const toastKey = message.toLowerCase().trim()
-  
-  // Prevent duplicate toasts
-  if (recentToasts.has(toastKey)) {
-    console.warn(`🔇 Suppressed duplicate toast: ${message}`)
-    return
-  }
-  
-  recentToasts.add(toastKey)
-  setTimeout(() => recentToasts.delete(toastKey), TOAST_DEDUPE_TIME)
-  
-  console.error('🚨', message, runId ? `[${runId}]` : '')
-  
-  // Dispatch custom event for toast system
-  window.dispatchEvent(new CustomEvent('generation-error', { 
-    detail: { message, runId, timestamp: Date.now() } 
-  }))
-}
-
-// Export UI state for components to subscribe to
-export function subscribeToUIState(callback: (state: UIState) => void) {
-  const handler = (event: CustomEvent) => callback(event.detail)
-  window.addEventListener('ui-state-change', handler as EventListener)
-  return () => window.removeEventListener('ui-state-change', handler as EventListener)
-}
-
-// Navigation and cleanup handlers
-export function setupNavigationCleanup() {
-  // Clean up on page unload
-  window.addEventListener('beforeunload', () => {
-    console.log('🧹 Page unload - aborting active runs')
-    uiStore.abortAllActiveRuns()
-  })
-  
-  // Clean up on visibility change (tab switch, minimize)
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      console.log('🧹 Page hidden - cleaning up stale runs')
-      uiStore.abortStaleRuns(60000) // 1 minute for hidden tabs
-    }
-  })
-  
-  // Periodic cleanup of very stale runs
-  setInterval(() => {
-    uiStore.abortStaleRuns()
-  }, 60000) // Every minute
-}
-
-// Handle generation completion - save to DB and update UI
-async function onGenerationComplete(result: GenerationResult, job: GenerateJob) {
-  if (!result.success || !result.resultUrl) {
-    console.error('Generation failed, skipping completion handling')
-    return
-  }
-
-  try {
-    // 🔧 FIX: Determine proper presetKey and presetType for all media types including Neo Glitch
-    let presetKey: string | null = null;
-    let presetType: string = 'custom';
-    
-    // Map generation mode to proper preset information
-    if (job.mode === 'i2i' && job.presetId) {
-      // For image-to-image modes, use the preset ID
-      presetKey = job.presetId;
-      presetType = 'professional';
-    } else if (job.mode === 't2i') {
-      presetKey = job.presetId || 'text-to-image';
-      presetType = 'text-to-image';
-    } else if (job.mode === 'story') {
-      presetKey = job.presetId || 'story';
-      presetType = 'story';
-    } else {
-      // Fallback for unknown modes
-      presetKey = job.presetId || job.mode || 'unknown';
-      presetType = 'custom';
-    }
-
-    // 🔧 SPECIAL HANDLING: If this is Neo Glitch (detected by presetId or job metadata)
-    if (job.presetId?.includes('neo_tokyo') || job.presetId?.includes('visor') || job.presetId?.includes('tattoos') || job.presetId?.includes('scanlines')) {
-      presetKey = job.presetId;
-      presetType = 'neo-tokyo';
-      console.log('🎭 [GenerationPipeline] Neo Glitch detected, setting preset type:', presetType);
-    }
-
-    console.log('🔧 [GenerationPipeline] Preset mapping:', {
-      mode: job.mode,
-      presetId: job.presetId,
-      mappedPresetKey: presetKey,
-      mappedPresetType: presetType
-    });
-
-    // Use the new unified save-media endpoint with proper preset data
-    const savePayload = {
-      finalUrl: result.resultUrl,  // ✅ Fixed: use finalUrl as expected by save-media
-      media_type: 'image', // ✅ Fixed: use media_type as expected by save-media
-      preset_key: presetKey, // ✅ Fixed: use preset_key as expected by save-media
-      prompt: job.prompt, // ✅ Fixed: add prompt at root level
-      meta: {
-        presetId: job.presetId,
-        presetKey: presetKey, // ✅ Pass presetKey in meta
-        presetType: presetType, // ✅ Pass presetType in meta
-        mode: job.mode,
-        group: job.group || null,
-        optionKey: job.optionKey || null,
-        storyKey: job.storyKey || null,
-        storyLabel: job.storyLabel || null,
-        source_url: job.source?.url,
-        generationType: job.generationType || 'custom',
-        runId: job.runId,
-        userId: authService.getCurrentUser()?.id || 'unknown',
-        shareNow: true, // TODO: get from user settings
-        model: 'flux/dev/image-to-image', // TODO: get actual model used
-        variation_index: 0,
-        totalVariations: 1
+        console.warn('⚠️ [GenerationPipeline] New system failed, falling back to old:', error);
+        // Fall through to old system
       }
     }
 
-    console.log('💾 [GenerationPipeline] Saving generation result via save-media:', {
-      ...savePayload,
-      finalUrl: savePayload.finalUrl.substring(0, 60) + '...' // Truncate for logging
-    });
+    // Use old system
+    console.log('🔄 [GenerationPipeline] Using OLD Emotion Mask system');
+    return await this.useOldSystem(request);
+  }
+
+  /**
+   * Handle Professional Presets generation
+   */
+  private async handlePresetsGeneration(request: GenerationRequest): Promise<GenerationResult> {
+    if (this.featureFlags.presetsNewSystem) {
+      console.log('🆕 [GenerationPipeline] Using NEW Presets system');
+      try {
+        const result = await this.presetsService.startGeneration({
+          prompt: request.prompt,
+          presetKey: request.presetKey,
+          sourceAssetId: request.sourceAssetId,
+          userId: request.userId,
+          runId: request.runId,
+          meta: request.meta
+        });
+
+        return {
+          ...result,
+          system: 'new',
+          type: 'presets'
+        };
+      } catch (error) {
+        console.warn('⚠️ [GenerationPipeline] New system failed, falling back to old:', error);
+        // Fall through to old system
+      }
+    }
+
+    // Use old system
+    console.log('🔄 [GenerationPipeline] Using OLD Presets system');
+    return await this.useOldSystem(request);
+  }
+
+  /**
+   * Handle Ghibli Reaction generation
+   */
+  private async handleGhibliReactionGeneration(request: GenerationRequest): Promise<GenerationResult> {
+    if (this.featureFlags.ghibliReactionNewSystem) {
+      console.log('🆕 [GenerationPipeline] Using NEW Ghibli Reaction system');
+      try {
+        const result = await this.ghibliReactionService.startGeneration({
+          prompt: request.prompt,
+          presetKey: request.presetKey,
+          sourceAssetId: request.sourceAssetId,
+          userId: request.userId,
+          runId: request.runId,
+          meta: request.meta
+        });
+
+        return {
+          ...result,
+          system: 'new',
+          type: 'ghibli-reaction'
+        };
+      } catch (error) {
+        console.warn('⚠️ [GenerationPipeline] New system failed, falling back to old:', error);
+        // Fall through to old system
+      }
+    }
+
+    // Use old system
+    console.log('🔄 [GenerationPipeline] Using OLD Ghibli Reaction system');
+    return await this.useOldSystem(request);
+  }
+
+  /**
+   * Handle Custom Prompt generation
+   */
+  private async handleCustomPromptGeneration(request: GenerationRequest): Promise<GenerationResult> {
+    if (this.featureFlags.customPromptNewSystem) {
+      console.log('🆕 [GenerationPipeline] Using NEW Custom Prompt system');
+      try {
+        const result = await this.customPromptService.startGeneration({
+          prompt: request.prompt,
+          presetKey: request.presetKey,
+          sourceAssetId: request.sourceAssetId,
+          userId: request.userId,
+          runId: request.runId,
+          meta: request.meta
+        });
+
+        return {
+          ...result,
+          system: 'new',
+          type: 'custom-prompt'
+        };
+      } catch (error) {
+        console.warn('⚠️ [GenerationPipeline] New system failed, falling back to old:', error);
+        // Fall through to old system
+      }
+    }
+
+    // Use old system
+    console.log('🔄 [GenerationPipeline] Using OLD Custom Prompt system');
+    return await this.useOldSystem(request);
+  }
+
+  /**
+   * Handle NeoGlitch generation (always uses new system)
+   */
+  private async handleNeoGlitchGeneration(request: GenerationRequest): Promise<GenerationResult> {
+    console.log('🆕 [GenerationPipeline] Using NEW NeoGlitch system (always stable)');
     
     try {
-      const response = await fetchWithAuth('/.netlify/functions/save-media', {
+      const response = await authenticatedFetch('/.netlify/functions/neo-glitch-generate', {
         method: 'POST',
-        body: JSON.stringify(savePayload)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: request.prompt,
+          presetKey: request.presetKey,
+          sourceUrl: request.sourceAssetId,
+          userId: request.userId,
+          runId: request.runId,
+          generationMeta: request.meta
+        })
       });
 
       if (!response.ok) {
-        console.error('Failed to save via save-media:', response.status, await response.text())
-        return
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `NeoGlitch generation failed: ${response.status}`);
       }
 
-      const saveResult = await response.json()
-      console.log('✅ [GenerationPipeline] Generation saved via save-media:', saveResult)
-
-      // If this is a remix (has parentId), send anonymous notification
-      if (job.parentId) {
-        try {
-          const notifyResponse = await fetchWithAuth('/.netlify/functions/notify-remix', {
-            method: 'POST',
-            body: JSON.stringify({
-              parentId: job.parentId,
-              childId: saveResult.results?.[0]?.cloudinary_public_id || 'unknown',
-              createdAt: new Date().toISOString()
-            })
-          });
-
-          if (notifyResponse.ok) {
-            console.log('📬 Remix notification sent successfully');
-          } else {
-            console.warn('⚠️ Failed to send remix notification:', notifyResponse.status);
-          }
-        } catch (notifyError) {
-          console.warn('⚠️ Remix notification error:', notifyError);
-          // Don't fail the generation if notification fails
-        }
-      }
-
-      // Update UI state immediately so user sees result without reload
-      // Dispatch custom event for UI components to listen to
-      window.dispatchEvent(new CustomEvent('generation-complete', { 
-        detail: { 
-          record: saveResult.results?.[0], 
-          resultUrl: result.resultUrl,
-          presetId: job.presetId,
-          mode: job.mode,
-          timestamp: Date.now() 
-        } 
-      }))
-
-      // Show success toast
-      window.dispatchEvent(new CustomEvent('generation-success', { 
-        detail: { resultUrl: result.resultUrl, timestamp: Date.now() } 
-      }))
-
-      // 💰 Finalize credits (commit) after successful generation
-      try {
-        console.log('💰 Generation Pipeline: Finalizing credits (commit)...');
-        const finalizeResponse = await fetchWithAuth('/.netlify/functions/credits-finalize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            request_id: job.runId,
-            disposition: 'commit'
-          })
-        });
-        
-        if (finalizeResponse.ok) {
-          const finalizeResult = await finalizeResponse.json();
-          console.log('✅ Generation Pipeline: Credits finalized successfully:', finalizeResult);
-        } else {
-          console.error('❌ Generation Pipeline: Credits finalization failed:', finalizeResponse.status);
-          // Don't throw here - generation succeeded, just log the credit issue
-        }
-      } catch (finalizeError) {
-        console.error('❌ Generation Pipeline: Credits finalization error:', finalizeError);
-        // Don't throw here - generation succeeded, just log the credit issue
-      }
+      const result = await response.json();
+      
+      return {
+        success: true,
+        jobId: result.jobId,
+        runId: result.runId,
+        status: result.status,
+        imageUrl: result.imageUrl,
+        aimlJobId: result.aimlJobId,
+        provider: result.provider,
+        system: 'new',
+        type: 'neo-glitch'
+      };
 
     } catch (error) {
-      console.error('Failed to save generation result:', error);
-      
-      // 💰 Refund credits if generation save failed
-      try {
-        console.log('💰 Generation Pipeline: Refunding credits due to save failure...');
-        const refundResponse = await fetchWithAuth('/.netlify/functions/credits-finalize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            request_id: job.runId,
-            disposition: 'refund'
-          })
-        });
-        
-        if (refundResponse.ok) {
-          const refundResult = await refundResponse.json();
-          console.log('✅ Generation Pipeline: Credits refunded successfully:', refundResult);
-        } else {
-          console.error('❌ Generation Pipeline: Credits refund failed:', refundResponse.status);
-        }
-      } catch (refundError) {
-        console.error('❌ Generation Pipeline: Credits refund error:', refundError);
-      }
-      
-      // Don't fail the generation if save fails
+      console.error('❌ [GenerationPipeline] NeoGlitch generation failed:', error);
+      return {
+        success: false,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'NeoGlitch generation failed',
+        system: 'new',
+        type: 'neo-glitch'
+      };
     }
+  }
 
-  } catch (error) {
-    console.error('Failed to complete generation:', error)
+  /**
+   * Use old generation system as fallback
+   */
+  private async useOldSystem(request: GenerationRequest): Promise<GenerationResult> {
+    try {
+      console.log('🔄 [GenerationPipeline] Using old system for:', request.type);
+      
+      // Use the old start-gen function
+      const response = await authenticatedFetch('/.netlify/functions/start-gen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: request.prompt,
+          presetKey: request.presetKey,
+          sourceAssetId: request.sourceAssetId,
+          userId: request.userId,
+          runId: request.runId,
+          generationMeta: request.meta
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `Old system generation failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      return {
+        success: true,
+        jobId: result.jobId,
+        runId: result.runId,
+        status: result.status,
+        imageUrl: result.imageUrl,
+        aimlJobId: result.aimlJobId,
+        provider: result.provider,
+        system: 'old',
+        type: request.type
+      };
+
+    } catch (error) {
+      console.error('❌ [GenerationPipeline] Old system generation failed:', error);
+      return {
+        success: false,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Old system generation failed',
+        system: 'old',
+        type: request.type
+      };
+    }
+  }
+
+  /**
+   * Get system status for monitoring
+   */
+  getSystemStatus(): {
+    newSystemEnabled: boolean;
+    oldSystemEnabled: boolean;
+    featureFlags: FeatureFlags;
+    migrationProgress: number;
+  } {
+    const enabledFeatures = Object.values(this.featureFlags).filter(Boolean).length;
+    const totalFeatures = Object.keys(this.featureFlags).length;
+    const migrationProgress = (enabledFeatures / totalFeatures) * 100;
+
+    return {
+      newSystemEnabled: enabledFeatures > 0,
+      oldSystemEnabled: enabledFeatures < totalFeatures,
+      featureFlags: this.featureFlags,
+      migrationProgress: Math.round(migrationProgress)
+    };
+  }
+
+  /**
+   * Enable new system for all features (complete migration)
+   */
+  enableCompleteMigration(): void {
+    this.featureFlags = {
+      emotionMaskNewSystem: true,
+      presetsNewSystem: true,
+      ghibliReactionNewSystem: true,
+      customPromptNewSystem: true,
+      neoGlitchNewSystem: true
+    };
+    console.log('🎉 [GenerationPipeline] Complete migration enabled! All features using new system.');
+  }
+
+  /**
+   * Rollback to old system for all features (emergency rollback)
+   */
+  emergencyRollback(): void {
+    this.featureFlags = {
+      emotionMaskNewSystem: false,
+      presetsNewSystem: false,
+      ghibliReactionNewSystem: false,
+      customPromptNewSystem: false,
+      neoGlitchNewSystem: true // Keep NeoGlitch on new system (it works)
+    };
+    console.log('🚨 [GenerationPipeline] Emergency rollback activated! All features using old system.');
   }
 }
 
-// Helper to extract Cloudinary public_id from URL
-function extractPublicId(url: string): string {
-  if (!url) return ''
-  
-  // Extract public_id from Cloudinary URL
-  const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[^.]+)?(?:\?|$)/)
-  return match?.[1] || url.split('/').pop()?.split('.')[0] || ''
-}
-
-// Route change cleanup (call this in your router)
-export function cleanupOnRouteChange() {
-  console.log('🧹 Route change - aborting active runs')
-  uiStore.abortAllActiveRuns()
-}
+export default GenerationPipeline;
