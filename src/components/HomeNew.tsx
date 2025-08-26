@@ -2509,45 +2509,79 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         }
       }
 
-      // 🎨 FX POST-PROCESSING - Apply visual effects based on generation mode
-      if (finalResultUrl && generationMeta?.mode) {
-        try {
-          let fxProcessedUrl = finalResultUrl;
+                // 🔧 CLOUDINARY CONVERSION - Convert AIML API URLs to Cloudinary URLs for Ghibli
+          let cloudinaryConvertedUrl = finalResultUrl;
           
-          // Apply Neo Tokyo Glitch FX
-          if (generationMeta.mode === 'neotokyoglitch' && selectedNeoTokyoGlitchPreset) {
-            console.log('🎭 Applying Neo Tokyo Glitch FX...');
-            const { applyNeoTokyoGlitch } = await import('../hooks/useNeoTokyoGlitch');
+          if (generationMeta?.mode === 'ghiblireact' && finalResultUrl && finalResultUrl.includes('cdn.aimlapi.com')) {
+            console.log('☁️ [Ghibli] Converting AIML API URL to Cloudinary:', finalResultUrl.substring(0, 60) + '...');
             
-            const fxOptions = {
-              enableGlow: true,
-              enableScanlines: true,
-              enableGlitch: true,
-              enableNeon: true,
-              glowIntensity: 0.8,
-              scanlineOpacity: 0.3,
-              glitchAmount: 0.4,
-              neonColor: '#00ffff'
-            };
-            
-            fxProcessedUrl = await applyNeoTokyoGlitch(finalResultUrl, fxOptions);
-            console.log('✅ Neo Tokyo FX applied successfully');
+            try {
+              // Download the image from AIML API and upload to Cloudinary
+              const imageResponse = await fetch(finalResultUrl);
+              if (!imageResponse.ok) {
+                throw new Error(`Failed to download AIML image: ${imageResponse.status}`);
+              }
+              
+              const imageBlob = await imageResponse.blob();
+              const imageFile = new File([imageBlob], 'ghibli-generated.png', { type: 'image/png' });
+              
+              // Upload to Cloudinary using the existing service
+              const { uploadToCloudinary } = await import('../lib/cloudinaryUpload');
+              const cloudinaryResult = await uploadToCloudinary(imageFile, 'stefna/ghibli');
+              
+              cloudinaryConvertedUrl = cloudinaryResult.secure_url;
+              console.log('✅ [Ghibli] Successfully converted to Cloudinary URL:', cloudinaryConvertedUrl.substring(0, 60) + '...');
+              
+              // Update the result URLs array to use the Cloudinary URL
+              allResultUrls = allResultUrls.map(url => url === finalResultUrl ? cloudinaryConvertedUrl : url);
+              finalResultUrl = cloudinaryConvertedUrl;
+              
+            } catch (conversionError) {
+              console.error('❌ [Ghibli] Failed to convert AIML URL to Cloudinary:', conversionError);
+              // Continue with original URL if conversion fails
+              cloudinaryConvertedUrl = finalResultUrl;
+            }
           }
           
-          // Apply Ghibli Reaction FX
-          else if (generationMeta.mode === 'ghiblireact' && selectedGhibliReactionPreset) {
-            console.log('🎭 Applying Ghibli Reaction FX...');
-            const { applyGhibliReactionFX } = await import('../hooks/useGhibliReaction');
-            
-            const fxOptions = {
-              enableTears: true,
-              enableHearts: true,
-              enableBlush: true,
-              enableEyeShine: true,
-              tearIntensity: 0.7,
-              heartOpacity: 0.6,
-              blushIntensity: 0.5,
-              eyeShineBrightness: 0.8
+          // 🎨 FX POST-PROCESSING - Apply visual effects based on generation mode
+          if (cloudinaryConvertedUrl && generationMeta?.mode) {
+            try {
+              let fxProcessedUrl = cloudinaryConvertedUrl;
+              
+              // Apply Neo Tokyo Glitch FX
+              if (generationMeta.mode === 'neotokyoglitch' && selectedNeoTokyoGlitchPreset) {
+                console.log('🎭 Applying Neo Tokyo Glitch FX...');
+                const { applyNeoTokyoGlitch } = await import('../hooks/useNeoTokyoGlitch');
+                
+                const fxOptions = {
+                  enableGlow: true,
+                  enableScanlines: true,
+                  enableGlitch: true,
+                  enableNeon: true,
+                  glowIntensity: 0.8,
+                  scanlineOpacity: 0.3,
+                  glitchAmount: 0.4,
+                  neonColor: '#00ffff'
+                };
+                
+                fxProcessedUrl = await applyNeoTokyoGlitch(cloudinaryConvertedUrl, fxOptions);
+                console.log('✅ Neo Tokyo FX applied successfully');
+              }
+              
+              // Apply Ghibli Reaction FX
+              else if (generationMeta.mode === 'ghiblireact' && selectedGhibliReactionPreset) {
+                console.log('🎭 Applying Ghibli Reaction FX...');
+                const { applyGhibliReactionFX } = await import('../hooks/useGhibliReaction');
+                
+                const fxOptions = {
+                  enableTears: true,
+                  enableHearts: true,
+                  enableBlush: true,
+                  enableEyeShine: true,
+                  tearIntensity: 0.7,
+                  heartOpacity: 0.6,
+                  blushIntensity: 0.5,
+                  eyeShineBrightness: 0.8
             };
             
             fxProcessedUrl = await applyGhibliReactionFX(finalResultUrl, fxOptions);
@@ -2809,7 +2843,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                     'X-Idempotency-Key': genId // prevents double-saves on retries
                   },
                   body: JSON.stringify({
-                    finalUrl: allResultUrls[0], // The generated image URL from Replicate
+                    finalUrl: allResultUrls[0], // The generated image URL (now Cloudinary for Ghibli)
                     media_type: 'image',
                     preset_key: selectedPreset || 'custom',
                     prompt: effectivePrompt,
@@ -2820,8 +2854,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                       runId: genId,
                       userId,
                       shareNow: !!shareToFeed,
-                      generationType: 'replicate',
-                      model: generationMeta?.model || 'replicate/stability-ai/stable-diffusion-img2img',
+                      generationType: composerState.mode === 'ghiblireact' ? 'aiml-ghibli' : 'replicate',
+                      model: generationMeta?.model || 'flux/dev/image-to-image',
                       variation_index: 0,
                       totalVariations: allResultUrls.length
                     }
