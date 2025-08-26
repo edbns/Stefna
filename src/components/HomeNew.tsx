@@ -3778,6 +3778,16 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                         (item.presetKey?.includes('ghibli') ? 'ghibli' :
                          item.presetKey?.includes('emotion') ? 'emotion' :
                          item.presetKey?.includes('neo') ? 'neo-tokyo' : 'professional')
+      
+      // Debug logging for filtering
+      console.log(`🔍 [Filter] Item ${item.id}:`, {
+        presetKey: item.presetKey,
+        metadataPresetType: item.metadata?.presetType,
+        calculatedPresetType: presetType,
+        activeFeedFilter,
+        matches: presetType === activeFeedFilter
+      })
+      
       if (presetType !== activeFeedFilter) return false
     }
     
@@ -4264,7 +4274,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           ) : feed.length > 0 ? (
             <>
               <SafeMasonryGrid 
-                feed={feed}
+                feed={filteredFeed}
                 handleMediaClick={handleMediaClick}
                 onLastItemRef={setLastItemRef}
                 // handleRemix removed
@@ -4292,6 +4302,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               {import.meta.env.DEV && (
                 <div className="fixed bottom-4 right-4 bg-black/80 text-white text-xs p-2 rounded backdrop-blur-sm z-50">
                   <div>📊 Feed: {feed.length}</div>
+                  <div>🔍 Filtered: {filteredFeed.length}</div>
+                  <div>🎯 Active Filter: {activeFeedFilter || 'none'}</div>
                   <div>👁️ Intersecting: {isIntersecting ? 'Yes' : 'No'}</div>
                   <div>📡 Has More: {hasMoreFeed ? 'Yes' : 'No'}</div>
                   <div>⏳ Loading: {isLoadingMore ? 'Yes' : 'No'}</div>
