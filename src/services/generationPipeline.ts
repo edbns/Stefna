@@ -468,41 +468,33 @@ async function onGenerationComplete(result: GenerationResult, job: GenerateJob) 
 
     // Use the new unified save-media endpoint with proper preset data
     const savePayload = {
-      runId: job.runId,
-      presetId: job.presetId,
-      presetKey: presetKey, // ✅ Add explicit presetKey
-      presetType: presetType, // ✅ Add explicit presetType
-      allowPublish: true, // TODO: get from user settings
-      source: job.source,
-      variations: [{
-        image_url: result.resultUrl,  // ✅ Fixed: 'url' → 'image_url'
-        type: 'image', // TODO: detect from result
-        meta: {
-          presetId: job.presetId,
-          presetKey: presetKey, // ✅ Pass presetKey in meta
-          presetType: presetType, // ✅ Pass presetType in meta
-          mode: job.mode,
-          group: job.group || null,
-          optionKey: job.optionKey || null,
-          storyKey: job.storyKey || null,
-          storyLabel: job.storyLabel || null,
-          prompt: job.prompt,
-          source_url: job.source?.url,
-        }
-      }],
-      tags: ['transformed', `preset:${presetKey}`, `mode:${job.mode}`],
-      extra: {
-        source: 'generation',
-        timestamp: new Date().toISOString()
+      finalUrl: result.resultUrl,  // ✅ Fixed: use finalUrl as expected by save-media
+      media_type: 'image', // ✅ Fixed: use media_type as expected by save-media
+      preset_key: presetKey, // ✅ Fixed: use preset_key as expected by save-media
+      prompt: job.prompt, // ✅ Fixed: add prompt at root level
+      meta: {
+        presetId: job.presetId,
+        presetKey: presetKey, // ✅ Pass presetKey in meta
+        presetType: presetType, // ✅ Pass presetType in meta
+        mode: job.mode,
+        group: job.group || null,
+        optionKey: job.optionKey || null,
+        storyKey: job.storyKey || null,
+        storyLabel: job.storyLabel || null,
+        source_url: job.source?.url,
+        generationType: job.generationType || 'custom',
+        runId: job.runId,
+        userId: authService.getCurrentUser()?.id || 'unknown',
+        shareNow: true, // TODO: get from user settings
+        model: 'flux/dev/image-to-image', // TODO: get actual model used
+        variation_index: 0,
+        totalVariations: 1
       }
     }
 
     console.log('💾 [GenerationPipeline] Saving generation result via save-media:', {
       ...savePayload,
-      variations: savePayload.variations.map(v => ({
-        ...v,
-        image_url: v.image_url.substring(0, 60) + '...' // Truncate for logging
-      }))
+      finalUrl: savePayload.finalUrl.substring(0, 60) + '...' // Truncate for logging
     });
     
     try {

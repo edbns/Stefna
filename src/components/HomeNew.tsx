@@ -2920,17 +2920,19 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                   'X-Idempotency-Key': genId // prevents double-saves on retries
                 },
                 body: JSON.stringify({
-                  variations: variations.map((url, index) => ({
-                    image_url: url,
-                    prompt: prompt?.trim() || 'AI Generated Content',
-                    media_type: 'image',
-                    meta: {
-                      variation_index: index,
-                      mode: composerState.mode,
-                      run_id: genId
-                    }
-                  })),
-                  runId: genId
+                  finalUrl: allResultUrls[0], // Use first URL for single save
+                  media_type: 'image',
+                  preset_key: selectedPreset || 'custom',
+                  prompt: effectivePrompt,
+                  meta: {
+                    mode: composerState.mode,
+                    presetId: selectedPreset,
+                    runId: genId,
+                    userId,
+                    shareNow: !!shareToFeed,
+                    variation_index: 0,
+                    totalVariations: allResultUrls.length
+                  }
                 })
               });
               
