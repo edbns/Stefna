@@ -368,8 +368,8 @@ class GenerationPipeline {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: request.prompt,
+          image_url: request.sourceAssetId, // Fix: use image_url instead of sourceAssetId
           presetKey: request.presetKey,
-          sourceAssetId: request.sourceAssetId,
           userId: request.userId,
           runId: request.runId,
           generationMeta: request.meta
