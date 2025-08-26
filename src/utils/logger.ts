@@ -58,7 +58,7 @@ class Logger {
   }
 
   debug(message: string, data?: any): void {
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       this.formatMessage('DEBUG', message, data)
     }
   }

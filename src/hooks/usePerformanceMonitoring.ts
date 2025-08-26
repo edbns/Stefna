@@ -97,7 +97,7 @@ export function usePerformanceMonitoring(config: PerformanceConfig = {}) {
     const metrics = getMetrics()
     
     // Send to analytics service (replace with your analytics provider)
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       // Example: Send to Google Analytics, DataDog, etc.
       console.log('Performance metrics:', metrics)
     }
