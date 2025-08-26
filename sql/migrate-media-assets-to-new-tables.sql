@@ -6,6 +6,51 @@
 -- PHASE 1: BACKUP AND VALIDATION
 -- ============================================================================
 
+-- Check for existing data in new tables
+SELECT '=== CHECKING EXISTING DATA ===' as phase;
+
+SELECT 
+    'Existing data check' as check_type,
+    'ghibli_reaction_media' as table_name,
+    COUNT(*) as count 
+FROM ghibli_reaction_media
+UNION ALL
+SELECT 
+    'Existing data check' as check_type,
+    'emotion_mask_media' as table_name,
+    COUNT(*) as count 
+FROM emotion_mask_media
+UNION ALL
+SELECT 
+    'Existing data check' as check_type,
+    'presets_media' as table_name,
+    COUNT(*) as count 
+FROM presets_media
+UNION ALL
+SELECT 
+    'Existing data check' as check_type,
+    'custom_prompt_media' as table_name,
+    COUNT(*) as count 
+FROM custom_prompt_media;
+
+-- ============================================================================
+-- PHASE 2: CLEANUP EXISTING DATA (OPTIONAL)
+-- ============================================================================
+
+-- Uncomment the lines below if you want to start fresh
+-- WARNING: This will delete ALL existing data in new tables
+/*
+DELETE FROM ghibli_reaction_media;
+DELETE FROM emotion_mask_media;
+DELETE FROM presets_media;
+DELETE FROM custom_prompt_media;
+SELECT '=== EXISTING DATA CLEARED ===' as status;
+*/
+
+-- ============================================================================
+-- PHASE 3: BACKUP AND VALIDATION
+-- ============================================================================
+
 -- Create backup of current media_assets table
 CREATE TABLE IF NOT EXISTS media_assets_backup AS 
 SELECT * FROM media_assets;
@@ -14,7 +59,7 @@ SELECT * FROM media_assets;
 SELECT 'Backup created' as status, COUNT(*) as backup_count FROM media_assets_backup;
 
 -- ============================================================================
--- PHASE 2: MIGRATE GHIBLI REACTION MEDIA (37 items)
+-- PHASE 4: MIGRATE GHIBLI REACTION MEDIA (37 items)
 -- ============================================================================
 
 SELECT '=== MIGRATING GHIBLI REACTION MEDIA ===' as phase;
@@ -49,15 +94,18 @@ SELECT
     'completed' as status
 FROM media_assets ma
 WHERE 
-    ma.preset_key LIKE '%ghibli%' 
+    (ma.preset_key LIKE '%ghibli%' 
     OR ma.meta->>'mode' = 'ghiblireact'
-    OR ma.meta->>'generation_type' LIKE '%ghibli%';
+    OR ma.meta->>'generation_type' LIKE '%ghibli%')
+    AND NOT EXISTS (
+        SELECT 1 FROM ghibli_reaction_media grm WHERE grm.id = ma.id
+    );
 
 -- Verify Ghibli migration
 SELECT 'Ghibli Reaction migrated' as status, COUNT(*) as count FROM ghibli_reaction_media;
 
 -- ============================================================================
--- PHASE 3: MIGRATE EMOTION MASK MEDIA (20 items)
+-- PHASE 5: MIGRATE EMOTION MASK MEDIA (20 items)
 -- ============================================================================
 
 SELECT '=== MIGRATING EMOTION MASK MEDIA ===' as phase;
@@ -94,15 +142,18 @@ SELECT
     'completed' as status
 FROM media_assets ma
 WHERE 
-    ma.preset_key IN ('nostalgia_distance', 'strength_vulnerability', 'peace_fear')
+    (ma.preset_key IN ('nostalgia_distance', 'strength_vulnerability', 'peace_fear')
     OR ma.meta->>'mode' = 'emotionmask'
-    OR ma.meta->>'generation_type' LIKE '%emotion%';
+    OR ma.meta->>'generation_type' LIKE '%emotion%')
+    AND NOT EXISTS (
+        SELECT 1 FROM emotion_mask_media emm WHERE emm.id = ma.id
+    );
 
 -- Verify Emotion Mask migration
 SELECT 'Emotion Mask migrated' as status, COUNT(*) as count FROM emotion_mask_media;
 
 -- ============================================================================
--- PHASE 4: MIGRATE PROFESSIONAL PRESETS MEDIA (17 items)
+-- PHASE 6: MIGRATE PROFESSIONAL PRESETS MEDIA (17 items)
 -- ============================================================================
 
 SELECT '=== MIGRATING PROFESSIONAL PRESETS MEDIA ===' as phase;
@@ -141,15 +192,18 @@ SELECT
     'completed' as status
 FROM media_assets ma
 WHERE 
-    ma.preset_key IN ('landscape', 'portrait', 'vintage', 'cinematic', 'soft')
+    (ma.preset_key IN ('landscape', 'portrait', 'vintage', 'cinematic', 'soft')
     OR ma.meta->>'mode' = 'preset'
-    OR ma.meta->>'generation_type' LIKE '%preset%';
+    OR ma.meta->>'generation_type' LIKE '%preset%')
+    AND NOT EXISTS (
+        SELECT 1 FROM presets_media pm WHERE pm.id = ma.id
+    );
 
 -- Verify Presets migration
 SELECT 'Professional Presets migrated' as status, COUNT(*) as count FROM presets_media;
 
 -- ============================================================================
--- PHASE 5: MIGRATE CUSTOM PROMPT MEDIA (19 items)
+-- PHASE 7: MIGRATE CUSTOM PROMPT MEDIA (19 items)
 -- ============================================================================
 
 SELECT '=== MIGRATING CUSTOM PROMPT MEDIA ===' as phase;
@@ -184,15 +238,18 @@ SELECT
     'completed' as status
 FROM media_assets ma
 WHERE 
-    ma.preset_key = 'custom_prompt'
+    (ma.preset_key = 'custom_prompt'
     OR ma.meta->>'mode' = 'custom'
-    OR ma.meta->>'generation_type' LIKE '%custom%';
+    OR ma.meta->>'generation_type' LIKE '%custom%')
+    AND NOT EXISTS (
+        SELECT 1 FROM custom_prompt_media cpm WHERE cpm.id = ma.id
+    );
 
 -- Verify Custom Prompt migration
 SELECT 'Custom Prompt migrated' as status, COUNT(*) as count FROM custom_prompt_media;
 
 -- ============================================================================
--- PHASE 6: INVESTIGATE REMAINING ITEMS (7 items)
+-- PHASE 8: INVESTIGATE REMAINING ITEMS (7 items)
 -- ============================================================================
 
 SELECT '=== INVESTIGATING REMAINING ITEMS ===' as phase;
@@ -232,7 +289,7 @@ WHERE NOT EXISTS (
 );
 
 -- ============================================================================
--- PHASE 7: MIGRATION SUMMARY
+-- PHASE 9: MIGRATION SUMMARY
 -- ============================================================================
 
 SELECT '=== MIGRATION SUMMARY ===' as phase;
@@ -257,7 +314,7 @@ UNION ALL
 SELECT 'Custom Prompt Media' as table_name, COUNT(*) as count FROM custom_prompt_media;
 
 -- ============================================================================
--- PHASE 8: VERIFICATION CHECKS
+-- PHASE 10: VERIFICATION CHECKS
 -- ============================================================================
 
 SELECT '=== VERIFICATION CHECKS ===' as phase;
@@ -293,7 +350,7 @@ FROM (
 ) missing_fields;
 
 -- ============================================================================
--- PHASE 9: CLEANUP PREPARATION (COMMENTED OUT FOR SAFETY)
+-- PHASE 11: CLEANUP PREPARATION (COMMENTED OUT FOR SAFETY)
 -- ============================================================================
 
 -- IMPORTANT: These commands are commented out for safety
