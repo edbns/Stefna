@@ -4379,7 +4379,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
 
                       {/* Bottom composer bar - compact, horizontally 70% */}
             <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
-            <div className="bg-black border-[0.5px] border-white rounded-2xl px-4 py-3 transition-all duration-300">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl px-4 py-3 transition-all duration-300 shadow-2xl shadow-black/20">
               
 
               
@@ -4397,7 +4397,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                       ? "Describe your vision... (click ✨ to enhance your prompt)"
                       : "Custom prompt (optional) - will be combined with selected preset"
                     }
-                    className="w-full px-3 py-2 pr-10 bg-black text-white placeholder-white/60 resize-none focus:outline-none focus:ring-2 focus:ring-white focus:bg-black transition-all duration-200 h-20 text-sm border-[0.5px] border-white hover:border-white/80 rounded-xl"
+                    className="w-full px-3 py-2 pr-10 bg-white/10 backdrop-blur-md text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200 h-20 text-sm border border-white/30 hover:border-white/50 rounded-xl"
                     disabled={false}
                     data-testid="custom-prompt-input"
                   />
@@ -4457,8 +4457,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                         }}
                       className={(() => {
                         const baseClass = 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors';
-                        const activeClass = 'bg-black text-white border-white hover:bg-black/80';
-                        const disabledClass = 'bg-black/50 text-white/50 border-white/30 cursor-not-allowed';
+                        const activeClass = 'bg-white/20 backdrop-blur-md text-white border-white/40 hover:bg-white/30 hover:border-white/60';
+                        const disabledClass = 'bg-white/5 text-white/40 border-white/20 cursor-not-allowed';
                         return `${baseClass} ${isAuthenticated ? activeClass : disabledClass}`;
                       })()}
                       data-nav-button
@@ -4471,7 +4471,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                     
                     {/* Presets dropdown - clean and simple */}
                     {presetsOpen && (
-                                             <div className="absolute bottom-full left-0 mb-2 bg-black border-[0.5px] border-white rounded-xl p-3 w-80 z-50">
+                                             <div className="absolute bottom-full left-0 mb-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-3 w-80 z-50 shadow-2xl shadow-black/20">
                         {/* Preset options - all visible, no scrolling */}
                         <div className="space-y-1">
                           {/* Preset options */}
@@ -4530,10 +4530,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                       }}
                       className={
                         !isAuthenticated
-                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-black/50 text-white/50 border-white/30 cursor-not-allowed'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white/5 text-white/40 border-white/20 cursor-not-allowed'
                           : composerState.mode === 'emotionmask'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-black text-white border-white hover:bg-black/80'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white/90 backdrop-blur-md text-black border-white/60'
+                          : 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white/20 backdrop-blur-md text-white border-white/40 hover:bg-white/30 hover:border-white/60'
                       }
                       title={isAuthenticated ? 'Switch to Emotion Mask™ mode' : 'Sign up to use Emotion Mask™'}
                       disabled={!isAuthenticated}
@@ -4606,10 +4606,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                       }}
                       className={
                         !isAuthenticated
-                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-black/50 text-white/50 border-white/30 cursor-not-allowed'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white/5 text-white/40 border-white/20 cursor-not-allowed'
                           : composerState.mode === 'ghiblireact'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-black text-white border-white hover:bg-black/80'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white/90 backdrop-blur-md text-black border-white/60'
+                          : 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white/20 backdrop-blur-md text-white border-white/40 hover:bg-white/30 hover:border-white/60'
                       }
                       title={isAuthenticated ? 'Switch to Studio Ghibli Reaction mode' : 'Sign up to use Studio Ghibli Reaction'}
                       disabled={!isAuthenticated}
@@ -4682,10 +4682,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                       }}
                       className={
                         !isAuthenticated
-                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-black/50 text-white/50 border-white/30 cursor-not-allowed'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white/5 text-white/40 border-white/20 cursor-not-allowed'
                           : composerState.mode === 'neotokyoglitch'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-black text-white border-white hover:bg-black/80'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white/90 backdrop-blur-md text-black border-white/60'
+                          : 'px-3 py-1.5 rounded-2xl text-xs border-[0.5px] transition-colors bg-white/20 backdrop-blur-md text-white border-white/40 hover:bg-white/30 hover:border-white/60'
                       }
                       title={isAuthenticated ? 'Switch to Neo Tokyo Glitch mode' : 'Sign up to use Neo Tokyo Glitch'}
                       disabled={!isAuthenticated}
