@@ -85,10 +85,14 @@ class GenerationPipeline {
    * This enables gradual rollout and A/B testing
    */
   private shouldUseNewSystem(type: string): boolean {
-    // Check environment variables for feature flags
-    const envFlag = process.env[`VITE_${type.toUpperCase().replace('-', '_')}_NEW_SYSTEM`];
-    if (envFlag) {
-      return envFlag === 'true';
+    // Check environment variables for feature flags (browser-compatible)
+    try {
+      const envFlag = import.meta.env[`VITE_${type.toUpperCase().replace('-', '_')}_NEW_SYSTEM`];
+      if (envFlag) {
+        return envFlag === 'true';
+      }
+    } catch (error) {
+      console.log('🔄 [GenerationPipeline] Environment check failed, using fallback logic');
     }
 
     // Check user ID for beta testing (last 2 digits determine system)
