@@ -11,9 +11,13 @@
 import { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
 
-const db = new PrismaClient();
+// Initialize Prisma client inside handler to avoid bundling issues
+let db: PrismaClient;
 
 export const handler: Handler = async (event) => {
+  // Initialize Prisma client inside handler to avoid bundling issues
+  db = new PrismaClient();
+  
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
