@@ -2811,17 +2811,12 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                   body: JSON.stringify({
                     finalUrl: allResultUrls[0], // The generated image URL from Replicate
                     media_type: 'image',
-                    preset_key: composerState.mode === 'neotokyoglitch' ? 'neotokyoglitch' : 
-                               composerState.mode === 'ghiblireact' ? selectedGhibliReactionPreset :
-                               composerState.mode === 'emotionmask' ? selectedEmotionMaskPreset :
-                               selectedPreset,
+                    preset_key: selectedPreset || 'custom',
                     prompt: effectivePrompt,
                     source_public_id: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
                     meta: {
                       mode: composerState.mode,
-                      presetId: composerState.mode === 'ghiblireact' ? selectedGhibliReactionPreset :
-                                composerState.mode === 'emotionmask' ? selectedEmotionMaskPreset :
-                                selectedPreset,
+                      presetId: selectedPreset || 'custom',
                       runId: genId,
                       userId,
                       shareNow: !!shareToFeed,
@@ -2967,9 +2962,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                         body: JSON.stringify({
                           finalUrl: allResultUrls[i],
                           media_type: 'image',
-                          preset_key: composerState.mode === 'ghiblireact' ? selectedGhibliReactionPreset :
-                                       composerState.mode === 'emotionmask' ? selectedEmotionMaskPreset :
-                                       selectedPreset,
+                          preset_key: selectedPreset || 'custom',
                           prompt: effectivePrompt,
                           source_public_id: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
                           meta: {
