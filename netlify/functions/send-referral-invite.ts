@@ -73,12 +73,13 @@ export const handler: Handler = async (event) => {
             background-color: #000000; 
             color: #ffffff;
         }
-        .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background-color: #000000; 
-            padding: 40px 30px;
-        }
+                            .container { 
+                        max-width: 600px; 
+                        margin: 0 auto; 
+                        background-color: #000000; 
+                        padding: 40px 30px;
+                        text-align: center;
+                    }
         .logo { 
             text-align: center; 
             margin-bottom: 40px;
@@ -87,9 +88,10 @@ export const handler: Handler = async (event) => {
             height: 60px;
             width: auto;
         }
-        .content { 
-            line-height: 1.6;
-        }
+                            .content { 
+                        line-height: 1.6;
+                        text-align: center;
+                    }
         .bonus-box { 
             background-color: #1a1a1a; 
             border: 2px solid #333333; 
@@ -121,14 +123,14 @@ export const handler: Handler = async (event) => {
             margin: 20px 0; 
             font-weight: 600;
         }
-        .footer { 
-            margin-top: 40px; 
-            text-align: center; 
-            color: #cccccc; 
-            font-size: 14px;
-            border-top: 1px solid #333333;
-            padding-top: 20px;
-        }
+                            .footer { 
+                        margin-top: 40px; 
+                        text-align: center; 
+                        color: #ffffff; 
+                        font-size: 14px;
+                        border-top: 1px solid #333333;
+                        padding-top: 20px;
+                    }
     </style>
 </head>
 <body>

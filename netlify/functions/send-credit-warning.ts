@@ -79,6 +79,7 @@ export const handler: Handler = async (event) => {
             margin: 0 auto; 
             background-color: #000000; 
             padding: 40px 30px;
+            text-align: center;
         }
         .logo { 
             text-align: center; 
@@ -90,10 +91,11 @@ export const handler: Handler = async (event) => {
         }
         .content { 
             line-height: 1.6;
+            text-align: center;
         }
         .warning-box { 
             background-color: #1a1a1a; 
-            border: 2px solid #dc3545; 
+            border: 2px solid #ffffff; 
             border-radius: 8px; 
             padding: 30px; 
             text-align: center; 
@@ -102,7 +104,7 @@ export const handler: Handler = async (event) => {
         .usage { 
             font-size: 24px; 
             font-weight: 700; 
-            color: #ff6b6b; 
+            color: #ffffff; 
             margin: 20px 0;
         }
         .remaining { 
@@ -111,7 +113,7 @@ export const handler: Handler = async (event) => {
             border-radius: 6px; 
             padding: 20px; 
             margin: 20px 0;
-            color: #ffcc00;
+            color: #ffffff;
         }
         .cta { 
             background-color: #ffffff; 
@@ -126,7 +128,7 @@ export const handler: Handler = async (event) => {
         .footer { 
             margin-top: 40px; 
             text-align: center; 
-            color: #cccccc; 
+            color: #ffffff; 
             font-size: 14px;
             border-top: 1px solid #333333;
             padding-top: 20px;
@@ -196,6 +198,7 @@ Want more credits now? Invite a friend and get 50 bonus credits instantly.
             margin: 0 auto; 
             background-color: #000000; 
             padding: 40px 30px;
+            text-align: center;
         }
         .logo { 
             text-align: center; 
@@ -207,6 +210,7 @@ Want more credits now? Invite a friend and get 50 bonus credits instantly.
         }
         .content { 
             line-height: 1.6;
+            text-align: center;
         }
         .info-box { 
             background-color: #1a1a1a; 
@@ -242,7 +246,7 @@ Want more credits now? Invite a friend and get 50 bonus credits instantly.
         .footer { 
             margin-top: 40px; 
             text-align: center; 
-            color: #cccccc; 
+            color: #ffffff; 
             font-size: 14px;
             border-top: 1px solid #333333;
             padding-top: 20px;
