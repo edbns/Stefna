@@ -104,7 +104,108 @@ export const handler: Handler = async (event) => {
       const { data: emailData, error: emailError } = await resend.emails.send({
         from: 'Stefna <hello@stefna.xyz>',
         to: [email],
-        subject: `Your Stefna Login Code`,
+        subject: `Your Stefna Login Code: ${otp}`,
+        html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stefna Login Code</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f8f9fa; 
+            color: #212529;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #ffffff; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header { 
+            background-color: #000000; 
+            color: #ffffff; 
+            padding: 40px 30px; 
+            text-align: center;
+        }
+        .header h1 { 
+            margin: 0; 
+            font-size: 28px; 
+            font-weight: 600; 
+            letter-spacing: -0.5px;
+        }
+        .content { 
+            padding: 40px 30px; 
+            line-height: 1.6;
+        }
+        .otp-box { 
+            background-color: #f8f9fa; 
+            border: 2px solid #dee2e6; 
+            border-radius: 8px; 
+            padding: 30px; 
+            text-align: center; 
+            margin: 30px 0;
+        }
+        .otp-code { 
+            font-size: 36px; 
+            font-weight: 700; 
+            color: #000000; 
+            letter-spacing: 4px; 
+            font-family: 'Courier New', monospace;
+        }
+        .expiry { 
+            color: #6c757d; 
+            font-size: 14px; 
+            margin-top: 15px;
+        }
+        .footer { 
+            background-color: #f8f9fa; 
+            padding: 30px; 
+            text-align: center; 
+            color: #6c757d; 
+            font-size: 14px;
+            border-top: 1px solid #dee2e6;
+        }
+        .warning { 
+            background-color: #fff3cd; 
+            border: 1px solid #ffeaa7; 
+            border-radius: 6px; 
+            padding: 15px; 
+            margin: 20px 0; 
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>STEFNA</h1>
+        </div>
+        
+        <div class="content">
+            <h2 style="margin-top: 0; color: #000000;">Your Login Code</h2>
+            <p>Here's your one-time login code to access your Stefna account:</p>
+            
+            <div class="otp-box">
+                <div class="otp-code">${otp}</div>
+                <div class="expiry">Expires in 10 minutes</div>
+            </div>
+            
+            <div class="warning">
+                <strong>Security Notice:</strong> If you didn't request this code, you can safely ignore this email.
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>The Stefna Team</p>
+        </div>
+    </div>
+</body>
+</html>`,
         text: `Here's your one-time login code:
 
 ${otp}

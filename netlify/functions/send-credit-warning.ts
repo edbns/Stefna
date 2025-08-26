@@ -55,13 +55,123 @@ export const handler: Handler = async (event) => {
     const resend = new Resend(resendApiKey);
     
     // Enhanced email content based on usage data
-    let subject, text;
+    let subject, html, text;
     
     if (isCritical) {
-      subject = '⚠️ Critical: You\'re Almost Out of Credits Today';
+      subject = 'Critical: You\'re Almost Out of Credits Today';
+      html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Critical Credit Warning</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f8f9fa; 
+            color: #212529;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #ffffff; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header { 
+            background-color: #dc3545; 
+            color: #ffffff; 
+            padding: 40px 30px; 
+            text-align: center;
+        }
+        .header h1 { 
+            margin: 0; 
+            font-size: 28px; 
+            font-weight: 600; 
+            letter-spacing: -0.5px;
+        }
+        .content { 
+            padding: 40px 30px; 
+            line-height: 1.6;
+        }
+        .warning-box { 
+            background-color: #f8d7da; 
+            border: 2px solid #f5c6cb; 
+            border-radius: 8px; 
+            padding: 30px; 
+            text-align: center; 
+            margin: 30px 0;
+        }
+        .usage { 
+            font-size: 24px; 
+            font-weight: 700; 
+            color: #721c24; 
+            margin: 20px 0;
+        }
+        .remaining { 
+            background-color: #fff3cd; 
+            border: 1px solid #ffeaa7; 
+            border-radius: 6px; 
+            padding: 20px; 
+            margin: 20px 0;
+            color: #856404;
+        }
+        .cta { 
+            background-color: #000000; 
+            color: #ffffff; 
+            padding: 15px 30px; 
+            border-radius: 6px; 
+            text-decoration: none; 
+            display: inline-block; 
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .footer { 
+            background-color: #f8f9fa; 
+            padding: 30px; 
+            text-align: center; 
+            color: #6c757d; 
+            font-size: 14px;
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CREDIT WARNING</h1>
+        </div>
+        
+        <div class="content">
+            <h2 style="margin-top: 0; color: #721c24;">Critical Credit Alert</h2>
+            <p>You've used <strong>${dailyUsed}</strong> out of <strong>${dailyCap}</strong> daily credits (<strong>${usagePercentage}%</strong>).</p>
+            
+            <div class="warning-box">
+                <div class="usage">WARNING: Only ${remainingCredits} credits remaining today!</div>
+                <p>Your daily credits reset at midnight UTC. You'll be back to full power tomorrow.</p>
+            </div>
+            
+            <div class="remaining">
+                <strong>Want more credits now?</strong><br>
+                Invite a friend and get 50 bonus credits instantly.
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="https://stefna.xyz" class="cta">Get More Credits</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>The Stefna Team</p>
+        </div>
+    </div>
+</body>
+</html>`;
       text = `You've used ${dailyUsed} out of ${dailyCap} daily credits (${usagePercentage}%).
 
-⚠️ WARNING: You only have ${remainingCredits} credits remaining today!
+WARNING: You only have ${remainingCredits} credits remaining today!
 
 Your daily credits reset at midnight UTC. You'll be back to full power tomorrow.
 
@@ -69,7 +179,116 @@ Want more credits now? Invite a friend and get 50 bonus credits instantly.
 
 — The Stefna Team`;
     } else {
-      subject = '📢 You\'re Running Low on Credits';
+      subject = 'You\'re Running Low on Credits';
+      html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Warning</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f8f9fa; 
+            color: #212529;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #ffffff; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header { 
+            background-color: #ffc107; 
+            color: #000000; 
+            padding: 40px 30px; 
+            text-align: center;
+        }
+        .header h1 { 
+            margin: 0; 
+            font-size: 28px; 
+            font-weight: 600; 
+            letter-spacing: -0.5px;
+        }
+        .content { 
+            padding: 40px 30px; 
+            line-height: 1.6;
+        }
+        .info-box { 
+            background-color: #f8f9fa; 
+            border: 2px solid #dee2e6; 
+            border-radius: 8px; 
+            padding: 30px; 
+            text-align: center; 
+            margin: 30px 0;
+        }
+        .usage { 
+            font-size: 24px; 
+            font-weight: 700; 
+            color: #000000; 
+            margin: 20px 0;
+        }
+        .remaining { 
+            background-color: #e9ecef; 
+            border-radius: 6px; 
+            padding: 20px; 
+            margin: 20px 0;
+        }
+        .cta { 
+            background-color: #000000; 
+            color: #ffffff; 
+            padding: 15px 30px; 
+            border-radius: 6px; 
+            text-decoration: none; 
+            display: inline-block; 
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .footer { 
+            background-color: #f8f9fa; 
+            padding: 30px; 
+            text-align: center; 
+            color: #6c757d; 
+            font-size: 14px;
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CREDIT ALERT</h1>
+        </div>
+        
+        <div class="content">
+            <h2 style="margin-top: 0; color: #000000;">Running Low on Credits</h2>
+            <p>You've used <strong>${dailyUsed}</strong> out of <strong>${dailyCap}</strong> daily credits (<strong>${usagePercentage}%</strong>).</p>
+            
+            <div class="info-box">
+                <div class="usage">${remainingCredits} Credits Remaining</div>
+                <p>Just a heads-up — you're running low on credits for today.</p>
+                <p>Your daily 30 credits reset at midnight UTC.</p>
+            </div>
+            
+            <div class="remaining">
+                <strong>Want more now?</strong><br>
+                Invite a friend and get 50 bonus credits instantly.
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="https://stefna.xyz" class="cta">Get More Credits</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>The Stefna Team</p>
+        </div>
+    </div>
+</body>
+</html>`;
       text = `You've used ${dailyUsed} out of ${dailyCap} daily credits (${usagePercentage}%).
 
 Just a heads-up — you're running low on credits for today.
@@ -85,6 +304,7 @@ Want more now? Invite a friend and get 50 bonus credits instantly.
       from: 'Stefna <hello@stefna.xyz>',
       to: [to],
       subject: subject,
+      html: html,
       text: text
     });
 

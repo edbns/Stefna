@@ -269,13 +269,121 @@ export const handler: Handler = async (event) => {
             from: 'Stefna <hello@stefna.xyz>',
             to: [email],
             subject: 'Welcome to Stefna – Your 30 Credits Are Ready',
+            html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Stefna</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f8f9fa; 
+            color: #212529;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #ffffff; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header { 
+            background-color: #000000; 
+            color: #ffffff; 
+            padding: 40px 30px; 
+            text-align: center;
+        }
+        .header h1 { 
+            margin: 0; 
+            font-size: 28px; 
+            font-weight: 600; 
+            letter-spacing: -0.5px;
+        }
+        .content { 
+            padding: 40px 30px; 
+            line-height: 1.6;
+        }
+        .welcome-box { 
+            background-color: #f8f9fa; 
+            border: 2px solid #dee2e6; 
+            border-radius: 8px; 
+            padding: 30px; 
+            text-align: center; 
+            margin: 30px 0;
+        }
+        .credits { 
+            font-size: 32px; 
+            font-weight: 700; 
+            color: #000000; 
+            margin: 20px 0;
+        }
+        .highlight { 
+            background-color: #e9ecef; 
+            border-radius: 6px; 
+            padding: 20px; 
+            margin: 20px 0;
+        }
+        .cta { 
+            background-color: #000000; 
+            color: #ffffff; 
+            padding: 15px 30px; 
+            border-radius: 6px; 
+            text-decoration: none; 
+            display: inline-block; 
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .footer { 
+            background-color: #f8f9fa; 
+            padding: 30px; 
+            text-align: center; 
+            color: #6c757d; 
+            font-size: 14px;
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>STEFNA</h1>
+        </div>
+        
+        <div class="content">
+            <h2 style="margin-top: 0; color: #000000;">Welcome to Stefna</h2>
+            <p>Your account is now active, and we've already added <strong>30 credits</strong> to get you started.</p>
+            
+            <div class="welcome-box">
+                <div class="credits">30 Credits</div>
+                <p>That's enough to create up to 15 high-quality images today. Credits reset daily, so you'll get 30 more tomorrow.</p>
+            </div>
+            
+            <div class="highlight">
+                <strong>No tiers, no gimmicks, and no social media verification.</strong><br>
+                Everyone gets the same creative power.
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="https://stefna.xyz" class="cta">Start Creating Now</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>The Stefna Team</p>
+        </div>
+    </div>
+</body>
+</html>`,
             text: `Welcome to Stefna.
 
-Your account is now active, and we've already added 30 credits to get you started. That's enough to generate up to 15 high-quality images today. Credits reset daily, so you'll get 30 more tomorrow.
+Your account is now active, and we've already added 30 credits to get you started. That's enough to create up to 15 high-quality images today. Credits reset daily, so you'll get 30 more tomorrow.
 
 There are no tiers, no gimmicks, and no social media verification. Everyone gets the same creative power.
 
-Start generating now.
+Start creating now.
 
 — The Stefna Team`
           });
