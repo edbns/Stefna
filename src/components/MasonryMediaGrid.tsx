@@ -194,11 +194,11 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                       <>
 
                         {/* Preset Tag - Bottom Left */}
-                        {item.metadata?.presetKey && (
+                        {(item.metadata?.presetKey || item.presetKey) && (
                           <div className="absolute bottom-2 left-2">
                             <PresetTag 
-                              presetKey={item.metadata.presetKey} 
-                              type={item.metadata.presetType}
+                              presetKey={item.metadata?.presetKey || item.presetKey} 
+                              type={item.metadata?.presetType || item.type}
                               size="sm"
                             />
                           </div>
