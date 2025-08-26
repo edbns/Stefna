@@ -456,13 +456,13 @@ async function deductCredits(userId: string, provider: 'stability' | 'aiml', run
         user_id: userId,
         request_id: runId,
         action: 'image.gen',
-        cost: 1
+        cost: 2
       })
     });
 
     if (reserveResponse.ok) {
       const reserveResult = await reserveResponse.json();
-      console.log(`✅ [NeoGlitch] Reserved 1 credit for ${provider}. New balance: ${reserveResult.newBalance}`);
+      console.log(`✅ [NeoGlitch] Reserved 2 credits for ${provider}. New balance: ${reserveResult.newBalance}`);
       
       // Now commit the credits since generation was successful
       const commitResponse = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-finalize`, {
@@ -480,7 +480,7 @@ async function deductCredits(userId: string, provider: 'stability' | 'aiml', run
 
       if (commitResponse.ok) {
         const commitResult = await commitResponse.json();
-        console.log(`✅ [NeoGlitch] Committed 1 credit for ${provider} after successful generation. Final balance: ${commitResult.newBalance}`);
+        console.log(`✅ [NeoGlitch] Committed 2 credits for ${provider} after successful generation. Final balance: ${commitResult.newBalance}`);
         return true;
       } else {
         console.warn(`⚠️ [NeoGlitch] Failed to commit credit for ${provider}: ${commitResponse.status}`);
@@ -543,13 +543,13 @@ async function finalizeCreditsOnce(userId: string, runId: string, success: boole
           user_id: userId,
           request_id: runId,
           action: 'image.gen',
-          cost: 1
+          cost: 2
         })
       });
 
       if (reserveResponse.ok) {
         const reserveResult = await reserveResponse.json();
-        console.log(`✅ [NeoGlitch] Reserved 1 credit for successful generation. New balance: ${reserveResult.newBalance}`);
+        console.log(`✅ [NeoGlitch] Reserved 2 credits for successful generation. New balance: ${reserveResult.newBalance}`);
         
         // Now commit the credits since generation was successful
         const commitResponse = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-finalize`, {

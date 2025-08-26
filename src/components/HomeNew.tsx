@@ -1938,12 +1938,12 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       console.info('🎯 AIML API payload for non-Neo-Glitch preset:', payload);
 
       // Reserve credits before generation - dynamically calculate based on variations
-      let creditsNeeded = 1; // Default for single generation
+      let creditsNeeded = 2; // Default for single generation (premium images)
       
       if (kind === 'ghiblireact' || kind === 'neotokyoglitch') {
-        creditsNeeded = 1; // Single generation for new modes
+        creditsNeeded = 2; // Single generation for new modes (premium images)
       } else {
-        creditsNeeded = 1; // Single generation (preset, custom single, emotionmask)
+                  creditsNeeded = 2; // Single generation (preset, custom single, emotionmask) - premium images
       }
       
       console.log(`💰 Reserving ${creditsNeeded} credits before generation...`);
@@ -3296,7 +3296,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       }
       
       // Reserve credits before generation for this path
-      const creditsNeeded = 1; // Single generation only
+      const creditsNeeded = 2; // Single generation only (premium images)
       console.log(`💰 Alt path: Reserving ${creditsNeeded} credits before generation...`);
       console.log('🔍 Alt path credit debug:', { 
         selectedMode, 
