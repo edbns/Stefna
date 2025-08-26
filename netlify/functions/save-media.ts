@@ -435,7 +435,7 @@ export const handler: Handler = async (event): Promise<any> => {
             console.log('🔄 [Batch Save] Non-Cloudinary URL detected, uploading to Cloudinary:', v.image_url.substring(0, 60) + '...');
             
             // Extract preset information using our detection function
-            presetInfo = extractPresetInfo(v.image_url, v.meta);
+            presetInfo = extractPresetInfo(v.image_url, v.meta, v.meta?.presetKey);
             
             console.log('🔍 [Batch Save] Extracted preset info:', presetInfo);
             
