@@ -37,6 +37,7 @@ interface SafeMasonryGridProps {
   handleMediaClick: (media: UserMedia) => void
   // handleRemix removed - no more remix functionality
   onLastItemRef?: (ref: HTMLDivElement | null) => void
+  onPresetTagClick?: (presetType: string) => void
 }
 
 const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
@@ -44,6 +45,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   handleMediaClick,
   onLastItemRef,
   // handleRemix removed
+  onPresetTagClick
 }) => {
   try {
     return (
@@ -55,6 +57,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         showActions={true}
         className="pb-24 w-full"
         onLastItemRef={onLastItemRef}
+        onPresetTagClick={onPresetTagClick}
       />
     )
   } catch (error) {
@@ -209,6 +212,9 @@ const HomeNew: React.FC = () => {
   const genIdRef = useRef(0) // increments per job to prevent race conditions
   const [currentRunId, setCurrentRunId] = useState<string | null>(null)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
+  
+  // Feed filtering state
+  const [activeFeedFilter, setActiveFeedFilter] = useState<string | null>(null)
   
   useEffect(() => { 
     selectedPresetRef.current = selectedPreset 
@@ -467,6 +473,8 @@ const HomeNew: React.FC = () => {
   const [isLoadingFeed, setIsLoadingFeed] = useState(true)
   const [hasMoreFeed, setHasMoreFeed] = useState(true)
   const [feedPage, setFeedPage] = useState(0)
+  
+
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
   const [creatorFilter, setCreatorFilter] = useState<string | null>(null)
@@ -3763,6 +3771,16 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     if (creatorFilter && item.userId !== creatorFilter) return false
     if (currentFilter === 'images') return item.type === 'photo'
     if (currentFilter === 'videos') return item.type === 'video'
+    
+    // Apply preset type filtering
+    if (activeFeedFilter) {
+      const presetType = item.metadata?.presetType || 
+                        (item.presetKey?.includes('ghibli') ? 'ghibli' :
+                         item.presetKey?.includes('emotion') ? 'emotion' :
+                         item.presetKey?.includes('neo') ? 'neo-tokyo' : 'professional')
+      if (presetType !== activeFeedFilter) return false
+    }
+    
     return true
   })
 
@@ -4240,6 +4258,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 handleMediaClick={handleMediaClick}
                 onLastItemRef={setLastItemRef}
                 // handleRemix removed
+                onPresetTagClick={(presetType) => setActiveFeedFilter(presetType)}
               />
               
               {/* 🚀 Unified infinite scroll: Loading indicator */}
@@ -4282,6 +4301,13 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       {creatorFilter && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-white/10 text-white text-xs px-3 py-1 rounded-full border border-white/20 backdrop-blur-sm">
           Filtering by creator • <button className="underline" onClick={() => setCreatorFilter(null)}>clear</button>
+        </div>
+      )}
+      
+      {/* Preset filter banner */}
+      {activeFeedFilter && (
+        <div className="fixed top-32 left-1/2 -translate-x-1/2 z-40 bg-white/10 text-white text-xs px-3 py-1 rounded-full border border-white/20 backdrop-blur-sm">
+          Filtering by {activeFeedFilter} • <button className="underline" onClick={() => setActiveFeedFilter(null)}>clear</button>
         </div>
       )}
 
