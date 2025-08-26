@@ -6,7 +6,7 @@ import authService from '../services/authService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import MasonryMediaGrid from './MasonryMediaGrid'
 import SkeletonGrid from './SkeletonGrid'
-import BufferSkeleton from './BufferSkeleton'
+
 import interactionService from '../services/interactionService'
 import type { UserMedia } from '../services/userMediaService'
 import NotificationBell from './NotificationBell'
@@ -912,28 +912,25 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     }
   }, [])
 
-  // 🚀 HIGH-END INFINITE SCROLL: Progressive loading with intersection observer
+  // 🚀 UNIFIED INFINITE SCROLL: Single loading system for consistent behavior
   const [isIntersecting, setIsIntersecting] = useState(false)
   const [lastItemRef, setLastItemRef] = useState<HTMLDivElement | null>(null)
-  const [feedBuffer, setFeedBuffer] = useState<UserMedia[]>([])
-  const [isBuffering, setIsBuffering] = useState(false)
   
-  // Progressive loading: Load more items when user approaches the end
+  // Unified loading: Use the same system for both initial and scroll loading
   const loadMoreFeed = async () => {
-    if (!hasMoreFeed || isLoadingMore || isBuffering) return
+    if (!hasMoreFeed || isLoadingMore) return
     
     try {
-      setIsBuffering(true)
-      console.log('🚀 [InfiniteScroll] Progressive loading triggered')
+      setIsLoadingMore(true)
+      console.log('🚀 [UnifiedScroll] Loading more items...')
       
-      // Load a smaller batch for smoother experience
-      const batchSize = 10
-      const currentTotal = feed.length + feedBuffer.length
-      const offset = currentTotal
+      // Use same batch size as initial load for consistency
+      const batchSize = 20
+      const offset = feed.length
       
-      console.log('🔍 [InfiniteScroll] Loading batch:', {
+      console.log('🔍 [UnifiedScroll] Loading batch:', {
         batchSize,
-        currentTotal,
+        currentFeedLength: feed.length,
         offset,
         expectedRange: `${offset}-${offset + batchSize - 1}`
       })
@@ -946,8 +943,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         if (resp.success && resp.items?.length > 0) {
           const newItems = resp.items
             .map((item: any): UserMedia | null => {
-              // Same mapping logic as before
+              // Same mapping logic as loadFeed for consistency
               let mediaUrl: string;
+              let provider = item.provider || 'unknown';
+              
               if (item.finalUrl && item.finalUrl.startsWith('http')) {
                 mediaUrl = item.finalUrl;
               } else if (item.imageUrl && item.imageUrl.startsWith('http')) {
@@ -979,8 +978,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                   quality: 'high', 
                   generationTime: 0, 
                   modelVersion: '1.0',
-                  presetKey: item.presetKey, // Add preset key
-                  presetType: item.type // Add preset type (neo-glitch, media-asset, etc.)
+                  presetKey: item.presetKey,
+                  presetType: item.type
                 },
                 cloudinaryPublicId: item.cloudinaryPublicId,
                 mediaType: item.mediaType,
@@ -988,34 +987,27 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             })
             .filter((item: UserMedia | null): item is UserMedia => item !== null)
           
-          console.log('✅ [InfiniteScroll] New items loaded:', newItems.length)
+          console.log('✅ [UnifiedScroll] New items loaded:', newItems.length)
           
-          // Add to buffer for smooth rendering
-          setFeedBuffer(prev => [...prev, ...newItems])
+          // Add directly to main feed (no buffer needed)
+          setFeed(prev => [...prev, ...newItems])
           
           // Update hasMore flag
           setHasMoreFeed(resp.hasMore !== false)
           
-          // If this was the last batch, merge buffer into main feed
-          if (!resp.hasMore || newItems.length < batchSize) {
-            setTimeout(() => {
-              setFeed(prev => [...prev, ...feedBuffer])
-              setFeedBuffer([])
-              console.log('🔄 [InfiniteScroll] Buffer merged into main feed')
-            }, 100) // Small delay for smooth transition
-          }
+          console.log('🔄 [UnifiedScroll] Items added to main feed, total:', feed.length + newItems.length)
         } else {
           setHasMoreFeed(false)
         }
       }
     } catch (error) {
-      console.error('❌ [InfiniteScroll] Progressive loading failed:', error)
+      console.error('❌ [UnifiedScroll] Loading failed:', error)
     } finally {
-      setIsBuffering(false)
+      setIsLoadingMore(false)
     }
   }
 
-  // Intersection Observer for smooth infinite scroll
+  // Intersection Observer for unified infinite scroll
   useEffect(() => {
     if (!lastItemRef) return
     
@@ -1024,8 +1016,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         const [entry] = entries
         setIsIntersecting(entry.isIntersecting)
         
-        if (entry.isIntersecting && hasMoreFeed && !isLoadingMore && !isBuffering) {
-          console.log('👁️ [InfiniteScroll] Last item visible, triggering load')
+        if (entry.isIntersecting && hasMoreFeed && !isLoadingMore) {
+          console.log('👁️ [UnifiedScroll] Last item visible, triggering load')
           loadMoreFeed()
         }
       },
@@ -1040,21 +1032,21 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     return () => {
       if (lastItemRef) observer.unobserve(lastItemRef)
     }
-  }, [lastItemRef, hasMoreFeed, isLoadingMore, isBuffering])
+  }, [lastItemRef, hasMoreFeed, isLoadingMore])
 
-  // Legacy scroll handler as fallback (can be removed once intersection observer is proven)
+    // Legacy scroll handler as fallback (can be removed once intersection observer is proven)
   useEffect(() => {
     const handleScroll = () => {
       if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 500) {
-        if (hasMoreFeed && !isLoadingMore && !isBuffering) {
+        if (hasMoreFeed && !isLoadingMore) {
           loadMoreFeed()
         }
       }
     }
-
+    
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [hasMoreFeed, isLoadingMore, isBuffering])
+  }, [hasMoreFeed, isLoadingMore])
 
   // Load public feed on mount
   const loadFeed = async (isInitial = true) => {
@@ -4262,13 +4254,8 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 // handleRemix removed
               />
               
-              {/* 🚀 High-end infinite scroll: Show buffer items with engaging skeleton */}
-              {feedBuffer.length > 0 && (
-                <BufferSkeleton items={feedBuffer} />
-              )}
-              
-              {/* Loading indicator for infinite scroll */}
-              {isBuffering && hasMoreFeed && (
+              {/* 🚀 Unified infinite scroll: Loading indicator */}
+              {isLoadingMore && hasMoreFeed && (
                 <div className="flex justify-center py-8">
                   <div className="flex items-center space-x-3 text-white/60">
                     <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
@@ -4288,10 +4275,9 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               {import.meta.env.DEV && (
                 <div className="fixed bottom-4 right-4 bg-black/80 text-white text-xs p-2 rounded backdrop-blur-sm z-50">
                   <div>📊 Feed: {feed.length}</div>
-                  <div>🔄 Buffer: {feedBuffer.length}</div>
                   <div>👁️ Intersecting: {isIntersecting ? 'Yes' : 'No'}</div>
                   <div>📡 Has More: {hasMoreFeed ? 'Yes' : 'No'}</div>
-                  <div>⏳ Buffering: {isBuffering ? 'Yes' : 'No'}</div>
+                  <div>⏳ Loading: {isLoadingMore ? 'Yes' : 'No'}</div>
                 </div>
               )}
 
