@@ -2599,34 +2599,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           }
         };
         
+        // 🔧 FIX: Remove duplicate save - generation pipeline handles all saving now
+        // Only save locally for immediate UI display
         await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
-        console.log('✅ [Media] Saved successfully to local profile');
-        
-        // Then save to backend database for feed visibility
-        const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            finalUrl: finalResultUrl,
-            media_type: 'image',
-            preset_key: generationMeta?.presetId || generationMeta?.ghibliReactionPresetId || generationMeta?.emotionMaskPresetId,
-            prompt: effectivePrompt,
-            meta: {
-              mode: generationMeta?.mode || 'custom',
-              generationType: generationMeta?.mode || 'custom', // 🔧 Add generationType for preset mapping
-              shareNow: true,
-              generation_type: generationMeta?.generation_type || 'custom',
-              model: body?.model || 'aiml-api'
-            }
-          })
-        });
-        
-        if (saveRes.ok) {
-          const saveBody = await saveRes.json();
-          console.log('✅ [Media] Saved successfully to backend database:', saveBody);
-        } else {
-          console.warn('⚠️ [Media] Backend save failed, but local save succeeded');
-        }
+        console.log('✅ [Media] Saved successfully to local profile (backend save handled by generation pipeline)');
         
       } catch (error) {
         console.error('❌ [Media] Failed to save media:', error);
@@ -2702,30 +2678,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               // The profile will refresh when the actual save completes
             }
           } catch {}
-          try {
-            const saved = await saveMedia({
-              resultUrl: finalResultUrl, // Use final result (original or retry)
-              userId,
-              presetKey: selectedPreset ?? null,
-              sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : null,
-
-              shareNow: !!shareToFeed,
-              mediaTypeHint: 'image',
-            })
-            console.log('✅ saveMedia ok:', saved)
-            // Refresh both feed and user profile
-            setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
-            // DON'T dispatch userMediaUpdated here - it clears the composer!
-            // The composer should stay open so user can see their result
-          } catch (e:any) {
-            console.error('❌ saveMedia failed:', e)
-            notifyError({ title: 'Something went wrong', message: e?.message || 'Failed to save media' })
-            try {
-              if (userId) {
-                const removeId = undefined // not tracked precisely for images; grid will refresh shortly
-              }
-            } catch {}
-          }
+          // 🔧 FIX: Remove duplicate saveMedia call - generation pipeline handles all saving now
+          console.log('✅ Backend save handled by generation pipeline');
+          // Refresh both feed and user profile
+          setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
           endGeneration(genId);
           setNavGenerating(false);
           

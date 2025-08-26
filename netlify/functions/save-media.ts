@@ -348,7 +348,7 @@ export const handler: Handler = async (event): Promise<any> => {
       console.log(`🔄 Batch save operation: ${body.variations!.length} variations for user ${userId}`);
       
       const { variations, runId } = body;
-      const batchId = randomUUID();
+      const batchId = crypto.randomUUID ? crypto.randomUUID() : `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const items: any[] = [];
       
       // Validate variations
@@ -407,7 +407,7 @@ export const handler: Handler = async (event): Promise<any> => {
 
       // Insert each variation using Prisma
       for (const v of validVariations) {
-        const id = randomUUID();
+        const id = crypto.randomUUID ? crypto.randomUUID() : `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const mediaType = v.media_type || 'image';
         const itemIdempotencyKey = `${runId || 'no-run'}:${v.meta?.mood || v.meta?.variation_index || Math.random().toString(36).substr(2, 9)}`;
         
@@ -699,7 +699,7 @@ export const handler: Handler = async (event): Promise<any> => {
       console.log(`🔒 [save-media] User visibility preference: ${userWantsPublic ? 'public' : 'private'}`);
       
       // Generate UUID for the new media asset
-      const mediaId = randomUUID();
+      const mediaId = crypto.randomUUID ? crypto.randomUUID() : `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       console.log(`🔍 [save-media] Generated UUID for new media: ${mediaId}`);
       console.log(`🔍 [save-media] UUID type: ${typeof mediaId}, length: ${mediaId.length}`);
       
