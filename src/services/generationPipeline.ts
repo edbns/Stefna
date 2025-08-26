@@ -55,13 +55,13 @@ class GenerationPipeline {
   private customPromptService: CustomPromptService;
 
   private constructor() {
-    // Initialize feature flags (can be loaded from environment or API)
+    // All systems now use dedicated functions - no more feature flags needed
     this.featureFlags = {
-      emotionMaskNewSystem: this.shouldUseNewSystem('emotion-mask'),
-      presetsNewSystem: this.shouldUseNewSystem('presets'),
-      ghibliReactionNewSystem: this.shouldUseNewSystem('ghibli-reaction'),
-      customPromptNewSystem: this.shouldUseNewSystem('custom-prompt'),
-      neoGlitchNewSystem: true // Always use new system (already working)
+      emotionMaskNewSystem: true, // Always use new system
+      presetsNewSystem: true,     // Always use new system
+      ghibliReactionNewSystem: true, // Always use new system
+      customPromptNewSystem: true,   // Always use new system
+      neoGlitchNewSystem: true      // Always use new system
     };
 
     // Initialize service instances
@@ -180,128 +180,104 @@ class GenerationPipeline {
    * Handle Emotion Mask generation
    */
   private async handleEmotionMaskGeneration(request: GenerationRequest): Promise<GenerationResult> {
-    if (this.featureFlags.emotionMaskNewSystem) {
-      console.log('🆕 [GenerationPipeline] Using NEW Emotion Mask system');
-      try {
-        const result = await this.emotionMaskService.startGeneration({
-          prompt: request.prompt,
-          presetKey: request.presetKey,
-          sourceAssetId: request.sourceAssetId,
-          userId: request.userId,
-          runId: request.runId,
-          meta: request.meta
-        });
+    console.log('🆕 [GenerationPipeline] Using NEW Emotion Mask system');
+    try {
+      const result = await this.emotionMaskService.startGeneration({
+        prompt: request.prompt,
+        presetKey: request.presetKey,
+        sourceAssetId: request.sourceAssetId,
+        userId: request.userId,
+        runId: request.runId,
+        meta: request.meta
+      });
 
-        return {
-          ...result,
-          system: 'new',
-          type: 'emotion-mask'
-        };
-      } catch (error) {
-        console.warn('⚠️ [GenerationPipeline] New system failed, falling back to old:', error);
-        // Fall through to old system
-      }
+      return {
+        ...result,
+        system: 'new',
+        type: 'emotion-mask'
+      };
+    } catch (error) {
+      console.error('❌ [GenerationPipeline] Emotion Mask generation failed:', error);
+      throw error; // No fallback - let error bubble up
     }
-
-    // Use old system
-    console.log('🔄 [GenerationPipeline] Using OLD Emotion Mask system');
-    return await this.useOldSystem(request);
   }
 
   /**
    * Handle Professional Presets generation
    */
   private async handlePresetsGeneration(request: GenerationRequest): Promise<GenerationResult> {
-    if (this.featureFlags.presetsNewSystem) {
-      console.log('🆕 [GenerationPipeline] Using NEW Presets system');
-      try {
-        const result = await this.presetsService.startGeneration({
-          prompt: request.prompt,
-          presetKey: request.presetKey,
-          sourceAssetId: request.sourceAssetId,
-          userId: request.userId,
-          runId: request.runId,
-          meta: request.meta
-        });
+    console.log('🆕 [GenerationPipeline] Using NEW Presets system');
+    try {
+      const result = await this.presetsService.startGeneration({
+        prompt: request.prompt,
+        presetKey: request.presetKey,
+        sourceAssetId: request.sourceAssetId,
+        userId: request.userId,
+        runId: request.runId,
+        meta: request.meta
+      });
 
-        return {
-          ...result,
-          system: 'new',
-          type: 'presets'
-        };
-      } catch (error) {
-        console.warn('⚠️ [GenerationPipeline] New system failed, falling back to old:', error);
-        // Fall through to old system
-      }
+      return {
+        ...result,
+        system: 'new',
+        type: 'presets'
+      };
+    } catch (error) {
+      console.error('❌ [GenerationPipeline] Presets generation failed:', error);
+      throw error; // No fallback - let error bubble up
     }
-
-    // Use old system
-    console.log('🔄 [GenerationPipeline] Using OLD Presets system');
-    return await this.useOldSystem(request);
   }
 
   /**
    * Handle Ghibli Reaction generation
    */
   private async handleGhibliReactionGeneration(request: GenerationRequest): Promise<GenerationResult> {
-    if (this.featureFlags.ghibliReactionNewSystem) {
-      console.log('🆕 [GenerationPipeline] Using NEW Ghibli Reaction system');
-      try {
-        const result = await this.ghibliReactionService.startGeneration({
-          prompt: request.prompt,
-          presetKey: request.presetKey,
-          sourceAssetId: request.sourceAssetId,
-          userId: request.userId,
-          runId: request.runId,
-          meta: request.meta
-        });
+    console.log('🆕 [GenerationPipeline] Using NEW Ghibli Reaction system');
+    try {
+      const result = await this.ghibliReactionService.startGeneration({
+        prompt: request.prompt,
+        presetKey: request.presetKey,
+        sourceAssetId: request.sourceAssetId,
+        userId: request.userId,
+        runId: request.runId,
+        meta: request.meta
+      });
 
-        return {
-          ...result,
-          system: 'new',
-          type: 'ghibli-reaction'
-        };
-      } catch (error) {
-        console.warn('⚠️ [GenerationPipeline] New system failed, falling back to old:', error);
-        // Fall through to old system
-      }
+      return {
+        ...result,
+        system: 'new',
+        type: 'ghibli-reaction'
+      };
+    } catch (error) {
+      console.error('❌ [GenerationPipeline] Ghibli Reaction generation failed:', error);
+      throw error; // No fallback - let error bubble up
     }
-
-    // Use old system
-    console.log('🔄 [GenerationPipeline] Using OLD Ghibli Reaction system');
-    return await this.useOldSystem(request);
   }
 
   /**
    * Handle Custom Prompt generation
    */
   private async handleCustomPromptGeneration(request: GenerationRequest): Promise<GenerationResult> {
-    if (this.featureFlags.customPromptNewSystem) {
-      console.log('🆕 [GenerationPipeline] Using NEW Custom Prompt system');
-      try {
-        const result = await this.customPromptService.startGeneration({
-          prompt: request.prompt,
-          presetKey: request.presetKey,
-          sourceAssetId: request.sourceAssetId,
-          userId: request.userId,
-          runId: request.runId,
-          meta: request.meta
-        });
+    console.log('🆕 [GenerationPipeline] Using NEW Custom Prompt system');
+    try {
+      const result = await this.customPromptService.startGeneration({
+        prompt: request.prompt,
+        presetKey: request.presetKey,
+        sourceAssetId: request.sourceAssetId,
+        userId: request.userId,
+        runId: request.runId,
+        meta: request.meta
+      });
 
-        return {
-          ...result,
-          system: 'new',
-          type: 'custom-prompt'
-        };
-      } catch (error) {
-        console.warn('⚠️ [GenerationPipeline] New system failed, falling back to old:', error);
-        // Fall through to old system
-      }
+      return {
+        ...result,
+        system: 'new',
+        type: 'custom-prompt'
+      };
+    } catch (error) {
+      console.error('❌ [GenerationPipeline] Custom Prompt generation failed:', error);
+      throw error; // No fallback - let error bubble up
     }
-
-    // Use old system
-    console.log('🔄 [GenerationPipeline] Using OLD Custom Prompt system');
-    return await this.useOldSystem(request);
   }
 
   /**
@@ -356,55 +332,19 @@ class GenerationPipeline {
   }
 
   /**
-   * Use old generation system as fallback
+   * Old system fallback removed - all generation now uses dedicated functions
    */
   private async useOldSystem(request: GenerationRequest): Promise<GenerationResult> {
-    try {
-      console.log('🔄 [GenerationPipeline] Using old system for:', request.type);
-      
-      // Use the old start-gen function
-      const response = await authenticatedFetch('/.netlify/functions/start-gen', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: request.prompt,
-          image_url: request.sourceAssetId, // Fix: use image_url instead of sourceAssetId
-          presetKey: request.presetKey,
-          userId: request.userId,
-          runId: request.runId,
-          generationMeta: request.meta
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || `Old system generation failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      return {
-        success: true,
-        jobId: result.jobId,
-        runId: result.runId,
-        status: result.status,
-        imageUrl: result.imageUrl,
-        aimlJobId: result.aimlJobId,
-        provider: result.provider,
-        system: 'old',
-        type: request.type
-      };
-
-    } catch (error) {
-      console.error('❌ [GenerationPipeline] Old system generation failed:', error);
-      return {
-        success: false,
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Old system generation failed',
-        system: 'old',
-        type: request.type
-      };
-    }
+    // Old system completely removed - all generation uses dedicated functions
+    console.log('🚫 [GenerationPipeline] Old system removed - using dedicated functions only');
+    
+    return {
+      success: false,
+      status: 'failed',
+      error: 'Old system removed - dedicated functions only',
+      system: 'new',
+      type: request.type
+    };
   }
 
   /**
