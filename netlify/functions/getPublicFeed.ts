@@ -7,6 +7,15 @@ import { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
 
 export const handler: Handler = async (event) => {
+  // 🚨 ENHANCED: Better request logging and validation
+  console.log('🔍 [getPublicFeed] Request received:', {
+    method: event.httpMethod,
+    path: event.path,
+    queryString: event.queryStringParameters,
+    headers: Object.keys(event.headers || {}),
+    timestamp: new Date().toISOString()
+  });
+
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -20,10 +29,15 @@ export const handler: Handler = async (event) => {
   }
 
   if (event.httpMethod !== 'GET') {
+    console.error('❌ [getPublicFeed] Invalid method:', event.httpMethod);
     return {
       statusCode: 405,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify({ 
+        error: 'Method not allowed',
+        received: event.httpMethod,
+        allowed: 'GET'
+      })
     };
   }
 
@@ -37,8 +51,43 @@ export const handler: Handler = async (event) => {
       userId = 'all'          // 'all' or specific user ID
     } = event.queryStringParameters || {};
     
+    // 🚨 ENHANCED: Validate query parameters
     const limitNum = parseInt(limit as string);
     const offsetNum = parseInt(offset as string);
+    
+    if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+      console.error('❌ [getPublicFeed] Invalid limit parameter:', limit);
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ 
+          error: 'Invalid limit parameter',
+          received: limit,
+          expected: '1-100'
+        })
+      };
+    }
+    
+    if (isNaN(offsetNum) || offsetNum < 0) {
+      console.error('❌ [getPublicFeed] Invalid offset parameter:', offset);
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ 
+          error: 'Invalid offset parameter',
+          received: offset,
+          expected: '0 or positive integer'
+        })
+      };
+    }
+    
+    console.log('✅ [getPublicFeed] Query parameters validated:', {
+      limit: limitNum,
+      offset: offsetNum,
+      type,
+      preset,
+      userId: userId === 'all' ? 'all' : userId.substring(0, 8) + '...'
+    });
 
     console.log('🔍 [getPublicFeed] Fetching unified feed with filters:', {
       limit: limitNum,
@@ -301,6 +350,8 @@ export const handler: Handler = async (event) => {
         items: feedItems,
         total: feedItems.length,
         hasMore: (offsetNum + feedItems.length) < uniqueFeedItems.length,
+        // 🆕 NEW: Total count for frontend display
+        totalCount: uniqueFeedItems.length,
         // 🆕 NEW: Detailed breakdown for debugging
         breakdown: {
           totalMediaAssets: publicMedia.length,
@@ -317,7 +368,7 @@ export const handler: Handler = async (event) => {
         pagination: {
           limit: limitNum,
           offset: offsetNum,
-          totalAvailable: allFeedItems.length
+          totalAvailable: uniqueFeedItems.length
         }
       };
 
