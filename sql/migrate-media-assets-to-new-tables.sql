@@ -114,7 +114,7 @@ INSERT INTO presets_media (
     image_url,
     source_url,
     prompt,
-    preset_key,
+    preset,
     run_id,
     aiml_job_id,
     created_at,
@@ -134,7 +134,7 @@ SELECT
         WHEN ma.preset_key = 'soft' THEN 'soft'
         WHEN ma.meta->>'mode' = 'preset' THEN 'professional_default'
         ELSE ma.preset_key
-    END as preset_key,
+    END as preset,
     ma.id as run_id,
     ma.id as aiml_job_id,
     ma.created_at,
