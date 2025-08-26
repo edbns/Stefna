@@ -1,6 +1,6 @@
 // Utility function to map preset keys to user-friendly display names
 export const getPresetDisplayName = (presetKey: string | null | undefined, type?: string): string => {
-  if (!presetKey) return 'Custom'
+  if (!presetKey) return 'Custom Prompt'
   
   // Neo Tokyo Glitch presets
   if (type === 'neo-glitch' || presetKey.startsWith('neo_')) {

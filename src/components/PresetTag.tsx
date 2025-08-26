@@ -30,7 +30,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
           `}
           title="Generated with custom prompt"
         >
-          Custom
+          Custom Prompt
         </div>
       )
     }
@@ -56,6 +56,29 @@ const PresetTag: React.FC<PresetTagProps> = ({
     'custom': 'bg-gradient-to-r from-green-600/80 to-emerald-600/80 text-white border-green-400/30'
   }
   
+  // Format: [Preset] - [Sub-preset] for better UX
+  const formatDisplayText = () => {
+    if (presetType === 'custom') return 'Custom Prompt'
+    
+    // Get the main preset name
+    const mainPresetNames = {
+      'neo-tokyo': 'Neo Tokyo Glitch',
+      'ghibli': 'Ghibli Reaction', 
+      'emotion': 'Emotion Mask',
+      'professional': 'Professional'
+    }
+    
+    const mainPreset = mainPresetNames[presetType as keyof typeof mainPresetNames] || 'Professional'
+    
+    // If it's a custom prompt or no sub-preset, just show main preset
+    if (!presetKey || presetType === 'custom') {
+      return mainPreset
+    }
+    
+    // Show format: [Preset] - [Sub-preset]
+    return `${mainPreset} - ${displayName}`
+  }
+
   return (
     <div 
       className={`
@@ -69,7 +92,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
       `}
       title={`Generated with ${displayName} preset`}
     >
-      {displayName}
+      {formatDisplayText()}
     </div>
   )
 }

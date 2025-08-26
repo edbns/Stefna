@@ -1753,7 +1753,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               height: 1024,
               tokensUsed: 1, // Default token usage
               isPublic: true, // Share to feed by default
-              tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+              tags: [],
               metadata: {
                 quality: 'high' as const,
                 generationTime: Date.now(),
@@ -2128,7 +2128,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 height: 1024,
                 tokensUsed: 1,
                 isPublic: true,
-                tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+                tags: [],
                 metadata: {
                   quality: 'high' as const,
                   generationTime: Date.now(),
@@ -2165,7 +2165,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                     tokensUsed: 1,
                     likes: 0,
                     isPublic: true,
-                    tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+                    tags: [],
                     metadata: { quality: 'high', generationTime: Date.now(), modelVersion: 'stability-ai' }
                   }]);
                   setViewerStartIndex(0);
@@ -2222,7 +2222,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                       height: 1024,
                       tokensUsed: 1,
                       isPublic: true,
-                      tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+                      tags: [],
                       metadata: {
                         quality: 'high' as const,
                         generationTime: Date.now(),
@@ -2258,7 +2258,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                           tokensUsed: 1,
                           likes: 0,
                           isPublic: true,
-                          tags: ['neo-tokyo-glitch', 'cyberpunk', 'ai-generated'],
+                          tags: [],
                           metadata: { quality: 'high', generationTime: Date.now(), modelVersion: 'stability-ai' }
                         }]);
                         setViewerStartIndex(0);
