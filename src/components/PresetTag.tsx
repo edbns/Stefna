@@ -6,7 +6,7 @@ interface PresetTagProps {
   type?: string
   className?: string
   size?: 'sm' | 'md' | 'lg'
-  onClick?: () => void // Add click handler for filtering
+  onClick?: (event: React.MouseEvent) => void // Add click handler for filtering
   clickable?: boolean // Make tags clickable for filtering
 }
 
@@ -44,7 +44,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
             ${className}
           `}
           title="Generated with custom prompt"
-          onClick={clickable ? onClick : undefined}
+          onClick={clickable ? (e) => onClick?.(e) : undefined}
         >
           Custom Prompt
         </div>
@@ -92,7 +92,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
         ${className}
       `}
       title={`Generated with ${displayName} preset`}
-      onClick={clickable ? onClick : undefined}
+      onClick={clickable ? (e) => onClick?.(e) : undefined}
     >
       {formatDisplayText()}
     </div>

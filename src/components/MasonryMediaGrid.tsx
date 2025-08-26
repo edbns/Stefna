@@ -217,7 +217,8 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                               type={item.metadata?.presetType || item.type}
                               size="sm"
                               clickable={!!onPresetTagClick}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation() // Prevent click from bubbling to media card
                                 if (onPresetTagClick) {
                                   const presetType = item.metadata?.presetType || 
                                     (item.presetKey?.includes('ghibli') ? 'ghibli' :

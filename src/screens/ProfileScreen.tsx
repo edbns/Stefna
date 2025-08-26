@@ -696,12 +696,6 @@ const ProfileScreen: React.FC = () => {
         console.error('Failed to load drafts from localStorage:', error)
       }
       
-      // Debug: Log final state
-      console.log('🎯 Final media state:', {
-        userMedia: userMedia.length,
-        totalItems: userMedia.length
-      })
-
       setIsLoading(false)
     } catch (error) {
       console.error('Failed to load user media:', error)

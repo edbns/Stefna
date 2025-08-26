@@ -4155,6 +4155,16 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform duration-200" 
         />
       </div>
+      
+      {/* Filter Banner - Center Top */}
+      {activeFeedFilter && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-white/10 text-white text-sm px-4 py-2 rounded-full border border-white/20 backdrop-blur-sm">
+          Filtering by <span className="font-medium capitalize">{activeFeedFilter}</span> • 
+          <button className="underline ml-1 hover:text-white/80 transition-colors" onClick={() => setActiveFeedFilter(null)}>
+            clear
+          </button>
+        </div>
+      )}
 
       {/* Floating Controls - Top Right */}
       <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
@@ -4304,12 +4314,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         </div>
       )}
       
-      {/* Preset filter banner */}
-      {activeFeedFilter && (
-        <div className="fixed top-32 left-1/2 -translate-x-1/2 z-40 bg-white/10 text-white text-xs px-3 py-1 rounded-full border border-white/20 backdrop-blur-sm">
-          Filtering by {activeFeedFilter} • <button className="underline" onClick={() => setActiveFeedFilter(null)}>clear</button>
-        </div>
-      )}
+
 
       {/* Guest gate overlay removed - existing system in place */}
 
