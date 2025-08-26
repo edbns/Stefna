@@ -29,8 +29,8 @@ const PresetTag: React.FC<PresetTagProps> = ({
   const unifiedStyle = 'bg-glossy-black-800 text-glossy-white-50 border-glossy-black-600 hover:bg-glossy-black-700'
   
   if (!presetKey) {
-    // Handle custom prompts
-    if (type === 'custom') {
+    // Handle custom prompts and new generation types
+    if (type === 'custom' || type === 'custom-prompt') {
       return (
         <div 
           className={`
@@ -60,18 +60,22 @@ const PresetTag: React.FC<PresetTagProps> = ({
   const formatDisplayText = () => {
     if (presetType === 'custom') return 'Custom Prompt'
     
-    // Get the main preset name
+    // Get the main preset name based on generation type
     const mainPresetNames = {
       'neo-tokyo': 'Neo Tokyo Glitch',
       'ghibli': 'Ghibli Reaction', 
       'emotion': 'Emotion Mask',
-      'professional': 'Professional'
+      'professional': 'Professional',
+      'presets': 'Professional',
+      'ghibli-reaction': 'Ghibli Reaction',
+      'emotion-mask': 'Emotion Mask',
+      'custom-prompt': 'Custom Prompt'
     }
     
     const mainPreset = mainPresetNames[presetType as keyof typeof mainPresetNames] || 'Professional'
     
     // If it's a custom prompt or no sub-preset, just show main preset
-    if (!presetKey || presetType === 'custom') {
+    if (!presetKey || presetType === 'custom' || presetType === 'custom-prompt') {
       return mainPreset
     }
     

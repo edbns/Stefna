@@ -3826,10 +3826,25 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     
     // Apply preset type filtering
     if (activeFeedFilter) {
-      const presetType = item.metadata?.presetType || 
-                        (item.presetKey?.includes('ghibli') ? 'ghibli' :
-                         item.presetKey?.includes('emotion') ? 'emotion' :
-                         item.presetKey?.includes('neo') ? 'neo-tokyo' : 'professional')
+      // Enhanced filtering for new dedicated table structure
+      let presetType = item.metadata?.presetType;
+      
+      // If no metadata preset type, try to determine from other fields
+      if (!presetType) {
+        if (item.presetKey?.includes('ghibli') || item.presetKey?.includes('ghibli_reaction')) {
+          presetType = 'ghibli-reaction';
+        } else if (item.presetKey?.includes('emotion') || item.presetKey?.includes('emotion_mask')) {
+          presetType = 'emotion-mask';
+        } else if (item.presetKey?.includes('neo') || item.presetKey?.includes('neo_glitch')) {
+          presetType = 'neo-tokyo';
+        } else if (item.presetKey?.includes('preset') || item.presetKey?.includes('professional')) {
+          presetType = 'presets';
+        } else if (item.presetKey?.includes('custom') || item.prompt) {
+          presetType = 'custom-prompt';
+        } else {
+          presetType = 'professional'; // Default fallback
+        }
+      }
       
       // Debug logging for filtering
       console.log(`🔍 [Filter] Item ${item.id}:`, {
