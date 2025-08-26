@@ -4844,7 +4844,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             
             {/* Clean disclaimer row under composer */}
             <div className="mt-3 text-center">
-              <p className="text-xs text-white/60">
+                              <p className="text-xs text-white">
                 <span className="font-bold">Disclaimer:</span> It's AI. It's smart, but not perfect. expect some fun, wild, and maybe a few "what were they thinking?" moments.
               </p>
             </div>
