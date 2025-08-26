@@ -18,24 +18,72 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Helper function to detect and extract preset information from various sources
+function extractPresetInfo(imageUrl: string, meta?: any, presetKey?: string): { presetKey: string | null; presetType: string } {
+  // Priority 1: Use explicit preset information from meta
+  if (meta?.presetId || meta?.presetKey || presetKey) {
+    return {
+      presetKey: meta?.presetId || meta?.presetKey || presetKey || null,
+      presetType: meta?.mode || meta?.presetType || 'preset'
+    };
+  }
+  
+  // Priority 2: Try to detect from URL patterns
+  if (imageUrl.includes('cdn.aimlapi.com')) {
+    // AIML API URLs - try to extract from path
+    const urlMatch = imageUrl.match(/\/files\/([^\/]+)\//);
+    if (urlMatch) {
+      const detectedPreset = urlMatch[1];
+      return {
+        presetKey: detectedPreset,
+        presetType: 'aiml-generated'
+      };
+    }
+  }
+  
+  // Priority 3: Default fallback
+  return {
+    presetKey: null,
+    presetType: 'unknown'
+  };
+}
+
 // Helper function to upload non-Cloudinary URLs to Cloudinary
-async function uploadToCloudinary(imageUrl: string, tags: string[] = []): Promise<{ url: string; publicId: string }> {
+async function uploadToCloudinary(imageUrl: string, tags: string[] = [], presetInfo?: { presetKey?: string | null; presetType?: string }): Promise<{ url: string; publicId: string }> {
   try {
     console.log('☁️ [Cloudinary] Uploading external URL to Cloudinary:', imageUrl.substring(0, 60) + '...');
     
+    // Enhanced tags with preset information
+    const enhancedTags = [
+      'auto-upload', 
+      'generation',
+      ...tags
+    ];
+    
+    // Add preset-specific tags if available
+    if (presetInfo?.presetKey) {
+      enhancedTags.push(`preset:${presetInfo.presetKey}`);
+    }
+    if (presetInfo?.presetType) {
+      enhancedTags.push(`type:${presetInfo.presetType}`);
+    }
+    
     const result = await cloudinary.uploader.upload(imageUrl, {
       resource_type: 'image',
-      tags: ['auto-upload', 'generation', ...tags],
+      tags: enhancedTags,
       folder: 'generations',
       transformation: [
-        { quality: 'auto:good', fetch_format: 'auto' } // Auto-optimize
+        { quality: 'auto:good', fetch_format: 'auto' }, // Auto-optimize
+        { width: 1024, height: 1024, crop: 'limit' }   // Limit size for performance
       ]
     });
     
     console.log('✅ [Cloudinary] Upload successful:', {
       publicId: result.public_id,
       url: result.secure_url,
-      size: result.bytes
+      size: result.bytes,
+      originalSize: result.original_width + 'x' + result.original_height,
+      optimizedSize: result.width + 'x' + result.height
     });
     
     return {
@@ -76,6 +124,8 @@ interface SaveRequest {
 }
 
 export const handler: Handler = async (event): Promise<any> => {
+  console.log('🚀 [Save Media] Handler started with method:', event.httpMethod);
+  
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -212,6 +262,7 @@ export const handler: Handler = async (event): Promise<any> => {
         // 🚀 UNIFIED CLOUDINARY APPROACH: Upload non-Cloudinary URLs to Cloudinary
         let finalImageUrl = v.image_url;
         let cloudinaryPublicId: string | null = null;
+        let presetInfo: { presetKey: string | null; presetType: string } = { presetKey: null, presetType: 'unknown' }; // Initialize presetInfo
         
         try {
           if (v.image_url.includes('cloudinary.com')) {
@@ -223,11 +274,16 @@ export const handler: Handler = async (event): Promise<any> => {
             // Non-Cloudinary URL (AIML, Replicate, etc.) - upload to Cloudinary
             console.log('🔄 [Batch Save] Non-Cloudinary URL detected, uploading to Cloudinary:', v.image_url.substring(0, 60) + '...');
             
+            // Extract preset information using our detection function
+            presetInfo = extractPresetInfo(v.image_url, v.meta);
+            
+            console.log('🔍 [Batch Save] Extracted preset info:', presetInfo);
+            
             const cloudinaryResult = await uploadToCloudinary(v.image_url, [
               'batch-upload',
-              `preset:${v.meta?.presetId || 'unknown'}`,
-              `mode:${v.meta?.mode || 'unknown'}`
-            ]);
+              `preset:${presetInfo.presetKey || 'unknown'}`,
+              `mode:${presetInfo.presetType}`
+            ], presetInfo);
             
             finalImageUrl = cloudinaryResult.url;
             cloudinaryPublicId = cloudinaryResult.publicId;
@@ -260,14 +316,15 @@ export const handler: Handler = async (event): Promise<any> => {
             url: finalImageUrl, // ✅ Use Cloudinary URL instead of original AIML URL
             visibility: visibility, // Use user preference instead of hardcoded 'public'
             allowRemix: false,
-            presetKey: v.meta?.presetId || null, // ✅ Store preset info for tags
+            presetKey: presetInfo.presetKey, // ✅ Store extracted preset info for tags
             meta: {
               ...v.meta, 
               batch_id: batchId, 
               run_id: runId, 
               idempotency_key: itemIdempotencyKey,
               original_url: v.image_url, // ✅ Keep original URL for reference
-              cloudinary_public_id: cloudinaryPublicId // ✅ Store Cloudinary public ID
+              cloudinary_public_id: cloudinaryPublicId, // ✅ Store Cloudinary public ID
+              extracted_preset: presetInfo // ✅ Store extracted preset information
             }
           }
         });
@@ -394,6 +451,7 @@ export const handler: Handler = async (event): Promise<any> => {
       // 🚀 UNIFIED CLOUDINARY APPROACH: Upload non-Cloudinary URLs to Cloudinary
       let finalImageUrl = finalUrl;
       let cloudinary_public_id: string | null = null;
+      let presetInfo: { presetKey: string | null; presetType: string } = { presetKey: null, presetType: 'unknown' }; // Initialize presetInfo
       
       if (finalUrl.includes('cloudinary.com')) {
         // Already a Cloudinary URL - validate and extract public ID
@@ -434,11 +492,16 @@ export const handler: Handler = async (event): Promise<any> => {
         console.log('🔄 [save-media] Non-Cloudinary URL detected, uploading to Cloudinary:', finalUrl.substring(0, 60) + '...');
         
         try {
-          const cloudinaryResult = await uploadToCloudinary(finalUrl, [
-            'single-upload',
-            `preset:${preset_key || 'unknown'}`,
-            `mode:${meta?.mode || 'unknown'}`
-          ]);
+                      // Extract preset information using our detection function
+            const presetInfo = extractPresetInfo(finalUrl, meta, preset_key);
+            
+            console.log('🔍 [Single Save] Extracted preset info:', presetInfo);
+            
+            const cloudinaryResult = await uploadToCloudinary(finalUrl, [
+              'single-upload',
+              `preset:${presetInfo.presetKey || 'unknown'}`,
+              `mode:${presetInfo.presetType}`
+            ], presetInfo);
           
           finalImageUrl = cloudinaryResult.url;
           cloudinary_public_id = cloudinaryResult.publicId;
@@ -482,12 +545,13 @@ export const handler: Handler = async (event): Promise<any> => {
           url: finalImageUrl, // ✅ Use Cloudinary URL instead of original AIML URL
           visibility: visibility, // Use user preference instead of hardcoded 'public'
           allowRemix: false,
-          presetKey: preset_key || null, // ✅ Store preset key for tag display
+          presetKey: presetInfo.presetKey, // ✅ Store extracted preset info for tags
           meta: { 
             ...(meta || {}), 
             idempotency_key: idempotencyKey || null,
             original_url: finalUrl, // ✅ Keep original URL for reference
-            cloudinary_public_id: cloudinary_public_id // ✅ Store Cloudinary public ID
+            cloudinary_public_id: cloudinary_public_id, // ✅ Store Cloudinary public ID
+            extracted_preset: presetInfo // ✅ Store extracted preset information
           }
         },
         select: {
