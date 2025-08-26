@@ -52,6 +52,18 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   deletingMediaIds = new Set()
 }) => {
   const gridRef = useRef<HTMLDivElement>(null)
+  
+  // 🔍 DEBUG: Log preset data for first few items
+  React.useEffect(() => {
+    if (media.length > 0) {
+      console.log('🔍 [MasonryMediaGrid] Media items preset data:', media.slice(0, 3).map(item => ({
+        id: item.id,
+        presetKey: item.metadata?.presetKey || item.presetKey,
+        type: item.metadata?.presetType || item.type,
+        metadata: item.metadata
+      })));
+    }
+  }, [media]);
 
   // Generate true masonry layout based on aspect ratios
   const masonryColumns = useMemo(() => {

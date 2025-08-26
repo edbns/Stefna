@@ -1157,6 +1157,26 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         
         console.log('🎯 Mapped feed items:', mapped.length)
         
+        // 🔍 DEBUG: Check preset data in feed items
+        if (mapped.length > 0) {
+          console.log('🔍 [DEBUG] First feed item preset data:', {
+            id: mapped[0]?.id,
+            presetKey: mapped[0]?.presetKey,
+            metadata: mapped[0]?.metadata,
+            type: mapped[0]?.type
+          });
+          
+          // Check a few more items
+          mapped.slice(0, 3).forEach((item, index) => {
+            console.log(`🔍 [DEBUG] Item ${index + 1} preset data:`, {
+              id: item.id,
+              presetKey: item.presetKey,
+              metadata: item.metadata,
+              type: item.type
+            });
+          });
+        }
+        
         if (isInitial) {
           console.log('🎯 Setting initial feed with items:', mapped.length, 'first item ID:', mapped[0]?.id)
           setFeed(mapped)
