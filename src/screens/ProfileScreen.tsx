@@ -476,12 +476,15 @@ const ProfileScreen: React.FC = () => {
         if (!token) throw new Error('Authentication required')
         
         const response = await fetch('/.netlify/functions/delete-media', {
-          method: 'POST',
+          method: 'DELETE',
           headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ mediaId })
+          body: JSON.stringify({ 
+            mediaId,
+            userId: authService.getCurrentUser()?.id || ''
+          })
         })
         
         if (!response.ok) {
