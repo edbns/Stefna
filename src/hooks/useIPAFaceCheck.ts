@@ -18,6 +18,11 @@ export interface IPACheckResult {
   originalEmbedding: FaceEmbedding;
   generatedEmbedding: FaceEmbedding;
   timestamp: number;
+  // NEW: Extended identity preservation details
+  animalPreservation: number;
+  groupPreservation: number;
+  genderPreservation: number;
+  facePreservation: number;
 }
 
 export interface IPALogEntry {
