@@ -260,13 +260,13 @@ SELECT
     COUNT(*) as count
 FROM media_assets ma
 WHERE NOT EXISTS (
-    SELECT 1 FROM ghibli_reaction_media grm WHERE grm.id = ma.id
+    SELECT 1 FROM ghibli_reaction_media grm WHERE grm.id = ma.id::text
     UNION ALL
-    SELECT 1 FROM emotion_mask_media emm WHERE emm.id = ma.id
+    SELECT 1 FROM emotion_mask_media emm WHERE emm.id = ma.id::text
     UNION ALL
-    SELECT 1 FROM presets_media pm WHERE pm.id = ma.id
+    SELECT 1 FROM presets_media pm WHERE pm.id = ma.id::text
     UNION ALL
-    SELECT 1 FROM custom_prompt_media cpm WHERE cpm.id = ma.id
+    SELECT 1 FROM custom_prompt_media cpm WHERE cpm.id = ma.id::text
 );
 
 -- Show details of remaining items
@@ -279,13 +279,13 @@ SELECT
     LEFT(ma.prompt, 50) as prompt_preview
 FROM media_assets ma
 WHERE NOT EXISTS (
-    SELECT 1 FROM ghibli_reaction_media grm WHERE grm.id = ma.id
+    SELECT 1 FROM ghibli_reaction_media grm WHERE grm.id = ma.id::text
     UNION ALL
-    SELECT 1 FROM emotion_mask_media emm WHERE emm.id = ma.id
+    SELECT 1 FROM emotion_mask_media emm WHERE emm.id = ma.id::text
     UNION ALL
-    SELECT 1 FROM presets_media pm WHERE pm.id = ma.id
+    SELECT 1 FROM presets_media pm WHERE pm.id = ma.id::text
     UNION ALL
-    SELECT 1 FROM custom_prompt_media cpm WHERE cpm.id = ma.id
+    SELECT 1 FROM custom_prompt_media cpm WHERE cpm.id = ma.id::text
 );
 
 -- ============================================================================
