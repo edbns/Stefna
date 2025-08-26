@@ -384,7 +384,7 @@ const ProfileScreen: React.FC = () => {
           },
           body: JSON.stringify({ 
             mediaId: media.id,
-            userId: authService.getCurrentUser()?.id || ''
+            userId: currentUserId || authService.getCurrentUser()?.id || ''
           })
         })
         
@@ -483,7 +483,7 @@ const ProfileScreen: React.FC = () => {
           },
           body: JSON.stringify({ 
             mediaId,
-            userId: authService.getCurrentUser()?.id || ''
+            userId: currentUserId || authService.getCurrentUser()?.id || ''
           })
         })
         
