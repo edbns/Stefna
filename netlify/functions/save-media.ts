@@ -462,7 +462,7 @@ export const handler: Handler = async (event): Promise<any> => {
         }
         
         // 🔒 RESPECT USER VISIBILITY PREFERENCE FOR BATCH OPERATIONS
-        const userWantsPublic = v.meta?.shareNow !== undefined ? v.meta.shareNow : true;
+        const userWantsPublic = v.meta?.shareNow === true; // Only public if explicitly true
         const visibility = userWantsPublic ? 'public' : 'private';
         
         console.log(`🔒 [save-media] Batch item ${id} visibility: ${userWantsPublic ? 'public' : 'private'}`);
@@ -692,8 +692,8 @@ export const handler: Handler = async (event): Promise<any> => {
       console.log(`🔍 [save-media] User ID: ${userId}, Preset: ${preset_key}`);
       
       // 🔒 RESPECT USER VISIBILITY PREFERENCE
-      // Check if user wants to share to feed (from meta.shareNow or default to public)
-      const userWantsPublic = meta?.shareNow !== undefined ? meta.shareNow : true;
+      // Check if user wants to share to feed (from meta.shareNow or default to private)
+      const userWantsPublic = meta?.shareNow === true; // Only public if explicitly true
       const visibility = userWantsPublic ? 'public' : 'private';
       
       console.log(`🔒 [save-media] User visibility preference: ${userWantsPublic ? 'public' : 'private'}`);
