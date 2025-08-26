@@ -2472,30 +2472,36 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           throw error; // Re-throw other errors
         }
 
-        // Process aimlApi results
-        if (res && !res.ok) {
-          // Handle different error types
-          if (res.status === 501 && isVideoPreview) {
-            notifyQueue({ title: 'Added to queue', message: 'We will start processing shortly.' });
-            // Don't return - let the processing continue
-          } else if (res.status === 429) {
-            notifyError({ title: 'Failed', message: 'Please try again' });
-            endGeneration(genId);
-            setNavGenerating(false);
-            return;
-          } else {
-            throw new Error(body?.error || `aimlApi ${res.status}`);
+        // Process results based on system used
+        if (body?.system === 'new') {
+          // New system already processed - skip old system logic
+          console.log('🆕 [New System] Skipping old system processing');
+        } else {
+          // Process aimlApi results (old system)
+          if (res && !res.ok) {
+            // Handle different error types
+            if (res.status === 501 && isVideoPreview) {
+              notifyQueue({ title: 'Added to queue', message: 'We will start processing shortly.' });
+              // Don't return - let the processing continue
+            } else if (res.status === 429) {
+              notifyError({ title: 'Failed', message: 'Please try again' });
+              endGeneration(genId);
+              setNavGenerating(false);
+              return;
+            } else {
+              throw new Error(body?.error || `aimlApi ${res.status}`);
+            }
           }
-        }
 
-        // Extract result URLs from aimlApi response
-        resultUrl = body?.image_url || body?.image_urls?.[0] || null;
-        allResultUrls = body.result_urls || [resultUrl];
-        variationsGenerated = body.variations_generated || 1;
+          // Extract result URLs from aimlApi response
+          resultUrl = body?.image_url || body?.image_urls?.[0] || null;
+          allResultUrls = body.result_urls || [resultUrl];
+          variationsGenerated = body.variations_generated || 1;
+        }
       }
 
-      // Handle video job creation (status 202) - only for aimlApi responses
-      if (!skipAimlApi && res?.status === 202 && body?.job_id && isVideoPreview) {
+      // Handle video job creation (status 202) - only for old system responses
+      if (body?.system !== 'new' && res?.status === 202 && body?.job_id && isVideoPreview) {
           notifyQueue({ title: 'Add to queue', message: 'We\'ll start processing shortly.' })
         setCurrentVideoJob({ id: body.job_id, status: 'queued' })
         startVideoJobPolling(body.job_id, body.model, effectivePrompt)
