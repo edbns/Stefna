@@ -16,6 +16,8 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
   // Ghibli Reaction presets
   if (presetKey.startsWith('ghibli_')) {
     const ghibliPresets: Record<string, string> = {
+      'ghibli_tears': 'Tears',
+      'ghibli_shock': 'Shock',
       'ghibli_sparkle': 'Sparkle',
       'ghibli_blush': 'Blush',
       'ghibli_dreamy': 'Dreamy',
@@ -25,8 +27,12 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
   }
   
   // Emotion Mask presets
-  if (presetKey.startsWith('emotion_')) {
+  if (presetKey.startsWith('emotion_') || presetKey.includes('_')) {
     const emotionPresets: Record<string, string> = {
+      'joy_sadness': 'Joy + Sadness',
+      'strength_vulnerability': 'Strength + Vulnerability',
+      'nostalgia_distance': 'Nostalgia + Distance',
+      'peace_fear': 'Peace + Fear',
       'emotion_angry': 'Angry',
       'emotion_sad': 'Sad',
       'emotion_happy': 'Happy',
@@ -60,7 +66,7 @@ export const getPresetType = (presetKey: string | null | undefined, type?: strin
   
   if (type === 'neo-glitch' || presetKey.startsWith('neo_')) return 'neo-tokyo'
   if (presetKey.startsWith('ghibli_')) return 'ghibli'
-  if (presetKey.startsWith('emotion_')) return 'emotion'
+  if (presetKey.startsWith('emotion_') || presetKey.includes('joy_') || presetKey.includes('strength_') || presetKey.includes('nostalgia_') || presetKey.includes('peace_')) return 'emotion'
   
   return 'professional'
 }
