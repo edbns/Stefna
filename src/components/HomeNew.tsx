@@ -89,6 +89,7 @@ import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
 import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
 import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
 import NeoGlitchService from '../services/neoGlitchService'
+import GenerationPipeline from '../services/generationPipeline'
 
 // Create a PRESETS object that maps to the new system for backward compatibility
 const PRESETS = Object.fromEntries(
@@ -2416,19 +2417,52 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         }, 24000); // 24s cushion before Netlify's 26s limit
 
         try {
-          // 🎯 Call AIML API for standard presets (flux/dev + flux/pro fallback)
-          res = await authenticatedFetch('/.netlify/functions/aimlApi', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            signal: controller.signal
+          // 🆕 Use NEW GenerationPipeline for rock-solid stability
+          console.log('🚀 [GenerationPipeline] Using new NeoGlitch-style system');
+          
+          const generationPipeline = GenerationPipeline.getInstance();
+          const generationResult = await generationPipeline.generate({
+            type: kind === 'preset' ? 'presets' : 
+                  kind === 'custom' ? 'custom-prompt' : 
+                  kind === 'emotionmask' ? 'emotion-mask' : 
+                  kind === 'ghiblireact' ? 'ghibli-reaction' : 'presets',
+            prompt: effectivePrompt,
+            presetKey: kind === 'preset' ? (options?.presetId || selectedPreset) : 'default',
+            sourceAssetId: sourceUrl,
+            userId: authService.getCurrentUser()?.id || '',
+            runId: runId,
+            meta: generationMeta
           });
           
           clearTimeout(timeoutId); // Clear timeout if request completes
 
-          console.info('aimlApi status', res.status);
-          body = await res.json().catch(() => ({}));
-          console.info('aimlApi body', body);
+          console.info('🆕 [GenerationPipeline] Result:', generationResult);
+          
+          if (generationResult.success && generationResult.status === 'completed') {
+            // New system completed immediately
+            resultUrl = generationResult.imageUrl;
+            allResultUrls = [resultUrl];
+            variationsGenerated = 1;
+            body = { success: true, system: 'new' };
+            res = { ok: true, status: 200 };
+          } else if (generationResult.success && generationResult.status === 'processing') {
+            // New system is processing
+            throw new Error('Generation in progress - please wait');
+          } else {
+            // New system failed, fall back to old system
+            console.warn('⚠️ [GenerationPipeline] New system failed, falling back to old aimlApi');
+            
+            res = await authenticatedFetch('/.netlify/functions/aimlApi', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+              signal: controller.signal
+            });
+            
+            body = await res.json().catch(() => ({}));
+            console.info('🔄 [Fallback] aimlApi status', res.status);
+            console.info('🔄 [Fallback] aimlApi body', body);
+          }
         } catch (error) {
           clearTimeout(timeoutId); // Clear timeout on error
           if (error.name === 'AbortError') {
@@ -2479,7 +2513,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       // 🔒 IDENTITY PRESERVATION CHECK - automatic based on preset type
       let finalResultUrl = resultUrl;
 
-      if (generationMeta?.generation_type && sourceUrl) {
+      // Skip IPA for new system (already handled by dedicated functions)
+      if (body?.system === 'new') {
+        console.log('🆕 [New System] Skipping IPA - already handled by dedicated function');
+      } else if (generationMeta?.generation_type && sourceUrl) {
         try {
           console.log('🔒 [IPA] Starting identity preservation check for:', generationMeta.generation_type);
           
@@ -2873,13 +2910,23 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 detail: { count: 1, runId: genId } 
               })), 800);
             }
-          } else if (composerState.mode === 'preset' || composerState.mode === 'custom') {
+          } else if (composerState.mode === 'preset' || composerState.mode === 'custom' || 
+                     composerState.mode === 'emotionmask' || composerState.mode === 'ghiblireact') {
             console.log(`🎭 ${composerState.mode} mode - checking variation count: ${allResultUrls.length}`);
             
             if (allResultUrls.length === 1) {
               // Single variation - update the asset directly
               console.log(`🎭 ${composerState.mode} mode - single variation, updating asset`);
-              if (allResultUrls.length > 0 && assetId) {
+              
+              // Skip asset update for new system (already saved by dedicated functions)
+              if (body?.system === 'new') {
+                console.log('🆕 [New System] Skipping asset update - already saved by dedicated function');
+                
+                // Refresh user media to show the new image
+                setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                  detail: { count: 1, runId: genId } 
+                })), 800);
+              } else if (allResultUrls.length > 0 && assetId) {
                 const updateRes = await authenticatedFetch('/.netlify/functions/update-asset-result', {
                   method: 'POST',
                   headers: { 
@@ -2920,6 +2967,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               // Multiple variations - use unified save-media
               console.log(`🎭 ${composerState.mode} mode - multiple variations (${allResultUrls.length}), using unified save-media`);
               
+              // Skip save-media for new system (already saved by dedicated functions)
+              if (body?.system === 'new') {
+                console.log('🆕 [New System] Skipping save-media - already saved by dedicated function');
+              } else {
               try {
               const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
                 method: 'POST',
@@ -3022,6 +3073,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 console.error(`❌ ${composerState.mode} batch save error:`, batchSaveError);
                 notifyError({ title: 'Save failed', message: 'Failed to save variations' });
               }
+              } // Close the if (body?.system === 'new') else block
             } else {
               console.warn(`⚠️ ${composerState.mode} mode - no result URLs to save`);
             }
