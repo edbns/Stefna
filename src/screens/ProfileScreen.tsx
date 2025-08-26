@@ -675,11 +675,6 @@ const ProfileScreen: React.FC = () => {
 
       // Remix functionality removed - no more remix processing
       
-      // Ensure we have the latest userMedia for filtering
-        console.log('🔄 Current userMedia for filtering (state):', userMedia.length, 'items')
-
-
-
       // Load draft media (empty for now - will be populated when users create drafts)
       setDraftMedia([])
       
@@ -762,6 +757,18 @@ const ProfileScreen: React.FC = () => {
       isLoading
     })
   }, [activeTab, userMedia.length, isLoading])
+
+  // Monitor userMedia state changes for debugging
+  useEffect(() => {
+    console.log('🔄 userMedia state updated:', userMedia.length, 'items')
+    if (userMedia.length > 0) {
+      console.log('🔍 First media item:', {
+        id: userMedia[0].id,
+        type: userMedia[0].type,
+        url: userMedia[0].url?.substring(0, 50) + '...'
+      })
+    }
+  }, [userMedia])
 
 
 
@@ -1101,9 +1108,9 @@ const ProfileScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black flex">
+    <div className="min-h-screen bg-glossy-black-950 flex">
       {/* Sidebar - 20% */}
-      <div className="w-[20%] bg-black p-4 pt-20 relative sticky top-0 h-screen overflow-y-auto flex flex-col">
+              <div className="w-[20%] bg-glossy-black-900 p-4 pt-20 relative sticky top-0 h-screen overflow-y-auto flex flex-col">
         {/* Back Arrow - Top Left */}
         <button 
           onClick={() => navigate('/')}

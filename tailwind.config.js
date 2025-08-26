@@ -9,6 +9,33 @@ export default {
       fontFamily: {
         'figtree': ['Figtree', 'sans-serif'],
       },
+      colors: {
+        'glossy-black': {
+          50: '#f8f9fa',
+          100: '#e9ecef',
+          200: '#dee2e6',
+          300: '#ced4da',
+          400: '#adb5bd',
+          500: '#6c757d',
+          600: '#495057',
+          700: '#343a40',
+          800: '#212529',
+          900: '#0d1117',
+          950: '#000000',
+        },
+        'glossy-white': {
+          50: '#ffffff',
+          100: '#f8f9fa',
+          200: '#e9ecef',
+          300: '#dee2e6',
+          400: '#ced4da',
+          500: '#adb5bd',
+          600: '#6c757d',
+          700: '#6c757d',
+          800: '#495057',
+          900: '#343a40',
+        }
+      },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
