@@ -2512,35 +2512,13 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 // 🔧 CLOUDINARY CONVERSION - Convert AIML API URLs to Cloudinary URLs for Ghibli
           let cloudinaryConvertedUrl = finalResultUrl;
           
+          // 🚨 REMOVED: Frontend Cloudinary upload - let backend handle it
+          // The backend save-media function will automatically convert AIML URLs to Cloudinary
+          // This prevents duplicate uploads and signature errors
+          
           if (generationMeta?.mode === 'ghiblireact' && finalResultUrl && finalResultUrl.includes('cdn.aimlapi.com')) {
-            console.log('☁️ [Ghibli] Converting AIML API URL to Cloudinary:', finalResultUrl.substring(0, 60) + '...');
-            
-            try {
-              // Download the image from AIML API and upload to Cloudinary
-              const imageResponse = await fetch(finalResultUrl);
-              if (!imageResponse.ok) {
-                throw new Error(`Failed to download AIML image: ${imageResponse.status}`);
-              }
-              
-              const imageBlob = await imageResponse.blob();
-              const imageFile = new File([imageBlob], 'ghibli-generated.png', { type: 'image/png' });
-              
-              // Upload to Cloudinary using the existing service
-              const { uploadToCloudinary } = await import('../lib/cloudinaryUpload');
-              const cloudinaryResult = await uploadToCloudinary(imageFile, 'stefna/ghibli');
-              
-              cloudinaryConvertedUrl = cloudinaryResult.secure_url;
-              console.log('✅ [Ghibli] Successfully converted to Cloudinary URL:', cloudinaryConvertedUrl.substring(0, 60) + '...');
-              
-              // Update the result URLs array to use the Cloudinary URL
-              allResultUrls = allResultUrls.map(url => url === finalResultUrl ? cloudinaryConvertedUrl : url);
-              finalResultUrl = cloudinaryConvertedUrl;
-              
-            } catch (conversionError) {
-              console.error('❌ [Ghibli] Failed to convert AIML URL to Cloudinary:', conversionError);
-              // Continue with original URL if conversion fails
-              cloudinaryConvertedUrl = finalResultUrl;
-            }
+            console.log('☁️ [Ghibli] AIML API URL detected, backend will handle Cloudinary conversion');
+            // Keep original URL - backend will convert it during save
           }
           
           // 🎨 FX POST-PROCESSING - Apply visual effects based on generation mode
