@@ -342,11 +342,46 @@ export const handler: Handler = async (event): Promise<any> => {
         };
       }
 
-      // Extract Cloudinary public ID if it's a Cloudinary URL
+      // 🚨 CRITICAL FIX: Validate and complete Cloudinary URLs
+      let validatedFinalUrl = finalUrl;
       let cloudinary_public_id: string | null = null;
+      
       if (finalUrl.includes('cloudinary.com')) {
+        // Check if URL is complete
+        if (!finalUrl.includes('/upload/')) {
+          console.error('❌ [save-media] Incomplete Cloudinary URL detected:', finalUrl);
+          return {
+            statusCode: 400,
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({ 
+              error: 'Incomplete Cloudinary URL',
+              details: 'URL is missing /upload/ path',
+              receivedUrl: finalUrl
+            })
+          };
+        }
+        
+        // Extract Cloudinary public ID
         const cloudinaryMatch = finalUrl.match(/\/upload\/(?:v\d+\/)?(.+?)\.(jpg|jpeg|png|webp|mp4|mov|avi)/);
         cloudinary_public_id = cloudinaryMatch ? cloudinaryMatch[1] : null;
+        
+        if (!cloudinary_public_id) {
+          console.error('❌ [save-media] Could not extract Cloudinary public ID from URL:', finalUrl);
+          return {
+            statusCode: 400,
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({ 
+              error: 'Invalid Cloudinary URL format',
+              details: 'Could not extract public ID',
+              receivedUrl: finalUrl
+            })
+          };
+        }
+        
+        console.log('✅ [save-media] Valid Cloudinary URL:', finalUrl);
+        console.log('✅ [save-media] Extracted public ID:', cloudinary_public_id);
+      } else {
+        console.log('⚠️ [save-media] Non-Cloudinary URL detected:', finalUrl);
       }
 
       // 🧠 DEBUG: Special logging for Neo Tokyo Glitch mode

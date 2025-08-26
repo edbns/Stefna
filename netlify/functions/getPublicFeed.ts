@@ -229,6 +229,29 @@ export const handler: Handler = async (event) => {
           return false;
         }
         
+        // 🚨 NEW: Validate Cloudinary URLs to prevent 404 errors
+        if (item.finalUrl.includes('cloudinary.com')) {
+          if (!item.finalUrl.includes('/upload/')) {
+            console.log('🚨 [getPublicFeed] Skipping item with incomplete Cloudinary URL:', {
+              id: item.id,
+              type: item.type,
+              url: item.finalUrl
+            });
+            return false;
+          }
+          
+          // Check if URL has a valid file extension
+          const hasValidExtension = /\.(jpg|jpeg|png|webp|mp4|mov|avi)$/i.test(item.finalUrl);
+          if (!hasValidExtension) {
+            console.log('🚨 [getPublicFeed] Skipping item with invalid Cloudinary URL extension:', {
+              id: item.id,
+              type: item.type,
+              url: item.finalUrl
+            });
+            return false;
+          }
+        }
+        
         // Find the first occurrence of this image URL
         const firstIndex = array.findIndex(otherItem => 
           otherItem.finalUrl && otherItem.finalUrl === item.finalUrl
