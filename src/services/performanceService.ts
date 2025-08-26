@@ -219,7 +219,7 @@ class PerformanceService {
     }
     
     // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`📊 Metric: ${name} = ${value}${unit}`)
     }
   }
@@ -233,7 +233,7 @@ class PerformanceService {
     }
     
     // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.error('🚨 Error:', error.message, error.stack)
     }
   }
@@ -254,7 +254,7 @@ class PerformanceService {
     }
     
     // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`📈 Event: ${event}`, properties)
     }
   }
