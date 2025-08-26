@@ -3207,8 +3207,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           errorMessage = 'Upload service temporarily unavailable';
         } else if (e.message.includes('Invalid api_key') || e.message.includes('api_key')) {
           errorMessage = 'Upload service temporarily unavailable';
-        } else if (e.message.includes('timeout')) {
-          errorMessage = 'Upload took too long, please try again';
+        } else if (e.message.includes('timeout') || e.message.includes('ERR_TIMED_OUT')) {
+          errorMessage = 'Upload took too long, please try again with a smaller file';
+        } else if (e.message.includes('Failed to fetch') || e.message.includes('ERR_TIMED_OUT')) {
+          errorMessage = 'Network timeout - please check your connection and try again';
         } else if (e.message.includes('unauthorized') || e.message.includes('401')) {
           errorMessage = 'Please sign in again';
         } else if (e.message.includes('quota') || e.message.includes('credits')) {
