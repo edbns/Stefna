@@ -411,10 +411,10 @@ const ProfileScreen: React.FC = () => {
         setUserMedia([])
         setDraftMedia([])
         
-        // Force refresh to ensure UI updates
-        setTimeout(() => {
-          loadUserMedia()
-        }, 100)
+        // Background refresh for immediate UX feedback
+        loadUserMedia().catch(error => {
+          console.warn('Background refresh failed:', error)
+        })
       } else {
         addNotification('Delete Failed', 'No media items were deleted', 'error')
       }
@@ -500,7 +500,11 @@ const ProfileScreen: React.FC = () => {
       // Clear selection and refresh media
       setSelectedMediaIds(new Set())
       setIsSelectionMode(false)
-      await loadUserMedia()
+      
+      // Background refresh for immediate UX feedback
+      loadUserMedia().catch(error => {
+        console.warn('Background refresh failed:', error)
+      })
       
       addNotification('Delete Successful', `Deleted ${selectedMediaIds.size} media items`, 'success')
     } catch (error) {
