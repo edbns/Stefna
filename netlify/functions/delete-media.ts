@@ -42,13 +42,39 @@ export const handler: Handler = async (event) => {
 
     console.log('🗑️ [delete-media] Deleting media:', { mediaId, userId });
 
-    // Delete the media asset using Prisma
-    const deletedMedia = await prisma.mediaAsset.delete({
-      where: {
-        id: mediaId,
-        userId: userId
-      }
+    // 🔧 FIX: Check if this is Neo Glitch media (CUID format) or regular media (UUID format)
+    // Neo Glitch IDs start with 'c' and are longer (CUID format)
+    // Regular media IDs are UUID format
+    const isNeoGlitchMedia = mediaId.startsWith('c') && mediaId.length > 20;
+    
+    console.log('🔍 [delete-media] Media type detection:', { 
+      mediaId, 
+      isNeoGlitchMedia, 
+      idLength: mediaId.length,
+      startsWithC: mediaId.startsWith('c')
     });
+
+    let deletedMedia;
+    
+    if (isNeoGlitchMedia) {
+      // Delete from NeoGlitchMedia table
+      console.log('🎭 [delete-media] Deleting from NeoGlitchMedia table');
+      deletedMedia = await prisma.neoGlitchMedia.delete({
+        where: {
+          id: mediaId,
+          userId: userId
+        }
+      });
+    } else {
+      // Delete from regular MediaAsset table
+      console.log('📷 [delete-media] Deleting from MediaAsset table');
+      deletedMedia = await prisma.mediaAsset.delete({
+        where: {
+          id: mediaId,
+          userId: userId
+        }
+      });
+    }
 
     if (deletedMedia) {
       console.log('✅ [delete-media] Media deleted successfully:', mediaId);
