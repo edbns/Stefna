@@ -2707,10 +2707,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           return
         }
 
-        // First, create an asset record (skip for Neo Tokyo Glitch and Ghibli Reaction since we use save-media directly)
+        // First, create an asset record (skip for Neo Tokyo Glitch only)
         let assetId: string | null = null;
         
-        if (composerState.mode !== 'neotokyoglitch' && composerState.mode !== 'ghiblireact') {
+        if (composerState.mode !== 'neotokyoglitch') {
         const assetResult = await createAsset({
           sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
           mediaType: 'image', // Default to image for now
@@ -2805,62 +2805,51 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
               console.warn('⚠️ Cannot update Emotion Mask asset: missing result URL or asset ID');
             }
           } else if (composerState.mode === 'ghiblireact') {
-            console.log(`🎭 ${composerState.mode} mode - calling save-media for complete user profile linking`);
+            console.log(`🎭 ${composerState.mode} mode - updating asset with final result`);
             
-            // For Ghibli Reaction and Neo Tokyo Glitch, we need to call save-media
-            // to properly link the generated media to the user profile with all features
-            if (allResultUrls.length > 0) {
-              console.log(`✅ ${composerState.mode} generation completed - calling save-media for complete processing`);
+            // For Ghibli Reaction, update the existing asset (like Emotion Mask)
+            if (allResultUrls.length > 0 && assetId) {
+              const updateRes = await authenticatedFetch('/.netlify/functions/update-asset-result', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  assetId: assetId, // Use the asset ID from create-asset
+                  finalUrl: allResultUrls[0], // The generated image URL from AIML API
+                  status: 'ready', // Mark as ready
+                  prompt: effectivePrompt,
+                  meta: {
+                    mode: 'ghiblireact',
+                    presetId: selectedPreset || 'custom',
+                    runId: genId,
+                    userId,
+                    shareNow: !!shareToFeed,
+                    generationType: 'aiml-ghibli',
+                    model: generationMeta?.model || 'flux/dev/image-to-image',
+                    variation_index: 0,
+                    totalVariations: allResultUrls.length
+                  }
+                })
+              });
               
-              try {
-                // Call save-media to properly link the generated media to the user profile
-                const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
-                  method: 'POST',
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Idempotency-Key': genId // prevents double-saves on retries
-                  },
-                  body: JSON.stringify({
-                    finalUrl: allResultUrls[0], // The generated image URL (now Cloudinary for Ghibli)
-                    media_type: 'image',
-                    preset_key: selectedPreset || 'custom',
-                    prompt: effectivePrompt,
-                    source_public_id: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
-                    meta: {
-                      mode: composerState.mode,
-                      presetId: selectedPreset || 'custom',
-                      runId: genId,
-                      userId,
-                      shareNow: !!shareToFeed,
-                      generationType: composerState.mode === 'ghiblireact' ? 'aiml-ghibli' : 'replicate',
-                      model: generationMeta?.model || 'flux/dev/image-to-image',
-                      variation_index: 0,
-                      totalVariations: allResultUrls.length
-                    }
-                  })
-                });
+              const updateText = await updateRes.text();
+              let updateBody: any = {};
+              try { updateBody = JSON.parse(updateText); } catch {}
+              
+              if (updateRes.ok && updateBody?.ok) {
+                console.log(`✅ ${composerState.mode} asset updated successfully:`, updateBody);
                 
-                const saveText = await saveRes.text();
-                let saveBody: any = {};
-                try { saveBody = JSON.parse(saveText); } catch {}
-                
-                if (saveRes.ok && saveBody?.success) {
-                  console.log(`✅ ${composerState.mode} media saved to user profile successfully:`, saveBody);
-                  
-                  // Refresh user media to show the new image
-              setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                detail: { count: 1, runId: genId } 
-                  })), 800);
-            } else {
-                  console.error(`❌ ${composerState.mode} media save failed:`, saveRes.status, saveBody || saveText);
-                  notifyError({ title: 'Save failed', message: saveBody?.error || `Failed to save ${composerState.mode} media to profile` });
-                }
-              } catch (saveError) {
-                console.error(`❌ ${composerState.mode} save-media call failed:`, saveError);
-                notifyError({ title: 'Save failed', message: `Failed to save ${composerState.mode} media to profile` });
+                // Refresh user media to show the new image
+                setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                  detail: { count: 1, runId: genId } 
+                })), 800);
+              } else {
+                console.error(`❌ ${composerState.mode} asset update failed:`, updateRes.status, updateBody || updateText);
+                notifyError({ title: 'Update failed', message: updateBody?.error || `Failed to update ${composerState.mode} asset` });
               }
             } else {
-              console.warn(`⚠️ Cannot save ${composerState.mode} media: missing result URL`);
+              console.warn(`⚠️ Cannot update ${composerState.mode} asset: missing result URL or asset ID`);
             }
           } else if (composerState.mode === 'neotokyoglitch') {
             console.log(`🎭 [NeoGlitch] Neo Tokyo Glitch mode - media already saved by first-class pipeline`);
