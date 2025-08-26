@@ -411,6 +411,7 @@ export const handler: Handler = async (event): Promise<any> => {
           url: finalUrl,
           visibility: visibility, // Use user preference instead of hardcoded 'public'
           allowRemix: false,
+          presetKey: preset_key || null, // ✅ FIXED: Store preset key for tag display
           meta: { ...(meta || {}), idempotency_key: idempotencyKey || null }
         },
         select: {
