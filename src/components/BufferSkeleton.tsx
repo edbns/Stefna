@@ -13,11 +13,11 @@ const BufferSkeleton: React.FC<BufferSkeletonProps> = ({
 
   return (
     <div className={`mt-4 ${className}`}>
-      <div className="grid grid-cols-4 gap-1">
+      <div className="grid grid-cols-3 gap-1">
         {items.map((item, index) => (
           <div 
             key={item.id} 
-            className="aspect-square bg-gradient-to-br from-white/8 via-white/12 to-white/6 rounded-xl animate-pulse relative overflow-hidden group"
+            className="aspect-square bg-gradient-to-br from-white/8 via-white/12 to-white/6 animate-pulse relative overflow-hidden group"
           >
             {/* Subtle shimmer effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
@@ -37,7 +37,7 @@ const BufferSkeleton: React.FC<BufferSkeletonProps> = ({
             <div className="absolute top-2 right-2 w-3 h-3 bg-white/20 rounded-full animate-ping" />
             
             {/* Subtle border */}
-            <div className="absolute inset-0 rounded-xl border border-white/10 group-hover:border-white/20 transition-all duration-300" />
+            <div className="absolute inset-0 border border-white/10 group-hover:border-white/20 transition-all duration-300" />
           </div>
         ))}
       </div>
