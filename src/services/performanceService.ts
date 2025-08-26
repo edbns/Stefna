@@ -116,6 +116,20 @@ class PerformanceService {
   private trackErrors() {
     // Track JavaScript errors
     window.addEventListener('error', (e) => {
+      const errorMsg = String(e.message || e.error?.message || '');
+      
+      // Filter out blocked request errors
+      if (errorMsg.includes('ERR_BLOCKED_BY_CLIENT') || 
+          errorMsg.includes('net::ERR_BLOCKED_BY_CLIENT') ||
+          errorMsg.includes('Failed to fetch') ||
+          errorMsg.includes('rum_collection') ||
+          errorMsg.includes('analytics') ||
+          errorMsg.includes('tracking') ||
+          errorMsg.includes('telemetry') ||
+          errorMsg.includes('metrics')) {
+        return; // Skip blocked request errors
+      }
+      
       this.recordError({
         message: e.message,
         stack: e.error?.stack,
@@ -128,6 +142,20 @@ class PerformanceService {
 
     // Track unhandled promise rejections
     window.addEventListener('unhandledrejection', (e) => {
+      const errorMsg = String(e.reason?.message || e.reason || '');
+      
+      // Filter out blocked request errors
+      if (errorMsg.includes('ERR_BLOCKED_BY_CLIENT') || 
+          errorMsg.includes('net::ERR_BLOCKED_BY_CLIENT') ||
+          errorMsg.includes('Failed to fetch') ||
+          errorMsg.includes('rum_collection') ||
+          errorMsg.includes('analytics') ||
+          errorMsg.includes('tracking') ||
+          errorMsg.includes('telemetry') ||
+          errorMsg.includes('metrics')) {
+        return; // Skip blocked request errors
+      }
+      
       this.recordError({
         message: e.reason?.message || 'Unhandled Promise Rejection',
         stack: e.reason?.stack,

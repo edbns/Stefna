@@ -140,14 +140,52 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
   const orig = window.fetch;
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const id = crypto.randomUUID?.() ?? String(Date.now());
-    console.info('[fetch>]', id, typeof input === 'string' ? input : input.toString(), init?.method || 'GET');
+    const url = typeof input === 'string' ? input : input.toString();
+    
+    // Skip logging for known blocked URLs (analytics, tracking, etc.)
+    const isBlockedUrl = url.includes('rum') || 
+                        url.includes('analytics') || 
+                        url.includes('tracking') || 
+                        url.includes('telemetry') ||
+                        url.includes('metrics');
+    
+    if (!isBlockedUrl) {
+      console.info('[fetch>]', id, url, init?.method || 'GET');
+    }
+    
     try {
       const res = await orig(input, init);
-      console.info('[fetch<]', id, res.status, res.url);
+      if (!isBlockedUrl) {
+        console.info('[fetch<]', id, res.status, res.url);
+      }
       return res;
-    } catch (err) {
-      console.error('[fetch!]', id, err);
-      throw err;
+    } catch (err: any) {
+      // Check if this is a blocked request error
+      const errorMsg = String(err?.message || err || '');
+      const isBlockedError = errorMsg.includes('ERR_BLOCKED_BY_CLIENT') || 
+                            errorMsg.includes('Failed to fetch') ||
+                            errorMsg.includes('net::ERR_BLOCKED_BY_CLIENT');
+      
+      if (isBlockedError) {
+        // Silently handle blocked requests - don't log them
+        if (!isBlockedUrl) {
+          console.debug('[fetch!]', id, 'Request blocked by client (ad blocker)');
+        }
+        // Return a mock response to prevent unhandled rejections
+        return new Response(JSON.stringify({ 
+          error: 'Request blocked by client',
+          blocked: true 
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } else {
+        // Log actual errors that aren't blocked
+        if (!isBlockedUrl) {
+          console.error('[fetch!]', id, err);
+        }
+        throw err;
+      }
     }
   };
 })();

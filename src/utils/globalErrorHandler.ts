@@ -3,7 +3,20 @@ export function setupGlobalErrorHandling() {
   // Global safety net for unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
     const msg = String(event.reason || '');
-    if (msg.includes('ERR_BLOCKED_BY_CLIENT')) return; // ignore analytics blocks
+    
+    // Filter out common blocked request errors
+    if (msg.includes('ERR_BLOCKED_BY_CLIENT') || 
+        msg.includes('net::ERR_BLOCKED_BY_CLIENT') ||
+        msg.includes('Failed to fetch') ||
+        msg.includes('rum_collection') ||
+        msg.includes('analytics') ||
+        msg.includes('tracking') ||
+        msg.includes('telemetry') ||
+        msg.includes('metrics')) {
+      // Silently ignore blocked requests - don't log them
+      event.preventDefault();
+      return;
+    }
     
     console.error('Global unhandledrejection caught:', event.reason);
     
@@ -25,6 +38,22 @@ export function setupGlobalErrorHandling() {
 
   // Global error handler
   window.addEventListener('error', (event) => {
+    const errorMsg = String(event.error || event.message || '');
+    
+    // Filter out common blocked request errors
+    if (errorMsg.includes('ERR_BLOCKED_BY_CLIENT') || 
+        errorMsg.includes('net::ERR_BLOCKED_BY_CLIENT') ||
+        errorMsg.includes('Failed to fetch') ||
+        errorMsg.includes('rum_collection') ||
+        errorMsg.includes('analytics') ||
+        errorMsg.includes('tracking') ||
+        errorMsg.includes('telemetry') ||
+        errorMsg.includes('metrics')) {
+      // Silently ignore blocked requests
+      event.preventDefault();
+      return;
+    }
+    
     console.error('Global error caught:', event.error);
     
     // Clear any stuck generating states
