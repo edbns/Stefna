@@ -668,9 +668,14 @@ export const handler: Handler = async (event): Promise<any> => {
       
       console.log(`🔒 [save-media] User visibility preference: ${userWantsPublic ? 'public' : 'private'}`);
       
+      // Generate UUID for the new media asset
+      const mediaId = randomUUID();
+      console.log(`🔍 [save-media] Generated UUID for new media: ${mediaId}`);
+      console.log(`🔍 [save-media] UUID type: ${typeof mediaId}, length: ${mediaId.length}`);
+      
       const savedItem = await prisma.mediaAsset.create({
         data: {
-          id: randomUUID(),
+          id: mediaId,
           userId: userId, // Fixed: use userId not ownerId
           resourceType: media_type || 'image',
           prompt: prompt || null,
