@@ -169,7 +169,16 @@ export const handler: Handler = async (event) => {
       const [publicMedia, neoGlitchMedia] = await Promise.all([
         prisma.mediaAsset.findMany({
           where: mediaAssetWhere,
-          include: {
+          select: {
+            id: true,
+            userId: true,
+            url: true,
+            finalUrl: true,
+            resourceType: true,
+            prompt: true,
+            presetKey: true, // ✅ FIXED: Explicitly select presetKey field
+            status: true,
+            createdAt: true,
             user: {
               select: {
                 id: true,
