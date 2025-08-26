@@ -28,6 +28,8 @@ interface MasonryMediaGridProps {
   isLoggedIn?: boolean
   // Loading states for actions
   deletingMediaIds?: Set<string>
+  // Filter functionality
+  onPresetTagClick?: (presetType: string) => void
 }
 
 const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
@@ -49,7 +51,9 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   onShowAuth,
   isLoggedIn = true,
   // Loading states for actions
-  deletingMediaIds = new Set()
+  deletingMediaIds = new Set(),
+  // Filter functionality
+  onPresetTagClick
 }) => {
   const gridRef = useRef<HTMLDivElement>(null)
   
@@ -212,6 +216,16 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                               presetKey={item.metadata?.presetKey || item.presetKey} 
                               type={item.metadata?.presetType || item.type}
                               size="sm"
+                              clickable={!!onPresetTagClick}
+                              onClick={() => {
+                                if (onPresetTagClick) {
+                                  const presetType = item.metadata?.presetType || 
+                                    (item.presetKey?.includes('ghibli') ? 'ghibli' :
+                                     item.presetKey?.includes('emotion') ? 'emotion' :
+                                     item.presetKey?.includes('neo') ? 'neo-tokyo' : 'professional')
+                                  onPresetTagClick(presetType)
+                                }
+                              }}
                             />
                           </div>
                         )}

@@ -6,14 +6,28 @@ interface PresetTagProps {
   type?: string
   className?: string
   size?: 'sm' | 'md' | 'lg'
+  onClick?: () => void // Add click handler for filtering
+  clickable?: boolean // Make tags clickable for filtering
 }
 
 const PresetTag: React.FC<PresetTagProps> = ({ 
   presetKey, 
   type, 
   className = '', 
-  size = 'md' 
+  size = 'md',
+  onClick,
+  clickable = false
 }) => {
+  // Size classes
+  const sizeClasses = {
+    sm: 'px-2 py-1 text-xs',
+    md: 'px-3 py-1.5 text-sm',
+    lg: 'px-4 py-2 text-base'
+  }
+  
+  // Unified glossy black styling for all preset types
+  const unifiedStyle = 'bg-glossy-black-800 text-glossy-white-50 border-glossy-black-600 hover:bg-glossy-black-700'
+  
   if (!presetKey) {
     // Handle custom prompts
     if (type === 'custom') {
@@ -21,14 +35,16 @@ const PresetTag: React.FC<PresetTagProps> = ({
         <div 
           className={`
             ${sizeClasses[size]}
-            ${typeStyles.custom}
+            ${unifiedStyle}
             border rounded-full font-medium
             shadow-sm backdrop-blur-sm
             transition-all duration-200
             hover:scale-105 hover:shadow-md
+            ${clickable ? 'cursor-pointer' : ''}
             ${className}
           `}
           title="Generated with custom prompt"
+          onClick={clickable ? onClick : undefined}
         >
           Custom Prompt
         </div>
@@ -39,22 +55,6 @@ const PresetTag: React.FC<PresetTagProps> = ({
   
   const displayName = getPresetDisplayName(presetKey, type)
   const presetType = getPresetType(presetKey, type)
-  
-  // Size classes
-  const sizeClasses = {
-    sm: 'px-2 py-1 text-xs',
-    md: 'px-3 py-1.5 text-sm',
-    lg: 'px-4 py-2 text-base'
-  }
-  
-  // Preset type styling
-  const typeStyles = {
-    'neo-tokyo': 'bg-gradient-to-r from-purple-600/80 to-pink-600/80 text-white border-purple-400/30',
-    'ghibli': 'bg-gradient-to-r from-blue-600/80 to-cyan-600/80 text-white border-blue-400/30',
-    'emotion': 'bg-gradient-to-r from-orange-600/80 to-red-600/80 text-white border-orange-400/30',
-    'professional': 'bg-gradient-to-r from-gray-600/80 to-slate-600/80 text-white border-gray-400/30',
-    'custom': 'bg-gradient-to-r from-green-600/80 to-emerald-600/80 text-white border-green-400/30'
-  }
   
   // Format: [Preset] - [Sub-preset] for better UX
   const formatDisplayText = () => {
@@ -83,14 +83,16 @@ const PresetTag: React.FC<PresetTagProps> = ({
     <div 
       className={`
         ${sizeClasses[size]}
-        ${typeStyles[presetType as keyof typeof typeStyles] || typeStyles.custom}
+        ${unifiedStyle}
         border rounded-full font-medium
         shadow-sm backdrop-blur-sm
         transition-all duration-200
         hover:scale-105 hover:shadow-md
+        ${clickable ? 'cursor-pointer' : ''}
         ${className}
       `}
       title={`Generated with ${displayName} preset`}
+      onClick={clickable ? onClick : undefined}
     >
       {formatDisplayText()}
     </div>

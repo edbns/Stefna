@@ -294,6 +294,10 @@ const ProfileScreen: React.FC = () => {
   const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set())
   const [isSelectionMode, setIsSelectionMode] = useState(false)
 
+  // Media filtering state
+  const [activeFilter, setActiveFilter] = useState<string | null>(null) // Filter by preset type
+  const [filteredMedia, setFilteredMedia] = useState<UserMedia[]>([])
+
   // Media selection helper functions
   const toggleMediaSelection = (mediaId: string) => {
     setSelectedMediaIds(prev => {
@@ -769,6 +773,23 @@ const ProfileScreen: React.FC = () => {
       })
     }
   }, [userMedia])
+
+  // Filter media based on active filter
+  useEffect(() => {
+    if (!activeFilter) {
+      setFilteredMedia(userMedia)
+    } else {
+      const filtered = userMedia.filter(media => {
+        // Extract preset type from metadata or presetKey
+        const presetType = media.metadata?.presetType || 
+                          (media.presetKey?.includes('ghibli') ? 'ghibli' :
+                           media.presetKey?.includes('emotion') ? 'emotion' :
+                           media.presetKey?.includes('neo') ? 'neo-tokyo' : 'professional')
+        return presetType === activeFilter
+      })
+      setFilteredMedia(filtered)
+    }
+  }, [userMedia, activeFilter])
 
 
 
@@ -1422,27 +1443,86 @@ const ProfileScreen: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <MasonryMediaGrid
-                media={userMedia.map(m => ({
-                  ...m,
-                  aspectRatio: m.width && m.height ? m.width / Math.max(1, m.height) : (m.aspectRatio || 4/3),
-                  width: m.width || 800,
-                  height: m.height || Math.round((m.width || 800) / ((m.aspectRatio || 4/3)))
-                }))}
-                columns={3}
-                onMediaClick={handleMediaClick}
-                onDownload={handleDownload}
-                onShare={handleShare}
-                onDelete={handleDeleteMedia}
-                showActions={true}
-                className="pb-20"
-                // Selection props
-                isSelectionMode={isSelectionMode}
-                selectedMediaIds={selectedMediaIds}
-                onToggleSelection={toggleMediaSelection}
-                // Loading states for actions
-                deletingMediaIds={isDeleting ? new Set([isDeleting]) : new Set()}
-              />
+              <>
+                {/* Filter Buttons */}
+                <div className="mb-6 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setActiveFilter(null)}
+                    className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
+                      !activeFilter 
+                        ? 'bg-glossy-black-800 text-glossy-white-50 border border-glossy-black-600' 
+                        : 'bg-glossy-black-700 text-glossy-white-200 border border-glossy-black-500 hover:bg-glossy-black-600'
+                    }`}
+                  >
+                    All Media ({userMedia.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('neo-tokyo')}
+                    className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
+                      activeFilter === 'neo-tokyo'
+                        ? 'bg-glossy-black-800 text-glossy-white-50 border border-glossy-black-600' 
+                        : 'bg-glossy-black-700 text-glossy-white-200 border border-glossy-black-500 hover:bg-glossy-black-600'
+                    }`}
+                  >
+                    Neo Tokyo Glitch ({userMedia.filter(m => m.metadata?.presetType === 'neo-glitch' || m.presetKey?.includes('neo')).length})
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('ghibli')}
+                    className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
+                      activeFilter === 'ghibli'
+                        ? 'bg-glossy-black-800 text-glossy-white-50 border border-glossy-black-600' 
+                        : 'bg-glossy-black-700 text-glossy-white-200 border border-glossy-black-500 hover:bg-glossy-black-600'
+                    }`}
+                  >
+                    Ghibli Reaction ({userMedia.filter(m => m.metadata?.presetType === 'ghibli' || m.presetKey?.includes('ghibli')).length})
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('emotion')}
+                    className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
+                      activeFilter === 'emotion'
+                        ? 'bg-glossy-black-800 text-glossy-white-50 border border-glossy-black-600' 
+                        : 'bg-glossy-black-700 text-glossy-white-200 border border-glossy-black-500 hover:bg-glossy-black-600'
+                    }`}
+                  >
+                    Emotion Mask ({userMedia.filter(m => m.metadata?.presetType === 'emotion' || m.presetKey?.includes('emotion')).length})
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('professional')}
+                    className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
+                      activeFilter === 'professional'
+                        ? 'bg-glossy-black-800 text-glossy-white-50 border border-glossy-black-600' 
+                        : 'bg-glossy-black-700 text-glossy-white-200 border border-glossy-black-500 hover:bg-glossy-black-600'
+                    }`}
+                  >
+                    Professional ({userMedia.filter(m => m.metadata?.presetType === 'professional' || (!m.presetKey?.includes('ghibli') && !m.presetKey?.includes('emotion') && !m.presetKey?.includes('neo'))).length})
+                  </button>
+                </div>
+
+                {/* Media Grid */}
+                <MasonryMediaGrid
+                  media={filteredMedia.map(m => ({
+                    ...m,
+                    aspectRatio: m.width && m.height ? m.width / Math.max(1, m.height) : (m.aspectRatio || 4/3),
+                    width: m.width || 800,
+                    height: m.height || Math.round((m.width || 800) / ((m.aspectRatio || 4/3)))
+                  }))}
+                  columns={3}
+                  onMediaClick={handleMediaClick}
+                  onDownload={handleDownload}
+                  onShare={handleShare}
+                  onDelete={handleDeleteMedia}
+                  showActions={true}
+                  className="pb-20"
+                  // Selection props
+                  isSelectionMode={isSelectionMode}
+                  selectedMediaIds={selectedMediaIds}
+                  onToggleSelection={toggleMediaSelection}
+                  // Loading states for actions
+                  deletingMediaIds={isDeleting ? new Set([isDeleting]) : new Set()}
+                  // Filter functionality
+                  onPresetTagClick={(presetType) => setActiveFilter(presetType)}
+                />
+              </>
             )}
           </div>
         )}
