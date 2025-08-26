@@ -7,8 +7,46 @@
 import type { Handler } from '@netlify/functions';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { v2 as cloudinary } from 'cloudinary';
 
 const prisma = new PrismaClient();
+
+// Initialize Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Helper function to upload non-Cloudinary URLs to Cloudinary
+async function uploadToCloudinary(imageUrl: string, tags: string[] = []): Promise<{ url: string; publicId: string }> {
+  try {
+    console.log('☁️ [Cloudinary] Uploading external URL to Cloudinary:', imageUrl.substring(0, 60) + '...');
+    
+    const result = await cloudinary.uploader.upload(imageUrl, {
+      resource_type: 'image',
+      tags: ['auto-upload', 'generation', ...tags],
+      folder: 'generations',
+      transformation: [
+        { quality: 'auto:good', fetch_format: 'auto' } // Auto-optimize
+      ]
+    });
+    
+    console.log('✅ [Cloudinary] Upload successful:', {
+      publicId: result.public_id,
+      url: result.secure_url,
+      size: result.bytes
+    });
+    
+    return {
+      url: result.secure_url,
+      publicId: result.public_id
+    };
+  } catch (error) {
+    console.error('❌ [Cloudinary] Upload failed:', error);
+    throw new Error(`Cloudinary upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
 
 interface MediaVariation {
   image_url: string;
@@ -171,16 +209,40 @@ export const handler: Handler = async (event): Promise<any> => {
           meta: v.meta
         });
         
-        // Extract Cloudinary public ID from the image URL or handle non-Cloudinary URLs
+        // 🚀 UNIFIED CLOUDINARY APPROACH: Upload non-Cloudinary URLs to Cloudinary
+        let finalImageUrl = v.image_url;
         let cloudinaryPublicId: string | null = null;
+        
         try {
           if (v.image_url.includes('cloudinary.com')) {
+            // Already a Cloudinary URL - extract public ID
             const cloudinaryMatch = v.image_url.match(/\/upload\/(?:v\d+\/)?(.+?)\.(jpg|jpeg|png|webp|mp4|mov|avi)/);
             cloudinaryPublicId = cloudinaryMatch ? cloudinaryMatch[1] : null;
+            console.log('✅ [Batch Save] Using existing Cloudinary URL:', v.image_url.substring(0, 60) + '...');
+          } else {
+            // Non-Cloudinary URL (AIML, Replicate, etc.) - upload to Cloudinary
+            console.log('🔄 [Batch Save] Non-Cloudinary URL detected, uploading to Cloudinary:', v.image_url.substring(0, 60) + '...');
+            
+            const cloudinaryResult = await uploadToCloudinary(v.image_url, [
+              'batch-upload',
+              `preset:${v.meta?.presetId || 'unknown'}`,
+              `mode:${v.meta?.mode || 'unknown'}`
+            ]);
+            
+            finalImageUrl = cloudinaryResult.url;
+            cloudinaryPublicId = cloudinaryResult.publicId;
+            
+            console.log('✅ [Batch Save] Successfully uploaded to Cloudinary:', {
+              originalUrl: v.image_url.substring(0, 60) + '...',
+              cloudinaryUrl: finalImageUrl.substring(0, 60) + '...',
+              publicId: cloudinaryPublicId
+            });
           }
         } catch (error) {
-          console.warn(`⚠️ Could not analyze URL: ${v.image_url}`, error);
+          console.error('❌ [Batch Save] Cloudinary processing failed:', error);
+          // Fallback to original URL if Cloudinary fails
           cloudinaryPublicId = v.cloudinary_public_id || null;
+          console.warn('⚠️ [Batch Save] Using original URL as fallback:', v.image_url.substring(0, 60) + '...');
         }
         
         // 🔒 RESPECT USER VISIBILITY PREFERENCE FOR BATCH OPERATIONS
@@ -195,37 +257,24 @@ export const handler: Handler = async (event): Promise<any> => {
             userId: userId, // Fixed: use userId not ownerId
             resourceType: mediaType,
             prompt: v.prompt || null,
-            url: v.image_url,
+            url: finalImageUrl, // ✅ Use Cloudinary URL instead of original AIML URL
             visibility: visibility, // Use user preference instead of hardcoded 'public'
             allowRemix: false,
-            meta: {...v.meta, batch_id: batchId, run_id: runId, idempotency_key: itemIdempotencyKey}
+            presetKey: v.meta?.presetId || null, // ✅ Store preset info for tags
+            meta: {
+              ...v.meta, 
+              batch_id: batchId, 
+              run_id: runId, 
+              idempotency_key: itemIdempotencyKey,
+              original_url: v.image_url, // ✅ Keep original URL for reference
+              cloudinary_public_id: cloudinaryPublicId // ✅ Store Cloudinary public ID
+            }
           }
         });
         items.push(row);
         
-        // 🔄 Auto-backup Replicate images to Cloudinary
-        if (v.image_url && v.image_url.includes('replicate.delivery')) {
-          console.log('🔄 Triggering Replicate image backup for:', { id, imageUrl: v.image_url });
-          
-          // Call backup function asynchronously (don't wait for it)
-          fetch('/.netlify/functions/backup-replicate-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              replicateUrl: v.image_url,
-              mediaId: id,
-              userId: userId
-            })
-          }).then(response => {
-            if (response.ok) {
-              console.log('✅ Replicate backup triggered successfully for:', id);
-            } else {
-              console.error('❌ Replicate backup trigger failed for:', id, response.status);
-            }
-          }).catch(error => {
-            console.error('❌ Replicate backup trigger error for:', id, error);
-          });
-        }
+        // ✅ UNIFIED CLOUDINARY APPROACH: All non-Cloudinary URLs are now handled above
+        // No need for separate Replicate backup logic
       }
       
       console.log(`✅ Batch save completed: ${items.length} variations for user ${userId}, run ${runId || 'no-run'}`);
@@ -342,12 +391,12 @@ export const handler: Handler = async (event): Promise<any> => {
         };
       }
 
-      // 🚨 CRITICAL FIX: Validate and complete Cloudinary URLs
-      let validatedFinalUrl = finalUrl;
+      // 🚀 UNIFIED CLOUDINARY APPROACH: Upload non-Cloudinary URLs to Cloudinary
+      let finalImageUrl = finalUrl;
       let cloudinary_public_id: string | null = null;
       
       if (finalUrl.includes('cloudinary.com')) {
-        // Check if URL is complete
+        // Already a Cloudinary URL - validate and extract public ID
         if (!finalUrl.includes('/upload/')) {
           console.error('❌ [save-media] Incomplete Cloudinary URL detected:', finalUrl);
           return {
@@ -381,7 +430,29 @@ export const handler: Handler = async (event): Promise<any> => {
         console.log('✅ [save-media] Valid Cloudinary URL:', finalUrl);
         console.log('✅ [save-media] Extracted public ID:', cloudinary_public_id);
       } else {
-        console.log('⚠️ [save-media] Non-Cloudinary URL detected:', finalUrl);
+        // Non-Cloudinary URL (AIML, Replicate, etc.) - upload to Cloudinary
+        console.log('🔄 [save-media] Non-Cloudinary URL detected, uploading to Cloudinary:', finalUrl.substring(0, 60) + '...');
+        
+        try {
+          const cloudinaryResult = await uploadToCloudinary(finalUrl, [
+            'single-upload',
+            `preset:${preset_key || 'unknown'}`,
+            `mode:${meta?.mode || 'unknown'}`
+          ]);
+          
+          finalImageUrl = cloudinaryResult.url;
+          cloudinary_public_id = cloudinaryResult.publicId;
+          
+          console.log('✅ [save-media] Successfully uploaded to Cloudinary:', {
+            originalUrl: finalUrl.substring(0, 60) + '...',
+            cloudinaryUrl: finalImageUrl.substring(0, 60) + '...',
+            publicId: cloudinary_public_id
+          });
+        } catch (error) {
+          console.error('❌ [save-media] Cloudinary upload failed:', error);
+          // Fallback to original URL if Cloudinary fails
+          console.warn('⚠️ [save-media] Using original URL as fallback:', finalUrl.substring(0, 60) + '...');
+        }
       }
 
       // 🧠 DEBUG: Special logging for Neo Tokyo Glitch mode
@@ -408,11 +479,16 @@ export const handler: Handler = async (event): Promise<any> => {
           userId: userId, // Fixed: use userId not ownerId
           resourceType: media_type || 'image',
           prompt: prompt || null,
-          url: finalUrl,
+          url: finalImageUrl, // ✅ Use Cloudinary URL instead of original AIML URL
           visibility: visibility, // Use user preference instead of hardcoded 'public'
           allowRemix: false,
-          presetKey: preset_key || null, // ✅ FIXED: Store preset key for tag display
-          meta: { ...(meta || {}), idempotency_key: idempotencyKey || null }
+          presetKey: preset_key || null, // ✅ Store preset key for tag display
+          meta: { 
+            ...(meta || {}), 
+            idempotency_key: idempotencyKey || null,
+            original_url: finalUrl, // ✅ Keep original URL for reference
+            cloudinary_public_id: cloudinary_public_id // ✅ Store Cloudinary public ID
+          }
         },
         select: {
           id: true,
