@@ -86,12 +86,20 @@ export const handler: Handler = async (event) => {
       finalUrl: item.url,
       mediaType: item.resourceType,
       prompt: item.prompt,
-      presetKey: item.prompt,
+      presetKey: item.presetKey,  // ✅ Use actual presetKey from database
       status: 'ready',
       isPublic: item.visibility === 'public',
       allowRemix: item.allowRemix,
       createdAt: item.createdAt,
-      type: 'media-asset'
+      type: 'media-asset',
+      // Include metadata for preset information
+      metadata: {
+        presetKey: item.presetKey,
+        presetType: 'media-asset',  // ✅ Default to media-asset for regular media
+        quality: 'high',
+        generationTime: 0,
+        modelVersion: '1.0'
+      }
     }));
 
     // Transform NeoGlitch media
@@ -106,7 +114,15 @@ export const handler: Handler = async (event) => {
       isPublic: false, // NeoGlitch media is always private by default
       allowRemix: false, // NeoGlitch doesn't support remixing
       createdAt: item.createdAt,
-      type: 'neo-glitch'
+      type: 'neo-glitch',
+      // Include metadata for preset information
+      metadata: {
+        presetKey: item.preset,
+        presetType: 'neo-glitch',  // ✅ Neo Glitch specific type
+        quality: 'high',
+        generationTime: 0,
+        modelVersion: '1.0'
+      }
     }));
 
     // Combine and sort by creation date
