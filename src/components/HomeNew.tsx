@@ -4845,7 +4845,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             {/* Clean disclaimer row under composer */}
             <div className="mt-3 text-center">
               <p className="text-xs text-white/60">
-                <span className="font-bold">Disclaimer:</span> AI Magic Zone, Neo Tokyo, Ghibli Reaction, Emotion Mask, and others are powered by AI. Fun, wild, sometimes a bit off — mistakes can happen.
+                <span className="font-bold">Disclaimer:</span> It's AI. It's smart, but not perfect. expect some fun, wild, and maybe a few "what were they thinking?" moments.
               </p>
             </div>
           </div>
