@@ -117,34 +117,29 @@ export const handler: Handler = async (event) => {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
             margin: 0; 
             padding: 0; 
-            background-color: #f8f9fa; 
-            color: #212529;
+            background-color: #000000; 
+            color: #ffffff;
         }
         .container { 
             max-width: 600px; 
             margin: 0 auto; 
-            background-color: #ffffff; 
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .header { 
             background-color: #000000; 
-            color: #ffffff; 
-            padding: 40px 30px; 
-            text-align: center;
+            padding: 40px 30px;
         }
-        .header h1 { 
-            margin: 0; 
-            font-size: 28px; 
-            font-weight: 600; 
-            letter-spacing: -0.5px;
+        .logo { 
+            text-align: center; 
+            margin-bottom: 40px;
+        }
+        .logo img {
+            height: 60px;
+            width: auto;
         }
         .content { 
-            padding: 40px 30px; 
             line-height: 1.6;
         }
         .otp-box { 
-            background-color: #f8f9fa; 
-            border: 2px solid #dee2e6; 
+            background-color: #1a1a1a; 
+            border: 2px solid #333333; 
             border-radius: 8px; 
             padding: 30px; 
             text-align: center; 
@@ -153,41 +148,41 @@ export const handler: Handler = async (event) => {
         .otp-code { 
             font-size: 36px; 
             font-weight: 700; 
-            color: #000000; 
+            color: #ffffff; 
             letter-spacing: 4px; 
             font-family: 'Courier New', monospace;
         }
         .expiry { 
-            color: #6c757d; 
+            color: #cccccc; 
             font-size: 14px; 
             margin-top: 15px;
         }
-        .footer { 
-            background-color: #f8f9fa; 
-            padding: 30px; 
-            text-align: center; 
-            color: #6c757d; 
-            font-size: 14px;
-            border-top: 1px solid #dee2e6;
-        }
         .warning { 
-            background-color: #fff3cd; 
-            border: 1px solid #ffeaa7; 
+            background-color: #1a1a1a; 
+            border: 1px solid #333333; 
             border-radius: 6px; 
             padding: 15px; 
             margin: 20px 0; 
-            color: #856404;
+            color: #ffcc00;
+        }
+        .footer { 
+            margin-top: 40px; 
+            text-align: center; 
+            color: #cccccc; 
+            font-size: 14px;
+            border-top: 1px solid #333333;
+            padding-top: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>STEFNA</h1>
+        <div class="logo">
+            <img src="https://stefna.xyz/logo.png" alt="Stefna" />
         </div>
         
         <div class="content">
-            <h2 style="margin-top: 0; color: #000000;">Your Login Code</h2>
+            <h2 style="margin-top: 0; color: #ffffff;">Your Login Code</h2>
             <p>Here's your one-time login code to access your Stefna account:</p>
             
             <div class="otp-box">
@@ -201,7 +196,8 @@ export const handler: Handler = async (event) => {
         </div>
         
         <div class="footer">
-            <p>The Stefna Team</p>
+            <p>This email was sent to: ${email}</p>
+            <p>Stefna 2025 all rights reserved</p>
         </div>
     </div>
 </body>

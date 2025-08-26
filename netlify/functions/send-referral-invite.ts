@@ -58,7 +58,7 @@ export const handler: Handler = async (event) => {
       from: 'Stefna <hello@stefna.xyz>',
       to: [to],
       subject: 'You\'ve Been Invited to Stefna – 25 Free Credits Inside',
-      html: `
+            html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -70,34 +70,29 @@ export const handler: Handler = async (event) => {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
             margin: 0; 
             padding: 0; 
-            background-color: #f8f9fa; 
-            color: #212529;
+            background-color: #000000; 
+            color: #ffffff;
         }
         .container { 
             max-width: 600px; 
             margin: 0 auto; 
-            background-color: #ffffff; 
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .header { 
             background-color: #000000; 
-            color: #ffffff; 
-            padding: 40px 30px; 
-            text-align: center;
+            padding: 40px 30px;
         }
-        .header h1 { 
-            margin: 0; 
-            font-size: 28px; 
-            font-weight: 600; 
-            letter-spacing: -0.5px;
+        .logo { 
+            text-align: center; 
+            margin-bottom: 40px;
+        }
+        .logo img {
+            height: 60px;
+            width: auto;
         }
         .content { 
-            padding: 40px 30px; 
             line-height: 1.6;
         }
         .bonus-box { 
-            background-color: #f8f9fa; 
-            border: 2px solid #dee2e6; 
+            background-color: #1a1a1a; 
+            border: 2px solid #333333; 
             border-radius: 8px; 
             padding: 30px; 
             text-align: center; 
@@ -106,43 +101,44 @@ export const handler: Handler = async (event) => {
         .credits { 
             font-size: 32px; 
             font-weight: 700; 
-            color: #000000; 
+            color: #ffffff; 
             margin: 20px 0;
         }
         .highlight { 
-            background-color: #e9ecef; 
+            background-color: #1a1a1a; 
             border-radius: 6px; 
             padding: 20px; 
             margin: 20px 0;
+            border: 1px solid #333333;
         }
         .cta { 
-            background-color: #000000; 
-            color: #ffffff; 
+            background-color: #ffffff; 
+            color: #000000; 
             padding: 15px 30px; 
             border-radius: 6px; 
             text-decoration: none; 
             display: inline-block; 
-            margin: 20px 0;
+            margin: 20px 0; 
             font-weight: 600;
         }
         .footer { 
-            background-color: #f8f9fa; 
-            padding: 30px; 
+            margin-top: 40px; 
             text-align: center; 
-            color: #6c757d; 
+            color: #cccccc; 
             font-size: 14px;
-            border-top: 1px solid #dee2e6;
+            border-top: 1px solid #333333;
+            padding-top: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>STEFNA INVITATION</h1>
+        <div class="logo">
+            <img src="https://stefna.xyz/logo.png" alt="Stefna" />
         </div>
         
         <div class="content">
-            <h2 style="margin-top: 0; color: #000000;">You've Been Invited!</h2>
+            <h2 style="margin-top: 0; color: #ffffff;">You've Been Invited!</h2>
             <p>Someone invited you to try Stefna — a new way to create high-quality AI images (and soon, videos).</p>
             
             <div class="bonus-box">
@@ -159,13 +155,14 @@ export const handler: Handler = async (event) => {
                 <a href="https://stefna.xyz/auth" class="cta">Join Now & Start Creating</a>
             </div>
             
-            <p style="font-size: 14px; color: #6c757d; text-align: center; margin-top: 20px;">
+            <p style="font-size: 14px; color: #cccccc; text-align: center; margin-top: 20px;">
                 When you sign up, make sure to mention that <strong>${referrerEmail}</strong> invited you to get your bonus credits.
             </p>
         </div>
         
         <div class="footer">
-            <p>The Stefna Team</p>
+            <p>This email was sent to: ${to}</p>
+            <p>Stefna 2025 all rights reserved</p>
         </div>
     </div>
 </body>

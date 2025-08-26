@@ -59,7 +59,7 @@ export const handler: Handler = async (event) => {
     
     if (isCritical) {
       subject = 'Critical: You\'re Almost Out of Credits Today';
-      html = `
+            html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -71,34 +71,29 @@ export const handler: Handler = async (event) => {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
             margin: 0; 
             padding: 0; 
-            background-color: #f8f9fa; 
-            color: #212529;
+            background-color: #000000; 
+            color: #ffffff;
         }
         .container { 
             max-width: 600px; 
             margin: 0 auto; 
-            background-color: #ffffff; 
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: #000000; 
+            padding: 40px 30px;
         }
-        .header { 
-            background-color: #dc3545; 
-            color: #ffffff; 
-            padding: 40px 30px; 
-            text-align: center;
+        .logo { 
+            text-align: center; 
+            margin-bottom: 40px;
         }
-        .header h1 { 
-            margin: 0; 
-            font-size: 28px; 
-            font-weight: 600; 
-            letter-spacing: -0.5px;
+        .logo img {
+            height: 60px;
+            width: auto;
         }
         .content { 
-            padding: 40px 30px; 
             line-height: 1.6;
         }
         .warning-box { 
-            background-color: #f8d7da; 
-            border: 2px solid #f5c6cb; 
+            background-color: #1a1a1a; 
+            border: 2px solid #dc3545; 
             border-radius: 8px; 
             padding: 30px; 
             text-align: center; 
@@ -107,45 +102,45 @@ export const handler: Handler = async (event) => {
         .usage { 
             font-size: 24px; 
             font-weight: 700; 
-            color: #721c24; 
+            color: #ff6b6b; 
             margin: 20px 0;
         }
         .remaining { 
-            background-color: #fff3cd; 
-            border: 1px solid #ffeaa7; 
+            background-color: #1a1a1a; 
+            border: 1px solid #333333; 
             border-radius: 6px; 
             padding: 20px; 
             margin: 20px 0;
-            color: #856404;
+            color: #ffcc00;
         }
         .cta { 
-            background-color: #000000; 
-            color: #ffffff; 
+            background-color: #ffffff; 
+            color: #000000; 
             padding: 15px 30px; 
             border-radius: 6px; 
             text-decoration: none; 
             display: inline-block; 
-            margin: 20px 0;
+            margin: 20px 0; 
             font-weight: 600;
         }
         .footer { 
-            background-color: #f8f9fa; 
-            padding: 30px; 
+            margin-top: 40px; 
             text-align: center; 
-            color: #6c757d; 
+            color: #cccccc; 
             font-size: 14px;
-            border-top: 1px solid #dee2e6;
+            border-top: 1px solid #333333;
+            padding-top: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>CREDIT WARNING</h1>
+        <div class="logo">
+            <img src="https://stefna.xyz/logo.png" alt="Stefna" />
         </div>
         
         <div class="content">
-            <h2 style="margin-top: 0; color: #721c24;">Critical Credit Alert</h2>
+            <h2 style="margin-top: 0; color: #ff6b6b;">Critical Credit Alert</h2>
             <p>You've used <strong>${dailyUsed}</strong> out of <strong>${dailyCap}</strong> daily credits (<strong>${usagePercentage}%</strong>).</p>
             
             <div class="warning-box">
@@ -164,7 +159,8 @@ export const handler: Handler = async (event) => {
         </div>
         
         <div class="footer">
-            <p>The Stefna Team</p>
+            <p>This email was sent to: ${to}</p>
+            <p>Stefna 2025 all rights reserved</p>
         </div>
     </div>
 </body>
@@ -180,7 +176,7 @@ Want more credits now? Invite a friend and get 50 bonus credits instantly.
 — The Stefna Team`;
     } else {
       subject = 'You\'re Running Low on Credits';
-      html = `
+            html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -192,34 +188,29 @@ Want more credits now? Invite a friend and get 50 bonus credits instantly.
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
             margin: 0; 
             padding: 0; 
-            background-color: #f8f9fa; 
-            color: #212529;
+            background-color: #000000; 
+            color: #ffffff;
         }
         .container { 
             max-width: 600px; 
             margin: 0 auto; 
-            background-color: #ffffff; 
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: #000000; 
+            padding: 40px 30px;
         }
-        .header { 
-            background-color: #ffc107; 
-            color: #000000; 
-            padding: 40px 30px; 
-            text-align: center;
+        .logo { 
+            text-align: center; 
+            margin-bottom: 40px;
         }
-        .header h1 { 
-            margin: 0; 
-            font-size: 28px; 
-            font-weight: 600; 
-            letter-spacing: -0.5px;
+        .logo img {
+            height: 60px;
+            width: auto;
         }
         .content { 
-            padding: 40px 30px; 
             line-height: 1.6;
         }
         .info-box { 
-            background-color: #f8f9fa; 
-            border: 2px solid #dee2e6; 
+            background-color: #1a1a1a; 
+            border: 2px solid #333333; 
             border-radius: 8px; 
             padding: 30px; 
             text-align: center; 
@@ -228,43 +219,44 @@ Want more credits now? Invite a friend and get 50 bonus credits instantly.
         .usage { 
             font-size: 24px; 
             font-weight: 700; 
-            color: #000000; 
+            color: #ffffff; 
             margin: 20px 0;
         }
         .remaining { 
-            background-color: #e9ecef; 
+            background-color: #1a1a1a; 
             border-radius: 6px; 
             padding: 20px; 
             margin: 20px 0;
+            border: 1px solid #333333;
         }
         .cta { 
-            background-color: #000000; 
-            color: #ffffff; 
+            background-color: #ffffff; 
+            color: #000000; 
             padding: 15px 30px; 
             border-radius: 6px; 
             text-decoration: none; 
             display: inline-block; 
-            margin: 20px 0;
+            margin: 20px 0; 
             font-weight: 600;
         }
         .footer { 
-            background-color: #f8f9fa; 
-            padding: 30px; 
+            margin-top: 40px; 
             text-align: center; 
-            color: #6c757d; 
+            color: #cccccc; 
             font-size: 14px;
-            border-top: 1px solid #dee2e6;
+            border-top: 1px solid #333333;
+            padding-top: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>CREDIT ALERT</h1>
+        <div class="logo">
+            <img src="https://stefna.xyz/logo.png" alt="Stefna" />
         </div>
         
         <div class="content">
-            <h2 style="margin-top: 0; color: #000000;">Running Low on Credits</h2>
+            <h2 style="margin-top: 0; color: #ffffff;">Running Low on Credits</h2>
             <p>You've used <strong>${dailyUsed}</strong> out of <strong>${dailyCap}</strong> daily credits (<strong>${usagePercentage}%</strong>).</p>
             
             <div class="info-box">
@@ -284,7 +276,8 @@ Want more credits now? Invite a friend and get 50 bonus credits instantly.
         </div>
         
         <div class="footer">
-            <p>The Stefna Team</p>
+            <p>This email was sent to: ${to}</p>
+            <p>Stefna 2025 all rights reserved</p>
         </div>
     </div>
 </body>
