@@ -4337,7 +4337,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           {isComposerOpen && (
             <div className="fixed inset-0 z-[999999] bg-black" style={{ zIndex: 999999 }}>
           {/* Close button */}
-          <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-[999999] pointer-events-auto text-white/80 hover:text-white transition-colors bg-black/60 hover:bg-black/80 rounded-full p-2 backdrop-blur-sm" aria-label="Close">
+          <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-[999999] pointer-events-auto text-white/80 hover:text-white transition-colors bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full p-2 border border-white/30 hover:border-white/50" aria-label="Close">
             <X size={20} />
           </button>
           
