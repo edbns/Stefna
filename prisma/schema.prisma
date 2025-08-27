@@ -171,64 +171,64 @@ model assets {
 
 model customPromptMedia {
   id          String   @id
-  user_id     String
-  image_url   String
-  source_url  String
+  userId      String   @map("user_id")
+  imageUrl    String   @map("image_url")
+  sourceUrl   String   @map("source_url")
   prompt      String
   preset      String
-  run_id      String   @unique
-  aiml_job_id String?
-  created_at  DateTime @default(now())
+  runId       String   @unique @map("run_id")
+  aimlJobId   String?  @map("aiml_job_id")
+  createdAt   DateTime @default(now()) @map("created_at")
   status      String   @default("completed")
   metadata    Json?
-  users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  users       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([aiml_job_id])
+  @@index([aimlJobId])
   @@index([preset])
   @@index([status])
-  @@index([user_id, created_at(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("custom_prompt_media")
 }
 
 model emotionMaskMedia {
   id          String   @id
-  user_id     String
-  image_url   String
-  source_url  String
+  userId      String   @map("user_id")
+  imageUrl    String   @map("image_url")
+  sourceUrl   String   @map("source_url")
   prompt      String
   preset      String
-  run_id      String   @unique
-  aiml_job_id String?
-  created_at  DateTime @default(now())
+  runId       String   @unique @map("run_id")
+  aimlJobId   String?  @map("aiml_job_id")
+  createdAt   DateTime @default(now()) @map("created_at")
   status      String   @default("completed")
   metadata    Json?
-  users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  users       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([aiml_job_id])
+  @@index([aimlJobId])
   @@index([preset])
   @@index([status])
-  @@index([user_id, created_at(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("emotion_mask_media")
 }
 
 model ghibliReactionMedia {
   id          String   @id
-  user_id     String
-  image_url   String
-  source_url  String
+  userId      String   @map("user_id")
+  imageUrl    String   @map("image_url")
+  sourceUrl   String   @map("source_url")
   prompt      String
   preset      String
-  run_id      String   @unique
-  aiml_job_id String?
-  created_at  DateTime @default(now())
+  runId       String   @unique @map("run_id")
+  aimlJobId   String?  @map("aiml_job_id")
+  createdAt   DateTime @default(now()) @map("created_at")
   status      String   @default("completed")
   metadata    Json?
-  users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  users       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([aiml_job_id])
+  @@index([aimlJobId])
   @@index([preset])
   @@index([status])
-  @@index([user_id, created_at(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("ghibli_reaction_media")
 }
 
@@ -301,24 +301,24 @@ model presets_config {
 
 model presetsMedia {
   id                     String   @id
-  user_id                String
-  image_url              String
-  source_url             String
-  prompt                 String
-  preset                 String
-  run_id                 String   @unique
-  aiml_job_id            String?
-  created_at             DateTime @default(now())
-  status                 String   @default("completed")
-  preset_week            Int?
-  preset_rotation_index  Int?
-  metadata               Json?
-  is_currently_available Boolean? @default(true)
-  users                  User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  userId                  String   @map("user_id")
+  imageUrl                String   @map("image_url")
+  sourceUrl               String   @map("source_url")
+  prompt                  String
+  preset                  String
+  runId                   String   @unique @map("run_id")
+  aimlJobId               String?  @map("aiml_job_id")
+  createdAt               DateTime @default(now()) @map("created_at")
+  status                  String   @default("completed")
+  presetWeek              Int?     @map("preset_week")
+  presetRotationIndex     Int?     @map("preset_rotation_index")
+  metadata                Json?
+  isCurrentlyAvailable    Boolean? @default(true) @map("is_currently_available")
+  users                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([aiml_job_id])
+  @@index([aimlJobId])
   @@index([preset])
   @@index([status])
-  @@index([user_id, created_at(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("presets_media")
 }
