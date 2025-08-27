@@ -62,6 +62,22 @@ export const IPA_PRESET_CONFIGS: Record<string, IPAPresetConfig> = {
     retries: 2,
     blocking: true,
     description: 'Moderate identity preservation for preset transformations'
+  },
+  
+  // Story Time identity preservation - Creative storytelling with moderate identity
+  'story_time_moderate_ipa': {
+    threshold: 0.55,
+    retries: 2,
+    blocking: true,
+    description: 'Moderate identity preservation for creative storytelling'
+  },
+  
+  // Story Time Auto Mode - AI-determined identity preservation
+  'story_time_auto_ipa': {
+    threshold: 0.6,
+    retries: 2,
+    blocking: true,
+    description: 'Auto-determined identity preservation for AI story themes'
   }
 };
 
@@ -330,5 +346,31 @@ export class IdentityPreservationService {
   static getThreshold(generationType: string): number {
     const config = this.getConfig(generationType);
     return config?.threshold ?? 0.5;
+  }
+
+  /**
+   * Get IPA configuration for Story Time presets
+   */
+  static getStoryTimeIPAConfig(preset: string): IPAPresetConfig {
+    switch (preset) {
+      case 'auto':
+        return IPA_PRESET_CONFIGS['story_time_auto_ipa'];
+      case 'adventure':
+      case 'romance':
+      case 'mystery':
+      case 'comedy':
+      case 'fantasy':
+      case 'travel':
+        return IPA_PRESET_CONFIGS['story_time_moderate_ipa'];
+      default:
+        return IPA_PRESET_CONFIGS['story_time_moderate_ipa'];
+    }
+  }
+
+  /**
+   * Get generation type string for Story Time
+   */
+  static getStoryTimeGenerationType(preset: string): string {
+    return `story_time_${preset}_ipa`;
   }
 }

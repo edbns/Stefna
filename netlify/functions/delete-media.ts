@@ -24,7 +24,7 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 405,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify({ error: 'Method not allowed' });
     };
   }
 
@@ -42,49 +42,120 @@ export const handler: Handler = async (event) => {
 
     console.log('🗑️ [delete-media] Deleting media:', { mediaId, userId });
 
-    // 🔧 FIX: Check if this is Neo Glitch media (CUID format) or regular media (UUID format)
-    // Neo Glitch IDs start with 'c' and are longer (CUID format)
-    // Regular media IDs are UUID format
-    const isNeoGlitchMedia = mediaId.startsWith('c') && mediaId.length > 20;
-    
-    console.log('🔍 [delete-media] Media type detection:', { 
-      mediaId, 
-      isNeoGlitchMedia, 
-      idLength: mediaId.length,
-      startsWithC: mediaId.startsWith('c')
-    });
+    // Try to delete from all media tables
+    let deletedMedia = null;
+    let deletedFromTable = '';
 
-    let deletedMedia;
-    
-    if (isNeoGlitchMedia) {
-      // Delete from NeoGlitchMedia table
-      console.log('🎭 [delete-media] Deleting from NeoGlitchMedia table');
+    // Try Neo Glitch Media first (CUID format)
+    try {
       deletedMedia = await prisma.neoGlitchMedia.delete({
         where: {
           id: mediaId,
           userId: userId
         }
       });
-    } else {
-      // Delete from regular MediaAsset table
-      console.log('📷 [delete-media] Deleting from MediaAsset table');
-      deletedMedia = await prisma.mediaAsset.delete({
-        where: {
-          id: mediaId,
-          userId: userId
+      deletedFromTable = 'neoGlitchMedia';
+    } catch (error: any) {
+      if (error.code !== 'P2025') { // Not "Record not found"
+        console.log('⚠️ [delete-media] Neo Glitch delete failed:', error.message);
+      }
+    }
+
+    // Try Custom Prompt Media
+    if (!deletedMedia) {
+      try {
+        deletedMedia = await prisma.customPromptMedia.delete({
+          where: {
+            id: mediaId,
+            userId: userId
+          }
+        });
+        deletedFromTable = 'customPromptMedia';
+      } catch (error: any) {
+        if (error.code !== 'P2025') {
+          console.log('⚠️ [delete-media] Custom Prompt delete failed:', error.message);
         }
-      });
+      }
+    }
+
+    // Try Emotion Mask Media
+    if (!deletedMedia) {
+      try {
+        deletedMedia = await prisma.emotionMaskMedia.delete({
+          where: {
+            id: mediaId,
+            userId: userId
+          }
+        });
+        deletedFromTable = 'emotionMaskMedia';
+      } catch (error: any) {
+        if (error.code !== 'P2025') {
+          console.log('⚠️ [delete-media] Emotion Mask delete failed:', error.message);
+        }
+      }
+    }
+
+    // Try Ghibli Reaction Media
+    if (!deletedMedia) {
+      try {
+        deletedMedia = await prisma.ghibliReactionMedia.delete({
+          where: {
+            id: mediaId,
+            userId: userId
+          }
+        });
+        deletedFromTable = 'ghibliReactionMedia';
+      } catch (error: any) {
+        if (error.code !== 'P2025') {
+          console.log('⚠️ [delete-media] Ghibli Reaction delete failed:', error.message);
+        }
+      }
+    }
+
+    // Try Presets Media
+    if (!deletedMedia) {
+      try {
+        deletedMedia = await prisma.presetsMedia.delete({
+          where: {
+            id: mediaId,
+            userId: userId
+          }
+        });
+        deletedFromTable = 'presetsMedia';
+      } catch (error: any) {
+        if (error.code !== 'P2025') {
+          console.log('⚠️ [delete-media] Presets delete failed:', error.message);
+        }
+      }
+    }
+
+    // Try Story Media
+    if (!deletedMedia) {
+      try {
+        deletedMedia = await prisma.story.delete({
+          where: {
+            id: mediaId,
+            userId: userId
+          }
+        });
+        deletedFromTable = 'story';
+      } catch (error: any) {
+        if (error.code !== 'P2025') {
+          console.log('⚠️ [delete-media] Story delete failed:', error.message);
+        }
+      }
     }
 
     if (deletedMedia) {
-      console.log('✅ [delete-media] Media deleted successfully:', mediaId);
+      console.log('✅ [delete-media] Media deleted successfully from', deletedFromTable, ':', mediaId);
       return json({
         success: true,
         message: 'Media deleted successfully',
-        deletedId: mediaId
+        deletedId: mediaId,
+        deletedFromTable: deletedFromTable
       });
     } else {
-      console.log('❌ [delete-media] Media not found or access denied:', mediaId);
+      console.log('❌ [delete-media] Media not found in any table:', mediaId);
       return json({ error: 'Media not found or access denied' }, { status: 404 });
     }
 

@@ -1,9 +1,9 @@
 // Neo Tokyo Glitch Creation Function
-// Creates the initial record in media_assets_glitch table
+// Creates the initial record in neoGlitchMedia table
 // Handles deduplication and user validation
 
 import type { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
+import { PrismaClient } from '@prisma/client';
 import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
 
@@ -58,28 +58,33 @@ export const handler: Handler = async (event) => {
       hasSource: !!sourceAssetId
     });
 
-    const sql = neon(process.env.NETLIFY_DATABASE_URL!);
+    const prisma = new PrismaClient();
 
-    // Check for existing record with same input hash (deduplication)
-    const existingRecord = await sql`
-      SELECT id, status, cloudinary_url 
-      FROM media_assets_glitch 
-      WHERE user_id = ${userId} AND input_hash = ${inputHash}
-      LIMIT 1
-    `;
+    // Check for existing record with same runId (deduplication)
+    const existingRecord = await prisma.neoGlitchMedia.findFirst({
+      where: { 
+        userId: userId,
+        runId: runId
+      },
+      select: {
+        id: true,
+        status: true,
+        imageUrl: true
+      }
+    });
 
-    if (existingRecord && existingRecord.length > 0) {
-      const existing = existingRecord[0];
+    if (existingRecord) {
       console.log('🎭 [NeoGlitch] Duplicate detected:', {
-        existingId: existing.id,
-        status: existing.status,
-        hasCloudinary: !!existing.cloudinary_url
+        existingId: existingRecord.id,
+        status: existingRecord.status,
+        hasImage: !!existingRecord.imageUrl
       });
 
       // If already completed, return the existing record
-      if (existing.status === 'completed' && existing.cloudinary_url) {
+      if (existingRecord.status === 'completed' && existingRecord.imageUrl) {
+        await prisma.$disconnect();
         return json({
-          id: existing.id,
+          id: existingRecord.id,
           status: 'completed',
           duplicate: true,
           message: 'Generation already completed with same input'
@@ -87,10 +92,11 @@ export const handler: Handler = async (event) => {
       }
 
       // If pending/processing, return the existing record
-      if (existing.status === 'pending' || existing.status === 'processing') {
+      if (existingRecord.status === 'pending' || existingRecord.status === 'processing') {
+        await prisma.$disconnect();
         return json({
-          id: existing.id,
-          status: existing.status,
+          id: existingRecord.id,
+          status: existingRecord.status,
           duplicate: true,
           message: 'Generation already in progress with same input'
         });
@@ -100,55 +106,52 @@ export const handler: Handler = async (event) => {
       console.log('🎭 [NeoGlitch] Previous generation failed, allowing retry');
     }
 
-    // Create new glitch record
-    const result = await sql`
-      INSERT INTO media_assets_glitch (
-        user_id,
-        run_id,
-        preset_key,
-        prompt,
-        source_asset_id,
-        status,
-        meta,
-        input_hash,
-        created_at,
-        updated_at
-      ) VALUES (
-        ${userId},
-        ${runId},
-        ${presetKey},
-        ${prompt},
-        ${sourceAssetId || null},
-        'pending',
-        ${JSON.stringify(meta)},
-        ${inputHash},
-        NOW(),
-        NOW()
-      ) RETURNING id, user_id, run_id, preset_key, prompt, status, input_hash, created_at
-    `;
+         // Create new glitch record
+     const result = await prisma.neoGlitchMedia.create({
+       data: {
+         userId: userId,
+         runId: runId,
+         preset: presetKey,
+         prompt: prompt,
+         sourceUrl: sourceAssetId || '',
+         imageUrl: '', // Will be updated when generation completes
+         status: 'pending',
+         metadata: meta,
+       },
+       select: {
+         id: true,
+         userId: true,
+         runId: true,
+         preset: true,
+         prompt: true,
+         status: true,
+         createdAt: true,
+       }
+     });
 
-    if (!result || result.length === 0) {
+    if (!result) {
       throw new Error('Failed to insert glitch record');
     }
 
-    const newRecord = result[0];
-    console.log('✅ [NeoGlitch] Record created successfully:', {
-      id: newRecord.id,
-      status: newRecord.status,
-      inputHash: newRecord.input_hash.substring(0, 16) + '...'
-    });
+    const newRecord = result;
+         console.log('✅ [NeoGlitch] Record created successfully:', {
+       id: newRecord.id,
+       status: newRecord.status,
+       runId: newRecord.runId.substring(0, 16) + '...'
+     });
 
-    return json({
-      id: newRecord.id,
-      userId: newRecord.user_id,
-      runId: newRecord.run_id,
-      presetKey: newRecord.preset_key,
-      prompt: newRecord.prompt,
-      status: newRecord.status,
-      inputHash: newRecord.input_hash,
-      createdAt: newRecord.created_at,
-      message: 'Neo Tokyo Glitch record created successfully'
-    });
+     await prisma.$disconnect();
+
+     return json({
+       id: newRecord.id,
+       userId: newRecord.userId,
+       runId: newRecord.runId,
+       presetKey: newRecord.preset,
+       prompt: newRecord.prompt,
+       status: newRecord.status,
+       createdAt: newRecord.createdAt,
+       message: 'Neo Tokyo Glitch record created successfully'
+     });
 
   } catch (error: any) {
     console.error('💥 [NeoGlitch] Create error:', error);

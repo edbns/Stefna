@@ -1,5 +1,5 @@
 import type { Handler } from '@netlify/functions';
-import { sql } from './_lib/db';
+import { PrismaClient } from '@prisma/client';
 import { requireUser } from './_lib/auth';
 
 export const handler: Handler = async (event) => {
@@ -19,36 +19,37 @@ export const handler: Handler = async (event) => {
     // Authenticate user
     const user = await requireUser(event);
     
-    // Ensure credits_ledger table exists
-    await sql`
-      CREATE TABLE IF NOT EXISTS credits_ledger (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id TEXT NOT NULL,
-        amount INTEGER NOT NULL CHECK (amount != 0),
-        reason TEXT NOT NULL,
-        env TEXT DEFAULT 'production',
-        request_id TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `;
-
-    // Get current credit balance
-    const currentCredits = await sql`
-      SELECT COALESCE(SUM(amount), 0) as total_credits
-      FROM credits_ledger 
-      WHERE user_id = ${user.id}
-    `;
+    const prisma = new PrismaClient();
     
-    const totalCredits = currentCredits[0]?.total_credits || 0;
+    // Get current credit balance from CreditTransaction table
+    const currentCredits = await prisma.creditTransaction.aggregate({
+      where: { 
+        userId: user.id 
+      },
+      _sum: {
+        amount: true
+      }
+    });
+    
+    const totalCredits = currentCredits._sum.amount || 0;
     
     // Get recent credit history
-    const recentTransactions = await sql`
-      SELECT amount, reason, created_at
-      FROM credits_ledger 
-      WHERE user_id = ${user.id}
-      ORDER BY created_at DESC
-      LIMIT 10
-    `;
+    const recentTransactions = await prisma.creditTransaction.findMany({
+      where: { 
+        userId: user.id 
+      },
+      select: {
+        amount: true,
+        reason: true,
+        createdAt: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 10
+    });
+
+    await prisma.$disconnect();
 
     console.log(`💰 User ${user.id} has ${totalCredits} credits`);
 
@@ -61,7 +62,7 @@ export const handler: Handler = async (event) => {
         recentTransactions: recentTransactions.map(t => ({
           amount: t.amount,
           reason: t.reason,
-          date: t.created_at
+          date: t.createdAt
         })),
         message: `Current balance: ${totalCredits} credits`
       })

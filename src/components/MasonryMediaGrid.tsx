@@ -235,6 +235,8 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                                       presetType = 'presets';
                                     } else if (item.presetKey?.includes('custom') || item.prompt) {
                                       presetType = 'custom-prompt';
+                                    } else if (item.presetKey?.includes('story') || item.presetKey === 'auto' || item.presetKey === 'adventure' || item.presetKey === 'romance' || item.presetKey === 'mystery' || item.presetKey === 'comedy' || item.presetKey === 'fantasy' || item.presetKey === 'travel') {
+                                      presetType = 'story-time';
                                     } else {
                                       presetType = 'presets'; // Default fallback
                                     }

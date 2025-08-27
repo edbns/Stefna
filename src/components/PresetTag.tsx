@@ -42,6 +42,8 @@ const PresetTag: React.FC<PresetTagProps> = ({
         return 'Presets'
       case 'custom-prompt':
         return 'Custom Prompt'
+      case 'story-time':
+        return 'Story Time'
       default:
         // Fallback to presetKey if type is not available
         if (presetKey) {
@@ -49,6 +51,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
           if (presetKey.startsWith('emotion_') || presetKey.includes('joy_') || presetKey.includes('strength_') || presetKey.includes('nostalgia_') || presetKey.includes('peace_')) return 'Emotion Mask'
           if (presetKey.startsWith('neo_')) return 'Neo Tokyo Glitch'
           if (presetKey === 'custom' || presetKey === 'custom_prompt') return 'Custom Prompt'
+          if (presetKey.startsWith('story_') || presetKey === 'auto' || presetKey === 'adventure' || presetKey === 'romance' || presetKey === 'mystery' || presetKey === 'comedy' || presetKey === 'fantasy' || presetKey === 'travel') return 'Story Time'
           return 'Presets'
         }
         return 'AI Generated'

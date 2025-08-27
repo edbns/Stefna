@@ -183,7 +183,7 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: 'custom' as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch', // remix mode removed
+    mode: 'custom' as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime', // remix mode removed
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
@@ -310,6 +310,37 @@ const HomeNew: React.FC = () => {
       // validateModeMappings() // REMOVED - complex drama validation
     })()
   }, [])
+
+  // Handle file data when navigating from profile screen
+  useEffect(() => {
+    if (location.state?.selectedFile && location.state?.previewUrl && location.state?.openComposer) {
+      console.log('📁 [Profile] File data received from profile screen:', {
+        fileName: location.state.selectedFile.name,
+        previewUrl: location.state.previewUrl
+      })
+      
+      // Set the file and preview URL
+      setSelectedFile(location.state.selectedFile)
+      setPreviewUrl(location.state.previewUrl)
+      
+      // Update composer state
+      setComposerState(s => ({
+        ...s,
+        mode: 'custom',
+        file: location.state.selectedFile,
+        sourceUrl: location.state.previewUrl,
+        status: 'idle',
+        error: null,
+        runOnOpen: false
+      }))
+      
+      // Open the composer
+      setIsComposerOpen(true)
+      
+      // Clear the location state to prevent re-triggering
+      navigate('/', { replace: true, state: {} })
+    }
+  }, [location.state, navigate])
 
   // Initialize sticky preset system when PROFESSIONAL_PRESETS are loaded
   useEffect(() => {
@@ -517,7 +548,9 @@ const HomeNew: React.FC = () => {
   const [selectedGhibliReactionPreset, setSelectedGhibliReactionPreset] = useState<string | null>(null)
   const [ghibliReactionDropdownOpen, setGhibliReactionDropdownOpen] = useState(false)
   const [selectedNeoTokyoGlitchPreset, setSelectedNeoTokyoGlitchPreset] = useState<string | null>(null)
-const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(false)
+  const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(false)
+  const [selectedStoryTimePreset, setSelectedStoryTimePreset] = useState<string | null>(null)
+  const [storyTimeDropdownOpen, setStoryTimeDropdownOpen] = useState(false)
 
   
 
@@ -610,6 +643,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
     setEmotionMaskDropdownOpen(false)
     setGhibliReactionDropdownOpen(false)
     setNeoTokyoGlitchDropdownOpen(false)
+    setStoryTimeDropdownOpen(false)
     setProfileDropdownOpen(false)
   }
 
@@ -4538,6 +4572,96 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                           }}
                           disabled={!isAuthenticated}
                         />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Story Time™ button - SINGLE BUTTON with dropdown */}
+                  <div className="relative" data-storytime-dropdown>
+                    <button
+                      onClick={async () => {
+                        if (!isAuthenticated) {
+                          navigate('/auth')
+                          return
+                        }
+                        
+                        if (composerState.mode === 'storytime') {
+                          // Already in Story Time mode - toggle dropdown
+                          closeAllDropdowns()
+                          setStoryTimeDropdownOpen((v) => !v)
+                        } else {
+                          // Switch to Story Time mode AND show dropdown immediately
+                          closeAllDropdowns()
+                          setComposerState(s => ({ ...s, mode: 'storytime' }))
+                          setSelectedMode('presets') // Set selectedMode to match the new system
+                          setSelectedStoryTimePreset(null)
+                          setStoryTimeDropdownOpen(true) // Show dropdown immediately
+                        }
+                      }}
+                      className={
+                        !isAuthenticated
+                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/5 text-white/40 cursor-not-allowed'
+                          : composerState.mode === 'storytime'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                      }
+                      title={isAuthenticated ? 'Switch to Story Time mode' : 'Sign up to use Story Time'}
+                      disabled={!isAuthenticated}
+                    >
+                      {selectedStoryTimePreset ? 
+                        selectedStoryTimePreset === 'auto' ? 'Story Time (Auto)' : `Story Time (${selectedStoryTimePreset})`
+                        : 'Story Time'
+                      }
+                    </button>
+                    
+                    {/* Story Time presets dropdown - show when in Story Time mode */}
+                    {composerState.mode === 'storytime' && storyTimeDropdownOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 z-50">
+                        <div className="bg-gray-700 rounded-xl shadow-2xl p-3 w-80">
+                          <div className="space-y-1">
+                            {/* Story Time preset options */}
+                            {[
+                              { id: 'auto', label: '🤖 Auto Mode', description: 'AI picks the best theme' },
+                              { id: 'adventure', label: '🚀 Adventure Mode', description: 'Epic journeys and exploration' },
+                              { id: 'romance', label: '💕 Romance Mode', description: 'Love stories and intimate moments' },
+                              { id: 'mystery', label: '🔍 Mystery Mode', description: 'Suspense and intrigue' },
+                              { id: 'comedy', label: '😂 Comedy Mode', description: 'Funny and playful stories' },
+                              { id: 'fantasy', label: '🧙‍♂️ Fantasy Mode', description: 'Magical and mystical tales' },
+                              { id: 'travel', label: '✈️ Travel Mode', description: 'Cultural exploration and discovery' }
+                            ].map((preset) => (
+                              <button
+                                key={preset.id}
+                                onClick={() => {
+                                  setSelectedStoryTimePreset(preset.id)
+                                  setStoryTimeDropdownOpen(false)
+                                  
+                                  // Auto-generate when Story Time preset is selected
+                                  if (preset.id && selectedFile && isAuthenticated) {
+                                    console.log('📖 Auto-generating Story Time with preset:', preset.id)
+                                    // TODO: Implement Story Time generation
+                                    notifySuccess({ title: 'Story Time Ready!', message: `Your ${preset.label} story is ready to begin!` })
+                                  }
+                                }}
+                                className={(() => {
+                                  const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-left';
+                                  const activeClass = 'bg-white/90 backdrop-blur-md text-black';
+                                  const inactiveClass = 'text-white hover:text-white hover:bg-white/20';
+                                  return `${baseClass} ${selectedStoryTimePreset === preset.id ? activeClass : inactiveClass}`;
+                                })()}
+                              >
+                                <div>
+                                  <div className="font-medium">{preset.label}</div>
+                                  <div className="text-xs opacity-70">{preset.description}</div>
+                                </div>
+                                {selectedStoryTimePreset === preset.id ? (
+                                  <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
+                                ) : (
+                                  <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

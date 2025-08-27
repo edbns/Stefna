@@ -155,7 +155,7 @@ export const handler: Handler = async (event) => {
       // Process referral if provided
       if (referrerEmail) {
         try {
-          const referrer = await prisma.user.findUnique({
+          const referrer = await prisma.user.findFirst({
             where: { email: referrerEmail.toLowerCase() }
           });
           

@@ -31,6 +31,7 @@ model User {
   neoGlitchMedia                                            neoGlitchMedia[]
   notifications                                             Notification[]
   presetsMedia                                              presetsMedia[]
+  stories                                                   Story[]
   referral_signups_referral_signups_new_user_idTousers      ReferralSignup?         @relation("referral_signups_new_user_idTousers")
   referral_signups_referral_signups_referrer_user_idTousers ReferralSignup[]        @relation("referral_signups_referrer_user_idTousers")
   user_credits                                              UserCredits?
@@ -321,4 +322,38 @@ model presetsMedia {
   @@index([status])
   @@index([userId, createdAt(sort: Desc)])
   @@map("presets_media")
+}
+
+// Story Time - AI-powered photo story creation
+model Story {
+  id          String      @id @default(cuid())
+  userId      String      @map("user_id")
+  title       String?
+  description String?
+  preset      String      @default("auto") // auto, adventure, romance, mystery, comedy, fantasy, travel
+  status      String      @default("pending") // pending, processing, completed, failed
+  progress    Int         @default(0) // 0-100
+  storyText   String?     @map("story_text") // AI-generated story narrative
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  photos      StoryPhoto[]
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([preset])
+  @@map("stories")
+}
+
+model StoryPhoto {
+  id        String   @id @default(cuid())
+  storyId   String   @map("story_id")
+  order     Int      // sequence in the story (1, 2, 3...)
+  imageUrl  String   @map("image_url")
+  prompt    String?  // AI-generated description for this photo
+  createdAt DateTime @default(now()) @map("created_at")
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  
+  @@index([storyId, order])
+  @@map("story_photos")
 }

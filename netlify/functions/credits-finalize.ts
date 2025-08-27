@@ -119,7 +119,7 @@ export const handler: Handler = async (event) => {
 
         // Restore credits to user balance
         const userCredits = await prisma.userCredits.findUnique({
-          where: { userId: userId }
+          where: { user_id: userId }
         });
 
         if (userCredits) {

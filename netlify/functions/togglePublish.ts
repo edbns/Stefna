@@ -1,8 +1,8 @@
 import { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
+import { PrismaClient } from '@prisma/client';
 
 // ---- Database connection ----
-const sql = neon(process.env.NETLIFY_DATABASE_URL!)
+const prisma = new PrismaClient();
 
 function getUserIdFromToken(auth?: string): string | null {
   try {
@@ -55,69 +55,74 @@ export const handler: Handler = async (event) => {
     }
 
     try {
-      // Update media asset visibility in database
+      // Update media asset visibility in database using Prisma
       // Check all new dedicated tables for the asset
       let result;
       
       // Try ghibli_reaction_media first
-      result = await sql`
-        UPDATE ghibli_reaction_media 
-        SET 
-          status = ${publish ? 'public' : 'private'},
-          updated_at = NOW()
-        WHERE id = ${assetId} AND user_id = ${userId}
-        RETURNING id, status as visibility, updated_at
-      `;
+      result = await prisma.ghibliReactionMedia.updateMany({
+        where: { 
+          id: assetId, 
+          userId: userId 
+        },
+        data: { 
+          status: publish ? 'public' : 'private'
+        }
+      });
       
       // If not found, try emotion_mask_media
-      if (result.length === 0) {
-        result = await sql`
-          UPDATE emotion_mask_media 
-          SET 
-            status = ${publish ? 'public' : 'private'},
-            updated_at = NOW()
-          WHERE id = ${assetId} AND user_id = ${userId}
-          RETURNING id, status as visibility, updated_at
-        `;
+      if (result.count === 0) {
+        result = await prisma.emotionMaskMedia.updateMany({
+          where: { 
+            id: assetId, 
+            userId: userId 
+          },
+          data: { 
+            status: publish ? 'public' : 'private'
+          }
+        });
       }
       
       // If not found, try presets_media
-      if (result.length === 0) {
-        result = await sql`
-          UPDATE presets_media 
-          SET 
-            status = ${publish ? 'public' : 'private'},
-            updated_at = NOW()
-          WHERE id = ${assetId} AND user_id = ${userId}
-          RETURNING id, status as visibility, updated_at
-        `;
+      if (result.count === 0) {
+        result = await prisma.presetsMedia.updateMany({
+          where: { 
+            id: assetId, 
+            userId: userId 
+          },
+          data: { 
+            status: publish ? 'public' : 'private'
+          }
+        });
       }
       
       // If not found, try custom_prompt_media
-      if (result.length === 0) {
-        result = await sql`
-          UPDATE custom_prompt_media 
-          SET 
-            status = ${publish ? 'public' : 'private'},
-            updated_at = NOW()
-          WHERE id = ${assetId} AND user_id = ${userId}
-          RETURNING id, status as visibility, updated_at
-        `;
+      if (result.count === 0) {
+        result = await prisma.customPromptMedia.updateMany({
+          where: { 
+            id: assetId, 
+            userId: userId 
+          },
+          data: { 
+            status: publish ? 'public' : 'private'
+          }
+        });
       }
       
-      // If not found, try neo_glitch_media (for backward compatibility)
-      if (result.length === 0) {
-        result = await sql`
-          UPDATE neo_glitch_media 
-          SET 
-            status = ${publish ? 'public' : 'private'},
-            updated_at = NOW()
-          WHERE id = ${assetId} AND user_id = ${userId}
-          RETURNING id, status as visibility, updated_at
-        `;
+      // If not found, try neo_glitch_media
+      if (result.count === 0) {
+        result = await prisma.neoGlitchMedia.updateMany({
+          where: { 
+            id: assetId, 
+            userId: userId 
+          },
+          data: { 
+            status: publish ? 'public' : 'private'
+          }
+        });
       }
 
-      if (result.length === 0) {
+      if (result.count === 0) {
         return { 
           statusCode: 404, 
           headers: {
@@ -128,8 +133,6 @@ export const handler: Handler = async (event) => {
         };
       }
 
-      const updatedAsset = result[0];
-
       return { 
         statusCode: 200, 
         headers: {
@@ -138,8 +141,8 @@ export const handler: Handler = async (event) => {
         },
         body: JSON.stringify({ 
           ok: true, 
-          asset: updatedAsset,
-          message: `Asset ${publish ? 'published' : 'unpublished'} successfully`
+          message: `Asset ${publish ? 'published' : 'unpublished'} successfully`,
+          updatedCount: result.count
         }) 
       };
 

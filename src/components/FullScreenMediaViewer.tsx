@@ -58,14 +58,31 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
   // Get the preset type for the tag
   const getPresetType = (media: UserMedia) => {
-    if (media.type) return media.type
-    if (media.presetKey) {
-      if (media.presetKey.includes('ghibli')) return 'ghibli-reaction'
-      if (media.presetKey.includes('emotion')) return 'emotion-mask'
-      if (media.presetKey.includes('neo')) return 'neo-glitch'
-      if (media.presetKey.includes('preset')) return 'presets'
-      if (media.presetKey === 'custom') return 'custom-prompt'
+    // Use metadata.presetType if available (from new dedicated tables)
+    if (media.metadata?.presetType) {
+      return media.metadata.presetType
     }
+    
+    // Fallback logic for items that might not have the presetType field
+    if (media.presetKey) {
+      if (media.presetKey.includes('ghibli') || media.presetKey.includes('ghibli_reaction')) {
+        return 'ghibli-reaction'
+      }
+      if (media.presetKey.includes('emotion') || media.presetKey.includes('emotion_mask')) {
+        return 'emotion-mask'
+      }
+      if (media.presetKey.includes('neo') || media.presetKey.includes('neo_glitch')) {
+        return 'neo-glitch'
+      }
+      if (media.presetKey.includes('preset') || media.presetKey.includes('professional')) {
+        return 'presets'
+      }
+      if (media.presetKey === 'custom' || media.presetKey === 'custom_prompt') {
+        return 'custom-prompt'
+      }
+    }
+    
+    // Default fallback
     return 'presets'
   }
 
@@ -80,24 +97,6 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
       >
         <X size={24} />
       </button>
-
-      {/* Top Bar - Date/Time and Preset Tag */}
-      <div className="absolute top-4 left-4 z-50">
-        <div className="flex items-center space-x-4">
-          {/* Preset Tag */}
-          <PresetTag
-            presetKey={current.presetKey}
-            type={getPresetType(current)}
-            size="sm"
-            clickable={false}
-          />
-          
-          {/* Date/Time */}
-          <span className="text-white/80 text-sm bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
-            {getCreationDate(current)}
-          </span>
-        </div>
-      </div>
 
       {/* Navigation Buttons - Always Visible */}
       {media.length > 1 && (
@@ -125,8 +124,9 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
       )}
 
       {/* Centered Media Display */}
-      <div className="h-full w-full flex items-center justify-center p-8">
-        <div className="max-w-full max-h-full flex items-center justify-center">
+      <div className="h-full w-full flex flex-col items-center justify-center p-8">
+        {/* Media Container */}
+        <div className="flex-1 flex items-center justify-center max-w-full max-h-full">
           {current.type === 'video' ? (
             <video 
               src={current.url} 
@@ -139,13 +139,36 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
             <img 
               src={current.url} 
               alt={current.prompt || 'AI Generated Image'} 
-              className="max-w-full max-h-full object-contain" 
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" 
             />
           )}
         </div>
+
+        {/* Info Display - Below Image: Preset Tag + Date/Time */}
+        <div className="mt-6 flex flex-col items-center space-y-3">
+          {/* Preset Tag */}
+          {(current.metadata?.presetKey || current.presetKey) && (
+            <PresetTag
+              presetKey={current.metadata?.presetKey || current.presetKey}
+              type={getPresetType(current)}
+              size="md"
+              clickable={false}
+            />
+          )}
+          
+          {/* Date/Time */}
+          <span className="text-white/80 text-sm bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
+            {getCreationDate(current)}
+          </span>
+        </div>
+
+        {/* Image Counter - Bottom Center */}
+        {media.length > 1 && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/60 text-sm bg-black/30 px-3 py-1 rounded-full backdrop-blur-sm">
+            {currentIndex + 1} of {media.length}
+          </div>
+        )}
       </div>
-
-
     </div>
   )
 }

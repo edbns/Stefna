@@ -57,10 +57,25 @@ export const handler: Handler = async (event) => {
           where: { key: 'daily_cap' },
           select: { value: true }
         }),
-        prisma.mediaAsset.findMany({
-          where: { userId: userId },
-          select: { id: true, prompt: true, visibility: true, createdAt: true }
-        }),
+        // Get media from all dedicated tables
+        Promise.all([
+          prisma.ghibliReactionMedia.findMany({
+            where: { userId: userId },
+            select: { id: true, prompt: true, status: true, createdAt: true }
+          }),
+          prisma.emotionMaskMedia.findMany({
+            where: { userId: userId },
+            select: { id: true, prompt: true, status: true, createdAt: true }
+          }),
+          prisma.presetsMedia.findMany({
+            where: { userId: userId },
+            select: { id: true, prompt: true, status: true, createdAt: true }
+          }),
+          prisma.customPromptMedia.findMany({
+            where: { userId: userId },
+            select: { id: true, prompt: true, status: true, createdAt: true }
+          })
+        ]).then(results => results.flat()),
         prisma.neoGlitchMedia.findMany({
           where: { userId: userId },
           select: { id: true, prompt: true, status: true, createdAt: true }
@@ -79,7 +94,10 @@ export const handler: Handler = async (event) => {
         credits: { balance },
         media: {
           count: userMedia.length,
-          items: userMedia
+          items: userMedia.map(item => ({
+            ...item,
+            visibility: item.status === 'completed' ? 'public' : 'private'
+          }))
         },
         neoGlitch: {
           count: userNeoGlitch.length,

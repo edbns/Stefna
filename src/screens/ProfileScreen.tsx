@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, ChevronRight, Coins, Users } from 'lucide-react'
+import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, ChevronRight, Coins, Users, Plus } from 'lucide-react'
 import { InstagramIcon, XIcon, FacebookIcon, TikTokIcon, ThreadsIcon, YouTubeIcon } from '../components/SocialIcons'
 // RemixIcon import removed - no more remix functionality
 import MasonryMediaGrid from '../components/MasonryMediaGrid'
@@ -13,6 +13,7 @@ import ConfirmModal from '../components/ConfirmModal'
 import tokenService from '../services/tokenService'
 import { authenticatedFetch } from '../utils/apiClient'
 import { useToasts } from '../components/ui/Toasts'
+import ProfileIcon from '../components/ProfileIcon'
 
 import userService from '../services/userService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
@@ -38,8 +39,43 @@ const ProfileScreen: React.FC = () => {
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
+  // Upload functionality
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [isComposerOpen, setIsComposerOpen] = useState(false)
+
   // Use profile context
   const { profileData, updateProfile, refreshProfile } = useProfile()
+  
+  // Upload handlers
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    console.log('📁 File selected:', { name: file.name, size: file.size, type: file.type })
+
+    // Create preview URL for display only
+    const preview = URL.createObjectURL(file)
+    console.log('🖼️ Preview URL created:', preview)
+
+    // Store both: File for upload, preview URL for display
+    setSelectedFile(file)
+    setPreviewUrl(preview)
+    
+    // Navigate to home page with file data
+    navigate('/', { 
+      state: { 
+        selectedFile: file,
+        previewUrl: preview,
+        openComposer: true 
+      }
+    })
+  }
   
   // Local state for editing (synced with context)
   const [editingProfileData, setEditingProfileData] = useState({
@@ -328,6 +364,10 @@ const ProfileScreen: React.FC = () => {
   // Add loading state for delete operations
   const [isDeletingSelected, setIsDeletingSelected] = useState(false)
   const [isDeletingAll, setIsDeletingAll] = useState(false)
+  
+  // Enhanced delete states for better UX
+  const [deletingMediaIds, setDeletingMediaIds] = useState<Set<string>>(new Set())
+  const [deletedMediaIds, setDeletedMediaIds] = useState<Set<string>>(new Set())
 
   // Add delete all functionality
   const deleteAllMedia = async () => {
@@ -372,6 +412,11 @@ const ProfileScreen: React.FC = () => {
     if (userMedia.length === 0) return
     
     setIsDeletingAll(true)
+    
+    // Add all media to deleting state for visual feedback
+    const allMediaIds = new Set(userMedia.map(m => m.id))
+    setDeletingMediaIds(allMediaIds)
+    
     try {
       // Delete all media items
       const deletePromises = userMedia.map(async (media) => {
@@ -403,20 +448,28 @@ const ProfileScreen: React.FC = () => {
       const failed = results.length - successful
 
       if (successful > 0) {
+        // Add successful deletions to deleted state
+        const successfulIds = results
+          .filter(r => r.status === 'fulfilled' && r.value.success)
+          .map(r => (r as any).value.mediaId)
+        setDeletedMediaIds(prev => new Set([...prev, ...successfulIds]))
+        
+        // Clear all media from local state immediately for instant UI feedback
+        setUserMedia([])
+        setDraftMedia([])
+        
         addNotification(
           'Delete All Complete', 
           `Successfully deleted ${successful} media items${failed > 0 ? `, ${failed} failed` : ''}`, 
           'success'
         )
         
-        // Clear all media from local state
-        setUserMedia([])
-        setDraftMedia([])
-        
-        // Background refresh for immediate UX feedback
-        loadUserMedia().catch(error => {
-          console.warn('Background refresh failed:', error)
-        })
+        // Background refresh to ensure database sync
+        setTimeout(() => {
+          loadUserMedia().catch(error => {
+            console.warn('Background refresh failed:', error)
+          })
+        }, 500)
       } else {
         addNotification('Delete Failed', 'No media items were deleted', 'error')
       }
@@ -425,6 +478,7 @@ const ProfileScreen: React.FC = () => {
       addNotification('Delete Failed', error instanceof Error ? error.message : 'Network or server error', 'error')
     } finally {
       setIsDeletingAll(false)
+      setDeletingMediaIds(new Set())
       setConfirm({ open: false, media: null })
     }
   }
@@ -471,6 +525,10 @@ const ProfileScreen: React.FC = () => {
     if (selectedMediaIds.size === 0) return
     
     setIsDeletingSelected(true)
+    
+    // Add all selected media to deleting state for visual feedback
+    setDeletingMediaIds(new Set(selectedMediaIds))
+    
     try {
       // Delete each selected media item
       const deletePromises = Array.from(selectedMediaIds).map(async (mediaId) => {
@@ -497,23 +555,42 @@ const ProfileScreen: React.FC = () => {
         return mediaId
       })
       
-      await Promise.all(deletePromises)
+      const results = await Promise.allSettled(deletePromises)
+      const successful = results.filter(r => r.status === 'fulfilled').length
+      const failed = results.length - successful
       
-      // Clear selection and refresh media
+      if (successful > 0) {
+        // Add successful deletions to deleted state
+        const successfulIds = results
+          .filter(r => r.status === 'fulfilled')
+          .map(r => (r as any).value)
+        setDeletedMediaIds(prev => new Set([...prev, ...successfulIds]))
+        
+        // Remove from user media immediately for instant UI feedback
+        setUserMedia(prev => prev.filter(item => !selectedMediaIds.has(item.id)))
+        
+        addNotification('Delete Successful', `Deleted ${successful} media items${failed > 0 ? `, ${failed} failed` : ''}`, 'success')
+      } else {
+        addNotification('Delete Failed', 'No media items were deleted', 'error')
+      }
+      
+      // Clear selection and exit selection mode
       setSelectedMediaIds(new Set())
       setIsSelectionMode(false)
       
-      // Background refresh for immediate UX feedback
-      loadUserMedia().catch(error => {
-        console.warn('Background refresh failed:', error)
-      })
+      // Background refresh to ensure database sync
+      setTimeout(() => {
+        loadUserMedia().catch(error => {
+          console.warn('Background refresh failed:', error)
+        })
+      }, 500)
       
-      addNotification('Delete Successful', `Deleted ${selectedMediaIds.size} media items`, 'success')
     } catch (error) {
       console.error('❌ Bulk delete error:', error)
       addNotification('Delete Failed', error instanceof Error ? error.message : 'Network or server error', 'error')
     } finally {
       setIsDeletingSelected(false)
+      setDeletingMediaIds(new Set())
       setConfirm({ open: false, media: null })
     }
   }
@@ -1319,6 +1396,45 @@ const ProfileScreen: React.FC = () => {
 
       {/* Main Area - 80% */}
       <div className="w-[80%] bg-black h-screen overflow-y-auto flex flex-col relative">
+        {/* Profile Controls - Top Right */}
+        <div className="absolute top-6 right-6 z-50 flex items-center gap-3">
+          {/* Hidden File Input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
+          {/* Upload Button */}
+          <button
+            onClick={handleUploadClick}
+            className="w-12 h-12 rounded-full border transition-all duration-300 flex items-center justify-center hover:scale-105 relative group bg-white/10 text-white border-white/20 hover:bg-white/20"
+            aria-label="Upload"
+            title="Upload"
+          >
+            <Plus size={24} className="transition-transform duration-200" />
+            
+            {/* Hover Tooltip */}
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+              Upload
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-black/80"></div>
+            </div>
+          </button>
+
+          {/* Profile Button */}
+          <div className="relative">
+            <button
+              onClick={() => navigate('/')}
+              className="w-12 h-12 bg-white/10 text-white rounded-full border border-white/20 transition-all duration-300 flex items-center justify-center hover:bg-white/20 hover:scale-105"
+              aria-label="Profile"
+            >
+              <ProfileIcon size={24} className="transition-transform duration-200" />
+            </button>
+          </div>
+        </div>
+
         {/* Notification System disabled on profile screen (only show in Notification tab) */}
         {/* Content based on active tab */}
         {activeTab === 'all-media' && (
@@ -1410,14 +1526,7 @@ const ProfileScreen: React.FC = () => {
                 <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
                   <Image size={48} className="text-white/40" />
                 </div>
-                <p className="text-white/60 text-lg text-center">Create your first piece</p>
-                <p className="text-white/40 text-sm text-center mt-2">Your edits will appear here. Defaults: auto-share {profileData.shareToFeed ? 'ON' : 'OFF'}</p>
-                <button 
-                  onClick={() => navigate('/')}
-                  className="mt-4 px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
-                >
-                  Create now
-                </button>
+                <p className="text-white/60 text-lg text-center">No media yet</p>
               </div>
             ) : (
               <MasonryMediaGrid
@@ -1438,8 +1547,8 @@ const ProfileScreen: React.FC = () => {
                 isSelectionMode={isSelectionMode}
                 selectedMediaIds={selectedMediaIds}
                 onToggleSelection={toggleMediaSelection}
-                // Loading states for actions
-                deletingMediaIds={isDeleting ? new Set([isDeleting]) : new Set()}
+                // Enhanced loading states for actions
+                deletingMediaIds={deletingMediaIds}
               />
             )}
           </div>
@@ -1467,7 +1576,6 @@ const ProfileScreen: React.FC = () => {
                   <FileText size={48} className="text-white/40" />
                 </div>
                 <p className="text-white/60 text-lg text-center">No drafts yet</p>
-                <p className="text-white/40 text-sm text-center mt-2">Your draft media will appear here</p>
               </div>
             ) : (
               <DraftMediaGrid
@@ -1479,7 +1587,7 @@ const ProfileScreen: React.FC = () => {
                 onShare={handleShare}
                 showActions={true}
                 className="pb-20"
-                deletingMediaIds={isDeleting ? new Set([isDeleting]) : new Set()}
+                deletingMediaIds={deletingMediaIds}
               />
             )}
           </div>
@@ -1691,6 +1799,7 @@ const ProfileScreen: React.FC = () => {
               try {
                 // Set loading state for this media
                 setIsDeleting(mediaToDelete.id)
+                setDeletingMediaIds(prev => new Set([...prev, mediaToDelete.id]))
                 
                 // Delete from server first
                 const jwt = authService.getToken()
@@ -1710,6 +1819,9 @@ const ProfileScreen: React.FC = () => {
                     if (r.ok) {
                       serverDeleteSuccess = true
                       console.log('Server delete successful')
+                      
+                      // Add to deleted state for visual feedback
+                      setDeletedMediaIds(prev => new Set([...prev, mediaToDelete.id]))
                     } else {
                       const errorText = await r.text()
                       console.warn('Server delete failed:', r.status, r.statusText, errorText)
@@ -1737,10 +1849,10 @@ const ProfileScreen: React.FC = () => {
                   }
                 }
                 
-                // Force refresh to ensure UI updates
+                // Background refresh to ensure database sync
                 setTimeout(() => {
                   loadUserMedia()
-                }, 100)
+                }, 500)
                 
                 console.log('✅ Local state updated, media removed from UI')
                 
@@ -1749,6 +1861,11 @@ const ProfileScreen: React.FC = () => {
               } finally {
                 // Clear loading state
                 setIsDeleting(null)
+                setDeletingMediaIds(prev => {
+                  const newSet = new Set(prev)
+                  newSet.delete(mediaToDelete.id)
+                  return newSet
+                })
               }
             }
           }

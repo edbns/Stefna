@@ -99,9 +99,41 @@ exports.handler = async (event) => {
     const prisma = new PrismaClient();
 
     try {
+      // 🔒 PRIVACY FIRST: Get all users who have shareToFeed enabled
+      console.log('🔒 [getPublicFeed] Fetching users with shareToFeed enabled...');
+      const usersWithPublicFeed = await prisma.userSettings.findMany({
+        where: {
+          shareToFeed: true
+        },
+        select: {
+          userId: true
+        }
+      });
+      
+      const publicUserIds = usersWithPublicFeed.map((u: any) => u.userId);
+      console.log('🔒 [getPublicFeed] Found', publicUserIds.length, 'users with public feed enabled');
+      
+      if (publicUserIds.length === 0) {
+        console.log('🔒 [getPublicFeed] No users have public feed enabled, returning empty feed');
+        return {
+          statusCode: 200,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({
+            media: [],
+            total: 0,
+            hasMore: false,
+            privacy: 'enforced',
+            message: 'No public media available'
+          })
+        };
+      }
+
       // 🚀 UNIFIED: Build dynamic where clauses for advanced filtering
       const mediaAssetWhere = { visibility: 'public' };
-      const neoGlitchWhere = { status: 'completed' };
+      const neoGlitchWhere: any = { 
+        status: 'completed',
+        userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
+      };
       
       // Apply preset filtering
       if (preset !== 'all') {
@@ -163,11 +195,14 @@ exports.handler = async (event) => {
           // Continue without exclusion if there's an error
         }
       }
-      
+
       // 🚨 UPDATED: Get ALL items from new dedicated tables with filters, then combine and paginate properly
-      const [ghibliReactionMedia, emotionMaskMedia, presetsMedia, customPromptMedia, neoGlitchMedia] = await Promise.all([
+      const [ghibliReactionMedia, emotionMaskMedia, presetsMedia, customPromptMedia, neoGlitchMedia, storyMedia] = await Promise.all([
         prisma.ghibliReactionMedia.findMany({
-          where: { status: 'completed' },
+          where: { 
+            status: 'completed',
+            userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
+          },
           select: {
             id: true,
             user_id: true,
@@ -189,7 +224,10 @@ exports.handler = async (event) => {
           }
         }),
         prisma.emotionMaskMedia.findMany({
-          where: { status: 'completed' },
+          where: { 
+            status: 'completed',
+            userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
+          },
           select: {
             id: true,
             user_id: true,
@@ -211,7 +249,10 @@ exports.handler = async (event) => {
           }
         }),
         prisma.presetsMedia.findMany({
-          where: { status: 'completed' },
+          where: { 
+            status: 'completed',
+            userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
+          },
           select: {
             id: true,
             user_id: true,
@@ -233,7 +274,10 @@ exports.handler = async (event) => {
           }
         }),
         prisma.customPromptMedia.findMany({
-          where: { status: 'completed' },
+          where: { 
+            status: 'completed',
+            userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
+          },
           select: {
             id: true,
             user_id: true,
@@ -255,13 +299,39 @@ exports.handler = async (event) => {
           }
         }),
         prisma.neoGlitchMedia.findMany({
-          where: neoGlitchWhere,
+          where: {
+            ...neoGlitchWhere,
+            userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
+          },
           include: {
             user: {
               select: {
                 id: true,
                 email: true,
                 name: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }),
+        prisma.story.findMany({
+          where: {
+            status: 'completed',
+            userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            },
+            photos: {
+              orderBy: {
+                order: 'asc'
               }
             }
           },
@@ -276,14 +346,16 @@ exports.handler = async (event) => {
       console.log('✅ [getPublicFeed] Retrieved Presets media:', presetsMedia.length);
       console.log('✅ [getPublicFeed] Retrieved Custom Prompt media:', customPromptMedia.length);
       console.log('✅ [getPublicFeed] Retrieved Neo Tokyo Glitch media:', neoGlitchMedia.length);
+      console.log('✅ [getPublicFeed] Retrieved Story media:', storyMedia.length);
       
       // 🚨 DEBUG: Check for potential duplicates
       const allImageUrls = [
-        ...ghibliReactionMedia.map(item => ({ url: item.image_url, source: 'ghibliReactionMedia', id: item.id })),
-        ...emotionMaskMedia.map(item => ({ url: item.image_url, source: 'emotionMaskMedia', id: item.id })),
-        ...presetsMedia.map(item => ({ url: item.image_url, source: 'presetsMedia', id: item.id })),
-        ...customPromptMedia.map(item => ({ url: item.image_url, source: 'customPromptMedia', id: item.id })),
-        ...neoGlitchMedia.map(item => ({ url: item.imageUrl, source: 'neoGlitchMedia', id: item.id }))
+        ...ghibliReactionMedia.map((item: any) => ({ url: item.image_url, source: 'ghibliReactionMedia', id: item.id })),
+        ...emotionMaskMedia.map((item: any) => ({ url: item.image_url, source: 'emotionMaskMedia', id: item.id })),
+        ...presetsMedia.map((item: any) => ({ url: item.image_url, source: 'presetsMedia', id: item.id })),
+        ...customPromptMedia.map((item: any) => ({ url: item.image_url, source: 'customPromptMedia', id: item.id })),
+        ...neoGlitchMedia.map((item: any) => ({ url: item.imageUrl, source: 'neoGlitchMedia', id: item.id })),
+        ...storyMedia.map((item: any) => ({ url: item.photos?.[0]?.imageUrl || '', source: 'storyMedia', id: item.id }))
       ];
       
       const duplicateUrls = allImageUrls.filter((item, index, array) => 
@@ -341,7 +413,7 @@ exports.handler = async (event) => {
       }));
 
       // Transform Neo Tokyo Glitch media to feed format
-      const glitchFeedItems = neoGlitchMedia.map(item => {
+      const glitchFeedItems = neoGlitchMedia.map((item: any) => {
         console.log('🔍 [getPublicFeed] NeoGlitchMedia item:', {
           id: item.id,
           imageUrl: item.imageUrl,
@@ -363,13 +435,43 @@ exports.handler = async (event) => {
         };
       });
 
+      // Transform Story Time media to feed format
+      const storyFeedItems = storyMedia.map((item: any) => {
+        console.log('🔍 [getPublicFeed] Story item:', {
+          id: item.id,
+          preset: item.preset,
+          photoCount: item.photos?.length || 0,
+          type: 'story-time'
+        });
+        
+        return {
+          id: item.id,
+          userId: item.userId,
+          user: item.user,
+          finalUrl: item.photos?.[0]?.imageUrl || '', // Use first photo as main image
+          mediaType: 'image',
+          prompt: item.storyText || item.description || 'AI-generated story',
+          presetKey: item.preset,
+          status: item.status,
+          createdAt: item.createdAt,
+          type: 'story-time', // Identify as Story Time
+          metadata: {
+            presetKey: item.preset,
+            presetType: 'story-time',
+            storyText: item.storyText,
+            photoCount: item.photos?.length || 0
+          }
+        };
+      });
+
       // ✅ FIXED: Combine ALL items first, then sort, then apply pagination
       const allFeedItems = [
         ...ghibliReactionItems, 
         ...emotionMaskItems, 
         ...presetsItems, 
         ...customPromptItems, 
-        ...glitchFeedItems
+        ...glitchFeedItems,
+        ...storyFeedItems
       ].sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
