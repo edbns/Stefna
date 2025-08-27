@@ -7,8 +7,9 @@ export interface UserMedia {
   userAvatar?: string
   userUsername?: string // New: display name from profiles table
   userTier?: string
-  type: 'photo' | 'video'
+  type: 'photo' | 'video' | 'story-time'
   url: string
+  finalUrl?: string // For feed compatibility
   thumbnailUrl?: string
   // Optional generation status for in-flight items
   status?: 'processing' | 'ready' | 'failed'

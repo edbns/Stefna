@@ -212,6 +212,23 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                           </div>
                         )}
                       </div>
+                  ) : item.type === 'story-time' && item.status === 'processing' ? (
+                      // Story Time processing - show progress with photo
+                      <div className="relative">
+                        <img
+                          src={item.url}
+                          alt="Story Time processing"
+                          className="w-full h-auto object-cover opacity-75"
+                        />
+                        {/* Processing overlay */}
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <div className="text-center text-white">
+                            <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-2"></div>
+                            <div className="text-sm font-semibold">Generating Videos...</div>
+                            <div className="text-xs opacity-75">Story Time in progress</div>
+                          </div>
+                        </div>
+                      </div>
                   ) : (
                       <img
                         src={item.url}
