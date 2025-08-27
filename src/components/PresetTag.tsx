@@ -7,6 +7,7 @@ interface PresetTagProps {
   size?: 'sm' | 'md' | 'lg'
   onClick?: (event: React.MouseEvent) => void
   clickable?: boolean
+  showPresetKey?: boolean
 }
 
 const PresetTag: React.FC<PresetTagProps> = ({ 
@@ -15,7 +16,8 @@ const PresetTag: React.FC<PresetTagProps> = ({
   className = '', 
   size = 'md',
   onClick,
-  clickable = false
+  clickable = false,
+  showPresetKey = true
 }) => {
   // Size classes
   const sizeClasses = {
@@ -27,9 +29,8 @@ const PresetTag: React.FC<PresetTagProps> = ({
   // Unified glossy black styling for all preset types
   const unifiedStyle = 'bg-glossy-black-800 text-glossy-white-50 border-glossy-black-600 hover:bg-glossy-black-700'
   
-  // Simple, clean tag display based on generation type
-  const getDisplayText = () => {
-    // Use the type field directly from new dedicated tables
+  // Get the preset type label
+  const getPresetTypeLabel = () => {
     switch (type) {
       case 'neo-glitch':
         return 'Neo Tokyo Glitch'
@@ -54,6 +55,32 @@ const PresetTag: React.FC<PresetTagProps> = ({
     }
   }
 
+  // Get the full display text (type + preset key if available)
+  const getDisplayText = () => {
+    const typeLabel = getPresetTypeLabel()
+    
+    // Don't show preset key for custom prompts
+    if (type === 'custom-prompt' || typeLabel === 'Custom Prompt') {
+      return typeLabel
+    }
+    
+    // Show preset key if available and showPresetKey is true
+    if (showPresetKey && presetKey && presetKey !== 'custom' && presetKey !== 'custom_prompt') {
+      // Clean up the preset key for display
+      const cleanKey = presetKey
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase())
+        .replace(/(ghibli|reaction|emotion|mask|neo|glitch|tokyo)/gi, '') // Remove redundant words
+        .trim()
+      
+      if (cleanKey) {
+        return `${typeLabel}: ${cleanKey}`
+      }
+    }
+    
+    return typeLabel
+  }
+
   return (
     <div 
       className={`
@@ -66,7 +93,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
         ${clickable ? 'cursor-pointer' : ''}
         ${className}
       `}
-      title={`Generated with ${getDisplayText()}`}
+      title={`Generated with ${getPresetTypeLabel()}${presetKey && presetKey !== 'custom' && presetKey !== 'custom_prompt' ? ` - ${presetKey}` : ''}`}
       onClick={clickable ? (e) => onClick?.(e) : undefined}
     >
       {getDisplayText()}

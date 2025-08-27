@@ -137,7 +137,7 @@ model UserCredits {
   @@map("user_credits")
 }
 
-model AuthOtp {
+model authOtp {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email     String
   code      String
