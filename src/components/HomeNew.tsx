@@ -159,7 +159,7 @@ export const resetHiddenUploader = () => {
 }
 
 const HomeNew: React.FC = () => {
-  const { notifyQueue, notifyReady, notifyError, notifySuccess } = useToasts()
+  const { notifyQueue, notifyReady, notifyError } = useToasts()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
   const location = useLocation() as any
@@ -799,7 +799,6 @@ const HomeNew: React.FC = () => {
     const handleGenerationError = (event: CustomEvent) => {
       const { message, mode } = event.detail
       console.log('❌ Generation error:', message, 'Mode:', mode)
-      notifyError({ title: 'Media failed', message: 'Try again' })
       
       // 🧹 Clear composer state for ALL generation types (new system only)
       console.log('🧹 Clearing composer state after generation error')
@@ -1533,7 +1532,7 @@ const HomeNew: React.FC = () => {
       
       if (!emotionMaskPresetId) {
         console.error('❌ Invalid Emotion Mask preset:', emotionMaskPresetId);
-        notifyError({ title: 'Invalid Emotion Mask preset', message: 'Please select an emotional variant first' });
+        console.error('❌ Invalid Emotion Mask preset: Please select an emotional variant first')
         endGeneration(genId);
         setNavGenerating(false);
         return;
@@ -1542,7 +1541,7 @@ const HomeNew: React.FC = () => {
       const emotionMaskPreset = EMOTION_MASK_PRESETS.find(p => p.id === emotionMaskPresetId);
       if (!emotionMaskPreset) {
         console.error('❌ Emotion Mask preset not found:', emotionMaskPresetId);
-        notifyError({ title: 'Emotion Mask preset not found', message: 'Please select a valid emotional variant' });
+        console.error('❌ Emotion Mask preset not found: Please select a valid emotional variant')
         endGeneration(genId);
         setNavGenerating(false);
         return;
@@ -1575,7 +1574,7 @@ const HomeNew: React.FC = () => {
       const ghibliReactionPresetId = options?.ghibliReactionPresetId || selectedGhibliReactionPreset;
       if (!ghibliReactionPresetId) {
         console.error('❌ Invalid Ghibli Reaction preset:', ghibliReactionPresetId);
-        notifyError({ title: 'Invalid Ghibli Reaction preset', message: 'Please select a Ghibli reaction preset first' });
+        console.error('❌ Invalid Ghibli Reaction preset: Please select a Ghibli reaction preset first')
         endGeneration(genId);
         setNavGenerating(false);
         return;
@@ -1584,7 +1583,7 @@ const HomeNew: React.FC = () => {
       const ghibliReactionPreset = GHIBLI_REACTION_PRESETS.find(p => p.id === ghibliReactionPresetId);
       if (!ghibliReactionPreset) {
         console.error('❌ Ghibli Reaction preset not found:', ghibliReactionPresetId);
-        notifyError({ title: 'Ghibli Reaction preset not found', message: 'Please select a valid Ghibli reaction preset' });
+        console.error('❌ Ghibli Reaction preset not found: Please select a valid Ghibli reaction preset')
         endGeneration(genId);
         setNavGenerating(false);
         return;
@@ -1612,7 +1611,7 @@ const HomeNew: React.FC = () => {
       const neoTokyoGlitchPresetId = options?.neoTokyoGlitchPresetId || selectedNeoTokyoGlitchPreset;
       if (!neoTokyoGlitchPresetId) {
         console.error('❌ Invalid Neo Tokyo Glitch preset:', neoTokyoGlitchPresetId);
-        notifyError({ title: 'Invalid Neo Tokyo Glitch preset', message: 'Please select a Neo Tokyo Glitch preset first' });
+        console.error('❌ Invalid Neo Tokyo Glitch preset: Please select a Neo Tokyo Glitch preset first')
         endGeneration(genId);
         setNavGenerating(false);
         return;
@@ -1621,7 +1620,7 @@ const HomeNew: React.FC = () => {
       const neoTokyoGlitchPreset = NEO_TOKYO_GLITCH_PRESETS.find(p => p.id === neoTokyoGlitchPresetId);
       if (!neoTokyoGlitchPreset) {
         console.error('❌ Neo Tokyo Glitch preset not found:', neoTokyoGlitchPresetId);
-        notifyError({ title: 'Neo Tokyo Glitch preset not found', message: 'Please select a valid Neo Tokyo Glitch preset' });
+        console.error('❌ Neo Tokyo Glitch preset not found: Please select a valid Neo Tokyo Glitch preset')
         endGeneration(genId);
         setNavGenerating(false);
         return;
@@ -1638,7 +1637,7 @@ const HomeNew: React.FC = () => {
       const presetKey = presetMap[neoTokyoGlitchPresetId];
       if (!presetKey) {
         console.error('❌ Unknown Neo Tokyo Glitch preset:', neoTokyoGlitchPresetId);
-        notifyError({ title: 'Unknown preset', message: 'Please select a valid Neo Tokyo Glitch preset' });
+        console.error('❌ Unknown preset: Please select a valid Neo Tokyo Glitch preset')
         endGeneration(genId);
         setNavGenerating(false);
         return;
@@ -1665,7 +1664,7 @@ const HomeNew: React.FC = () => {
       
     } else {
       console.error('❌ Unknown generation kind:', kind);
-      notifyError({ title: 'Generation error', message: 'Unknown generation type' });
+              console.error('❌ Generation error: Unknown generation type')
       endGeneration(genId);
       setNavGenerating(false);
       return;
@@ -1735,7 +1734,6 @@ const HomeNew: React.FC = () => {
           assertIsSourceUrl(sourceUrl);
         } catch (error) {
           console.error('❌ Source URL validation failed:', error);
-          notifyError({ title: 'Invalid source', message: 'Please use an original photo, not a generated image' });
           endGeneration(genId);
           setNavGenerating(false);
           return;
@@ -1803,15 +1801,7 @@ const HomeNew: React.FC = () => {
           setNavGenerating(false);
           
           // Show unified toast with thumbnail
-          notifyReady({ 
-            title: 'Your media is ready', 
-            message: 'Tap to open',
-            thumbUrl: neoGlitchResult.imageUrl,
-            onClickThumb: () => {
-              // Open the generated image in a new tab
-              window.open(neoGlitchResult.imageUrl, '_blank');
-            }
-          });
+          console.log('✅ Your media is ready: Tap to open')
           
           return;
         } else if (neoGlitchResult.status === 'generating' || neoGlitchResult.status === 'processing') {
@@ -1837,10 +1827,7 @@ const HomeNew: React.FC = () => {
             
                       // Don't start frontend polling - the service handles it
           // Just show a message that generation is in progress
-          notifyQueue({ 
-            title: 'Add to queue', 
-            message: 'Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.'
-          });
+          console.log('🔄 Add to queue: Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.')
             
             return;
           }
@@ -1863,13 +1850,12 @@ const HomeNew: React.FC = () => {
       // Validate source URL
       try {
         assertIsSourceUrl(sourceUrl);
-      } catch (error) {
-        console.error('❌ Source URL validation failed:', error);
-        notifyError({ title: 'Invalid source', message: 'Please use an original photo, not a generated image' });
-        endGeneration(genId);
-        setNavGenerating(false);
-        return;
-      }
+              } catch (error) {
+          console.error('❌ Source URL validation failed:', error);
+          endGeneration(genId);
+          setNavGenerating(false);
+          return;
+        }
       
       // Final sanity check before API call
       console.table({
@@ -2162,7 +2148,6 @@ const HomeNew: React.FC = () => {
               return; // Don't start polling if already complete
             } catch (error) {
               console.error('❌ [NeoGlitch] Failed to save media:', error);
-              notifyError({ title: 'Failed', message: 'Please try again' });
               endGeneration(genId);
               setNavGenerating(false);
               return;
@@ -2174,7 +2159,7 @@ const HomeNew: React.FC = () => {
             console.log('🔄 [NeoGlitch] Generation in progress, starting simple polling...');
             
             // Show processing toast (following Ghibli pattern)
-            notifyQueue({ title: 'Add to queue', message: 'Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.' });
+            console.log('🔄 Add to queue: Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.')
             
             // Start simple polling for completion (not complex service)
             const pollForCompletion = async () => {
@@ -2216,31 +2201,7 @@ const HomeNew: React.FC = () => {
                     loadFeed();
                     
                     // Show unified toast with thumbnail (following Ghibli pattern)
-                    notifyReady({ 
-                      title: 'Your media is ready', 
-                      message: 'Tap to open',
-                      thumbUrl: statusBody.imageUrl,
-                      onClickThumb: () => {
-                        setViewerMedia([{
-                          id: 'generated-' + Date.now(),
-                          userId: 'current-user',
-                          type: 'photo',
-                          url: statusBody.imageUrl,
-                          prompt: effectivePrompt,
-                          aspectRatio: 1,
-                          width: 1024,
-                          height: 1024,
-                          timestamp: new Date().toISOString(),
-                          tokensUsed: 1,
-                          likes: 0,
-                          isPublic: true,
-                          tags: [],
-                          metadata: { quality: 'high', generationTime: Date.now(), modelVersion: 'stability-ai' }
-                        }]);
-                        setViewerStartIndex(0);
-                        setViewerOpen(true);
-                      }
-                    });
+                    console.log('✅ Your media is ready: Tap to open')
                     
                     // End generation successfully (following Ghibli pattern)
                     endGeneration(genId);
@@ -2264,7 +2225,6 @@ const HomeNew: React.FC = () => {
                 }
               } catch (error) {
                 console.error('❌ [NeoGlitch] Polling failed:', error);
-                notifyError({ title: 'Failed', message: 'Please try again' });
                 endGeneration(genId);
                 setNavGenerating(false);
                 resetComposerState();
@@ -2285,7 +2245,6 @@ const HomeNew: React.FC = () => {
           
         } catch (error) {
           console.error('❌ [NeoGlitch] Generation failed:', error);
-          notifyError({ title: 'Failed', message: 'Please try again' });
           endGeneration(genId);
           setNavGenerating(false);
           
@@ -2384,7 +2343,6 @@ const HomeNew: React.FC = () => {
 
       // Handle video job creation (status 202) - only for old system responses
       if (body?.system !== 'new' && res?.status === 202 && body?.job_id && isVideoPreview) {
-          notifyQueue({ title: 'Add to queue', message: 'We\'ll start processing shortly.' })
         setCurrentVideoJob({ id: body.job_id, status: 'queued' })
         startVideoJobPolling(body.job_id, body.model, effectivePrompt)
         endGeneration(genId)
@@ -2594,7 +2552,7 @@ const HomeNew: React.FC = () => {
             
             if (!jwt || !userId) {
               console.error('No JWT or user ID for saveMedia');
-           notifyError({ title: 'Something went wrong', message: 'Generated, but not saved (auth error)' });
+           console.error('❌ Something went wrong: Generated, but not saved (auth error)')
               return;
             }
 
@@ -2653,7 +2611,7 @@ const HomeNew: React.FC = () => {
 
         if (!assetResult.ok) {
           console.error('Failed to create asset:', assetResult.error);
-          notifyError({ title: 'Something went wrong', message: 'Failed to create asset record' });
+          console.error('❌ Something went wrong: Failed to create asset record')
           endGeneration(genId);
           setNavGenerating(false);
           return;
@@ -2846,12 +2804,12 @@ const HomeNew: React.FC = () => {
                     })), 800);
                   } else {
                     console.error(`❌ [Fallback] All individual saves failed for ${composerState.mode}`);
-                    notifyError({ title: 'Save failed', message: 'Failed to save any variations' });
+                    console.error('❌ Save failed: Failed to save any variations')
                   }
                 }
               } catch (batchSaveError) {
                 console.error(`❌ ${composerState.mode} batch save error:`, batchSaveError);
-                notifyError({ title: 'Save failed', message: 'Failed to save variations' });
+                console.error('❌ Save failed: Failed to save variations')
               }
               } // Close the if (body?.system === 'new') else block
             } else {
@@ -2862,7 +2820,7 @@ const HomeNew: React.FC = () => {
           }
         } catch (error) {
           console.error(`❌ Save error:`, error);
-          notifyError({ title: 'Save failed', message: error instanceof Error ? error.message : 'Unknown error' });
+          console.error('❌ Save failed:', error instanceof Error ? error.message : 'Unknown error')
           
           // 🚨 CRITICAL: If save failed, refund the reserved credits
           console.log('🚨 Save failed - refunding reserved credits to prevent charging for failed saves');
@@ -2918,7 +2876,7 @@ const HomeNew: React.FC = () => {
         return
       } catch (error) {
         console.error('❌ Error in save flow:', error);
-        notifyError({ title: 'Something went wrong', message: 'Failed to save generated media' });
+        console.error('❌ Something went wrong: Failed to save generated media')
       }
 
       // Success: stop progress
@@ -3041,7 +2999,7 @@ const HomeNew: React.FC = () => {
         }
       }
       
-      notifyError({ title: 'Error! Please try again', message: errorMessage });
+      console.error('❌ Error! Please try again:', errorMessage)
       
       // Refund credits since generation failed
       if (typeof finalizeCredits === 'function') {
@@ -3241,7 +3199,7 @@ const HomeNew: React.FC = () => {
       }
       
       // Show user-friendly error message
-      notifyError({ title: 'Failed', message: errorMessage });
+      console.error('❌ Failed:', errorMessage)
       
       // 💰 Refund credits if generation failed
       if (creditsResult?.request_id) {
@@ -3325,7 +3283,7 @@ const HomeNew: React.FC = () => {
     // Check if we can auto-generate
     if (!selectedFile) {
       console.log('❌ No file selected, cannot generate with preset')
-      notifyError({ title: 'Add an image first', message: `Select an image to use ${presetName}` })
+              console.error(`❌ Add an image first: Select an image to use ${presetName}`)
       return
     }
     
@@ -3347,7 +3305,6 @@ const HomeNew: React.FC = () => {
       })
     } catch (error) {
       console.log('❌ Preset generation failed:', error)
-      notifyError({ title: 'Media failed', message: 'Try again' })
       // Clear all options after preset generation failure
       clearAllOptionsAfterGeneration();
     }
@@ -3393,7 +3350,7 @@ const HomeNew: React.FC = () => {
     console.log('🎨 CUSTOM MODE: Generating with user prompt only')
     
     if (!prompt.trim()) {
-      notifyError({ title: 'Custom prompt required', message: 'Please enter a prompt to generate' })
+      console.error('❌ Custom prompt required: Please enter a prompt to generate')
       return
     }
     
@@ -3423,7 +3380,7 @@ const HomeNew: React.FC = () => {
     console.log('🎯 PRESET MODE: Generating with preset only')
     
     if (!selectedPreset) {
-      notifyError({ title: 'Preset required', message: 'Please select a preset first' })
+      console.error('❌ Preset required: Please select a preset first')
       return
     }
     
@@ -3458,7 +3415,7 @@ const HomeNew: React.FC = () => {
     console.log('🎭 EMOTION MASK MODE: Generating emotional truth portrait')
     
     if (!selectedEmotionMaskPreset) {
-      notifyError({ title: 'Emotion Mask preset required', message: 'Please select an emotional variant first' })
+      console.error('❌ Emotion Mask preset required: Please select an emotional variant first')
       return
     }
     
@@ -3497,7 +3454,7 @@ const HomeNew: React.FC = () => {
     // UI guards: prevent sharing until asset is ready
     if (!media.cloudinaryPublicId || !media.mediaType) {
       console.error('Cannot share: missing cloudinary_public_id or media_type');
-      notifyError({ title: 'Something went wrong', message: 'Cannot share incomplete media' });
+              console.error('❌ Something went wrong: Cannot share incomplete media')
       return;
     }
     
@@ -3560,7 +3517,7 @@ const HomeNew: React.FC = () => {
         error = { error: errorText };
       }
       console.error('❌ Unshare failed:', error)
-      notifyError({ title: 'Failed', message: error.error || 'Failed to remove media from feed' })
+              console.error('❌ Failed:', error.error || 'Failed to remove media from feed')
     }
   }
 
@@ -3679,7 +3636,7 @@ const HomeNew: React.FC = () => {
             clearInterval(interval)
             setVideoJobPolling(null)
             setCurrentVideoJob(null)
-            notifyError({ title: 'Failed', message: jobStatus.error || (jobStatus.status === 'timeout' ? 'Timed out' : 'Video processing failed') })
+            console.error('❌ Failed:', jobStatus.error || (jobStatus.status === 'timeout' ? 'Timed out' : 'Video processing failed'))
             
             // Reset composer state even on failure
             resetComposerState();
@@ -3716,14 +3673,14 @@ const HomeNew: React.FC = () => {
   // Save current composer state as a draft (local only)
   const handleSaveDraft = async () => {
     if (!previewUrl || !prompt.trim()) {
-       notifyError({ title: 'Something went wrong', message: 'Upload media and enter a prompt first' })
+               console.error('❌ Something went wrong: Upload media and enter a prompt first')
       return
     }
     
     try {
       const user = authService.getCurrentUser()
       if (!user?.id) {
-        notifyError({ title: 'Something went wrong', message: 'Please sign up to save drafts' })
+        console.error('❌ Something went wrong: Please sign up to save drafts')
         navigate('/auth')
         return
       }
@@ -3761,14 +3718,14 @@ const HomeNew: React.FC = () => {
       }
       
       // Show success notification
-      notifyReady({ title: 'Your media is ready', message: 'Draft saved' })
+              console.log('✅ Draft saved successfully')
       
       // Dispatch event to notify ProfileScreen to refresh drafts
       window.dispatchEvent(new Event('userMediaUpdated'))
       
     } catch (error) {
       console.error('Failed to save draft:', error)
-      notifyError({ title: 'Something went wrong', message: 'Could not save draft' })
+              console.error('❌ Something went wrong: Could not save draft')
     }
   }
 
@@ -3792,9 +3749,7 @@ const HomeNew: React.FC = () => {
     } catch (error) {
       console.error('❌ Magic Wand enhancement failed:', error)
       // Show error feedback but keep original prompt - with safety check
-      if (typeof notifyError === 'function') {
-      notifyError({ title: 'Enhancement failed', message: 'Could not enhance prompt, keeping original' })
-      }
+              console.error('❌ Enhancement failed: Could not enhance prompt, keeping original')
     } finally {
       setIsEnhancing(false)
     }
@@ -4385,7 +4340,6 @@ const HomeNew: React.FC = () => {
                                 }, 500)
                                 } catch (error) {
                                   console.error('❌ Emotion Mask auto-generation failed:', error)
-                                  notifyError({ title: 'Media failed', message: 'Try again' })
                                   // Clear composer after generation error
                                   setTimeout(() => {
                                     clearAllOptionsAfterGeneration()
@@ -4461,7 +4415,6 @@ const HomeNew: React.FC = () => {
                                 }, 500)
                               } catch (error) {
                                 console.error('❌ Ghibli Reaction auto-generation failed:', error)
-                                notifyError({ title: 'Media failed', message: 'Try again' })
                                 // Clear composer after generation error
                                 setTimeout(() => {
                                   clearAllOptionsAfterGeneration()
@@ -4537,7 +4490,6 @@ const HomeNew: React.FC = () => {
                                 }, 500)
                               } catch (error) {
                                 console.error('❌ Neo Tokyo Glitch auto-generation failed:', error)
-                                notifyError({ title: 'Media failed', message: 'Try again' })
                                 // Clear composer after generation error
                                 setTimeout(() => {
                                   clearAllOptionsAfterGeneration()
@@ -4632,19 +4584,16 @@ const HomeNew: React.FC = () => {
                                         const story = await response.json()
                                         console.log('📖 Story Time story created:', story)
                                         
-                                        notifySuccess({ title: 'Story Time Ready!', message: `Your ${preset.label} story is ready to begin!` })
-                                        
                                         // Clear composer after successful story creation
                                         setTimeout(() => {
                                           handleClearComposerState()
                                         }, 1000)
                                       } else {
                                         const error = await response.json()
-                                        notifyError({ title: 'Story Time Failed', message: error.error || 'Failed to create story' })
+                                        console.error('❌ Story Time creation failed:', error)
                                       }
                                     } catch (error) {
                                       console.error('❌ Story Time creation failed:', error)
-                                      notifyError({ title: 'Story Time Failed', message: 'Failed to create story' })
                                     }
                                   }
                                 }}
