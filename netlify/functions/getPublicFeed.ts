@@ -363,29 +363,6 @@ exports.handler = async (event) => {
         };
       });
 
-      // Transform Neo Tokyo Glitch media to feed format
-      const glitchFeedItems = neoGlitchMedia.map(item => {
-        console.log('🔍 [getPublicFeed] NeoGlitchMedia item:', {
-          id: item.id,
-          imageUrl: item.imageUrl,
-          mappedFinalUrl: item.imageUrl,
-          type: 'neo-glitch'
-        });
-        
-        return {
-          id: item.id,
-          userId: item.userId,
-          user: item.user,
-          finalUrl: item.imageUrl, // Neo Tokyo Glitch uses imageUrl
-          mediaType: 'image',
-          prompt: item.prompt,
-          presetKey: item.preset,
-          status: item.status,
-          createdAt: item.createdAt,
-          type: 'neo-glitch' // Identify as Neo Tokyo Glitch
-        };
-      });
-
       // ✅ FIXED: Combine ALL items first, then sort, then apply pagination
       const allFeedItems = [
         ...ghibliReactionItems, 
