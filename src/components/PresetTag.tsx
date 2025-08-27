@@ -1,13 +1,12 @@
 import React from 'react'
-import { getPresetDisplayName, getPresetType } from '../utils/presetLabels'
 
 interface PresetTagProps {
   presetKey: string | null | undefined
   type?: string
   className?: string
   size?: 'sm' | 'md' | 'lg'
-  onClick?: (event: React.MouseEvent) => void // Add click handler for filtering
-  clickable?: boolean // Make tags clickable for filtering
+  onClick?: (event: React.MouseEvent) => void
+  clickable?: boolean
 }
 
 const PresetTag: React.FC<PresetTagProps> = ({ 
@@ -28,59 +27,31 @@ const PresetTag: React.FC<PresetTagProps> = ({
   // Unified glossy black styling for all preset types
   const unifiedStyle = 'bg-glossy-black-800 text-glossy-white-50 border-glossy-black-600 hover:bg-glossy-black-700'
   
-  if (!presetKey) {
-    // Handle custom prompts and new generation types
-    if (type === 'custom' || type === 'custom-prompt') {
-      return (
-        <div 
-          className={`
-            ${sizeClasses[size]}
-            ${unifiedStyle}
-            border rounded-full font-medium
-            shadow-sm backdrop-blur-sm
-            transition-all duration-200
-            hover:scale-105 hover:shadow-md
-            ${clickable ? 'cursor-pointer' : ''}
-            ${className}
-          `}
-          title="Generated with custom prompt"
-          onClick={clickable ? (e) => onClick?.(e) : undefined}
-        >
-          Custom Prompt
-        </div>
-      )
+  // Simple, clean tag display based on generation type
+  const getDisplayText = () => {
+    // Use the type field directly from new dedicated tables
+    switch (type) {
+      case 'neo-glitch':
+        return 'Neo Tokyo Glitch'
+      case 'ghibli-reaction':
+        return 'Ghibli Reaction'
+      case 'emotion-mask':
+        return 'Emotion Mask'
+      case 'presets':
+        return 'Presets'
+      case 'custom-prompt':
+        return 'Custom Prompt'
+      default:
+        // Fallback to presetKey if type is not available
+        if (presetKey) {
+          if (presetKey.startsWith('ghibli_')) return 'Ghibli Reaction'
+          if (presetKey.startsWith('emotion_') || presetKey.includes('joy_') || presetKey.includes('strength_') || presetKey.includes('nostalgia_') || presetKey.includes('peace_')) return 'Emotion Mask'
+          if (presetKey.startsWith('neo_')) return 'Neo Tokyo Glitch'
+          if (presetKey === 'custom' || presetKey === 'custom_prompt') return 'Custom Prompt'
+          return 'Presets'
+        }
+        return 'AI Generated'
     }
-    return null
-  }
-  
-  const displayName = getPresetDisplayName(presetKey, type)
-  const presetType = getPresetType(presetKey, type)
-  
-  // Format: [Preset] - [Sub-preset] for better UX
-  const formatDisplayText = () => {
-    if (presetType === 'custom') return 'Custom Prompt'
-    
-    // Get the main preset name based on generation type
-    const mainPresetNames = {
-      'neo-tokyo': 'Neo Tokyo Glitch',
-      'ghibli': 'Ghibli Reaction', 
-      'emotion': 'Emotion Mask',
-      'professional': 'Professional',
-      'presets': 'Professional',
-      'ghibli-reaction': 'Ghibli Reaction',
-      'emotion-mask': 'Emotion Mask',
-      'custom-prompt': 'Custom Prompt'
-    }
-    
-    const mainPreset = mainPresetNames[presetType as keyof typeof mainPresetNames] || 'Professional'
-    
-    // If it's a custom prompt or no sub-preset, just show main preset
-    if (!presetKey || presetType === 'custom' || presetType === 'custom-prompt') {
-      return mainPreset
-    }
-    
-    // Show format: [Preset] - [Sub-preset]
-    return `${mainPreset} - ${displayName}`
   }
 
   return (
@@ -95,10 +66,10 @@ const PresetTag: React.FC<PresetTagProps> = ({
         ${clickable ? 'cursor-pointer' : ''}
         ${className}
       `}
-      title={`Generated with ${displayName} preset`}
+      title={`Generated with ${getDisplayText()}`}
       onClick={clickable ? (e) => onClick?.(e) : undefined}
     >
-      {formatDisplayText()}
+      {getDisplayText()}
     </div>
   )
 }

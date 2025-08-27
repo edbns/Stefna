@@ -3687,7 +3687,7 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         } else if (item.presetKey?.includes('emotion') || item.presetKey?.includes('emotion_mask')) {
           presetType = 'emotion-mask';
         } else if (item.presetKey?.includes('neo') || item.presetKey?.includes('neo_glitch')) {
-          presetType = 'neo-tokyo';
+          presetType = 'neo-glitch';
         } else if (item.presetKey?.includes('preset') || item.presetKey?.includes('professional')) {
           presetType = 'presets';
         } else if (item.presetKey?.includes('custom') || item.prompt) {
