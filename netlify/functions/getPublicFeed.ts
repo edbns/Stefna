@@ -266,7 +266,7 @@ exports.handler = async (event) => {
             }
           },
           orderBy: {
-            created_at: 'desc'
+            createdAt: 'desc'
           }
         })
       ]);
@@ -320,24 +320,24 @@ exports.handler = async (event) => {
 
       const presetsItems = presetsMedia.map(item => ({
         id: item.id,
-        userId: item.userId,
-        user: item.user,
-        finalUrl: item.imageUrl,
+        userId: item.user_id,
+        user: item.users,
+        finalUrl: item.image_url,
         prompt: item.prompt,
         presetKey: item.preset,
         type: 'presets',
-        createdAt: item.createdAt
+        createdAt: item.created_at
       }));
 
       const customPromptItems = customPromptMedia.map(item => ({
         id: item.id,
-        userId: item.userId,
-        user: item.user,
-        finalUrl: item.imageUrl,
+        userId: item.user_id,
+        user: item.users,
+        finalUrl: item.image_url,
         prompt: item.prompt,
         presetKey: item.preset,
         type: 'custom-prompt',
-        createdAt: item.createdAt
+        createdAt: item.created_at
       }));
 
       // Transform Neo Tokyo Glitch media to feed format
