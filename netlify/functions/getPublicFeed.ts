@@ -51,8 +51,8 @@ exports.handler = async (event) => {
     } = event.queryStringParameters || {};
     
     // 🚨 ENHANCED: Validate query parameters
-    const limitNum = parseInt(limit as string);
-    const offsetNum = parseInt(offset as string);
+    const limitNum = parseInt(limit);
+    const offsetNum = parseInt(offset);
     
     if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
       console.error('❌ [getPublicFeed] Invalid limit parameter:', limit);
@@ -100,8 +100,8 @@ exports.handler = async (event) => {
 
     try {
       // 🚀 UNIFIED: Build dynamic where clauses for advanced filtering
-      const mediaAssetWhere: any = { visibility: 'public' };
-      const neoGlitchWhere: any = { status: 'completed' };
+      const mediaAssetWhere = { visibility: 'public' };
+      const neoGlitchWhere = { status: 'completed' };
       
       // Apply preset filtering
       if (preset !== 'all') {
@@ -529,7 +529,7 @@ exports.handler = async (event) => {
       };
     }
 
-  } catch (error: any) {
+      } catch (error) {
     console.error('💥 [getPublicFeed] Feed error:', error);
     
     return {
