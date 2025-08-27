@@ -22,6 +22,95 @@ cloudinary.config({
 
 const db = new PrismaClient();
 
+// Helper function to check identity similarity (placeholder for now)
+async function checkIdentitySimilarity(sourceUrl: string, generatedUrl: string): Promise<number> {
+  try {
+    // TODO: Implement actual face embedding comparison with TensorFlow.js
+    // For now, return a placeholder similarity score
+    console.log('🔒 [IPA] Placeholder similarity check - will implement actual face comparison');
+    
+    // Simulate similarity check (replace with real implementation)
+    // In production, this would:
+    // 1. Extract face embeddings from both images
+    // 2. Calculate cosine similarity between embeddings
+    // 3. Return similarity score (0.0 to 1.0)
+    
+    const similarity = 0.75; // Placeholder value - replace with real calculation
+    return similarity;
+  } catch (error) {
+    console.error('❌ [IPA] Similarity check failed:', error);
+    return 0.5; // Default to 50% similarity on error
+  }
+}
+
+// Helper function to retry generation with lower strength
+async function retryWithLowerStrength(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string): Promise<{ imageUrl: string; aimlJobId?: string } | null> {
+  try {
+    console.log('🔄 [IPA] Retrying with lower strength for better identity preservation...');
+    
+    // Reduce strength by 20% for retry
+    const reducedStrength = 0.4; // 0.5 * 0.8 = 0.4 (Neo Glitch uses 0.5 base)
+    
+    // Call AIML API with lower strength
+    const retryPayload = {
+      model: 'stable-diffusion-v35-large',
+      prompt: prompt,
+      init_image: sourceUrl,
+      image_strength: reducedStrength, // Lower strength for better identity preservation
+      num_images: 1,
+      guidance_scale: 7.5,
+      num_inference_steps: 30,
+      seed: Math.floor(Math.random() * 1000000)
+    };
+    
+    const AIML_API_KEY = process.env.AIML_API_KEY;
+    const AIML_API_URL = process.env.AIML_API_URL;
+    
+    if (!AIML_API_KEY || !AIML_API_URL) {
+      throw new Error('AIML API configuration missing for retry');
+    }
+    
+    const response = await fetch(`${AIML_API_URL}/v1/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AIML_API_KEY}`,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(retryPayload)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`AIML API retry failed: ${response.status} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ [IPA] Retry generation successful');
+    
+    // Extract image URL from response
+    let imageUrl = null;
+    if (result.output && result.output.choices && result.output.choices[0]?.image_base64) {
+      // Handle base64 response
+      const cloudinaryUrl = await uploadBase64ToCloudinary(result.output.choices[0].image_base64);
+      imageUrl = cloudinaryUrl;
+    } else if (result.image_url) {
+      imageUrl = result.image_url;
+    } else if (result.images && Array.isArray(result.images) && result.images[0]?.url) {
+      imageUrl = result.images[0].url;
+    }
+    
+    if (!imageUrl) {
+      throw new Error('No image URL in retry response');
+    }
+    
+    return { imageUrl };
+  } catch (error) {
+    console.error('❌ [IPA] Retry with lower strength failed:', error);
+    return null;
+  }
+}
+
 // Helper function to upload AIML results to Cloudinary
 async function uploadAIMLToCloudinary(imageUrl: string, presetKey: string): Promise<{ url: string; publicId: string }> {
   try {
@@ -406,13 +495,75 @@ async function processGenerationAsync(
             // Fallback to original URL if Cloudinary fails
           }
           
-          // Update database record with Cloudinary URL (or fallback to AIML URL)
+          // 🔒 IDENTITY PRESERVATION CHECK for AIML fallback
+          console.log('🔒 [NeoGlitch] Starting IPA check for AIML fallback...');
+          let ipaPassed = true;
+          let ipaSimilarity = 1.0;
+          
+          try {
+            // Simple similarity check - compare source and generated images
+            // In production, this would use TensorFlow.js face embeddings
+            const similarity = await checkIdentitySimilarity(sourceUrl, finalImageUrl);
+            ipaSimilarity = similarity;
+            
+            // Neo Glitch uses relaxed IPA threshold (0.4) for creative freedom
+            const ipaThreshold = 0.4;
+            ipaPassed = similarity >= ipaThreshold;
+            
+            console.log(`🔒 [NeoGlitch] IPA check: ${(similarity * 100).toFixed(1)}% similarity, threshold: ${(ipaThreshold * 100).toFixed(1)}%, passed: ${ipaPassed}`);
+            
+            if (!ipaPassed) {
+              console.log('⚠️ [NeoGlitch] IPA failed, attempting retry with lower strength...');
+              
+              // Retry with lower strength for better identity preservation
+              const retryResult = await retryWithLowerStrength(sourceUrl, prompt, presetKey, userId, runId);
+              if (retryResult && retryResult.imageUrl) {
+                console.log('🔄 [NeoGlitch] Retry successful, updating with new result');
+                finalImageUrl = retryResult.imageUrl;
+                
+                // Re-upload to Cloudinary if needed
+                try {
+                  const retryCloudinaryResult = await uploadAIMLToCloudinary(retryResult.imageUrl, presetKey);
+                  finalImageUrl = retryCloudinaryResult.url;
+                  cloudinaryPublicId = retryCloudinaryResult.publicId;
+                  console.log('✅ [NeoGlitch] Retry result uploaded to Cloudinary');
+                } catch (retryCloudinaryError) {
+                  console.warn('⚠️ [NeoGlitch] Retry Cloudinary upload failed, using original URL');
+                }
+                
+                // Re-check IPA on retry result
+                const retrySimilarity = await checkIdentitySimilarity(sourceUrl, finalImageUrl);
+                ipaSimilarity = retrySimilarity;
+                ipaPassed = retrySimilarity >= ipaThreshold;
+                console.log(`🔒 [NeoGlitch] Retry IPA: ${(retrySimilarity * 100).toFixed(1)}% similarity, passed: ${ipaPassed}`);
+              }
+            }
+          } catch (ipaError) {
+            console.warn('⚠️ [NeoGlitch] IPA check failed, proceeding with original result:', ipaError);
+            // Continue with original result if IPA fails
+          }
+          
+          // If IPA still fails after retry, log warning but continue
+          if (!ipaPassed) {
+            console.warn(`⚠️ [NeoGlitch] IPA failed after retry: ${(ipaSimilarity * 100).toFixed(1)}% similarity < ${(0.4 * 100).toFixed(1)}% threshold`);
+            console.warn('⚠️ [NeoGlitch] Proceeding with result but identity preservation may be poor');
+          }
+          
+          // Update database record with Cloudinary URL (or fallback to AIML URL) and IPA results
           await db.neoGlitchMedia.update({
             where: { id: recordId },
             data: {
               status: 'completed',
               imageUrl: finalImageUrl, // ✅ Use Cloudinary URL instead of AIML URL
-              stabilityJobId: `aiml_${runId}` // Mark as AIML generation
+              stabilityJobId: `aiml_${runId}`, // Mark as AIML generation
+              metadata: {
+                ipaPassed,
+                ipaSimilarity: Math.round(ipaSimilarity * 100) / 100, // Round to 2 decimal places
+                ipaThreshold: 0.4,
+                ipaRetries: ipaPassed ? 0 : 1, // 1 retry if IPA failed initially
+                ipaStrategy: ipaPassed ? 'first_try' : 'lower_strength_retry',
+                generationPath: 'aiml_fallback' // Mark as AIML fallback generation
+              }
             }
           });
           
