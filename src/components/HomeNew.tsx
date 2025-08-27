@@ -2723,42 +2723,16 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                 setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
                   detail: { count: 1, runId: genId } 
                 })), 800);
-              } else if (allResultUrls.length > 0 && assetId) {
-                const updateRes = await authenticatedFetch('/.netlify/functions/update-asset-result', {
-                  method: 'POST',
-                  headers: { 
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    assetId: assetId, // Use the asset ID from create-asset
-                    finalUrl: allResultUrls[0], // The generated image URL from AIML API
-                    status: 'ready', // Mark as ready
-                    prompt: effectivePrompt,
-                    meta: {
-                      mode: composerState.mode,
-                      presetId: selectedPreset,
-                      runId: genId
-                    }
-                  })
-                });
+              } else if (allResultUrls.length > 0) {
+                // All AI types now use dedicated tables - no asset update needed
+                console.log(`🎭 ${composerState.mode} mode - media saved by dedicated pipeline, refreshing display`);
                 
-                const updateText = await updateRes.text();
-                let updateBody: any = {};
-                try { updateBody = JSON.parse(updateText); } catch {}
-                
-                if (updateRes.ok && updateBody?.ok) {
-                  console.log(`✅ ${composerState.mode} asset updated successfully:`, updateBody);
-                  
-                  // Refresh user media to show the new image
-                  setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                    detail: { count: 1, runId: genId } 
-                  })), 800);
-                } else {
-                  console.error(`❌ ${composerState.mode} asset update failed:`, updateRes.status, updateBody || updateText);
-                  notifyError({ title: 'Update failed', message: updateBody?.error || `Failed to update ${composerState.mode} asset` });
-                }
+                // Refresh user media to show the new image
+                setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
+                  detail: { count: 1, runId: genId } 
+                })), 800);
               } else {
-                console.warn(`⚠️ Cannot update ${composerState.mode} asset: missing result URL or asset ID`);
+                console.warn(`⚠️ No result URLs available for ${composerState.mode}`);
               }
             } else if (allResultUrls.length > 1) {
               // Multiple variations - use unified save-media
