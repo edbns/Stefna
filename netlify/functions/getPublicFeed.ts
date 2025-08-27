@@ -3,10 +3,9 @@
 // Handles: Ghibli, Emotion Mask, Presets, Custom, AND Neo Tokyo Glitch
 // Provides consistent, deduplicated feed data for the main application
 
-import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+const { PrismaClient } = require('@prisma/client');
 
-export const handler: Handler = async (event) => {
+exports.handler = async (event) => {
   // 🚨 ENHANCED: Better request logging and validation
   console.log('🔍 [getPublicFeed] Request received:', {
     method: event.httpMethod,
