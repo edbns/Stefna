@@ -265,36 +265,11 @@ const HomeNew: React.FC = () => {
   // Clear all options after generation (success or failure)
   const clearAllOptionsAfterGeneration = () => {
     console.log('🎭 Clearing all options after generation')
-    setSelectedMode(null)
-    setSelectedPreset(null)
-    setSelectedEmotionMaskPreset(null)
-    setSelectedGhibliReactionPreset(null)
-    setSelectedNeoTokyoGlitchPreset(null)
-    setPrompt('')
-    setSelectedFile(null)
-    setPreviewUrl(null)
-    setComposerState(s => ({
-      ...s,
-      mode: 'preset', // Reset to preset mode instead of custom for cleaner state
-      file: null,
-      sourceUrl: null,
-      selectedPresetId: null,
-      selectedEmotionMaskPresetId: null,
-      selectedGhibliReactionPresetId: null,
-      selectedNeoTokyoGlitchPresetId: null,
-      customPrompt: '',
-      status: 'idle',
-      error: null,
-      runOnOpen: false
-    }))
     
-    // Reset HiddenUploader component by dispatching a custom event
-    window.dispatchEvent(new CustomEvent('reset-hidden-uploader'))
+    // Call the comprehensive composer clearing function
+    handleClearComposerState()
     
-    // Reset HiddenUploader component by dispatching a custom event
-    window.dispatchEvent(new CustomEvent('reset-hidden-uploader'))
-    
-    console.log('🎭 All options cleared, HiddenUploader reset triggered')
+    console.log('🎭 All options cleared, composer state reset, HiddenUploader reset triggered')
   }
 
   // Clear preset when user exits composer (immediate to avoid race)
@@ -4631,15 +4606,46 @@ const HomeNew: React.FC = () => {
                             ].map((preset) => (
                               <button
                                 key={preset.id}
-                                onClick={() => {
+                                onClick={async () => {
                                   setSelectedStoryTimePreset(preset.id)
                                   setStoryTimeDropdownOpen(false)
                                   
                                   // Auto-generate when Story Time preset is selected
                                   if (preset.id && selectedFile && isAuthenticated) {
                                     console.log('📖 Auto-generating Story Time with preset:', preset.id)
-                                    // TODO: Implement Story Time generation
-                                    notifySuccess({ title: 'Story Time Ready!', message: `Your ${preset.label} story is ready to begin!` })
+                                    
+                                    // Create Story Time story
+                                    try {
+                                      const formData = new FormData()
+                                      formData.append('photos', selectedFile)
+                                      formData.append('preset', preset.id)
+                                      
+                                      const response = await fetch('/.netlify/functions/story-time-create', {
+                                        method: 'POST',
+                                        headers: {
+                                          'Authorization': `Bearer ${authService.getToken()}`
+                                        },
+                                        body: formData
+                                      })
+                                      
+                                      if (response.ok) {
+                                        const story = await response.json()
+                                        console.log('📖 Story Time story created:', story)
+                                        
+                                        notifySuccess({ title: 'Story Time Ready!', message: `Your ${preset.label} story is ready to begin!` })
+                                        
+                                        // Clear composer after successful story creation
+                                        setTimeout(() => {
+                                          handleClearComposerState()
+                                        }, 1000)
+                                      } else {
+                                        const error = await response.json()
+                                        notifyError({ title: 'Story Time Failed', message: error.error || 'Failed to create story' })
+                                      }
+                                    } catch (error) {
+                                      console.error('❌ Story Time creation failed:', error)
+                                      notifyError({ title: 'Story Time Failed', message: 'Failed to create story' })
+                                    }
                                   }
                                 }}
                                 className={(() => {

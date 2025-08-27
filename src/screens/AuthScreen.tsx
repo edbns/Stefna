@@ -175,7 +175,18 @@ const AuthScreen: React.FC = () => {
                 <input
                   type="text"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onChange={(e) => {
+                    const newOtp = e.target.value.replace(/\D/g, '').slice(0, 6)
+                    setOtp(newOtp)
+                    
+                    // Auto-verify when 6 digits are entered
+                    if (newOtp.length === 6 && !isLoading) {
+                      // Small delay to ensure state is updated
+                      setTimeout(() => {
+                        handleVerifyOTP(new Event('submit') as any)
+                      }, 100)
+                    }
+                  }}
                   placeholder="Enter 6-digit code"
                   className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10 text-center text-lg tracking-widest"
                   maxLength={6}
