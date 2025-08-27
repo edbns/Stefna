@@ -26,9 +26,13 @@ model User {
   creditTransactions CreditTransaction[]
   media_assets       media_assets[]
   neoGlitchMedia     neoGlitchMedia[]
+  ghibliReactionMedia ghibliReactionMedia[]
+  emotionMaskMedia   emotionMaskMedia[]
+  presetsMedia       presetsMedia[]
+  customPromptMedia  customPromptMedia[]
   notifications      Notification[]
-  settings           UserSettings?
   stories            Story[]
+  settings           UserSettings?
 
   @@map("users")
 }
@@ -119,22 +123,21 @@ model media_assets {
   @@index([visibility, created_at(sort: Desc)])
 }
 
-// Story Time - AI-powered photo story creation
 model Story {
-  id          String      @id @default(cuid())
-  userId      String      @map("user_id")
+  id          String       @id @default(cuid())
+  userId      String       @map("user_id")
   title       String?
   description String?
-  preset      String      @default("auto") // auto, adventure, romance, mystery, comedy, fantasy, travel
-  status      String      @default("pending") // pending, processing, completed, failed
-  progress    Int         @default(0) // 0-100
-  storyText   String?     @map("story_text") // AI-generated story narrative
-  metadata    Json?       // Store video generation results and other metadata
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+  preset      String       @default("auto")
+  status      String       @default("pending")
+  progress    Int          @default(0)
+  storyText   String?      @map("story_text")
+  metadata    Json?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   photos      StoryPhoto[]
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([userId, createdAt(sort: Desc)])
   @@index([status])
   @@index([preset])
@@ -144,13 +147,77 @@ model Story {
 model StoryPhoto {
   id        String   @id @default(cuid())
   storyId   String   @map("story_id")
-  order     Int      // sequence in the story (1, 2, 3...)
+  order     Int
   imageUrl  String   @map("image_url")
-  videoUrl  String?  @map("video_url") // Generated video URL from Kling V1.6
-  prompt    String?  // AI-generated description for this photo
+  videoUrl  String?  @map("video_url")
+  prompt    String?
   createdAt DateTime @default(now()) @map("created_at")
   story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
-  
+
   @@index([storyId, order])
   @@map("story_photos")
+}
+
+// Ghibli Reaction Media
+model ghibliReactionMedia {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  imageUrl  String  @map("image_url")
+  prompt    String
+  preset    String
+  status    String  @default("completed")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("ghibli_reaction_media")
+}
+
+// Emotion Mask Media
+model emotionMaskMedia {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  imageUrl  String  @map("image_url")
+  prompt    String
+  preset    String
+  status    String  @default("completed")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("emotion_mask_media")
+}
+
+// Presets Media
+model presetsMedia {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  imageUrl  String  @map("image_url")
+  prompt    String
+  preset    String
+  status    String  @default("completed")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("presets_media")
+}
+
+// Custom Prompt Media
+model customPromptMedia {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  imageUrl  String  @map("image_url")
+  prompt    String
+  preset    String
+  status    String  @default("completed")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("custom_prompt_media")
 }

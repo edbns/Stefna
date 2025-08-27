@@ -197,9 +197,108 @@ const handler: Handler = async (event) => {
         }
       }
 
-      // 🚨 UPDATED: Get items from available models only
-      // Note: Only using models that exist in the current schema
-      const [neoGlitchMedia, storyMedia] = await Promise.all([
+      // 🚨 UPDATED: Get ALL items from all available media tables
+      const [ghibliReactionMedia, emotionMaskMedia, presetsMedia, customPromptMedia, neoGlitchMedia, storyMedia] = await Promise.all([
+        prisma.ghibliReactionMedia.findMany({
+          where: { 
+            status: 'completed',
+            userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
+          },
+          select: {
+            id: true,
+            userId: true,
+            imageUrl: true,
+            prompt: true,
+            preset: true,
+            status: true,
+            createdAt: true,
+            users: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }),
+        prisma.emotionMaskMedia.findMany({
+          where: { 
+            status: 'completed',
+            userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
+          },
+          select: {
+            id: true,
+            userId: true,
+            imageUrl: true,
+            prompt: true,
+            preset: true,
+            status: true,
+            createdAt: true,
+            users: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }),
+        prisma.presetsMedia.findMany({
+          where: { 
+            status: 'completed',
+            userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
+          },
+          select: {
+            id: true,
+            userId: true,
+            imageUrl: true,
+            prompt: true,
+            preset: true,
+            status: true,
+            createdAt: true,
+            users: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }),
+        prisma.customPromptMedia.findMany({
+          where: { 
+            status: 'completed',
+            userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
+          },
+          select: {
+            id: true,
+            userId: true,
+            imageUrl: true,
+            prompt: true,
+            preset: true,
+            status: true,
+            createdAt: true,
+            users: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }),
         prisma.neoGlitchMedia.findMany({
           where: {
             ...neoGlitchWhere,
@@ -221,12 +320,6 @@ const handler: Handler = async (event) => {
         // Story Time media - temporarily disabled until models are deployed
         Promise.resolve([])
       ]);
-      
-      // Initialize empty arrays for missing models
-      const ghibliReactionMedia: any[] = [];
-      const emotionMaskMedia: any[] = [];
-      const presetsMedia: any[] = [];
-      const customPromptMedia: any[] = [];
 
       console.log('✅ [getPublicFeed] Retrieved Ghibli Reaction media:', ghibliReactionMedia.length);
       console.log('✅ [getPublicFeed] Retrieved Emotion Mask media:', emotionMaskMedia.length);
@@ -254,12 +347,50 @@ const handler: Handler = async (event) => {
         console.log('🚨 [getPublicFeed] These URLs appear in multiple tables and may cause feed duplicates');
       }
 
-      // Transform media from available models only
-      // Note: Only handling models that exist in the current schema
-      const ghibliReactionItems: any[] = [];
-      const emotionMaskItems: any[] = [];
-      const presetsItems: any[] = [];
-      const customPromptItems: any[] = [];
+      // Transform all media from all available media tables to feed format
+      const ghibliReactionItems = ghibliReactionMedia.map(item => ({
+        id: item.id,
+        userId: item.userId,
+        user: item.users,
+        finalUrl: item.imageUrl,
+        prompt: item.prompt,
+        presetKey: item.preset,
+        type: 'ghibli-reaction',
+        createdAt: item.createdAt
+      }));
+
+      const emotionMaskItems = emotionMaskMedia.map(item => ({
+        id: item.id,
+        userId: item.userId,
+        user: item.users,
+        finalUrl: item.imageUrl,
+        prompt: item.prompt,
+        presetKey: item.preset,
+        type: 'emotion-mask',
+        createdAt: item.createdAt
+      }));
+
+      const presetsItems = presetsMedia.map(item => ({
+        id: item.id,
+        userId: item.userId,
+        user: item.users,
+        finalUrl: item.imageUrl,
+        prompt: item.prompt,
+        presetKey: item.preset,
+        type: 'presets',
+        createdAt: item.createdAt
+      }));
+
+      const customPromptItems = customPromptMedia.map(item => ({
+        id: item.id,
+        userId: item.userId,
+        user: item.users,
+        finalUrl: item.imageUrl,
+        prompt: item.prompt,
+        presetKey: item.preset,
+        type: 'custom-prompt',
+        createdAt: item.createdAt
+      }));
 
       // Transform Neo Tokyo Glitch media to feed format
       const glitchFeedItems = neoGlitchMedia.map((item: any) => {
