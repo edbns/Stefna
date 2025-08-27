@@ -2686,95 +2686,13 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
             meta: v.meta
           })));
 
-          // Handle different generation modes
+          // Handle different generation modes - all now use dedicated tables
           if (composerState.mode === 'emotionmask') {
-            console.log('🎭 Emotion Mask mode - updating asset with final result');
-            
-            // For Emotion Mask, we need to update the asset with the final generated image
-            if (allResultUrls.length > 0 && assetId) {
-              const updateRes = await authenticatedFetch('/.netlify/functions/update-asset-result', {
-              method: 'POST',
-              headers: { 
-                  'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                  assetId: assetId, // Use the asset ID from create-asset
-                  finalUrl: allResultUrls[0], // The generated image URL from AIML API
-                  status: 'ready', // Mark as ready
-                  prompt: effectivePrompt,
-                  meta: {
-                    mode: 'emotionmask',
-                    presetId: selectedPreset,
-                    runId: genId
-                  }
-              })
-            });
-            
-              const updateText = await updateRes.text();
-              let updateBody: any = {};
-              try { updateBody = JSON.parse(updateText); } catch {}
-              
-              if (updateRes.ok && updateBody?.ok) {
-                console.log('✅ Emotion Mask asset updated successfully:', updateBody);
-                
-                // Refresh user media to show the new image
-              setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                  detail: { count: 1, runId: genId } 
-              })), 800);
-            } else {
-                console.error(`❌ Emotion Mask asset update failed:`, updateRes.status, updateBody || updateText);
-                notifyError({ title: 'Update failed', message: updateBody?.error || 'Failed to update Emotion Mask asset' });
-              }
-            } else {
-              console.warn('⚠️ Cannot update Emotion Mask asset: missing result URL or asset ID');
-            }
+            console.log('🎭 Emotion Mask mode - media saved by dedicated pipeline');
+            // Media is already saved by the dedicated emotion-mask-generate function
           } else if (composerState.mode === 'ghiblireact') {
-            console.log(`🎭 ${composerState.mode} mode - updating asset with final result`);
-            
-            // For Ghibli Reaction, update the existing asset (like Emotion Mask)
-            if (allResultUrls.length > 0 && assetId) {
-              const updateRes = await authenticatedFetch('/.netlify/functions/update-asset-result', {
-                method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  assetId: assetId, // Use the asset ID from create-asset
-                  finalUrl: allResultUrls[0], // The generated image URL from AIML API
-                  status: 'ready', // Mark as ready
-                  prompt: effectivePrompt,
-                  meta: {
-                    mode: 'ghiblireact',
-                    presetId: selectedPreset || 'custom',
-                    runId: genId,
-                    userId,
-                    shareNow: !!shareToFeed,
-                    generationType: 'aiml-ghibli',
-                    model: generationMeta?.model || 'flux/dev/image-to-image',
-                    variation_index: 0,
-                    totalVariations: allResultUrls.length
-                  }
-                })
-              });
-              
-              const updateText = await updateRes.text();
-              let updateBody: any = {};
-              try { updateBody = JSON.parse(updateText); } catch {}
-              
-              if (updateRes.ok && updateBody?.ok) {
-                console.log(`✅ ${composerState.mode} asset updated successfully:`, updateBody);
-                
-                // Refresh user media to show the new image
-                setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                  detail: { count: 1, runId: genId } 
-                })), 800);
-              } else {
-                console.error(`❌ ${composerState.mode} asset update failed:`, updateRes.status, updateBody || updateText);
-                notifyError({ title: 'Update failed', message: updateBody?.error || `Failed to update ${composerState.mode} asset` });
-              }
-            } else {
-              console.warn(`⚠️ Cannot update ${composerState.mode} asset: missing result URL or asset ID`);
-            }
+            console.log(`🎭 ${composerState.mode} mode - media saved by dedicated pipeline`);
+            // Media is already saved by the dedicated ghibli-reaction-generate function
           } else if (composerState.mode === 'neotokyoglitch') {
             console.log(`🎭 [NeoGlitch] Neo Tokyo Glitch mode - media already saved by first-class pipeline`);
             console.log(`✅ [NeoGlitch] No additional save-media call needed - using dedicated glitch table`);

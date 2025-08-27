@@ -164,12 +164,12 @@ class GenerationPipeline {
           throw new Error(`Unknown generation type: ${request.type}`);
       }
 
-    } catch (error) {
+  } catch (error) {
       console.error('❌ [GenerationPipeline] Generation failed:', error);
-      return {
-        success: false,
+    return {
+      success: false,
         status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : 'Unknown error',
         system: 'new', // All systems now use new architecture
         type: request.type
       };
