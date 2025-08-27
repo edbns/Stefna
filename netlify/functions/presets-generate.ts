@@ -127,13 +127,23 @@ async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey:
       presetRotationIndex: presetConfig.preset_rotation_index
     });
 
-    const response = await fetch(`${AIML_API_URL}/v2/generate/image`, {
+    const response = await fetch(`${AIML_API_URL}/v1/images/generations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${AIML_API_KEY}`,
+        'Accept': 'application/json'
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        model: 'stable-diffusion-v35-large',
+        prompt: prompt,
+        init_image: sourceUrl,
+        image_strength: 0.85,
+        num_images: 1,
+        guidance_scale: 7.5,
+        num_inference_steps: 30,
+        seed: Math.floor(Math.random() * 1000000)
+      }),
     });
 
     if (!response.ok) {
@@ -148,8 +158,28 @@ async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey:
       resultKeys: result ? Object.keys(result) : 'none'
     });
 
-    // Extract image URL from AIML response
-    const imageUrl = result.image_url || result.url || result.result?.image_url;
+    // Extract image URL from AIML v1 API response format
+    let imageUrl = null;
+    
+    // Handle v1 response format: result.output.choices[0].image_base64
+    if (result.output && result.output.choices && result.output.choices[0]?.image_base64) {
+      console.log('✅ [Presets] Found v1 response format with base64 image');
+      try {
+        // Convert base64 to Cloudinary URL
+        const cloudinaryUrl = await uploadBase64ToCloudinary(result.output.choices[0].image_base64);
+        imageUrl = cloudinaryUrl;
+        console.log('☁️ [Presets] Image successfully uploaded to Cloudinary:', cloudinaryUrl);
+      } catch (uploadError: any) {
+        console.error('❌ [Presets] Cloudinary upload failed:', uploadError);
+        throw new Error(`Failed to upload generated image: ${uploadError.message}`);
+      }
+    } else if (result.image_url) {
+      // Fallback to direct URL if present
+      imageUrl = result.image_url;
+    } else if (result.images && Array.isArray(result.images) && result.images[0]?.url) {
+      // Fallback to images array if present
+      imageUrl = result.images[0].url;
+    }
     
     if (!imageUrl) {
       console.error('❌ [Presets] No image URL in AIML response:', result);
@@ -171,6 +201,44 @@ async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey:
 
   } catch (error) {
     console.error('❌ [Presets] AIML generation failed:', error);
+    throw error;
+  }
+}
+
+// Cloudinary Upload Function for base64 images
+async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
+  const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+  const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
+  const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
+
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
+    throw new Error('Cloudinary credentials not configured');
+  }
+
+  try {
+    // Convert base64 to buffer
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    
+    // Create form data for Cloudinary upload
+    const formData = new FormData();
+    formData.append('file', new Blob([imageBuffer], { type: 'image/png' }), 'generated.png');
+    formData.append('upload_preset', 'ml_default');
+    
+    // Upload to Cloudinary
+    const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      throw new Error(`Cloudinary upload failed: ${uploadResponse.status} - ${errorText}`);
+    }
+
+    const uploadResult = await uploadResponse.json();
+    return uploadResult.secure_url;
+  } catch (error: any) {
+    console.error('❌ [Presets] Cloudinary upload error:', error);
     throw error;
   }
 }
