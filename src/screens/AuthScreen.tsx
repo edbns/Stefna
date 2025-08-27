@@ -49,6 +49,15 @@ const AuthScreen: React.FC = () => {
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault()
+    await handleVerifyOTPAuto(otp)
+  }
+
+  const handleVerifyOTPAuto = async (otpValue: string) => {
+    if (!otpValue || otpValue.length !== 6) {
+      setError('Please enter a valid 6-digit code')
+      return
+    }
+
     setIsLoading(true)
     setError('')
 
@@ -58,7 +67,7 @@ const AuthScreen: React.FC = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, otp, referrerEmail: referrerEmail || undefined })
+        body: JSON.stringify({ email, otp: otpValue, referrerEmail: referrerEmail || undefined })
       })
 
       const data = await response.json()
@@ -183,7 +192,7 @@ const AuthScreen: React.FC = () => {
                     if (newOtp.length === 6 && !isLoading) {
                       // Small delay to ensure state is updated
                       setTimeout(() => {
-                        handleVerifyOTP(new Event('submit') as any)
+                        handleVerifyOTPAuto(newOtp)
                       }, 100)
                     }
                   }}
