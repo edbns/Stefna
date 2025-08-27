@@ -165,20 +165,82 @@ export const handler: Handler = async (event) => {
         }
       }
       
-      // 🚨 CRITICAL FIX: Get ALL items from both tables with filters, then combine and paginate properly
-      const [publicMedia, neoGlitchMedia] = await Promise.all([
-        prisma.mediaAsset.findMany({
-          where: mediaAssetWhere,
+      // 🚨 UPDATED: Get ALL items from new dedicated tables with filters, then combine and paginate properly
+      const [ghibliReactionMedia, emotionMaskMedia, presetsMedia, customPromptMedia, neoGlitchMedia] = await Promise.all([
+        prisma.ghibliReactionMedia.findMany({
+          where: { status: 'completed' },
           select: {
             id: true,
             userId: true,
-            url: true,
-            finalUrl: true,
-            resourceType: true,
+            imageUrl: true,
             prompt: true,
-            presetKey: true, // ✅ FIXED: Explicitly select presetKey field
-            presetId: true,  // 🔍 DEBUG: Also check presetId
-            meta: true,      // 🔍 DEBUG: Also check meta
+            preset: true,
+            status: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }),
+        prisma.emotionMaskMedia.findMany({
+          where: { status: 'completed' },
+          select: {
+            id: true,
+            userId: true,
+            imageUrl: true,
+            prompt: true,
+            preset: true,
+            status: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }),
+        prisma.presetsMedia.findMany({
+          where: { status: 'completed' },
+          select: {
+            id: true,
+            userId: true,
+            imageUrl: true,
+            prompt: true,
+            preset: true,
+            status: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }),
+        prisma.customPromptMedia.findMany({
+          where: { status: 'completed' },
+          select: {
+            id: true,
+            userId: true,
+            imageUrl: true,
+            prompt: true,
+            preset: true,
             status: true,
             createdAt: true,
             user: {
@@ -210,12 +272,18 @@ export const handler: Handler = async (event) => {
         })
       ]);
 
-      console.log('✅ [getPublicFeed] Retrieved public media:', publicMedia.length);
+      console.log('✅ [getPublicFeed] Retrieved Ghibli Reaction media:', ghibliReactionMedia.length);
+      console.log('✅ [getPublicFeed] Retrieved Emotion Mask media:', emotionMaskMedia.length);
+      console.log('✅ [getPublicFeed] Retrieved Presets media:', presetsMedia.length);
+      console.log('✅ [getPublicFeed] Retrieved Custom Prompt media:', customPromptMedia.length);
       console.log('✅ [getPublicFeed] Retrieved Neo Tokyo Glitch media:', neoGlitchMedia.length);
       
       // 🚨 DEBUG: Check for potential duplicates
       const allImageUrls = [
-        ...publicMedia.map(item => ({ url: item.url || item.finalUrl, source: 'mediaAsset', id: item.id })),
+        ...ghibliReactionMedia.map(item => ({ url: item.imageUrl, source: 'ghibliReactionMedia', id: item.id })),
+        ...emotionMaskMedia.map(item => ({ url: item.imageUrl, source: 'emotionMaskMedia', id: item.id })),
+        ...presetsMedia.map(item => ({ url: item.imageUrl, source: 'presetsMedia', id: item.id })),
+        ...customPromptMedia.map(item => ({ url: item.imageUrl, source: 'customPromptMedia', id: item.id })),
         ...neoGlitchMedia.map(item => ({ url: item.imageUrl, source: 'neoGlitchMedia', id: item.id }))
       ];
       
@@ -228,25 +296,50 @@ export const handler: Handler = async (event) => {
         console.log('🚨 [getPublicFeed] These URLs appear in multiple tables and may cause feed duplicates');
       }
 
-      // Transform main media assets to feed format
-      const mainFeedItems = publicMedia.map(item => {
-        const finalUrl = item.url || item.finalUrl;
-        console.log('🔍 [getPublicFeed] MediaAsset item:', {
-          id: item.id,
-          url: item.url,
-          finalUrl: item.finalUrl,
-          mappedFinalUrl: finalUrl,
-          type: 'media-asset',
-          presetKey: item.presetKey, // 🔍 DEBUG: Check what's in presetKey
-          presetId: item.presetId,   // 🔍 DEBUG: Check if presetId exists
-          meta: item.meta            // 🔍 DEBUG: Check if meta has preset info
-        });
-        
-        return {
-          id: item.id,
-          userId: item.userId,
-          user: item.user, // Now using 'user' instead of 'owner'
-          finalUrl: finalUrl,
+      // Transform all media from new dedicated tables to feed format
+      const ghibliReactionItems = ghibliReactionMedia.map(item => ({
+        id: item.id,
+        userId: item.userId,
+        user: item.user,
+        finalUrl: item.imageUrl,
+        prompt: item.prompt,
+        presetKey: item.preset,
+        type: 'ghibli-reaction',
+        createdAt: item.createdAt
+      }));
+
+      const emotionMaskItems = emotionMaskMedia.map(item => ({
+        id: item.id,
+        userId: item.userId,
+        user: item.user,
+        finalUrl: item.imageUrl,
+        prompt: item.prompt,
+        presetKey: item.preset,
+        type: 'emotion-mask',
+        createdAt: item.createdAt
+      }));
+
+      const presetsItems = presetsMedia.map(item => ({
+        id: item.id,
+        userId: item.userId,
+        user: item.user,
+        finalUrl: item.imageUrl,
+        prompt: item.prompt,
+        presetKey: item.preset,
+        type: 'presets',
+        createdAt: item.createdAt
+      }));
+
+      const customPromptItems = customPromptMedia.map(item => ({
+        id: item.id,
+        userId: item.userId,
+        user: item.user,
+        finalUrl: item.imageUrl,
+        prompt: item.prompt,
+        presetKey: item.preset,
+        type: 'custom-prompt',
+        createdAt: item.createdAt
+      }));
           mediaType: item.resourceType,
           prompt: item.prompt,
           presetKey: item.presetKey, // Using the actual presetKey field
