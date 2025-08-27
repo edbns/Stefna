@@ -20,6 +20,7 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
 }) => {
   const [usage, setUsage] = useState<TokenUsage | null>(null);
   const [serverQuota, setServerQuota] = useState<{ daily_used: number; daily_limit: number; weekly_used: number; weekly_limit: number } | null>(null);
+  const [actualCredits, setActualCredits] = useState<number | null>(null);
   const [referralStats, setReferralStats] = useState<{ invites: number; tokensEarned: number; referralCode: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -28,6 +29,7 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
     if (import.meta.env.VITE_NO_DB_MODE !== '1') {
       loadTokenData();
       loadServerQuota();
+      loadActualCredits();
     }
   }, [userId]);
 
@@ -74,6 +76,21 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
     } catch (e) {
       console.error('Failed to load server quota:', e);
       setServerQuota(null);
+    }
+  };
+
+  const loadActualCredits = async () => {
+    try {
+      const res = await authenticatedFetch('/.netlify/functions/check-credits', { method: 'GET' });
+      if (res.ok) {
+        const data = await res.json();
+        setActualCredits(data.credits || 0);
+      } else {
+        setActualCredits(0);
+      }
+    } catch (e) {
+      console.error('Failed to load actual credits:', e);
+      setActualCredits(0);
     }
   };
 
@@ -170,7 +187,7 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
           <div>
             <h3 className="text-white font-semibold text-lg">Token Balance</h3>
             <p className="text-white/60 text-sm">
-              Standard User • 30 tokens/day
+              Standard User • {actualCredits !== null ? `${actualCredits} credits available` : 'Loading...'}
             </p>
           </div>
         </div>
@@ -178,9 +195,11 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
         {/* Token Count */}
         <div className="text-right">
           <div className={`text-3xl font-bold ${getUsageColor()}`}>
-            {remainingTokens}
+            {actualCredits !== null ? actualCredits : remainingTokens}
           </div>
-          <div className="text-white/60 text-sm">tokens left</div>
+          <div className="text-white/60 text-sm">
+            {actualCredits !== null ? 'credits available' : 'tokens left'}
+          </div>
         </div>
       </div>
 
