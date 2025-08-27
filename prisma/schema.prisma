@@ -25,6 +25,10 @@ model User {
   creditTransactions CreditTransaction[]
   media              MediaAsset[]
   neoGlitchMedia     NeoGlitchMedia[]
+  ghibliReactionMedia GhibliReactionMedia[]
+  emotionMaskMedia   EmotionMaskMedia[]
+  presetsMedia       PresetsMedia[]
+  customPromptMedia  CustomPromptMedia[]
   notifications      Notification[]
   settings           UserSettings?
 
@@ -139,6 +143,86 @@ model NeoGlitchMedia {
   @@index([preset])
   @@index([stabilityJobId])
   @@map("neo_glitch_media")
+}
+
+model GhibliReactionMedia {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  imageUrl       String   @map("image_url")
+  sourceUrl      String   @map("source_url")
+  prompt         String
+  preset         String
+  runId          String   @unique @map("run_id")
+  aimlJobId      String?  @map("aiml_job_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  status         String   @default("completed")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([preset])
+  @@index([aimlJobId])
+  @@map("ghibli_reaction_media")
+}
+
+model EmotionMaskMedia {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  imageUrl       String   @map("image_url")
+  sourceUrl      String   @map("source_url")
+  prompt         String
+  preset         String
+  runId          String   @unique @map("run_id")
+  aimlJobId      String?  @map("aiml_job_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  status         String   @default("completed")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([preset])
+  @@index([aimlJobId])
+  @@map("emotion_mask_media")
+}
+
+model PresetsMedia {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  imageUrl       String   @map("image_url")
+  sourceUrl      String   @map("source_url")
+  prompt         String
+  preset         String
+  runId          String   @unique @map("run_id")
+  aimlJobId      String?  @map("aiml_job_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  status         String   @default("completed")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([preset])
+  @@index([aimlJobId])
+  @@map("presets_media")
+}
+
+model CustomPromptMedia {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  imageUrl       String   @map("image_url")
+  sourceUrl      String   @map("source_url")
+  prompt         String
+  preset         String
+  runId          String   @unique @map("run_id")
+  aimlJobId      String?  @map("aiml_job_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  status         String   @default("completed")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([preset])
+  @@index([aimlJobId])
+  @@map("custom_prompt_media")
 }
 
 model AppConfig {
