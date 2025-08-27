@@ -1,6 +1,6 @@
 # 🚀 **Stefna AI Photo Platform**
 
-**Professional AI-powered photo editing with automatic identity preservation, multiple AI providers, and seamless user experience.**
+**Professional AI-powered photo editing with automatic identity preservation, multiple AI providers, and seamless user experience. Now featuring Story Time - AI-powered photo-to-video storytelling!**
 
 ---
 
@@ -18,16 +18,18 @@ Stefna is a cutting-edge AI photo editing platform that transforms your photos u
 - **Emotion Mask**: Emotional expression overlays with AIML API
 - **Custom Presets**: Professional-grade transformations with AIML API
 - **Custom Prompt**: User-defined transformations with AIML API
+- **🎬 Story Time**: AI-powered photo-to-video storytelling with Kling V1.6
 
 ### **🔒 Identity Preservation**
 - **Automatic IPA**: Built-in face preservation without user intervention
 - **Multi-tier Validation**: Ensures generated content maintains original identity
 - **Configurable Thresholds**: Adjustable similarity requirements per preset
 
-### **🤖 Dual AI Providers**
-- **Primary**: Stability.ai (cost-effective, high-quality)
-- **Fallback**: AIML API (reliable, feature-rich)
-- **Smart Routing**: Automatic fallback only when needed
+### **🤖 AI Providers**
+- **Stability.ai**: Primary provider for Neo Tokyo Glitch (cost-effective, high-quality)
+- **AIML API**: Fallback provider and primary for other presets (reliable, feature-rich)
+- **Kling V1.6**: Image-to-Video generation for Story Time (cinematic storytelling)
+- **Smart Routing**: Automatic fallback and provider selection
 
 ### **💳 Credit System**
 - **1 Credit per Generation**: Simple, predictable pricing
@@ -53,6 +55,7 @@ Stefna is a cutting-edge AI photo editing platform that transforms your photos u
 ### **AI Services**
 - **Stability.ai**: Primary provider for Neo Tokyo Glitch
 - **AIML API**: Fallback provider and primary for other presets
+- **Kling V1.6**: Image-to-Video generation for Story Time
 
 ---
 

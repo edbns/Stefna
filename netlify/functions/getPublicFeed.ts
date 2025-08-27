@@ -3,9 +3,10 @@
 // Handles: Ghibli, Emotion Mask, Presets, Custom, AND Neo Tokyo Glitch
 // Provides consistent, deduplicated feed data for the main application
 
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
+import type { Handler } from '@netlify/functions';
 
-exports.handler = async (event) => {
+const handler: Handler = async (event) => {
   // 🚨 ENHANCED: Better request logging and validation
   console.log('🔍 [getPublicFeed] Request received:', {
     method: event.httpMethod,
@@ -197,6 +198,7 @@ exports.handler = async (event) => {
       }
 
       // 🚨 UPDATED: Get ALL items from new dedicated tables with filters, then combine and paginate properly
+      // Note: Story models might not exist in deployed version yet, so we handle them gracefully
       const [ghibliReactionMedia, emotionMaskMedia, presetsMedia, customPromptMedia, neoGlitchMedia, storyMedia] = await Promise.all([
         prisma.ghibliReactionMedia.findMany({
           where: { 
@@ -316,29 +318,8 @@ exports.handler = async (event) => {
             createdAt: 'desc'
           }
         }),
-        prisma.story.findMany({
-          where: {
-            status: 'completed',
-            userId: { in: publicUserIds } // 🔒 Only show media from users with public feed enabled
-          },
-          include: {
-            user: {
-              select: {
-                id: true,
-                email: true,
-                name: true
-              }
-            },
-            photos: {
-              orderBy: {
-                order: 'asc'
-              }
-            }
-          },
-          orderBy: {
-            createdAt: 'desc'
-          }
-        })
+        // Story Time media - temporarily disabled until models are deployed
+        Promise.resolve([])
       ]);
 
       console.log('✅ [getPublicFeed] Retrieved Ghibli Reaction media:', ghibliReactionMedia.length);
@@ -435,38 +416,8 @@ exports.handler = async (event) => {
         };
       });
 
-      // Transform Story Time media to feed format
-      const storyFeedItems = storyMedia.map((item: any) => {
-        console.log('🔍 [getPublicFeed] Story item:', {
-          id: item.id,
-          preset: item.preset,
-          photoCount: item.photos?.length || 0,
-          type: 'story-time',
-          hasVideos: item.metadata?.videoResults?.length > 0
-        });
-        
-        return {
-          id: item.id,
-          userId: item.userId,
-          user: item.user,
-          finalUrl: item.photos?.[0]?.imageUrl || '', // Use first photo as main image
-          mediaType: item.metadata?.videoResults?.length > 0 ? 'video' : 'image',
-          prompt: item.storyText || item.description || 'AI-generated story',
-          presetKey: item.preset,
-          status: item.status,
-          createdAt: item.createdAt,
-          type: 'story-time', // Identify as Story Time
-          metadata: {
-            presetKey: item.preset,
-            presetType: 'story-time',
-            storyText: item.storyText,
-            photoCount: item.photos?.length || 0,
-            videoResults: item.metadata?.videoResults || [],
-            totalVideos: item.metadata?.totalVideos || 0,
-            successfulVideos: item.metadata?.successfulVideos || 0
-          }
-        };
-      });
+      // Story Time media transformation - temporarily disabled
+      const storyFeedItems: any[] = [];
 
       // ✅ FIXED: Combine ALL items first, then sort, then apply pagination
       const allFeedItems = [
@@ -612,7 +563,7 @@ exports.handler = async (event) => {
       };
     }
 
-      } catch (error) {
+  } catch (error) {
     console.error('💥 [getPublicFeed] Feed error:', error);
     
     return {
@@ -620,9 +571,11 @@ exports.handler = async (event) => {
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
         error: 'FEED_FETCH_FAILED',
-        message: error.message,
+        message: error instanceof Error ? error.message : String(error),
         status: 'failed'
       })
     };
   }
 };
+
+export { handler };
