@@ -16,22 +16,27 @@ model Extensions {
 }
 
 model User {
-  id                 String              @id @default(cuid())
-  email              String              @unique
-  name               String?
-  avatarUrl          String?             @map("avatar_url")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
-  creditTransactions CreditTransaction[]
-  media              MediaAsset[]
-  neoGlitchMedia     NeoGlitchMedia[]
-  ghibliReactionMedia GhibliReactionMedia[]
-  emotionMaskMedia   EmotionMaskMedia[]
-  presetsMedia       PresetsMedia[]
-  customPromptMedia  CustomPromptMedia[]
-  notifications      Notification[]
-  settings           UserSettings?
+  id                                                        String                  @id @default(cuid())
+  email                                                     String?
+  name                                                      String?
+  tier                                                      String?                 @default("registered")
+  createdAt                                                 DateTime?               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                                                 DateTime?               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  avatarUrl                                                 String?                 @map("avatar_url")
+  assets                                                    assets[]
+  creditTransactions                                        CreditTransaction[]
+  custom_prompt_media                                       custom_prompt_media[]
+  emotion_mask_media                                        emotion_mask_media[]
+  ghibli_reaction_media                                     ghibli_reaction_media[]
+  neoGlitchMedia                                            NeoGlitchMedia[]
+  notifications                                             Notification[]
+  presets_media                                             presets_media[]
+  referral_signups_referral_signups_new_user_idTousers      ReferralSignup?         @relation("referral_signups_new_user_idTousers")
+  referral_signups_referral_signups_referrer_user_idTousers ReferralSignup[]        @relation("referral_signups_referrer_user_idTousers")
+  user_credits                                              UserCredits?
+  settings                                                  UserSettings?
 
+  @@index([email], map: "idx_users_email")
   @@map("users")
 }
 
@@ -46,68 +51,22 @@ model UserSettings {
   @@map("user_settings")
 }
 
-model MediaAsset {
-  id             String   @id @default(uuid())
-  userId         String   @map("user_id")
-  url            String
-  resultUrl      String?  @map("result_url")
-  sourceUrl      String?  @map("source_url")
-  publicId       String?  @unique @map("public_id")
-  resourceType   String   @map("resource_type")
-  folder         String?
-  bytes          Int?
-  width          Int?
-  height         Int?
-  duration       Float?
-  prompt         String   @default("")
-  negativePrompt String?  @map("negative_prompt")
-  model          String?
-  mode           String?
-  visibility     String   @default("private")
-  allowRemix     Boolean  @default(false) @map("allow_remix")
-  env            String   @default("production")
-  runId          String?  @map("run_id")
-  presetId       String?  @map("preset_id")
-  parentAssetId  String?  @map("parent_asset_id")
-  strength       Float?
-  tags           String[]
-  meta           Json?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-  
-  // Fields that functions need
-  cloudinaryPublicId String? @map("cloudinary_public_id")
-  mediaType         String? @map("media_type")
-  presetKey         String? @map("preset_key")
-  sourceAssetId     String? @map("source_asset_id")
-  status            String  @default("ready")
-  isPublic          Boolean @default(false) @map("is_public")
-  finalUrl          String? @map("final_url")
-  
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([visibility, createdAt(sort: Desc)])
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([publicId])
-  @@index([status])
-  @@index([cloudinaryPublicId])
-  @@index([finalUrl])
-  @@map("media_assets")
-}
-
 model CreditTransaction {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  requestId  String   @map("request_id") @unique
-  action     String?
-  amount     Int
-  status     String   @default("reserved")
-  meta       Json?
-  createdAt  DateTime @default(now()) @map("created_at")
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  requestId String?  @unique @map("request_id")
+  action    String
+  amount    Int
+  status    String
+  meta      Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  reason    String?
+  env       String?  @default("production")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([requestId], map: "idx_credits_ledger_request_id")
   @@index([userId, createdAt(sort: Desc)])
-  @@index([requestId])
+  @@index([userId, status, createdAt(sort: Desc)])
   @@map("credits_ledger")
 }
 
@@ -133,9 +92,10 @@ model NeoGlitchMedia {
   prompt         String
   preset         String
   runId          String   @unique @map("run_id")
+  stabilityJobId String?  @map("stability_job_id")
   createdAt      DateTime @default(now()) @map("created_at")
   status         String   @default("completed")
-  stabilityJobId String?  @map("stability_job_id")
+  metadata       Json?
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
@@ -145,100 +105,22 @@ model NeoGlitchMedia {
   @@map("neo_glitch_media")
 }
 
-model GhibliReactionMedia {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  imageUrl       String   @map("image_url")
-  sourceUrl      String   @map("source_url")
-  prompt         String
-  preset         String
-  runId          String   @unique @map("run_id")
-  aimlJobId      String?  @map("aiml_job_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  status         String   @default("completed")
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@index([preset])
-  @@index([aimlJobId])
-  @@map("ghibli_reaction_media")
-}
-
-model EmotionMaskMedia {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  imageUrl       String   @map("image_url")
-  sourceUrl      String   @map("source_url")
-  prompt         String
-  preset         String
-  runId          String   @unique @map("run_id")
-  aimlJobId      String?  @map("aiml_job_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  status         String   @default("completed")
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@index([preset])
-  @@index([aimlJobId])
-  @@map("emotion_mask_media")
-}
-
-model PresetsMedia {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  imageUrl       String   @map("image_url")
-  sourceUrl      String   @map("source_url")
-  prompt         String
-  preset         String
-  runId          String   @unique @map("run_id")
-  aimlJobId      String?  @map("aiml_job_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  status         String   @default("completed")
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@index([preset])
-  @@index([aimlJobId])
-  @@map("presets_media")
-}
-
-model CustomPromptMedia {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  imageUrl       String   @map("image_url")
-  sourceUrl      String   @map("source_url")
-  prompt         String
-  preset         String
-  runId          String   @unique @map("run_id")
-  aimlJobId      String?  @map("aiml_job_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  status         String   @default("completed")
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@index([preset])
-  @@index([aimlJobId])
-  @@map("custom_prompt_media")
-}
-
 model AppConfig {
   key   String @id
-  value Json?
+  value Json
 
   @@map("app_config")
 }
 
 model ReferralSignup {
-  id               String    @id
-  referrer_user_id String
-  new_user_id      String    @unique
-  referrer_email   String?
-  new_user_email   String?
-  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  id                                             String   @id
+  referrer_user_id                               String
+  new_user_id                                    String   @unique
+  referrer_email                                 String?
+  new_user_email                                 String?
+  created_at                                     DateTime @default(now())
+  users_referral_signups_new_user_idTousers      User     @relation("referral_signups_new_user_idTousers", fields: [new_user_id], references: [id], onDelete: Cascade)
+  users_referral_signups_referrer_user_idTousers User     @relation("referral_signups_referrer_user_idTousers", fields: [referrer_user_id], references: [id], onDelete: Cascade)
 
   @@index([new_user_id], map: "idx_referral_signups_new_user")
   @@index([referrer_user_id], map: "idx_referral_signups_referrer")
@@ -246,23 +128,193 @@ model ReferralSignup {
 }
 
 model UserCredits {
-  user_id    String    @id
-  balance    Int?      @default(0)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  user_id    String   @id
+  balance    Int      @default(0)
+  updated_at DateTime @default(now())
+  users      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id], map: "idx_user_credits_user_id")
   @@map("user_credits")
 }
 
 model AuthOtp {
-  id        String    @id @default(cuid())
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email     String
   code      String
-  used      Boolean?  @default(false)
-  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
-  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  used      Boolean? @default(false)
 
-  @@index([email, code], map: "idx_auth_otps_email_code")
-  @@index([expiresAt], map: "idx_auth_otps_expires_at")
+  @@index([code])
+  @@index([email])
+  @@index([expiresAt])
   @@map("auth_otps")
+}
+
+model assets {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String
+  url           String
+  public_id     String?
+  resource_type String?   @default("image") @db.VarChar(10)
+  folder        String?
+  bytes         Int?
+  width         Int?
+  height        Int?
+  duration      Float?    @db.Real
+  meta          Json?
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  users         User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_assets_user")
+
+  @@index([user_id], map: "idx_assets_user_id")
+}
+
+model custom_prompt_media {
+  id          String   @id
+  user_id     String
+  image_url   String
+  source_url  String
+  prompt      String
+  preset      String
+  run_id      String   @unique
+  aiml_job_id String?
+  created_at  DateTime @default(now())
+  status      String   @default("completed")
+  metadata    Json?
+  users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([aiml_job_id])
+  @@index([preset])
+  @@index([status])
+  @@index([user_id, created_at(sort: Desc)])
+}
+
+model emotion_mask_media {
+  id          String   @id
+  user_id     String
+  image_url   String
+  source_url  String
+  prompt      String
+  preset      String
+  run_id      String   @unique
+  aiml_job_id String?
+  created_at  DateTime @default(now())
+  status      String   @default("completed")
+  metadata    Json?
+  users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([aiml_job_id])
+  @@index([preset])
+  @@index([status])
+  @@index([user_id, created_at(sort: Desc)])
+}
+
+model ghibli_reaction_media {
+  id          String   @id
+  user_id     String
+  image_url   String
+  source_url  String
+  prompt      String
+  preset      String
+  run_id      String   @unique
+  aiml_job_id String?
+  created_at  DateTime @default(now())
+  status      String   @default("completed")
+  metadata    Json?
+  users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([aiml_job_id])
+  @@index([preset])
+  @@index([status])
+  @@index([user_id, created_at(sort: Desc)])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model media_assets_backup {
+  id                   String?   @db.Uuid
+  user_id              String?
+  url                  String?
+  result_url           String?
+  source_url           String?
+  resource_type        String?   @db.VarChar(10)
+  visibility           String?
+  allow_remix          Boolean?
+  prompt               String?
+  model                String?
+  mode                 String?
+  env                  String?
+  run_id               String?
+  preset_id            String?
+  parent_asset_id      String?   @db.Uuid
+  strength             Float?    @db.Real
+  tags                 String[]
+  public_id            String?
+  folder               String?
+  bytes                Int?
+  width                Int?
+  height               Int?
+  duration             Float?    @db.Real
+  meta                 Json?
+  created_at           DateTime? @db.Timestamptz(6)
+  updated_at           DateTime? @db.Timestamptz(6)
+  final_url            String?
+  cloudinary_public_id String?
+  media_type           String?
+  is_public            Boolean?
+  status               String?
+  preset_key           String?
+  source_asset_id      String?
+  negative_prompt      String?
+
+  @@ignore
+}
+
+model missing_table {
+  id         String    @id
+  name       String?
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model presets_config {
+  id                     String   @id
+  preset_key             String   @unique
+  preset_name            String
+  preset_description     String?
+  preset_category        String?
+  preset_prompt          String
+  preset_negative_prompt String?
+  preset_strength        Float?   @default(0.8)
+  preset_rotation_index  Int
+  preset_week            Int?
+  is_active              Boolean? @default(true)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @default(now())
+
+  @@index([is_active], map: "presets_config_active_idx")
+  @@index([preset_key])
+  @@index([preset_rotation_index], map: "presets_config_rotation_index_idx")
+  @@index([preset_week], map: "presets_config_week_idx")
+}
+
+model presets_media {
+  id                     String   @id
+  user_id                String
+  image_url              String
+  source_url             String
+  prompt                 String
+  preset                 String
+  run_id                 String   @unique
+  aiml_job_id            String?
+  created_at             DateTime @default(now())
+  status                 String   @default("completed")
+  preset_week            Int?
+  preset_rotation_index  Int?
+  metadata               Json?
+  is_currently_available Boolean? @default(true)
+  users                  User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([aiml_job_id])
+  @@index([preset])
+  @@index([status])
+  @@index([user_id, created_at(sort: Desc)])
 }
