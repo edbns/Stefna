@@ -25,12 +25,12 @@ model User {
   avatarUrl                                                 String?                 @map("avatar_url")
   assets                                                    assets[]
   creditTransactions                                        CreditTransaction[]
-  custom_prompt_media                                       custom_prompt_media[]
-  emotion_mask_media                                        emotion_mask_media[]
-  ghibli_reaction_media                                     ghibli_reaction_media[]
-  neoGlitchMedia                                            NeoGlitchMedia[]
+  customPromptMedia                                         customPromptMedia[]
+  emotionMaskMedia                                          emotionMaskMedia[]
+  ghibliReactionMedia                                       ghibliReactionMedia[]
+  neoGlitchMedia                                            neoGlitchMedia[]
   notifications                                             Notification[]
-  presets_media                                             presets_media[]
+  presetsMedia                                              presetsMedia[]
   referral_signups_referral_signups_new_user_idTousers      ReferralSignup?         @relation("referral_signups_new_user_idTousers")
   referral_signups_referral_signups_referrer_user_idTousers ReferralSignup[]        @relation("referral_signups_referrer_user_idTousers")
   user_credits                                              UserCredits?
@@ -84,7 +84,7 @@ model Notification {
   @@map("notifications")
 }
 
-model NeoGlitchMedia {
+model neoGlitchMedia {
   id             String   @id @default(cuid())
   userId         String   @map("user_id")
   imageUrl       String   @map("image_url")
@@ -169,7 +169,7 @@ model assets {
   @@index([user_id], map: "idx_assets_user_id")
 }
 
-model custom_prompt_media {
+model customPromptMedia {
   id          String   @id
   user_id     String
   image_url   String
@@ -189,7 +189,7 @@ model custom_prompt_media {
   @@index([user_id, created_at(sort: Desc)])
 }
 
-model emotion_mask_media {
+model emotionMaskMedia {
   id          String   @id
   user_id     String
   image_url   String
@@ -209,7 +209,7 @@ model emotion_mask_media {
   @@index([user_id, created_at(sort: Desc)])
 }
 
-model ghibli_reaction_media {
+model ghibliReactionMedia {
   id          String   @id
   user_id     String
   image_url   String
@@ -296,7 +296,7 @@ model presets_config {
   @@index([preset_week], map: "presets_config_week_idx")
 }
 
-model presets_media {
+model presetsMedia {
   id                     String   @id
   user_id                String
   image_url              String
