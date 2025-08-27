@@ -2325,7 +2325,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
                   kind === 'emotionmask' ? 'emotion-mask' : 
                   kind === 'ghiblireact' ? 'ghibli-reaction' : 'presets',
             prompt: effectivePrompt,
-            presetKey: kind === 'preset' ? (options?.presetId || selectedPreset) : 'default',
+            presetKey: kind === 'preset' ? (options?.presetId || selectedPreset) : 
+                      kind === 'ghiblireact' ? (generationMeta?.ghibliReactionPresetId || 'ghibli_default') :
+                      kind === 'emotionmask' ? (generationMeta?.emotionMaskPresetId || 'emotion_default') :
+                      kind === 'custom' ? 'custom_prompt' : 'default',
             sourceAssetId: sourceUrl,
             userId: authService.getCurrentUser()?.id || '',
             runId: runId,
