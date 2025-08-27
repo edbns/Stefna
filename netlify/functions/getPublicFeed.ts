@@ -205,12 +205,12 @@ exports.handler = async (event) => {
           },
           select: {
             id: true,
-            user_id: true,
-            image_url: true,
+            userId: true,
+            imageUrl: true,
             prompt: true,
             preset: true,
             status: true,
-            created_at: true,
+            createdAt: true,
             users: {
               select: {
                 id: true,
@@ -220,7 +220,7 @@ exports.handler = async (event) => {
             }
           },
           orderBy: {
-            created_at: 'desc'
+            createdAt: 'desc'
           }
         }),
         prisma.emotionMaskMedia.findMany({
@@ -230,12 +230,12 @@ exports.handler = async (event) => {
           },
           select: {
             id: true,
-            user_id: true,
-            image_url: true,
+            userId: true,
+            imageUrl: true,
             prompt: true,
             preset: true,
             status: true,
-            created_at: true,
+            createdAt: true,
             users: {
               select: {
                 id: true,
@@ -245,7 +245,7 @@ exports.handler = async (event) => {
             }
           },
           orderBy: {
-            created_at: 'desc'
+            createdAt: 'desc'
           }
         }),
         prisma.presetsMedia.findMany({
@@ -255,12 +255,12 @@ exports.handler = async (event) => {
           },
           select: {
             id: true,
-            user_id: true,
-            image_url: true,
+            userId: true,
+            imageUrl: true,
             prompt: true,
             preset: true,
             status: true,
-            created_at: true,
+            createdAt: true,
             users: {
               select: {
                 id: true,
@@ -270,7 +270,7 @@ exports.handler = async (event) => {
             }
           },
           orderBy: {
-            created_at: 'desc'
+            createdAt: 'desc'
           }
         }),
         prisma.customPromptMedia.findMany({
@@ -280,12 +280,12 @@ exports.handler = async (event) => {
           },
           select: {
             id: true,
-            user_id: true,
-            image_url: true,
+            userId: true,
+            imageUrl: true,
             prompt: true,
             preset: true,
             status: true,
-            created_at: true,
+            createdAt: true,
             users: {
               select: {
                 id: true,
@@ -295,7 +295,7 @@ exports.handler = async (event) => {
             }
           },
           orderBy: {
-            created_at: 'desc'
+            createdAt: 'desc'
           }
         }),
         prisma.neoGlitchMedia.findMany({
@@ -350,10 +350,10 @@ exports.handler = async (event) => {
       
       // 🚨 DEBUG: Check for potential duplicates
       const allImageUrls = [
-        ...ghibliReactionMedia.map((item: any) => ({ url: item.image_url, source: 'ghibliReactionMedia', id: item.id })),
-        ...emotionMaskMedia.map((item: any) => ({ url: item.image_url, source: 'emotionMaskMedia', id: item.id })),
-        ...presetsMedia.map((item: any) => ({ url: item.image_url, source: 'presetsMedia', id: item.id })),
-        ...customPromptMedia.map((item: any) => ({ url: item.image_url, source: 'customPromptMedia', id: item.id })),
+        ...ghibliReactionMedia.map((item: any) => ({ url: item.imageUrl, source: 'ghibliReactionMedia', id: item.id })),
+        ...emotionMaskMedia.map((item: any) => ({ url: item.imageUrl, source: 'emotionMaskMedia', id: item.id })),
+        ...presetsMedia.map((item: any) => ({ url: item.imageUrl, source: 'presetsMedia', id: item.id })),
+        ...customPromptMedia.map((item: any) => ({ url: item.imageUrl, source: 'customPromptMedia', id: item.id })),
         ...neoGlitchMedia.map((item: any) => ({ url: item.imageUrl, source: 'neoGlitchMedia', id: item.id })),
         ...storyMedia.map((item: any) => ({ url: item.photos?.[0]?.imageUrl || '', source: 'storyMedia', id: item.id }))
       ];
@@ -370,19 +370,19 @@ exports.handler = async (event) => {
       // Transform all media from new dedicated tables to feed format
       const ghibliReactionItems = ghibliReactionMedia.map(item => ({
         id: item.id,
-        userId: item.user_id,
+        userId: item.userId,
         user: item.users,
-        finalUrl: item.image_url,
+        finalUrl: item.imageUrl,
         prompt: item.prompt,
         presetKey: item.preset,
         type: 'ghibli-reaction',
-        createdAt: item.created_at
+        createdAt: item.createdAt
       }));
 
       const emotionMaskItems = emotionMaskMedia.map(item => ({
         id: item.id,
         userId: item.userId,
-        user: item.user,
+        user: item.users,
         finalUrl: item.imageUrl,
         prompt: item.prompt,
         presetKey: item.preset,
@@ -392,24 +392,24 @@ exports.handler = async (event) => {
 
       const presetsItems = presetsMedia.map(item => ({
         id: item.id,
-        userId: item.user_id,
+        userId: item.userId,
         user: item.users,
-        finalUrl: item.image_url,
+        finalUrl: item.imageUrl,
         prompt: item.prompt,
         presetKey: item.preset,
         type: 'presets',
-        createdAt: item.created_at
+        createdAt: item.createdAt
       }));
 
       const customPromptItems = customPromptMedia.map(item => ({
         id: item.id,
-        userId: item.user_id,
+        userId: item.userId,
         user: item.users,
-        finalUrl: item.image_url,
+        finalUrl: item.imageUrl,
         prompt: item.prompt,
         presetKey: item.preset,
         type: 'custom-prompt',
-        createdAt: item.created_at
+        createdAt: item.createdAt
       }));
 
       // Transform Neo Tokyo Glitch media to feed format
