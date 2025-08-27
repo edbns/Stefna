@@ -95,6 +95,7 @@ model neoGlitchMedia {
   stabilityJobId String?  @map("stability_job_id")
   createdAt      DateTime @default(now()) @map("created_at")
   status         String   @default("completed")
+  metadata       Json?
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
@@ -179,6 +180,7 @@ model customPromptMedia {
   aiml_job_id String?
   created_at  DateTime @default(now())
   status      String   @default("completed")
+  metadata    Json?
   users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([aiml_job_id])
@@ -199,6 +201,7 @@ model emotionMaskMedia {
   aiml_job_id String?
   created_at  DateTime @default(now())
   status      String   @default("completed")
+  metadata    Json?
   users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([aiml_job_id])
@@ -219,6 +222,7 @@ model ghibliReactionMedia {
   aiml_job_id String?
   created_at  DateTime @default(now())
   status      String   @default("completed")
+  metadata    Json?
   users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([aiml_job_id])
@@ -308,6 +312,7 @@ model presetsMedia {
   status                 String   @default("completed")
   preset_week            Int?
   preset_rotation_index  Int?
+  metadata               Json?
   is_currently_available Boolean? @default(true)
   users                  User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
