@@ -187,6 +187,7 @@ model customPromptMedia {
   @@index([preset])
   @@index([status])
   @@index([user_id, created_at(sort: Desc)])
+  @@map("custom_prompt_media")
 }
 
 model emotionMaskMedia {
@@ -207,6 +208,7 @@ model emotionMaskMedia {
   @@index([preset])
   @@index([status])
   @@index([user_id, created_at(sort: Desc)])
+  @@map("emotion_mask_media")
 }
 
 model ghibliReactionMedia {
@@ -227,6 +229,7 @@ model ghibliReactionMedia {
   @@index([preset])
   @@index([status])
   @@index([user_id, created_at(sort: Desc)])
+  @@map("ghibli_reaction_media")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -317,4 +320,5 @@ model presetsMedia {
   @@index([preset])
   @@index([status])
   @@index([user_id, created_at(sort: Desc)])
+  @@map("presets_media")
 }
