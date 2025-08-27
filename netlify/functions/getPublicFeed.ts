@@ -170,13 +170,13 @@ exports.handler = async (event) => {
           where: { status: 'completed' },
           select: {
             id: true,
-            userId: true,
-            imageUrl: true,
+            user_id: true,
+            image_url: true,
             prompt: true,
             preset: true,
             status: true,
-            createdAt: true,
-            user: {
+            created_at: true,
+            users: {
               select: {
                 id: true,
                 email: true,
@@ -185,20 +185,20 @@ exports.handler = async (event) => {
             }
           },
           orderBy: {
-            createdAt: 'desc'
+            created_at: 'desc'
           }
         }),
         prisma.emotionMaskMedia.findMany({
           where: { status: 'completed' },
           select: {
             id: true,
-            userId: true,
-            imageUrl: true,
+            user_id: true,
+            image_url: true,
             prompt: true,
             preset: true,
             status: true,
-            createdAt: true,
-            user: {
+            created_at: true,
+            users: {
               select: {
                 id: true,
                 email: true,
@@ -207,20 +207,20 @@ exports.handler = async (event) => {
             }
           },
           orderBy: {
-            createdAt: 'desc'
+            created_at: 'desc'
           }
         }),
         prisma.presetsMedia.findMany({
           where: { status: 'completed' },
           select: {
             id: true,
-            userId: true,
-            imageUrl: true,
+            user_id: true,
+            image_url: true,
             prompt: true,
             preset: true,
             status: true,
-            createdAt: true,
-            user: {
+            created_at: true,
+            users: {
               select: {
                 id: true,
                 email: true,
@@ -229,20 +229,20 @@ exports.handler = async (event) => {
             }
           },
           orderBy: {
-            createdAt: 'desc'
+            created_at: 'desc'
           }
         }),
         prisma.customPromptMedia.findMany({
           where: { status: 'completed' },
           select: {
             id: true,
-            userId: true,
-            imageUrl: true,
+            user_id: true,
+            image_url: true,
             prompt: true,
             preset: true,
             status: true,
-            createdAt: true,
-            user: {
+            created_at: true,
+            users: {
               select: {
                 id: true,
                 email: true,
@@ -251,7 +251,7 @@ exports.handler = async (event) => {
             }
           },
           orderBy: {
-            createdAt: 'desc'
+            created_at: 'desc'
           }
         }),
         prisma.neoGlitchMedia.findMany({
@@ -266,7 +266,7 @@ exports.handler = async (event) => {
             }
           },
           orderBy: {
-            createdAt: 'desc'
+            created_at: 'desc'
           }
         })
       ]);
@@ -279,10 +279,10 @@ exports.handler = async (event) => {
       
       // 🚨 DEBUG: Check for potential duplicates
       const allImageUrls = [
-        ...ghibliReactionMedia.map(item => ({ url: item.imageUrl, source: 'ghibliReactionMedia', id: item.id })),
-        ...emotionMaskMedia.map(item => ({ url: item.imageUrl, source: 'emotionMaskMedia', id: item.id })),
-        ...presetsMedia.map(item => ({ url: item.imageUrl, source: 'presetsMedia', id: item.id })),
-        ...customPromptMedia.map(item => ({ url: item.imageUrl, source: 'customPromptMedia', id: item.id })),
+        ...ghibliReactionMedia.map(item => ({ url: item.image_url, source: 'ghibliReactionMedia', id: item.id })),
+        ...emotionMaskMedia.map(item => ({ url: item.image_url, source: 'emotionMaskMedia', id: item.id })),
+        ...presetsMedia.map(item => ({ url: item.image_url, source: 'presetsMedia', id: item.id })),
+        ...customPromptMedia.map(item => ({ url: item.image_url, source: 'customPromptMedia', id: item.id })),
         ...neoGlitchMedia.map(item => ({ url: item.imageUrl, source: 'neoGlitchMedia', id: item.id }))
       ];
       
@@ -298,13 +298,13 @@ exports.handler = async (event) => {
       // Transform all media from new dedicated tables to feed format
       const ghibliReactionItems = ghibliReactionMedia.map(item => ({
         id: item.id,
-        userId: item.userId,
-        user: item.user,
-        finalUrl: item.imageUrl,
+        userId: item.user_id,
+        user: item.users,
+        finalUrl: item.image_url,
         prompt: item.prompt,
         presetKey: item.preset,
         type: 'ghibli-reaction',
-        createdAt: item.createdAt
+        createdAt: item.created_at
       }));
 
       const emotionMaskItems = emotionMaskMedia.map(item => ({
