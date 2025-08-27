@@ -87,7 +87,7 @@ export const handler: Handler = async (event) => {
     });
     
     // 3) Check if user exists
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { email: email.toLowerCase() }
     });
     

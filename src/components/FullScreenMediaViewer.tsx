@@ -145,16 +145,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
         </div>
       </div>
 
-      {/* Bottom Info - Prompt if available */}
-      {current.prompt && (
-        <div className="absolute bottom-4 left-4 right-4 z-50">
-          <div className="bg-black/50 backdrop-blur-sm rounded-lg p-3 max-w-2xl mx-auto">
-            <p className="text-white/90 text-sm text-center leading-relaxed break-words">
-              {current.prompt}
-            </p>
-          </div>
-        </div>
-      )}
+
     </div>
   )
 }
