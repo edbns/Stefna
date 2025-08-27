@@ -458,7 +458,7 @@ exports.handler = async (event) => {
         totalCount: uniqueFeedItems.length,
         // 🆕 NEW: Detailed breakdown for debugging
         breakdown: {
-          totalMediaAssets: publicMedia.length,
+          totalMediaAssets: ghibliReactionMedia.length + emotionMaskMedia.length + presetsMedia.length + customPromptMedia.length + neoGlitchMedia.length,
           totalNeoGlitch: neoGlitchMedia.length,
           combinedBeforePagination: allFeedItems.length,
           paginatedResult: feedItems.length,
