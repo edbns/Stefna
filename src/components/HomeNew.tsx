@@ -983,7 +983,11 @@ const HomeNew: React.FC = () => {
                   generationTime: 0, 
                   modelVersion: '1.0',
                   presetKey: item.presetKey,
-                  presetType: item.type
+                  presetType: item.type,
+                  // Story Time video metadata
+                  videoResults: item.metadata?.videoResults,
+                  totalVideos: item.metadata?.totalVideos,
+                  successfulVideos: item.metadata?.successfulVideos
                 },
                 cloudinaryPublicId: item.cloudinaryPublicId,
                 mediaType: item.mediaType,
@@ -1150,7 +1154,11 @@ const HomeNew: React.FC = () => {
               generationTime: 0, 
               modelVersion: '1.0',
               presetKey: item.presetKey, // Add preset key from backend
-              presetType: item.type // Add preset type from backend
+              presetType: item.type, // Add preset type from backend
+              // Story Time video metadata
+              videoResults: item.metadata?.videoResults,
+              totalVideos: item.metadata?.totalVideos,
+              successfulVideos: item.metadata?.successfulVideos
             },
             // Store additional fields needed for functionality
             cloudinaryPublicId: item.cloudinaryPublicId,

@@ -441,7 +441,8 @@ exports.handler = async (event) => {
           id: item.id,
           preset: item.preset,
           photoCount: item.photos?.length || 0,
-          type: 'story-time'
+          type: 'story-time',
+          hasVideos: item.metadata?.videoResults?.length > 0
         });
         
         return {
@@ -449,7 +450,7 @@ exports.handler = async (event) => {
           userId: item.userId,
           user: item.user,
           finalUrl: item.photos?.[0]?.imageUrl || '', // Use first photo as main image
-          mediaType: 'image',
+          mediaType: item.metadata?.videoResults?.length > 0 ? 'video' : 'image',
           prompt: item.storyText || item.description || 'AI-generated story',
           presetKey: item.preset,
           status: item.status,
@@ -459,7 +460,10 @@ exports.handler = async (event) => {
             presetKey: item.preset,
             presetType: 'story-time',
             storyText: item.storyText,
-            photoCount: item.photos?.length || 0
+            photoCount: item.photos?.length || 0,
+            videoResults: item.metadata?.videoResults || [],
+            totalVideos: item.metadata?.totalVideos || 0,
+            successfulVideos: item.metadata?.successfulVideos || 0
           }
         };
       });

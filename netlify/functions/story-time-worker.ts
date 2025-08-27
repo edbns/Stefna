@@ -6,7 +6,8 @@ import { PrismaClient } from '@prisma/client';
 import { initCloudinary } from './_cloudinary';
 
 const AIML_API_KEY = process.env.AIML_API_KEY!;
-const AIML_ENDPOINT = 'https://api.aimlapi.com/v1/images/generations';
+const AIML_IMAGE_ENDPOINT = 'https://api.aimlapi.com/v1/images/generations';
+const AIML_VIDEO_ENDPOINT = 'https://api.aimlapi.com/v2/generate/video/kling/generation';
 
 // Story Time presets with fun themes
 const STORY_PRESETS = {
@@ -41,6 +42,63 @@ const STORY_PRESETS = {
     negative: "home, familiar, routine, boring, static, indoor"
   }
 };
+
+// Generate Image-to-Video using Kling V1.6
+async function generateImageToVideo(imageUrl: string, prompt: string, preset: string): Promise<string> {
+  try {
+    console.log(`🎬 [Story Time] Generating video from image: ${imageUrl.substring(0, 50)}...`);
+    
+    const requestBody = {
+      prompt: prompt,
+      image_url: imageUrl,
+      negative_prompt: STORY_PRESETS[preset as keyof typeof STORY_PRESETS]?.negative || "boring, static, low quality",
+      num_frames: 16, // 16 frames for smooth video
+      fps: 8, // 8 FPS for cinematic feel
+      guidance_scale: 7.5, // Balanced creativity vs adherence
+      num_inference_steps: 20, // Good quality vs speed balance
+      height: 512, // Standard video height
+      width: 512, // Standard video width
+      seed: Math.floor(Math.random() * 1000000) // Random seed for variety
+    };
+
+    console.log(`🎬 [Story Time] Sending request to Kling V1.6:`, {
+      endpoint: AIML_VIDEO_ENDPOINT,
+      prompt: requestBody.prompt.substring(0, 100) + '...',
+      imageUrl: imageUrl.substring(0, 50) + '...'
+    });
+
+    const response = await fetch(AIML_VIDEO_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${AIML_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ [Story Time] Kling V1.6 API error:`, {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
+      throw new Error(`Kling V1.6 API error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log(`✅ [Story Time] Kling V1.6 video generation successful:`, {
+      jobId: result.id,
+      status: result.status
+    });
+
+    // Return the video URL or job ID for status checking
+    return result.video_url || result.id || 'pending';
+  } catch (error) {
+    console.error(`💥 [Story Time] Image-to-Video generation failed:`, error);
+    throw error;
+  }
+}
 
 // Process Story Time job: analyze photos and create AI story
 async function processStoryTimeJob(job: any, storyId: string) {
@@ -90,7 +148,53 @@ async function processStoryTimeJob(job: any, storyId: string) {
       });
     }
     
-    // 2) Generate the overall story narrative
+    // 2) Generate videos from each photo using Kling V1.6
+    console.log(`🎬 [Story Time] Generating videos from photos...`);
+    
+    const videoResults: Array<{ photoId: string, videoUrl: string, status: string }> = [];
+    
+    for (let i = 0; i < job.photos.length; i++) {
+      const photo = job.photos[i];
+      console.log(`🎬 [Story Time] Generating video for photo ${i + 1}/${job.photos.length}`);
+      
+      try {
+        // Create enhanced prompt for video generation
+        const videoPrompt = `${STORY_PRESETS[job.preset as keyof typeof STORY_PRESETS]?.prompt || 'cinematic, engaging'}, ${photoDescriptions[i]}, smooth motion, dynamic camera movement, professional cinematography`;
+        
+        // Generate video using Kling V1.6
+        const videoResult = await generateImageToVideo(photo.imageUrl, videoPrompt, job.preset);
+        
+        videoResults.push({
+          photoId: photo.id,
+          videoUrl: videoResult,
+          status: 'generated'
+        });
+        
+        // Update the StoryPhoto record with the video URL
+        await prisma.storyPhoto.update({
+          where: { id: photo.id },
+          data: { videoUrl: videoResult }
+        });
+        
+        console.log(`✅ [Story Time] Video generated for photo ${i + 1}: ${videoResult.substring(0, 50)}...`);
+      } catch (error) {
+        console.error(`❌ [Story Time] Failed to generate video for photo ${i + 1}:`, error);
+        videoResults.push({
+          photoId: photo.id,
+          videoUrl: '',
+          status: 'failed'
+        });
+      }
+      
+      // Update progress (50-80%)
+      const progress = Math.round(((i + 1) / job.photos.length) * 30) + 50;
+      await prisma.story.update({
+        where: { id: storyId },
+        data: { progress }
+      });
+    }
+    
+    // 3) Generate the overall story narrative
     console.log(`📝 [Story Time] Generating story narrative...`);
     
     const storyPrompt = `Create a compelling ${job.preset} story that connects these ${job.photos.length} photos. 
@@ -110,17 +214,17 @@ async function processStoryTimeJob(job: any, storyId: string) {
     
     And so, our ${job.preset} journey continues, with each moment captured in time, waiting to be shared with the world. ✨`;
     
-    // Update progress to 80%
+    // Update progress to 90%
     await prisma.story.update({
       where: { id: storyId },
       data: { 
-        progress: 80,
+        progress: 90,
         storyText: storyNarrative
       }
     });
     
-    // 3) Finalize the story
-    console.log(`✨ [Story Time] Finalizing story...`);
+    // 4) Finalize the story with video results
+    console.log(`✨ [Story Time] Finalizing story with ${videoResults.filter(v => v.status === 'generated').length} videos...`);
     
     // TODO: Final IPA check before completing the story
     // This would verify that all generated content maintains identity preservation
@@ -131,7 +235,13 @@ async function processStoryTimeJob(job: any, storyId: string) {
       data: { 
         status: 'completed',
         progress: 100,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        metadata: {
+          videoResults: videoResults,
+          totalVideos: videoResults.length,
+          successfulVideos: videoResults.filter(v => v.status === 'generated').length,
+          preset: job.preset
+        }
       }
     });
     

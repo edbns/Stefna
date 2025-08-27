@@ -334,6 +334,7 @@ model Story {
   status      String      @default("pending") // pending, processing, completed, failed
   progress    Int         @default(0) // 0-100
   storyText   String?     @map("story_text") // AI-generated story narrative
+  metadata    Json?       // Store video generation results and other metadata
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
   photos      StoryPhoto[]
@@ -350,6 +351,7 @@ model StoryPhoto {
   storyId   String   @map("story_id")
   order     Int      // sequence in the story (1, 2, 3...)
   imageUrl  String   @map("image_url")
+  videoUrl  String?  @map("video_url") // Generated video URL from Kling V1.6
   prompt    String?  // AI-generated description for this photo
   createdAt DateTime @default(now()) @map("created_at")
   story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)

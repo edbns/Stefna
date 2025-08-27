@@ -40,6 +40,10 @@ export interface UserMedia {
     optionKey?: string | null;     // e.g. 'vhs_1980s', 'four_seasons/spring', 'colorize_bw'
     storyKey?: string | null;      // e.g. 'four_seasons'
     storyLabel?: string | null;    // e.g. 'Spring'
+    // Story Time video metadata
+    videoResults?: Array<{ photoId: string, videoUrl: string, status: string }>;
+    totalVideos?: number;
+    successfulVideos?: number;
   }
   // Optional expiration for guest media
   expiresAt?: string

@@ -194,6 +194,24 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         onMouseEnter={(e) => e.currentTarget.play()}
                         onMouseLeave={(e) => e.currentTarget.pause()}
                       />
+                  ) : item.type === 'story-time' && item.metadata?.videoResults && item.metadata.videoResults.length > 0 ? (
+                      // Story Time with videos - show first video as main content
+                      <div className="relative">
+                        <video
+                          src={item.metadata.videoResults[0]?.videoUrl || item.finalUrl}
+                          className="w-full h-auto object-cover"
+                          muted
+                          loop
+                          onMouseEnter={(e) => e.currentTarget.play()}
+                          onMouseLeave={(e) => e.currentTarget.pause()}
+                        />
+                        {/* Video count indicator */}
+                        {item.metadata.videoResults.length > 1 && (
+                          <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 text-white text-xs font-semibold">
+                            {item.metadata.videoResults.length} videos
+                          </div>
+                        )}
+                      </div>
                   ) : (
                       <img
                         src={item.url}
