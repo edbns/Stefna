@@ -223,8 +223,11 @@ export const handler: Handler = async (event) => {
       console.log('✅ [GhibliReaction] No existing run found, proceeding with new generation');
     }
 
-    // Validate preset key
-    const validPresets = ['ghibli_reaction'];
+    // Validate preset key - accept all Ghibli Reaction preset values
+    const validPresets = [
+      'ghibli_shock', 'ghibli_blush', 'ghibli_sparkle', 'ghibli_dreamy', 
+      'ghibli_magical', 'ghibli_tears', 'ghibli_reaction', 'ghibli_default'
+    ];
     if (!validPresets.includes(presetKey)) {
       return {
         statusCode: 422,
