@@ -50,61 +50,130 @@ export const handler: Handler = async (event) => {
       offset
     });
 
-    // Fetch user's media using Prisma - both regular media assets and NeoGlitch media
-    const [userMedia, neoGlitchMedia] = await Promise.all([
-      prisma.mediaAsset.findMany({
-        where: {
-          userId: userId
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
+    // Fetch user's media using Prisma - from all new dedicated tables
+    const [ghibliReactionMedia, emotionMaskMedia, presetsMedia, customPromptMedia, neoGlitchMedia] = await Promise.all([
+      prisma.ghibliReactionMedia.findMany({
+        where: { userId: userId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset
+      }),
+      prisma.emotionMaskMedia.findMany({
+        where: { userId: userId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset
+      }),
+      prisma.presetsMedia.findMany({
+        where: { userId: userId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset
+      }),
+      prisma.customPromptMedia.findMany({
+        where: { userId: userId },
+        orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset
       }),
       prisma.neoGlitchMedia.findMany({
-        where: {
-          userId: userId
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
+        where: { userId: userId },
+        orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset
       })
     ]);
 
     console.log('✅ [getUserMedia] Retrieved user media:', {
-      regularMedia: userMedia.length,
-      neoGlitchMedia: neoGlitchMedia.length
+      ghibliReaction: ghibliReactionMedia.length,
+      emotionMask: emotionMaskMedia.length,
+      presets: presetsMedia.length,
+      customPrompt: customPromptMedia.length,
+      neoGlitch: neoGlitchMedia.length
     });
 
-    // 🔍 DEBUG: Log the actual presetKey values from database
-    if (userMedia.length > 0) {
-      console.log('🔍 [getUserMedia] Regular media presetKey values:', userMedia.map(item => ({
-        id: item.id,
-        presetKey: item.presetKey,
-        prompt: item.prompt?.substring(0, 50) + '...'
-      })));
-    }
-
-    // Transform regular media assets
-    const regularMediaItems = userMedia.map(item => ({
+    // Transform Ghibli Reaction media
+    const ghibliReactionItems = ghibliReactionMedia.map(item => ({
       id: item.id,
       userId: item.userId,
-      finalUrl: item.url,
-      mediaType: item.resourceType,
+      finalUrl: item.imageUrl,
+      mediaType: 'image',
       prompt: item.prompt,
-      presetKey: item.presetKey,  // ✅ Use actual presetKey from database
+      presetKey: item.preset,
       status: 'ready',
-      isPublic: item.visibility === 'public',
-      allowRemix: item.allowRemix,
+      isPublic: false,
+      allowRemix: false,
       createdAt: item.createdAt,
-      type: 'media-asset',
-      // Include metadata for preset information
+      type: 'ghibli-reaction',
       metadata: {
-        presetKey: item.presetKey,
-        presetType: 'media-asset',  // ✅ Default to media-asset for regular media
+        presetKey: item.preset,
+        presetType: 'ghibli-reaction',
+        quality: 'high',
+        generationTime: 0,
+        modelVersion: '1.0'
+      }
+    }));
+
+    // Transform Emotion Mask media
+    const emotionMaskItems = emotionMaskMedia.map(item => ({
+      id: item.id,
+      userId: item.userId,
+      finalUrl: item.imageUrl,
+      mediaType: 'image',
+      prompt: item.prompt,
+      presetKey: item.preset,
+      status: 'ready',
+      isPublic: false,
+      allowRemix: false,
+      createdAt: item.createdAt,
+      type: 'emotion-mask',
+      metadata: {
+        presetKey: item.preset,
+        presetType: 'emotion-mask',
+        quality: 'high',
+        generationTime: 0,
+        modelVersion: '1.0'
+      }
+    }));
+
+    // Transform Presets media
+    const presetsItems = presetsMedia.map(item => ({
+      id: item.id,
+      userId: item.userId,
+      finalUrl: item.imageUrl,
+      mediaType: 'image',
+      prompt: item.prompt,
+      presetKey: item.preset,
+      status: 'ready',
+      isPublic: false,
+      allowRemix: false,
+      createdAt: item.createdAt,
+      type: 'presets',
+      metadata: {
+        presetKey: item.preset,
+        presetType: 'presets',
+        quality: 'high',
+        generationTime: 0,
+        modelVersion: '1.0'
+      }
+    }));
+
+    // Transform Custom Prompt media
+    const customPromptItems = customPromptMedia.map(item => ({
+      id: item.id,
+      userId: item.userId,
+      finalUrl: item.imageUrl,
+      mediaType: 'image',
+      prompt: item.prompt,
+      presetKey: item.preset,
+      status: 'ready',
+      isPublic: false,
+      allowRemix: false,
+      createdAt: item.createdAt,
+      type: 'custom-prompt',
+      metadata: {
+        presetKey: item.preset,
+        presetType: 'custom-prompt',
         quality: 'high',
         generationTime: 0,
         modelVersion: '1.0'
@@ -135,7 +204,13 @@ export const handler: Handler = async (event) => {
     }));
 
     // Combine and sort by creation date
-    const allMediaItems = [...regularMediaItems, ...neoGlitchItems]
+    const allMediaItems = [
+      ...ghibliReactionItems, 
+      ...emotionMaskItems, 
+      ...presetsItems, 
+      ...customPromptItems, 
+      ...neoGlitchItems
+    ]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, limit);
 

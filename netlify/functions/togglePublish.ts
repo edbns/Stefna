@@ -56,14 +56,66 @@ export const handler: Handler = async (event) => {
 
     try {
       // Update media asset visibility in database
-      const result = await sql`
-        UPDATE media_assets 
+      // Check all new dedicated tables for the asset
+      let result;
+      
+      // Try ghibli_reaction_media first
+      result = await sql`
+        UPDATE ghibli_reaction_media 
         SET 
-          visibility = ${publish ? 'public' : 'private'},
+          status = ${publish ? 'public' : 'private'},
           updated_at = NOW()
         WHERE id = ${assetId} AND user_id = ${userId}
-        RETURNING id, visibility, updated_at
+        RETURNING id, status as visibility, updated_at
       `;
+      
+      // If not found, try emotion_mask_media
+      if (result.length === 0) {
+        result = await sql`
+          UPDATE emotion_mask_media 
+          SET 
+            status = ${publish ? 'public' : 'private'},
+            updated_at = NOW()
+          WHERE id = ${assetId} AND user_id = ${userId}
+          RETURNING id, status as visibility, updated_at
+        `;
+      }
+      
+      // If not found, try presets_media
+      if (result.length === 0) {
+        result = await sql`
+          UPDATE presets_media 
+          SET 
+            status = ${publish ? 'public' : 'private'},
+            updated_at = NOW()
+          WHERE id = ${assetId} AND user_id = ${userId}
+          RETURNING id, status as visibility, updated_at
+        `;
+      }
+      
+      // If not found, try custom_prompt_media
+      if (result.length === 0) {
+        result = await sql`
+          UPDATE custom_prompt_media 
+          SET 
+            status = ${publish ? 'public' : 'private'},
+            updated_at = NOW()
+          WHERE id = ${assetId} AND user_id = ${userId}
+          RETURNING id, status as visibility, updated_at
+        `;
+      }
+      
+      // If not found, try neo_glitch_media (for backward compatibility)
+      if (result.length === 0) {
+        result = await sql`
+          UPDATE neo_glitch_media 
+          SET 
+            status = ${publish ? 'public' : 'private'},
+            updated_at = NOW()
+          WHERE id = ${assetId} AND user_id = ${userId}
+          RETURNING id, status as visibility, updated_at
+        `;
+      }
 
       if (result.length === 0) {
         return { 
