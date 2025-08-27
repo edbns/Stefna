@@ -212,7 +212,7 @@ const handler: Handler = async (event) => {
             preset: true,
             status: true,
             createdAt: true,
-            users: {
+            user: {
               select: {
                 id: true,
                 email: true,
@@ -237,7 +237,7 @@ const handler: Handler = async (event) => {
             preset: true,
             status: true,
             createdAt: true,
-            users: {
+            user: {
               select: {
                 id: true,
                 email: true,
@@ -262,7 +262,7 @@ const handler: Handler = async (event) => {
             preset: true,
             status: true,
             createdAt: true,
-            users: {
+            user: {
               select: {
                 id: true,
                 email: true,
@@ -287,7 +287,7 @@ const handler: Handler = async (event) => {
             preset: true,
             status: true,
             createdAt: true,
-            users: {
+            user: {
               select: {
                 id: true,
                 email: true,
@@ -351,7 +351,7 @@ const handler: Handler = async (event) => {
       const ghibliReactionItems = ghibliReactionMedia.map(item => ({
         id: item.id,
         userId: item.userId,
-        user: item.users,
+        user: item.user,
         finalUrl: item.imageUrl,
         prompt: item.prompt,
         presetKey: item.preset,
@@ -362,7 +362,7 @@ const handler: Handler = async (event) => {
       const emotionMaskItems = emotionMaskMedia.map(item => ({
         id: item.id,
         userId: item.userId,
-        user: item.users,
+        user: item.user,
         finalUrl: item.imageUrl,
         prompt: item.prompt,
         presetKey: item.preset,
@@ -373,7 +373,7 @@ const handler: Handler = async (event) => {
       const presetsItems = presetsMedia.map(item => ({
         id: item.id,
         userId: item.userId,
-        user: item.users,
+        user: item.user,
         finalUrl: item.imageUrl,
         prompt: item.prompt,
         presetKey: item.preset,
@@ -384,7 +384,7 @@ const handler: Handler = async (event) => {
       const customPromptItems = customPromptMedia.map(item => ({
         id: item.id,
         userId: item.userId,
-        user: item.users,
+        user: item.user,
         finalUrl: item.imageUrl,
         prompt: item.prompt,
         presetKey: item.preset,
