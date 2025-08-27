@@ -78,8 +78,15 @@ export const handler: Handler = async (event) => {
       return json({ ok: false, error: 'Missing action or intent' }, { status: 400 });
     }
     
-    // Validate action values
-    const allowedActions = ['image.gen', 'video.gen', 'mask.gen', 'emotionmask', 'preset', 'presets', 'custom', 'ghiblireact', 'neotokyoglitch'];
+    // Validate action values - updated to include all new generation types
+    const allowedActions = [
+      'image.gen', 'video.gen', 'mask.gen', 
+      'emotionmask', 'emotion_mask_generation',
+      'preset', 'presets', 'presets_generation',
+      'custom', 'custom_prompt_generation',
+      'ghiblireact', 'ghibli_reaction_generation',
+      'neotokyoglitch', 'neo_glitch_generation'
+    ];
     if (!allowedActions.includes(action)) {
       console.error("❌ Invalid action:", action, "Allowed:", allowedActions);
       return json({ ok: false, error: `Invalid action: ${action}. Allowed: ${allowedActions.join(', ')}` }, { status: 500 });
