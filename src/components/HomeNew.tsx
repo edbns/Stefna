@@ -2952,6 +2952,11 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
         clearAllOptionsAfterGeneration();
       }
       
+      // Dispatch generation success event to trigger composer clearing
+      window.dispatchEvent(new CustomEvent('generation-success', {
+        detail: { message: 'Generation completed successfully', mode: kind }
+      }));
+      
       // Handle V2V processing status
       if (isVideoPreview) {
         if (body.status === 'processing' || body.status === 'queued') {
@@ -2967,8 +2972,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
           // Clear all options after successful generation
           clearAllOptionsAfterGeneration();
           
-          // Reset composer state for next upload
-          resetComposerState();
+          // Dispatch generation success event to trigger composer clearing
+          window.dispatchEvent(new CustomEvent('generation-success', {
+            detail: { message: 'Generation completed successfully', mode: kind }
+          }));
           
           // Refresh user media to show the new video
           // TODO: Implement user media refresh
@@ -3035,8 +3042,10 @@ const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(fal
       // Clear all options after generation failure
       clearAllOptionsAfterGeneration();
       
-      // Reset composer state even on failure
-      resetComposerState();
+      // Dispatch generation error event to trigger composer clearing
+      window.dispatchEvent(new CustomEvent('generation-error', {
+        detail: { message: 'Generation failed', mode: kind }
+      }));
       
       endGeneration(genId);
       setNavGenerating(false);
