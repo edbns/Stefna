@@ -97,7 +97,7 @@ export const handler: Handler = async (event) => {
       console.log('🔍 Checking user credit balance before reservation...');
       
       let userCredits = await prisma.userCredits.findUnique({
-        where: { user_id: userId }
+        where: { userId: userId }
       });
       
       // Initialize user credits if they don't exist
@@ -108,9 +108,9 @@ export const handler: Handler = async (event) => {
           // Create new user credits record with starter balance
           userCredits = await prisma.userCredits.create({
             data: {
-              user_id: userId,
-              balance: 30, // Default starter credits
-              updated_at: new Date()
+              userId: userId,
+              credits: 30, // Default starter credits
+              updatedAt: new Date()
             }
           });
           
@@ -126,7 +126,7 @@ export const handler: Handler = async (event) => {
         }
       }
       
-      const currentBalance = userCredits.balance || 0;
+      const currentBalance = userCredits.credits || 0;
       console.log('💰 Current balance:', currentBalance, 'credits, requesting:', cost, 'credits');
       
       // Check if user has insufficient credits
@@ -182,39 +182,37 @@ export const handler: Handler = async (event) => {
       
       console.log('🔒 Credit balance check passed:', currentBalance, '>=', cost);
       
-             // Create credit transaction record
-       const creditTransaction = await prisma.creditTransaction.create({
-         data: {
-           userId: userId,
-           requestId: request_id,
-           action: action,
-           amount: -cost, // Negative amount for credit usage
-           status: "reserved",
-           createdAt: new Date()
-         }
-       });
+      // Create credit transaction record
+      const creditTransaction = await prisma.creditTransaction.create({
+        data: {
+          userId: userId,
+          reason: action,
+          amount: -cost, // Negative amount for credit usage
+          env: "production"
+        }
+      });
       
       console.log('💰 Credit transaction created:', creditTransaction.id);
       
       // Update user credits balance
       const updatedCredits = await prisma.userCredits.update({
-        where: { user_id: userId },
+        where: { userId: userId },
         data: {
-          balance: currentBalance - cost,
-          updated_at: new Date()
+          credits: currentBalance - cost,
+          updatedAt: new Date()
         }
       });
       
-      console.log('💰 Balance updated:', updatedCredits.balance);
+      console.log('💰 Credits updated:', updatedCredits.credits);
         
-        // Return success with request_id for finalization
-        return json({
-          ok: true,
-          request_id: request_id,
-          balance: updatedCredits.balance,
-          cost: cost,
-          action: action
-        }, { status: 200 });
+      // Return success with request_id for finalization
+      return json({
+        ok: true,
+        request_id: request_id,
+        balance: updatedCredits.credits,
+        cost: cost,
+        action: action
+      }, { status: 200 });
       
     } catch (dbError) {
       console.error("💥 DB reservation failed:", dbError);
