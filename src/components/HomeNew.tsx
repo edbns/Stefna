@@ -679,6 +679,20 @@ const HomeNew: React.FC = () => {
     
     console.log('✅ File state updated, opening composer')
     setIsComposerOpen(true)
+    
+    // Clear pending file after successful processing
+    setPendingFile(null)
+  }
+
+  const handleUploadAgreementCancel = () => {
+    // Clear pending file and reset file input when agreement is cancelled
+    setPendingFile(null)
+    setShowUploadAgreement(false)
+    
+    // Reset the file input so user can select the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
   }
 
   const measure = () => {
@@ -4787,10 +4801,7 @@ const HomeNew: React.FC = () => {
       {/* Media Upload Agreement Modal */}
       <MediaUploadAgreement
         isOpen={showUploadAgreement}
-        onClose={() => {
-          setShowUploadAgreement(false)
-          setPendingFile(null)
-        }}
+        onClose={handleUploadAgreementCancel}
         onAccept={handleUploadAgreementAccept}
       />
 

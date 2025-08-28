@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from '../utils/motionShim';
-import { AlertTriangle, Shield, FileText, CheckCircle } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 interface MediaUploadAgreementProps {
   isOpen: boolean;
@@ -13,12 +13,32 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
   onClose,
   onAccept
 }) => {
+  const [legalRightsChecked, setLegalRightsChecked] = useState(false);
+  const [contentPolicyChecked, setContentPolicyChecked] = useState(false);
+
+  // Reset checkboxes when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setLegalRightsChecked(false);
+      setContentPolicyChecked(false);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleAccept = () => {
     onAccept();
     onClose();
   };
+
+  const handleClose = () => {
+    // Reset checkboxes when closing
+    setLegalRightsChecked(false);
+    setContentPolicyChecked(false);
+    onClose();
+  };
+
+  const isAcceptDisabled = !legalRightsChecked || !contentPolicyChecked;
 
   return (
     <AnimatePresence>
@@ -52,11 +72,17 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
             <div className="space-y-4 mb-6">
               {/* Legal Rights */}
               <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                <CheckCircle size={20} className="text-green-400 mt-0.5 flex-shrink-0" />
+                <input
+                  type="checkbox"
+                  id="legal-rights"
+                  checked={legalRightsChecked}
+                  onChange={(e) => setLegalRightsChecked(e.target.checked)}
+                  className="mt-1 w-4 h-4 text-white bg-white/10 border-white/30 rounded focus:ring-white/50 focus:ring-2"
+                />
                 <div>
-                  <p className="text-white font-medium text-sm mb-1">
+                  <label htmlFor="legal-rights" className="text-white font-medium text-sm mb-1 cursor-pointer">
                     I confirm that I have the legal rights to upload this media
-                  </p>
+                  </label>
                   <p className="text-white/70 text-xs">
                     I will not upload images of people under 18 or others without their consent, and I hold full rights to the content I upload.
                   </p>
@@ -65,11 +91,17 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
 
               {/* Content Policy */}
               <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                <FileText size={20} className="text-blue-400 mt-0.5 flex-shrink-0" />
+                <input
+                  type="checkbox"
+                  id="content-policy"
+                  checked={contentPolicyChecked}
+                  onChange={(e) => setContentPolicyChecked(e.target.checked)}
+                  className="mt-1 w-4 h-4 text-white bg-white/10 border-white/30 rounded focus:ring-white/50 focus:ring-2"
+                />
                 <div>
-                  <p className="text-white font-medium text-sm mb-1">
+                  <label htmlFor="content-policy" className="text-white font-medium text-sm mb-1 cursor-pointer">
                     I agree to follow Stefna's content policy
-                  </p>
+                  </label>
                   <p className="text-white/70 text-xs">
                     I will not upload media that contains violence, explicit themes, or violates any community guidelines. I understand misuse may result in a ban or loss of access without refund.
                   </p>
@@ -77,27 +109,29 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
               </div>
 
               {/* Creative Tool Notice */}
-              <div className="flex items-start space-x-3 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-                <AlertTriangle size={20} className="text-amber-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-white font-medium text-sm">
-                    This is a creative tool — please use it responsibly.
-                  </p>
-                </div>
+              <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+                <p className="text-white/70 text-sm">
+                  This is a creative tool — please use it responsibly.
+                </p>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="flex justify-end space-x-3">
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="px-6 py-2.5 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAccept}
-                className="px-6 py-2.5 text-black bg-white/90 hover:bg-white backdrop-blur-md rounded-lg transition-colors font-medium"
+                disabled={isAcceptDisabled}
+                className={`px-6 py-2.5 rounded-lg transition-colors font-medium ${
+                  isAcceptDisabled
+                    ? 'text-white/40 bg-white/20 cursor-not-allowed'
+                    : 'text-black bg-white/90 hover:bg-white backdrop-blur-md'
+                }`}
               >
                 Accept
               </button>
