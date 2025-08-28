@@ -61,6 +61,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
 
+  // Debug logging
+  console.log('🛡️ AdminDashboard render:', { isOpen, isAuthenticated })
+
   // Check admin authentication
   useEffect(() => {
     const checkAdminAuth = async () => {

@@ -1449,7 +1449,10 @@ const ProfileScreen: React.FC = () => {
 
           {/* Admin Dashboard Button */}
           <button
-            onClick={() => setShowAdminDashboard(true)}
+            onClick={() => {
+              console.log('🛡️ Admin Dashboard button clicked!')
+              setShowAdminDashboard(true)
+            }}
             className="w-12 h-12 rounded-full border transition-all duration-300 flex items-center justify-center hover:scale-105 relative group bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30"
             aria-label="Admin Dashboard"
             title="Admin Dashboard"
