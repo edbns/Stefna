@@ -63,6 +63,7 @@
     "husky": "^9.1.7",
     "netlify-cli": "^23.3.1",
     "terser": "^5.43.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.0.2"
   }
 }
