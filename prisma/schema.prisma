@@ -8,7 +8,7 @@ datasource db {
 }
 
 model extensions {
-  id      String  @id
+  id      String  @id @default(cuid())
   name    String  @unique
   enabled Boolean @default(true)
 
@@ -16,7 +16,7 @@ model extensions {
 }
 
 model AuthOtp {
-  id        String   @id
+  id        String   @id @default(cuid())
   email     String
   code      String
   used      Boolean  @default(false)
@@ -29,7 +29,7 @@ model AuthOtp {
 }
 
 model CreditTransaction {
-  id        String   @id
+  id        String   @id @default(cuid())
   userId    String  @map("user_id")
   amount    Int
   reason    String
@@ -42,7 +42,7 @@ model CreditTransaction {
 }
 
 model CustomPromptMedia {
-  id         String   @id
+  id         String   @id @default(cuid())
   userId     String   @map("user_id")
   imageUrl   String   @map("image_url")
   prompt     String
@@ -58,13 +58,13 @@ model CustomPromptMedia {
 }
 
 model EmotionMaskMedia {
-  id         String   @id
+  id         String   @id @default(cuid())
   userId     String   @map("user_id")
   imageUrl   String   @map("image_url")
   prompt     String
   preset     String
   status     String   @default("completed")
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @map("created_at")
   metadata   Json?
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -74,13 +74,13 @@ model EmotionMaskMedia {
 }
 
 model GhibliReactionMedia {
-  id         String   @id
+  id         String   @id @default(cuid())
   userId     String   @map("user_id")
   imageUrl   String   @map("image_url")
   prompt     String
   preset     String
   status     String   @default("completed")
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @map("created_at")
   metadata   Json?
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -90,7 +90,7 @@ model GhibliReactionMedia {
 }
 
 model media_assets {
-  id              String   @id
+  id              String   @id @default(cuid())
   owner_id        String
   url             String
   public_id       String?  @unique
@@ -118,7 +118,7 @@ model media_assets {
 }
 
 model NeoGlitchMedia {
-  id               String   @id
+  id               String   @id @default(cuid())
   userId           String   @map("user_id")
   imageUrl         String   @map("image_url")
   sourceUrl        String   @map("source_url")
@@ -139,7 +139,7 @@ model NeoGlitchMedia {
 }
 
 model notifications {
-  id         String   @id
+  id         String   @id @default(cuid())
   user_id    String
   type       String
   title      String
@@ -152,7 +152,7 @@ model notifications {
 }
 
 model preset_config {
-  id          String   @id
+  id          String   @id @default(cuid())
   preset_key  String   @unique
   name        String
   description String   @default("")
@@ -169,13 +169,13 @@ model preset_config {
 }
 
 model PresetsMedia {
-  id         String   @id
+  id         String   @id @default(cuid())
   userId     String   @map("user_id")
   imageUrl   String   @map("image_url")
   prompt     String
   preset     String
   status     String   @default("completed")
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @map("created_at")
   metadata   Json?
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -185,7 +185,7 @@ model PresetsMedia {
 }
 
 model Story {
-  id           String         @id
+  id           String         @id @default(cuid())
   userId       String         @map("user_id")
   title        String?
   description  String?
@@ -194,7 +194,7 @@ model Story {
   progress     Int            @default(0)
   storyText    String?        @map("story_text")
   metadata     Json?
-  createdAt    DateTime       @default(now()) @map("created_at")
+  createdAt    DateTime       @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   storyPhotos  StoryPhoto[]
@@ -206,13 +206,13 @@ model Story {
 }
 
 model StoryPhoto {
-  id        String   @id
+  id        String   @id @default(cuid())
   storyId   String   @map("story_id")
   order     Int
   imageUrl  String   @map("image_url")
   videoUrl  String?  @map("video_url")
   prompt    String?
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @map("created_at")
   story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
   @@index([storyId, order])
@@ -220,7 +220,7 @@ model StoryPhoto {
 }
 
 model UserCredits {
-  id        String   @id
+  id        String   @id @default(cuid())
   userId    String   @unique @map("user_id")
   credits   Int      @default(30)
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -231,10 +231,9 @@ model UserCredits {
 }
 
 model UserSettings {
-  id                 String   @id
+  id                 String   @id @default(cuid())
   userId             String   @unique @map("user_id")
   shareToFeed        Boolean  @default(true) @map("share_to_feed")
-  allowRemix         Boolean  @default(true) @map("allow_remix")
   updatedAt          DateTime @updatedAt @map("updated_at")
   mediaUploadAgreed  Boolean  @default(false) @map("media_upload_agreed")
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -243,11 +242,11 @@ model UserSettings {
 }
 
 model User {
-  id                    String                  @id
+  id                    String                  @id @default(cuid())
   email                 String                  @unique
   name                  String?
   avatarUrl             String?                 @map("avatar_url")
-  createdAt             DateTime                @default(now()) @map("created_at")
+  createdAt             DateTime                @map("created_at")
   updatedAt             DateTime                @updatedAt @map("updated_at")
   creditTransactions    CreditTransaction[]
   customPromptMedia     CustomPromptMedia[]

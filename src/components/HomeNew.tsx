@@ -766,13 +766,15 @@ const HomeNew: React.FC = () => {
 
     // Update user agreement status in local state immediately
     setUserHasAgreed(true)
+    console.log('✅ User agreement status updated to true')
     
-    // Close agreement modal first
-    setShowUploadAgreement(false)
-    setPendingFile(null)
+    // Don't close modal yet - keep it visible during transition
+    // The modal will close automatically when composer is ready via useEffect
 
     // Use the same direct upload logic for consistency
     await handleDirectUpload(file)
+    
+    // Don't close modal here - let useEffect handle it when composer is fully ready
   }
 
   const handleUploadAgreementCancel = () => {
@@ -830,6 +832,20 @@ const HomeNew: React.FC = () => {
       })
     }
   }, [isComposerOpen, previewUrl, selectedFile, isVideoPreview, composerState.mode, composerState.status])
+
+  // Auto-close agreement modal when composer is fully ready
+  useEffect(() => {
+    if (isComposerOpen && showUploadAgreement && pendingFile) {
+      // Wait a bit for the composer to fully render and be visible
+      const timer = setTimeout(() => {
+        console.log('🎭 Composer is ready, closing agreement modal')
+        setShowUploadAgreement(false)
+        setPendingFile(null)
+      }, 300) // Small delay to ensure smooth transition
+      
+      return () => clearTimeout(timer)
+    }
+  }, [isComposerOpen, showUploadAgreement, pendingFile])
 
 
 
@@ -1298,7 +1314,7 @@ const HomeNew: React.FC = () => {
               if (response.ok) {
                 const settings = await response.json()
                 setUserHasAgreed(settings.mediaUploadAgreed || false)
-                console.log('✅ User agreement status loaded:', settings.mediaUploadAgreed)
+                console.log('✅ User agreement status loaded from database:', settings.mediaUploadAgreed)
               }
             } catch (error) {
               console.error('Failed to load user agreement status:', error)

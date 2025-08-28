@@ -21,6 +21,7 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
   const [legalRightsChecked, setLegalRightsChecked] = useState(false);
   const [contentPolicyChecked, setContentPolicyChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAccepting, setIsAccepting] = useState(false);
   
   // Use parent's state instead of local state
   const hasUserAgreed = parentUserHasAgreed;
@@ -38,14 +39,30 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
     }
   }, [isOpen, hasUserAgreed, isLoading]);
 
+  // Debug logging
+  console.log('🔍 MediaUploadAgreement render:', { 
+    isOpen, 
+    hasUserAgreed, 
+    isLoading, 
+    parentUserHasAgreed 
+  });
+
   // If user has already agreed or still loading, don't show the modal
   if (hasUserAgreed || isLoading) {
+    console.log('✅ User has agreed or still loading, not showing modal');
     return null;
   }
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    console.log('❌ Modal not open, not showing');
+    return null;
+  }
 
   const handleAccept = async () => {
+    if (isAccepting) return; // Prevent double-clicks
+    
+    setIsAccepting(true);
+    
     try {
       // Save user agreement preference to database
       const response = await authenticatedFetch('/.netlify/functions/user-settings', {
@@ -64,19 +81,25 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
         if (onAgreementAccepted) {
           onAgreementAccepted();
         }
+        // Don't close modal yet - let parent handle the transition
         onAccept();
-        onClose();
       } else {
         console.error('Failed to save agreement preference');
         // Still proceed with upload even if saving fails
+        if (onAgreementAccepted) {
+          onAgreementAccepted();
+        }
         onAccept();
-        onClose();
       }
     } catch (error) {
       console.error('Error saving agreement preference:', error);
       // Still proceed with upload even if saving fails
+      if (onAgreementAccepted) {
+        onAgreementAccepted();
+      }
       onAccept();
-      onClose();
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -175,14 +198,23 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
               </button>
               <button
                 onClick={handleAccept}
-                disabled={isAcceptDisabled}
-                className={`px-6 py-2.5 rounded-lg transition-colors font-medium ${
+                disabled={isAcceptDisabled || isAccepting}
+                className={`px-6 py-2.5 rounded-lg transition-all duration-200 font-medium ${
                   isAcceptDisabled
                     ? 'text-white/40 bg-white/20 cursor-not-allowed'
-                    : 'text-black bg-white/90 hover:bg-white backdrop-blur-md'
+                    : isAccepting
+                    ? 'text-black bg-white/70 cursor-wait scale-95'
+                    : 'text-black bg-white/90 hover:bg-white hover:scale-105 active:scale-95 backdrop-blur-md shadow-lg hover:shadow-xl'
                 }`}
               >
-                Accept
+                {isAccepting ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                    <span>Accepting...</span>
+                  </div>
+                ) : (
+                  'Accept'
+                )}
               </button>
             </div>
           </motion.div>
