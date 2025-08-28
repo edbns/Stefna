@@ -1,5 +1,5 @@
 [build]
-  command = "npm ci && npx prisma generate && npm run build"
+  command = "npm ci && npm run prebuild && npm run build"
   publish = "dist"
   functions = "netlify/functions"
 
@@ -7,20 +7,21 @@
   NODE_VERSION = "20.19.4"
   NPM_FLAGS = "--prefer-offline --no-audit"
   VITE_BUILD_OPTIMIZE = "true"
+  PRISMA_GENERATE_DATAPROXY = "false"
 
 # Production context
 [context.production]
-  command = "npm ci && npx prisma generate && npm run build"
+  command = "npm ci && npm run prebuild && npm run build"
   environment = { NODE_ENV = "production" }
 
 # Deploy preview context  
 [context.deploy-preview]
-  command = "npm ci && npx prisma generate && npm run build"
+  command = "npm ci && npm run prebuild && npm run build"
   environment = { NODE_ENV = "preview" }
 
 # Branch deploy context
 [context.branch-deploy]
-  command = "npm ci && npx prisma generate && npm run build"
+  command = "npm ci && npm run prebuild && npm run build"
   environment = { NODE_ENV = "preview" }
 
 # Function optimization

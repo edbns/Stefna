@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run prebuild && vite build",
+    "prebuild": "npx prisma generate",
     "build:fast": "vite build --mode production --minify",
     "build:preview": "vite build --mode preview",
     "preview": "vite preview",
