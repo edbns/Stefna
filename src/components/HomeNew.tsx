@@ -4001,17 +4001,7 @@ const HomeNew: React.FC = () => {
           </div>
         </button>
 
-        {/* Manual Reset Button - for testing composer state reset */}
-        {isAuthenticated && (
-          <button
-            onClick={resetComposerState}
-            className="w-10 h-10 rounded-full bg-gray-600/20 text-white border border-gray-500/30 transition-all duration-300 flex items-center justify-center hover:bg-gray-600/30 hover:scale-105"
-            aria-label="Reset Composer"
-            title="Reset composer state (for testing)"
-          >
-            <X size={16} className="transition-transform duration-200" />
-          </button>
-        )}
+
 
         {/* Login/Profile Button */}
         {!isAuthenticated ? (
