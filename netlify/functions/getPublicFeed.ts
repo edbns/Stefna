@@ -9,6 +9,10 @@ import type { Handler } from '@netlify/functions';
 const prisma = new PrismaClient();
 
 export const handler: Handler = async (event) => {
+  // 🚨 ADDED: Environment variable debugging
+  console.log('🔍 [getPublicFeed] DATABASE_URL is:', process.env.DATABASE_URL);
+  console.log('🔍 [getPublicFeed] NODE_ENV is:', process.env.NODE_ENV);
+  
   // 🚨 ADDED: Runtime Prisma client diagnostics
   console.log('🔍 [getPublicFeed] Prisma client initialized successfully');
   
