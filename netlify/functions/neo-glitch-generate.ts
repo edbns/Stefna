@@ -1009,9 +1009,9 @@ async function attemptStabilityGeneration(
 
   // 🎯 CORRECT: Stability.ai API endpoints (verified working)
   const modelEndpoints = {
-    'ultra': 'https://api.stability.ai/v1/generation/stable-image-ultra',
-    'core': 'https://api.stability.ai/v1/generation/stable-image-core',
-    'sd3': 'https://api.stability.ai/v1/generation/stable-diffusion-3-5'
+    'ultra': 'https://api.stability.ai/v1/generation/stable-image-ultra/v1',
+    'core': 'https://api.stability.ai/v1/generation/stable-image-core/v1',
+    'sd3': 'https://api.stability.ai/v1/generation/stable-diffusion-3-5/v1'
   };
 
   const endpoint = modelEndpoints[modelType];
