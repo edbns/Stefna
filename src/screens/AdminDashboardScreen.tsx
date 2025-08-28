@@ -97,7 +97,15 @@ const AdminDashboardScreen: React.FC = () => {
     }
   }, [adminSecret])
 
+  // Load admin data when authenticated
+  useEffect(() => {
+    if (isAuthenticated && adminSecret) {
+      loadAdminData()
+    }
+  }, [isAuthenticated, adminSecret])
+
   const loadAdminData = async () => {
+    console.log('🔍 [Admin] Loading admin data...')
     setIsLoading(true)
     try {
       // Load users
@@ -112,12 +120,14 @@ const AdminDashboardScreen: React.FC = () => {
         const usersData = await usersResponse.json()
         setUsers(usersData.users || [])
         setStats(usersData.stats || stats)
+        console.log('✅ [Admin] Users loaded:', usersData.users?.length || 0)
       }
 
       // Load presets
+      console.log('🔍 [Admin] Loading presets...')
       await loadPresets()
     } catch (error) {
-      console.error('Failed to load admin data:', error)
+      console.error('❌ [Admin] Failed to load admin data:', error)
     } finally {
       setIsLoading(false)
     }
@@ -198,6 +208,7 @@ const AdminDashboardScreen: React.FC = () => {
 
   // Preset management functions
   const loadPresets = async () => {
+    console.log('🔍 [Admin] Loading presets with secret:', adminSecret ? '***' : 'none')
     try {
       const response = await authenticatedFetch('/.netlify/functions/admin-presets', {
         method: 'GET',
@@ -206,12 +217,17 @@ const AdminDashboardScreen: React.FC = () => {
         }
       })
       
+      console.log('🔍 [Admin] Presets response status:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('🔍 [Admin] Presets data:', data)
         setPresets(data.presets || [])
+      } else {
+        console.error('❌ [Admin] Failed to load presets:', response.status, response.statusText)
       }
     } catch (error) {
-      console.error('Failed to load presets:', error)
+      console.error('❌ [Admin] Failed to load presets:', error)
     }
   }
 
