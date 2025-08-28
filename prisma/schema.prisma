@@ -7,123 +7,82 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Extensions {
-  id      String  @id @default(cuid())
+model extensions {
+  id      String  @id
   name    String  @unique
   enabled Boolean @default(true)
 
   @@map("_extensions")
 }
 
-model PresetConfig {
-  id          String   @id @default(cuid())
-  presetKey   String   @unique @map("preset_key")
-  name        String
-  description String   @default("")
-  strength    Float    @default(1.0)
-  category    String   @default("custom")
-  isEnabled   Boolean  @default(true) @map("is_enabled")
-  isCustom    Boolean  @default(false) @map("is_custom")
-  metadata    Json?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+model auth_otps {
+  id         String   @id
+  email      String
+  code       String
+  used       Boolean  @default(false)
+  expires_at DateTime
+  created_at DateTime @default(now())
 
-  @@index([category, isEnabled])
-  @@index([presetKey])
-  @@map("preset_config")
-}
-
-model User {
-  id                  String                @id @default(cuid())
-  email               String                @unique
-  name                String?
-  avatarUrl           String?               @map("avatar_url")
-  createdAt           DateTime              @default(now()) @map("created_at")
-  updatedAt           DateTime              @updatedAt @map("updated_at")
-  creditTransactions  CreditTransaction[]
-  customPromptMedia   customPromptMedia[]
-  emotionMaskMedia    emotionMaskMedia[]
-  ghibliReactionMedia ghibliReactionMedia[]
-  media_assets        media_assets[]
-  neoGlitchMedia      neoGlitchMedia[]
-  notifications       Notification[]
-  presetsMedia        presetsMedia[]
-  stories             Story[]
-  userCredits         UserCredits?
-  settings            UserSettings?
-
-  @@map("users")
-}
-
-model UserSettings {
-  id                String   @id @default(cuid())
-  userId            String   @unique @map("user_id")
-  shareToFeed       Boolean  @default(true) @map("share_to_feed")
-  allowRemix        Boolean  @default(true) @map("allow_remix")
-  updatedAt         DateTime @updatedAt @map("updated_at")
-  mediaUploadAgreed Boolean  @default(false) @map("media_upload_agreed")
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_settings")
-}
-
-model UserCredits {
-  id        String   @id @default(cuid())
-  userId    String   @unique @map("user_id")
-  credits   Int      @default(30)
-  updatedAt DateTime @updatedAt @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("user_credits")
+  @@index([email, code])
+  @@index([expires_at])
 }
 
 model CreditTransaction {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
+  id        String   @id
+  userId    String  @map("user_id")
   amount    Int
   reason    String
-  env       String   @default("production")
+  env       String  @default("production")
   createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, env, createdAt(sort: Desc)])
   @@map("credits_ledger")
 }
 
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  type      String
-  title     String
-  message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model custom_prompt_media {
+  id         String   @id
+  user_id    String
+  image_url  String
+  prompt     String
+  preset     String
+  status     String   @default("completed")
+  created_at DateTime @default(now())
+  metadata   Json?
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@index([userId, read, createdAt(sort: Desc)])
-  @@map("notifications")
+  @@index([status])
+  @@index([user_id, created_at(sort: Desc)])
 }
 
-model neoGlitchMedia {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  imageUrl       String   @map("image_url")
-  sourceUrl      String   @map("source_url")
-  prompt         String
-  preset         String
-  runId          String   @unique @map("run_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  status         String   @default("completed")
-  stabilityJobId String?  @map("stability_job_id")
-  metadata       Json?
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model emotion_mask_media {
+  id         String   @id
+  user_id    String
+  image_url  String
+  prompt     String
+  preset     String
+  status     String   @default("completed")
+  created_at DateTime @default(now())
+  metadata   Json?
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt(sort: Desc)])
   @@index([status])
-  @@index([preset])
-  @@index([stabilityJobId])
-  @@map("neo_glitch_media")
+  @@index([user_id, created_at(sort: Desc)])
+}
+
+model ghibli_reaction_media {
+  id         String   @id
+  user_id    String
+  image_url  String
+  prompt     String
+  preset     String
+  status     String   @default("completed")
+  created_at DateTime @default(now())
+  metadata   Json?
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([user_id, created_at(sort: Desc)])
 }
 
 model media_assets {
@@ -147,121 +106,152 @@ model media_assets {
   meta            Json?
   created_at      DateTime @default(now())
   updated_at      DateTime
-  users           User     @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [owner_id], references: [id], onDelete: Cascade)
 
   @@index([owner_id, created_at(sort: Desc)])
   @@index([public_id])
   @@index([visibility, created_at(sort: Desc)])
 }
 
-model Story {
-  id          String       @id @default(cuid())
-  userId      String       @map("user_id")
-  title       String?
-  description String?
-  preset      String       @default("auto")
-  status      String       @default("pending")
-  progress    Int          @default(0)
-  storyText   String?      @map("story_text")
-  metadata    Json?
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  photos      StoryPhoto[]
+model neo_glitch_media {
+  id               String   @id
+  user_id          String
+  image_url        String
+  source_url       String
+  prompt           String
+  preset           String
+  run_id           String   @unique
+  created_at       DateTime @default(now())
+  status           String   @default("completed")
+  stability_job_id String?
+  metadata         Json?
+  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
   @@index([preset])
-  @@map("stories")
+  @@index([stability_job_id])
+  @@index([status])
+  @@index([user_id, created_at(sort: Desc)])
 }
 
-model StoryPhoto {
-  id        String   @id @default(cuid())
-  storyId   String   @map("story_id")
-  order     Int
-  imageUrl  String   @map("image_url")
-  videoUrl  String?  @map("video_url")
-  prompt    String?
-  createdAt DateTime @default(now()) @map("created_at")
-  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+model notifications {
+  id         String   @id
+  user_id    String
+  type       String
+  title      String
+  message    String
+  read       Boolean  @default(false)
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@index([storyId, order])
-  @@map("story_photos")
+  @@index([user_id, read, created_at(sort: Desc)])
 }
 
-model ghibliReactionMedia {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  imageUrl  String   @map("image_url")
-  prompt    String
-  preset    String
-  status    String   @default("completed")
-  createdAt DateTime @default(now()) @map("created_at")
-  metadata  Json?
+model preset_config {
+  id          String   @id
+  preset_key  String   @unique
+  name        String
+  description String   @default("")
+  strength    Float    @default(1.0)
+  category    String   @default("custom")
+  is_enabled  Boolean  @default(true)
+  is_custom   Boolean  @default(false)
+  metadata    Json?
+  created_at  DateTime @default(now())
+  updated_at  DateTime
+
+  @@index([category, is_enabled])
+  @@index([preset_key])
+}
+
+model presets_media {
+  id         String   @id
+  user_id    String
+  image_url  String
+  prompt     String
+  preset     String
+  status     String   @default("completed")
+  created_at DateTime @default(now())
+  metadata   Json?
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([user_id, created_at(sort: Desc)])
+}
+
+model stories {
+  id           String         @id
+  user_id      String
+  title        String?
+  description  String?
+  preset       String         @default("auto")
+  status       String         @default("pending")
+  progress     Int            @default(0)
+  story_text   String?
+  metadata     Json?
+  created_at   DateTime       @default(now())
+  updated_at   DateTime
+  user         User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  story_photos story_photos[]
+
+  @@index([preset])
+  @@index([status])
+  @@index([user_id, created_at(sort: Desc)])
+}
+
+model story_photos {
+  id         String   @id
+  story_id   String
+  order      Int
+  image_url  String
+  video_url  String?
+  prompt     String?
+  created_at DateTime @default(now())
+  stories    stories  @relation(fields: [story_id], references: [id], onDelete: Cascade)
+
+  @@index([story_id, order])
+}
+
+model UserCredits {
+  id        String   @id
+  userId    String   @unique @map("user_id")
+  credits   Int      @default(30)
+  updatedAt DateTime @updatedAt @map("updated_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@map("ghibli_reaction_media")
+  @@index([userId])
+  @@map("user_credits")
 }
 
-model emotionMaskMedia {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  imageUrl  String   @map("image_url")
-  prompt    String
-  preset    String
-  status    String   @default("completed")
-  createdAt DateTime @default(now()) @map("created_at")
-  metadata  Json?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model UserSettings {
+  id                 String   @id
+  userId             String   @unique @map("user_id")
+  shareToFeed        Boolean  @default(true) @map("share_to_feed")
+  allowRemix         Boolean  @default(true) @map("allow_remix")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  mediaUploadAgreed  Boolean  @default(false) @map("media_upload_agreed")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@map("emotion_mask_media")
+  @@map("user_settings")
 }
 
-model presetsMedia {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  imageUrl  String   @map("image_url")
-  prompt    String
-  preset    String
-  status    String   @default("completed")
-  createdAt DateTime @default(now()) @map("created_at")
-  metadata  Json?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model User {
+  id                    String                  @id
+  email                 String                  @unique
+  name                  String?
+  avatarUrl             String?                 @map("avatar_url")
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+  creditTransactions    CreditTransaction[]
+  customPromptMedia     custom_prompt_media[]
+  emotionMaskMedia      emotion_mask_media[]
+  ghibliReactionMedia   ghibli_reaction_media[]
+  mediaAssets           media_assets[]
+  neoGlitchMedia        neo_glitch_media[]
+  notifications         notifications[]
+  presetsMedia          presets_media[]
+  stories               stories[]
+  userCredits           UserCredits?
+  userSettings          UserSettings?
 
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@map("presets_media")
-}
-
-model customPromptMedia {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  imageUrl  String   @map("image_url")
-  prompt    String
-  preset    String
-  status    String   @default("completed")
-  createdAt DateTime @default(now()) @map("created_at")
-  metadata  Json?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@map("custom_prompt_media")
-}
-
-model authOtp {
-  id        String   @id @default(cuid())
-  email     String
-  code      String
-  used      Boolean  @default(false)
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([email, code])
-  @@index([expiresAt])
-  @@map("auth_otps")
+  @@map("users")
 }
