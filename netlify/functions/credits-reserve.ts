@@ -186,7 +186,9 @@ export const handler: Handler = async (event) => {
       const creditTransaction = await prisma.creditTransaction.create({
         data: {
           userId: userId,
-          reason: action,
+          action: action, // ✅ REQUIRED: Database expects this (NOT NULL)
+          status: "completed", // ✅ REQUIRED: Database expects this (NOT NULL)
+          reason: action, // ✅ OPTIONAL: Additional context (nullable)
           amount: -cost, // Negative amount for credit usage
           env: "production"
         }

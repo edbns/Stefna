@@ -27,6 +27,61 @@ cloudinary.config({
 
 const db = new PrismaClient();
 
+// Background generation function that can be called from start-glitch-job
+export async function startBackgroundGeneration(
+  jobId: string,
+  sourceUrl: string,
+  prompt: string,
+  presetKey: string,
+  userId: string
+) {
+  console.log('[NeoGlitch] Starting background generation for job:', jobId);
+  console.log('[NeoGlitch] Parameters:', { sourceUrl, prompt, presetKey, userId });
+
+  try {
+    // Start the generation process using the existing function
+    const result = await processGenerationAsync(jobId, sourceUrl, prompt, presetKey, userId, jobId, 'background');
+    
+          // Update job status based on result
+      if (result.status === 'completed') {
+        await db.neoGlitchMedia.update({
+          where: { id: jobId },
+          data: {
+            status: 'completed',
+            imageUrl: result.imageUrl,
+            stabilityJobId: result.stabilityJobId
+          }
+        });
+        console.log('[NeoGlitch] Background generation completed successfully for job:', jobId);
+      } else {
+        // Still processing
+        await db.neoGlitchMedia.update({
+          where: { id: jobId },
+          data: {
+            status: 'processing',
+            stabilityJobId: result.stabilityJobId
+          }
+        });
+        console.log('[NeoGlitch] Background generation started for job:', jobId);
+      }
+
+    return result;
+
+  } catch (error: any) {
+    console.error('[NeoGlitch] Background generation failed for job:', jobId, error);
+    
+    // Update job status to failed
+    await db.neoGlitchMedia.update({
+      where: { id: jobId },
+      data: {
+        status: 'failed'
+      }
+    });
+
+    throw error;
+  }
+}
+
 // Helper function to check identity similarity (placeholder for now)
 async function checkIdentitySimilarity(sourceUrl: string, generatedUrl: string): Promise<number> {
   try {

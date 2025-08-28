@@ -32,7 +32,10 @@ model CreditTransaction {
   id        String   @id @default(cuid())
   userId    String  @map("user_id")
   amount    Int
-  reason    String
+  action    String  // ✅ ADDED: Required field from database
+  status    String  // ✅ ADDED: Required field from database
+  reason    String? // ✅ MADE OPTIONAL: Matches database (nullable)
+  meta      Json?   // ✅ ADDED: Optional JSON field from database
   env       String  @default("production")
   createdAt DateTime @default(now()) @map("created_at")
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
