@@ -40,49 +40,52 @@ model CreditTransaction {
   @@map("credits_ledger")
 }
 
-model custom_prompt_media {
+model CustomPromptMedia {
   id         String   @id
-  user_id    String
-  image_url  String
+  userId     String   @map("user_id")
+  imageUrl   String   @map("image_url")
   prompt     String
   preset     String
   status     String   @default("completed")
-  created_at DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
   metadata   Json?
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
-  @@index([user_id, created_at(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("custom_prompt_media")
 }
 
-model emotion_mask_media {
+model EmotionMaskMedia {
   id         String   @id
-  user_id    String
-  image_url  String
+  userId     String   @map("user_id")
+  imageUrl   String   @map("image_url")
   prompt     String
   preset     String
   status     String   @default("completed")
-  created_at DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
   metadata   Json?
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
-  @@index([user_id, created_at(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("emotion_mask_media")
 }
 
-model ghibli_reaction_media {
+model GhibliReactionMedia {
   id         String   @id
-  user_id    String
-  image_url  String
+  userId     String   @map("user_id")
+  imageUrl   String   @map("image_url")
   prompt     String
   preset     String
   status     String   @default("completed")
-  created_at DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
   metadata   Json?
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
-  @@index([user_id, created_at(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("ghibli_reaction_media")
 }
 
 model media_assets {
@@ -113,24 +116,25 @@ model media_assets {
   @@index([visibility, created_at(sort: Desc)])
 }
 
-model neo_glitch_media {
+model NeoGlitchMedia {
   id               String   @id
-  user_id          String
-  image_url        String
-  source_url       String
+  userId           String   @map("user_id")
+  imageUrl         String   @map("image_url")
+  sourceUrl        String   @map("source_url")
   prompt           String
   preset           String
-  run_id           String   @unique
-  created_at       DateTime @default(now())
+  runId            String   @unique @map("run_id")
+  createdAt        DateTime @default(now()) @map("created_at")
   status           String   @default("completed")
-  stability_job_id String?
+  stabilityJobId   String?  @map("stability_job_id")
   metadata         Json?
-  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([preset])
-  @@index([stability_job_id])
+  @@index([stabilityJobId])
   @@index([status])
-  @@index([user_id, created_at(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("neo_glitch_media")
 }
 
 model notifications {
@@ -163,19 +167,20 @@ model preset_config {
   @@index([preset_key])
 }
 
-model presets_media {
+model PresetsMedia {
   id         String   @id
-  user_id    String
-  image_url  String
+  userId     String   @map("user_id")
+  imageUrl   String   @map("image_url")
   prompt     String
   preset     String
   status     String   @default("completed")
-  created_at DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
   metadata   Json?
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
-  @@index([user_id, created_at(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("presets_media")
 }
 
 model stories {
@@ -242,13 +247,13 @@ model User {
   createdAt             DateTime                @default(now()) @map("created_at")
   updatedAt             DateTime                @updatedAt @map("updated_at")
   creditTransactions    CreditTransaction[]
-  customPromptMedia     custom_prompt_media[]
-  emotionMaskMedia      emotion_mask_media[]
-  ghibliReactionMedia   ghibli_reaction_media[]
+  customPromptMedia     CustomPromptMedia[]
+  emotionMaskMedia      EmotionMaskMedia[]
+  ghibliReactionMedia   GhibliReactionMedia[]
   mediaAssets           media_assets[]
-  neoGlitchMedia        neo_glitch_media[]
+  neoGlitchMedia        NeoGlitchMedia[]
   notifications         notifications[]
-  presetsMedia          presets_media[]
+  presetsMedia          PresetsMedia[]
   stories               stories[]
   userCredits           UserCredits?
   userSettings          UserSettings?
