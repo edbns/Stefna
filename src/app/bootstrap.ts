@@ -2,7 +2,12 @@
 // Global bootstrap for the application
 
 // NO_DB_MODE: Gate noisy endpoints
-const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
+const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true' || false
+
+// Safety check for environment variables
+if (typeof import.meta.env.VITE_NO_DB_MODE === 'undefined') {
+  console.warn('⚠️ VITE_NO_DB_MODE not defined, defaulting to false')
+}
 
 if (NO_DB_MODE) {
   console.log('🚫 NO_DB_MODE: Silencing DB calls (onboarding, notifications, record-asset)')

@@ -136,12 +136,12 @@ import { createAsset } from '../lib/api'
 import { saveMedia, togglePublish } from '../lib/api'
 import { Mode, MODE_LABELS } from '../config/modes'
 // Removed old preset services - using new professional presets system
-const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true'
+const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true' || false
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
   if (/^https?:\/\//i.test(maybeUrl)) return maybeUrl
-  const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+  const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || ''
   if (!cloud) return maybeUrl
   // Default to image upload path
   return `https://res.cloudinary.com/${cloud}/image/upload/${maybeUrl.replace(/^\/+/, '')}`
