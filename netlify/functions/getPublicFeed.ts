@@ -13,6 +13,9 @@ export const handler: Handler = async (event) => {
   console.log('🔍 [getPublicFeed] DATABASE_URL is:', process.env.DATABASE_URL);
   console.log('🔍 [getPublicFeed] NODE_ENV is:', process.env.NODE_ENV);
   
+  // 🚨 ADDED: Prisma engine check
+  console.log('🔍 [getPublicFeed] Prisma engine check:', typeof prisma.$on === 'function' ? 'binary ✅' : 'data proxy ❌');
+  
   // 🚨 ADDED: Runtime Prisma client diagnostics
   console.log('🔍 [getPublicFeed] Prisma client initialized successfully');
   
