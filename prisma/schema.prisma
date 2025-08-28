@@ -126,18 +126,20 @@ model media_assets {
 model NeoGlitchMedia {
   id               String   @id @default(cuid())
   userId           String   @map("user_id")
-  imageUrl         String   @map("image_url")
+  imageUrl         String?  @map("image_url")
   sourceUrl        String   @map("source_url")
   prompt           String
-  preset           String
-  runId            String   @unique @map("run_id")
+  presetKey        String   @map("preset_key")
+  status           String   @default("processing")
+  errorMessage     String?  @map("error_message")
+  runId            String?  @unique @map("run_id")
   createdAt        DateTime @default(now()) @map("created_at")
-  status           String   @default("completed")
+  updatedAt        DateTime @default(now()) @map("updated_at")
   stabilityJobId   String?  @map("stability_job_id")
   metadata         Json?
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([preset])
+  @@index([presetKey])
   @@index([stabilityJobId])
   @@index([status])
   @@index([userId, createdAt(sort: Desc)])
