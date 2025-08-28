@@ -1195,17 +1195,7 @@ const ProfileScreen: React.FC = () => {
           <ArrowLeft size={20} />
         </button>
 
-        {/* Logout Icon - Top Right */}
-        <button 
-          onClick={() => {
-            authService.logout()
-            navigate('/')
-          }}
-          className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors duration-300"
-          title="Logout"
-        >
-          <LogOut size={20} />
-        </button>
+
 
         {/* All Navigation Items in One Block */}
         <div className="flex-1">
@@ -1397,7 +1387,8 @@ const ProfileScreen: React.FC = () => {
       {/* Main Area - 80% */}
       <div className="w-[80%] bg-black h-screen overflow-y-auto flex flex-col relative">
         {/* Profile Controls - Top Right */}
-        <div className="absolute top-6 right-6 z-50 flex items-center gap-3">
+        {/* Fixed Navigation Bar - Top Right */}
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
           {/* Hidden File Input */}
           <input
             ref={fileInputRef}
@@ -1423,14 +1414,18 @@ const ProfileScreen: React.FC = () => {
             </div>
           </button>
 
-          {/* Profile Button */}
+          {/* Logout Button */}
           <div className="relative">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => {
+                authService.logout()
+                navigate('/')
+              }}
               className="w-12 h-12 bg-white/10 text-white rounded-full border border-white/20 transition-all duration-300 flex items-center justify-center hover:bg-white/20 hover:scale-105"
-              aria-label="Profile"
+              aria-label="Logout"
+              title="Logout"
             >
-              <ProfileIcon size={24} className="transition-transform duration-200" />
+              <LogOut size={24} className="transition-transform duration-200" />
             </button>
           </div>
         </div>
@@ -1438,7 +1433,7 @@ const ProfileScreen: React.FC = () => {
         {/* Notification System disabled on profile screen (only show in Notification tab) */}
         {/* Content based on active tab */}
         {activeTab === 'all-media' && (
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 pt-24">
             {/* Selection Controls */}
             {!isLoading && userMedia.length > 0 && (
               <div className="mb-6 flex items-center justify-between bg-white/5 rounded-lg p-4 border border-white/10">
@@ -1559,7 +1554,7 @@ const ProfileScreen: React.FC = () => {
 
 
         {activeTab === 'draft' && (
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 pt-24">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full">
                 <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
@@ -1594,7 +1589,7 @@ const ProfileScreen: React.FC = () => {
         )}
 
         {activeTab === 'invite-friends' && (
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-6 pt-24">
             <div className="max-w-4xl mx-auto">
               {/* Invite Friends Header */}
               <div className="text-center mb-8">
@@ -1688,7 +1683,7 @@ const ProfileScreen: React.FC = () => {
         )}
 
         {activeTab === 'account' && (
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-6 pt-24">
             <div className="max-w-2xl mx-auto">
               {/* Account Header */}
               <div className="text-center mb-8">
