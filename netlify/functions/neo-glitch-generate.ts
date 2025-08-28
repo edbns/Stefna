@@ -1026,6 +1026,7 @@ async function attemptStabilityGeneration(
 
     console.log(`✅ [NeoGlitch] Stability.ai ${modelType.toUpperCase()} generation successful!`);
     console.log(`🎨 [NeoGlitch] Generated image URL:`, result.url);
+    console.info(`🧭 Generation Path: Used Stability.ai → Tier: ${modelType.toUpperCase()} → Result: SUCCESS`);
 
     // Upload the generated image to Cloudinary
     const cloudinaryUrl = await uploadBase64ToCloudinary(result.url);
@@ -1045,6 +1046,7 @@ async function attemptStabilityGeneration(
     
     // 🚨 STABILITY.AI FAILED - Now fallback to AIML (this prevents double billing)
     console.log('🔄 [NeoGlitch] Stability.ai failed - falling back to AIML API');
+    console.warn(`🧭 Generation Path: Stability.ai failed → Fallback to AIML`);
     
     try {
       return await attemptAIMLFallback(sourceUrl, prompt, presetKey, userId, runId);

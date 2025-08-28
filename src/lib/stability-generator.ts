@@ -2,6 +2,60 @@
 import axios from "axios";
 import FormData from "form-data";
 
+// ============================================================================
+// STABILITY.AI MODULAR GENERATOR
+// ============================================================================
+// This module provides a clean, reusable interface for Stability.ai image generation
+// with automatic fallback from Ultra → Core → SD3 tiers.
+//
+// USAGE EXAMPLES:
+//
+// 1. NeoGlitch Preset:
+//    import { generateImageWithStability } from './stability-generator';
+//    const result = await generateImageWithStability({ prompt, sourceUrl, ... });
+//
+// 2. Emotion Mask Preset:
+//    const result = await generateImageWithStability({ 
+//      prompt: "Emotional portrait with dramatic lighting...", 
+//      sourceUrl, 
+//      modelTier: "core" 
+//    });
+//
+// 3. Studio Ghibli Preset:
+//    const result = await generateImageWithStability({ 
+//      prompt: "Studio Ghibli style animation...", 
+//      sourceUrl, 
+//      modelTier: "ultra" 
+//    });
+// ============================================================================
+
+// Check Stability.ai account status and remaining credits
+export async function checkStabilityAccount(stabilityApiKey: string) {
+  try {
+    const response = await axios.get('https://api.stability.ai/v1/user/account', {
+      headers: {
+        'Authorization': `Bearer ${stabilityApiKey}`,
+        'Accept': 'application/json'
+      },
+      timeout: 10_000
+    });
+
+    const account = response.data;
+    console.log('💰 [Stability.ai] Account Status:', {
+      email: account.email,
+      tier: account.tier,
+      remainingCredits: account.remaining_credits,
+      totalCredits: account.total_credits,
+      usagePercentage: account.usage_percentage
+    });
+
+    return account;
+  } catch (error: any) {
+    console.warn('⚠️ [Stability.ai] Failed to check account status:', error.message);
+    return null;
+  }
+}
+
 // Drop-in Stability.ai generator with 3-tier fallback: Ultra → Core → SD3
 export async function generateImageWithStability({
   prompt,
