@@ -25,6 +25,7 @@ import { useGenerationMode } from '../stores/generationMode'
 import { EmotionMaskPicker } from './EmotionMaskPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
+import { MediaUploadAgreement } from './MediaUploadAgreement'
 import { paramsForI2ISharp } from '../services/infer-params'
 // import { clampStrength } from '../lib/strengthPolicy' // REMOVED - drama file deleted
 
@@ -216,6 +217,10 @@ const HomeNew: React.FC = () => {
   
   // Feed filtering state
   const [activeFeedFilter, setActiveFeedFilter] = useState<string | null>(null)
+  
+  // Media upload agreement state
+  const [showUploadAgreement, setShowUploadAgreement] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
   
   useEffect(() => { 
     selectedPresetRef.current = selectedPreset 
@@ -632,6 +637,17 @@ const HomeNew: React.FC = () => {
     if (!file) return
 
     console.log('📁 File selected:', { name: file.name, size: file.size, type: file.type })
+
+    // Show upload agreement first
+    setPendingFile(file)
+    setShowUploadAgreement(true)
+  }
+
+  const handleUploadAgreementAccept = async () => {
+    const file = pendingFile
+    if (!file) return
+
+    console.log('📁 File accepted after agreement:', { name: file.name, size: file.size, type: file.type })
 
     // Create preview URL for display only
     const preview = URL.createObjectURL(file)
@@ -4761,6 +4777,16 @@ const HomeNew: React.FC = () => {
 
 
       {/* Video Job Status Display removed in favor of unified toasts */}
+
+      {/* Media Upload Agreement Modal */}
+      <MediaUploadAgreement
+        isOpen={showUploadAgreement}
+        onClose={() => {
+          setShowUploadAgreement(false)
+          setPendingFile(null)
+        }}
+        onAccept={handleUploadAgreementAccept}
+      />
 
     </div>
   )
