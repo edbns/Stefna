@@ -15,16 +15,17 @@ model extensions {
   @@map("_extensions")
 }
 
-model auth_otps {
-  id         String   @id
-  email      String
-  code       String
-  used       Boolean  @default(false)
-  expires_at DateTime
-  created_at DateTime @default(now())
+model AuthOtp {
+  id        String   @id
+  email     String
+  code      String
+  used      Boolean  @default(false)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@index([email, code])
-  @@index([expires_at])
+  @@index([expiresAt])
+  @@map("auth_otps")
 }
 
 model CreditTransaction {
@@ -183,37 +184,39 @@ model PresetsMedia {
   @@map("presets_media")
 }
 
-model stories {
+model Story {
   id           String         @id
-  user_id      String
+  userId       String         @map("user_id")
   title        String?
   description  String?
   preset       String         @default("auto")
   status       String         @default("pending")
   progress     Int            @default(0)
-  story_text   String?
+  storyText    String?        @map("story_text")
   metadata     Json?
-  created_at   DateTime       @default(now())
-  updated_at   DateTime
-  user         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  story_photos story_photos[]
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storyPhotos  StoryPhoto[]
 
   @@index([preset])
   @@index([status])
-  @@index([user_id, created_at(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("stories")
 }
 
-model story_photos {
-  id         String   @id
-  story_id   String
-  order      Int
-  image_url  String
-  video_url  String?
-  prompt     String?
-  created_at DateTime @default(now())
-  stories    stories  @relation(fields: [story_id], references: [id], onDelete: Cascade)
+model StoryPhoto {
+  id        String   @id
+  storyId   String   @map("story_id")
+  order     Int
+  imageUrl  String   @map("image_url")
+  videoUrl  String?  @map("video_url")
+  prompt    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
-  @@index([story_id, order])
+  @@index([storyId, order])
+  @@map("story_photos")
 }
 
 model UserCredits {
@@ -254,7 +257,7 @@ model User {
   neoGlitchMedia        NeoGlitchMedia[]
   notifications         notifications[]
   presetsMedia          PresetsMedia[]
-  stories               stories[]
+  stories               Story[]
   userCredits           UserCredits?
   userSettings          UserSettings?
 
