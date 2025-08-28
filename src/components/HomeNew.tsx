@@ -4038,10 +4038,24 @@ const HomeNew: React.FC = () => {
                   Profile
                 </button>
                 <button
-                  onClick={() => {
-                    // Reset media upload agreement preference
-                    localStorage.removeItem('mediaUploadAgreement')
-                    setProfileDropdownOpen(false)
+                  onClick={async () => {
+                    try {
+                      // Reset media upload agreement preference in database
+                      await authenticatedFetch('/.netlify/functions/user-settings', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                          shareToFeed: true, // Keep existing setting
+                          mediaUploadAgreed: false
+                        })
+                      });
+                      setProfileDropdownOpen(false);
+                    } catch (error) {
+                      console.error('Failed to reset agreement preference:', error);
+                      setProfileDropdownOpen(false);
+                    }
                   }}
                   className="w-full text-left px-3 py-2 text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
                   title="Reset upload agreement preference"

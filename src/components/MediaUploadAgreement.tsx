@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from '../utils/motionShim';
 import { Shield } from 'lucide-react';
+import { authenticatedFetch } from '../utils/apiClient';
 
 interface MediaUploadAgreementProps {
   isOpen: boolean;
@@ -15,30 +16,80 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
 }) => {
   const [legalRightsChecked, setLegalRightsChecked] = useState(false);
   const [contentPolicyChecked, setContentPolicyChecked] = useState(false);
+  const [hasUserAgreed, setHasUserAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user has already agreed (localStorage)
-  const hasUserAgreed = localStorage.getItem('mediaUploadAgreement') === 'true';
+  // Check if user has already agreed (from database)
+  useEffect(() => {
+    const checkUserAgreement = async () => {
+      try {
+        const response = await authenticatedFetch('/.netlify/functions/user-settings', {
+          method: 'GET'
+        });
+        
+        if (response.ok) {
+          const settings = await response.json();
+          setHasUserAgreed(settings.mediaUploadAgreed || false);
+        }
+      } catch (error) {
+        console.error('Failed to check user agreement status:', error);
+        // Fallback to showing agreement on error
+        setHasUserAgreed(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isOpen) {
+      checkUserAgreement();
+    }
+  }, [isOpen]);
 
   // Reset checkboxes when modal opens (only if user hasn't agreed before)
-  React.useEffect(() => {
-    if (isOpen && !hasUserAgreed) {
+  useEffect(() => {
+    if (isOpen && !hasUserAgreed && !isLoading) {
       setLegalRightsChecked(false);
       setContentPolicyChecked(false);
     }
-  }, [isOpen, hasUserAgreed]);
+  }, [isOpen, hasUserAgreed, isLoading]);
 
-  // If user has already agreed, don't show the modal
-  if (hasUserAgreed) {
+  // If user has already agreed or still loading, don't show the modal
+  if (hasUserAgreed || isLoading) {
     return null;
   }
 
   if (!isOpen) return null;
 
-  const handleAccept = () => {
-    // Save user agreement preference
-    localStorage.setItem('mediaUploadAgreement', 'true');
-    onAccept();
-    onClose();
+  const handleAccept = async () => {
+    try {
+      // Save user agreement preference to database
+      const response = await authenticatedFetch('/.netlify/functions/user-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          shareToFeed: true, // Keep existing setting
+          mediaUploadAgreed: true
+        })
+      });
+
+      if (response.ok) {
+        setHasUserAgreed(true);
+        onAccept();
+        onClose();
+      } else {
+        console.error('Failed to save agreement preference');
+        // Still proceed with upload even if saving fails
+        onAccept();
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error saving agreement preference:', error);
+      // Still proceed with upload even if saving fails
+      onAccept();
+      onClose();
+    }
   };
 
   const handleClose = () => {

@@ -37,12 +37,13 @@ model User {
 }
 
 model UserSettings {
-  id          String   @id @default(cuid())
-  userId      String   @unique @map("user_id")
-  shareToFeed Boolean  @default(true) @map("share_to_feed")
-  allowRemix  Boolean  @default(true) @map("allow_remix")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    String   @id @default(cuid())
+  userId                String   @unique @map("user_id")
+  shareToFeed           Boolean  @default(true) @map("share_to_feed")
+  allowRemix            Boolean  @default(true) @map("allow_remix")
+  mediaUploadAgreed     Boolean  @default(false) @map("media_upload_agreed")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
 }

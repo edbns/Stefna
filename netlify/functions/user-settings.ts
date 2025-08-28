@@ -37,12 +37,14 @@ export const handler: Handler = async (event) => {
       try {
         const settings = await prisma.userSettings.findUnique({
           where: { userId },
-          select: { shareToFeed: true, updatedAt: true }
+          select: { shareToFeed: true, allowRemix: true, mediaUploadAgreed: true, updatedAt: true }
         });
 
         // Return default settings if none exist
         const defaultSettings = {
-          shareToFeed: false,  // 🔒 PRIVACY FIRST: Default to private
+          shareToFeed: false,      // 🔒 PRIVACY FIRST: Default to private
+          allowRemix: true,        // Default to allowing remixes
+          mediaUploadAgreed: false, // Default to showing agreement
           updatedAt: null
         }
 
@@ -51,6 +53,8 @@ export const handler: Handler = async (event) => {
 
         return json({
           shareToFeed: result.shareToFeed,
+          allowRemix: result.allowRemix,
+          mediaUploadAgreed: result.mediaUploadAgreed,
           updatedAt: result.updatedAt
         })
       } catch (dbError) {
@@ -66,13 +70,20 @@ export const handler: Handler = async (event) => {
     if (event.httpMethod === 'POST') {
       // Update user settings
       const body = JSON.parse(event.body || '{}')
-      const { shareToFeed } = body
+      const { shareToFeed, allowRemix, mediaUploadAgreed } = body
 
+      // Validate required fields
       if (typeof shareToFeed !== 'boolean') {
         return json({ error: 'shareToFeed must be boolean' }, { status: 400 })
       }
+      if (allowRemix !== undefined && typeof allowRemix !== 'boolean') {
+        return json({ error: 'allowRemix must be boolean' }, { status: 400 })
+      }
+      if (mediaUploadAgreed !== undefined && typeof mediaUploadAgreed !== 'boolean') {
+        return json({ error: 'mediaUploadAgreed must be boolean' }, { status: 400 })
+      }
 
-      console.log(`📝 Updating settings for user ${userId}:`, { shareToFeed })
+      console.log(`📝 Updating settings for user ${userId}:`, { shareToFeed, allowRemix, mediaUploadAgreed })
 
       try {
         // Upsert settings (create if doesn't exist, update if it does)
@@ -80,13 +91,16 @@ export const handler: Handler = async (event) => {
           where: { userId },
           update: { 
             shareToFeed,
+            ...(allowRemix !== undefined && { allowRemix }),
+            ...(mediaUploadAgreed !== undefined && { mediaUploadAgreed }),
             updatedAt: new Date()
           },
           create: {
             id: `settings-${userId}`,
             userId,
             shareToFeed,
-            allowRemix: true, // Default value
+            allowRemix: allowRemix ?? true, // Use provided value or default
+            mediaUploadAgreed: mediaUploadAgreed ?? false, // Use provided value or default
             updatedAt: new Date()
           }
         });
@@ -95,6 +109,8 @@ export const handler: Handler = async (event) => {
 
         return json({
           shareToFeed: updated.shareToFeed,
+          allowRemix: updated.allowRemix,
+          mediaUploadAgreed: updated.mediaUploadAgreed,
           updatedAt: updated.updatedAt
         })
       } catch (dbError) {
