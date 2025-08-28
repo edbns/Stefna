@@ -13,6 +13,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
 
+// 🚀 BACKGROUND MODE: Allow function to run for up to 15 minutes
+export const config = {
+  type: "background",
+};
+
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
