@@ -4039,6 +4039,17 @@ const HomeNew: React.FC = () => {
                 </button>
                 <button
                   onClick={() => {
+                    // Reset media upload agreement preference
+                    localStorage.removeItem('mediaUploadAgreement')
+                    setProfileDropdownOpen(false)
+                  }}
+                  className="w-full text-left px-3 py-2 text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
+                  title="Reset upload agreement preference"
+                >
+                  Reset Agreement
+                </button>
+                <button
+                  onClick={() => {
                     authService.logout()
                     setProfileDropdownOpen(false)
                     navigate('/')

@@ -16,17 +16,27 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
   const [legalRightsChecked, setLegalRightsChecked] = useState(false);
   const [contentPolicyChecked, setContentPolicyChecked] = useState(false);
 
-  // Reset checkboxes when modal opens
+  // Check if user has already agreed (localStorage)
+  const hasUserAgreed = localStorage.getItem('mediaUploadAgreement') === 'true';
+
+  // Reset checkboxes when modal opens (only if user hasn't agreed before)
   React.useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !hasUserAgreed) {
       setLegalRightsChecked(false);
       setContentPolicyChecked(false);
     }
-  }, [isOpen]);
+  }, [isOpen, hasUserAgreed]);
+
+  // If user has already agreed, don't show the modal
+  if (hasUserAgreed) {
+    return null;
+  }
 
   if (!isOpen) return null;
 
   const handleAccept = () => {
+    // Save user agreement preference
+    localStorage.setItem('mediaUploadAgreement', 'true');
     onAccept();
     onClose();
   };
