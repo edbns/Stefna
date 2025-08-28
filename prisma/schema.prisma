@@ -77,15 +77,18 @@ model EmotionMaskMedia {
 }
 
 model GhibliReactionMedia {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  imageUrl   String   @map("image_url")
-  prompt     String
-  preset     String
-  status     String   @default("completed")
-  createdAt  DateTime @map("created_at")
-  metadata   Json?
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  imageUrl      String?  @map("image_url")
+  sourceUrl     String   @map("source_url")
+  prompt        String
+  presetKey     String   @map("preset_key")
+  status        String   @default("processing")
+  errorMessage  String?  @map("error_message")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @map("updated_at")
+  metadata      Json?
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([userId, createdAt(sort: Desc)])
