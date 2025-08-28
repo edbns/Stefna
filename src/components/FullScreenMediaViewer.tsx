@@ -98,7 +98,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
         <X size={24} />
       </button>
 
-      {/* Navigation Buttons - Always Visible */}
+      {/* Navigation Buttons - Show when there are multiple media items */}
       {media.length > 1 && (
         <>
           {/* Previous Button */}
@@ -125,8 +125,8 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
       {/* Centered Media Display */}
       <div className="h-full w-full flex flex-col items-center justify-center p-8">
-        {/* Media Container */}
-        <div className="flex-1 flex items-center justify-center max-w-full max-h-full">
+        {/* Media Container - Made smaller */}
+        <div className="flex-1 flex items-center justify-center max-w-4xl max-h-[70vh]">
           {current.type === 'video' ? (
             <video 
               src={current.url} 
@@ -144,8 +144,8 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
           )}
         </div>
 
-        {/* Info Display - Below Image: Preset Tag + Date/Time */}
-        <div className="mt-6 flex flex-col items-center space-y-3">
+        {/* Info Display - Same row: Preset Tag + Date/Time */}
+        <div className="mt-6 flex items-center justify-center space-x-4">
           {/* Preset Tag */}
           {(current.metadata?.presetKey || current.presetKey) && (
             <PresetTag

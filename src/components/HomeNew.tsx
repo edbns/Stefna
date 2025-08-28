@@ -3558,8 +3558,14 @@ const HomeNew: React.FC = () => {
       hasPrompt: !!media.prompt,
       promptLength: media.prompt?.length || 0
     })
-    setViewerMedia([media])
-    setViewerStartIndex(0)
+    
+    // Find the index of the clicked media in the filtered feed
+    const mediaIndex = filteredFeed.findIndex(item => item.id === media.id)
+    const startIndex = mediaIndex >= 0 ? mediaIndex : 0
+    
+    // Pass the full filtered feed for navigation
+    setViewerMedia(filteredFeed)
+    setViewerStartIndex(startIndex)
     setViewerOpen(true)
   }
 
