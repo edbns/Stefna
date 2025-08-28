@@ -64,5 +64,12 @@ export default defineConfig({
         drop_debugger: true,
       }
     }
+  },
+  // esbuild configuration for cross-platform compatibility
+  esbuild: {
+    target: 'es2015',
+    supported: {
+      'top-level-await': true
+    }
   }
 }) 

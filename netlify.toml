@@ -1,28 +1,28 @@
 [build]
-  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npx prisma generate && npm run build"
+  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npm install --include=optional && npx prisma generate && npm run build"
   publish = "dist"
   functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20.19.4"
-  NPM_FLAGS = "--prefer-offline --no-audit"
+  NPM_FLAGS = "--prefer-offline --no-audit --include=optional"
   VITE_BUILD_OPTIMIZE = "true"
   PRISMA_GENERATE_DATAPROXY = "false"
   PRISMA_CLIENT_ENGINE_TYPE = "binary"
 
 # Production context
 [context.production]
-  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npx prisma generate && npm run build"
+  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npm install --include=optional && npx prisma generate && npm run build"
   environment = { NODE_ENV = "production" }
 
 # Deploy preview context  
 [context.deploy-preview]
-  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npx prisma generate && npm run build"
+  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npm install --include=optional && npx prisma generate && npm run build"
   environment = { NODE_ENV = "preview" }
 
 # Branch deploy context
 [context.branch-deploy]
-  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npx prisma generate && npm run build"
+  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npm install --include=optional && npx prisma generate && npm run build"
   environment = { NODE_ENV = "preview" }
 
 # Function optimization
