@@ -190,7 +190,7 @@ model stories {
   metadata     Json?
   created_at   DateTime       @default(now())
   updated_at   DateTime
-  user         User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
   story_photos story_photos[]
 
   @@index([preset])
