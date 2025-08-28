@@ -8,43 +8,27 @@ interface MediaUploadAgreementProps {
   onClose: () => void;
   onAccept: () => void;
   onAgreementAccepted?: () => void; // New callback to notify parent
+  userHasAgreed?: boolean; // Pass parent's state
 }
 
 export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
   isOpen,
   onClose,
   onAccept,
-  onAgreementAccepted
+  onAgreementAccepted,
+  userHasAgreed: parentUserHasAgreed = false
 }) => {
   const [legalRightsChecked, setLegalRightsChecked] = useState(false);
   const [contentPolicyChecked, setContentPolicyChecked] = useState(false);
-  const [hasUserAgreed, setHasUserAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Use parent's state instead of local state
+  const hasUserAgreed = parentUserHasAgreed;
 
-  // Check if user has already agreed (from database) - only once on mount
+  // No need to check database - parent component handles this
   useEffect(() => {
-    const checkUserAgreement = async () => {
-      try {
-        const response = await authenticatedFetch('/.netlify/functions/user-settings', {
-          method: 'GET'
-        });
-        
-        if (response.ok) {
-          const settings = await response.json();
-          setHasUserAgreed(settings.mediaUploadAgreed || false);
-        }
-      } catch (error) {
-        console.error('Failed to check user agreement status:', error);
-        // Fallback to showing agreement on error
-        setHasUserAgreed(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // Only check once when component mounts, not every time it opens
-    checkUserAgreement();
-  }, []); // Empty dependency array - only run once
+    setIsLoading(false);
+  }, []);
 
   // Reset checkboxes when modal opens (only if user hasn't agreed before)
   useEffect(() => {
@@ -76,7 +60,6 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
       });
 
       if (response.ok) {
-        setHasUserAgreed(true);
         // Notify parent component that agreement was accepted
         if (onAgreementAccepted) {
           onAgreementAccepted();

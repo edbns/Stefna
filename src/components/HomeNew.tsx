@@ -708,13 +708,16 @@ const HomeNew: React.FC = () => {
     if (!file) return
 
     console.log('📁 File selected:', { name: file.name, size: file.size, type: file.type })
+    console.log('🔍 User agreement status:', { userHasAgreed })
 
     // Check if user has already agreed to the upload agreement
     if (userHasAgreed) {
       // User has agreed, proceed directly to upload
+      console.log('✅ User has agreed, proceeding with direct upload')
       await handleDirectUpload(file)
     } else {
       // Show upload agreement first
+      console.log('⚠️ User has not agreed, showing agreement popup')
       setPendingFile(file)
       setShowUploadAgreement(true)
     }
@@ -761,39 +764,15 @@ const HomeNew: React.FC = () => {
 
     console.log('📁 File accepted after agreement:', { name: file.name, size: file.size, type: file.type })
 
-    // Create preview URL for display only
-    const preview = URL.createObjectURL(file)
-    console.log('🖼️ Preview URL created:', preview)
-
-    // Store both: File for upload, preview URL for display
-    setSelectedFile(file)                    // File used for upload
-    setPreviewUrl(preview)                   // blob: used only for <img> preview
-    storeSelectedFile(file)                  // Store globally for blob: fallback
+    // Update user agreement status in local state immediately
+    setUserHasAgreed(true)
     
-    // Update composer state
-    setComposerState(s => ({
-      ...s,
-      mode: 'custom',
-      file,
-      sourceUrl: preview,
-      status: 'idle',
-      error: null,
-      runOnOpen: false
-    }))
-    
-    // Also store in generation store for centralized access
-    const { useGenerationStore } = await import('../stores/generationStore')
-    useGenerationStore.getState().setSelectedFile(file)                    // keep the File object
-    useGenerationStore.getState().setSelectedFileName(file.name)           // separate field for UI
-    useGenerationStore.getState().setPreviewUrl(preview)
-    useGenerationStore.getState().setPreviewDataUrl(null)
-    useGenerationStore.getState().setPreviewBlob(null)
-    
-    console.log('✅ File state updated, opening composer')
-    setIsComposerOpen(true)
-    
-    // Clear pending file after successful processing
+    // Close agreement modal first
+    setShowUploadAgreement(false)
     setPendingFile(null)
+
+    // Use the same direct upload logic for consistency
+    await handleDirectUpload(file)
   }
 
   const handleUploadAgreementCancel = () => {
@@ -4854,6 +4833,7 @@ const HomeNew: React.FC = () => {
         onClose={handleUploadAgreementCancel}
         onAccept={handleUploadAgreementAccept}
         onAgreementAccepted={() => setUserHasAgreed(true)}
+        userHasAgreed={userHasAgreed}
       />
 
     </div>
