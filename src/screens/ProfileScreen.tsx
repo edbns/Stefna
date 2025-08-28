@@ -320,6 +320,23 @@ const ProfileScreen: React.FC = () => {
       window.removeEventListener('clear-composer-state', handleClearComposerState)
     }
   }, [])
+
+  // Add global fallback to prevent handleClearComposerState errors
+  useEffect(() => {
+    // Create a global fallback function to prevent errors
+    if (typeof window !== 'undefined') {
+      (window as any).handleClearComposerState = () => {
+        console.log('🎭 [ProfileScreen] Global handleClearComposerState called')
+      }
+    }
+    
+    return () => {
+      // Clean up global function when component unmounts
+      if (typeof window !== 'undefined') {
+        delete (window as any).handleClearComposerState
+      }
+    }
+  }, [])
   const [referralStats, setReferralStats] = useState<{ invites: number; tokensEarned: number; referralCode: string } | null>(null)
   // const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [tokenCount, setTokenCount] = useState(0)
