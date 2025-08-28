@@ -1007,11 +1007,11 @@ async function attemptStabilityGeneration(
 
   const config = presetConfigs[presetKey as keyof typeof presetConfigs] || presetConfigs.visor;
 
-  // 🎯 CORRECT: Stability.ai API endpoints (verified working)
+  // 🎯 CORRECT: Stability.ai v2beta API endpoints
   const modelEndpoints = {
-    'ultra': 'https://api.stability.ai/v1/generation/stable-image-ultra/v1',
-    'core': 'https://api.stability.ai/v1/generation/stable-image-core/v1',
-    'sd3': 'https://api.stability.ai/v1/generation/stable-diffusion-3-5/v1'
+    'ultra': 'https://api.stability.ai/v2beta/stable-image/generate/ultra',
+    'core': 'https://api.stability.ai/v2beta/stable-image/generate/core',
+    'sd3': 'https://api.stability.ai/v2beta/stable-image/generate/sd3'
   };
 
   const endpoint = modelEndpoints[modelType];
@@ -1031,7 +1031,7 @@ async function attemptStabilityGeneration(
   const imageBuffer = await imageResponse.arrayBuffer();
   const imageBase64 = Buffer.from(imageBuffer).toString('base64');
 
-  // ✅ CORRECT: Stability.ai v1 API payload format
+  // ✅ CORRECT: Stability.ai v2beta API payload format
   const payload = {
     text_prompts: [
       {
@@ -1043,7 +1043,10 @@ async function attemptStabilityGeneration(
     image_strength: config.strength,
     steps: config.steps,
     cfg_scale: config.guidance_scale,
-    samples: 1
+    samples: 1,
+    // v2beta specific fields
+    seed: Math.floor(Math.random() * 1000000),
+    style_preset: "photographic"
   };
 
   console.log(`🧪 [NeoGlitch] Attempting Stability.ai ${modelType.toUpperCase()} generation with JSON payload`);
