@@ -4745,13 +4745,13 @@ const HomeNew: React.FC = () => {
                           <div className="space-y-1">
                             {/* Story Time preset options */}
                             {[
-                              { id: 'auto', label: '🤖 Auto Mode', description: 'AI picks the best theme' },
-                              { id: 'adventure', label: '🚀 Adventure Mode', description: 'Epic journeys and exploration' },
-                              { id: 'romance', label: '💕 Romance Mode', description: 'Love stories and intimate moments' },
-                              { id: 'mystery', label: '🔍 Mystery Mode', description: 'Suspense and intrigue' },
-                              { id: 'comedy', label: '😂 Comedy Mode', description: 'Funny and playful stories' },
-                              { id: 'fantasy', label: '🧙‍♂️ Fantasy Mode', description: 'Magical and mystical tales' },
-                              { id: 'travel', label: '✈️ Travel Mode', description: 'Cultural exploration and discovery' }
+                              { id: 'auto', label: 'Auto Mode' },
+                              { id: 'adventure', label: 'Adventure Mode' },
+                              { id: 'romance', label: 'Romance Mode' },
+                              { id: 'mystery', label: 'Mystery Mode' },
+                              { id: 'comedy', label: 'Comedy Mode' },
+                              { id: 'fantasy', label: 'Fantasy Mode' },
+                              { id: 'travel', label: 'Travel Mode' }
                             ].map((preset) => (
                               <button
                                 key={preset.id}
@@ -4803,7 +4803,6 @@ const HomeNew: React.FC = () => {
                               >
                                 <div>
                                   <div className="font-medium">{preset.label}</div>
-                                  <div className="text-xs opacity-70">{preset.description}</div>
                                 </div>
                                 {selectedStoryTimePreset === preset.id ? (
                                   <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
