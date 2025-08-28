@@ -8,7 +8,7 @@ import type { Handler } from '@netlify/functions';
 
 const prisma = new PrismaClient();
 
-const handler: Handler = async (event) => {
+export const handler: Handler = async (event) => {
   // 🚨 ADDED: Runtime Prisma client diagnostics
   console.log('🔍 [getPublicFeed] Prisma client initialized successfully');
   
