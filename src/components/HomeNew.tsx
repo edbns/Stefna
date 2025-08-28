@@ -270,6 +270,73 @@ const HomeNew: React.FC = () => {
 
 
 
+  // Composer clearing function - defined early to avoid reference errors
+  const handleClearComposerState = () => {
+    console.log('🧹 Clearing composer state...')
+    
+    // Clear all local state variables
+    setSelectedFile(null)
+    setPreviewUrl(null)
+    setPrompt('')
+    setSelectedPreset(null)
+    setSelectedEmotionMaskPreset(null)
+    setSelectedGhibliReactionPreset(null)
+    setSelectedNeoTokyoGlitchPreset(null)
+    setSelectedMode(null)
+    setIsVideoPreview(false)
+    setIsGenerating(false)
+    setIsEnhancing(false)
+    
+    // Clear composer state completely
+    setComposerState({
+      mode: 'custom',
+      file: null,
+      sourceUrl: null,
+      selectedPresetId: null,
+      selectedEmotionMaskPresetId: null,
+      selectedGhibliReactionPresetId: null,
+      selectedNeoTokyoGlitchPresetId: null,
+      customPrompt: '',
+      status: 'idle',
+      error: null,
+      runOnOpen: false
+    })
+    
+    // Clear generation store state
+    import('../stores/generationStore').then(({ useGenerationStore }) => {
+      useGenerationStore.getState().clearAll()
+    })
+    
+    // Clear intent queue state
+    import('../state/intentQueue').then(({ useIntentQueue }) => {
+      useIntentQueue.getState().clearIntent()
+      useIntentQueue.getState().setSourceUrl(null)
+      useIntentQueue.getState().setIsUploading(false)
+      useIntentQueue.getState().setIsGenerating(false)
+    })
+    
+    // Reset HiddenUploader by dispatching reset event
+    window.dispatchEvent(new CustomEvent('reset-hidden-uploader'))
+    
+    // Clear any global file references
+    if (window.__lastSelectedFile) {
+      delete window.__lastSelectedFile
+    }
+    
+    // Revoke any blob URLs to prevent memory leaks
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl)
+    }
+    
+    // Force file input reset by incrementing key
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+    
+    // Keep composer open for continued use
+    console.log('🧹 Composer state completely cleared - ready for new uploads')
+  }
+
   // Clear all options after generation (success or failure)
   const clearAllOptionsAfterGeneration = () => {
     console.log('🎭 Clearing all options after generation')
@@ -860,71 +927,7 @@ const HomeNew: React.FC = () => {
       setIsComposerOpen(false)
     }
 
-    const handleClearComposerState = () => {
-      console.log('🧹 Clearing composer state...')
-      
-      // Clear all local state variables
-      setSelectedFile(null)
-      setPreviewUrl(null)
-      setPrompt('')
-      setSelectedPreset(null)
-      setSelectedEmotionMaskPreset(null)
-      setSelectedGhibliReactionPreset(null)
-      setSelectedNeoTokyoGlitchPreset(null)
-      setSelectedMode(null)
-      setIsVideoPreview(false)
-      setIsGenerating(false)
-      setIsEnhancing(false)
-      
-      // Clear composer state completely
-      setComposerState({
-        mode: 'custom',
-        file: null,
-        sourceUrl: null,
-        selectedPresetId: null,
-        selectedEmotionMaskPresetId: null,
-        selectedGhibliReactionPresetId: null,
-        selectedNeoTokyoGlitchPresetId: null,
-        customPrompt: '',
-        status: 'idle',
-        error: null,
-        runOnOpen: false
-      })
-      
-      // Clear generation store state
-      import('../stores/generationStore').then(({ useGenerationStore }) => {
-        useGenerationStore.getState().clearAll()
-      })
-      
-      // Clear intent queue state
-      import('../state/intentQueue').then(({ useIntentQueue }) => {
-        useIntentQueue.getState().clearIntent()
-        useIntentQueue.getState().setSourceUrl(null)
-        useIntentQueue.getState().setIsUploading(false)
-        useIntentQueue.getState().setIsGenerating(false)
-      })
-      
-      // Reset HiddenUploader by dispatching reset event
-      window.dispatchEvent(new CustomEvent('reset-hidden-uploader'))
-      
-      // Clear any global file references
-      if (window.__lastSelectedFile) {
-        delete window.__lastSelectedFile
-      }
-      
-      // Revoke any blob URLs to prevent memory leaks
-      if (previewUrl && previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(previewUrl)
-      }
-      
-      // Force file input reset by incrementing key
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-      
-      // Keep composer open for continued use
-      console.log('🧹 Composer state completely cleared - ready for new uploads')
-    }
+    // handleClearComposerState is now defined at the top level to avoid reference errors
 
     window.addEventListener('generation-complete', handleGenerationComplete as EventListener)
     window.addEventListener('generation-success', handleGenerationSuccess as EventListener)
@@ -1853,7 +1856,7 @@ const HomeNew: React.FC = () => {
           // Just show a message that generation is in progress
           notifyQueue({ 
             title: 'Add to queue', 
-            message: 'Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.'
+            message: 'We\'ll start processing it shortly.'
           });
           
           return;
@@ -1868,7 +1871,7 @@ const HomeNew: React.FC = () => {
             
                       // Don't start frontend polling - the service handles it
           // Just show a message that generation is in progress
-          console.log('🔄 Add to queue: Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.')
+          console.log('🔄 Add to queue: We\'ll start processing it shortly.')
             
             return;
           }
@@ -2200,7 +2203,7 @@ const HomeNew: React.FC = () => {
             console.log('🔄 [NeoGlitch] Generation in progress, starting simple polling...');
             
             // Show processing toast (following Ghibli pattern)
-            console.log('🔄 Add to queue: Your Neo Tokyo Glitch is being processed. You\'ll be notified when it\'s ready.')
+            console.log('🔄 Add to queue: We\'ll start processing it shortly.')
             
             // Start simple polling for completion (not complex service)
             const pollForCompletion = async () => {
