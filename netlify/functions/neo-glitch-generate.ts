@@ -987,7 +987,7 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
   }
 }
 
-// Stability.ai Generation Implementation
+// Stability.ai Generation Implementation - Now using modular approach
 async function attemptStabilityGeneration(
   apiToken: string,
   sourceUrl: string,
@@ -995,7 +995,7 @@ async function attemptStabilityGeneration(
   presetKey: string,
   userId: string,
   runId: string,
-  modelType: 'ultra' | 'core' | 'sd3' = 'core' // Added modelType parameter
+  modelType: 'ultra' | 'core' | 'sd3' = 'core'
 ) {
   // ✅ CORRECT: Stability.ai parameters (verified working ranges)
   const presetConfigs = {
@@ -1007,150 +1007,50 @@ async function attemptStabilityGeneration(
 
   const config = presetConfigs[presetKey as keyof typeof presetConfigs] || presetConfigs.visor;
 
-  // 🎯 CORRECT: Stability.ai v2beta API endpoints
-  const modelEndpoints = {
-    'ultra': 'https://api.stability.ai/v2beta/stable-image/generate/ultra',
-    'core': 'https://api.stability.ai/v2beta/stable-image/generate/core',
-    'sd3': 'https://api.stability.ai/v2beta/stable-image/generate/sd3'
-  };
+  console.log(`🧪 [NeoGlitch] Attempting Stability.ai generation with ${modelType.toUpperCase()} tier`);
+  console.log(`🔧 [NeoGlitch] Using preset config:`, config);
 
-  const endpoint = modelEndpoints[modelType];
-  if (!endpoint) {
-    throw new Error(`Invalid model type: ${modelType}`);
-  }
-
-  console.log(`🧪 [NeoGlitch] Attempting Stability.ai ${modelType.toUpperCase()} generation`);
-  console.log(`🔗 [NeoGlitch] Using endpoint: ${endpoint}`);
-
-  // Download the source image and convert to base64
-  const imageResponse = await fetch(sourceUrl);
-  if (!imageResponse.ok) {
-    throw new Error(`Failed to download source image: ${imageResponse.status}`);
-  }
-  
-  const imageBuffer = await imageResponse.arrayBuffer();
-  const imageBase64 = Buffer.from(imageBuffer).toString('base64');
-
-  // ✅ CORRECT: Stability.ai v2beta API payload format
-  const payload = {
-    text_prompts: [
-      {
-        text: `${prompt}, preserve facial identity, maintain original face structure`,
-        weight: 1
-      }
-    ],
-    init_image: imageBase64,
-    image_strength: config.strength,
-    steps: config.steps,
-    cfg_scale: config.guidance_scale,
-    samples: 1,
-    // v2beta specific fields
-    seed: Math.floor(Math.random() * 1000000),
-    style_preset: "photographic"
-  };
-
-  console.log(`🧪 [NeoGlitch] Attempting Stability.ai ${modelType.toUpperCase()} generation with JSON payload`);
-  console.log('📦 [NeoGlitch] Stability.ai JSON parameters:', {
-    modelType,
-    endpoint,
-    prompt: payload.text_prompts[0].text,
-    image_strength: config.strength,
-    steps: config.steps,
-    cfg_scale: config.guidance_scale,
-    samples: 1
-  });
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiToken}`,
-      'Content-Type': 'application/json',
-      'Accept': 'image/*'
-    },
-    body: JSON.stringify(payload)
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ [NeoGlitch] Stability.ai API error:', {
-      status: response.status,
-      statusText: response.statusText,
-      errorText
+  try {
+    // 🚀 NEW: Use the modular Stability.ai generator
+    const { generateImageWithStability } = await import('../../src/lib/stability-generator.js');
+    
+    const result = await generateImageWithStability({
+      prompt: `${prompt}, preserve facial identity, maintain original face structure`,
+      sourceUrl,
+      modelTier: modelType,
+      strength: config.strength,
+      steps: config.steps,
+      cfgScale: config.guidance_scale,
+      stabilityApiKey: apiToken
     });
 
-    let errorDetails;
-    try {
-      errorDetails = JSON.parse(errorText);
-    } catch {
-      errorDetails = errorText;
-    }
+    console.log(`✅ [NeoGlitch] Stability.ai ${modelType.toUpperCase()} generation successful!`);
+    console.log(`🎨 [NeoGlitch] Generated image URL:`, result.url);
 
-    throw new Error(`Stability.ai API failed (${response.status}): ${JSON.stringify(errorDetails)}`);
-  }
+    // Upload the generated image to Cloudinary
+    const cloudinaryUrl = await uploadBase64ToCloudinary(result.url);
+    console.log(`☁️ [NeoGlitch] Image uploaded to Cloudinary:`, cloudinaryUrl);
 
-  // ✅ CORRECT: Handle Stability.ai JSON response with base64 image
-  console.log('✅ [NeoGlitch] Stability.ai generation completed successfully');
-  
-  // Stability.ai returns JSON with base64 image in artifacts array
-  let imageUrl = null;
-  let stabilityJobId = `stability_${Date.now()}`;
-  
-  if (response.ok && response.status === 200) {
-    console.log('🎨 [NeoGlitch] Stability.ai returned successful JSON response');
-    
-    try {
-      // Parse JSON response from Stability.ai
-      const result = await response.json();
-      console.log('📦 [NeoGlitch] Stability.ai response structure:', {
-        hasArtifacts: !!result.artifacts,
-        artifactsCount: result.artifacts?.length || 0,
-        hasBase64: !!result.artifacts?.[0]?.base64
-      });
-      
-      if (result.artifacts && result.artifacts.length > 0 && result.artifacts[0].base64) {
-        // Extract base64 image from artifacts array
-        const imageBase64 = result.artifacts[0].base64;
-        console.log('🖼️ [NeoGlitch] Found base64 image in Stability.ai response');
-        
-        // Upload base64 to Cloudinary
-        const cloudinaryUrl = await uploadBase64ToCloudinary(imageBase64);
-        imageUrl = cloudinaryUrl;
-        console.log('☁️ [NeoGlitch] Image successfully uploaded to Cloudinary:', cloudinaryUrl);
-      } else {
-        console.warn('⚠️ [NeoGlitch] No base64 image found in Stability.ai response');
-        console.log('🔍 [NeoGlitch] Full response structure:', JSON.stringify(result, null, 2));
-      }
-    } catch (parseError: any) {
-      console.error('❌ [NeoGlitch] Failed to parse Stability.ai response:', parseError);
-      throw new Error(`Failed to parse Stability.ai response: ${parseError.message}`);
-    }
-  }
-  
-  // If we found a valid image URL, return success
-  if (imageUrl) {
-    console.log(`✅ [NeoGlitch] Successfully extracted image URL from Stability.ai ${modelType.toUpperCase()} response`);
-    console.log('✅ [NeoGlitch] Final image URL:', imageUrl);
     return {
-      stabilityJobId,
+      stabilityJobId: `stability_${Date.now()}`,
       model: modelType,
       strategy: `stability_${modelType}`,
       provider: 'stability',
-      imageUrl,
+      imageUrl: cloudinaryUrl,
       status: 'completed'
     };
-  }
-  
-  // 🔒 CRITICAL FIX: Only fallback to AIML if Stability.ai truly failed to provide usable image
-  console.log('⚠️ [NeoGlitch] No usable image found in Stability.ai response');
-  console.log('🔍 [NeoGlitch] Stability.ai response analysis complete');
-  
-  // 🚨 STABILITY.AI FAILED - Now fallback to AIML (this prevents double billing)
-  console.log('🔄 [NeoGlitch] Stability.ai failed to provide usable image - falling back to AIML API');
-  
-  try {
-    return await attemptAIMLFallback(sourceUrl, prompt, presetKey, userId, runId);
-  } catch (fallbackError: any) {
-    console.error('❌ [NeoGlitch] AIML fallback also failed:', fallbackError);
-    throw new Error(`Stability.ai failed to provide usable image, and AIML fallback failed: ${fallbackError.message}`);
+
+  } catch (stabilityError: any) {
+    console.error(`❌ [NeoGlitch] Stability.ai ${modelType.toUpperCase()} generation failed:`, stabilityError.message);
+    
+    // 🚨 STABILITY.AI FAILED - Now fallback to AIML (this prevents double billing)
+    console.log('🔄 [NeoGlitch] Stability.ai failed - falling back to AIML API');
+    
+    try {
+      return await attemptAIMLFallback(sourceUrl, prompt, presetKey, userId, runId);
+    } catch (fallbackError: any) {
+      console.error('❌ [NeoGlitch] AIML fallback also failed:', fallbackError);
+      throw new Error(`Stability.ai failed, and AIML fallback failed: ${fallbackError.message}`);
+    }
   }
 }
