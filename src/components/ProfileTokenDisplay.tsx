@@ -26,7 +26,7 @@ const ProfileTokenDisplay: React.FC<ProfileTokenDisplayProps> = ({
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   useEffect(() => {
-    if (import.meta.env.VITE_NO_DB_MODE !== '1') {
+    if (true) {
       loadTokenData();
       loadServerQuota();
       loadActualCredits();

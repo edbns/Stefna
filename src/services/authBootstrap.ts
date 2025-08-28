@@ -1,6 +1,7 @@
 // src/services/authBootstrap.ts
 import authService from './authService';
 import { ensureAndUpdateProfile, needsOnboarding } from './profile';
+import { UserMedia } from '../types/media'
 
 let isBootstrapInitialized = false;
 
@@ -14,13 +15,6 @@ export function initializeAuthBootstrap(): void {
   }
 
   console.log('🔧 Initializing auth bootstrap...');
-
-  // Skip DB operations in NO_DB_MODE
-  if (import.meta.env.VITE_NO_DB_MODE === '1') {
-    console.log('🚫 NO_DB_MODE: Skipping auth bootstrap DB operations');
-    isBootstrapInitialized = true;
-    return;
-  }
 
   // Listen for auth state changes
   authService.onAuthStateChange(async (authState) => {
@@ -73,5 +67,39 @@ export async function checkAndTriggerOnboarding(): Promise<boolean> {
   } catch (error) {
     console.error('❌ Error checking onboarding status:', error);
     return false;
+  }
+}
+
+// Bootstrap authentication and user state
+export async function bootstrapAuth() {
+  console.log('🔐 [AuthBootstrap] Starting authentication bootstrap...')
+  
+  try {
+    // Check if user is authenticated
+    const token = localStorage.getItem('auth_token')
+    if (!token) {
+      console.log('🔐 [AuthBootstrap] No auth token found, user not authenticated')
+      return { isAuthenticated: false, user: null }
+    }
+
+    // Validate token and get user info
+    const response = await fetch('/.netlify/functions/get-user-profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (response.ok) {
+      const user = await response.json()
+      console.log('✅ [AuthBootstrap] User authenticated:', user.id)
+      return { isAuthenticated: true, user }
+    } else {
+      console.log('❌ [AuthBootstrap] Token validation failed')
+      localStorage.removeItem('auth_token')
+      return { isAuthenticated: false, user: null }
+    }
+  } catch (error) {
+    console.error('❌ [AuthBootstrap] Error during bootstrap:', error)
+    return { isAuthenticated: false, user: null }
   }
 }

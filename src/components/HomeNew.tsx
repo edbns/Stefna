@@ -136,7 +136,6 @@ import { createAsset } from '../lib/api'
 import { saveMedia, togglePublish } from '../lib/api'
 import { Mode, MODE_LABELS } from '../config/modes'
 // Removed old preset services - using new professional presets system
-const NO_DB_MODE = import.meta.env.VITE_NO_DB_MODE === 'true' || false
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
@@ -3021,47 +3020,20 @@ const HomeNew: React.FC = () => {
               return;
             }
 
-        if (NO_DB_MODE) {
-          // Optimistic placeholder for images too
-          try {
-            if (userId) {
-              const placeholder: UserMedia = {
-                id: `img-${Date.now()}`,
-                userId,
-                type: 'photo',
-                url: cacheBustedResultUrl,
-                thumbnailUrl: cacheBustedResultUrl,
-                status: 'processing',
-                prompt: effectivePrompt,
-                aspectRatio: 4/3,
-                width: 800,
-                height: 600,
-                timestamp: new Date().toISOString(),
-                tokensUsed: 0,
-                likes: 0,
-                isPublic: shareToFeed,
-                tags: [],
-                metadata: { quality: 'high', generationTime: 0, modelVersion: 'pending' }
-              }
-              // Don't dispatch userMediaUpdated during generation - it clears the composer!
-              // The profile will refresh when the actual save completes
-            }
-          } catch {}
-          // 🔧 FIX: Remove duplicate saveMedia call - generation pipeline handles all saving now
-          console.log('✅ Backend save handled by generation pipeline');
-          // Refresh both feed and user profile
-          setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
-          endGeneration(genId);
-          setNavGenerating(false);
-          
-          // Clear composer after a delay so user can see their result
-          setTimeout(() => {
-            console.log('🧹 Clearing composer after generation completion');
-            handleClearComposerState();
-          }, 3000); // 3 seconds delay
-          
-          return
-        }
+        // 🔧 FIX: Remove duplicate saveMedia call - generation pipeline handles all saving now
+        console.log('✅ Backend save handled by generation pipeline');
+        // Refresh both feed and user profile
+        setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
+        endGeneration(genId);
+        setNavGenerating(false);
+        
+        // Clear composer after a delay so user can see their result
+        setTimeout(() => {
+          console.log('🧹 Clearing composer after generation completion');
+          handleClearComposerState();
+        }, 3000); // 3 seconds delay
+        
+        return
 
         // First, create an asset record (skip for Neo Tokyo Glitch only)
         let assetId: string | null = null;
@@ -3935,22 +3907,7 @@ const HomeNew: React.FC = () => {
       return
     }
     
-    if (NO_DB_MODE) {
-      try {
-        // derive publicId from known fields or URL
-        const publicId = (media as any).cloudinaryPublicId || media.id || (media.url?.split('/').pop()?.split('.')[0])
-        if (!publicId) {
-          console.error('togglePublish: missing publicId')
-          return
-        }
-        await togglePublish(publicId, false)
-        // Trigger feed refresh
-        setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
-      } catch (e) {
-        console.error('togglePublish failed', e)
-      }
-      return
-    }
+
     
     console.log('📤 Unsharing media:', media.id)
     
