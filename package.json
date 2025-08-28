@@ -15,7 +15,9 @@
     "type-check": "tsc --noEmit",
     "test": "echo 'No tests configured yet'",
     "postinstall": "prisma generate",
-    "postinstall:dev": "husky install"
+    "postinstall:dev": "husky install",
+    "prisma:reset": "npx prisma generate --force && npx prisma db push --force-reset",
+    "prisma:nuclear": "rm -rf node_modules/@prisma && npm install && npx prisma generate"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
