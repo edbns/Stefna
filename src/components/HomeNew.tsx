@@ -602,6 +602,7 @@ const HomeNew: React.FC = () => {
   const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(false)
   const [selectedStoryTimePreset, setSelectedStoryTimePreset] = useState<string | null>(null)
   const [storyTimeDropdownOpen, setStoryTimeDropdownOpen] = useState(false)
+  const [additionalStoryImages, setAdditionalStoryImages] = useState<File[]>([])
 
   
 
@@ -696,6 +697,268 @@ const HomeNew: React.FC = () => {
     setNeoTokyoGlitchDropdownOpen(false)
     setStoryTimeDropdownOpen(false)
     setProfileDropdownOpen(false)
+  }
+
+  // Story Time additional image handling
+  const handleAdditionalStoryImageUpload = async (file: File, slotIndex: number) => {
+    console.log('📸 [Story Time] Adding additional image to slot:', slotIndex + 2)
+    
+    // Create preview URL for display
+    const preview = URL.createObjectURL(file)
+    
+    // Add to additional images array
+    setAdditionalStoryImages(prev => {
+      const newImages = [...prev]
+      newImages[slotIndex] = file
+      return newImages
+    })
+  }
+
+  const handleAdditionalStoryImageRemove = (slotIndex: number) => {
+    console.log('🗑️ [Story Time] Removing image from slot:', slotIndex + 2)
+    
+    setAdditionalStoryImages(prev => {
+      const newImages = [...prev]
+      delete newImages[slotIndex]
+      return newImages.filter(Boolean) as File[]
+    })
+  }
+
+  // Check if we can generate story (minimum 3 images total)
+  const canGenerateStory = selectedFile && additionalStoryImages.filter(Boolean).length >= 2
+
+  // Story Time stacked cards styles
+  const storyCardStyles = `
+    .story-stacked-cards {
+      position: absolute;
+      right: -120px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+    }
+
+    .stacked-images {
+      position: relative;
+      width: 120px;
+      height: 120px;
+    }
+
+    .story-image-card {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      border-radius: 12px;
+      border: 2px solid #fff;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      overflow: hidden;
+      background: #1a1a1a;
+    }
+
+    .story-image-card.empty {
+      border: 2px dashed #333;
+      background: #1a1a1a;
+    }
+
+    .story-image-card.has-image {
+      border: 2px solid #fff;
+    }
+
+    .story-image-card:hover {
+      transform: translateY(-8px) scale(1.05);
+      z-index: 10;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+
+    .story-image-card[data-stack="0"] {
+      top: 0;
+      left: 0;
+      z-index: 2;
+    }
+
+    .story-image-card[data-stack="1"] {
+      top: 20px;
+      left: 20px;
+      z-index: 1;
+    }
+
+    .story-image-card[data-stack="2"] {
+      top: 40px;
+      left: 40px;
+      z-index: 0;
+    }
+
+    .story-image-card[data-stack="3"] {
+      top: 60px;
+      left: 60px;
+      z-index: -1;
+    }
+
+    .card-number {
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      width: 24px;
+      height: 24px;
+      background: #fff;
+      color: #000;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 12px;
+      z-index: 5;
+    }
+
+    .card-preview {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .upload-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+    }
+
+    .plus-icon {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .upload-text {
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .remove-btn {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 20px;
+      height: 20px;
+      background: #ff4444;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 5;
+    }
+
+    .remove-btn:hover {
+      background: #ff6666;
+    }
+  `
+
+  // Inject Story Time styles
+  useEffect(() => {
+    if (composerState.mode === 'storytime') {
+      const styleId = 'story-time-styles'
+      let styleElement = document.getElementById(styleId) as HTMLStyleElement
+      
+      if (!styleElement) {
+        styleElement = document.createElement('style')
+        styleElement.id = styleId
+        document.head.appendChild(styleElement)
+      }
+      
+      styleElement.textContent = storyCardStyles
+    }
+  }, [composerState.mode, storyCardStyles])
+
+  // Story Image Card Component
+  const StoryImageCard = ({ 
+    index, 
+    image, 
+    isRequired, 
+    onUpload, 
+    onRemove 
+  }: { 
+    index: number
+    image: File | undefined
+    isRequired: boolean
+    onUpload: (file: File, slotIndex: number) => void
+    onRemove: (slotIndex: number) => void
+  }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (file) {
+        onUpload(file, index)
+      }
+    }
+
+    const handleClick = () => {
+      if (image) {
+        // Show image preview or actions
+        return
+      }
+      // Trigger file upload
+      fileInputRef.current?.click()
+    }
+
+    return (
+      <div 
+        className={`story-image-card ${image ? 'has-image' : 'empty'}`}
+        data-stack={index}
+        onClick={handleClick}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+        />
+        
+        {image ? (
+          <>
+            <div className="card-number">{index + 2}</div>
+            <img 
+              src={URL.createObjectURL(image)} 
+              alt={`Story image ${index + 2}`}
+              className="card-preview"
+            />
+            <button
+              className="remove-btn"
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemove(index)
+              }}
+              title="Remove image"
+            >
+              ×
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="card-number">{index + 2}</div>
+            <div className="upload-placeholder">
+              <div className="plus-icon">+</div>
+              <span className="upload-text">
+                {isRequired ? 'Required' : 'Optional'}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    )
   }
 
   const handleUploadClick = () => {
@@ -4323,26 +4586,47 @@ const HomeNew: React.FC = () => {
                 {isVideoPreview ? (
                   <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} referrerPolicy="no-referrer" />
                 ) : (
-                  <img 
-                    ref={(el) => (mediaRef.current = el as HTMLImageElement)} 
-                    src={previewUrl || ''} 
-                    alt="Preview" 
-                    className="max-w-full max-h-[60vh] object-contain" 
-                    referrerPolicy="no-referrer"
-                    onLoad={(e) => {
-                      console.log('🖼️ Image loaded successfully:', previewUrl)
-                      measure()
-                    }}
-                    onError={(e) => {
-                      console.error('❌ Image failed to load:', previewUrl, e)
-                      console.error('❌ Error details:', {
-                        url: previewUrl,
-                        error: e,
-                        target: e.target,
-                        currentTarget: e.currentTarget
-                      })
-                    }}
-                  />
+                  <>
+                    {/* Main image */}
+                    <img 
+                      ref={(el) => (mediaRef.current = el as HTMLImageElement)} 
+                      src={previewUrl || ''} 
+                      alt="Preview" 
+                      className="max-w-full max-h-[60vh] object-contain" 
+                      referrerPolicy="no-referrer"
+                      onLoad={(e) => {
+                        console.log('🖼️ Image loaded successfully:', previewUrl)
+                        measure()
+                      }}
+                      onError={(e) => {
+                        console.error('❌ Image failed to load:', previewUrl, e)
+                        console.error('❌ Error details:', {
+                          url: previewUrl,
+                          error: e,
+                          target: e.target,
+                          currentTarget: e.currentTarget
+                        })
+                      }}
+                    />
+                    
+                    {/* Story Time stacked cards - show when in storytime mode */}
+                    {composerState.mode === 'storytime' && (
+                      <div className="story-stacked-cards">
+                        <div className="stacked-images">
+                          {Array.from({ length: 4 }, (_, i) => (
+                            <StoryImageCard
+                              key={i}
+                              index={i}
+                              image={additionalStoryImages[i]}
+                              isRequired={i < 2} // First 2 slots required
+                              onUpload={handleAdditionalStoryImageUpload}
+                              onRemove={handleAdditionalStoryImageRemove}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
                 
 
@@ -4742,6 +5026,14 @@ const HomeNew: React.FC = () => {
                     {composerState.mode === 'storytime' && storyTimeDropdownOpen && (
                       <div className="absolute bottom-full left-0 mb-2 z-50">
                         <div className="rounded-xl shadow-2xl p-3 w-80" style={{ backgroundColor: '#333333' }}>
+                          {/* Status indicator */}
+                          <div className="mb-3 p-2 rounded-lg text-xs text-center" style={{ backgroundColor: canGenerateStory ? '#22c55e20' : '#f59e0b20' }}>
+                            {canGenerateStory 
+                              ? `✅ Ready to generate with ${additionalStoryImages.filter(Boolean).length + 1} images`
+                              : `📸 Need ${3 - (additionalStoryImages.filter(Boolean).length + 1)} more images (minimum 3)`
+                            }
+                          </div>
+                          
                           <div className="space-y-1">
                             {/* Story Time preset options */}
                             {[
@@ -4759,14 +5051,24 @@ const HomeNew: React.FC = () => {
                                   setSelectedStoryTimePreset(preset.id)
                                   setStoryTimeDropdownOpen(false)
                                   
-                                  // Auto-generate when Story Time preset is selected
-                                  if (preset.id && selectedFile && isAuthenticated) {
-                                    console.log('📖 Auto-generating Story Time with preset:', preset.id)
+                                  // Check if we have enough images for Story Time
+                                  if (preset.id && canGenerateStory && isAuthenticated) {
+                                    console.log('📖 Generating Story Time with preset:', preset.id)
                                     
-                                    // Create Story Time story
+                                    // Create Story Time story with multiple images
                                     try {
                                       const formData = new FormData()
+                                      
+                                      // Add main image
                                       formData.append('photos', selectedFile)
+                                      
+                                      // Add additional images
+                                      additionalStoryImages.forEach((file, index) => {
+                                        if (file) {
+                                          formData.append('photos', file)
+                                        }
+                                      })
+                                      
                                       formData.append('preset', preset.id)
                                       
                                       const response = await fetch('/.netlify/functions/story-time-create', {
@@ -4792,14 +5094,20 @@ const HomeNew: React.FC = () => {
                                     } catch (error) {
                                       console.error('❌ Story Time creation failed:', error)
                                     }
-                                  }
-                                }}
-                                className={(() => {
-                                  const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-left';
-                                  const activeClass = 'bg-white/90 backdrop-blur-md text-black';
-                                  const inactiveClass = 'text-white hover:text-white hover:bg-white/20';
-                                  return `${baseClass} ${selectedStoryTimePreset === preset.id ? activeClass : inactiveClass}`;
-                                })()}
+                                                                      } else if (!canGenerateStory) {
+                                      console.log('📖 Need more images for Story Time generation')
+                                      // Show message that more images are needed
+                                    }
+                                  }}
+                                  disabled={!canGenerateStory}
+                                  className={(() => {
+                                    const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-left';
+                                    const activeClass = 'bg-white/90 backdrop-blur-md text-black';
+                                    const inactiveClass = canGenerateStory 
+                                      ? 'text-white hover:text-white hover:bg-white/20' 
+                                      : 'text-white/50 cursor-not-allowed';
+                                    return `${baseClass} ${selectedStoryTimePreset === preset.id ? activeClass : inactiveClass}`;
+                                  })()}
                               >
                                 <div>
                                   <div className="font-medium">{preset.label}</div>
