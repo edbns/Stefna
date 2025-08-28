@@ -48,6 +48,8 @@ export const handler: Handler = async (event) => {
           id: `admin-ban-${Date.now()}`,
           userId: userId,
           amount: 0,
+          action: 'admin.ban',
+          status: 'granted',
           reason: `User ${ban ? 'banned' : 'unbanned'} by admin`,
           env: 'production'
         }

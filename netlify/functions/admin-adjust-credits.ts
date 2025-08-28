@@ -62,6 +62,8 @@ export const handler: Handler = async (event) => {
         id: `admin-adjust-${Date.now()}`,
         userId: userId,
         amount: adjustment,
+        action: 'admin.adjust',
+        status: 'granted',
         reason: `Admin credit adjustment: ${adjustment > 0 ? '+' : ''}${adjustment}`,
         env: 'production'
       }

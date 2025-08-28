@@ -40,7 +40,7 @@ export const handler: Handler = async (event) => {
     console.log('🔐 Cloudinary sign request:', {
       hasAuth: !!event.headers.authorization,
       authHeader: event.headers.authorization?.substring(0, 20) + '...',
-      method: event.method,
+      method: event.httpMethod,
       body: event.body
     });
     
