@@ -74,6 +74,22 @@ Stefna is a cutting-edge AI photo editing platform that transforms your photos u
 - Stability.ai API key
 - AIML API key
 
+### **Admin Dashboard Setup**
+The admin dashboard provides full control over users, media, credits, and system configuration.
+
+1. **Set Admin Secret**: Add `ADMIN_SECRET=your_secure_secret_here` to your environment variables
+2. **Access**: Click the red Shield icon (🛡️) in the top-right navigation of the Profile screen
+3. **Authentication**: Enter your admin secret to access the dashboard
+4. **Features**:
+   - **Users Management**: View, ban/unban, adjust credits, delete users
+   - **Media Browser**: Browse and manage all user-generated content
+   - **Credit System**: Monitor and adjust user credit balances
+   - **Config & Tokens**: Manage API keys and system settings
+   - **Logs & Debug**: View generation logs and system activity
+   - **Referral System**: Manage referral bonuses and tracking
+
+**Security**: The admin secret should be a strong, unique password known only to administrators.
+
 ### **Installation**
 ```bash
 # Clone the repository
