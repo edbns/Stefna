@@ -19,7 +19,7 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
   const [hasUserAgreed, setHasUserAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user has already agreed (from database)
+  // Check if user has already agreed (from database) - only once on mount
   useEffect(() => {
     const checkUserAgreement = async () => {
       try {
@@ -40,10 +40,9 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
       }
     };
 
-    if (isOpen) {
-      checkUserAgreement();
-    }
-  }, [isOpen]);
+    // Only check once when component mounts, not every time it opens
+    checkUserAgreement();
+  }, []); // Empty dependency array - only run once
 
   // Reset checkboxes when modal opens (only if user hasn't agreed before)
   useEffect(() => {
