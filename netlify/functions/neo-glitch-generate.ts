@@ -1079,7 +1079,7 @@ async function attemptStabilityGeneration(
       sourceUrl,
       modelTier: modelType,
       strength: config.strength,
-      steps: config.steps,
+    steps: config.steps,
       cfgScale: config.guidance_scale,
       stabilityApiKey: apiToken
     });
@@ -1100,18 +1100,18 @@ async function attemptStabilityGeneration(
       imageUrl: cloudinaryUrl,
       status: 'completed'
     };
-
+  
   } catch (stabilityError: any) {
     console.error(`❌ [NeoGlitch] Stability.ai ${modelType.toUpperCase()} generation failed:`, stabilityError.message);
-    
-    // 🚨 STABILITY.AI FAILED - Now fallback to AIML (this prevents double billing)
+  
+  // 🚨 STABILITY.AI FAILED - Now fallback to AIML (this prevents double billing)
     console.log('🔄 [NeoGlitch] Stability.ai failed - falling back to AIML API');
     console.warn(`🧭 Generation Path: Stability.ai failed → Fallback to AIML`);
-    
-    try {
-      return await attemptAIMLFallback(sourceUrl, prompt, presetKey, userId, runId);
-    } catch (fallbackError: any) {
-      console.error('❌ [NeoGlitch] AIML fallback also failed:', fallbackError);
+  
+  try {
+    return await attemptAIMLFallback(sourceUrl, prompt, presetKey, userId, runId);
+  } catch (fallbackError: any) {
+    console.error('❌ [NeoGlitch] AIML fallback also failed:', fallbackError);
       throw new Error(`Stability.ai failed, and AIML fallback failed: ${fallbackError.message}`);
     }
   }
