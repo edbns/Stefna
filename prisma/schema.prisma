@@ -104,6 +104,7 @@ model neoGlitchMedia {
   createdAt      DateTime @default(now()) @map("created_at")
   status         String   @default("completed")
   stabilityJobId String?  @map("stability_job_id")
+  metadata       Json?
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
@@ -185,6 +186,7 @@ model ghibliReactionMedia {
   preset    String
   status    String  @default("completed")
   createdAt DateTime @default(now()) @map("created_at")
+  metadata  Json?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
@@ -201,6 +203,7 @@ model emotionMaskMedia {
   preset    String
   status    String  @default("completed")
   createdAt DateTime @default(now()) @map("created_at")
+  metadata  Json?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
@@ -217,6 +220,7 @@ model presetsMedia {
   preset    String
   status    String  @default("completed")
   createdAt DateTime @default(now()) @map("created_at")
+  metadata  Json?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
@@ -233,6 +237,7 @@ model customPromptMedia {
   preset    String
   status    String  @default("completed")
   createdAt DateTime @default(now()) @map("created_at")
+  metadata  Json?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
