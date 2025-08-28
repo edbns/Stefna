@@ -220,6 +220,7 @@ const HomeNew: React.FC = () => {
   
   // Media upload agreement state
   const [showUploadAgreement, setShowUploadAgreement] = useState(false)
+  const [userHasAgreed, setUserHasAgreed] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   
   // Composer clearing function - defined early to avoid reference errors
@@ -708,9 +709,50 @@ const HomeNew: React.FC = () => {
 
     console.log('📁 File selected:', { name: file.name, size: file.size, type: file.type })
 
-    // Show upload agreement first
-    setPendingFile(file)
-    setShowUploadAgreement(true)
+    // Check if user has already agreed to the upload agreement
+    if (userHasAgreed) {
+      // User has agreed, proceed directly to upload
+      await handleDirectUpload(file)
+    } else {
+      // Show upload agreement first
+      setPendingFile(file)
+      setShowUploadAgreement(true)
+    }
+  }
+
+  const handleDirectUpload = async (file: File) => {
+    console.log('📁 Direct upload (user already agreed):', { name: file.name, size: file.size, type: file.type })
+
+    // Create preview URL for display only
+    const preview = URL.createObjectURL(file)
+    console.log('🖼️ Preview URL created:', preview)
+
+    // Store both: File for upload, preview URL for display
+    setSelectedFile(file)                    // File used for upload
+    setPreviewUrl(preview)                   // blob: used only for <img> preview
+    storeSelectedFile(file)                  // Store globally for blob: fallback
+    
+    // Update composer state
+    setComposerState(s => ({
+      ...s,
+      mode: 'custom',
+      file,
+      sourceUrl: preview,
+      status: 'idle',
+      error: null,
+      runOnOpen: false
+    }))
+    
+    // Also store in generation store for centralized access
+    const { useGenerationStore } = await import('../stores/generationStore')
+    useGenerationStore.getState().setSelectedFile(file)                    // keep the File object
+    useGenerationStore.getState().setSelectedFileName(file.name)           // separate field for UI
+    useGenerationStore.getState().setPreviewUrl(preview)
+    useGenerationStore.getState().setPreviewDataUrl(null)
+    useGenerationStore.getState().setPreviewBlob(null)
+    
+    console.log('✅ File state updated, opening composer')
+    setIsComposerOpen(true)
   }
 
   const handleUploadAgreementAccept = async () => {
@@ -1267,6 +1309,22 @@ const HomeNew: React.FC = () => {
           if (token) {
             await loadUserProfileFromDatabase()
             console.log('✅ User profile synced from database')
+            
+            // Load user agreement status
+            try {
+              const response = await authenticatedFetch('/.netlify/functions/user-settings', {
+                method: 'GET'
+              })
+              
+              if (response.ok) {
+                const settings = await response.json()
+                setUserHasAgreed(settings.mediaUploadAgreed || false)
+                console.log('✅ User agreement status loaded:', settings.mediaUploadAgreed)
+              }
+            } catch (error) {
+              console.error('Failed to load user agreement status:', error)
+              setUserHasAgreed(false)
+            }
           } else {
             console.warn('⚠️ Skipping profile load: no valid token')
           }
@@ -1498,11 +1556,8 @@ const HomeNew: React.FC = () => {
     const genId = startGeneration();
     setNavGenerating(true);
       
-      // 🔍 CRITICAL FIX: Only show "Add to queue" for modes that actually queue
-      // Neo Tokyo Glitch and other immediate modes don't need this toast
-      if (kind !== 'neotokyoglitch') {
-        notifyQueue({ title: 'Add to queue', message: 'We\'ll start processing shortly.' });
-      }
+      // Show "Add to queue" toast for all generation modes
+      notifyQueue({ title: 'Add to queue', message: 'We\'ll start processing shortly.' });
 
     // Get current profile settings from context (real-time state)
     // Note: profileData is already available from the top-level useProfile() hook
@@ -4043,31 +4098,7 @@ const HomeNew: React.FC = () => {
                 >
                   Profile
                 </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      // Reset media upload agreement preference in database
-                      await authenticatedFetch('/.netlify/functions/user-settings', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                          shareToFeed: true, // Keep existing setting
-                          mediaUploadAgreed: false
-                        })
-                      });
-                      setProfileDropdownOpen(false);
-                    } catch (error) {
-                      console.error('Failed to reset agreement preference:', error);
-                      setProfileDropdownOpen(false);
-                    }
-                  }}
-                  className="w-full text-left px-3 py-2 text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
-                  title="Reset upload agreement preference"
-                >
-                  Reset Agreement
-                </button>
+
                 <button
                   onClick={() => {
                     authService.logout()
@@ -4822,6 +4853,7 @@ const HomeNew: React.FC = () => {
         isOpen={showUploadAgreement}
         onClose={handleUploadAgreementCancel}
         onAccept={handleUploadAgreementAccept}
+        onAgreementAccepted={() => setUserHasAgreed(true)}
       />
 
     </div>

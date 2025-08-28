@@ -7,12 +7,14 @@ interface MediaUploadAgreementProps {
   isOpen: boolean;
   onClose: () => void;
   onAccept: () => void;
+  onAgreementAccepted?: () => void; // New callback to notify parent
 }
 
 export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
   isOpen,
   onClose,
-  onAccept
+  onAccept,
+  onAgreementAccepted
 }) => {
   const [legalRightsChecked, setLegalRightsChecked] = useState(false);
   const [contentPolicyChecked, setContentPolicyChecked] = useState(false);
@@ -75,6 +77,10 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
 
       if (response.ok) {
         setHasUserAgreed(true);
+        // Notify parent component that agreement was accepted
+        if (onAgreementAccepted) {
+          onAgreementAccepted();
+        }
         onAccept();
         onClose();
       } else {
