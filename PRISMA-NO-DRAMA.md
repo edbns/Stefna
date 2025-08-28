@@ -46,7 +46,7 @@ npx prisma db push        # sync with database
 ### 4. Run Safety Checks
 ```bash
 # Test all fields locally
-ts-node scripts/checkFields.ts
+node scripts/checkFields.js
 
 # Scan for potential field issues
 ts-node scripts/fieldGuard.ts
@@ -57,17 +57,38 @@ ts-node scripts/fieldGuard.ts
 - **Document** what changed and when
 - **Track** field renames and removals
 
+## 🛡️ Bonus: Git Hooks (Automatic Enforcement)
+- **Pre-commit**: Validates schema before commit
+- **Pre-push**: Runs full safety check before push
+- **Result**: **Impossible** to push broken code to production
+
 ## 🛠️ Available Scripts
 
-### `scripts/checkFields.ts`
+### `scripts/checkFields.js`
 - **Purpose**: Validates all field names exist in current schema
-- **Usage**: `ts-node scripts/checkFields.ts`
+- **Usage**: `node scripts/checkFields.js`
 - **When**: After schema changes, before deployment
 
 ### `scripts/fieldGuard.ts`
 - **Purpose**: Scans codebase for potentially invalid field names
 - **Usage**: `ts-node scripts/fieldGuard.ts`
 - **When**: Before commits, after schema changes
+
+## 🛡️ Git Hooks (Automatic Safety)
+
+### `.husky/pre-commit`
+- **Purpose**: Validates schema and client before commit
+- **Triggers**: Automatically on every `git commit`
+- **Checks**: 
+  - Prisma schema validation
+  - Prisma client generation
+- **Result**: Cannot commit broken schema
+
+### `.husky/pre-push`
+- **Purpose**: Runs full field safety check before push
+- **Triggers**: Automatically on every `git push`
+- **Checks**: All field names in all models
+- **Result**: Cannot push broken code to production
 
 ## 📊 Field Change Log
 

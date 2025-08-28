@@ -17,7 +17,7 @@ fi
 
 # Check if Prisma client is up to date
 echo "📋 Checking Prisma client..."
-npx prisma generate --silent
+npx prisma generate
 
 if [ $? -eq 0 ]; then
     echo "✅ [Pre-Commit Hook] Prisma client is up to date!"
