@@ -497,13 +497,10 @@ export const handler: Handler = async (event) => {
         userId,
         sourceUrl,
         prompt,
-        preset: presetKey,
+        presetKey: presetKey,
         runId: runId.toString(),
         status: 'pending',
-        imageUrl: sourceUrl, // Temporary, will be updated
-        presetWeek: presetConfig.preset_week,
-        presetRotationIndex: presetConfig.preset_rotation_index,
-        isCurrentlyAvailable: true
+        imageUrl: sourceUrl // Temporary, will be updated
       }
     });
 

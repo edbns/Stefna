@@ -43,7 +43,7 @@ export const handler: Handler = async (event) => {
       // Get all preset configurations
       console.log('🔍 [Admin] Fetching preset configurations...')
       
-      const presets = await prisma.presetConfig.findMany({
+      const presets = await prisma.preset_config.findMany({
         orderBy: [
           { category: 'asc' },
           { name: 'asc' }
@@ -68,22 +68,22 @@ export const handler: Handler = async (event) => {
 
       console.log(`➕ [Admin] Creating new preset: ${presetKey}`)
 
-      const newPreset = await prisma.presetConfig.create({
+      const newPreset = await prisma.preset_config.create({
         data: {
-          presetKey,
+          preset_key: presetKey,
           name,
           description: description || '',
           strength: strength || 1.0,
           category: category || 'custom',
-          isEnabled: true,
-          isCustom: true,
+          is_enabled: true,
+          is_custom: true,
           metadata: metadata || {},
-          createdAt: new Date(),
-          updatedAt: new Date()
+          created_at: new Date(),
+          updated_at: new Date()
         }
       })
 
-      console.log(`✅ [Admin] Created preset: ${newPreset.presetKey}`)
+      console.log(`✅ [Admin] Created preset: ${newPreset.preset_key}`)
       
       return json({
         success: true,
@@ -102,15 +102,15 @@ export const handler: Handler = async (event) => {
 
       console.log(`✏️ [Admin] Updating preset: ${id}`)
 
-      const updatedPreset = await prisma.presetConfig.update({
+      const updatedPreset = await prisma.preset_config.update({
         where: { id },
         data: {
           ...updates,
-          updatedAt: new Date()
+          updated_at: new Date()
         }
       })
 
-      console.log(`✅ [Admin] Updated preset: ${updatedPreset.presetKey}`)
+      console.log(`✅ [Admin] Updated preset: ${updatedPreset.preset_key}`)
       
       return json({
         success: true,
@@ -129,7 +129,7 @@ export const handler: Handler = async (event) => {
 
       console.log(`🗑️ [Admin] Deleting preset: ${id}`)
 
-      await prisma.presetConfig.delete({
+      await prisma.preset_config.delete({
         where: { id }
       })
 

@@ -107,19 +107,14 @@ export const handler: Handler = async (event) => {
     switch (jobRecord.status) {
       case 'completed':
         response.imageUrl = jobRecord.imageUrl;
-        response.stabilityJobId = jobRecord.stabilityJobId;
-        response.model = jobRecord.model;
-        response.strategy = jobRecord.strategy;
-        response.provider = jobRecord.provider;
         break;
 
       case 'failed':
-        response.errorMessage = jobRecord.errorMessage;
+        // No errorMessage field in schema, use metadata if available
         break;
 
       case 'processing':
-        // Add any progress information if available
-        response.progress = jobRecord.progress || 0;
+        // No progress field in schema
         break;
     }
 

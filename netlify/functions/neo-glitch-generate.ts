@@ -361,7 +361,7 @@ export const handler: Handler = async (event) => {
         userId: userId,
         sourceUrl,
         prompt: normalizedPrompt,
-        preset: presetKey,
+        presetKey: presetKey,
         status: 'processing',
         imageUrl: sourceUrl, // Use source URL temporarily, will be updated after generation
         createdAt: new Date()

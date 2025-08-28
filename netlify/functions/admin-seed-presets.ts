@@ -86,13 +86,29 @@ export const handler: Handler = async (event) => {
       const createdPresets = []
       for (const preset of samplePresets) {
         try {
-          const created = await prisma.presetConfig.upsert({
-            where: { presetKey: preset.presetKey },
-            update: preset,
+          const created = await prisma.preset_config.upsert({
+            where: { preset_key: preset.presetKey },
+            update: {
+              name: preset.name,
+              description: preset.description,
+              strength: preset.strength,
+              category: preset.category,
+              is_enabled: preset.isEnabled,
+              is_custom: preset.isCustom,
+              metadata: preset.metadata,
+              updated_at: new Date()
+            },
             create: {
-              ...preset,
-              createdAt: new Date(),
-              updatedAt: new Date()
+              preset_key: preset.presetKey,
+              name: preset.name,
+              description: preset.description,
+              strength: preset.strength,
+              category: preset.category,
+              is_enabled: preset.isEnabled,
+              is_custom: preset.isCustom,
+              metadata: preset.metadata,
+              created_at: new Date(),
+              updated_at: new Date()
             }
           })
           createdPresets.push(created)

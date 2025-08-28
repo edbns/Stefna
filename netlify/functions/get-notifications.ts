@@ -38,13 +38,13 @@ export const handler: Handler = async (event) => {
 
     try {
       // Build query for notifications
-      let whereClause: any = { userId: user.id };
+      let whereClause: any = { user_id: user.id };
       
       if (unread_only === 'true') {
         whereClause.read = false;
       }
 
-      const notifications = await prisma.notification.findMany({
+      const notifications = await prisma.notifications.findMany({
         where: whereClause,
         select: {
           id: true,
@@ -52,17 +52,17 @@ export const handler: Handler = async (event) => {
           title: true,
           message: true,
           read: true,
-          createdAt: true
+          created_at: true
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
         take: parseInt(limit),
         skip: parseInt(offset)
       });
 
       // Get unread count
-      const unreadCount = await prisma.notification.count({
+      const unreadCount = await prisma.notifications.count({
         where: { 
-          userId: user.id, 
+          user_id: user.id, 
           read: false 
         }
       });
@@ -74,7 +74,7 @@ export const handler: Handler = async (event) => {
         id: notification.id,
         kind: notification.type,
         mediaId: null, // Notifications don't have media_id in current schema
-        createdAt: notification.createdAt,
+        createdAt: notification.created_at,
         read: notification.read,
         metadata: {} // No metadata field in current schema
       }));

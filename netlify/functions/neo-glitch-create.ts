@@ -111,7 +111,7 @@ export const handler: Handler = async (event) => {
        data: {
          userId: userId,
          runId: runId,
-         preset: presetKey,
+         presetKey: presetKey,
          prompt: prompt,
          sourceUrl: sourceAssetId || '',
          imageUrl: '', // Will be updated when generation completes
@@ -122,7 +122,7 @@ export const handler: Handler = async (event) => {
          id: true,
          userId: true,
          runId: true,
-         preset: true,
+         presetKey: true,
          prompt: true,
          status: true,
          createdAt: true,
@@ -137,7 +137,7 @@ export const handler: Handler = async (event) => {
          console.log('✅ [NeoGlitch] Record created successfully:', {
        id: newRecord.id,
        status: newRecord.status,
-       runId: newRecord.runId.substring(0, 16) + '...'
+       runId: newRecord.runId ? newRecord.runId.substring(0, 16) + '...' : 'no-run-id'
      });
 
      await prisma.$disconnect();
@@ -146,7 +146,7 @@ export const handler: Handler = async (event) => {
        id: newRecord.id,
        userId: newRecord.userId,
        runId: newRecord.runId,
-       presetKey: newRecord.preset,
+       presetKey: newRecord.presetKey,
        prompt: newRecord.prompt,
        status: newRecord.status,
        createdAt: newRecord.createdAt,

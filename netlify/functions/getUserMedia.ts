@@ -93,20 +93,20 @@ export const handler: Handler = async (event) => {
     });
 
     // Transform Ghibli Reaction media
-    const ghibliReactionItems = ghibliReactionMedia.map(item => ({
+    const ghibliItems = ghibliReactionMedia.map(item => ({
       id: item.id,
       userId: item.userId,
       finalUrl: item.imageUrl,
       mediaType: 'image',
       prompt: item.prompt,
-      presetKey: item.preset,
+      presetKey: item.presetKey,
       status: 'ready',
       isPublic: false,
       allowRemix: false,
       createdAt: item.createdAt,
       type: 'ghibli-reaction',
       metadata: {
-        presetKey: item.preset,
+        presetKey: item.presetKey,
         presetType: 'ghibli-reaction',
         quality: 'high',
         generationTime: 0,
@@ -121,14 +121,14 @@ export const handler: Handler = async (event) => {
       finalUrl: item.imageUrl,
       mediaType: 'image',
       prompt: item.prompt,
-      presetKey: item.preset,
+      presetKey: item.presetKey,
       status: 'ready',
       isPublic: false,
       allowRemix: false,
       createdAt: item.createdAt,
       type: 'emotion-mask',
       metadata: {
-        presetKey: item.preset,
+        presetKey: item.presetKey,
         presetType: 'emotion-mask',
         quality: 'high',
         generationTime: 0,
@@ -143,14 +143,14 @@ export const handler: Handler = async (event) => {
       finalUrl: item.imageUrl,
       mediaType: 'image',
       prompt: item.prompt,
-      presetKey: item.preset,
+      presetKey: item.presetKey,
       status: 'ready',
       isPublic: false,
       allowRemix: false,
       createdAt: item.createdAt,
       type: 'presets',
       metadata: {
-        presetKey: item.preset,
+        presetKey: item.presetKey,
         presetType: 'presets',
         quality: 'high',
         generationTime: 0,
@@ -165,14 +165,14 @@ export const handler: Handler = async (event) => {
       finalUrl: item.imageUrl,
       mediaType: 'image',
       prompt: item.prompt,
-      presetKey: item.preset,
+      presetKey: item.presetKey,
       status: 'ready',
       isPublic: false,
       allowRemix: false,
       createdAt: item.createdAt,
       type: 'custom-prompt',
       metadata: {
-        presetKey: item.preset,
+        presetKey: item.presetKey,
         presetType: 'custom-prompt',
         quality: 'high',
         generationTime: 0,
@@ -187,7 +187,7 @@ export const handler: Handler = async (event) => {
       finalUrl: item.imageUrl,
       mediaType: 'image',
       prompt: item.prompt,
-      presetKey: item.preset,
+      presetKey: item.presetKey,
       status: 'ready',
       isPublic: false, // NeoGlitch media is always private by default
       allowRemix: false, // NeoGlitch doesn't support remixing
@@ -195,7 +195,7 @@ export const handler: Handler = async (event) => {
       type: 'neo-glitch',
       // Include metadata for preset information
       metadata: {
-        presetKey: item.preset,
+        presetKey: item.presetKey,
         presetType: 'neo-glitch',  // ✅ Neo Glitch specific type
         quality: 'high',
         generationTime: 0,
@@ -205,7 +205,7 @@ export const handler: Handler = async (event) => {
 
     // Combine and sort by creation date
     const allMediaItems = [
-      ...ghibliReactionItems, 
+      ...ghibliItems, 
       ...emotionMaskItems, 
       ...presetsItems, 
       ...customPromptItems, 

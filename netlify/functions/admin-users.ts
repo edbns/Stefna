@@ -40,10 +40,9 @@ export const handler: Handler = async (event) => {
         avatarUrl: true,
         createdAt: true,
         updatedAt: true,
-        settings: {
+        userSettings: {
           select: {
             shareToFeed: true,
-            allowRemix: true,
             mediaUploadAgreed: true
           }
         },
@@ -68,15 +67,14 @@ export const handler: Handler = async (event) => {
       updatedAt: user.updatedAt.toISOString(),
       credits: user.userCredits?.credits || 0,
       isBanned: false, // TODO: Add ban field to user model
-      shareToFeed: user.settings?.shareToFeed || false,
-      allowRemix: user.settings?.allowRemix || true,
-      mediaUploadAgreed: user.settings?.mediaUploadAgreed || false
+      shareToFeed: user.userSettings?.shareToFeed || false,
+      mediaUploadAgreed: user.userSettings?.mediaUploadAgreed || false
     }))
 
     // Calculate stats
     const stats = {
       totalUsers: users.length,
-      activeUsers: users.filter(u => !u.settings?.shareToFeed).length,
+      activeUsers: users.filter(u => !u.userSettings?.shareToFeed).length,
       bannedUsers: 0, // TODO: Implement ban system
       totalCredits: transformedUsers.reduce((sum, user) => sum + user.credits, 0),
       totalMedia: 0 // TODO: Count all media types

@@ -65,7 +65,7 @@ export const handler: Handler = async (event) => {
     try {
       // Find the credit transaction
       const creditTransaction = await prisma.creditTransaction.findUnique({
-        where: { requestId: request_id }
+        where: { id: request_id }
       });
 
       if (!creditTransaction) {
@@ -119,32 +119,31 @@ export const handler: Handler = async (event) => {
 
         // Restore credits to user balance
         const userCredits = await prisma.userCredits.findUnique({
-          where: { user_id: userId }
+          where: { userId: userId }
         });
 
         if (userCredits) {
           const refundAmount = Math.abs(creditTransaction.amount); // Convert negative to positive
-          const newBalance = userCredits.balance + refundAmount;
+          const newCredits = userCredits.credits + refundAmount;
           
           await prisma.userCredits.update({
-            where: { user_id: userId },
+            where: { userId: userId },
             data: { 
-              balance: newBalance,
-              updated_at: new Date()
+              credits: newCredits
             }
           });
 
           console.log('✅ Credits refunded successfully:', {
             refundAmount,
-            oldBalance: userCredits.balance,
-            newBalance
+            oldCredits: userCredits.credits,
+            newCredits
           });
 
           return json({
             ok: true,
             disposition: 'refund',
             refundAmount,
-            newBalance,
+            newCredits,
             message: 'Credits refunded successfully'
           });
         } else {

@@ -27,34 +27,25 @@ export const handler: Handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body || '{}');
-    const { aimlJobId, runId } = body;
+    const { runId } = body;
 
-    if (!aimlJobId && !runId) {
+    if (!runId) {
       return {
         statusCode: 422,
         headers: { 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({
           error: 'MISSING_IDENTIFIER',
-          message: 'Either aimlJobId or runId must be provided'
+          message: 'runId must be provided'
         })
       };
     }
 
-    console.log('🔍 [EmotionMask] Checking status:', { aimlJobId, runId });
+    console.log('🔍 [EmotionMask] Checking status:', { runId });
 
-    let mediaRecord;
-
-    if (aimlJobId) {
-      // Find by AIML job ID
-      mediaRecord = await db.emotionMaskMedia.findFirst({
-        where: { aimlJobId }
-      });
-    } else if (runId) {
-      // Find by run ID
-      mediaRecord = await db.emotionMaskMedia.findUnique({
-        where: { runId: runId.toString() }
-      });
-    }
+    // Find by run ID
+    const mediaRecord = await db.emotionMaskMedia.findUnique({
+      where: { runId: runId.toString() }
+    });
 
     if (!mediaRecord) {
       return {
@@ -81,9 +72,8 @@ export const handler: Handler = async (event) => {
         id: mediaRecord.id,
         status: mediaRecord.status,
         imageUrl: mediaRecord.imageUrl,
-        aimlJobId: mediaRecord.aimlJobId,
         createdAt: mediaRecord.createdAt,
-        preset: mediaRecord.preset,
+        presetKey: mediaRecord.presetKey,
         prompt: mediaRecord.prompt,
         sourceUrl: mediaRecord.sourceUrl,
         userId: mediaRecord.userId

@@ -41,19 +41,9 @@ export const handler: Handler = async (event) => {
     }
     const referrerId = referrer.id;
 
-    // Upsert referral row — unique on new_user_id prevents double awards
-    await prisma.referralSignup.upsert({
-      where: { new_user_id: newUserId },
-      update: {}, // Don't update if exists
-      create: {
-        id: crypto.randomUUID(),
-        referrer_user_id: referrerId,
-        new_user_id: newUserId,
-        referrer_email: referrerEmail,
-        new_user_email: newUserEmail
-      }
-    });
-
+    // Skip referral tracking for now since referralSignup table doesn't exist
+    // TODO: Implement referral tracking when table is created
+    
     // Only award if this is the first time (check ledger for existing referral grants)
     const existingReferralGrant = await prisma.creditTransaction.findFirst({
       where: {
@@ -68,30 +58,21 @@ export const handler: Handler = async (event) => {
     });
     
     if (!existingReferralGrant) {
-      // Get bonus amounts from app config
-      const refBonusConfig = await prisma.appConfig.findUnique({
-        where: { key: 'referral_referrer_bonus' }
-      });
-      const newBonusConfig = await prisma.appConfig.findUnique({
-        where: { key: 'referral_new_bonus' }
-      });
-      
-      const refBonus = refBonusConfig?.value ? parseInt(String(refBonusConfig.value)) : 50;
-      const newBonus = newBonusConfig?.value ? parseInt(String(newBonusConfig.value)) : 25;
+      // Use hardcoded bonus amounts since appConfig table doesn't exist
+      const refBonus = 50; // Referrer gets 50 credits
+      const newBonus = 25; // New user gets 25 credits
 
       // Grant to referrer
       await prisma.creditTransaction.create({
         data: {
           userId: referrerId,
-          requestId: crypto.randomUUID(),
           action: 'referral.referrer',
           amount: refBonus,
           status: 'granted',
           meta: {
             reason: 'referral.referrer',
             new_user_id: newUserId
-          },
-          createdAt: new Date()
+          }
         }
       });
       
@@ -99,42 +80,36 @@ export const handler: Handler = async (event) => {
       await prisma.creditTransaction.create({
         data: {
           userId: newUserId,
-          requestId: crypto.randomUUID(),
           action: 'referral.new',
           amount: newBonus,
           status: 'granted',
           meta: {
             reason: 'referral.new',
             referrer_user_id: referrerId
-          },
-          createdAt: new Date()
+          }
         }
       });
 
       // Update user credits balances
       await prisma.userCredits.upsert({
-        where: { user_id: referrerId },
+        where: { userId: referrerId },
         update: { 
-          balance: { increment: refBonus },
-          updated_at: new Date()
+          credits: { increment: refBonus }
         },
         create: {
-          user_id: referrerId,
-          balance: refBonus,
-          updated_at: new Date()
+          userId: referrerId,
+          credits: refBonus
         }
       });
 
       await prisma.userCredits.upsert({
-        where: { user_id: newUserId },
+        where: { userId: newUserId },
         update: { 
-          balance: { increment: newBonus },
-          updated_at: new Date()
+          credits: { increment: newBonus }
         },
         create: {
-          user_id: newUserId,
-          balance: newBonus,
-          updated_at: new Date()
+          userId: newUserId,
+          credits: newBonus
         }
       });
 

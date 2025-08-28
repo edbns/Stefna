@@ -568,7 +568,7 @@ export const handler: Handler = async (event) => {
         userId,
         sourceUrl,
         prompt,
-        preset: presetKey,
+        presetKey: presetKey,
         runId: runId.toString(),
         status: 'pending',
         imageUrl: sourceUrl // Temporary, will be updated
@@ -660,7 +660,6 @@ export const handler: Handler = async (event) => {
           data: {
             status: 'completed',
             imageUrl: finalImageUrl,
-            aimlJobId: generationResult.aimlJobId,
             metadata: {
               ipaPassed,
               ipaSimilarity: Math.round(ipaSimilarity * 100) / 100, // Round to 2 decimal places
@@ -699,7 +698,6 @@ export const handler: Handler = async (event) => {
             runId: runId.toString(),
             status: 'completed',
             imageUrl: finalImageUrl,
-            aimlJobId: generationResult.aimlJobId,
             provider: 'aiml'
           })
         };

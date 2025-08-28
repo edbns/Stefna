@@ -48,14 +48,10 @@ export const handler: Handler = async (event) => {
     // Fetch user profile with media assets
     try {
       // Get user info, credits, and media assets
-      const [userCredits, appConfig, userMedia, userNeoGlitch] = await Promise.all([
+      const [userCredits, userMedia, userNeoGlitch] = await Promise.all([
         prisma.userCredits.findUnique({
-          where: { user_id: userId },
-          select: { balance: true }
-        }),
-        prisma.appConfig.findUnique({
-          where: { key: 'daily_cap' },
-          select: { value: true }
+          where: { userId: userId },
+          select: { credits: true }
         }),
         // Get media from all dedicated tables
         Promise.all([
@@ -82,8 +78,8 @@ export const handler: Handler = async (event) => {
         })
       ]);
 
-      const balance = userCredits?.balance ?? 0;
-      const dailyCap = appConfig?.value ? parseInt(appConfig.value as string) : 30;
+      const balance = userCredits?.credits ?? 30; // Default to 30 credits
+      const dailyCap = 30; // Hardcoded for now since appConfig table doesn't exist
 
       await prisma.$disconnect();
 

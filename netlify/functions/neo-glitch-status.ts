@@ -112,14 +112,14 @@ export const handler: Handler = async (event) => {
         where: {
           OR: [
             { id: stabilityJobId },
-            { stabilityJobId: stabilityJobId }
+            { runId: stabilityJobId }
           ]
         },
         select: {
           id: true,
           status: true,
           imageUrl: true,
-          stabilityJobId: true,
+          runId: true,
           createdAt: true
         }
       });
@@ -137,7 +137,7 @@ export const handler: Handler = async (event) => {
         id: jobRecord.id,
         status: jobRecord.status,
         hasImage: !!jobRecord.imageUrl,
-        stabilityJobId: jobRecord.stabilityJobId
+        runId: jobRecord.runId
       });
 
       // Return the actual status from the database
@@ -147,16 +147,16 @@ export const handler: Handler = async (event) => {
           status: 'completed',
           message: 'Generation completed successfully',
           imageUrl: jobRecord.imageUrl,
-          stabilityJobId: jobRecord.stabilityJobId
+          runId: jobRecord.runId
         });
       } else if (jobRecord.status === 'failed') {
         return json({
           id: jobRecord.id,
           status: 'failed',
           message: 'Generation failed',
-          stabilityJobId: jobRecord.stabilityJobId
+          runId: jobRecord.runId
         });
-      } else if (jobRecord.status === 'processing' && !jobRecord.stabilityJobId) {
+      } else if (jobRecord.status === 'processing' && !jobRecord.runId) {
         // Check if job has been stuck too long (more than 5 minutes)
         const jobAge = Date.now() - new Date(jobRecord.createdAt).getTime();
         const maxAge = 5 * 60 * 1000; // 5 minutes
@@ -175,7 +175,7 @@ export const handler: Handler = async (event) => {
             id: jobRecord.id,
             status: 'failed',
             message: 'Job failed due to timeout - Stability.ai never started processing',
-            stabilityJobId: null,
+            runId: null,
             error: 'TIMEOUT_ERROR',
             details: 'Job was stuck in initialization for more than 5 minutes'
           });
@@ -186,17 +186,17 @@ export const handler: Handler = async (event) => {
           id: jobRecord.id,
           status: 'processing',
           message: 'Job is being initialized - waiting for Stability.ai to start',
-          stabilityJobId: null,
+          runId: null,
           warning: 'This job may be stuck in initialization. Consider retrying the generation.',
           jobAge: Math.round(jobAge / 1000) + 's'
         });
-      } else if (jobRecord.status === 'processing' && jobRecord.stabilityJobId) {
+      } else if (jobRecord.status === 'processing' && jobRecord.runId) {
         // 🔍 ACTUALLY CHECK STABILITY.AI STATUS - Don't just assume it's processing!
         console.log('🔄 [NeoGlitch] Job is processing, checking Stability.ai status...');
         
         try {
           // Check if Stability.ai job is actually complete
-          const stabilityStatus = await checkStabilityAIStatus(jobRecord.stabilityJobId);
+          const stabilityStatus = await checkStabilityAIStatus(jobRecord.runId);
           
           if (stabilityStatus.status === 'completed' && stabilityStatus.imageUrl) {
             console.log('✅ [NeoGlitch] Stability.ai job completed, updating database');
@@ -215,7 +215,7 @@ export const handler: Handler = async (event) => {
               status: 'completed',
               message: 'Generation completed successfully',
               imageUrl: stabilityStatus.imageUrl,
-              stabilityJobId: jobRecord.stabilityJobId
+              runId: jobRecord.runId
             });
           } else if (stabilityStatus.status === 'failed') {
             console.log('❌ [NeoGlitch] Stability.ai job failed, marking as failed');
@@ -233,7 +233,7 @@ export const handler: Handler = async (event) => {
               id: jobRecord.id,
               status: 'failed',
               message: 'Stability.ai generation failed',
-              stabilityJobId: jobRecord.stabilityJobId,
+              runId: jobRecord.runId,
               error: stabilityStatus.error || 'Generation failed'
             });
           } else {
@@ -242,7 +242,7 @@ export const handler: Handler = async (event) => {
               id: jobRecord.id,
               status: 'processing',
               message: 'Job is being processed by Stability.ai',
-              stabilityJobId: jobRecord.stabilityJobId
+              runId: jobRecord.runId
             });
           }
         } catch (stabilityError) {
@@ -253,7 +253,7 @@ export const handler: Handler = async (event) => {
             id: jobRecord.id,
             status: 'processing',
             message: 'Job is being processed by Stability.ai',
-            stabilityJobId: jobRecord.stabilityJobId,
+            runId: jobRecord.runId,
             warning: 'Unable to check Stability.ai status'
           });
         }
@@ -263,7 +263,7 @@ export const handler: Handler = async (event) => {
           id: jobRecord.id,
           status: 'unknown',
           message: 'Unknown job status',
-          stabilityJobId: jobRecord.stabilityJobId
+          runId: jobRecord.runId
         });
       }
 

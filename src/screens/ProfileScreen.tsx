@@ -281,7 +281,7 @@ const ProfileScreen: React.FC = () => {
       });
       
       // Load persisted user settings (shareToFeed)
-      ;(async () => {
+      (async () => {
         try {
           const token = authService.getToken()
           if (!token) return

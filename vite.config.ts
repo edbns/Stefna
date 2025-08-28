@@ -35,7 +35,7 @@ export default defineConfig({
   },
   // Build optimizations for dev server
   build: {
-    target: 'es2015',
+    target: 'es2020',
     minify: 'terser', // Better minification than esbuild for production
     rollupOptions: {
       output: {
@@ -67,7 +67,7 @@ export default defineConfig({
   },
   // esbuild configuration for cross-platform compatibility
   esbuild: {
-    target: 'es2015',
+    target: 'es2020',
     supported: {
       'top-level-await': true
     }
