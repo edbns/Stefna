@@ -9,6 +9,7 @@ import PrivacyPolicy from './screens/PrivacyPolicy'
 import TermsOfService from './screens/TermsOfService'
 import CookiesPolicy from './screens/CookiesPolicy'
 import ProfileScreen from './screens/ProfileScreen'
+import AdminDashboardScreen from './screens/AdminDashboardScreen'
 import { Navigate } from 'react-router-dom'
 import AuthScreen from './screens/AuthScreen'
 import { initializeAuthBootstrap } from './services/authBootstrap'
@@ -120,6 +121,7 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<HomeNew />} />
           <Route path="/auth" element={<AuthScreen />} />
           <Route path="/profile" element={<ProfileScreen />} />
+          <Route path="/dashboard/management/control" element={<AdminDashboardScreen />} />
           <Route path="/gallery" element={<Navigate to="/" replace />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />

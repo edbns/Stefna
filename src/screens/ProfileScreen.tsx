@@ -19,7 +19,7 @@ import userService from '../services/userService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import { ensureAndUpdateProfile } from '../services/profile'
 import { useProfile } from '../contexts/ProfileContext'
-import AdminDashboard from '../components/AdminDashboard'
+
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
@@ -342,7 +342,7 @@ const ProfileScreen: React.FC = () => {
   // const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [tokenCount, setTokenCount] = useState(0)
   const [showAdminUpgrade, setShowAdminUpgrade] = useState(false)
-  const [showAdminDashboard, setShowAdminDashboard] = useState(false)
+
 
 
   // Unified notification system (same as home page)
@@ -1447,24 +1447,7 @@ const ProfileScreen: React.FC = () => {
             </div>
           </button>
 
-          {/* Admin Dashboard Button */}
-          <button
-            onClick={() => {
-              console.log('🛡️ Admin Dashboard button clicked!')
-              setShowAdminDashboard(true)
-            }}
-            className="w-12 h-12 rounded-full border transition-all duration-300 flex items-center justify-center hover:scale-105 relative group bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30"
-            aria-label="Admin Dashboard"
-            title="Admin Dashboard"
-          >
-            <Shield size={24} className="transition-transform duration-200" />
-            
-            {/* Hover Tooltip */}
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-              Admin Dashboard
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-black/80"></div>
-            </div>
-          </button>
+
 
           {/* Logout Button */}
           <div className="relative">
@@ -2071,11 +2054,7 @@ const ProfileScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Admin Dashboard */}
-      <AdminDashboard 
-        isOpen={showAdminDashboard}
-        onClose={() => setShowAdminDashboard(false)}
-      />
+
 
     </div>
   )
