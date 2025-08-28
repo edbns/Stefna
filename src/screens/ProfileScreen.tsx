@@ -306,6 +306,20 @@ const ProfileScreen: React.FC = () => {
       }
     }
   }, [isAuthenticated])
+
+  // Add event listener for clear-composer-state to fix JavaScript error
+  useEffect(() => {
+    const handleClearComposerState = () => {
+      // This is just to prevent the error - ProfileScreen doesn't have a composer
+      console.log('🎭 [ProfileScreen] Received clear-composer-state event')
+    }
+
+    window.addEventListener('clear-composer-state', handleClearComposerState)
+    
+    return () => {
+      window.removeEventListener('clear-composer-state', handleClearComposerState)
+    }
+  }, [])
   const [referralStats, setReferralStats] = useState<{ invites: number; tokensEarned: number; referralCode: string } | null>(null)
   // const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [tokenCount, setTokenCount] = useState(0)

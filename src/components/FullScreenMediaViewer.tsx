@@ -146,6 +146,13 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
         {/* Info Display - Same row: Preset Tag + Date/Time */}
         <div className="mt-6 flex items-center justify-center space-x-4">
+          {/* Debug Info - Remove after fixing */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="text-white/40 text-xs bg-black/50 px-2 py-1 rounded">
+              Debug: presetKey={current.presetKey}, metadata.presetKey={current.metadata?.presetKey}, type={getPresetType(current)}
+            </div>
+          )}
+          
           {/* Preset Tag */}
           {(current.metadata?.presetKey || current.presetKey) && (
             <PresetTag
