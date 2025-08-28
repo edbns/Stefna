@@ -209,7 +209,7 @@ const handler: Handler = async (event) => {
             userId: true,
             imageUrl: true,
             prompt: true,
-            preset: true,
+            presetKey: true,
             status: true,
             createdAt: true,
             user: {
@@ -234,7 +234,7 @@ const handler: Handler = async (event) => {
             userId: true,
             imageUrl: true,
             prompt: true,
-            preset: true,
+            presetKey: true,
             status: true,
             createdAt: true,
             user: {
@@ -259,7 +259,7 @@ const handler: Handler = async (event) => {
             userId: true,
             imageUrl: true,
             prompt: true,
-            preset: true,
+            presetKey: true,
             status: true,
             createdAt: true,
             user: {
@@ -284,7 +284,7 @@ const handler: Handler = async (event) => {
             userId: true,
             imageUrl: true,
             prompt: true,
-            preset: true,
+            presetKey: true,
             status: true,
             createdAt: true,
             user: {
@@ -354,7 +354,7 @@ const handler: Handler = async (event) => {
         user: item.user,
         finalUrl: item.imageUrl,
         prompt: item.prompt,
-        presetKey: item.preset,
+        presetKey: item.presetKey,
         type: 'ghibli-reaction',
         createdAt: item.createdAt
       }));
@@ -365,7 +365,7 @@ const handler: Handler = async (event) => {
         user: item.user,
         finalUrl: item.imageUrl,
         prompt: item.prompt,
-        presetKey: item.preset,
+        presetKey: item.presetKey,
         type: 'emotion-mask',
         createdAt: item.createdAt
       }));
@@ -376,7 +376,7 @@ const handler: Handler = async (event) => {
         user: item.user,
         finalUrl: item.imageUrl,
         prompt: item.prompt,
-        presetKey: item.preset,
+        presetKey: item.presetKey,
         type: 'presets',
         createdAt: item.createdAt
       }));
@@ -387,7 +387,7 @@ const handler: Handler = async (event) => {
         user: item.user,
         finalUrl: item.imageUrl,
         prompt: item.prompt,
-        presetKey: item.preset,
+        presetKey: item.presetKey,
         type: 'custom-prompt',
         createdAt: item.createdAt
       }));
@@ -408,7 +408,7 @@ const handler: Handler = async (event) => {
           finalUrl: item.imageUrl, // Neo Tokyo Glitch uses imageUrl
           mediaType: 'image',
           prompt: item.prompt,
-          presetKey: item.preset,
+          presetKey: item.presetKey,
           status: item.status,
           createdAt: item.createdAt,
           type: 'neo-glitch' // Identify as Neo Tokyo Glitch
