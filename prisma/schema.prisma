@@ -220,13 +220,11 @@ model StoryPhoto {
 }
 
 model UserCredits {
-  id        String   @id @default(cuid())
-  userId    String   @unique @map("user_id")
+  userId    String   @id @map("user_id")
   credits   Int      @default(30)
   updatedAt DateTime @updatedAt @map("updated_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
   @@map("user_credits")
 }
 
