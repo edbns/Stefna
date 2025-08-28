@@ -38,12 +38,27 @@ interface AdminStats {
   activeUsers: number
 }
 
+interface PresetConfig {
+  id: string
+  presetKey: string
+  name: string
+  description: string
+  strength: number
+  category: string
+  isEnabled: boolean
+  isCustom: boolean
+  metadata: any
+  createdAt: string
+  updatedAt: string
+}
+
 const AdminDashboardScreen: React.FC = () => {
   const navigate = useNavigate()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [adminSecret, setAdminSecret] = useState('')
-  const [activeTab, setActiveTab] = useState<'users' | 'media' | 'credits' | 'config' | 'logs' | 'referrals'>('users')
+  const [activeTab, setActiveTab] = useState<'users' | 'media' | 'credits' | 'presets' | 'config' | 'logs' | 'referrals'>('users')
   const [users, setUsers] = useState<User[]>([])
+  const [presets, setPresets] = useState<PresetConfig[]>([])
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     totalMedia: 0,
@@ -53,6 +68,7 @@ const AdminDashboardScreen: React.FC = () => {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [presetSearchTerm, setPresetSearchTerm] = useState('')
 
   // Check admin authentication
   useEffect(() => {
@@ -97,6 +113,9 @@ const AdminDashboardScreen: React.FC = () => {
         setUsers(usersData.users || [])
         setStats(usersData.stats || stats)
       }
+
+      // Load presets
+      await loadPresets()
     } catch (error) {
       console.error('Failed to load admin data:', error)
     } finally {
@@ -177,9 +196,107 @@ const AdminDashboardScreen: React.FC = () => {
     }
   }
 
+  // Preset management functions
+  const loadPresets = async () => {
+    try {
+      const response = await authenticatedFetch('/.netlify/functions/admin-presets', {
+        method: 'GET',
+        headers: {
+          'X-Admin-Secret': adminSecret
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setPresets(data.presets || [])
+      }
+    } catch (error) {
+      console.error('Failed to load presets:', error)
+    }
+  }
+
+  const togglePreset = async (presetId: string, isEnabled: boolean) => {
+    try {
+      const response = await authenticatedFetch('/.netlify/functions/admin-presets', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Secret': adminSecret
+        },
+        body: JSON.stringify({
+          id: presetId,
+          updates: { isEnabled }
+        })
+      })
+      
+      if (response.ok) {
+        // Update local state
+        setPresets(prev => prev.map(preset => 
+          preset.id === presetId ? { ...preset, isEnabled } : preset
+        ))
+      }
+    } catch (error) {
+      console.error('Failed to toggle preset:', error)
+    }
+  }
+
+  const updatePreset = async (presetId: string, updates: Partial<PresetConfig>) => {
+    try {
+      const response = await authenticatedFetch('/.netlify/functions/admin-presets', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Secret': adminSecret
+        },
+        body: JSON.stringify({
+          id: presetId,
+          updates
+        })
+      })
+      
+      if (response.ok) {
+        // Update local state
+        setPresets(prev => prev.map(preset => 
+          preset.id === presetId ? { ...preset, ...updates } : preset
+        ))
+      }
+    } catch (error) {
+      console.error('Failed to update preset:', error)
+    }
+  }
+
+  const deletePreset = async (presetId: string) => {
+    if (!confirm('Are you sure you want to delete this preset? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      const response = await authenticatedFetch('/.netlify/functions/admin-presets', {
+        method: 'DELETE',
+        headers: {
+          'X-Admin-Secret': adminSecret
+        },
+        body: JSON.stringify({ id: presetId })
+      })
+      
+      if (response.ok) {
+        // Remove preset from local state
+        setPresets(prev => prev.filter(preset => preset.id !== presetId))
+      }
+    } catch (error) {
+      console.error('Failed to delete preset:', error)
+    }
+  }
+
   const filteredUsers = users.filter(user => 
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const filteredPresets = presets.filter(preset => 
+    preset.name.toLowerCase().includes(presetSearchTerm.toLowerCase()) ||
+    preset.presetKey.toLowerCase().includes(presetSearchTerm.toLowerCase()) ||
+    preset.category.toLowerCase().includes(presetSearchTerm.toLowerCase())
   )
 
   // If not authenticated, show login screen
@@ -283,17 +400,29 @@ const AdminDashboardScreen: React.FC = () => {
               <span>Media Browser</span>
             </button>
             
-            <button
-              onClick={() => setActiveTab('credits')}
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
-                activeTab === 'credits' 
-                  ? 'bg-red-500 text-white' 
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <Coins size={20} />
-              <span>Credit System</span>
-            </button>
+                              <button
+                    onClick={() => setActiveTab('credits')}
+                    className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+                      activeTab === 'credits' 
+                        ? 'bg-red-500 text-white' 
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <Coins size={20} />
+                    <span>Credit System</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setActiveTab('presets')}
+                    className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+                      activeTab === 'presets' 
+                        ? 'bg-red-500 text-white' 
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <Settings size={20} />
+                    <span>Preset Manager</span>
+                  </button>
             
             <button
               onClick={() => setActiveTab('config')}
@@ -481,13 +610,161 @@ const AdminDashboardScreen: React.FC = () => {
               </div>
             )}
 
-            {/* Other tabs will be implemented next */}
-            {activeTab !== 'users' && (
-              <div className="text-center py-12">
-                <div className="text-white/40 text-lg">Coming Soon...</div>
-                <div className="text-white/20 text-sm mt-2">This section is under development</div>
-              </div>
-            )}
+                                {/* Preset Manager Tab */}
+                    {activeTab === 'presets' && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-white">Preset System Manager</h3>
+                          <div className="flex items-center space-x-3">
+                            <div className="relative">
+                              <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" />
+                              <input
+                                type="text"
+                                value={presetSearchTerm}
+                                onChange={(e) => setPresetSearchTerm(e.target.value)}
+                                placeholder="Search presets..."
+                                className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Presets Table */}
+                        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead className="bg-white/10">
+                                <tr>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Preset</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Category</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Strength</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Status</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/10">
+                                {filteredPresets.map((preset) => (
+                                  <tr key={preset.id} className="hover:bg-white/5">
+                                    <td className="px-4 py-3">
+                                      <div>
+                                        <div className="text-sm font-medium text-white">{preset.name}</div>
+                                        <div className="text-xs text-white/60">{preset.presetKey}</div>
+                                        {preset.description && (
+                                          <div className="text-xs text-white/40 mt-1">{preset.description}</div>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
+                                        {preset.category}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center space-x-2">
+                                        <span className="text-sm text-white">{preset.strength}</span>
+                                        <div className="w-16 bg-white/10 rounded-full h-2">
+                                          <div 
+                                            className="bg-white h-2 rounded-full transition-all duration-300"
+                                            style={{ width: `${Math.min(preset.strength * 100, 100)}%` }}
+                                          ></div>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center space-x-2">
+                                        <button
+                                          onClick={() => togglePreset(preset.id, !preset.isEnabled)}
+                                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                            preset.isEnabled
+                                              ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                              : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                                          }`}
+                                        >
+                                          {preset.isEnabled ? 'Enabled' : 'Disabled'}
+                                        </button>
+                                        {preset.isCustom && (
+                                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400">
+                                            Custom
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center space-x-2">
+                                        <button
+                                          onClick={() => {
+                                            // TODO: Implement edit modal
+                                            alert('Edit preset functionality coming soon!')
+                                          }}
+                                          className="px-3 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                                        >
+                                          Edit
+                                        </button>
+                                        {preset.isCustom && (
+                                          <button
+                                            onClick={() => deletePreset(preset.id)}
+                                            className="px-3 py-1 rounded text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                                          >
+                                            Delete
+                                          </button>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Add New Preset Button */}
+                        <div className="text-center space-y-3">
+                          <button
+                            onClick={() => {
+                              // TODO: Implement add preset modal
+                              alert('Add preset functionality coming soon!')
+                            }}
+                            className="px-6 py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors"
+                          >
+                            + Add New Preset
+                          </button>
+                          
+                          <button
+                            onClick={async () => {
+                              try {
+                                const response = await authenticatedFetch('/.netlify/functions/admin-seed-presets', {
+                                  method: 'POST',
+                                  headers: {
+                                    'X-Admin-Secret': adminSecret
+                                  }
+                                })
+                                
+                                if (response.ok) {
+                                  alert('Sample presets seeded successfully!')
+                                  loadPresets() // Reload presets
+                                } else {
+                                  alert('Failed to seed presets')
+                                }
+                              } catch (error) {
+                                console.error('Failed to seed presets:', error)
+                                alert('Error seeding presets')
+                              }
+                            }}
+                            className="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors"
+                          >
+                            🌱 Seed Sample Presets
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Other tabs will be implemented next */}
+                    {activeTab !== 'users' && activeTab !== 'presets' && (
+                      <div className="text-center py-12">
+                        <div className="text-white/40 text-lg">Coming Soon...</div>
+                        <div className="text-white/20 text-sm mt-2">This section is under development</div>
+                      </div>
+                    )}
           </div>
         </div>
       </div>

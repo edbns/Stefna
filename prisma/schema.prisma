@@ -15,6 +15,24 @@ model Extensions {
   @@map("_extensions")
 }
 
+model PresetConfig {
+  id          String   @id @default(cuid())
+  presetKey   String   @unique @map("preset_key")
+  name        String
+  description String   @default("")
+  strength    Float    @default(1.0)
+  category    String   @default("custom")
+  isEnabled   Boolean  @default(true) @map("is_enabled")
+  isCustom    Boolean  @default(false) @map("is_custom")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([category, isEnabled])
+  @@index([presetKey])
+  @@map("preset_config")
+}
+
 model User {
   id                 String              @id @default(cuid())
   email              String              @unique
