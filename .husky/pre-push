@@ -1,0 +1,27 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 [Pre-Push Hook] Running Prisma Safety Check..."
+echo "📋 Validating all field names before push..."
+
+# Run the safety check script
+node scripts/checkFields.js
+
+if [ $? -eq 0 ]; then
+    echo "✅ [Pre-Push Hook] Prisma Safety Check PASSED!"
+    echo "🚀 Safe to push - all fields validated successfully!"
+    exit 0
+else
+    echo "❌ [Pre-Push Hook] Prisma Safety Check FAILED!"
+    echo "🚨 Cannot push - schema issues detected!"
+    echo ""
+    echo "🔧 To fix this:"
+    echo "   1. Check the error message above"
+    echo "   2. Update schema.prisma if needed"
+    echo "   3. Run: npx prisma generate"
+    echo "   4. Run: npx prisma db push"
+    echo "   5. Test: node scripts/checkFields.js"
+    echo "   6. Try pushing again"
+    echo ""
+    exit 1
+fi

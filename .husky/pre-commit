@@ -1,1 +1,31 @@
-npm test
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 [Pre-Commit Hook] Running basic safety checks..."
+
+# Check if Prisma schema is valid
+echo "📋 Validating Prisma schema..."
+npx prisma validate
+
+if [ $? -eq 0 ]; then
+    echo "✅ [Pre-Commit Hook] Prisma schema is valid!"
+else
+    echo "❌ [Pre-Commit Hook] Prisma schema validation failed!"
+    echo "🚨 Cannot commit - fix schema issues first!"
+    exit 1
+fi
+
+# Check if Prisma client is up to date
+echo "📋 Checking Prisma client..."
+npx prisma generate --silent
+
+if [ $? -eq 0 ]; then
+    echo "✅ [Pre-Commit Hook] Prisma client is up to date!"
+else
+    echo "❌ [Pre-Commit Hook] Prisma client generation failed!"
+    echo "🚨 Cannot commit - fix Prisma issues first!"
+    exit 1
+fi
+
+echo "🎉 [Pre-Commit Hook] All checks passed! Safe to commit."
+exit 0
