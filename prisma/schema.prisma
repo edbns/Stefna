@@ -34,35 +34,35 @@ model PresetConfig {
 }
 
 model User {
-  id                 String              @id @default(cuid())
-  email              String              @unique
-  name               String?
-  avatarUrl          String?             @map("avatar_url")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
-  creditTransactions CreditTransaction[]
-  userCredits        UserCredits?
-  media_assets       media_assets[]
-  neoGlitchMedia     neoGlitchMedia[]
+  id                  String                @id @default(cuid())
+  email               String                @unique
+  name                String?
+  avatarUrl           String?               @map("avatar_url")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+  creditTransactions  CreditTransaction[]
+  customPromptMedia   customPromptMedia[]
+  emotionMaskMedia    emotionMaskMedia[]
   ghibliReactionMedia ghibliReactionMedia[]
-  emotionMaskMedia   emotionMaskMedia[]
-  presetsMedia       presetsMedia[]
-  customPromptMedia  customPromptMedia[]
-  notifications      Notification[]
-  stories            Story[]
-  settings           UserSettings?
+  media_assets        media_assets[]
+  neoGlitchMedia      neoGlitchMedia[]
+  notifications       Notification[]
+  presetsMedia        presetsMedia[]
+  stories             Story[]
+  userCredits         UserCredits?
+  settings            UserSettings?
 
   @@map("users")
 }
 
 model UserSettings {
-  id                    String   @id @default(cuid())
-  userId                String   @unique @map("user_id")
-  shareToFeed           Boolean  @default(true) @map("share_to_feed")
-  allowRemix            Boolean  @default(true) @map("allow_remix")
-  mediaUploadAgreed     Boolean  @default(false) @map("media_upload_agreed")
-  updatedAt             DateTime @updatedAt @map("updated_at")
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String   @id @default(cuid())
+  userId            String   @unique @map("user_id")
+  shareToFeed       Boolean  @default(true) @map("share_to_feed")
+  allowRemix        Boolean  @default(true) @map("allow_remix")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  mediaUploadAgreed Boolean  @default(false) @map("media_upload_agreed")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
 }
@@ -189,14 +189,13 @@ model StoryPhoto {
   @@map("story_photos")
 }
 
-// Ghibli Reaction Media
 model ghibliReactionMedia {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  imageUrl  String  @map("image_url")
+  imageUrl  String   @map("image_url")
   prompt    String
   preset    String
-  status    String  @default("completed")
+  status    String   @default("completed")
   createdAt DateTime @default(now()) @map("created_at")
   metadata  Json?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -206,14 +205,13 @@ model ghibliReactionMedia {
   @@map("ghibli_reaction_media")
 }
 
-// Emotion Mask Media
 model emotionMaskMedia {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  imageUrl  String  @map("image_url")
+  imageUrl  String   @map("image_url")
   prompt    String
   preset    String
-  status    String  @default("completed")
+  status    String   @default("completed")
   createdAt DateTime @default(now()) @map("created_at")
   metadata  Json?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -223,14 +221,13 @@ model emotionMaskMedia {
   @@map("emotion_mask_media")
 }
 
-// Presets Media
 model presetsMedia {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  imageUrl  String  @map("image_url")
+  imageUrl  String   @map("image_url")
   prompt    String
   preset    String
-  status    String  @default("completed")
+  status    String   @default("completed")
   createdAt DateTime @default(now()) @map("created_at")
   metadata  Json?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -240,14 +237,13 @@ model presetsMedia {
   @@map("presets_media")
 }
 
-// Custom Prompt Media
 model customPromptMedia {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  imageUrl  String  @map("image_url")
+  imageUrl  String   @map("image_url")
   prompt    String
   preset    String
-  status    String  @default("completed")
+  status    String   @default("completed")
   createdAt DateTime @default(now()) @map("created_at")
   metadata  Json?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -257,7 +253,6 @@ model customPromptMedia {
   @@map("custom_prompt_media")
 }
 
-// Authentication OTP
 model authOtp {
   id        String   @id @default(cuid())
   email     String

@@ -60,12 +60,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   // 🔍 DEBUG: Log preset data for first few items
   React.useEffect(() => {
     if (media.length > 0) {
-      console.log('🔍 [MasonryMediaGrid] Media items preset data:', JSON.stringify(media.slice(0, 3).map(item => ({
-        id: item.id,
-        presetKey: item.metadata?.presetKey || item.presetKey,
-        type: item.metadata?.presetType || item.type,
-        metadata: item.metadata
-      })), null, 2));
+
     }
   }, [media]);
 
