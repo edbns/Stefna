@@ -1795,6 +1795,103 @@ const HomeNew: React.FC = () => {
       setIsComposerOpen(false);
 
       // 🎭 NEO TOKYO GLITCH: Use Stability.ai (3-tier) + AIML fallback
+      
+      // Poll for job completion function
+      const pollForJobCompletion = async (jobId: string, prompt: string, meta: any) => {
+        console.log('🔄 [NeoGlitch] Starting to poll for job completion:', jobId);
+        
+        const maxAttempts = 60; // 3 minutes max
+        let attempts = 0;
+        
+        const poll = async () => {
+          if (attempts >= maxAttempts) {
+            console.error('❌ [NeoGlitch] Job polling timed out');
+            notifyError({ title: 'Generation failed', message: 'Job timed out' });
+            endGeneration(genId);
+            setNavGenerating(false);
+            return;
+          }
+          
+          attempts++;
+          console.log(`🔄 [NeoGlitch] Polling attempt ${attempts}/${maxAttempts}`);
+          
+          try {
+            const statusResponse = await authenticatedFetch(`/.netlify/functions/poll-glitch-job?jobId=${jobId}`, {
+              method: 'GET'
+            });
+            
+            if (!statusResponse.ok) {
+              throw new Error(`Status check failed: ${statusResponse.status}`);
+            }
+            
+            const status = await statusResponse.json();
+            console.log('📊 [NeoGlitch] Job status:', status);
+            
+            if (status.status === 'completed' && status.imageUrl) {
+              console.log('🎉 [NeoGlitch] Job completed successfully!');
+              
+              // Show "Ready" toast with thumbnail
+              notifyReady({ 
+                title: 'Your media is ready', 
+                message: 'Tap to open',
+                thumbUrl: status.imageUrl,
+                onClickThumb: () => {
+                  // Open the media viewer
+                  setViewerMedia([{
+                    id: 'generated-' + Date.now(),
+                    userId: 'current-user',
+                    type: 'photo',
+                    url: status.imageUrl,
+                    prompt: prompt,
+                    aspectRatio: 1,
+                    width: 1024,
+                    height: 1024,
+                    timestamp: new Date().toISOString(),
+                    tokensUsed: 1,
+                    likes: 0,
+                    isPublic: true,
+                    tags: [],
+                    metadata: { quality: 'high', generationTime: Date.now(), modelVersion: 'stability-ai' }
+                  }]);
+                  setViewerStartIndex(0);
+                  setViewerOpen(true);
+                }
+              });
+              
+              // End generation and refresh feed
+              endGeneration(genId);
+              setNavGenerating(false);
+              loadFeed();
+              
+              // Clear composer after delay
+              setTimeout(() => {
+                resetComposerState();
+              }, 3000);
+              
+              return;
+            } else if (status.status === 'failed') {
+              console.error('❌ [NeoGlitch] Job failed:', status.errorMessage);
+              notifyError({ title: 'Generation failed', message: status.errorMessage || 'Unknown error' });
+              endGeneration(genId);
+              setNavGenerating(false);
+              return;
+            } else {
+              // Still processing, continue polling
+              console.log('⏳ [NeoGlitch] Job still processing, continuing to poll...');
+              setTimeout(poll, 3000); // Poll every 3 seconds
+            }
+          } catch (error) {
+            console.error('❌ [NeoGlitch] Polling error:', error);
+            notifyError({ title: 'Status check failed', message: 'Please try again' });
+            endGeneration(genId);
+            setNavGenerating(false);
+          }
+        };
+        
+        // Start polling
+        poll();
+      };
+      
       if (kind === 'neotokyoglitch') {
         console.log('🚀 [NeoGlitch] Starting generation with Stability.ai (3-tier) + AIML fallback');
         
@@ -1815,15 +1912,13 @@ const HomeNew: React.FC = () => {
           return;
         }
         
-        // Call our new neo-glitch-generate function
-        const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-generate', {
+        // Call our new async start-glitch-job function
+        const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/start-glitch-job', {
           method: 'POST',
           body: JSON.stringify({
             prompt: effectivePrompt,
-            userId: authService.getCurrentUser()?.id,
             presetKey: generationMeta?.presetKey || 'base',
-            sourceUrl,
-            runId: genId
+            sourceUrl
           })
         });
         
@@ -1833,6 +1928,22 @@ const HomeNew: React.FC = () => {
         
         const neoGlitchResult = await neoGlitchResponse.json();
         console.log('✅ [NeoGlitch] Generation result:', neoGlitchResult);
+        
+        // Handle new async job system response
+        if (neoGlitchResult.ok && neoGlitchResult.jobId) {
+          console.log('🔄 [NeoGlitch] Job started successfully, job ID:', neoGlitchResult.jobId);
+          
+          // Show "Added to queue" toast
+          notifyQueue({ 
+            title: 'Add to queue', 
+            message: 'We\'ll start processing it shortly.'
+          });
+          
+          // Start polling for job completion
+          pollForJobCompletion(neoGlitchResult.jobId, effectivePrompt, generationMeta);
+          
+          return;
+        }
         
         // Handle the response based on status
         if (neoGlitchResult.status === 'completed' && neoGlitchResult.imageUrl) {
@@ -2130,15 +2241,14 @@ const HomeNew: React.FC = () => {
         try {
           // Call Neo Tokyo Glitch backend directly (like Ghibli calls AIML API)
           
-          // Call Neo Tokyo Glitch backend directly (like Ghibli calls AIML API)
-          const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-generate', {
+          // Call our new async start-glitch-job function
+          const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/start-glitch-job', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               prompt: effectivePrompt,
               presetKey: generationMeta.presetKey,
-              sourceUrl: sourceUrl,
-              runId: genId
+              sourceUrl: sourceUrl
             })
           });
           
@@ -2148,6 +2258,22 @@ const HomeNew: React.FC = () => {
           
           const neoGlitchBody = await neoGlitchResponse.json();
           console.log('✅ [NeoGlitch] Backend response:', neoGlitchBody);
+          
+          // Handle new async job system response
+          if (neoGlitchBody.ok && neoGlitchBody.jobId) {
+            console.log('🔄 [NeoGlitch] Job started successfully, job ID:', neoGlitchBody.jobId);
+            
+            // Show "Added to queue" toast
+            notifyQueue({ 
+              title: 'Add to queue', 
+              message: 'We\'ll start processing it shortly.'
+            });
+            
+            // Start polling for job completion
+            pollForJobCompletion(neoGlitchBody.jobId, effectivePrompt, generationMeta);
+            
+            return;
+          }
           
           // Handle immediate completion (Stability.ai returns immediately - like Ghibli)
           if (neoGlitchBody.status === 'completed' && neoGlitchBody.imageUrl) {
