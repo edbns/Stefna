@@ -45,33 +45,45 @@ model CreditTransaction {
 }
 
 model CustomPromptMedia {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  imageUrl   String   @map("image_url")
-  prompt     String
-  preset     String
-  status     String   @default("completed")
-  createdAt  DateTime @default(now()) @map("created_at")
-  metadata   Json?
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  imageUrl      String?  @map("image_url")
+  sourceUrl     String   @map("source_url")
+  prompt        String
+  presetKey     String   @map("preset_key")
+  status        String   @default("processing")
+  errorMessage  String?  @map("error_message")
+  runId         String?  @unique @map("run_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @map("updated_at")
+  metadata      Json?
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
+  @@index([presetKey])
+  @@index([runId])
   @@index([userId, createdAt(sort: Desc)])
   @@map("custom_prompt_media")
 }
 
 model EmotionMaskMedia {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  imageUrl   String   @map("image_url")
-  prompt     String
-  preset     String
-  status     String   @default("completed")
-  createdAt  DateTime @map("created_at")
-  metadata   Json?
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  imageUrl      String?  @map("image_url")
+  sourceUrl     String   @map("source_url")
+  prompt        String
+  presetKey     String   @map("preset_key")
+  status        String   @default("processing")
+  errorMessage  String?  @map("error_message")
+  runId         String?  @unique @map("run_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @map("updated_at")
+  metadata      Json?
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
+  @@index([presetKey])
+  @@index([runId])
   @@index([userId, createdAt(sort: Desc)])
   @@map("emotion_mask_media")
 }
@@ -85,12 +97,14 @@ model GhibliReactionMedia {
   presetKey     String   @map("preset_key")
   status        String   @default("processing")
   errorMessage  String?  @map("error_message")
+  runId         String?  @unique @map("run_id")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @default(now()) @map("updated_at")
   metadata      Json?
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
+  @@index([runId])
   @@index([userId, createdAt(sort: Desc)])
   @@map("ghibli_reaction_media")
 }
@@ -177,17 +191,23 @@ model preset_config {
 }
 
 model PresetsMedia {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  imageUrl   String   @map("image_url")
-  prompt     String
-  preset     String
-  status     String   @default("completed")
-  createdAt  DateTime @map("created_at")
-  metadata   Json?
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  imageUrl      String?  @map("image_url")
+  sourceUrl     String   @map("source_url")
+  prompt        String
+  presetKey     String   @map("preset_key")
+  status        String   @default("processing")
+  errorMessage  String?  @map("error_message")
+  runId         String?  @unique @map("run_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @map("updated_at")
+  metadata      Json?
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
+  @@index([presetKey])
+  @@index([runId])
   @@index([userId, createdAt(sort: Desc)])
   @@map("presets_media")
 }
