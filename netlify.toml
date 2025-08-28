@@ -8,6 +8,7 @@
   NPM_FLAGS = "--prefer-offline --no-audit"
   VITE_BUILD_OPTIMIZE = "true"
   PRISMA_GENERATE_DATAPROXY = "false"
+  PRISMA_CLIENT_ENGINE_TYPE = "binary"
 
 # Production context
 [context.production]
