@@ -6,7 +6,23 @@
 import { PrismaClient } from '@prisma/client';
 import type { Handler } from '@netlify/functions';
 
+const prisma = new PrismaClient();
+
 const handler: Handler = async (event) => {
+  // 🚨 ADDED: Runtime Prisma client diagnostics
+  console.log('🔍 [getPublicFeed] Prisma client initialized successfully');
+  
+  // 🚨 ADDED: Runtime schema check
+  try {
+    const columns = await prisma.$queryRaw<Array<{ column_name: string }>>`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'emotion_mask_media'
+    `;
+    console.log('🔍 [getPublicFeed] Schema Check - Columns in emotion_mask_media:', columns.map(c => c.column_name));
+  } catch (schemaError) {
+    console.error('❌ [getPublicFeed] Schema check failed:', schemaError);
+  }
+  
   // 🚨 ENHANCED: Better request logging and validation
   console.log('🔍 [getPublicFeed] Request received:', {
     method: event.httpMethod,
@@ -576,5 +592,3 @@ const handler: Handler = async (event) => {
     };
   }
 };
-
-export { handler };

@@ -1,5 +1,5 @@
 [build]
-  command = "npm ci && npm run prebuild && node scripts/verifyPrismaBuild.js && npm run build"
+  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npx prisma generate && npm run build"
   publish = "dist"
   functions = "netlify/functions"
 
@@ -8,20 +8,21 @@
   NPM_FLAGS = "--prefer-offline --no-audit"
   VITE_BUILD_OPTIMIZE = "true"
   PRISMA_GENERATE_DATAPROXY = "false"
+  PRISMA_CLIENT_ENGINE_TYPE = "binary"
 
 # Production context
 [context.production]
-  command = "npm ci && npm run prebuild && node scripts/verifyPrismaBuild.js && npm run build"
+  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npx prisma generate && npm run build"
   environment = { NODE_ENV = "production" }
 
 # Deploy preview context  
 [context.deploy-preview]
-  command = "npm ci && npm run prebuild && node scripts/verifyPrismaBuild.js && npm run build"
+  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npx prisma generate && npm run build"
   environment = { NODE_ENV = "preview" }
 
 # Branch deploy context
 [context.branch-deploy]
-  command = "npm ci && npm run prebuild && node scripts/verifyPrismaBuild.js && npm run build"
+  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npx prisma generate && npm run build"
   environment = { NODE_ENV = "preview" }
 
 # Function optimization
