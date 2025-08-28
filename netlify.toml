@@ -1,28 +1,29 @@
 [build]
-  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npm install --include=optional && npx prisma generate && npm run build"
+  command = "bash scripts/build-for-netlify.sh"
   publish = "dist"
   functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20.19.4"
-  NPM_FLAGS = "--prefer-offline --no-audit --include=optional"
+  NPM_FLAGS = "--prefer-offline --no-audit --force"
   VITE_BUILD_OPTIMIZE = "true"
   PRISMA_GENERATE_DATAPROXY = "false"
   PRISMA_CLIENT_ENGINE_TYPE = "binary"
+  ESBUILD_BINARY_PATH = "node_modules/@esbuild/linux-x64/bin/esbuild"
 
 # Production context
 [context.production]
-  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npm install --include=optional && npx prisma generate && npm run build"
+  command = "bash scripts/build-for-netlify.sh"
   environment = { NODE_ENV = "production" }
 
 # Deploy preview context  
 [context.deploy-preview]
-  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npm install --include=optional && npx prisma generate && npm run build"
+  command = "bash scripts/build-for-netlify.sh"
   environment = { NODE_ENV = "preview" }
 
 # Branch deploy context
 [context.branch-deploy]
-  command = "rm -rf node_modules/.prisma && rm -rf prisma/generated && npm install --include=optional && npx prisma generate && npm run build"
+  command = "bash scripts/build-for-netlify.sh"
   environment = { NODE_ENV = "preview" }
 
 # Function optimization
