@@ -4253,7 +4253,7 @@ const HomeNew: React.FC = () => {
                     
                     {/* Presets dropdown - clean and simple */}
                     {presetsOpen && (
-                                             <div className="absolute bottom-full left-0 mb-2 bg-gray-700 rounded-xl p-3 w-80 z-50 shadow-2xl shadow-black/20">
+                                             <div className="absolute bottom-full left-0 mb-2 rounded-xl p-3 w-80 z-50 shadow-2xl shadow-black/20" style={{ backgroundColor: '#333333' }}>
                         {/* Preset options - all visible, no scrolling */}
                         <div className="space-y-1">
                           {/* Preset options */}
@@ -4552,7 +4552,7 @@ const HomeNew: React.FC = () => {
                     {/* Story Time presets dropdown - show when in Story Time mode */}
                     {composerState.mode === 'storytime' && storyTimeDropdownOpen && (
                       <div className="absolute bottom-full left-0 mb-2 z-50">
-                        <div className="bg-gray-700 rounded-xl shadow-2xl p-3 w-80">
+                        <div className="rounded-xl shadow-2xl p-3 w-80" style={{ backgroundColor: '#333333' }}>
                           <div className="space-y-1">
                             {/* Story Time preset options */}
                             {[

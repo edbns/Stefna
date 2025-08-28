@@ -15,7 +15,7 @@ export function EmotionMaskPicker({
   disabled = false,
 }: EmotionMaskPickerProps) {
   return (
-    <div className="bg-gray-700 rounded-xl shadow-2xl p-3 w-80">
+    <div className="rounded-xl shadow-2xl p-3 w-80" style={{ backgroundColor: '#333333' }}>
       <div className="space-y-1">
         {/* Emotion Mask preset options - including the None option from presets */}
         {presets.map((preset) => (
