@@ -118,7 +118,7 @@ export const handler: Handler = async (event) => {
       console.log(`ℹ️ Referral already processed for user ${newUserId}`);
     }
 
-    await q($disconnect();
+    
     return json({ ok: true });
   } catch (e) {
     console.error('❌ Referral processing error:', e);

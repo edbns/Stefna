@@ -248,7 +248,7 @@ async function processStoryTimeJob(job: any, storyId: string) {
     console.log(`✅ [Story Time] Story ${storyId} completed successfully!`);
     console.log(`🔒 [Story Time] IPA integration ready for full implementation`);
     
-    await q($disconnect();
+    
     return { success: true, storyId, status: 'completed' };
     
   } catch (error) {
@@ -262,7 +262,7 @@ async function processStoryTimeJob(job: any, storyId: string) {
       }
     });
     
-    await q($disconnect();
+    
     throw error;
   }
 }
@@ -313,7 +313,7 @@ export const handler: Handler = async (event) => {
     });
 
     if (!story) {
-      await q($disconnect();
+      
       return {
         statusCode: 404,
         headers: { 'Access-Control-Allow-Origin': '*' },
@@ -322,7 +322,7 @@ export const handler: Handler = async (event) => {
     }
 
     if (story.status !== 'pending') {
-      await q($disconnect();
+      
       return {
         statusCode: 200,
         headers: { 'Access-Control-Allow-Origin': '*' },
@@ -344,7 +344,7 @@ export const handler: Handler = async (event) => {
       }
     });
 
-    await q($disconnect();
+    
 
     // Process the story
     const result = await processStoryTimeJob(story, storyId);

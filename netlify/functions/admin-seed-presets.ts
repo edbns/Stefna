@@ -134,6 +134,6 @@ export const handler: Handler = async (event) => {
     console.error('❌ [Admin] Error seeding presets:', e)
     return json({ error: 'Failed to seed presets' }, { status: 500 })
   } finally {
-    await q($disconnect();
+    
   }
 }

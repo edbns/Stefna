@@ -82,7 +82,7 @@ export const handler: Handler = async (event) => {
 
       // If already completed, return the existing record
       if (existingRecord.status === 'completed' && existingRecord.imageUrl) {
-        await q($disconnect();
+        
         return json({
           id: existingRecord.id,
           status: 'completed',
@@ -93,7 +93,7 @@ export const handler: Handler = async (event) => {
 
       // If pending/processing, return the existing record
       if (existingRecord.status === 'pending' || existingRecord.status === 'processing') {
-        await q($disconnect();
+        
         return json({
           id: existingRecord.id,
           status: existingRecord.status,
@@ -140,7 +140,7 @@ export const handler: Handler = async (event) => {
        runId: newRecord.runId ? newRecord.runId.substring(0, 16) + '...' : 'no-run-id'
      });
 
-     await q($disconnect();
+     
 
      return json({
        id: newRecord.id,

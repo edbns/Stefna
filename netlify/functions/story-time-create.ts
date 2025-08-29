@@ -101,7 +101,7 @@ export const handler: Handler = async (event) => {
       });
     }
 
-    await q($disconnect();
+    
 
     console.log(`📖 [Story Time] Created story ${story.id} with ${storyPhotos.length} photos, preset: ${finalPreset}`);
 

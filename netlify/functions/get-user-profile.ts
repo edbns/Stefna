@@ -81,7 +81,7 @@ export const handler: Handler = async (event) => {
       const balance = userCredits?.credits ?? 30; // Default to 30 credits
       const dailyCap = 30; // Hardcoded for now since appConfig table doesn't exist
 
-      await q($disconnect();
+      
 
       return json({
         ok: true,
@@ -102,7 +102,7 @@ export const handler: Handler = async (event) => {
       });
     } catch (dbError) {
       console.error('❌ Database error in get-user-profile:', dbError);
-      await q($disconnect();
+      
       // Return safe defaults if database fails
       return json({
         ok: true,

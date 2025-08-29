@@ -193,6 +193,6 @@ export const handler: Handler = async (event) => {
       stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   } finally {
-    await q($disconnect();
+    
   }
 };

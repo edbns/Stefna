@@ -39,10 +39,9 @@ export const handler: Handler = async (event) => {
     console.log(`💰 [Admin] Adjusting credits for user ${userId}: ${adjustment > 0 ? '+' : ''}${adjustment}`)
 
     // Get current user credits
-    const currentCredits = await q(userCredits.findUnique({
-      where: { userId },
-      select: { credits: true }
-    })
+    const currentCredits = await qOne(`
+      SELECT credits FROM user_credits WHERE user_id = $1
+    `, [userId])
 
     if (!currentCredits) {
       return json({ error: 'User credits not found' }, { status: 404 })
@@ -51,23 +50,23 @@ export const handler: Handler = async (event) => {
     const newCredits = Math.max(0, currentCredits.credits + adjustment)
 
     // Update user credits
-    await q(userCredits.update({
-      where: { userId },
-      data: { credits: newCredits }
-    })
+    await q(`
+      UPDATE user_credits SET credits = $1, updated_at = NOW() WHERE user_id = $2
+    `, [newCredits, userId])
 
     // Create audit log entry
-    await q(creditTransaction.create({
-      data: {
-        id: `admin-adjust-${Date.now()}`,
-        userId: userId,
-        amount: adjustment,
-        action: 'admin.adjust',
-        status: 'granted',
-        reason: `Admin credit adjustment: ${adjustment > 0 ? '+' : ''}${adjustment}`,
-        env: 'production'
-      }
-    })
+    await q(`
+      INSERT INTO credits_ledger (id, user_id, amount, action, status, reason, env, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+    `, [
+      `admin-adjust-${Date.now()}`,
+      userId,
+      adjustment,
+      'admin.adjust',
+      'granted',
+      `Admin credit adjustment: ${adjustment > 0 ? '+' : ''}${adjustment}`,
+      'production'
+    ])
 
     console.log(`✅ [Admin] Credits adjusted successfully. New balance: ${newCredits}`)
 
@@ -84,7 +83,5 @@ export const handler: Handler = async (event) => {
   } catch (e) {
     console.error('❌ [Admin] Error adjusting credits:', e)
     return json({ error: 'Failed to adjust credits' }, { status: 500 })
-  } finally {
-    await q($disconnect();
   }
 }

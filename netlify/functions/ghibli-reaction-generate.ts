@@ -384,7 +384,7 @@ async function processGenerationAsync(
     
     console.log('✅ [Ghibli] Background generation completed successfully for job:', jobId);
     
-    await q($disconnect();
+    
   } catch (error) {
     console.error('❌ [Ghibli] Background generation failed for job:', jobId, error);
     
@@ -398,7 +398,7 @@ async function processGenerationAsync(
           errorMessage: error instanceof Error ? error.message : 'Unknown error'
         }
       });
-      await q($disconnect();
+      
     } catch (updateError) {
       console.error('❌ [Ghibli] Failed to update job status to failed:', updateError);
     }

@@ -111,6 +111,6 @@ export const handler: Handler = async (event) => {
     console.error('❌ [Admin] Error fetching users:', e)
     return json({ error: 'Failed to fetch users' }, { status: 500 })
   } finally {
-    await q($disconnect();
+    
   }
 }

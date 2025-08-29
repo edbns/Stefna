@@ -51,7 +51,7 @@ export const handler: Handler = async (event) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    await q($disconnect();
+    
 
     // Format stories for response
     const formattedStories = stories.map(story => ({

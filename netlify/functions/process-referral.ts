@@ -111,7 +111,7 @@ export const handler: Handler = async (event) => {
       });
     }
 
-    await q($disconnect();
+    
     return json({ ok:true });
   } catch (e) {
     console.error('Referral processing error:', e);

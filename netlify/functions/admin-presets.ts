@@ -148,6 +148,6 @@ export const handler: Handler = async (event) => {
     console.error('❌ [Admin] Error managing presets:', e)
     return json({ error: 'Failed to manage presets' }, { status: 500 })
   } finally {
-    await q($disconnect();
+    
   }
 }

@@ -138,6 +138,6 @@ export const handler: Handler = async (event, context) => {
       })
     };
   } finally {
-    await q($disconnect();
+    
   }
 };

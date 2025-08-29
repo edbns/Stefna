@@ -274,6 +274,6 @@ It expires in 10 minutes. If you didn't request this code, you can ignore this e
       })
     };
   } finally {
-    await q($disconnect();
+    
   }
 };

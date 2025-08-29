@@ -117,6 +117,6 @@ export const handler: Handler = async (event) => {
     console.error('❌ user-settings error:', e)
     return json({ error: 'Internal server error' }, { status: 500 })
   } finally {
-    await q($disconnect();
+    
   }
 }

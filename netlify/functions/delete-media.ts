@@ -172,6 +172,6 @@ export const handler: Handler = async (event) => {
       status: 'failed'
     }, { status: 500 });
   } finally {
-    await q($disconnect();
+    
   }
 };

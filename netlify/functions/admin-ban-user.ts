@@ -43,17 +43,18 @@ export const handler: Handler = async (event) => {
     
     // For now, we'll create an audit log entry
     try {
-      await q(creditTransaction.create({
-        data: {
-          id: `admin-ban-${Date.now()}`,
-          userId: userId,
-          amount: 0,
-          action: 'admin.ban',
-          status: 'granted',
-          reason: `User ${ban ? 'banned' : 'unbanned'} by admin`,
-          env: 'production'
-        }
-      })
+      await q(`
+        INSERT INTO credits_ledger (id, user_id, amount, action, status, reason, env, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      `, [
+        `admin-ban-${Date.now()}`,
+        userId,
+        0,
+        'admin.ban',
+        'granted',
+        `User ${ban ? 'banned' : 'unbanned'} by admin`,
+        'production'
+      ])
     } catch (e) {
       // Ignore audit log errors for now
       console.warn('⚠️ Could not create audit log entry:', e)
@@ -72,7 +73,5 @@ export const handler: Handler = async (event) => {
   } catch (e) {
     console.error('❌ [Admin] Error banning/unbanning user:', e)
     return json({ error: 'Failed to ban/unban user' }, { status: 500 })
-  } finally {
-    await q($disconnect();
   }
 }

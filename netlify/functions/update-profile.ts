@@ -107,7 +107,7 @@ export const handler: Handler = async (event, context) => {
         // Don't fail the request for credits errors
       }
 
-      await q($disconnect();
+      
 
       // Return success response
       return resp(200, {
@@ -122,7 +122,7 @@ export const handler: Handler = async (event, context) => {
 
     } catch (dbError) {
       console.error('Database error:', dbError);
-      await q($disconnect();
+      
       return resp(500, { 
         error: 'Failed to update profile',
         details: String(dbError)

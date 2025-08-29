@@ -77,6 +77,6 @@ export const handler: Handler = async (event) => {
     console.error('❌ [Admin] Error deleting user:', e)
     return json({ error: 'Failed to delete user' }, { status: 500 })
   } finally {
-    await q($disconnect();
+    
   }
 }
