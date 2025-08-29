@@ -151,73 +151,9 @@ CREATE TABLE IF NOT EXISTS presets_media (
     metadata JSONB DEFAULT '{}'
 );
 
--- ========================================
--- STORY TIME TABLES (MISSING FROM PRISMA)
--- ========================================
 
--- Story table
-CREATE TABLE IF NOT EXISTS story (
-    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    description TEXT,
-    preset TEXT NOT NULL,
-    status TEXT DEFAULT 'pending',
-    story_text TEXT,
-    created_at TIMESTAMPTZ(6) DEFAULT NOW(),
-    updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
-    completed_at TIMESTAMPTZ(6),
-    metadata JSONB DEFAULT '{}'
-);
 
--- Story photo table
-CREATE TABLE IF NOT EXISTS story_photo (
-    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    story_id TEXT NOT NULL REFERENCES story(id) ON DELETE CASCADE,
-    photo_url TEXT NOT NULL,
-    description TEXT,
-    video_url TEXT,
-    status TEXT DEFAULT 'pending',
-    order_index INTEGER DEFAULT 0,
-    created_at TIMESTAMPTZ(6) DEFAULT NOW(),
-    updated_at TIMESTAMPTZ(6) DEFAULT NOW()
-);
 
--- ========================================
--- VIDEO GENERATION TABLES (MISSING FROM PRISMA)
--- ========================================
-
--- Video jobs table
-CREATE TABLE IF NOT EXISTS video_jobs (
-    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    type TEXT NOT NULL DEFAULT 'story',
-    status TEXT DEFAULT 'pending',
-    input_data JSONB NOT NULL,
-    output_data JSONB,
-    progress INTEGER DEFAULT 0,
-    error_message TEXT,
-    created_at TIMESTAMPTZ(6) DEFAULT NOW(),
-    updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
-    started_at TIMESTAMPTZ(6),
-    completed_at TIMESTAMPTZ(6)
-);
-
--- AI generations table
-CREATE TABLE IF NOT EXISTS ai_generations (
-    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    type TEXT NOT NULL,
-    status TEXT DEFAULT 'pending',
-    input_data JSONB NOT NULL,
-    output_data JSONB,
-    progress INTEGER DEFAULT 0,
-    error_message TEXT,
-    created_at TIMESTAMPTZ(6) DEFAULT NOW(),
-    updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
-    started_at TIMESTAMPTZ(6),
-    completed_at TIMESTAMPTZ(6)
-);
 
 -- ========================================
 -- SUPPORTING TABLES
@@ -389,10 +325,6 @@ $$ language 'plpgsql';
 -- Create triggers for updated_at columns
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_settings_updated_at BEFORE UPDATE ON user_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_story_updated_at BEFORE UPDATE ON story FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_story_photo_updated_at BEFORE UPDATE ON story_photo FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_video_jobs_updated_at BEFORE UPDATE ON video_jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_ai_generations_updated_at BEFORE UPDATE ON ai_generations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ========================================
 -- SAMPLE DATA
@@ -454,14 +386,7 @@ SELECT 'neo_glitch_media', COUNT(*) FROM neo_glitch_media
 UNION ALL
 SELECT 'presets_media', COUNT(*) FROM presets_media
 UNION ALL
-SELECT 'story', COUNT(*) FROM story
-UNION ALL
-SELECT 'story_photo', COUNT(*) FROM story_photo
-UNION ALL
-SELECT 'video_jobs', COUNT(*) FROM video_jobs
-UNION ALL
-SELECT 'ai_generations', COUNT(*) FROM ai_generations
-UNION ALL
+
 SELECT 'notifications', COUNT(*) FROM notifications
 UNION ALL
 SELECT 'assets', COUNT(*) FROM assets

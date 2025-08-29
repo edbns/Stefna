@@ -7,7 +7,7 @@ export interface UserMedia {
   userAvatar?: string
   userUsername?: string // New: display name from profiles table
   userTier?: string
-  type: 'photo' | 'video' | 'story-time'
+  type: 'photo' | 'video'
   url: string
   finalUrl?: string // For feed compatibility
   thumbnailUrl?: string
