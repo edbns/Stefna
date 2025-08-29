@@ -103,19 +103,37 @@ export const handler: Handler = async (event) => {
 
     console.log('📧 [OTP] Processing OTP request for:', email);
 
-    // Check if user exists
-    const userResult = await client.query(
+    // Check if user exists, create if not
+    let userResult = await client.query(
       'SELECT id, email FROM users WHERE email = $1',
       [email.toLowerCase()]
     );
 
     if (userResult.rows.length === 0) {
-      console.log('❌ [OTP] User not found:', email);
-      return {
-        statusCode: 404,
-        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'User not found' })
-      };
+      console.log('👤 [OTP] User not found, creating new user:', email);
+
+      // Create new user
+      const userId = uuidv4();
+      await client.query(
+        'INSERT INTO users (id, email, created_at) VALUES ($1, $2, NOW())',
+        [userId, email.toLowerCase()]
+      );
+
+      // Create user credits
+      await client.query(
+        'INSERT INTO user_credits (user_id, credits, balance) VALUES ($1, 30, 0)',
+        [userId]
+      );
+
+      // Create user settings
+      await client.query(
+        'INSERT INTO user_settings (id, user_id, share_to_feed, allow_remix) VALUES ($1, $2, true, true)',
+        [uuidv4(), userId]
+      );
+
+      console.log('✅ [OTP] New user created:', userId);
+    } else {
+      console.log('✅ [OTP] Existing user found:', userResult.rows[0].id);
     }
 
     // Generate OTP
