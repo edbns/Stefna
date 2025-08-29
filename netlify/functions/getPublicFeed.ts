@@ -8,6 +8,33 @@ import { q } from './_db';
 
 
 export const handler: Handler = async (event) => {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Content-Type': 'application/json'
+      },
+      body: ''
+    };
+  }
+
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
   const limit = Math.max(1, Math.min(100, Number(event.queryStringParameters?.limit ?? 20)));
   const offset = Math.max(0, Number(event.queryStringParameters?.offset ?? 0));
 
@@ -42,13 +69,22 @@ export const handler: Handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 'content-type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      },
       body: JSON.stringify({ items: rows, limit, offset }),
     };
   } catch (err: any) {
     console.error('💥 [getPublicFeed] Error:', err?.message || err);
     return {
       statusCode: 500,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      },
       body: JSON.stringify({ 
         error: 'FEED_FETCH_FAILED',
         message: err?.message || 'Unknown error',

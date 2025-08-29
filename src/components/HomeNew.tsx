@@ -183,7 +183,7 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: 'custom' as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch', // storytime mode removed
+    mode: 'custom' as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime', // remix mode removed
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
@@ -864,7 +864,21 @@ const HomeNew: React.FC = () => {
     }
   `
 
-
+  // Inject Story Time styles
+  useEffect(() => {
+    if (composerState.mode === 'storytime') {
+      const styleId = 'story-time-styles'
+      let styleElement = document.getElementById(styleId) as HTMLStyleElement
+      
+      if (!styleElement) {
+        styleElement = document.createElement('style')
+        styleElement.id = styleId
+        document.head.appendChild(styleElement)
+      }
+      
+      styleElement.textContent = storyCardStyles
+    }
+  }, [composerState.mode, storyCardStyles])
 
   // Story Image Card Component
   const StoryImageCard = ({ 
