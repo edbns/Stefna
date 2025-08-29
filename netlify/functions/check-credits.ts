@@ -1,6 +1,5 @@
 import type { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
-import { requireUser } from './_lib/auth';
+import { qOne } from './_db';
 
 export const handler: Handler = async (event) => {
   // Handle CORS
@@ -11,75 +10,61 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      },
-      body: ''
+      }
+    };
+  }
+
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
 
   try {
-    // Authenticate user
-    const user = await requireUser(event);
+    const userId = event.queryStringParameters?.userId;
     
-    const prisma = new PrismaClient();
-    
-    // Get current credit balance from CreditTransaction table
-    const currentCredits = await prisma.creditTransaction.aggregate({
-      where: { 
-        userId: user.id 
-      },
-      _sum: {
-        amount: true
-      }
-    });
-    
-    const totalCredits = currentCredits._sum.amount || 0;
-    
-    // Get recent credit history
-    const recentTransactions = await prisma.creditTransaction.findMany({
-      where: { 
-        userId: user.id 
-      },
-      select: {
-        amount: true,
-        reason: true,
-        createdAt: true
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: 10
-    });
+    if (!userId) {
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'userId parameter is required' })
+      };
+    }
 
-    await prisma.$disconnect();
+    // Get user credits using pg
+    const userCredits = await qOne<{ credits: number; balance: number }>(
+      'SELECT credits, balance FROM user_credits WHERE user_id = $1',
+      [userId]
+    );
 
-    console.log(`💰 User ${user.id} has ${totalCredits} credits`);
+    if (!userCredits) {
+      return {
+        statusCode: 404,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'User credits not found' })
+      };
+    }
 
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
-        ok: true,
-        credits: totalCredits,
-        recentTransactions: recentTransactions.map(t => ({
-          amount: t.amount,
-          reason: t.reason,
-          date: t.createdAt
-        })),
-        message: `Current balance: ${totalCredits} credits`
+        userId,
+        credits: userCredits.credits,
+        balance: userCredits.balance
       })
     };
 
   } catch (error: any) {
-    console.error('❌ Check credits error:', error);
-    
-    const statusCode = error?.status || 500;
+    console.error('Error checking credits:', error);
     return {
-      statusCode,
+      statusCode: 500,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        ok: false,
-        error: error.message || 'Internal server error',
-        statusCode
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        message: error.message 
       })
     };
   }

@@ -32,8 +32,7 @@
 # Function optimization
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["@prisma/client"]
-  included_files = ["node_modules/.prisma/client/**", "prisma/schema.prisma"]
+  # No need for Prisma includes if you don't import it at runtime
 
 # Function-specific configurations
 [functions."aimlApi"]

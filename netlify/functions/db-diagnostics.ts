@@ -1,66 +1,63 @@
 // netlify/functions/db-diagnostics.ts
 import type { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q } from './_db';
 
-const redact = (u: string) => u.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:****@');
-
-export const handler: Handler = async (event) => {
-  const url = process.env.DATABASE_URL || '';
-  const isAccel = /^prisma(\+postgres)?:\/\//i.test(url);
-
-  const report: any = {
-    nodeVersion: process.versions.node,
-    dbUrlScheme: url.split(':')[0] || '',
-    dbUrlRedacted: redact(url),
-    accelerateExpected: isAccel,
-    steps: [] as any[],
-  };
-
-  // STEP 1: Check environment variables
-  report.steps.push({ 
-    step: 'env-check', 
-    ok: true, 
-    DATABASE_URL: redact(url),
-    NODE_ENV: process.env.NODE_ENV,
-    PRISMA_CLIENT_ENGINE_TYPE: process.env.PRISMA_CLIENT_ENGINE_TYPE
-  });
-
-  // STEP 2: Try to create Prisma client
+export const handler: Handler = async () => {
+  const redact = (u: string) => (u || '').replace(/:\/\/([^:]+):([^@]+)@/,'://$1:****@');
+  
   try {
-    const prisma = new PrismaClient();
-    report.steps.push({ 
-      step: 'prisma-client-creation', 
-      ok: true,
-      clientVersion: (prisma as any)?._clientVersion
-    });
+    // Test connection with simple query
+    const result = await q('SELECT 1 as test');
     
-    // STEP 3: Try a simple query
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-      report.steps.push({ step: 'prisma-query', ok: true });
-    } catch (e: any) {
-      report.steps.push({
-        step: 'prisma-query',
-        ok: false,
-        code: e.code,
-        message: e.message,
-        meta: e.meta ?? null,
-      });
-    }
-    
-    await prisma.$disconnect();
-  } catch (e: any) {
-    report.steps.push({
-      step: 'prisma-client-creation',
-      ok: false,
-      error: e.message,
-      stack: e.stack?.split('\n').slice(0, 3).join('\n'),
-    });
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nodeVersion: process.version,
+        dbUrlScheme: 'postgresql',
+        dbUrlRedacted: redact(process.env.DATABASE_URL || ''),
+        accelerateExpected: false,
+        steps: [
+          {
+            step: 'env-check',
+            ok: true,
+            DATABASE_URL: redact(process.env.DATABASE_URL || ''),
+            NODE_ENV: process.env.NODE_ENV || 'not set'
+          },
+          {
+            step: 'pg-connection',
+            ok: true,
+            testResult: result[0]?.test
+          },
+          {
+            step: 'pg-query',
+            ok: true,
+            message: 'Successfully connected using pg Pool'
+          }
+        ]
+      })
+    };
+  } catch (error: any) {
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        error: 'Database connection failed',
+        message: error.message,
+        steps: [
+          {
+            step: 'env-check',
+            ok: !!process.env.DATABASE_URL,
+            DATABASE_URL: redact(process.env.DATABASE_URL || ''),
+            NODE_ENV: process.env.NODE_ENV || 'not set'
+          },
+          {
+            step: 'pg-connection',
+            ok: false,
+            error: error.message
+          }
+        ]
+      })
+    };
   }
-
-  return {
-    statusCode: 200,
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(report, null, 2),
-  };
 };
