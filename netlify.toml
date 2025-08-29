@@ -28,7 +28,7 @@
 
 # Function optimization
 [functions]
-  node_bundler = "esbuild"
+  # Using default bundler instead of esbuild to avoid dependency issues
   # No need for Prisma includes if you don't import it at runtime
 
 # Function-specific configurations
