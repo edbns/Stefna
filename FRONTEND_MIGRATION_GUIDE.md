@@ -1,4 +1,4 @@
-# 🎯 Frontend Migration Guide: Unified Generation Endpoints
+# 🎯 Frontend Migration Guide: Dedicated Generation Endpoints
 
 ## 📋 Overview
 

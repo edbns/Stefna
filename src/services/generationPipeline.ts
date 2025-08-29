@@ -1,13 +1,11 @@
 // src/services/generationPipeline.ts
-// Unified Generation Pipeline - Routes between old and new systems
+// Dedicated Generation Pipeline - Direct routing to specialized services
 // 
 // 🎯 PIPELINE STRATEGY:
-// 1. Feature flag system for gradual user migration
-// 2. Routes to new NeoGlitch-style functions when enabled
-// 3. Falls back to old system for backward compatibility
-// 4. Enables zero-risk migration with A/B testing
-// 
-// ⚠️ IMPORTANT: This makes the migration seamless and risk-free
+// 1. Direct routing to dedicated generation functions
+// 2. Each generation type has its own optimized service
+// 3. No more feature flags or fallbacks - clean, direct architecture
+// 4. Scalable and maintainable design
 
 import { authenticatedFetch } from '../utils/apiClient';
 import EmotionMaskService from './emotionMaskService';
@@ -38,39 +36,25 @@ export interface GenerationResult {
   type: string;
 }
 
-export interface FeatureFlags {
-  emotionMaskNewSystem: boolean;
-  presetsNewSystem: boolean;
-  ghibliReactionNewSystem: boolean;
-  customPromptNewSystem: boolean;
-  neoGlitchNewSystem: boolean; // Already working
+export interface GenerationType {
+  type: 'emotion-mask' | 'presets' | 'ghibli-reaction' | 'custom-prompt' | 'neo-glitch';
 }
 
 class GenerationPipeline {
   private static instance: GenerationPipeline;
-  private featureFlags: FeatureFlags;
   private emotionMaskService: EmotionMaskService;
   private presetsService: PresetsService;
   private ghibliReactionService: GhibliReactionService;
   private customPromptService: CustomPromptService;
 
   private constructor() {
-    // All systems now use dedicated functions - no more feature flags needed
-    this.featureFlags = {
-      emotionMaskNewSystem: true, // Always use new system
-      presetsNewSystem: true,     // Always use new system
-      ghibliReactionNewSystem: true, // Always use new system
-      customPromptNewSystem: true,   // Always use new system
-      neoGlitchNewSystem: true      // Always use new system
-    };
-
-    // Initialize service instances
+    // Initialize service instances for dedicated functions
     this.emotionMaskService = EmotionMaskService.getInstance();
     this.presetsService = PresetsService.getInstance();
     this.ghibliReactionService = GhibliReactionService.getInstance();
     this.customPromptService = CustomPromptService.getInstance();
 
-    console.log('🚀 [GenerationPipeline] Initialized with feature flags:', this.featureFlags);
+    console.log('🚀 [GenerationPipeline] Initialized with dedicated services');
   }
 
   static getInstance(): GenerationPipeline {
@@ -116,20 +100,7 @@ class GenerationPipeline {
     return null;
   }
 
-  /**
-   * Update feature flags dynamically
-   */
-  updateFeatureFlags(flags: Partial<FeatureFlags>): void {
-    this.featureFlags = { ...this.featureFlags, ...flags };
-    console.log('🔄 [GenerationPipeline] Feature flags updated:', this.featureFlags);
-  }
 
-  /**
-   * Get current feature flags
-   */
-  getFeatureFlags(): FeatureFlags {
-    return { ...this.featureFlags };
-  }
 
   /**
    * Main generation method - routes to appropriate system
@@ -332,68 +303,16 @@ class GenerationPipeline {
   }
 
   /**
-   * Old system fallback removed - all generation now uses dedicated functions
-   */
-  private async useOldSystem(request: GenerationRequest): Promise<GenerationResult> {
-    // Old system completely removed - all generation uses dedicated functions
-    console.log('🚫 [GenerationPipeline] Old system removed - using dedicated functions only');
-    
-    return {
-      success: false,
-      status: 'failed',
-      error: 'Old system removed - dedicated functions only',
-      system: 'new',
-      type: request.type
-    };
-  }
-
-  /**
    * Get system status for monitoring
    */
   getSystemStatus(): {
-    newSystemEnabled: boolean;
-    oldSystemEnabled: boolean;
-    featureFlags: FeatureFlags;
-    migrationProgress: number;
+    system: string;
+    status: string;
   } {
-    const enabledFeatures = Object.values(this.featureFlags).filter(Boolean).length;
-    const totalFeatures = Object.keys(this.featureFlags).length;
-    const migrationProgress = (enabledFeatures / totalFeatures) * 100;
-
     return {
-      newSystemEnabled: enabledFeatures > 0,
-      oldSystemEnabled: enabledFeatures < totalFeatures,
-      featureFlags: this.featureFlags,
-      migrationProgress: Math.round(migrationProgress)
+      system: 'dedicated',
+      status: 'active'
     };
-  }
-
-  /**
-   * Enable new system for all features (complete migration)
-   */
-  enableCompleteMigration(): void {
-    this.featureFlags = {
-      emotionMaskNewSystem: true,
-      presetsNewSystem: true,
-      ghibliReactionNewSystem: true,
-      customPromptNewSystem: true,
-      neoGlitchNewSystem: true
-    };
-    console.log('🎉 [GenerationPipeline] Complete migration enabled! All features using new system.');
-  }
-
-  /**
-   * Rollback to old system for all features (emergency rollback)
-   */
-  emergencyRollback(): void {
-    this.featureFlags = {
-      emotionMaskNewSystem: false,
-      presetsNewSystem: false,
-      ghibliReactionNewSystem: false,
-      customPromptNewSystem: false,
-      neoGlitchNewSystem: true // Keep NeoGlitch on new system (it works)
-    };
-    console.log('🚨 [GenerationPipeline] Emergency rollback activated! All features using old system.');
   }
 }
 
