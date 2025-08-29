@@ -31,15 +31,14 @@ export const handler: Handler = async (event) => {
       
       // Get user settings
       const settings = await q(`
-        SELECT * FROM user_settings WHERE user_id = $1
+        SELECT media_upload_agreed, share_to_feed FROM user_settings WHERE user_id = $1
       `, [userId]);
 
       if (!settings || settings.length === 0) {
         // Return default settings if none exist
         const defaultSettings = {
-          share_to_feed: true,
-          allow_remix: true,
-          media_upload_agreed: false
+          media_upload_agreed: false,
+          share_to_feed: true
         };
         
         return json({ settings: defaultSettings });
@@ -54,20 +53,18 @@ export const handler: Handler = async (event) => {
       
       // Upsert user settings
       const updated = await q(`
-        INSERT INTO user_settings (user_id, share_to_feed, allow_remix, media_upload_agreed, updated_at)
-        VALUES ($1, $2, $3, $4, NOW())
+        INSERT INTO user_settings (user_id, media_upload_agreed, share_to_feed, updated_at)
+        VALUES ($1, $2, $3, NOW())
         ON CONFLICT (user_id) 
         DO UPDATE SET 
-          share_to_feed = EXCLUDED.share_to_feed,
-          allow_remix = EXCLUDED.allow_remix,
           media_upload_agreed = EXCLUDED.media_upload_agreed,
+          share_to_feed = EXCLUDED.share_to_feed,
           updated_at = NOW()
         RETURNING *
       `, [
         userId, 
-        body.share_to_feed !== undefined ? body.share_to_feed : true,
-        body.allow_remix !== undefined ? body.allow_remix : true,
-        body.media_upload_agreed !== undefined ? body.media_upload_agreed : false
+        body.media_upload_agreed !== undefined ? body.media_upload_agreed : false,
+        body.share_to_feed !== undefined ? body.share_to_feed : true
       ]);
 
       if (!updated || updated.length === 0) {

@@ -8,24 +8,21 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- CORE USER MANAGEMENT
 -- ========================================
 
--- Users table
+-- Users table (simplified - only what we actually use)
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     email TEXT UNIQUE,
     name TEXT,
-    tier TEXT DEFAULT 'registered',
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     avatar_url TEXT
 );
 
--- User settings table
+-- User settings table (simplified - only what we actually use)
 CREATE TABLE IF NOT EXISTS user_settings (
-    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    user_id TEXT UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    share_to_feed BOOLEAN DEFAULT TRUE,
-    allow_remix BOOLEAN DEFAULT TRUE,
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     media_upload_agreed BOOLEAN DEFAULT FALSE,
+    share_to_feed BOOLEAN DEFAULT TRUE,
     updated_at TIMESTAMPTZ(6) DEFAULT NOW()
 );
 
@@ -223,16 +220,7 @@ CREATE TABLE IF NOT EXISTS ai_generations (
 -- SUPPORTING TABLES
 -- ========================================
 
--- Notifications table
-CREATE TABLE IF NOT EXISTS notifications (
-    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    type TEXT NOT NULL,
-    title TEXT NOT NULL,
-    message TEXT NOT NULL,
-    read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ(6) DEFAULT NOW()
-);
+
 
 -- Assets table
 CREATE TABLE IF NOT EXISTS assets (
@@ -462,8 +450,7 @@ SELECT 'video_jobs', COUNT(*) FROM video_jobs
 UNION ALL
 SELECT 'ai_generations', COUNT(*) FROM ai_generations
 UNION ALL
-SELECT 'notifications', COUNT(*) FROM notifications
-UNION ALL
+
 SELECT 'assets', COUNT(*) FROM assets
 UNION ALL
 SELECT 'presets_config', COUNT(*) FROM presets_config
