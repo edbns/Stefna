@@ -7,8 +7,8 @@
 // 🔄 FLOW: Receive Job ID → Find Job → Return Current Status
 
 import { Handler } from '@netlify/functions';
-import { q, qOne, qCount } from './_db';
 import { requireAuth } from './_lib/auth';
+import { Client as PgClient } from 'pg';
 
 interface StatusRequest {
   jobId: string;
@@ -55,7 +55,30 @@ export const handler: Handler = async (event) => {
     };
   }
 
+  // Check database URL
+  const url = process.env.DATABASE_URL || '';
+  if (!url) {
+    return {
+      statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        success: false,
+        error: 'Database configuration error',
+        message: 'DATABASE_URL missing'
+      })
+    };
+  }
+
+  const client = new PgClient({ connectionString: url });
+
   try {
+    await client.connect();
+
     // Authenticate user (optional for testing)
     let userId: string = 'test-user-status';
 
@@ -104,7 +127,7 @@ export const handler: Handler = async (event) => {
 
     // If type is specified, search that specific table
     if (type) {
-      const status = await getJobStatusByType(jobId, type, userId);
+      const status = await getJobStatusByType(client, jobId, type, userId);
       if (status.status !== 'not_found') {
         return {
           statusCode: 200,
@@ -120,7 +143,7 @@ export const handler: Handler = async (event) => {
     }
 
     // If no type specified or not found in specific table, search all tables
-    const status = await getJobStatusFromAnyTable(jobId, userId);
+    const status = await getJobStatusFromAnyTable(client, jobId, userId);
 
     return {
       statusCode: 200,
@@ -149,11 +172,13 @@ export const handler: Handler = async (event) => {
         message: error instanceof Error ? error.message : 'Unknown error'
       })
     };
+  } finally {
+    await client.end();
   }
 }
 
 // Get job status from a specific table
-async function getJobStatusByType(jobId: string, type: string, userId: string): Promise<StatusResponse> {
+async function getJobStatusByType(client: PgClient, jobId: string, type: string, userId: string): Promise<StatusResponse> {
   let tableName: string;
   let typeLabel: string;
 
@@ -182,16 +207,17 @@ async function getJobStatusByType(jobId: string, type: string, userId: string): 
       return { success: false, jobId, status: 'not_found' };
   }
 
-  const job = await qOne(`
+  const result = await client.query(`
     SELECT id, status, image_url, created_at, updated_at, user_id
     FROM ${tableName}
     WHERE id = $1 AND user_id = $2
   `, [jobId, userId]);
 
-  if (!job) {
+  if (result.rows.length === 0) {
     return { success: false, jobId, status: 'not_found' };
   }
 
+  const job = result.rows[0];
   return {
     success: true,
     jobId: job.id,
@@ -204,7 +230,7 @@ async function getJobStatusByType(jobId: string, type: string, userId: string): 
 }
 
 // Search for job across all tables
-async function getJobStatusFromAnyTable(jobId: string, userId: string): Promise<StatusResponse> {
+async function getJobStatusFromAnyTable(client: PgClient, jobId: string, userId: string): Promise<StatusResponse> {
   const tables = [
     { name: 'neo_glitch_media', type: 'neo-glitch' },
     { name: 'emotion_mask_media', type: 'emotion-mask' },
@@ -214,13 +240,14 @@ async function getJobStatusFromAnyTable(jobId: string, userId: string): Promise<
   ];
 
   for (const table of tables) {
-    const job = await qOne(`
+    const result = await client.query(`
       SELECT id, status, image_url, created_at, updated_at
       FROM ${table.name}
       WHERE id = $1 AND user_id = $2
     `, [jobId, userId]);
 
-    if (job) {
+    if (result.rows.length > 0) {
+      const job = result.rows[0];
       return {
         success: true,
         jobId: job.id,
