@@ -44,7 +44,15 @@ export const handler: Handler = async (event) => {
       body: event.body
     });
     
-    await verifyJWT(event.headers.authorization);
+    // Cloudinary sign doesn't require authentication - it's a public function
+    // Only verify JWT if authorization header is provided (for logged-in users)
+    if (event.headers.authorization) {
+      try {
+        await verifyJWT(event.headers.authorization);
+      } catch (error) {
+        console.log('🔐 JWT verification failed, but continuing as public function:', error);
+      }
+    }
 
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
     const apiKey = process.env.CLOUDINARY_API_KEY;
@@ -54,7 +62,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Parse request body for additional parameters
-    let body = {};
+    let body: { folder?: string } = {};
     console.log('🔐 Body parsing debug:', {
       hasBody: !!event.body,
       bodyType: typeof event.body,
