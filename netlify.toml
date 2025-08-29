@@ -1,3 +1,4 @@
+
 [build]
   command = "bash scripts/build-for-netlify.sh"
   publish = "dist"
@@ -9,7 +10,6 @@
   VITE_BUILD_OPTIMIZE = "true"
   PRISMA_GENERATE_DATAPROXY = "false"
   PRISMA_CLIENT_ENGINE_TYPE = "binary"
-  ESBUILD_BINARY_PATH = "node_modules/@esbuild/linux-x64/bin/esbuild"
 
 # Production context
 [context.production]

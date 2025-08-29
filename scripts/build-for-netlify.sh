@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Netlify Build Script - Handles esbuild platform issues
+# Netlify Build Script - Handles Prisma and build process
 set -e
 
 echo "🔧 [Netlify Build] Starting build process..."
@@ -13,10 +13,6 @@ rm -rf prisma/generated
 # Install dependencies
 echo "📦 [Netlify Build] Installing dependencies..."
 npm install
-
-# Force install Linux esbuild binary
-echo "🔧 [Netlify Build] Installing Linux esbuild binary..."
-npm install --save-dev @esbuild/linux-x64 --force --platform=linux --arch=x64
 
 # Generate Prisma client
 echo "🗄️ [Netlify Build] Generating Prisma client..."
