@@ -1,8 +1,6 @@
 import { Handler } from '@netlify/functions';
 import { q, qOne, qCount } from './_db';
-import * as jwt from 'jsonwebtoken';
-
-const jwtSecret = process.env.JWT_SECRET!;
+import { requireAuth } from './_lib/auth';
 
 interface UpdateProfileRequest {
   username?: string;
@@ -36,41 +34,12 @@ export const handler: Handler = async (event, context) => {
   }
 
   try {
-    // Use custom JWT authentication (not Netlify Identity)
-    const auth = event.headers.authorization || "";
-    const token = auth.replace(/^Bearer\s+/i, "");
-    
-    if (!token) {
-      return resp(401, { error: 'Unauthorized - No bearer token provided' });
-    }
+    // Use standardized authentication helper
+    const { userId } = requireAuth(event.headers.authorization);
+    const uid = userId;
+    const email = `user-${uid}@placeholder.com`;
 
-    // Verify JWT token
-    let claims: jwt.JwtPayload | string;
-    try {
-      claims = jwt.verify(token, jwtSecret, { clockTolerance: 5 });
-    } catch (jwtError) {
-      console.error('JWT verification failed:', jwtError);
-      return resp(401, { error: 'Unauthorized - Invalid token' });
-    }
-
-    // Ensure claims is an object (not a string)
-    if (typeof claims === 'string') {
-      return resp(401, { error: 'Unauthorized - Invalid token format' });
-    }
-
-    // Extract user ID from claims with proper type checking
-    const uid = (claims as any).sub ||
-                (claims as any).user_id ||
-                (claims as any).uid ||
-                (claims as any).id ||
-                (claims as any).userId;
-    if (!uid) {
-      return resp(401, { error: 'Unauthorized - No user ID in token' });
-    }
-
-    const email = (claims as any).email || `user-${uid}@placeholder.com`;
-
-    console.log('🔐 Auth context:', { uid, email, claims });
+    console.log('🔐 Auth context:', { uid, email });
 
     // Parse request body
     const body: UpdateProfileRequest = JSON.parse(event.body || '{}');

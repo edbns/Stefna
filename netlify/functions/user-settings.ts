@@ -37,10 +37,9 @@ export const handler: Handler = async (event) => {
       if (!settings || settings.length === 0) {
         // Return default settings if none exist
         const defaultSettings = {
-          theme: 'dark',
-          notifications: true,
-          autoSave: true,
-          language: 'en'
+          share_to_feed: true,
+          allow_remix: true,
+          media_upload_agreed: false
         };
         
         return json({ settings: defaultSettings });
@@ -55,22 +54,20 @@ export const handler: Handler = async (event) => {
       
       // Upsert user settings
       const updated = await q(`
-        INSERT INTO user_settings (user_id, theme, notifications, auto_save, language, updated_at)
-        VALUES ($1, $2, $3, $4, $5, NOW())
+        INSERT INTO user_settings (user_id, share_to_feed, allow_remix, media_upload_agreed, updated_at)
+        VALUES ($1, $2, $3, $4, NOW())
         ON CONFLICT (user_id) 
         DO UPDATE SET 
-          theme = EXCLUDED.theme,
-          notifications = EXCLUDED.notifications,
-          auto_save = EXCLUDED.auto_save,
-          language = EXCLUDED.language,
+          share_to_feed = EXCLUDED.share_to_feed,
+          allow_remix = EXCLUDED.allow_remix,
+          media_upload_agreed = EXCLUDED.media_upload_agreed,
           updated_at = NOW()
         RETURNING *
       `, [
         userId, 
-        body.theme || 'dark',
-        body.notifications !== undefined ? body.notifications : true,
-        body.autoSave !== undefined ? body.autoSave : true,
-        body.language || 'en'
+        body.share_to_feed !== undefined ? body.share_to_feed : true,
+        body.allow_remix !== undefined ? body.allow_remix : true,
+        body.media_upload_agreed !== undefined ? body.media_upload_agreed : false
       ]);
 
       if (!updated || updated.length === 0) {
