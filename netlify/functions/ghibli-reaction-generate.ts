@@ -563,17 +563,11 @@ export const handler: Handler = async (event) => {
     console.log('✅ [GhibliReaction] Credit reserved successfully');
 
     // Create initial record
-    const initialRecord = await q(ghibliReactionMedia.create({
-      data: {
-        userId,
-        sourceUrl,
-        prompt,
-        presetKey: presetKey,
-        runId: runId.toString(),
-        status: 'pending',
-        imageUrl: sourceUrl // Temporary, will be updated
-      }
-    });
+    const initialRecord = await qOne(`
+      INSERT INTO ghibli_reaction_media (user_id, source_url, prompt, preset, run_id, status, image_url, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      RETURNING id
+    `, [userId, sourceUrl, prompt, presetKey, runId.toString(), 'pending', sourceUrl]);
 
     console.log('✅ [GhibliReaction] Initial record created:', initialRecord.id);
 

@@ -48,12 +48,11 @@ export const handler: Handler = async (event) => {
 
     // Try Neo Glitch Media first (CUID format)
     try {
-      deletedMedia = await q(neoGlitchMedia.delete({
-        where: {
-          id: mediaId,
-          userId: userId
-        }
-      });
+      deletedMedia = await q(`
+        DELETE FROM neo_glitch_media 
+        WHERE id = $1 AND user_id = $2
+        RETURNING id
+      `, [mediaId, userId]);
       deletedFromTable = 'neoGlitchMedia';
     } catch (error: any) {
       if (error.code !== 'P2025') { // Not "Record not found"
