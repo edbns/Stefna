@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run prebuild && vite build",
-    "prebuild": "node ./scripts/no-edge-client.js && PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_GENERATE_DATAPROXY=false npx prisma generate",
+    "prebuild": "node ./scripts/no-edge-client.js && PRISMA_CLIENT_ENGINE_TYPE=library PRISMA_GENERATE_DATAPROXY=false npx prisma generate",
     "build:fast": "vite build --mode production --minify",
     "build:preview": "vite preview",
     "preview": "vite preview",
@@ -14,10 +14,10 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
     "test": "echo 'No tests configured yet'",
-    "postinstall": "PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_GENERATE_DATAPROXY=false prisma generate",
+    "postinstall": "PRISMA_CLIENT_ENGINE_TYPE=library PRISMA_GENERATE_DATAPROXY=false prisma generate",
     "postinstall:dev": "husky install",
-    "prisma:reset": "PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_GENERATE_DATAPROXY=false npx prisma generate --force && npx prisma db push --force-reset",
-    "prisma:nuclear": "rm -rf node_modules/@prisma && npm install && PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_GENERATE_DATAPROXY=false npx prisma generate",
+    "prisma:reset": "PRISMA_CLIENT_ENGINE_TYPE=library PRISMA_GENERATE_DATAPROXY=false npx prisma generate --force && npx prisma db push --force-reset",
+    "prisma:nuclear": "rm -rf node_modules/@prisma && npm install && PRISMA_CLIENT_ENGINE_TYPE=library PRISMA_GENERATE_DATAPROXY=false npx prisma generate",
     "ensure-esbuild": "npm install --save-dev @esbuild/linux-x64 --force"
   },
   "dependencies": {

@@ -9,9 +9,10 @@
   NPM_FLAGS = "--prefer-offline --no-audit --force"
   VITE_BUILD_OPTIMIZE = "true"
   PRISMA_GENERATE_DATAPROXY = "false"
-  PRISMA_CLIENT_ENGINE_TYPE = "binary"
+  PRISMA_CLIENT_ENGINE_TYPE = "library"
 
-  PRISMA_CLI_QUERY_ENGINE_TYPE = "binary"
+  PRISMA_CLI_QUERY_ENGINE_TYPE = "library"
+  
 
 # Production context
 [context.production]
@@ -32,7 +33,8 @@
 [functions]
   node_bundler = "esbuild"
   # External modules that should not be bundled
-  external_node_modules = ["@neondatabase/serverless", "pg", "@prisma/client"]
+  external_node_modules = ["@neondatabase/serverless", "pg", "@prisma/client", "prisma"]
+  included_files = ["node_modules/.prisma/**", "node_modules/@prisma/client/**"]
 
 # Function-specific configurations
 [functions."aimlApi"]

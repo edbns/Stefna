@@ -5,33 +5,42 @@ set -e
 
 echo "🔧 [Netlify Build] Starting build process..."
 
-# Clean Prisma artifacts completely
-echo "🧹 [Netlify Build] Cleaning Prisma artifacts..."
+# SCORCHED EARTH: Clean Prisma artifacts completely
+echo "🧹 [Netlify Build] SCORCHED EARTH: Cleaning ALL Prisma artifacts..."
 rm -rf node_modules/.prisma 
 rm -rf node_modules/@prisma/client
 rm -rf prisma/generated
 rm -rf .prisma
+rm -rf node_modules/prisma
 
-# Install dependencies (this will run postinstall with correct env vars)
-echo "📦 [Netlify Build] Installing dependencies..."
-npm install
+# Force clean install to remove any cached packages
+echo "📦 [Netlify Build] Force clean install of dependencies..."
+npm ci --force
 
-# Double-check: Generate Prisma client with explicit binary engine
-echo "🗄️ [Netlify Build] Generating Prisma client with explicit settings..."
-export PRISMA_CLIENT_ENGINE_TYPE="binary"
+# Generate Prisma client with explicit library engine
+echo "🗄️ [Netlify Build] Generating Prisma client with explicit library engine..."
+export PRISMA_CLIENT_ENGINE_TYPE="library"
 export PRISMA_GENERATE_DATAPROXY="false"
-export PRISMA_CLI_QUERY_ENGINE_TYPE="binary"
-npx prisma generate
+export PRISMA_CLI_QUERY_ENGINE_TYPE="library"
+npx prisma generate --schema=./prisma/schema.prisma
 
 # Verify the generated client
 echo "🔍 [Netlify Build] Verifying Prisma client..."
 if [ -f "node_modules/@prisma/client/index.js" ]; then
   echo "✅ Prisma client generated successfully"
-  # Check if it's a binary engine client
-  if grep -q "binary" "node_modules/@prisma/client/index.js" 2>/dev/null || ! grep -q "data-proxy" "node_modules/@prisma/client/index.js" 2>/dev/null; then
-    echo "✅ Appears to be binary engine client"
+  
+  # Check if it's a library engine client (not Data Proxy)
+  if grep -q "library" "node_modules/@prisma/client/index.js" 2>/dev/null || ! grep -q "data-proxy" "node_modules/@prisma/client/index.js" 2>/dev/null; then
+    echo "✅ Appears to be library engine client (not Data Proxy)"
   else
     echo "⚠️  Warning: Client may be Data Proxy type"
+  fi
+  
+  # Check for any Accelerate/Data Proxy references
+  if grep -q "accelerate\|data-proxy" "node_modules/@prisma/client/index.js" 2>/dev/null; then
+    echo "❌ WARNING: Data Proxy/Accelerate references found in generated client!"
+    echo "This will cause P6001 errors. Regenerating..."
+    npx prisma generate --schema=./prisma/schema.prisma --force
   fi
 else
   echo "❌ Prisma client not found!"
