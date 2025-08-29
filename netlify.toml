@@ -32,9 +32,8 @@
 # Function optimization
 [functions]
   node_bundler = "esbuild"
-  # External modules that should not be bundled
-  external_node_modules = ["@neondatabase/serverless", "pg", "@prisma/client", "prisma"]
-  included_files = ["node_modules/.prisma/**", "node_modules/@prisma/client/**"]
+  external_node_modules = ["@prisma/client"]
+  included_files = ["node_modules/.prisma/client/**", "prisma/schema.prisma"]
 
 # Function-specific configurations
 [functions."aimlApi"]

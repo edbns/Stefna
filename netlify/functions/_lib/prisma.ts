@@ -21,14 +21,14 @@ export const prisma = globalThis.__prisma ?? new PrismaClient({
   }
 });
 
-// Runtime config inspection to identify Data Proxy/Accelerate client
-const anyPrisma = prisma as any;
-console.info('[PRISMA:ENGINE_CONFIG]', {
-  dataProxy: anyPrisma?._engineConfig?.dataProxy,
-  activeProvider: anyPrisma?._engineConfig?.activeProvider,
-  // file paths help pinpoint which client got bundled
-  runtimePath: require.resolve('@prisma/client/runtime/binary.js'),
-  clientPkg: require('@prisma/client/package.json'),
+// Debug once at startup: Check what's actually being used
+const any = prisma as any;
+console.info('[PRISMA:ENGINE]', {
+  dataProxy: any?._engineConfig?.dataProxy,
+  activeProvider: any?._engineConfig?.activeProvider,
+  runtimePath: (() => {
+    try { return require.resolve('@prisma/client/runtime/binary.js') } catch { return 'n/a' }
+  })()
 });
 
 if (!globalThis.__prisma) {

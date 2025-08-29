@@ -1,27 +1,20 @@
 #!/bin/bash
 
 # Netlify Build Script - Handles Prisma and build process
-set -e
+set -euo pipefail
 
 echo "🔧 [Netlify Build] Starting build process..."
 
-# SCORCHED EARTH: Clean Prisma artifacts completely
-echo "🧹 [Netlify Build] SCORCHED EARTH: Cleaning ALL Prisma artifacts..."
-rm -rf node_modules/.prisma 
-rm -rf node_modules/@prisma/client
-rm -rf prisma/generated
-rm -rf .prisma
-rm -rf node_modules/prisma
+# SURGICAL FIX: Nuke any shipped Prisma client
+echo "🧹 [Netlify Build] Nuking any shipped Prisma client..."
+rm -rf node_modules/.prisma node_modules/@prisma/client .prisma
 
-# Force clean install to remove any cached packages
-echo "📦 [Netlify Build] Force clean install of dependencies..."
-npm ci --force
+# Fresh install to ensure clean state
+echo "📦 [Netlify Build] Fresh install..."
+npm ci
 
-# Generate Prisma client with explicit library engine
-echo "🗄️ [Netlify Build] Generating Prisma client with explicit library engine..."
-export PRISMA_CLIENT_ENGINE_TYPE="library"
-export PRISMA_GENERATE_DATAPROXY="false"
-export PRISMA_CLI_QUERY_ENGINE_TYPE="library"
+# Generate Prisma client (Node-API)
+echo "🗄️ [Netlify Build] Generate Prisma client (Node-API)..."
 npx prisma generate --schema=./prisma/schema.prisma
 
 # Verify the generated client
