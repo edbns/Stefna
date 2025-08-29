@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import * as jwt from 'jsonwebtoken';
 
 const jwtSecret = process.env.JWT_SECRET!;
@@ -67,12 +67,12 @@ export const handler: Handler = async (event, context) => {
     const body: UpdateProfileRequest = JSON.parse(event.body || '{}');
     console.log('📝 Update profile request:', { uid, body });
 
-    const prisma = new PrismaClient();
+    
 
     try {
       // FIRST: Ensure user exists in users table by upserting
       // This prevents the "User ID not found in users table" error
-      const user = await prisma.user.upsert({
+      const user = await q(user.upsert({
         where: { id: uid },
         update: { 
           email: email || `user-${uid}@placeholder.com`,
@@ -91,7 +91,7 @@ export const handler: Handler = async (event, context) => {
 
       // SECOND: Initialize user credits if they don't exist
       try {
-        await prisma.userCredits.upsert({
+        await q(userCredits.upsert({
           where: { user_id: uid },
           update: {}, // Don't update if exists
           create: {
@@ -107,7 +107,7 @@ export const handler: Handler = async (event, context) => {
         // Don't fail the request for credits errors
       }
 
-      await prisma.$disconnect();
+      await q($disconnect();
 
       // Return success response
       return resp(200, {
@@ -122,7 +122,7 @@ export const handler: Handler = async (event, context) => {
 
     } catch (dbError) {
       console.error('Database error:', dbError);
-      await prisma.$disconnect();
+      await q($disconnect();
       return resp(500, { 
         error: 'Failed to update profile',
         details: String(dbError)

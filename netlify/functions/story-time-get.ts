@@ -2,7 +2,7 @@
 // Shows all stories with their status, progress, and photo details
 
 import type { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
 
@@ -31,10 +31,10 @@ export const handler: Handler = async (event) => {
     // Authenticate user
     const { userId } = requireAuth(event.headers.authorization);
     
-    const prisma = new PrismaClient();
+    
 
     // Get user's stories with photos
-    const stories = await prisma.story.findMany({
+    const stories = await q(story.findMany({
       where: { userId },
       include: {
         photos: {
@@ -51,7 +51,7 @@ export const handler: Handler = async (event) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    await prisma.$disconnect();
+    await q($disconnect();
 
     // Format stories for response
     const formattedStories = stories.map(story => ({

@@ -1,4 +1,4 @@
-// netlify/functions/_db.ts
+// netlify/functions/_q(ts
 // 🗄️ Standardized DB helper using pg Pool
 // Replaces PrismaClient for runtime database operations
 

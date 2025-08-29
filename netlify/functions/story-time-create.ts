@@ -2,7 +2,7 @@
 // Users upload photos, choose presets, and start AI story generation
 
 import type { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
 
@@ -58,10 +58,10 @@ export const handler: Handler = async (event) => {
       }, { status: 400 });
     }
 
-    const prisma = new PrismaClient();
+    
 
     // Create the story
-    const story = await prisma.story.create({
+    const story = await q(story.create({
       data: {
         userId,
         title: title || `My ${preset === 'auto' ? 'Adventure' : preset} Story`,
@@ -74,7 +74,7 @@ export const handler: Handler = async (event) => {
 
     // Create photo records
     const photoPromises = photos.map((photo: any, index: number) => 
-      prisma.storyPhoto.create({
+      q(storyPhoto.create({
         data: {
           storyId: story.id,
           order: index + 1,
@@ -95,13 +95,13 @@ export const handler: Handler = async (event) => {
       finalPreset = themes[Math.floor(Math.random() * themes.length)];
       
       // Update story with detected preset
-      await prisma.story.update({
+      await q(story.update({
         where: { id: story.id },
         data: { preset: finalPreset }
       });
     }
 
-    await prisma.$disconnect();
+    await q($disconnect();
 
     console.log(`📖 [Story Time] Created story ${story.id} with ${storyPhotos.length} photos, preset: ${finalPreset}`);
 

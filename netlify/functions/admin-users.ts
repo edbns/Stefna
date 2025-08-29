@@ -1,8 +1,8 @@
 import type { Handler } from "@netlify/functions";
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -32,7 +32,7 @@ export const handler: Handler = async (event) => {
     console.log('🔍 [Admin] Fetching all users and stats...')
 
     // Fetch all users with their settings and credits
-    const users = await prisma.user.findMany({
+    const users = await q(user.findMany({
       select: {
         id: true,
         email: true,
@@ -89,12 +89,12 @@ export const handler: Handler = async (event) => {
       customPromptCount,
       storyCount
     ] = await Promise.all([
-      prisma.neoGlitchMedia.count(),
-      prisma.ghibliReactionMedia.count(),
-      prisma.emotionMaskMedia.count(),
-      prisma.presetsMedia.count(),
-      prisma.customPromptMedia.count(),
-      prisma.story.count()
+      q(neoGlitchMedia.count(),
+      q(ghibliReactionMedia.count(),
+      q(emotionMaskMedia.count(),
+      q(presetsMedia.count(),
+      q(customPromptMedia.count(),
+      q(story.count()
     ])
 
     stats.totalMedia = neoGlitchCount + ghibliCount + emotionMaskCount + presetsCount + customPromptCount + storyCount
@@ -111,6 +111,6 @@ export const handler: Handler = async (event) => {
     console.error('❌ [Admin] Error fetching users:', e)
     return json({ error: 'Failed to fetch users' }, { status: 500 })
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 }

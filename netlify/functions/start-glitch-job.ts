@@ -6,7 +6,7 @@
 // 
 // 🔄 FLOW: Start Job → Immediate Response → Background Processing → Poll for Results
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
@@ -23,7 +23,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -94,7 +94,7 @@ export const handler: Handler = async (event) => {
 
     // Create initial job record in database
     try {
-      const jobRecord = await prisma.neoGlitchMedia.create({
+      const jobRecord = await q(neoGlitchMedia.create({
         data: {
           id: jobId,
           userId: userId,
@@ -140,7 +140,7 @@ export const handler: Handler = async (event) => {
         console.error('[start-glitch-job] Credit reservation failed:', errorText);
         
         // Update job status to failed
-        await prisma.neoGlitchMedia.update({
+        await q(neoGlitchMedia.update({
           where: { id: jobId },
           data: { 
             status: 'failed',
@@ -166,7 +166,7 @@ export const handler: Handler = async (event) => {
       console.error('[start-glitch-job] Credit reservation error:', creditError);
       
       // Update job status to failed
-      await prisma.neoGlitchMedia.update({
+      await q(neoGlitchMedia.update({
         where: { id: jobId },
         data: { 
           status: 'failed',
@@ -204,7 +204,7 @@ export const handler: Handler = async (event) => {
         console.error('[start-glitch-job] Background generation failed for job:', jobId, error);
         
         // Update job status to failed
-        await prisma.neoGlitchMedia.update({
+        await q(neoGlitchMedia.update({
           where: { id: jobId },
           data: { 
             status: 'failed',
@@ -242,6 +242,6 @@ export const handler: Handler = async (event) => {
       })
     };
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 };

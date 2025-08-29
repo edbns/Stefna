@@ -9,7 +9,7 @@
 // ⚠️ IMPORTANT: This is NOT "Stability.ai + AIML fallback" - it's "Stability.ai with AIML emergency fallback"
 // The misleading message has been removed to prevent confusion about billing and generation flow.
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 
@@ -25,7 +25,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const db = new PrismaClient();
+
 
 // Background generation function that can be called from start-glitch-job
 export async function startBackgroundGeneration(
@@ -44,7 +44,7 @@ export async function startBackgroundGeneration(
     
           // Update job status based on result
       if (result.status === 'completed') {
-        await db.neoGlitchMedia.update({
+        await q(neoGlitchMedia.update({
           where: { id: jobId },
           data: {
             status: 'completed',
@@ -55,7 +55,7 @@ export async function startBackgroundGeneration(
         console.log('[NeoGlitch] Background generation completed successfully for job:', jobId);
       } else {
         // Still processing
-        await db.neoGlitchMedia.update({
+        await q(neoGlitchMedia.update({
           where: { id: jobId },
           data: {
             status: 'processing',
@@ -71,7 +71,7 @@ export async function startBackgroundGeneration(
     console.error('[NeoGlitch] Background generation failed for job:', jobId, error);
     
     // Update job status to failed
-    await db.neoGlitchMedia.update({
+    await q(neoGlitchMedia.update({
       where: { id: jobId },
       data: {
         status: 'failed'
@@ -289,7 +289,7 @@ export const handler: Handler = async (event) => {
     // Check for existing run
     let existingRun;
     try {
-      existingRun = await db.neoGlitchMedia.findUnique({
+      existingRun = await q(neoGlitchMedia.findUnique({
         where: { runId: runId.toString() }
       });
     } catch (dbError: any) {
@@ -315,7 +315,7 @@ export const handler: Handler = async (event) => {
       } else {
         console.warn('⚠️ [NeoGlitch] Run exists but incomplete, cleaning up and retrying');
         // Delete old failed/incomplete record to retry clean
-        await db.neoGlitchMedia.delete({ where: { id: existingRun.id } });
+        await q(neoGlitchMedia.delete({ where: { id: existingRun.id } });
         console.log('🧹 [NeoGlitch] Cleaned up incomplete run, proceeding with new generation');
       }
     } else {
@@ -355,7 +355,7 @@ export const handler: Handler = async (event) => {
     console.log('📝 [NeoGlitch] Prompt normalized:', { original: prompt.length, normalized: normalizedPrompt.length });
 
     // Create initial record
-    const initialRecord = await db.neoGlitchMedia.create({
+    const initialRecord = await q(neoGlitchMedia.create({
       data: {
         runId: runId.toString(),
         userId: userId,
@@ -379,7 +379,7 @@ export const handler: Handler = async (event) => {
       .catch(error => {
         console.error('❌ [NeoGlitch] Async generation failed:', error);
         // Update status to failed in database
-        db.neoGlitchMedia.update({
+        q(neoGlitchMedia.update({
           where: { id: initialRecord.id },
           data: { 
             status: 'failed'
@@ -485,7 +485,7 @@ async function processGenerationAsync(
         }
         
         // Update database record with Cloudinary URL (or fallback to Stability.ai URL)
-        await db.neoGlitchMedia.update({
+        await q(neoGlitchMedia.update({
           where: { id: recordId },
           data: {
             status: 'completed',
@@ -508,7 +508,7 @@ async function processGenerationAsync(
       console.log('🔄 [NeoGlitch] Stability.ai returned job ID, will need polling');
       
       // Update record with Stability.ai job ID
-      await db.neoGlitchMedia.update({
+      await q(neoGlitchMedia.update({
         where: { id: recordId },
         data: {
           status: 'generating',
@@ -610,7 +610,7 @@ async function processGenerationAsync(
           }
           
           // Update database record with Cloudinary URL (or fallback to AIML URL) and IPA results
-          await db.neoGlitchMedia.update({
+          await q(neoGlitchMedia.update({
             where: { id: recordId },
             data: {
               status: 'completed',
@@ -643,7 +643,7 @@ async function processGenerationAsync(
         console.error('❌ [NeoGlitch] AIML fallback also failed:', aimlError);
         
         // Update database record with failed status
-        await db.neoGlitchMedia.update({
+        await q(neoGlitchMedia.update({
           where: { id: recordId },
           data: {
             status: 'failed',
@@ -665,7 +665,7 @@ async function processGenerationAsync(
     console.error('❌ [NeoGlitch] Async generation failed:', error);
     
     // Update database record with failed status
-    await db.neoGlitchMedia.update({
+    await q(neoGlitchMedia.update({
       where: { id: recordId },
       data: {
         status: 'failed',

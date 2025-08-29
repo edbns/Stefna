@@ -2,7 +2,7 @@
 // Converts multiple photos into engaging stories with AI-generated narratives
 
 import type { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { initCloudinary } from './_cloudinary';
 
 const AIML_API_KEY = process.env.AIML_API_KEY!;
@@ -103,14 +103,14 @@ async function generateImageToVideo(imageUrl: string, prompt: string, preset: st
 // Process Story Time job: analyze photos and create AI story
 async function processStoryTimeJob(job: any, storyId: string) {
   const cloudinary = initCloudinary();
-  const prisma = new PrismaClient();
+  
   
   try {
     console.log(`📖 [Story Time] Processing story ${storyId} with ${job.photos.length} photos`);
     console.log(`🔒 [Story Time] Using preset: ${job.preset} with IPA integration`);
     
     // Update progress to processing
-    await prisma.story.update({
+    await q(story.update({
       where: { id: storyId },
       data: { 
         status: 'processing',
@@ -135,14 +135,14 @@ async function processStoryTimeJob(job: any, storyId: string) {
       photoDescriptions.push(photoDescription);
       
       // Update photo record with AI description
-      await prisma.storyPhoto.update({
+      await q(storyPhoto.update({
         where: { id: photo.id },
         data: { prompt: photoDescription }
       });
       
       // Update progress
       const progress = Math.round(((i + 1) / job.photos.length) * 40) + 10; // 10-50%
-      await prisma.story.update({
+      await q(story.update({
         where: { id: storyId },
         data: { progress }
       });
@@ -171,7 +171,7 @@ async function processStoryTimeJob(job: any, storyId: string) {
         });
         
         // Update the StoryPhoto record with the video URL
-        await prisma.storyPhoto.update({
+        await q(storyPhoto.update({
           where: { id: photo.id },
           data: { videoUrl: videoResult }
         });
@@ -188,7 +188,7 @@ async function processStoryTimeJob(job: any, storyId: string) {
       
       // Update progress (50-80%)
       const progress = Math.round(((i + 1) / job.photos.length) * 30) + 50;
-      await prisma.story.update({
+      await q(story.update({
         where: { id: storyId },
         data: { progress }
       });
@@ -215,7 +215,7 @@ async function processStoryTimeJob(job: any, storyId: string) {
     And so, our ${job.preset} journey continues, with each moment captured in time, waiting to be shared with the world. ✨`;
     
     // Update progress to 90%
-    await prisma.story.update({
+    await q(story.update({
       where: { id: storyId },
       data: { 
         progress: 90,
@@ -230,7 +230,7 @@ async function processStoryTimeJob(job: any, storyId: string) {
     // This would verify that all generated content maintains identity preservation
     // Use IPA service: IdentityPreservationService.runIPA() with story_time_moderate_ipa config
     
-    await prisma.story.update({
+    await q(story.update({
       where: { id: storyId },
       data: { 
         status: 'completed',
@@ -248,13 +248,13 @@ async function processStoryTimeJob(job: any, storyId: string) {
     console.log(`✅ [Story Time] Story ${storyId} completed successfully!`);
     console.log(`🔒 [Story Time] IPA integration ready for full implementation`);
     
-    await prisma.$disconnect();
+    await q($disconnect();
     return { success: true, storyId, status: 'completed' };
     
   } catch (error) {
     console.error(`❌ [Story Time] Error processing story ${storyId}:`, error);
     
-    await prisma.story.update({
+    await q(story.update({
       where: { id: storyId },
       data: { 
         status: 'failed',
@@ -262,7 +262,7 @@ async function processStoryTimeJob(job: any, storyId: string) {
       }
     });
     
-    await prisma.$disconnect();
+    await q($disconnect();
     throw error;
   }
 }
@@ -300,10 +300,10 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    const prisma = new PrismaClient();
+    
 
     // Load story from database
-    const story = await prisma.story.findUnique({
+    const story = await q(story.findUnique({
       where: { id: storyId },
       include: {
         photos: {
@@ -313,7 +313,7 @@ export const handler: Handler = async (event) => {
     });
 
     if (!story) {
-      await prisma.$disconnect();
+      await q($disconnect();
       return {
         statusCode: 404,
         headers: { 'Access-Control-Allow-Origin': '*' },
@@ -322,7 +322,7 @@ export const handler: Handler = async (event) => {
     }
 
     if (story.status !== 'pending') {
-      await prisma.$disconnect();
+      await q($disconnect();
       return {
         statusCode: 200,
         headers: { 'Access-Control-Allow-Origin': '*' },
@@ -335,7 +335,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Mark story as processing
-    await prisma.story.update({
+    await q(story.update({
       where: { id: storyId },
       data: { 
         status: 'processing',
@@ -344,7 +344,7 @@ export const handler: Handler = async (event) => {
       }
     });
 
-    await prisma.$disconnect();
+    await q($disconnect();
 
     // Process the story
     const result = await processStoryTimeJob(story, storyId);

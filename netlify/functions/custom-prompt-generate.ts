@@ -9,7 +9,7 @@
 // 
 // ⚠️ IMPORTANT: This follows the exact NeoGlitch pattern that works perfectly
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 
@@ -300,7 +300,7 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
 
 export const handler: Handler = async (event) => {
   // Initialize Prisma client inside handler to avoid bundling issues
-  const db = new PrismaClient();
+  
   
   if (event.httpMethod !== 'POST') {
     return {
@@ -387,7 +387,7 @@ export const handler: Handler = async (event) => {
     console.log('🔍 [CustomPrompt] Checking for existing run with runId:', runId.toString());
 
     // Check for existing run
-    const existingRun = await db.customPromptMedia.findUnique({
+    const existingRun = await q(customPromptMedia.findUnique({
       where: { runId: runId.toString() }
     });
 
@@ -409,7 +409,7 @@ export const handler: Handler = async (event) => {
       } else {
         console.warn('⚠️ [CustomPrompt] Run exists but incomplete, cleaning up and retrying');
         // Delete old failed/incomplete record to retry clean
-        await db.customPromptMedia.delete({ where: { id: existingRun.id } });
+        await q(customPromptMedia.delete({ where: { id: existingRun.id } });
         console.log('🧹 [CustomPrompt] Cleaned up incomplete run, proceeding with new generation');
       }
     } else {
@@ -478,7 +478,7 @@ export const handler: Handler = async (event) => {
     console.log('✅ [CustomPrompt] Credit reserved successfully');
 
     // Create initial record
-    const initialRecord = await db.customPromptMedia.create({
+    const initialRecord = await q(customPromptMedia.create({
       data: {
         userId,
         sourceUrl,
@@ -570,7 +570,7 @@ export const handler: Handler = async (event) => {
         }
         
         // Update database record with completed status and IPA results
-        await db.customPromptMedia.update({
+        await q(customPromptMedia.update({
           where: { id: initialRecord.id },
           data: {
             status: 'completed',
@@ -627,7 +627,7 @@ export const handler: Handler = async (event) => {
       console.error('❌ [CustomPrompt] Generation failed:', generationError);
       
       // Update database record with failed status
-      await db.customPromptMedia.update({
+      await q(customPromptMedia.update({
         where: { id: initialRecord.id },
         data: {
           status: 'failed',

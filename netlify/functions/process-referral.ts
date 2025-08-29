@@ -1,5 +1,5 @@
 import type { Handler } from "@netlify/functions";
-import { PrismaClient } from "@prisma/client";
+import { q, qOne, qCount } from './_db';
 import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
 
@@ -22,10 +22,10 @@ export const handler: Handler = async (event) => {
     const referrerEmail: string = body.referrerEmail;
     if (!referrerEmail) return json({ ok:false, error:"MISSING_REFERRER_EMAIL" }, { status: 400 });
 
-    const prisma = new PrismaClient();
+    
 
     // Find referrer by email
-    const referrer = await prisma.user.findFirst({
+    const referrer = await q(user.findFirst({
       where: { 
         email: { 
           equals: referrerEmail, 
@@ -42,7 +42,7 @@ export const handler: Handler = async (event) => {
     // TODO: Implement referral tracking when table is created
     
     // Only award if this is the first time (check ledger for existing referral grants)
-    const existingReferralGrant = await prisma.creditTransaction.findFirst({
+    const existingReferralGrant = await q(creditTransaction.findFirst({
       where: {
         userId: referrerId,
         status: 'granted',
@@ -60,7 +60,7 @@ export const handler: Handler = async (event) => {
       const newBonus = 25; // New user gets 25 credits
 
       // Grant to referrer
-      await prisma.creditTransaction.create({
+      await q(creditTransaction.create({
         data: {
           userId: referrerId,
           action: 'referral.referrer',
@@ -74,7 +74,7 @@ export const handler: Handler = async (event) => {
       });
 
       // Grant to new user
-      await prisma.creditTransaction.create({
+      await q(creditTransaction.create({
         data: {
           userId: newUserId,
           action: 'referral.new',
@@ -88,7 +88,7 @@ export const handler: Handler = async (event) => {
       });
 
       // Update user credits balances
-      await prisma.userCredits.upsert({
+      await q(userCredits.upsert({
         where: { userId: referrerId },
         update: { 
           credits: { increment: refBonus }
@@ -99,7 +99,7 @@ export const handler: Handler = async (event) => {
         }
       });
 
-      await prisma.userCredits.upsert({
+      await q(userCredits.upsert({
         where: { userId: newUserId },
         update: { 
           credits: { increment: newBonus }
@@ -111,7 +111,7 @@ export const handler: Handler = async (event) => {
       });
     }
 
-    await prisma.$disconnect();
+    await q($disconnect();
     return json({ ok:true });
   } catch (e) {
     console.error('Referral processing error:', e);

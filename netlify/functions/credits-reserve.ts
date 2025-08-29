@@ -1,5 +1,5 @@
 import type { Handler } from "@netlify/functions";
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
 import { randomUUID } from "crypto";
@@ -13,7 +13,7 @@ import { randomUUID } from "crypto";
 // - Simplified credit reservation logic
 // ============================================================================
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -96,7 +96,7 @@ export const handler: Handler = async (event) => {
       // Check user's current credit balance
       console.log('🔍 Checking user credit balance before reservation...');
       
-      let userCredits = await prisma.userCredits.findUnique({
+      let userCredits = await q(userCredits.findUnique({
         where: { userId: userId }
       });
       
@@ -106,7 +106,7 @@ export const handler: Handler = async (event) => {
         
         try {
           // Create new user credits record with starter balance
-          userCredits = await prisma.userCredits.create({
+          userCredits = await q(userCredits.create({
             data: {
               userId: userId,
               credits: 30, // Default starter credits
@@ -146,7 +146,7 @@ export const handler: Handler = async (event) => {
       if (currentBalance <= 6) { // 6 credits = 3 images remaining
         try {
           // Get user email from the database
-          const user = await prisma.user.findUnique({
+          const user = await q(user.findUnique({
             where: { id: userId },
             select: { email: true }
           });
@@ -183,7 +183,7 @@ export const handler: Handler = async (event) => {
       console.log('🔒 Credit balance check passed:', currentBalance, '>=', cost);
       
       // Create credit transaction record
-      const creditTransaction = await prisma.creditTransaction.create({
+      const creditTransaction = await q(creditTransaction.create({
         data: {
           userId: userId,
           action: action, // ✅ REQUIRED: Database expects this (NOT NULL)
@@ -197,7 +197,7 @@ export const handler: Handler = async (event) => {
       console.log('💰 Credit transaction created:', creditTransaction.id);
       
       // Update user credits balance
-      const updatedCredits = await prisma.userCredits.update({
+      const updatedCredits = await q(userCredits.update({
         where: { userId: userId },
         data: {
           credits: currentBalance - cost,
@@ -235,6 +235,6 @@ export const handler: Handler = async (event) => {
       stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 };

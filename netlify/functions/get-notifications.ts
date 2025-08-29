@@ -2,7 +2,7 @@
 // Returns notifications for the authenticated user
 
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qCount } from './_db';
 import { requireUser } from './_lib/auth';
 
 export const handler: Handler = async (event) => {
@@ -34,40 +34,31 @@ export const handler: Handler = async (event) => {
 
     const { limit = '20', offset = '0', unread_only = 'false' } = event.queryStringParameters || {};
 
-    const prisma = new PrismaClient();
-
     try {
       // Build query for notifications
-      let whereClause: any = { user_id: user.id };
+      let whereClause = '';
+      let params: any[] = [user.id];
       
       if (unread_only === 'true') {
-        whereClause.read = false;
+        whereClause = 'AND read = false';
       }
 
-      const notifications = await prisma.notifications.findMany({
-        where: whereClause,
-        select: {
-          id: true,
-          type: true,
-          title: true,
-          message: true,
-          read: true,
-          created_at: true
-        },
-        orderBy: { created_at: 'desc' },
-        take: parseInt(limit),
-        skip: parseInt(offset)
-      });
+      const notifications = await q(`
+        SELECT id, type, title, message, read, created_at
+        FROM notifications 
+        WHERE user_id = $1 ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+      `, [user.id, parseInt(limit), parseInt(offset)]);
 
       // Get unread count
-      const unreadCount = await prisma.notifications.count({
-        where: { 
-          user_id: user.id, 
-          read: false 
-        }
-      });
-
-      await prisma.$disconnect();
+      const unreadCountResult = await qCount(`
+        SELECT COUNT(*) as count
+        FROM notifications 
+        WHERE user_id = $1 AND read = false
+      `, [user.id]);
+      
+      const unreadCount = unreadCountResult;
 
       // Format notifications for UI
       const formattedNotifications = notifications.map((notification: any) => ({
@@ -94,7 +85,6 @@ export const handler: Handler = async (event) => {
 
     } catch (dbError) {
       console.error('❌ Database error in get-notifications:', dbError);
-      await prisma.$disconnect();
       
       // Return empty notifications instead of error for better UX
       return {

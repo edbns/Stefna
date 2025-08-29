@@ -2,10 +2,10 @@
 // Deletes media assets using Prisma for consistent database access
 
 import type { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -48,7 +48,7 @@ export const handler: Handler = async (event) => {
 
     // Try Neo Glitch Media first (CUID format)
     try {
-      deletedMedia = await prisma.neoGlitchMedia.delete({
+      deletedMedia = await q(neoGlitchMedia.delete({
         where: {
           id: mediaId,
           userId: userId
@@ -64,7 +64,7 @@ export const handler: Handler = async (event) => {
     // Try Custom Prompt Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await prisma.customPromptMedia.delete({
+        deletedMedia = await q(customPromptMedia.delete({
           where: {
             id: mediaId,
             userId: userId
@@ -81,7 +81,7 @@ export const handler: Handler = async (event) => {
     // Try Emotion Mask Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await prisma.emotionMaskMedia.delete({
+        deletedMedia = await q(emotionMaskMedia.delete({
           where: {
             id: mediaId,
             userId: userId
@@ -98,7 +98,7 @@ export const handler: Handler = async (event) => {
     // Try Ghibli Reaction Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await prisma.ghibliReactionMedia.delete({
+        deletedMedia = await q(ghibliReactionMedia.delete({
           where: {
             id: mediaId,
             userId: userId
@@ -115,7 +115,7 @@ export const handler: Handler = async (event) => {
     // Try Presets Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await prisma.presetsMedia.delete({
+        deletedMedia = await q(presetsMedia.delete({
           where: {
             id: mediaId,
             userId: userId
@@ -132,7 +132,7 @@ export const handler: Handler = async (event) => {
     // Try Story Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await prisma.story.delete({
+        deletedMedia = await q(story.delete({
           where: {
             id: mediaId,
             userId: userId
@@ -172,6 +172,6 @@ export const handler: Handler = async (event) => {
       status: 'failed'
     }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 };

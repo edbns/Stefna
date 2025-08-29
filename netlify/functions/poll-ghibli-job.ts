@@ -6,9 +6,9 @@
 // 🔄 INTEGRATION: Works with start-ghibli-job.ts for complete async flow
 
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event, context) => {
   console.log('📊 [Ghibli] Polling job status...');
@@ -71,7 +71,7 @@ export const handler: Handler = async (event, context) => {
     
     // Fetch job status from database
     try {
-      const jobRecord = await prisma.ghibliReactionMedia.findUnique({
+      const jobRecord = await q(ghibliReactionMedia.findUnique({
         where: { id: jobId }
       });
       
@@ -138,6 +138,6 @@ export const handler: Handler = async (event, context) => {
       })
     };
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 };

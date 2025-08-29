@@ -1,5 +1,5 @@
 import type { Handler } from "@netlify/functions";
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
 
@@ -12,7 +12,7 @@ import { json } from "./_lib/http";
 // - Implemented actual credit refund logic
 // ============================================================================
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -64,7 +64,7 @@ export const handler: Handler = async (event) => {
 
     try {
       // Find the credit transaction
-      const creditTransaction = await prisma.creditTransaction.findUnique({
+      const creditTransaction = await q(creditTransaction.findUnique({
         where: { id: request_id }
       });
 
@@ -112,13 +112,13 @@ export const handler: Handler = async (event) => {
         console.log('💰 Processing credit refund...');
         
         // Update transaction status to refunded
-        await prisma.creditTransaction.update({
+        await q(creditTransaction.update({
           where: { id: creditTransaction.id },
           data: { status: 'refunded' }
         });
 
         // Restore credits to user balance
-        const userCredits = await prisma.userCredits.findUnique({
+        const userCredits = await q(userCredits.findUnique({
           where: { userId: userId }
         });
 
@@ -126,7 +126,7 @@ export const handler: Handler = async (event) => {
           const refundAmount = Math.abs(creditTransaction.amount); // Convert negative to positive
           const newCredits = userCredits.credits + refundAmount;
           
-          await prisma.userCredits.update({
+          await q(userCredits.update({
             where: { userId: userId },
             data: { 
               credits: newCredits
@@ -160,7 +160,7 @@ export const handler: Handler = async (event) => {
         console.log('💰 Processing credit commit...');
         
         // Update transaction status to completed
-        await prisma.creditTransaction.update({
+        await q(creditTransaction.update({
           where: { id: creditTransaction.id },
           data: { status: 'completed' }
         });
@@ -193,6 +193,6 @@ export const handler: Handler = async (event) => {
       stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 };

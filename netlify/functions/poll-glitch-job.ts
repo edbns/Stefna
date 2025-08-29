@@ -6,9 +6,9 @@
 // 
 // 🔄 FLOW: Frontend polls → Check DB status → Return current state
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -65,7 +65,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Find the job record
-    const jobRecord = await prisma.neoGlitchMedia.findUnique({
+    const jobRecord = await q(neoGlitchMedia.findUnique({
       where: { id: jobId },
       include: {
         user: {
@@ -139,6 +139,6 @@ export const handler: Handler = async (event) => {
       })
     };
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 };

@@ -9,13 +9,13 @@
 // ⚠️ IMPORTANT: This follows the exact NeoGlitch pattern that works perfectly
 
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 
 // Prisma client will be initialized inside handler
 
 export const handler: Handler = async (event) => {
   // Initialize Prisma client inside handler to avoid bundling issues
-  const db = new PrismaClient();
+  
   
   if (event.httpMethod !== 'POST') {
     return {
@@ -43,7 +43,7 @@ export const handler: Handler = async (event) => {
     console.log('🔍 [GhibliReaction] Checking status:', { runId });
 
     // Find by run ID
-    const mediaRecord = await db.ghibliReactionMedia.findUnique({
+    const mediaRecord = await q(ghibliReactionMedia.findUnique({
       where: { runId: runId.toString() }
     });
 

@@ -1,8 +1,8 @@
 import type { Handler } from "@netlify/functions";
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -86,7 +86,7 @@ export const handler: Handler = async (event) => {
       const createdPresets = []
       for (const preset of samplePresets) {
         try {
-          const created = await prisma.preset_config.upsert({
+          const created = await q(preset_config.upsert({
             where: { preset_key: preset.presetKey },
             update: {
               name: preset.name,
@@ -134,6 +134,6 @@ export const handler: Handler = async (event) => {
     console.error('❌ [Admin] Error seeding presets:', e)
     return json({ error: 'Failed to seed presets' }, { status: 500 })
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 }

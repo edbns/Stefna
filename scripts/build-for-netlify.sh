@@ -5,9 +5,8 @@ set -euo pipefail
 
 echo "🔧 [Netlify Build] Starting build process..."
 
-# SURGICAL FIX: Nuke any shipped Prisma client
-echo "🧹 [Netlify Build] Nuking any shipped Prisma client..."
-rm -rf node_modules/.prisma node_modules/@prisma/client .prisma
+# Prisma completely removed - no need to clean
+echo "🗄️ [Netlify Build] Prisma completely removed - using raw SQL with pg"
 
 # Fresh install to ensure clean state
 echo "📦 [Netlify Build] Fresh install..."

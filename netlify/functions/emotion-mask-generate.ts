@@ -8,7 +8,7 @@
 // 
 // ⚠️ IMPORTANT: This follows the exact NeoGlitch pattern that works perfectly
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
@@ -298,7 +298,7 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
 
 export const handler: Handler = async (event) => {
   // Initialize Prisma client inside handler to avoid bundling issues
-  const db = new PrismaClient();
+  
   
   if (event.httpMethod !== 'POST') {
     return {
@@ -357,7 +357,7 @@ export const handler: Handler = async (event) => {
     console.log('🔍 [EmotionMask] Checking for existing run with runId:', runId.toString());
 
     // Check for existing run
-    const existingRun = await db.emotionMaskMedia.findUnique({
+    const existingRun = await q(emotionMaskMedia.findUnique({
       where: { runId: runId.toString() }
     });
 
@@ -379,7 +379,7 @@ export const handler: Handler = async (event) => {
       } else {
         console.warn('⚠️ [EmotionMask] Run exists but incomplete, cleaning up and retrying');
         // Delete old failed/incomplete record to retry clean
-        await db.emotionMaskMedia.delete({ where: { id: existingRun.id } });
+        await q(emotionMaskMedia.delete({ where: { id: existingRun.id } });
         console.log('🧹 [EmotionMask] Cleaned up incomplete run, proceeding with new generation');
       }
     } else {
@@ -449,7 +449,7 @@ export const handler: Handler = async (event) => {
     console.log('✅ [EmotionMask] Credit reserved successfully');
 
     // Create initial record
-    const initialRecord = await db.emotionMaskMedia.create({
+    const initialRecord = await q(emotionMaskMedia.create({
       data: {
         userId,
         sourceUrl,
@@ -541,7 +541,7 @@ export const handler: Handler = async (event) => {
         }
         
         // Update database record with completed status and IPA results
-        await db.emotionMaskMedia.update({
+        await q(emotionMaskMedia.update({
           where: { id: initialRecord.id },
           data: {
             status: 'completed',
@@ -593,7 +593,7 @@ export const handler: Handler = async (event) => {
       console.error('❌ [EmotionMask] Generation failed:', generationError);
       
       // Update database record with failed status
-      await db.emotionMaskMedia.update({
+      await q(emotionMaskMedia.update({
         where: { id: initialRecord.id },
         data: {
           status: 'failed',

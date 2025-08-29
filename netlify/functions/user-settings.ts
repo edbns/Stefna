@@ -1,10 +1,10 @@
 import type { Handler } from "@netlify/functions";
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
 
 // ---- Database connection ----
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -35,7 +35,7 @@ export const handler: Handler = async (event) => {
       console.log(`📥 Getting settings for user: ${userId}`)
       
       try {
-        const settings = await prisma.userSettings.findUnique({
+        const settings = await q(userSettings.findUnique({
           where: { userId }
         });
 
@@ -81,7 +81,7 @@ export const handler: Handler = async (event) => {
 
       try {
         // Upsert settings (create if doesn't exist, update if it does)
-        const updated = await prisma.userSettings.upsert({
+        const updated = await q(userSettings.upsert({
           where: { userId },
           update: { 
             shareToFeed,
@@ -117,6 +117,6 @@ export const handler: Handler = async (event) => {
     console.error('❌ user-settings error:', e)
     return json({ error: 'Internal server error' }, { status: 500 })
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 }

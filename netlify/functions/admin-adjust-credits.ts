@@ -1,8 +1,8 @@
 import type { Handler } from "@netlify/functions";
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -39,7 +39,7 @@ export const handler: Handler = async (event) => {
     console.log(`💰 [Admin] Adjusting credits for user ${userId}: ${adjustment > 0 ? '+' : ''}${adjustment}`)
 
     // Get current user credits
-    const currentCredits = await prisma.userCredits.findUnique({
+    const currentCredits = await q(userCredits.findUnique({
       where: { userId },
       select: { credits: true }
     })
@@ -51,13 +51,13 @@ export const handler: Handler = async (event) => {
     const newCredits = Math.max(0, currentCredits.credits + adjustment)
 
     // Update user credits
-    await prisma.userCredits.update({
+    await q(userCredits.update({
       where: { userId },
       data: { credits: newCredits }
     })
 
     // Create audit log entry
-    await prisma.creditTransaction.create({
+    await q(creditTransaction.create({
       data: {
         id: `admin-adjust-${Date.now()}`,
         userId: userId,
@@ -85,6 +85,6 @@ export const handler: Handler = async (event) => {
     console.error('❌ [Admin] Error adjusting credits:', e)
     return json({ error: 'Failed to adjust credits' }, { status: 500 })
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 }

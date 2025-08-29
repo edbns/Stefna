@@ -1,8 +1,8 @@
 import type { Handler } from "@netlify/functions";
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -39,7 +39,7 @@ export const handler: Handler = async (event) => {
     console.log(`🗑️ [Admin] Deleting user and all associated data: ${userId}`)
 
     // Start a transaction to delete all user data
-    await prisma.$transaction(async (tx) => {
+    await q($transaction(async (tx) => {
       // Delete all media types
       await tx.neoGlitchMedia.deleteMany({ where: { userId } })
       await tx.ghibliReactionMedia.deleteMany({ where: { userId } })
@@ -77,6 +77,6 @@ export const handler: Handler = async (event) => {
     console.error('❌ [Admin] Error deleting user:', e)
     return json({ error: 'Failed to delete user' }, { status: 500 })
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 }

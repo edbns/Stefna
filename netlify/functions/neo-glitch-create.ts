@@ -3,7 +3,7 @@
 // Handles deduplication and user validation
 
 import type { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
 
@@ -58,10 +58,10 @@ export const handler: Handler = async (event) => {
       hasSource: !!sourceAssetId
     });
 
-    const prisma = new PrismaClient();
+    
 
     // Check for existing record with same runId (deduplication)
-    const existingRecord = await prisma.neoGlitchMedia.findFirst({
+    const existingRecord = await q(neoGlitchMedia.findFirst({
       where: { 
         userId: userId,
         runId: runId
@@ -82,7 +82,7 @@ export const handler: Handler = async (event) => {
 
       // If already completed, return the existing record
       if (existingRecord.status === 'completed' && existingRecord.imageUrl) {
-        await prisma.$disconnect();
+        await q($disconnect();
         return json({
           id: existingRecord.id,
           status: 'completed',
@@ -93,7 +93,7 @@ export const handler: Handler = async (event) => {
 
       // If pending/processing, return the existing record
       if (existingRecord.status === 'pending' || existingRecord.status === 'processing') {
-        await prisma.$disconnect();
+        await q($disconnect();
         return json({
           id: existingRecord.id,
           status: existingRecord.status,
@@ -107,7 +107,7 @@ export const handler: Handler = async (event) => {
     }
 
          // Create new glitch record
-     const result = await prisma.neoGlitchMedia.create({
+     const result = await q(neoGlitchMedia.create({
        data: {
          userId: userId,
          runId: runId,
@@ -140,7 +140,7 @@ export const handler: Handler = async (event) => {
        runId: newRecord.runId ? newRecord.runId.substring(0, 16) + '...' : 'no-run-id'
      });
 
-     await prisma.$disconnect();
+     await q($disconnect();
 
      return json({
        id: newRecord.id,

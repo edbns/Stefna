@@ -5,7 +5,7 @@
 import type { Handler } from '@netlify/functions';
 import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 
 // Stability.ai API configuration
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
@@ -104,11 +104,11 @@ export const handler: Handler = async (event) => {
     console.log('🔍 [NeoGlitch] Checking status for Stability.ai job:', stabilityJobId);
 
     // 🔍 ACTUALLY CHECK THE DATABASE for real job status
-    const prisma = new PrismaClient();
+    
     
     try {
       // Find the job in the database
-      const jobRecord = await prisma.neoGlitchMedia.findFirst({
+      const jobRecord = await q(neoGlitchMedia.findFirst({
         where: {
           OR: [
             { id: stabilityJobId },
@@ -163,7 +163,7 @@ export const handler: Handler = async (event) => {
         
         if (jobAge > maxAge) {
           // Job is stuck - mark as failed
-          await prisma.neoGlitchMedia.update({
+          await q(neoGlitchMedia.update({
             where: { id: jobRecord.id },
             data: { 
               status: 'failed',
@@ -202,7 +202,7 @@ export const handler: Handler = async (event) => {
             console.log('✅ [NeoGlitch] Stability.ai job completed, updating database');
             
             // Update database with completed status
-            await prisma.neoGlitchMedia.update({
+            await q(neoGlitchMedia.update({
               where: { id: jobRecord.id },
               data: {
                 status: 'completed',
@@ -221,7 +221,7 @@ export const handler: Handler = async (event) => {
             console.log('❌ [NeoGlitch] Stability.ai job failed, marking as failed');
             
             // Update database with failed status
-            await prisma.neoGlitchMedia.update({
+            await q(neoGlitchMedia.update({
               where: { id: jobRecord.id },
               data: {
                 status: 'failed',
@@ -268,7 +268,7 @@ export const handler: Handler = async (event) => {
       }
 
     } finally {
-      await prisma.$disconnect();
+      await q($disconnect();
     }
 
   } catch (error) {

@@ -1,5 +1,5 @@
 import type { Handler } from "@netlify/functions";
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { requireAuth } from "./_auth";
 import { json } from "./_lib/http";
 
@@ -43,36 +43,36 @@ export const handler: Handler = async (event) => {
     const { userId, email } = requireAuth(authHeader);
     console.log('✅ [get-user-profile] User authenticated:', userId, 'Email:', email);
     
-    const prisma = new PrismaClient();
+    
 
     // Fetch user profile with media assets
     try {
       // Get user info, credits, and media assets
       const [userCredits, userMedia, userNeoGlitch] = await Promise.all([
-        prisma.userCredits.findUnique({
+        q(userCredits.findUnique({
           where: { userId: userId },
           select: { credits: true }
         }),
         // Get media from all dedicated tables
         Promise.all([
-          prisma.ghibliReactionMedia.findMany({
+          q(ghibliReactionMedia.findMany({
             where: { userId: userId },
             select: { id: true, prompt: true, status: true, createdAt: true }
           }),
-          prisma.emotionMaskMedia.findMany({
+          q(emotionMaskMedia.findMany({
             where: { userId: userId },
             select: { id: true, prompt: true, status: true, createdAt: true }
           }),
-          prisma.presetsMedia.findMany({
+          q(presetsMedia.findMany({
             where: { userId: userId },
             select: { id: true, prompt: true, status: true, createdAt: true }
           }),
-          prisma.customPromptMedia.findMany({
+          q(customPromptMedia.findMany({
             where: { userId: userId },
             select: { id: true, prompt: true, status: true, createdAt: true }
           })
         ]).then(results => results.flat()),
-        prisma.neoGlitchMedia.findMany({
+        q(neoGlitchMedia.findMany({
           where: { userId: userId },
           select: { id: true, prompt: true, status: true, createdAt: true }
         })
@@ -81,7 +81,7 @@ export const handler: Handler = async (event) => {
       const balance = userCredits?.credits ?? 30; // Default to 30 credits
       const dailyCap = 30; // Hardcoded for now since appConfig table doesn't exist
 
-      await prisma.$disconnect();
+      await q($disconnect();
 
       return json({
         ok: true,
@@ -102,7 +102,7 @@ export const handler: Handler = async (event) => {
       });
     } catch (dbError) {
       console.error('❌ Database error in get-user-profile:', dbError);
-      await prisma.$disconnect();
+      await q($disconnect();
       // Return safe defaults if database fails
       return json({
         ok: true,

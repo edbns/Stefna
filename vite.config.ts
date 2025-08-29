@@ -47,7 +47,7 @@ export default defineConfig({
           // UI and animation chunks
           ui: ['framer-motion', 'clsx', 'tailwind-merge'],
           // Database and API chunks
-          data: ['@neondatabase/serverless', '@prisma/client', 'pg'],
+          data: ['@neondatabase/serverless', 'pg'],
           // Utility chunks
           utils: ['lucide-react', 'nanoid', 'zustand', 'react-router-dom']
         }

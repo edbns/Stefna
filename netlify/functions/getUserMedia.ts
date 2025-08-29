@@ -3,9 +3,9 @@
 // Provides user-specific media data
 
 import type { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event) => {
   // Handle CORS
@@ -52,31 +52,31 @@ export const handler: Handler = async (event) => {
 
     // Fetch user's media using Prisma - from all new dedicated tables
     const [ghibliReactionMedia, emotionMaskMedia, presetsMedia, customPromptMedia, neoGlitchMedia] = await Promise.all([
-      prisma.ghibliReactionMedia.findMany({
+      q(ghibliReactionMedia.findMany({
         where: { userId: userId },
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset
       }),
-      prisma.emotionMaskMedia.findMany({
+      q(emotionMaskMedia.findMany({
         where: { userId: userId },
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset
       }),
-      prisma.presetsMedia.findMany({
+      q(presetsMedia.findMany({
         where: { userId: userId },
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset
       }),
-      prisma.customPromptMedia.findMany({
+      q(customPromptMedia.findMany({
         where: { userId: userId },
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset
       }),
-      prisma.neoGlitchMedia.findMany({
+      q(neoGlitchMedia.findMany({
         where: { userId: userId },
         orderBy: { createdAt: 'desc' },
         take: limit,
@@ -244,6 +244,6 @@ export const handler: Handler = async (event) => {
       })
     };
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 };

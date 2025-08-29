@@ -6,7 +6,7 @@
 // 🔄 INTEGRATION: Works with poll-ghibli-job.ts for status checking
 
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 
 // 🚀 BACKGROUND MODE: Allow function to run for up to 15 minutes
@@ -14,7 +14,7 @@ export const config = {
   type: "background",
 };
 
-const prisma = new PrismaClient();
+
 
 export const handler: Handler = async (event, context) => {
   console.log('🚀 [Ghibli] Starting async job creation...');
@@ -117,7 +117,7 @@ export const handler: Handler = async (event, context) => {
     
     // Create job record in database
     try {
-      const jobRecord = await prisma.ghibliReactionMedia.create({
+      const jobRecord = await q(ghibliReactionMedia.create({
         data: {
           id: jobId,
           userId: userId,
@@ -168,7 +168,7 @@ export const handler: Handler = async (event, context) => {
       
       // Clean up job record if credit reservation fails
       try {
-        await prisma.ghibliReactionMedia.delete({ where: { id: jobId } });
+        await q(ghibliReactionMedia.delete({ where: { id: jobId } });
         console.log('🧹 [Ghibli] Cleaned up job record after credit reservation failure');
       } catch (cleanupError) {
         console.error('❌ [Ghibli] Failed to cleanup job record:', cleanupError);
@@ -197,7 +197,7 @@ export const handler: Handler = async (event, context) => {
         
         // Update job status to failed
         try {
-          await prisma.ghibliReactionMedia.update({
+          await q(ghibliReactionMedia.update({
             where: { id: jobId },
             data: {
               status: 'failed',
@@ -234,6 +234,6 @@ export const handler: Handler = async (event, context) => {
       })
     };
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 };

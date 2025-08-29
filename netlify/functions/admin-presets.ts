@@ -1,8 +1,8 @@
 import type { Handler } from "@netlify/functions";
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
 
-const prisma = new PrismaClient();
+
 
 interface PresetConfig {
   id: string;
@@ -43,7 +43,7 @@ export const handler: Handler = async (event) => {
       // Get all preset configurations
       console.log('🔍 [Admin] Fetching preset configurations...')
       
-      const presets = await prisma.preset_config.findMany({
+      const presets = await q(preset_config.findMany({
         orderBy: [
           { category: 'asc' },
           { name: 'asc' }
@@ -68,7 +68,7 @@ export const handler: Handler = async (event) => {
 
       console.log(`➕ [Admin] Creating new preset: ${presetKey}`)
 
-      const newPreset = await prisma.preset_config.create({
+      const newPreset = await q(preset_config.create({
         data: {
           preset_key: presetKey,
           name,
@@ -102,7 +102,7 @@ export const handler: Handler = async (event) => {
 
       console.log(`✏️ [Admin] Updating preset: ${id}`)
 
-      const updatedPreset = await prisma.preset_config.update({
+      const updatedPreset = await q(preset_config.update({
         where: { id },
         data: {
           ...updates,
@@ -129,7 +129,7 @@ export const handler: Handler = async (event) => {
 
       console.log(`🗑️ [Admin] Deleting preset: ${id}`)
 
-      await prisma.preset_config.delete({
+      await q(preset_config.delete({
         where: { id }
       })
 
@@ -148,6 +148,6 @@ export const handler: Handler = async (event) => {
     console.error('❌ [Admin] Error managing presets:', e)
     return json({ error: 'Failed to manage presets' }, { status: 500 })
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 }

@@ -1,8 +1,8 @@
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 
 // ---- Database connection ----
-const prisma = new PrismaClient();
+
 
 function getUserIdFromToken(auth?: string): string | null {
   try {
@@ -60,7 +60,7 @@ export const handler: Handler = async (event) => {
       let result;
       
       // Try ghibli_reaction_media first
-      result = await prisma.ghibliReactionMedia.updateMany({
+      result = await q(ghibliReactionMedia.updateMany({
         where: { 
           id: assetId, 
           userId: userId 
@@ -72,7 +72,7 @@ export const handler: Handler = async (event) => {
       
       // If not found, try emotion_mask_media
       if (result.count === 0) {
-        result = await prisma.emotionMaskMedia.updateMany({
+        result = await q(emotionMaskMedia.updateMany({
           where: { 
             id: assetId, 
             userId: userId 
@@ -85,7 +85,7 @@ export const handler: Handler = async (event) => {
       
       // If not found, try presets_media
       if (result.count === 0) {
-        result = await prisma.presetsMedia.updateMany({
+        result = await q(presetsMedia.updateMany({
           where: { 
             id: assetId, 
             userId: userId 
@@ -98,7 +98,7 @@ export const handler: Handler = async (event) => {
       
       // If not found, try custom_prompt_media
       if (result.count === 0) {
-        result = await prisma.customPromptMedia.updateMany({
+        result = await q(customPromptMedia.updateMany({
           where: { 
             id: assetId, 
             userId: userId 
@@ -111,7 +111,7 @@ export const handler: Handler = async (event) => {
       
       // If not found, try neo_glitch_media
       if (result.count === 0) {
-        result = await prisma.neoGlitchMedia.updateMany({
+        result = await q(neoGlitchMedia.updateMany({
           where: { 
             id: assetId, 
             userId: userId 

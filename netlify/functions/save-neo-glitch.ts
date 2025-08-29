@@ -5,9 +5,9 @@
 import type { Handler } from '@netlify/functions';
 import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 
-const prisma = new PrismaClient();
+
 
 interface SaveNeoGlitchRequest {
   userId: string;
@@ -80,7 +80,7 @@ export const handler: Handler = async (event) => {
     });
 
     // Step 1: Check if this generation already exists using Prisma
-    const existingRecord = await prisma.neoGlitchMedia.findUnique({
+    const existingRecord = await q(neoGlitchMedia.findUnique({
       where: { runId: stabilityJobId }
     });
 
@@ -101,7 +101,7 @@ export const handler: Handler = async (event) => {
     if (existingRecord) {
       console.log('🔄 [SaveNeoGlitch] Updating existing record...');
       
-      const updatedRecord = await prisma.neoGlitchMedia.update({
+      const updatedRecord = await q(neoGlitchMedia.update({
         where: { id: existingRecord.id },
         data: {
           status: 'completed',
@@ -123,7 +123,7 @@ export const handler: Handler = async (event) => {
     // Step 3: Create new record if none exists
     console.log('🆕 [SaveNeoGlitch] Creating new record...');
     
-    const newRecord = await prisma.neoGlitchMedia.create({
+    const newRecord = await q(neoGlitchMedia.create({
       data: {
         runId: stabilityJobId,
         userId: userId,

@@ -78,7 +78,7 @@ export const handler: Handler = async (event) => {
     let otpInserted = false;
     try {
       console.log('=== INSERTING OTP WITH PRISMA ===');
-      const insertResult = await prisma.authOtp.create({
+      const insertResult = await q(authOtp.create({
         data: {
           id: uuidv4(),
           email: email.toLowerCase(),
@@ -274,6 +274,6 @@ It expires in 10 minutes. If you didn't request this code, you can ignore this e
       })
     };
   } finally {
-    await prisma.$disconnect();
+    await q($disconnect();
   }
 };

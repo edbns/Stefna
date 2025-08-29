@@ -8,7 +8,7 @@
 // 
 // ⚠️ IMPORTANT: This follows the exact NeoGlitch pattern that works perfectly
 import { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 
@@ -326,10 +326,10 @@ async function processGenerationAsync(
   
   try {
     // Initialize Prisma client
-    const db = new PrismaClient();
+    
     
     // Update job status to processing
-    await db.ghibliReactionMedia.update({
+    await q(ghibliReactionMedia.update({
       where: { id: jobId },
       data: { status: 'processing' }
     });
@@ -374,7 +374,7 @@ async function processGenerationAsync(
     }
     
     // Update job with completed status and image URL
-    await db.ghibliReactionMedia.update({
+    await q(ghibliReactionMedia.update({
       where: { id: jobId },
       data: { 
         status: 'completed',
@@ -384,21 +384,21 @@ async function processGenerationAsync(
     
     console.log('✅ [Ghibli] Background generation completed successfully for job:', jobId);
     
-    await db.$disconnect();
+    await q($disconnect();
   } catch (error) {
     console.error('❌ [Ghibli] Background generation failed for job:', jobId, error);
     
     // Update job with failed status
     try {
-      const db = new PrismaClient();
-      await db.ghibliReactionMedia.update({
+      
+      await q(ghibliReactionMedia.update({
         where: { id: jobId },
         data: { 
           status: 'failed',
           errorMessage: error instanceof Error ? error.message : 'Unknown error'
         }
       });
-      await db.$disconnect();
+      await q($disconnect();
     } catch (updateError) {
       console.error('❌ [Ghibli] Failed to update job status to failed:', updateError);
     }
@@ -410,7 +410,7 @@ async function processGenerationAsync(
 // Main handler for direct calls (legacy support)
 export const handler: Handler = async (event) => {
   // Initialize Prisma client inside handler to avoid bundling issues
-  const db = new PrismaClient();
+  
   
   if (event.httpMethod !== 'POST') {
     return {
@@ -469,7 +469,7 @@ export const handler: Handler = async (event) => {
     console.log('🔍 [GhibliReaction] Checking for existing run with runId:', runId.toString());
 
     // Check for existing run
-    const existingRun = await db.ghibliReactionMedia.findUnique({
+    const existingRun = await q(ghibliReactionMedia.findUnique({
       where: { runId: runId.toString() }
     });
 
@@ -491,7 +491,7 @@ export const handler: Handler = async (event) => {
       } else {
         console.warn('⚠️ [GhibliReaction] Run exists but incomplete, cleaning up and retrying');
         // Delete old failed/incomplete record to retry clean
-        await db.ghibliReactionMedia.delete({ where: { id: existingRun.id } });
+        await q(ghibliReactionMedia.delete({ where: { id: existingRun.id } });
         console.log('🧹 [GhibliReaction] Cleaned up incomplete run, proceeding with new generation');
       }
     } else {
@@ -563,7 +563,7 @@ export const handler: Handler = async (event) => {
     console.log('✅ [GhibliReaction] Credit reserved successfully');
 
     // Create initial record
-    const initialRecord = await db.ghibliReactionMedia.create({
+    const initialRecord = await q(ghibliReactionMedia.create({
       data: {
         userId,
         sourceUrl,
@@ -655,7 +655,7 @@ export const handler: Handler = async (event) => {
         }
         
         // Update database record with completed status and IPA results
-        await db.ghibliReactionMedia.update({
+        await q(ghibliReactionMedia.update({
           where: { id: initialRecord.id },
           data: {
             status: 'completed',
@@ -707,7 +707,7 @@ export const handler: Handler = async (event) => {
       console.error('❌ [GhibliReaction] Generation failed:', generationError);
       
       // Update database record with failed status
-      await db.ghibliReactionMedia.update({
+      await q(ghibliReactionMedia.update({
         where: { id: initialRecord.id },
         data: {
           status: 'failed',
