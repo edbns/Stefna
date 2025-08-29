@@ -21,19 +21,18 @@ export const handler: Handler = async (event) => {
       body: ''
     };
   }
-  
-    if (event.httpMethod !== 'POST') {
-      return {
-        statusCode: 405,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ error: 'Method not allowed' })
-      };
-    }
+
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
   }
 
   try {
@@ -167,4 +166,4 @@ export const handler: Handler = async (event) => {
       })
     };
   }
-};
+}
