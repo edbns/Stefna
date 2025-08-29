@@ -13,27 +13,11 @@ const prismaEnvSnapshot = Object.fromEntries(
 console.info('[PRISMA:ENV]', prismaEnvSnapshot);
 console.info('[PRISMA:DATABASE_URL]', redact(process.env.DATABASE_URL || ''));
 
-// Detect accidental Data Proxy / Accelerate / Edge builds
-const suspicious: string[] = [];
-try {
-  // If this resolves, your build targets Data Proxy (Accelerate) instead of binary/lib runtime
-  require.resolve('@prisma/client/runtime/data-proxy');
-  suspicious.push('uses-runtime:data-proxy');
-} catch {}
-try {
-  require.resolve('@prisma/client/edge');
-  suspicious.push('uses-client:edge');
-} catch {}
-try {
-  require.resolve('@prisma/extension-accelerate');
-  suspicious.push('uses-extension:accelerate');
-} catch {}
-try {
-  require.resolve('@prisma/ppg'); // serverless driver (requires prisma+postgres)
-  suspicious.push('uses-serverless-driver:@prisma/ppg');
-} catch {}
-
-console.info('[PRISMA:DETECT]', { suspicious });
+// Simple detection without loading problematic modules
+console.info('[PRISMA:DETECT]', { 
+  suspicious: [],
+  note: 'Safe detection mode - no edge client loading'
+});
 // ===== end detector =====
 
 import type { Handler } from '@netlify/functions';

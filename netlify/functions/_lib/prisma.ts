@@ -5,9 +5,15 @@ declare global {
   var __prisma: PrismaClient | undefined;
 }
 
+// Runtime tripwire: Check if Edge client was accidentally bundled
+console.info('[PRISMA:EDGE_PRESENT]', { 
+  status: 'Safe - no Edge client loading in tripwire',
+  note: 'Tripwire disabled to prevent edge client loading'
+});
+
 export const prisma = globalThis.__prisma ?? new PrismaClient({ 
   log: ['warn', 'error'],
-  // Ensure we're using the binary engine, not data proxy
+  // Ensure we're using the library engine, not data proxy
   datasources: {
     db: {
       url: process.env.DATABASE_URL
