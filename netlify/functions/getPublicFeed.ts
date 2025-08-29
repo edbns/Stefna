@@ -3,10 +3,41 @@
 // Handles: Ghibli, Emotion Mask, Presets, Custom, AND Neo Tokyo Glitch
 // Provides consistent, deduplicated feed data for the main application
 
-import { PrismaClient } from '@prisma/client';
-import type { Handler } from '@netlify/functions';
+// ======= Prisma Mode Detector =======
+const redact = (u:string) => (u || '').replace(/:\/\/([^:]+):([^@]+)@/,'://$1:****@');
 
-const prisma = new PrismaClient();
+const prismaEnvSnapshot = Object.fromEntries(
+  Object.entries(process.env).filter(([k]) => k.startsWith('PRISMA_'))
+);
+
+console.info('[PRISMA:ENV]', prismaEnvSnapshot);
+console.info('[PRISMA:DATABASE_URL]', redact(process.env.DATABASE_URL || ''));
+
+// Detect accidental Data Proxy / Accelerate / Edge builds
+const suspicious: string[] = [];
+try {
+  // If this resolves, your build targets Data Proxy (Accelerate) instead of binary/lib runtime
+  require.resolve('@prisma/client/runtime/data-proxy');
+  suspicious.push('uses-runtime:data-proxy');
+} catch {}
+try {
+  require.resolve('@prisma/client/edge');
+  suspicious.push('uses-client:edge');
+} catch {}
+try {
+  require.resolve('@prisma/extension-accelerate');
+  suspicious.push('uses-extension:accelerate');
+} catch {}
+try {
+  require.resolve('@prisma/ppg'); // serverless driver (requires prisma+postgres)
+  suspicious.push('uses-serverless-driver:@prisma/ppg');
+} catch {}
+
+console.info('[PRISMA:DETECT]', { suspicious });
+// ===== end detector =====
+
+import type { Handler } from '@netlify/functions';
+import { prisma } from './_lib/prisma';
 
 export const handler: Handler = async (event) => {
   // 🚨 ADDED: Environment variable debugging
@@ -120,7 +151,7 @@ export const handler: Handler = async (event) => {
       userId: userId === 'all' ? 'all' : userId.substring(0, 8) + '...'
     });
 
-    const prisma = new PrismaClient();
+
 
     try {
       // 🔒 PRIVACY FIRST: Get all users who have shareToFeed enabled

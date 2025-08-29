@@ -1,9 +1,7 @@
 import type { Handler } from '@netlify/functions';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './_lib/prisma';
 import { Resend } from 'resend';
 import { v4 as uuidv4 } from 'uuid';
-
-const prisma = new PrismaClient();
 
 export const handler: Handler = async (event) => {
   console.log('=== OTP REQUEST FUNCTION STARTED ===');
