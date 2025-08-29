@@ -108,21 +108,11 @@ export const handler: Handler = async (event) => {
     
     try {
       // Find the job in the database
-      const jobRecord = await q(neoGlitchMedia.findFirst({
-        where: {
-          OR: [
-            { id: stabilityJobId },
-            { runId: stabilityJobId }
-          ]
-        },
-        select: {
-          id: true,
-          status: true,
-          imageUrl: true,
-          runId: true,
-          createdAt: true
-        }
-      });
+      const jobRecord = await qOne(`
+        SELECT id, status, image_url, run_id, created_at
+        FROM neo_glitch_media 
+        WHERE id = $1 OR run_id = $1
+      `, [stabilityJobId]);
 
       if (!jobRecord) {
         console.warn('⚠️ [NeoGlitch] Job not found in database:', stabilityJobId);
@@ -136,8 +126,8 @@ export const handler: Handler = async (event) => {
       console.log('✅ [NeoGlitch] Found job in database:', {
         id: jobRecord.id,
         status: jobRecord.status,
-        hasImage: !!jobRecord.imageUrl,
-        runId: jobRecord.runId
+        hasImage: !!jobRecord.image_url,
+        runId: jobRecord.run_id
       });
 
       // Return the actual status from the database
