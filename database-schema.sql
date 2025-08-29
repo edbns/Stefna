@@ -126,6 +126,7 @@ CREATE TABLE IF NOT EXISTS neo_glitch_media (
     run_id TEXT UNIQUE NOT NULL,
     stability_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     status TEXT DEFAULT 'completed',
     metadata JSONB DEFAULT '{}'
 );

@@ -97,8 +97,8 @@ export const handler: Handler = async (event) => {
     // Create initial job record in database
     try {
       const jobRecord = await qOne(`
-        INSERT INTO neo_glitch_media (id, user_id, source_url, prompt, preset, status, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        INSERT INTO neo_glitch_media (id, user_id, source_url, prompt, preset, status, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
         RETURNING id
       `, [jobId, userId, sourceUrl, prompt, presetKey, 'processing']);
       console.log('[start-glitch-job] Job record created:', jobRecord.id);
@@ -137,7 +137,7 @@ export const handler: Handler = async (event) => {
         // Update job status to failed
         await q(`
           UPDATE neo_glitch_media 
-          SET status = $1, metadata = jsonb_set(COALESCE(metadata, '{}'), '{error_message}', $2), updated_at = NOW()
+          SET status = $1, metadata = jsonb_set(COALESCE(metadata, '{}'), '{error_message}', $2)
           WHERE id = $3
         `, ['failed', `Credit reservation failed: ${errorText}`, jobId]);
 
@@ -160,7 +160,7 @@ export const handler: Handler = async (event) => {
       // Update job status to failed
       await q(`
         UPDATE neo_glitch_media 
-        SET status = $1, metadata = jsonb_set(COALESCE(metadata, '{}'), '{error_message}', $2), updated_at = NOW()
+        SET status = $1, metadata = jsonb_set(COALESCE(metadata, '{}'), '{error_message}', $2)
         WHERE id = $3
       `, ['failed', `Credit reservation error: ${creditError.message}`, jobId]);
 

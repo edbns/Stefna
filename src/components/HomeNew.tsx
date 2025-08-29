@@ -1422,16 +1422,19 @@ const HomeNew: React.FC = () => {
       if (res.ok) {
         const resp = await res.json()
         console.log('📊 Raw feed response:', resp)
-        console.log('📥 Feed items received:', resp.success ? 'success' : 'failed')
+        console.log('📥 Feed items received:', resp.items ? 'success' : 'failed')
         
-        if (!resp.success) {
-          console.error('❌ Feed API error:', resp.error)
+        if (!resp.items) {
+          console.error('❌ Feed API error:', resp.error || 'No items in response')
           return
         }
         
-        const { items: media, hasMore } = resp
+        const { items: media } = resp
         console.log('📊 Raw feed data:', media)
         console.log('📊 Feed length:', media?.length || 0)
+        
+        // Determine if there are more items based on whether we got the full pageSize
+        const hasMore = media && media.length === pageSize
         console.log('📊 Has more:', hasMore)
         
         const mapped: UserMedia[] = (media || [])
@@ -1515,7 +1518,7 @@ const HomeNew: React.FC = () => {
           setFeedPage(prev => prev + 1)
         }
         
-        setHasMoreFeed(hasMore !== false)
+        setHasMoreFeed(hasMore)
       } else {
         console.error('❌ Feed response not ok:', res.status, await res.text())
       }
