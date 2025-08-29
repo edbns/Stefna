@@ -186,8 +186,8 @@ async function handleNeoGlitchGeneration(userId: string, prompt: string, presetK
 
   await q(`
     INSERT INTO neo_glitch_media (
-      id, user_id, run_id, preset, prompt, source_url, status, created_at, updated_at, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW(), $8)
+      id, user_id, run_id, preset, prompt, source_url, status, created_at, metadata
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
   `, [jobId, userId, runId, presetKey, prompt, sourceAssetId, 'processing', JSON.stringify(meta)]);
 
   // Start background processing using the shared generation service
@@ -215,7 +215,7 @@ async function handleNeoGlitchGeneration(userId: string, prompt: string, presetK
       try {
         await q(`
           UPDATE neo_glitch_media
-          SET status = $1, updated_at = NOW()
+          SET status = $1
           WHERE id = $2
         `, ['failed', jobId]);
       } catch (dbError) {
@@ -232,8 +232,8 @@ async function handleEmotionMaskGeneration(userId: string, prompt: string, prese
 
   await q(`
     INSERT INTO emotion_mask_media (
-      id, user_id, run_id, preset, prompt, source_url, status, created_at, updated_at, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW(), $8)
+      id, user_id, run_id, preset, prompt, source_url, status, created_at, metadata
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
   `, [jobId, userId, runId, presetKey, prompt, sourceAssetId, 'processing', JSON.stringify(meta)]);
 
   // Start background processing
@@ -243,7 +243,7 @@ async function handleEmotionMaskGeneration(userId: string, prompt: string, prese
     } catch (error) {
       console.error('❌ [Generate] Background emotion-mask generation failed:', error);
       try {
-        await q(`UPDATE emotion_mask_media SET status = $1, updated_at = NOW() WHERE id = $2`, ['failed', jobId]);
+        await q(`UPDATE emotion_mask_media SET status = $1 WHERE id = $2`, ['failed', jobId]);
       } catch (dbError) {
         console.error('❌ [Generate] Failed to update emotion-mask job status:', dbError);
       }
@@ -258,8 +258,8 @@ async function handlePresetsGeneration(userId: string, prompt: string, presetKey
 
   await q(`
     INSERT INTO presets_media (
-      id, user_id, run_id, preset, prompt, source_url, status, created_at, updated_at, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW(), $8)
+      id, user_id, run_id, preset, prompt, source_url, status, created_at, metadata
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
   `, [jobId, userId, runId, presetKey, prompt, sourceAssetId, 'processing', JSON.stringify(meta)]);
 
   // Start background processing
@@ -269,7 +269,7 @@ async function handlePresetsGeneration(userId: string, prompt: string, presetKey
     } catch (error) {
       console.error('❌ [Generate] Background presets generation failed:', error);
       try {
-        await q(`UPDATE presets_media SET status = $1, updated_at = NOW() WHERE id = $2`, ['failed', jobId]);
+        await q(`UPDATE presets_media SET status = $1 WHERE id = $2`, ['failed', jobId]);
       } catch (dbError) {
         console.error('❌ [Generate] Failed to update presets job status:', dbError);
       }
@@ -284,8 +284,8 @@ async function handleGhibliReactionGeneration(userId: string, prompt: string, pr
 
   await q(`
     INSERT INTO ghibli_reaction_media (
-      id, user_id, run_id, preset, prompt, source_url, status, created_at, updated_at, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW(), $8)
+      id, user_id, run_id, preset, prompt, source_url, status, created_at, metadata
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
   `, [jobId, userId, runId, presetKey, prompt, sourceAssetId, 'processing', JSON.stringify(meta)]);
 
   // Start background processing
@@ -295,7 +295,7 @@ async function handleGhibliReactionGeneration(userId: string, prompt: string, pr
     } catch (error) {
       console.error('❌ [Generate] Background ghibli-reaction generation failed:', error);
       try {
-        await q(`UPDATE ghibli_reaction_media SET status = $1, updated_at = NOW() WHERE id = $2`, ['failed', jobId]);
+        await q(`UPDATE ghibli_reaction_media SET status = $1 WHERE id = $2`, ['failed', jobId]);
       } catch (dbError) {
         console.error('❌ [Generate] Failed to update ghibli-reaction job status:', dbError);
       }
@@ -310,8 +310,8 @@ async function handleCustomPromptGeneration(userId: string, prompt: string, pres
 
   await q(`
     INSERT INTO custom_prompt_media (
-      id, user_id, run_id, preset, prompt, source_url, status, created_at, updated_at, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW(), $8)
+      id, user_id, run_id, preset, prompt, source_url, status, created_at, metadata
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
   `, [jobId, userId, runId, presetKey, prompt, sourceAssetId, 'processing', JSON.stringify(meta)]);
 
   // Start background processing
@@ -321,7 +321,7 @@ async function handleCustomPromptGeneration(userId: string, prompt: string, pres
     } catch (error) {
       console.error('❌ [Generate] Background custom-prompt generation failed:', error);
       try {
-        await q(`UPDATE custom_prompt_media SET status = $1, updated_at = NOW() WHERE id = $2`, ['failed', jobId]);
+        await q(`UPDATE custom_prompt_media SET status = $1 WHERE id = $2`, ['failed', jobId]);
       } catch (dbError) {
         console.error('❌ [Generate] Failed to update custom-prompt job status:', dbError);
       }
