@@ -1,5 +1,5 @@
 import type { Handler } from '@netlify/functions';
-import { q } from './_db';
+import { Client as PgClient } from 'pg';
 import { Resend } from 'resend';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -35,8 +35,48 @@ export const handler: Handler = async (event) => {
     };
   }
 
+  // Check database URL
+  const url = process.env.DATABASE_URL || '';
+  if (!url) {
+    console.log('❌ DATABASE_URL missing');
+    return {
+      statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ error: 'Database configuration error' })
+    };
+  }
+
+  const client = new PgClient({ connectionString: url });
+
   try {
-    const { email } = JSON.parse(event.body || '{}');
+    await client.connect();
+    console.log('✅ Database connected');
+
+    // Parse request body
+    let bodyData;
+    try {
+      bodyData = JSON.parse(event.body || '{}');
+      console.log('✅ Body parsed successfully');
+    } catch (parseError) {
+      console.log('❌ Failed to parse body:', parseError);
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'Invalid JSON in request body' })
+      };
+    }
+
+    const { email } = bodyData;
 
     if (!email) {
       return {
@@ -64,11 +104,12 @@ export const handler: Handler = async (event) => {
     console.log('📧 [OTP] Processing OTP request for:', email);
 
     // Check if user exists
-    const user = await q(`
-      SELECT id, email FROM users WHERE email = $1
-    `, [email.toLowerCase()]);
+    const userResult = await client.query(
+      'SELECT id, email FROM users WHERE email = $1',
+      [email.toLowerCase()]
+    );
 
-    if (!user || user.length === 0) {
+    if (userResult.rows.length === 0) {
       console.log('❌ [OTP] User not found:', email);
       return {
         statusCode: 404,
@@ -89,13 +130,12 @@ export const handler: Handler = async (event) => {
     let otpInserted = false;
     try {
       console.log('=== INSERTING OTP WITH RAW SQL ===');
-      const insertResult = await q(`
-        INSERT INTO auth_otps (id, email, code, expires_at, created_at)
-        VALUES ($1, $2, $3, $4, NOW())
-        RETURNING id
-      `, [uuidv4(), email.toLowerCase(), otp, expiresAt]);
-      
-      console.log('OTP inserted successfully:', insertResult[0]?.id);
+      const insertResult = await client.query(
+        'INSERT INTO auth_otps (id, email, code, expires_at, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id',
+        [uuidv4(), email.toLowerCase(), otp, expiresAt]
+      );
+
+      console.log('OTP inserted successfully:', insertResult.rows[0]?.id);
       otpInserted = true;
     } catch (insertError) {
       console.error('Failed to insert OTP with raw SQL:', insertError);
@@ -273,5 +313,7 @@ export const handler: Handler = async (event) => {
         details: error instanceof Error ? error.message : 'Unknown error'
       })
     };
+  } finally {
+    await client.end();
   }
 };
