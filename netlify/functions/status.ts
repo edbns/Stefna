@@ -158,6 +158,26 @@ export const handler: Handler = async (event) => {
 
   } catch (error) {
     console.error('❌ [Status] Error:', error);
+
+    // Check if it's a database table error
+    if (error instanceof Error && error.message.includes('relation') && error.message.includes('does not exist')) {
+      return {
+        statusCode: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          success: false,
+          error: 'Database not initialized',
+          message: 'Media tables not found. Please run database migrations.',
+          details: error.message
+        })
+      };
+    }
+
     return {
       statusCode: 500,
       headers: {
