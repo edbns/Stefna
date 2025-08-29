@@ -23,7 +23,6 @@ interface StatusResponse {
   imageUrl?: string;
   error?: string;
   createdAt?: string;
-  updatedAt?: string;
   progress?: number;
 }
 
@@ -228,7 +227,7 @@ async function getJobStatusByType(client: PgClient, jobId: string, type: string,
   }
 
   const result = await client.query(`
-    SELECT id, status, image_url, created_at, updated_at, user_id
+    SELECT id, status, image_url, created_at, user_id
     FROM ${tableName}
     WHERE id = $1 AND user_id = $2
   `, [jobId, userId]);
@@ -244,8 +243,7 @@ async function getJobStatusByType(client: PgClient, jobId: string, type: string,
     status: job.status as 'processing' | 'completed' | 'failed',
     type: typeLabel,
     imageUrl: job.image_url,
-    createdAt: job.created_at,
-    updatedAt: job.updated_at
+    createdAt: job.created_at
   };
 }
 
@@ -261,7 +259,7 @@ async function getJobStatusFromAnyTable(client: PgClient, jobId: string, userId:
 
   for (const table of tables) {
     const result = await client.query(`
-      SELECT id, status, image_url, created_at, updated_at
+      SELECT id, status, image_url, created_at
       FROM ${table.name}
       WHERE id = $1 AND user_id = $2
     `, [jobId, userId]);
@@ -274,8 +272,7 @@ async function getJobStatusFromAnyTable(client: PgClient, jobId: string, userId:
         status: job.status as 'processing' | 'completed' | 'failed',
         type: table.type,
         imageUrl: job.image_url,
-        createdAt: job.created_at,
-        updatedAt: job.updated_at
+        createdAt: job.created_at
       };
     }
   }
