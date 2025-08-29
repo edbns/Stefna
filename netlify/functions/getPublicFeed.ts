@@ -1,25 +1,17 @@
 // netlify/functions/getPublicFeed.ts
-// 🔥 HOTFIX: Bypass Prisma for immediate relief from P6001 errors
-// Uses pg directly with your Neon DATABASE_URL while we finish Prisma cleanup
+// 🗄️ Public Feed using standardized _db helper
+// Unified feed across all media tables
 
 import type { Handler } from '@netlify/functions';
-import { Client as PgClient } from 'pg';
+import { q } from './_db';
 
-const redact = (u: string) => (u || '').replace(/:\/\/([^:]+):([^@]+)@/,'://$1:****@');
+
 
 export const handler: Handler = async (event) => {
   const limit = Math.max(1, Math.min(100, Number(event.queryStringParameters?.limit ?? 20)));
   const offset = Math.max(0, Number(event.queryStringParameters?.offset ?? 0));
 
-  const url = process.env.DATABASE_URL || '';
-  if (!url) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'FEED_FETCH_FAILED', message: 'DATABASE_URL missing' }),
-    };
-  }
 
-  const client = new PgClient({ connectionString: url });
 
   // Unified feed across your media tables, filtered by users who enabled share_to_feed
   const sql = `
@@ -45,19 +37,16 @@ export const handler: Handler = async (event) => {
   `;
 
   try {
-    console.info('🔒 [getPublicFeed:pg] Connecting to Neon:', redact(url));
-    await client.connect();
-    const { rows } = await client.query(sql, [limit, offset]);
-    await client.end();
+    console.info('🔒 [getPublicFeed] Fetching feed with limit:', limit, 'offset:', offset);
+    const rows = await q(sql, [limit, offset]);
 
-        return {
-          statusCode: 200,
+    return {
+      statusCode: 200,
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ items: rows, limit, offset }),
     };
   } catch (err: any) {
-    console.error('💥 [getPublicFeed:pg] Error:', err?.message || err);
-    try { await client.end(); } catch {}
+    console.error('💥 [getPublicFeed] Error:', err?.message || err);
     return {
       statusCode: 500,
       body: JSON.stringify({ 

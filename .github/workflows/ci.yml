@@ -8,13 +8,12 @@ on:
 
 jobs:
   validate:
-    name: Prisma + Code Validation
+    name: Code Validation
     runs-on: ubuntu-latest
 
     env:
       NODE_ENV: production
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      PRISMA_CLIENT_ENGINE_TYPE: binary
 
     steps:
       - name: 📥 Checkout Repo
@@ -28,12 +27,6 @@ jobs:
       - name: 📦 Install Dependencies
         run: npm ci
 
-      - name: ✅ Prisma - Validate Schema
-        run: npx prisma validate
-
-      - name: 🧠 Prisma - Generate Client
-        run: npx prisma generate
-
       - name: 🧪 TypeScript Check
         run: npx tsc --noEmit
 
@@ -42,6 +35,3 @@ jobs:
 
       - name: 🧪 Test Netlify Function Build
         run: npx netlify build
-
-      - name: 🔥 Prisma Migrate Check (Optional)
-        run: npx prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-schema-datasource prisma/schema.prisma --script

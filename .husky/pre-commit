@@ -3,27 +3,27 @@
 
 echo "🔍 [Pre-Commit Hook] Running basic safety checks..."
 
-# Check if Prisma schema is valid
-echo "📋 Validating Prisma schema..."
-npx prisma validate
+# Check TypeScript compilation
+echo "📋 Checking TypeScript compilation..."
+npx tsc --noEmit
 
 if [ $? -eq 0 ]; then
-    echo "✅ [Pre-Commit Hook] Prisma schema is valid!"
+    echo "✅ [Pre-Commit Hook] TypeScript compilation successful!"
 else
-    echo "❌ [Pre-Commit Hook] Prisma schema validation failed!"
-    echo "🚨 Cannot commit - fix schema issues first!"
+    echo "❌ [Pre-Commit Hook] TypeScript compilation failed!"
+    echo "🚨 Cannot commit - fix TypeScript issues first!"
     exit 1
 fi
 
-# Check if Prisma client is up to date
-echo "📋 Checking Prisma client..."
-npx prisma generate
+# Check ESLint
+echo "📋 Running ESLint..."
+npx eslint . --ext .ts,.tsx --max-warnings 0
 
 if [ $? -eq 0 ]; then
-    echo "✅ [Pre-Commit Hook] Prisma client is up to date!"
+    echo "✅ [Pre-Commit Hook] ESLint passed!"
 else
-    echo "❌ [Pre-Commit Hook] Prisma client generation failed!"
-    echo "🚨 Cannot commit - fix Prisma issues first!"
+    echo "❌ [Pre-Commit Hook] ESLint failed!"
+    echo "🚨 Cannot commit - fix linting issues first!"
     exit 1
 fi
 
