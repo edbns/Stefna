@@ -492,17 +492,11 @@ export const handler: Handler = async (event) => {
     const presetConfig = await getPresetConfig(presetKey);
 
     // Create initial record
-    const initialRecord = await q(presetsMedia.create({
-      data: {
-        userId,
-        sourceUrl,
-        prompt,
-        presetKey: presetKey,
-        runId: runId.toString(),
-        status: 'pending',
-        imageUrl: sourceUrl // Temporary, will be updated
-      }
-    });
+    const initialRecord = await qOne(`
+      INSERT INTO presets_media (user_id, source_url, prompt, preset, run_id, status, image_url, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      RETURNING id
+    `, [userId, sourceUrl, prompt, presetKey, runId.toString(), 'pending', sourceUrl]);
 
     console.log('✅ [Presets] Initial record created:', initialRecord.id);
 
@@ -584,21 +578,17 @@ export const handler: Handler = async (event) => {
         }
         
         // Update database record with completed status and IPA results
-        await q(presetsMedia.update({
-          where: { id: initialRecord.id },
-          data: {
-            status: 'completed',
-            imageUrl: finalImageUrl,
-            aimlJobId: generationResult.aimlJobId,
-            metadata: {
-              ipaPassed,
-              ipaSimilarity: Math.round(ipaSimilarity * 100) / 100, // Round to 2 decimal places
-              ipaThreshold: 0.65,
-              ipaRetries: ipaPassed ? 0 : 1, // 1 retry if IPA failed initially
-              ipaStrategy: ipaPassed ? 'first_try' : 'lower_strength_retry'
-            }
-          }
-        });
+        await q(`
+          UPDATE presets_media 
+          SET status = $1, image_url = $2, metadata = $3, updated_at = NOW()
+          WHERE id = $4
+        `, ['completed', finalImageUrl, JSON.stringify({
+          ipaPassed,
+          ipaSimilarity: Math.round(ipaSimilarity * 100) / 100, // Round to 2 decimal places
+          ipaThreshold: 0.65,
+          ipaRetries: ipaPassed ? 0 : 1, // 1 retry if IPA failed initially
+          ipaStrategy: ipaPassed ? 'first_try' : 'lower_strength_retry'
+        }), initialRecord.id]);
         
         console.log('✅ [Presets] Database updated with completed status');
         
