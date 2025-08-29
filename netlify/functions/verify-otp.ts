@@ -2,6 +2,7 @@
 import type { Handler } from '@netlify/functions';
 import { Client as PgClient } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
+import * as jwt from 'jsonwebtoken';
 
 export const handler: Handler = async (event) => {
   console.log('=== OTP VERIFICATION FUNCTION STARTED ===');
@@ -178,8 +179,8 @@ export const handler: Handler = async (event) => {
 
       // Create user settings
       await client.query(
-        'INSERT INTO user_settings (id, user_id, share_to_feed, allow_remix) VALUES ($1, $2, true, true)',
-        [uuidv4(), userId]
+        'INSERT INTO user_settings (user_id, share_to_feed, allow_remix) VALUES ($1, true, true)',
+        [userId]
       );
 
       user = { id: userId, email: email.toLowerCase() };
@@ -188,6 +189,22 @@ export const handler: Handler = async (event) => {
     }
 
     console.log('✅ OTP verification successful for user:', user.id);
+
+    // Generate proper JWT token
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET not configured');
+    }
+
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+      },
+      jwtSecret
+    );
 
     return {
       statusCode: 200,
@@ -199,7 +216,7 @@ export const handler: Handler = async (event) => {
       },
       body: JSON.stringify({
         success: true,
-        token: `user_${user.id}`, // Generate a simple token
+        token: token, // Generate a proper JWT token
         user: {
           id: user.id,
           email: user.email

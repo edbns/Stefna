@@ -9,7 +9,7 @@ import { Handler } from '@netlify/functions';
 import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
-import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
+import { requireAuth } from './_lib/auth';
 
 // 🚀 BACKGROUND MODE: Allow function to run for up to 15 minutes
 export const config = {
@@ -71,11 +71,11 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Extract user ID from authorization header
+    // Extract user ID from authorization header using standardized auth helper
     let userId: string;
     try {
-      const authResult = getFreshToken(event.headers.authorization);
-      userId = authResult.userId;
+      const { userId: uid } = requireAuth(event.headers.authorization);
+      userId = uid;
       console.log('[start-glitch-job] User authenticated:', userId);
     } catch (authError: any) {
       console.error('[start-glitch-job] Authentication failed:', authError.message);

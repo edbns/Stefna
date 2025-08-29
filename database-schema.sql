@@ -23,13 +23,16 @@ CREATE TABLE IF NOT EXISTS user_settings (
     user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     media_upload_agreed BOOLEAN DEFAULT FALSE,
     share_to_feed BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW()
 );
 
 -- User credits table
 CREATE TABLE IF NOT EXISTS user_credits (
+    user_id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     balance INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     credits INTEGER DEFAULT 30
 );
@@ -44,6 +47,7 @@ CREATE TABLE IF NOT EXISTS auth_otps (
     email TEXT NOT NULL,
     code TEXT NOT NULL,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     expires_at TIMESTAMPTZ(6) NOT NULL,
     used BOOLEAN DEFAULT FALSE
 );
@@ -62,6 +66,7 @@ CREATE TABLE IF NOT EXISTS credits_ledger (
     status TEXT NOT NULL,
     meta JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     reason TEXT,
     env TEXT DEFAULT 'production'
 );
@@ -78,9 +83,10 @@ CREATE TABLE IF NOT EXISTS custom_prompt_media (
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
-    run_id TEXT UNIQUE NOT NULL,
+    run_id TEXT NOT NULL,
     aiml_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     status TEXT DEFAULT 'completed',
     metadata JSONB DEFAULT '{}'
 );
@@ -96,6 +102,7 @@ CREATE TABLE IF NOT EXISTS emotion_mask_media (
     run_id TEXT UNIQUE NOT NULL,
     aiml_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     status TEXT DEFAULT 'completed',
     metadata JSONB DEFAULT '{}'
 );
@@ -108,9 +115,10 @@ CREATE TABLE IF NOT EXISTS ghibli_reaction_media (
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
-    run_id TEXT UNIQUE NOT NULL,
+    run_id TEXT NOT NULL,
     aiml_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     status TEXT DEFAULT 'completed',
     metadata JSONB DEFAULT '{}'
 );
@@ -123,7 +131,7 @@ CREATE TABLE IF NOT EXISTS neo_glitch_media (
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
-    run_id TEXT UNIQUE NOT NULL,
+    run_id TEXT NOT NULL,
     stability_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
@@ -139,9 +147,10 @@ CREATE TABLE IF NOT EXISTS presets_media (
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
-    run_id TEXT UNIQUE NOT NULL,
+    run_id TEXT NOT NULL,
     aiml_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     status TEXT DEFAULT 'completed',
     preset_week INTEGER,
     preset_rotation_index INTEGER,
