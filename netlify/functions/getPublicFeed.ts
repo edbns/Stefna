@@ -65,7 +65,13 @@ export const handler: Handler = async (event) => {
 
   try {
     console.info('🔒 [getPublicFeed] Fetching feed with limit:', limit, 'offset:', offset);
+    
+    // First check if we have any users with share_to_feed enabled
+    const allowedUsersCount = await q(`SELECT COUNT(*) as count FROM user_settings WHERE share_to_feed = true`);
+    console.info('🔒 [getPublicFeed] Users with share_to_feed enabled:', allowedUsersCount[0]?.count || 0);
+    
     const rows = await q(sql, [limit, offset]);
+    console.info('🔒 [getPublicFeed] Feed items found:', rows.length);
 
     return {
       statusCode: 200,
@@ -74,7 +80,13 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       },
-      body: JSON.stringify({ items: rows, limit, offset }),
+      body: JSON.stringify({ 
+        items: rows || [], 
+        limit, 
+        offset,
+        totalUsers: allowedUsersCount[0]?.count || 0,
+        message: rows.length > 0 ? `Found ${rows.length} items` : 'No public items available yet'
+      }),
     };
   } catch (err: any) {
     console.error('💥 [getPublicFeed] Error:', err?.message || err);
