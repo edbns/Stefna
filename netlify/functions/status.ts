@@ -150,7 +150,7 @@ export const handler: Handler = async (event) => {
       })
     };
   }
-};
+}
 
 // Get job status from a specific table
 async function getJobStatusByType(jobId: string, type: string, userId: string): Promise<StatusResponse> {
