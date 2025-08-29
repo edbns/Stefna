@@ -20,14 +20,14 @@ export const handler: Handler = async (event) => {
       body: ''
     };
   }
-
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
+  
+    if (event.httpMethod !== 'POST') {
+      return { 
+        statusCode: 405, 
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json'
+        },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -38,8 +38,8 @@ export const handler: Handler = async (event) => {
     console.log('Parsed code:', code);
 
     if (!email || !code) {
-      return {
-        statusCode: 400,
+      return { 
+        statusCode: 400, 
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Content-Type': 'application/json'
@@ -55,7 +55,7 @@ export const handler: Handler = async (event) => {
     );
 
     if (!otpRecord) {
-      return {
+      return { 
         statusCode: 400,
         headers: {
           'Access-Control-Allow-Origin': '*',
@@ -136,7 +136,7 @@ export const handler: Handler = async (event) => {
         message: 'OTP verified successfully'
       })
     };
-
+    
   } catch (error: any) {
     console.error('❌ OTP verification error:', error);
     return {
@@ -145,7 +145,7 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         error: 'Internal server error',
         message: error.message 
       })

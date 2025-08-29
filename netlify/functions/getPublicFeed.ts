@@ -50,8 +50,8 @@ export const handler: Handler = async (event) => {
     const { rows } = await client.query(sql, [limit, offset]);
     await client.end();
 
-    return {
-      statusCode: 200,
+        return {
+          statusCode: 200,
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ items: rows, limit, offset }),
     };
@@ -60,7 +60,7 @@ export const handler: Handler = async (event) => {
     try { await client.end(); } catch {}
     return {
       statusCode: 500,
-      body: JSON.stringify({
+      body: JSON.stringify({ 
         error: 'FEED_FETCH_FAILED',
         message: err?.message || 'Unknown error',
         status: 'failed',

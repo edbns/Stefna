@@ -13,9 +13,9 @@ rm -rf node_modules/.prisma node_modules/@prisma/client .prisma
 echo "📦 [Netlify Build] Fresh install..."
 npm ci
 
-# Prisma client not needed at runtime - using pg directly
-echo "🗄️ [Netlify Build] Prisma client not needed at runtime - using pg directly"
-echo "✅ Build can proceed without Prisma generation"
+# Prisma completely removed - using raw SQL with pg
+echo "🗄️ [Netlify Build] Prisma completely removed - using raw SQL with pg"
+echo "✅ Build can proceed without any Prisma dependencies"
 
 # Build the application
 echo "🚀 [Netlify Build] Building application..."

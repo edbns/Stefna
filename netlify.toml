@@ -8,10 +8,7 @@
   NODE_VERSION = "20.19.4"
   NPM_FLAGS = "--prefer-offline --no-audit --force"
   VITE_BUILD_OPTIMIZE = "true"
-  PRISMA_GENERATE_DATAPROXY = "false"
-  PRISMA_CLIENT_ENGINE_TYPE = "library"
 
-  PRISMA_CLI_QUERY_ENGINE_TYPE = "library"
   
 
 # Production context
