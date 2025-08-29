@@ -43,9 +43,11 @@ export const handler: Handler = async (event) => {
     console.log('🔍 [EmotionMask] Checking status:', { runId });
 
     // Find by run ID
-    const mediaRecord = await q(emotionMaskMedia.findUnique({
-      where: { runId: runId.toString() }
-    });
+    const mediaRecord = await qOne(`
+      SELECT id, status, image_url, created_at, preset, prompt, source_url, user_id
+      FROM emotion_mask_media 
+      WHERE run_id = $1
+    `, [runId.toString()]);
 
     if (!mediaRecord) {
       return {
@@ -71,12 +73,12 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({
         id: mediaRecord.id,
         status: mediaRecord.status,
-        imageUrl: mediaRecord.imageUrl,
-        createdAt: mediaRecord.createdAt,
-        presetKey: mediaRecord.presetKey,
+        imageUrl: mediaRecord.image_url,
+        createdAt: mediaRecord.created_at,
+        presetKey: mediaRecord.preset,
         prompt: mediaRecord.prompt,
-        sourceUrl: mediaRecord.sourceUrl,
-        userId: mediaRecord.userId
+        sourceUrl: mediaRecord.source_url,
+        userId: mediaRecord.user_id
       })
     };
 

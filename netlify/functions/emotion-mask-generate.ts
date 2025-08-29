@@ -449,17 +449,11 @@ export const handler: Handler = async (event) => {
     console.log('✅ [EmotionMask] Credit reserved successfully');
 
     // Create initial record
-    const initialRecord = await q(emotionMaskMedia.create({
-      data: {
-        userId,
-        sourceUrl,
-        prompt,
-        presetKey: presetKey,
-        runId: runId.toString(),
-        status: 'pending',
-        imageUrl: sourceUrl // Temporary, will be updated
-      }
-    });
+    const initialRecord = await qOne(`
+      INSERT INTO emotion_mask_media (user_id, source_url, prompt, preset, run_id, status, image_url, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      RETURNING id
+    `, [userId, sourceUrl, prompt, presetKey, runId.toString(), 'pending', sourceUrl]);
 
     console.log('✅ [EmotionMask] Initial record created:', initialRecord.id);
 
@@ -541,20 +535,17 @@ export const handler: Handler = async (event) => {
         }
         
         // Update database record with completed status and IPA results
-        await q(emotionMaskMedia.update({
-          where: { id: initialRecord.id },
-          data: {
-            status: 'completed',
-            imageUrl: finalImageUrl,
-            metadata: {
-              ipaPassed,
-              ipaSimilarity: Math.round(ipaSimilarity * 100) / 100, // Round to 2 decimal places
-              ipaThreshold: 0.7,
-              ipaRetries: ipaPassed ? 0 : 1, // 1 retry if IPA failed initially
-              ipaStrategy: ipaPassed ? 'first_try' : 'lower_strength_retry'
-            }
-          }
-        });
+        await q(`
+          UPDATE emotion_mask_media 
+          SET status = $1, image_url = $2, metadata = $3, updated_at = NOW()
+          WHERE id = $4
+        `, ['completed', finalImageUrl, JSON.stringify({
+          ipaPassed,
+          ipaSimilarity: Math.round(ipaSimilarity * 100) / 100, // Round to 2 decimal places
+          ipaThreshold: 0.7,
+          ipaRetries: ipaPassed ? 0 : 1, // 1 retry if IPA failed initially
+          ipaStrategy: ipaPassed ? 'first_try' : 'lower_strength_retry'
+        }), initialRecord.id]);
         
         console.log('✅ [EmotionMask] Database updated with completed status');
         
