@@ -64,9 +64,9 @@ export const handler: Handler = async (event) => {
 
     try {
       // Find the credit transaction
-      const creditTransaction = await q(creditTransaction.findUnique({
-        where: { id: request_id }
-      });
+      const creditTransaction = await qOne(`
+        SELECT id, user_id, amount, status FROM credits_ledger WHERE id = $1
+      `, [request_id]);
 
       if (!creditTransaction) {
         console.error("❌ Credit transaction not found:", request_id);
@@ -78,9 +78,9 @@ export const handler: Handler = async (event) => {
       }
 
       // Verify the transaction belongs to this user
-      if (creditTransaction.userId !== userId) {
+      if (creditTransaction.user_id !== userId) {
         console.error("❌ Transaction belongs to different user:", {
-          transactionUserId: creditTransaction.userId,
+          transactionUserId: creditTransaction.user_id,
           requestUserId: userId
         });
           return json({ 
@@ -112,26 +112,22 @@ export const handler: Handler = async (event) => {
         console.log('💰 Processing credit refund...');
         
         // Update transaction status to refunded
-        await q(creditTransaction.update({
-          where: { id: creditTransaction.id },
-          data: { status: 'refunded' }
-        });
+        await q(`
+          UPDATE credits_ledger SET status = $1, updated_at = NOW() WHERE id = $2
+        `, ['refunded', creditTransaction.id]);
 
         // Restore credits to user balance
-        const userCredits = await q(userCredits.findUnique({
-          where: { userId: userId }
-        });
+        const userCredits = await qOne(`
+          SELECT credits FROM user_credits WHERE user_id = $1
+        `, [userId]);
 
         if (userCredits) {
           const refundAmount = Math.abs(creditTransaction.amount); // Convert negative to positive
           const newCredits = userCredits.credits + refundAmount;
           
-          await q(userCredits.update({
-            where: { userId: userId },
-            data: { 
-              credits: newCredits
-            }
-          });
+          await q(`
+            UPDATE user_credits SET credits = $1, updated_at = NOW() WHERE user_id = $2
+          `, [newCredits, userId]);
 
           console.log('✅ Credits refunded successfully:', {
             refundAmount,
@@ -160,10 +156,9 @@ export const handler: Handler = async (event) => {
         console.log('💰 Processing credit commit...');
         
         // Update transaction status to completed
-        await q(creditTransaction.update({
-          where: { id: creditTransaction.id },
-          data: { status: 'completed' }
-        });
+        await q(`
+          UPDATE credits_ledger SET status = $1, updated_at = NOW() WHERE id = $2
+        `, ['completed', creditTransaction.id]);
 
         console.log('✅ Credits committed successfully');
 
@@ -192,7 +187,5 @@ export const handler: Handler = async (event) => {
       details: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
-  } finally {
-    
   }
 };
