@@ -72,20 +72,27 @@ export const handler: Handler = async (event, context) => {
     try {
       // FIRST: Ensure user exists in users table by upserting
       // This prevents the "User ID not found in users table" error
-      const user = await q(user.upsert({
-        where: { id: uid },
-        update: { 
-          email: email || `user-${uid}@placeholder.com`,
-          updatedAt: new Date()
-        },
-        create: {
-          id: uid,
-          email: email || `user-${uid}@placeholder.com`,
-          name: body.username || `User ${uid}`,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
+      // Check if user exists
+      const existingUser = await qOne(`
+        SELECT id FROM users WHERE id = $1
+      `, [uid]);
+      
+      if (existingUser) {
+        // Update existing user
+        await q(`
+          UPDATE users 
+          SET email = $1, updated_at = NOW()
+          WHERE id = $2
+        `, [email || `user-${uid}@placeholder.com`, uid]);
+      } else {
+        // Create new user
+        await q(`
+          INSERT INTO users (id, email, name, created_at, updated_at)
+          VALUES ($1, $2, $3, NOW(), NOW())
+        `, [uid, email || `user-${uid}@placeholder.com`, body.username || `User ${uid}`]);
+      }
+      
+      const user = { id: uid };
       
       console.log('✅ User upserted successfully');
 

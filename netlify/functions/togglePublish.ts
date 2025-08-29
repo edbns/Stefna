@@ -60,15 +60,14 @@ export const handler: Handler = async (event) => {
       let result;
       
       // Try ghibli_reaction_media first
-      result = await q(ghibliReactionMedia.updateMany({
-        where: { 
-          id: assetId, 
-          userId: userId 
-        },
-        data: { 
-          status: publish ? 'public' : 'private'
-        }
-      });
+      result = await q(`
+        UPDATE ghibli_reaction_media 
+        SET status = $1, updated_at = NOW()
+        WHERE id = $2 AND user_id = $3
+      `, [publish ? 'public' : 'private', assetId, userId]);
+      
+      // Check if any rows were affected
+      const ghibliCount = result.length;
       
       // If not found, try emotion_mask_media
       if (result.count === 0) {
