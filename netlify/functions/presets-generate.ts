@@ -150,17 +150,18 @@ async function uploadAIMLToCloudinary(imageUrl: string, presetKey: string): Prom
 // Get preset configuration from database
 async function getPresetConfig(presetKey: string) {
   try {
-    const presetConfig = await q($queryRaw`
+    const presetConfigRows = await q(`
       SELECT * FROM presets_config 
-      WHERE preset_key = ${presetKey} 
+      WHERE preset_key = $1 
       AND is_active = true
-    `;
+      LIMIT 1
+    `, [presetKey]);
     
-    if (!presetConfig || Array.isArray(presetConfig) && presetConfig.length === 0) {
+    if (!presetConfigRows || presetConfigRows.length === 0) {
       throw new Error(`Preset ${presetKey} not found or inactive`);
     }
     
-    return Array.isArray(presetConfig) ? presetConfig[0] : presetConfig;
+    return presetConfigRows[0];
   } catch (error) {
     console.error('❌ [Presets] Failed to get preset config:', error);
     throw error;
@@ -341,10 +342,18 @@ export const handler: Handler = async (event) => {
   // Initialize Prisma client inside handler to avoid bundling issues
   
   
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+      body: ''
+    };
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -377,7 +386,7 @@ export const handler: Handler = async (event) => {
     if (missingFields.length > 0) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'VALIDATION_FAILED',
           message: `Missing required fields: ${missingFields.join(', ')}`,
@@ -400,7 +409,7 @@ export const handler: Handler = async (event) => {
     if (!isAvailable) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'PRESET_NOT_AVAILABLE',
           message: `Preset ${presetKey} is not available this week. Check back next week for new presets!`,
@@ -413,29 +422,31 @@ export const handler: Handler = async (event) => {
     console.log('🔍 [Presets] Checking for existing run with runId:', runId.toString());
 
     // Check for existing run
-    const existingRun = await q(presetsMedia.findUnique({
-      where: { runId: runId.toString() }
-    });
+    const existingRun = await qOne(`
+      SELECT id, status, image_url, created_at
+      FROM presets_media
+      WHERE run_id = $1
+    `, [runId.toString()]);
 
     if (existingRun) {
       console.log('🔄 [Presets] Found existing run:', {
         id: existingRun.id,
         status: existingRun.status,
-        hasImageUrl: !!existingRun.imageUrl,
-        createdAt: existingRun.createdAt
+        hasImageUrl: !!existingRun.image_url,
+        createdAt: existingRun.created_at
       });
       
-      if (existingRun.status === 'completed' && existingRun.imageUrl) {
+      if (existingRun.status === 'completed' && existingRun.image_url) {
         console.log('🔄 [Presets] Run already completed, returning cached result');
         return {
           statusCode: 200,
-          headers: { 'Access-Control-Allow-Origin': '*' },
+          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
           body: JSON.stringify(existingRun)
         };
       } else {
         console.warn('⚠️ [Presets] Run exists but incomplete, cleaning up and retrying');
         // Delete old failed/incomplete record to retry clean
-        await q(presetsMedia.delete({ where: { id: existingRun.id } });
+        await q(`DELETE FROM presets_media WHERE id = $1`, [existingRun.id]);
         console.log('🧹 [Presets] Cleaned up incomplete run, proceeding with new generation');
       }
     } else {
@@ -446,7 +457,7 @@ export const handler: Handler = async (event) => {
     if (!sourceUrl.startsWith('http')) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'INVALID_IMAGE_URL',
           message: 'Source URL must be a valid HTTP(S) URL',
@@ -477,7 +488,7 @@ export const handler: Handler = async (event) => {
       console.error('❌ [Presets] Credit reservation failed:', creditError);
       return {
         statusCode: 402,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'INSUFFICIENT_CREDITS',
           message: 'Not enough credits for generation',
@@ -616,7 +627,7 @@ export const handler: Handler = async (event) => {
         
         return {
           statusCode: 200,
-          headers: { 'Access-Control-Allow-Origin': '*' },
+          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
           body: JSON.stringify({
             message: 'Generation completed successfully',
             jobId: initialRecord.id,
@@ -640,13 +651,11 @@ export const handler: Handler = async (event) => {
       console.error('❌ [Presets] Generation failed:', generationError);
       
       // Update database record with failed status
-      await q(presetsMedia.update({
-        where: { id: initialRecord.id },
-        data: {
-          status: 'failed',
-          imageUrl: sourceUrl // Keep source URL
-        }
-      });
+      await q(`
+        UPDATE presets_media
+        SET status = 'failed', image_url = $1, updated_at = NOW()
+        WHERE id = $2
+      `, [sourceUrl, initialRecord.id]);
       
       // Refund credits since generation failed
       await fetch(`${process.env.URL}/.netlify/functions/credits-finalize`, {
@@ -667,7 +676,7 @@ export const handler: Handler = async (event) => {
       
       return {
         statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'GENERATION_FAILED',
           message: 'Professional preset generation failed',
@@ -681,7 +690,7 @@ export const handler: Handler = async (event) => {
     
     return {
       statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
       body: JSON.stringify({
         error: 'INTERNAL_ERROR',
         message: 'Unexpected error occurred',
@@ -689,4 +698,10 @@ export const handler: Handler = async (event) => {
       })
     };
   }
+
+  return {
+    statusCode: 500,
+    headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+    body: JSON.stringify({ error: 'UNEXPECTED_FALLTHROUGH' })
+  };
 };

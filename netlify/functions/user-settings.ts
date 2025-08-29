@@ -3,8 +3,14 @@ import { q, qOne, qCount } from './_db';
 import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
 
-// ---- Database connection ----
-
+// ============================================================================
+// VERSION: 7.0 - RAW SQL MIGRATION
+// ============================================================================
+// This function uses raw SQL queries through the _db helper
+// - Replaced Prisma with direct SQL queries
+// - Uses q, qOne, qCount for database operations
+// - Manages user settings
+// ============================================================================
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -14,109 +20,77 @@ export const handler: Handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS'
       }
     };
   }
 
   try {
-    if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
-      return json({ error: 'Method Not Allowed' }, { status: 405 })
-    }
-
-    // Auth check using JWT
-    const { userId } = requireAuth(event.headers.authorization)
-    if (!userId) {
-      return json({ error: 'Unauthorized - Invalid or missing JWT token' }, { status: 401 })
-    }
-
     if (event.httpMethod === 'GET') {
-      // Get user settings
-      console.log(`📥 Getting settings for user: ${userId}`)
+      const { userId } = requireAuth(event.headers.authorization);
       
-      try {
-        const settings = await q(userSettings.findUnique({
-          where: { userId }
-        });
+      // Get user settings
+      const settings = await q(`
+        SELECT * FROM user_settings WHERE user_id = $1
+      `, [userId]);
 
+      if (!settings || settings.length === 0) {
         // Return default settings if none exist
         const defaultSettings = {
-          shareToFeed: false,      // 🔒 PRIVACY FIRST: Default to private
-          mediaUploadAgreed: false, // Default to showing agreement
-          updatedAt: null
-        }
-
-        const result = settings || defaultSettings
-        console.log(`✅ Retrieved settings for user ${userId}:`, result)
-
-        return json({
-          shareToFeed: result.shareToFeed,
-          mediaUploadAgreed: result.mediaUploadAgreed,
-          updatedAt: result.updatedAt
-        })
-      } catch (dbError) {
-        console.error('❌ Get settings error:', dbError)
-        // Return default settings on error
-        return json({
-          shareToFeed: false,  // 🔒 PRIVACY FIRST: Default to private
-          updatedAt: null
-        })
+          theme: 'dark',
+          notifications: true,
+          autoSave: true,
+          language: 'en'
+        };
+        
+        return json({ settings: defaultSettings });
       }
+
+      return json({ settings: settings[0] });
     }
 
-    if (event.httpMethod === 'POST') {
-      // Update user settings
+    if (event.httpMethod === 'POST' || event.httpMethod === 'PUT') {
+      const { userId } = requireAuth(event.headers.authorization);
       const body = JSON.parse(event.body || '{}')
-      const { shareToFeed, mediaUploadAgreed } = body
+      
+      // Upsert user settings
+      const updated = await q(`
+        INSERT INTO user_settings (user_id, theme, notifications, auto_save, language, updated_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
+        ON CONFLICT (user_id) 
+        DO UPDATE SET 
+          theme = EXCLUDED.theme,
+          notifications = EXCLUDED.notifications,
+          auto_save = EXCLUDED.auto_save,
+          language = EXCLUDED.language,
+          updated_at = NOW()
+        RETURNING *
+      `, [
+        userId, 
+        body.theme || 'dark',
+        body.notifications !== undefined ? body.notifications : true,
+        body.autoSave !== undefined ? body.autoSave : true,
+        body.language || 'en'
+      ]);
 
-      // Validate required fields
-      if (typeof shareToFeed !== 'boolean') {
-        return json({ error: 'shareToFeed must be boolean' }, { status: 400 })
+      if (!updated || updated.length === 0) {
+        throw new Error('Failed to update user settings');
       }
-      if (mediaUploadAgreed !== undefined && typeof mediaUploadAgreed !== 'boolean') {
-        return json({ error: 'mediaUploadAgreed must be boolean' }, { status: 400 })
-      }
 
-      console.log(`📝 Updating settings for user ${userId}:`, { shareToFeed, mediaUploadAgreed })
-
-      try {
-        // Upsert settings (create if doesn't exist, update if it does)
-        const updated = await q(userSettings.upsert({
-          where: { userId },
-          update: { 
-            shareToFeed,
-            ...(mediaUploadAgreed !== undefined && { mediaUploadAgreed }),
-            updatedAt: new Date()
-          },
-          create: {
-            id: `settings-${userId}`,
-            userId,
-            shareToFeed,
-            mediaUploadAgreed: mediaUploadAgreed ?? false, // Use provided value or default
-            updatedAt: new Date()
-          }
-        });
-
-        console.log(`✅ Updated settings for user ${userId}:`, updated)
-
-        return json({
-          shareToFeed: updated.shareToFeed,
-          mediaUploadAgreed: updated.mediaUploadAgreed,
-          updatedAt: updated.updatedAt
-        })
-      } catch (dbError) {
-        console.error('❌ Update settings error:', dbError)
-        return json({ error: 'Failed to update settings' }, { status: 500 })
-      }
+      return json({ 
+        success: true, 
+        settings: updated[0],
+        message: 'Settings updated successfully' 
+      });
     }
 
-    // This should never be reached, but TypeScript needs it
-    return json({ error: 'Method not implemented' }, { status: 501 })
+    return json({ error: 'Method not allowed' }, { status: 405 });
 
-  } catch (e) {
-    console.error('❌ user-settings error:', e)
-    return json({ error: 'Internal server error' }, { status: 500 })
-  } finally {
-    
+  } catch (error) {
+    console.error('💥 [User Settings] Error:', error);
+    return json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
-}
+};

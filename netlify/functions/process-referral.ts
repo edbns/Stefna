@@ -1,7 +1,15 @@
 import type { Handler } from "@netlify/functions";
 import { q, qOne, qCount } from './_db';
-import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
+
+// ============================================================================
+// VERSION: 7.0 - RAW SQL MIGRATION
+// ============================================================================
+// This function uses raw SQL queries through the _db helper
+// - Replaced Prisma with direct SQL queries
+// - Uses q, qOne, qCount for database operations
+// - Processes referrals and grants credits
+// ============================================================================
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -11,110 +19,107 @@ export const handler: Handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
       }
     };
   }
 
+  if (event.httpMethod !== 'POST') {
+    return json({ error: 'Method not allowed' }, { status: 405 });
+  }
+
   try {
-    const { userId: newUserId, email: newUserEmail } = requireAuth(event.headers.authorization);
     const body = event.body ? JSON.parse(event.body) : {};
-    const referrerEmail: string = body.referrerEmail;
-    if (!referrerEmail) return json({ ok:false, error:"MISSING_REFERRER_EMAIL" }, { status: 400 });
-
+    const { referrerEmail, newUserId, newUserEmail } = body;
     
-
-    // Find referrer by email
-    const referrer = await q(user.findFirst({
-      where: { 
-        email: { 
-          equals: referrerEmail, 
-          mode: 'insensitive' 
-        } 
-      },
-      select: { id: true }
-    });
-    
-    if (!referrer) return json({ ok:false, error:"REFERRER_NOT_FOUND" }, { status: 404 });
-    const referrerId = referrer.id;
-
-    // Skip referral tracking for now since referralSignup table doesn't exist
-    // TODO: Implement referral tracking when table is created
-    
-    // Only award if this is the first time (check ledger for existing referral grants)
-    const existingReferralGrant = await q(creditTransaction.findFirst({
-      where: {
-        userId: referrerId,
-        status: 'granted',
-        action: 'referral.referrer',
-        meta: {
-          path: ['new_user_id'],
-          equals: newUserId
-        }
-      }
-    });
-
-    if (!existingReferralGrant) {
-      // Use hardcoded bonus amounts since appConfig table doesn't exist
-      const refBonus = 50; // Referrer gets 50 credits
-      const newBonus = 25; // New user gets 25 credits
-
-      // Grant to referrer
-      await q(creditTransaction.create({
-        data: {
-          userId: referrerId,
-          action: 'referral.referrer',
-          amount: refBonus,
-          status: 'granted',
-          meta: {
-            reason: 'referral.referrer',
-            new_user_id: newUserId
-          }
-        }
-      });
-
-      // Grant to new user
-      await q(creditTransaction.create({
-        data: {
-          userId: newUserId,
-          action: 'referral.new',
-          amount: newBonus,
-          status: 'granted',
-          meta: {
-            reason: 'referral.new',
-            referrer_user_id: referrerId
-          }
-        }
-      });
-
-      // Update user credits balances
-      await q(userCredits.upsert({
-        where: { userId: referrerId },
-        update: { 
-          credits: { increment: refBonus }
-        },
-        create: {
-          userId: referrerId,
-          credits: refBonus
-        }
-      });
-
-      await q(userCredits.upsert({
-        where: { userId: newUserId },
-        update: { 
-          credits: { increment: newBonus }
-        },
-        create: {
-          userId: newUserId,
-          credits: newBonus
-        }
-      });
+    if (!referrerEmail || !newUserId || !newUserEmail) {
+      return json({ ok: false, error: "MISSING_PARAMS" }, { status: 400 });
     }
 
+    console.log('🔗 [Referral] Processing referral:', { referrerEmail, newUserId, newUserEmail });
+
+    // Find referrer by email
+    const referrer = await q(`
+      SELECT id FROM users WHERE email = $1
+    `, [referrerEmail]);
     
-    return json({ ok:true });
-  } catch (e) {
-    console.error('Referral processing error:', e);
-    return json({ ok: false, error: 'INTERNAL_ERROR', details: e instanceof Error ? e.message : 'Unknown error' }, { status: 500 });
+    if (!referrer || referrer.length === 0) {
+      return json({ ok: false, error: "REFERRER_NOT_FOUND" }, { status: 404 });
+    }
+    
+    const referrerId = referrer[0].id;
+
+    // Check if this referral has already been processed
+    const existingReferralGrant = await q(`
+      SELECT id FROM credits_ledger 
+      WHERE user_id = $1 AND reason = 'referral.referrer' AND action = 'referral'
+    `, [referrerId]);
+    
+    if (existingReferralGrant && existingReferralGrant.length > 0) {
+      console.log(`ℹ️ Referral already processed for user ${newUserId}`);
+      return json({ ok: true, message: 'Referral already processed' });
+    }
+
+    // Use hardcoded bonus amounts since appConfig table doesn't exist
+    const refBonus = 50; // Referrer gets 50 credits
+    const newBonus = 25; // New user gets 25 credits
+
+    // Grant to referrer
+    const referrerCredits = await q(`
+      INSERT INTO credits_ledger (id, user_id, action, status, reason, amount, env, created_at, updated_at)
+      VALUES (gen_random_uuid(), $1, 'referral', 'completed', 'referral.referrer', $2, 'production', NOW(), NOW())
+      RETURNING id
+    `, [referrerId, refBonus]);
+    
+    if (!referrerCredits || referrerCredits.length === 0) {
+      throw new Error('Failed to create referrer credit transaction');
+    }
+    
+    // Grant to new user
+    const newUserCredits = await q(`
+      INSERT INTO credits_ledger (id, user_id, action, status, reason, amount, env, created_at, updated_at)
+      VALUES (gen_random_uuid(), $1, 'referral', 'completed', 'referral.new', $2, 'production', NOW(), NOW())
+      RETURNING id
+    `, [newUserId, newBonus]);
+    
+    if (!newUserCredits || newUserCredits.length === 0) {
+      throw new Error('Failed to create new user credit transaction');
+    }
+
+    // Update user credits balances
+    const referrerBalance = await q(`
+      INSERT INTO user_credits (user_id, credits, balance, updated_at)
+      VALUES ($1, $2, 0, NOW())
+      ON CONFLICT (user_id) 
+      DO UPDATE SET credits = user_credits.credits + $2, updated_at = NOW()
+      RETURNING credits
+    `, [referrerId, refBonus]);
+
+    const newUserBalance = await q(`
+      INSERT INTO user_credits (user_id, credits, balance, updated_at)
+      VALUES ($1, $2, 0, NOW())
+      ON CONFLICT (user_id) 
+      DO UPDATE SET credits = user_credits.credits + $2, updated_at = NOW()
+      RETURNING credits
+    `, [newUserId, newBonus]);
+
+    console.log(`✅ Referral processed: ${refBonus} credits to referrer, ${newBonus} credits to new user`);
+    console.log('💰 Referrer new balance:', referrerBalance[0]?.credits);
+    console.log('💰 New user new balance:', newUserBalance[0]?.credits);
+    
+    return json({ 
+      ok: true, 
+      message: 'Referral processed successfully',
+      referrerCredits: referrerBalance[0]?.credits || refBonus,
+      newUserCredits: newUserBalance[0]?.credits || newBonus
+    });
+    
+  } catch (error) {
+    console.error('❌ Referral processing error:', error);
+    return json({ 
+      ok: false, 
+      error: 'INTERNAL_ERROR', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
   }
 };

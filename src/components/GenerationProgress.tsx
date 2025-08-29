@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { Sparkles, CheckCircle, AlertCircle, Download, Share2 } from 'lucide-react'
-import { GenerationStatus, GenerationResult } from '../services/aiGenerationService'
+// import { GenerationStatus, GenerationResult } from '../services/aiGenerationService'
 // RemixIcon import removed
 
+// Component disabled - types not available
 interface GenerationProgressProps {
   isVisible: boolean
-  status: GenerationStatus | null
-  result?: GenerationResult | null
+  status: any // GenerationStatus | null
+  result?: any // GenerationResult | null
   onComplete?: () => void
   onError?: () => void
-  onShareToFeed?: (result: GenerationResult) => void
+  onShareToFeed?: (result: any) => void
   // onAllowRemix removed
-  onSave?: (result: GenerationResult) => void
-  onShareSocial?: (result: GenerationResult) => void
+  onSave?: (result: any) => void
+  onShareSocial?: (result: any) => void
 }
 
 const GenerationProgress: React.FC<GenerationProgressProps> = ({

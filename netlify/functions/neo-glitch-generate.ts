@@ -44,24 +44,19 @@ export async function startBackgroundGeneration(
     
           // Update job status based on result
       if (result.status === 'completed') {
-        await q(neoGlitchMedia.update({
-          where: { id: jobId },
-          data: {
-            status: 'completed',
-            imageUrl: result.imageUrl,
-            stabilityJobId: result.stabilityJobId
-          }
-        });
+        await q(`
+          UPDATE neo_glitch_media
+          SET status = $1, image_url = $2, stability_job_id = $3, updated_at = NOW()
+          WHERE id = $4
+        `, ['completed', result.imageUrl, result.stabilityJobId, jobId]);
         console.log('[NeoGlitch] Background generation completed successfully for job:', jobId);
       } else {
         // Still processing
-        await q(neoGlitchMedia.update({
-          where: { id: jobId },
-          data: {
-            status: 'processing',
-            stabilityJobId: result.stabilityJobId
-          }
-        });
+        await q(`
+          UPDATE neo_glitch_media
+          SET status = $1, stability_job_id = $2, updated_at = NOW()
+          WHERE id = $3
+        `, ['processing', result.stabilityJobId, jobId]);
         console.log('[NeoGlitch] Background generation started for job:', jobId);
       }
 
@@ -71,12 +66,11 @@ export async function startBackgroundGeneration(
     console.error('[NeoGlitch] Background generation failed for job:', jobId, error);
     
     // Update job status to failed
-    await q(neoGlitchMedia.update({
-      where: { id: jobId },
-      data: {
-        status: 'failed'
-      }
-    });
+    await q(`
+      UPDATE neo_glitch_media
+      SET status = 'failed', updated_at = NOW()
+      WHERE id = $1
+    `, [jobId]);
 
     throw error;
   }
@@ -289,9 +283,11 @@ export const handler: Handler = async (event) => {
     // Check for existing run
     let existingRun;
     try {
-      existingRun = await q(neoGlitchMedia.findUnique({
-        where: { runId: runId.toString() }
-      });
+      existingRun = await qOne(`
+        SELECT id, status, image_url, created_at
+        FROM neo_glitch_media
+        WHERE run_id = $1
+      `, [runId.toString()]);
     } catch (dbError: any) {
       console.warn('⚠️ [NeoGlitch] Database check failed, proceeding with generation:', dbError.message);
       existingRun = null;
@@ -301,11 +297,11 @@ export const handler: Handler = async (event) => {
       console.log('🔄 [NeoGlitch] Found existing run:', {
         id: existingRun.id,
         status: existingRun.status,
-        hasImageUrl: !!existingRun.imageUrl,
-        createdAt: existingRun.createdAt
+        hasImageUrl: !!existingRun.image_url,
+        createdAt: existingRun.created_at
       });
       
-      if (existingRun.status === 'completed' && existingRun.imageUrl) {
+      if (existingRun.status === 'completed' && existingRun.image_url) {
         console.log('🔄 [NeoGlitch] Run already completed, returning cached result');
       return {
         statusCode: 200,
@@ -315,58 +311,24 @@ export const handler: Handler = async (event) => {
       } else {
         console.warn('⚠️ [NeoGlitch] Run exists but incomplete, cleaning up and retrying');
         // Delete old failed/incomplete record to retry clean
-        await q(neoGlitchMedia.delete({ where: { id: existingRun.id } });
+        await q(`DELETE FROM neo_glitch_media WHERE id = $1`, [existingRun.id]);
         console.log('🧹 [NeoGlitch] Cleaned up incomplete run, proceeding with new generation');
       }
     } else {
       console.log('✅ [NeoGlitch] No existing run found, proceeding with new generation');
     }
 
-    // Validate preset key
-    const validPresets = ['base', 'visor', 'tattoos', 'scanlines'];
-    if (!validPresets.includes(presetKey)) {
-      return {
-        statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({
-          error: 'INVALID_PRESET',
-          message: `Invalid preset key. Must be one of: ${validPresets.join(', ')}`,
-          received: presetKey,
-          valid: validPresets
-        })
-      };
-    }
-
-    // Validate image URL
-    if (!sourceUrl.startsWith('http')) {
-      return {
-        statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({
-          error: 'INVALID_IMAGE_URL',
-          message: 'Source URL must be a valid HTTP(S) URL',
-          received: sourceUrl
-        })
-      };
-    }
-
-    // Smart Prompt Normalization (keep under 800 chars)
-    const normalizedPrompt = prompt.length > 800 ? prompt.substring(0, 800) + '...' : prompt;
-    console.log('📝 [NeoGlitch] Prompt normalized:', { original: prompt.length, normalized: normalizedPrompt.length });
-
     // Create initial record
-    const initialRecord = await q(neoGlitchMedia.create({
-      data: {
-        runId: runId.toString(),
-        userId: userId,
-        sourceUrl,
-        prompt: normalizedPrompt,
-        presetKey: presetKey,
-        status: 'processing',
-        imageUrl: sourceUrl, // Use source URL temporarily, will be updated after generation
-        createdAt: new Date()
-      }
-    });
+    const initialRows = await q(`
+      INSERT INTO neo_glitch_media (
+        run_id, user_id, source_url, prompt, preset, status, image_url, created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, 'processing', $3, NOW(), NOW()
+      )
+      RETURNING id
+    `, [runId.toString(), userId, sourceUrl, prompt, presetKey]);
+
+    const initialRecord = { id: initialRows[0].id } as any;
 
     console.log('✅ [NeoGlitch] Initial record created:', initialRecord.id);
 
@@ -375,16 +337,11 @@ export const handler: Handler = async (event) => {
     console.log('🚀 [NeoGlitch] Starting Stability.ai generation process...');
     
     // Process the generation immediately (Stability.ai is synchronous)
-    const generationResult = await processGenerationAsync(initialRecord.id, sourceUrl, normalizedPrompt, presetKey, userId, runId, userToken)
+    const generationResult = await processGenerationAsync(initialRecord.id, sourceUrl, prompt, presetKey, userId, runId, userToken)
       .catch(error => {
         console.error('❌ [NeoGlitch] Async generation failed:', error);
         // Update status to failed in database
-        q(neoGlitchMedia.update({
-          where: { id: initialRecord.id },
-          data: { 
-            status: 'failed'
-          }
-        }).catch(dbError => console.error('❌ [NeoGlitch] Failed to update status to failed:', dbError));
+        q(`UPDATE neo_glitch_media SET status = 'failed' WHERE id = $1`, [initialRecord.id]);
       });
 
     // 🔍 CRITICAL FIX: Check if generation completed immediately
@@ -485,14 +442,11 @@ async function processGenerationAsync(
         }
         
         // Update database record with Cloudinary URL (or fallback to Stability.ai URL)
-        await q(neoGlitchMedia.update({
-          where: { id: recordId },
-          data: {
-            status: 'completed',
-            imageUrl: finalImageUrl, // ✅ Use Cloudinary URL instead of Stability.ai URL
-            stabilityJobId: stabilityResult.stabilityJobId
-          }
-        });
+        await q(`
+          UPDATE neo_glitch_media
+          SET status = $1, image_url = $2, stability_job_id = $3, updated_at = NOW()
+          WHERE id = $4
+        `, ['completed', finalImageUrl, stabilityResult.stabilityJobId, recordId]);
         
         console.log('✅ [NeoGlitch] Database updated with completed status and Cloudinary URL');
         
@@ -508,13 +462,11 @@ async function processGenerationAsync(
       console.log('🔄 [NeoGlitch] Stability.ai returned job ID, will need polling');
       
       // Update record with Stability.ai job ID
-      await q(neoGlitchMedia.update({
-        where: { id: recordId },
-        data: {
-          status: 'generating',
-          stabilityJobId: stabilityResult.stabilityJobId
-        }
-      });
+      await q(`
+        UPDATE neo_glitch_media
+        SET status = $1, stability_job_id = $2, updated_at = NOW()
+        WHERE id = $3
+      `, ['generating', stabilityResult.stabilityJobId, recordId]);
       
       console.log('🚀 [NeoGlitch] Generation started successfully:', {
         strategy: stabilityResult.strategy,
@@ -610,22 +562,13 @@ async function processGenerationAsync(
           }
           
           // Update database record with Cloudinary URL (or fallback to AIML URL) and IPA results
-          await q(neoGlitchMedia.update({
-            where: { id: recordId },
-            data: {
-              status: 'completed',
-              imageUrl: finalImageUrl, // ✅ Use Cloudinary URL instead of AIML URL
-              stabilityJobId: `aiml_${runId}`, // Mark as AIML generation
-              metadata: {
-                ipaPassed,
-                ipaSimilarity: Math.round(ipaSimilarity * 100) / 100, // Round to 2 decimal places
-                ipaThreshold: 0.4,
-                ipaRetries: ipaPassed ? 0 : 1, // 1 retry if IPA failed initially
-                ipaStrategy: ipaPassed ? 'first_try' : 'lower_strength_retry',
-                generationPath: 'aiml_fallback' // Mark as AIML fallback generation
-              }
-            }
-          });
+          await q(`
+            UPDATE neo_glitch_media
+            SET status = $1, image_url = $2, stability_job_id = $3, metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{ipaPassed}', to_jsonb($4::boolean), true)
+              || jsonb_build_object('ipaSimilarity', $5, 'ipaThreshold', $6, 'ipaRetries', $7, 'ipaStrategy', $8, 'generationPath', $9),
+              updated_at = NOW()
+            WHERE id = $10
+          `, ['completed', finalImageUrl, `aiml_${runId}`, ipaPassed, Math.round(ipaSimilarity * 100) / 100, 0.4, ipaPassed ? 0 : 1, ipaPassed ? 'first_try' : 'lower_strength_retry', 'aiml_fallback', recordId]);
           
           // 🔒 CRITICAL FIX: Only charge credits ONCE for AIML fallback (no double billing)
           await finalizeCreditsOnce(userId, runId, true, userToken);
@@ -643,13 +586,11 @@ async function processGenerationAsync(
         console.error('❌ [NeoGlitch] AIML fallback also failed:', aimlError);
         
         // Update database record with failed status
-        await q(neoGlitchMedia.update({
-          where: { id: recordId },
-          data: {
-            status: 'failed',
-            imageUrl: sourceUrl // Keep source URL
-          }
-        });
+        await q(`
+          UPDATE neo_glitch_media
+          SET status = 'failed', image_url = $1, updated_at = NOW()
+          WHERE id = $2
+        `, [sourceUrl, recordId]);
         
         // 🔒 CRITICAL FIX: No credits charged since both failed
         await finalizeCreditsOnce(userId, runId, false, userToken);
@@ -665,13 +606,11 @@ async function processGenerationAsync(
     console.error('❌ [NeoGlitch] Async generation failed:', error);
     
     // Update database record with failed status
-    await q(neoGlitchMedia.update({
-      where: { id: recordId },
-      data: {
-        status: 'failed',
-        imageUrl: sourceUrl // Keep source URL
-      }
-    });
+    await q(`
+      UPDATE neo_glitch_media
+      SET status = 'failed', image_url = $1, updated_at = NOW()
+      WHERE id = $2
+    `, [sourceUrl, recordId]);
     
     // Refund credits since generation failed
     await finalizeCreditsOnce(userId, runId, false, userToken);
@@ -890,7 +829,7 @@ async function finalizeCreditsOnce(userId: string, runId: string, success: boole
             'Authorization': `Bearer ${userToken}` // Use user's actual JWT token
           },
           body: JSON.stringify({
-            userId,
+            user_id: userId,
             request_id: runId,
             disposition: 'commit'
           })

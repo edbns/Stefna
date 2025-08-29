@@ -5,15 +5,13 @@ import { json } from "./_lib/http";
 import { randomUUID } from "crypto";
 
 // ============================================================================
-// VERSION: 6.0 - PRISMA MIGRATION
+// VERSION: 7.0 - RAW SQL MIGRATION
 // ============================================================================
-// This function has been migrated to use Prisma instead of raw SQL
-// - Replaced neon client with PrismaClient
-// - Removed dependency on non-existent database functions
+// This function has been migrated to use raw SQL instead of Prisma
+// - Replaced Prisma with direct SQL queries
+// - Uses q, qOne, qCount for database operations
 // - Simplified credit reservation logic
 // ============================================================================
-
-
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -106,11 +104,11 @@ export const handler: Handler = async (event) => {
         
         try {
           // Create new user credits record with starter balance
-                  userCredits = await qOne(`
-          INSERT INTO user_credits (user_id, credits, balance, updated_at)
-          VALUES ($1, 30, 0, NOW())
-          RETURNING user_id, credits, balance
-        `, [userId]);
+          userCredits = await qOne(`
+            INSERT INTO user_credits (user_id, credits, balance, updated_at)
+            VALUES ($1, 30, 0, NOW())
+            RETURNING user_id, credits, balance
+          `, [userId]);
           
           console.log(`✅ Successfully initialized user with 30 starter credits`);
         } catch (initError) {
@@ -179,29 +177,33 @@ export const handler: Handler = async (event) => {
       
       console.log('🔒 Credit balance check passed:', currentBalance, '>=', cost);
       
-      // Create credit transaction record
-      const creditTransaction = await q(creditTransaction.create({
-        data: {
-          userId: userId,
-          action: action, // ✅ REQUIRED: Database expects this (NOT NULL)
-          status: "completed", // ✅ REQUIRED: Database expects this (NOT NULL)
-          reason: action, // ✅ OPTIONAL: Additional context (nullable)
-          amount: -cost, // Negative amount for credit usage
-          env: "production"
-        }
-      });
-      
+      // Create credit transaction record using raw SQL
+      const creditTransactionResult = await q(`
+        INSERT INTO credits_ledger (id, user_id, action, status, reason, amount, env, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+        RETURNING id, user_id, action, status, amount
+      `, [request_id, userId, action, 'reserved', action, -cost, 'production']);
+
+      if (!creditTransactionResult || creditTransactionResult.length === 0) {
+        throw new Error('Failed to create credit transaction');
+      }
+
+      const creditTransaction = creditTransactionResult[0];
       console.log('💰 Credit transaction created:', creditTransaction.id);
       
-      // Update user credits balance
-      const updatedCredits = await q(userCredits.update({
-        where: { userId: userId },
-        data: {
-          credits: currentBalance - cost,
-          updatedAt: new Date()
-        }
-      });
-      
+      // Update user credits balance using raw SQL
+      const updatedCreditsResult = await q(`
+        UPDATE user_credits 
+        SET credits = $1, updated_at = NOW() 
+        WHERE user_id = $2
+        RETURNING user_id, credits, balance
+      `, [currentBalance - cost, userId]);
+
+      if (!updatedCreditsResult || updatedCreditsResult.length === 0) {
+        throw new Error('Failed to update user credits');
+      }
+
+      const updatedCredits = updatedCreditsResult[0];
       console.log('💰 Credits updated:', updatedCredits.credits);
         
       // Return success with request_id for finalization
@@ -231,7 +233,5 @@ export const handler: Handler = async (event) => {
       details: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
-  } finally {
-    
   }
 };

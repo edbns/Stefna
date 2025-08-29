@@ -55,73 +55,63 @@ export const handler: Handler = async (event) => {
     }
 
     try {
-      // Update media asset visibility in database using Prisma
-      // Check all new dedicated tables for the asset
-      let result;
-      
+      const status = publish ? 'public' : 'private';
+      let updatedCount = 0;
+
       // Try ghibli_reaction_media first
-      result = await q(`
+      let rows = await q(`
         UPDATE ghibli_reaction_media 
         SET status = $1, updated_at = NOW()
         WHERE id = $2 AND user_id = $3
-      `, [publish ? 'public' : 'private', assetId, userId]);
-      
-      // Check if any rows were affected
-      const ghibliCount = result.length;
-      
+        RETURNING id
+      `, [status, assetId, userId]);
+      updatedCount += rows.length;
+
       // If not found, try emotion_mask_media
-      if (result.count === 0) {
-        result = await q(emotionMaskMedia.updateMany({
-          where: { 
-            id: assetId, 
-            userId: userId 
-          },
-          data: { 
-            status: publish ? 'public' : 'private'
-          }
-        });
-      }
-      
-      // If not found, try presets_media
-      if (result.count === 0) {
-        result = await q(presetsMedia.updateMany({
-          where: { 
-            id: assetId, 
-            userId: userId 
-          },
-          data: { 
-            status: publish ? 'public' : 'private'
-          }
-        });
-      }
-      
-      // If not found, try custom_prompt_media
-      if (result.count === 0) {
-        result = await q(customPromptMedia.updateMany({
-          where: { 
-            id: assetId, 
-            userId: userId 
-          },
-          data: { 
-            status: publish ? 'public' : 'private'
-          }
-        });
-      }
-      
-      // If not found, try neo_glitch_media
-      if (result.count === 0) {
-        result = await q(neoGlitchMedia.updateMany({
-          where: { 
-            id: assetId, 
-            userId: userId 
-          },
-          data: { 
-            status: publish ? 'public' : 'private'
-          }
-        });
+      if (updatedCount === 0) {
+        rows = await q(`
+          UPDATE emotion_mask_media
+          SET status = $1, updated_at = NOW()
+          WHERE id = $2 AND user_id = $3
+          RETURNING id
+        `, [status, assetId, userId]);
+        updatedCount += rows.length;
       }
 
-      if (result.count === 0) {
+      // If not found, try presets_media
+      if (updatedCount === 0) {
+        rows = await q(`
+          UPDATE presets_media
+          SET status = $1, updated_at = NOW()
+          WHERE id = $2 AND user_id = $3
+          RETURNING id
+        `, [status, assetId, userId]);
+        updatedCount += rows.length;
+      }
+
+      // If not found, try custom_prompt_media
+      if (updatedCount === 0) {
+        rows = await q(`
+          UPDATE custom_prompt_media
+          SET status = $1, updated_at = NOW()
+          WHERE id = $2 AND user_id = $3
+          RETURNING id
+        `, [status, assetId, userId]);
+        updatedCount += rows.length;
+      }
+
+      // If not found, try neo_glitch_media
+      if (updatedCount === 0) {
+        rows = await q(`
+          UPDATE neo_glitch_media
+          SET status = $1, updated_at = NOW()
+          WHERE id = $2 AND user_id = $3
+          RETURNING id
+        `, [status, assetId, userId]);
+        updatedCount += rows.length;
+      }
+
+      if (updatedCount === 0) {
         return { 
           statusCode: 404, 
           headers: {
@@ -141,7 +131,7 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify({ 
           ok: true, 
           message: `Asset ${publish ? 'published' : 'unpublished'} successfully`,
-          updatedCount: result.count
+          updatedCount
         }) 
       };
 

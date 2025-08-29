@@ -1,72 +1,83 @@
 import type { Handler } from '@netlify/functions';
-import { prisma } from './_lib/prisma';
+import { q } from './_db';
 import { Resend } from 'resend';
 import { v4 as uuidv4 } from 'uuid';
 
+// ============================================================================
+// VERSION: 7.0 - RAW SQL MIGRATION
+// ============================================================================
+// This function uses raw SQL queries through the _db helper
+// - Replaced Prisma with direct SQL queries
+// - Uses q for database operations
+// - Sends OTP emails for authentication
+// ============================================================================
+
 export const handler: Handler = async (event) => {
-  console.log('=== OTP REQUEST FUNCTION STARTED ===');
-  console.log('Event method:', event.httpMethod);
-  console.log('Event body:', event.body);
-  
-  // Handle CORS
+  // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      }
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+      },
+      body: ''
     };
   }
 
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json' },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
 
   try {
     const { email } = JSON.parse(event.body || '{}');
-    console.log('Parsed email:', email);
 
-    if (!email || !email.includes('@')) {
+    if (!email) {
       return {
         statusCode: 400,
         headers: {
           'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ error: 'Valid email is required' })
+        body: JSON.stringify({ error: 'Email is required' })
       };
     }
 
-    // Check required environment variables
-    const resendApiKey = process.env.RESEND_API_KEY;
-    
-    console.log('=== ENVIRONMENT VARIABLES ===');
-    console.log('RESEND_API_KEY:', resendApiKey ? 'LOADED' : 'MISSING');
-    
-    if (!resendApiKey) {
-      console.error('Missing Resend API key');
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       return {
-        statusCode: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ error: 'Email service configuration error' })
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Invalid email format' })
       };
     }
-    
-    console.log('=== USING PRISMA CLIENT ===');
 
-    // Generate 6-digit OTP
+    console.log('📧 [OTP] Processing OTP request for:', email);
+
+    // Check if user exists
+    const user = await q(`
+      SELECT id, email FROM users WHERE email = $1
+    `, [email.toLowerCase()]);
+
+    if (!user || user.length === 0) {
+      console.log('❌ [OTP] User not found:', email);
+      return {
+        statusCode: 404,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'User not found' })
+      };
+    }
+
+    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
@@ -74,25 +85,40 @@ export const handler: Handler = async (event) => {
     console.log('OTP:', otp);
     console.log('Expires at:', expiresAt.toISOString());
 
-    // Insert OTP using Prisma
+    // Insert OTP using raw SQL
     let otpInserted = false;
     try {
-      console.log('=== INSERTING OTP WITH PRISMA ===');
+      console.log('=== INSERTING OTP WITH RAW SQL ===');
       const insertResult = await q(`
         INSERT INTO auth_otps (id, email, code, expires_at, created_at)
         VALUES ($1, $2, $3, $4, NOW())
         RETURNING id
       `, [uuidv4(), email.toLowerCase(), otp, expiresAt]);
       
-      console.log('OTP inserted successfully:', insertResult.id);
+      console.log('OTP inserted successfully:', insertResult[0]?.id);
       otpInserted = true;
     } catch (insertError) {
-      console.error('Failed to insert OTP with Prisma:', insertError);
+      console.error('Failed to insert OTP with raw SQL:', insertError);
       // Continue with email sending even if DB insert fails
     }
 
     // Send email via Resend
     console.log('=== SENDING EMAIL ===');
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      console.error('❌ RESEND_API_KEY not configured');
+      return {
+        statusCode: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'Email service not configured' })
+      };
+    }
+
     const resend = new Resend(resendApiKey);
     
     try {
@@ -115,13 +141,13 @@ export const handler: Handler = async (event) => {
             background-color: #000000; 
             color: #ffffff;
         }
-                            .container { 
-                        max-width: 600px; 
-                        margin: 0 auto; 
-                        background-color: #000000; 
-                        padding: 40px 30px;
-                        text-align: center;
-                    }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #000000; 
+            padding: 40px 30px;
+            text-align: center;
+        }
         .logo { 
             text-align: center; 
             margin-bottom: 40px;
@@ -130,10 +156,10 @@ export const handler: Handler = async (event) => {
             height: 60px;
             width: auto;
         }
-                            .content { 
-                        line-height: 1.6;
-                        text-align: center;
-                    }
+        .content { 
+            line-height: 1.6;
+            text-align: center;
+        }
         .otp-box { 
             background-color: #1a1a1a; 
             border: 2px solid #333333; 
@@ -154,22 +180,20 @@ export const handler: Handler = async (event) => {
             font-size: 14px; 
             margin-top: 15px;
         }
-                            .warning { 
-                        background-color: #1a1a1a; 
-                        border: 1px solid #333333; 
-                        border-radius: 6px; 
-                        padding: 15px; 
-                        margin: 20px 0; 
-                        color: #ffffff;
-                    }
-                            .footer { 
-                        margin-top: 40px; 
-                        text-align: center; 
-                        color: #ffffff; 
-                        font-size: 14px;
-                        border-top: 1px solid #333333;
-                        padding-top: 20px;
-                    }
+        .warning { 
+            background-color: #1a1a1a; 
+            border: 1px solid #333333; 
+            border-radius: 6px; 
+            padding: 15px; 
+            margin: 20px 0;
+            font-size: 14px;
+            color: #cccccc;
+        }
+        .footer { 
+            margin-top: 40px; 
+            font-size: 12px; 
+            color: #666666;
+        }
     </style>
 </head>
 <body>
@@ -179,8 +203,8 @@ export const handler: Handler = async (event) => {
         </div>
         
         <div class="content">
-            <h2 style="margin-top: 0; color: #ffffff;">Your Login Code</h2>
-            <p>Here's your one-time login code to access your Stefna account:</p>
+            <h1>Your Login Code</h1>
+            <p>Use this code to sign in to your Stefna account:</p>
             
             <div class="otp-box">
                 <div class="otp-code">${otp}</div>
@@ -188,86 +212,65 @@ export const handler: Handler = async (event) => {
             </div>
             
             <div class="warning">
-                <strong>Security Notice:</strong> If you didn't request this code, you can safely ignore this email.
+                <strong>Security Notice:</strong> Never share this code with anyone. Stefna will never ask for it.
             </div>
+            
+            <p>If you didn't request this code, you can safely ignore this email.</p>
         </div>
         
         <div class="footer">
-            <p>This email was sent to: ${email}</p>
-            <p>Stefna 2025 all rights reserved</p>
+            <p>This email was sent to ${email}</p>
+            <p>&copy; 2024 Stefna. All rights reserved.</p>
         </div>
     </div>
 </body>
-</html>`,
-        text: `Here's your one-time login code:
-
-${otp}
-
-It expires in 10 minutes. If you didn't request this code, you can ignore this email.
-
-— The Stefna Team`
+</html>`
       });
 
       if (emailError) {
-        console.error('Email sending failed:', emailError);
+        console.error('❌ [OTP] Email send failed:', emailError);
         return {
           statusCode: 500,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            error: 'Failed to send email',
-            details: emailError.message || 'Unknown email error'
+          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            error: 'Failed to send OTP email',
+            details: emailError.message
           })
         };
       }
-      
-      console.log('=== EMAIL SENT SUCCESSFULLY ===');
-      console.log('Email data:', emailData);
 
+      console.log('✅ [OTP] Email sent successfully:', emailData?.id);
+      
       return {
         statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          success: true, 
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success: true,
           message: 'OTP sent successfully',
-          otpSent: otpInserted
+          otpInserted: otpInserted
         })
       };
 
     } catch (emailError) {
-      console.error('Email sending error:', emailError);
+      console.error('❌ [OTP] Email send error:', emailError);
       return {
         statusCode: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          error: 'Failed to send email',
-          details: emailError.message || 'Unknown email error'
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Failed to send OTP email',
+          details: emailError instanceof Error ? emailError.message : 'Unknown error'
         })
       };
     }
 
-  } catch (error: any) {
-    console.error('=== OTP REQUEST ERROR ===');
-    console.error('Error:', error);
-    console.error('Stack:', error.stack);
-    
+  } catch (error) {
+    console.error('💥 [OTP] Error:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
+      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         error: 'Internal server error',
-        details: error.message || 'Unknown error occurred'
+        details: error instanceof Error ? error.message : 'Unknown error'
       })
     };
   }

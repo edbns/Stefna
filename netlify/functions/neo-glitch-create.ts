@@ -16,16 +16,13 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      }
+      },
+      body: ''
     };
   }
 
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+    return json({ error: 'Method not allowed' }, { status: 405 });
   }
 
   try {
@@ -58,31 +55,23 @@ export const handler: Handler = async (event) => {
       hasSource: !!sourceAssetId
     });
 
-    
-
     // Check for existing record with same runId (deduplication)
-    const existingRecord = await q(neoGlitchMedia.findFirst({
-      where: { 
-        userId: userId,
-        runId: runId
-      },
-      select: {
-        id: true,
-        status: true,
-        imageUrl: true
-      }
-    });
+    const existingRecord = await qOne(`
+      SELECT id, status, image_url
+      FROM neo_glitch_media
+      WHERE user_id = $1 AND run_id = $2
+      LIMIT 1
+    `, [userId, runId]);
 
     if (existingRecord) {
       console.log('🎭 [NeoGlitch] Duplicate detected:', {
         existingId: existingRecord.id,
         status: existingRecord.status,
-        hasImage: !!existingRecord.imageUrl
+        hasImage: !!existingRecord.image_url
       });
 
       // If already completed, return the existing record
-      if (existingRecord.status === 'completed' && existingRecord.imageUrl) {
-        
+      if (existingRecord.status === 'completed' && existingRecord.image_url) {
         return json({
           id: existingRecord.id,
           status: 'completed',
@@ -93,7 +82,6 @@ export const handler: Handler = async (event) => {
 
       // If pending/processing, return the existing record
       if (existingRecord.status === 'pending' || existingRecord.status === 'processing') {
-        
         return json({
           id: existingRecord.id,
           status: existingRecord.status,
@@ -106,52 +94,46 @@ export const handler: Handler = async (event) => {
       console.log('🎭 [NeoGlitch] Previous generation failed, allowing retry');
     }
 
-         // Create new glitch record
-     const result = await q(neoGlitchMedia.create({
-       data: {
-         userId: userId,
-         runId: runId,
-         presetKey: presetKey,
-         prompt: prompt,
-         sourceUrl: sourceAssetId || '',
-         imageUrl: '', // Will be updated when generation completes
-         status: 'pending',
-         metadata: meta,
-       },
-       select: {
-         id: true,
-         userId: true,
-         runId: true,
-         presetKey: true,
-         prompt: true,
-         status: true,
-         createdAt: true,
-       }
-     });
+    // Create new glitch record
+    const insertRows = await q(`
+      INSERT INTO neo_glitch_media (
+        user_id, run_id, preset, prompt, source_url, image_url, status, metadata, created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()
+      )
+      RETURNING id, user_id, run_id, preset, prompt, status, created_at
+    `, [
+      userId,
+      runId,
+      presetKey,
+      prompt,
+      sourceAssetId || '',
+      '', // image_url placeholder
+      'pending',
+      meta
+    ]);
 
-    if (!result) {
+    if (!insertRows || insertRows.length === 0) {
       throw new Error('Failed to insert glitch record');
     }
 
-    const newRecord = result;
-         console.log('✅ [NeoGlitch] Record created successfully:', {
-       id: newRecord.id,
-       status: newRecord.status,
-       runId: newRecord.runId ? newRecord.runId.substring(0, 16) + '...' : 'no-run-id'
-     });
+    const row = insertRows[0];
+    console.log('✅ [NeoGlitch] Record created successfully:', {
+      id: row.id,
+      status: row.status,
+      runId: row.run_id ? row.run_id.substring(0, 16) + '...' : 'no-run-id'
+    });
 
-     
-
-     return json({
-       id: newRecord.id,
-       userId: newRecord.userId,
-       runId: newRecord.runId,
-       presetKey: newRecord.presetKey,
-       prompt: newRecord.prompt,
-       status: newRecord.status,
-       createdAt: newRecord.createdAt,
-       message: 'Neo Tokyo Glitch record created successfully'
-     });
+    return json({
+      id: row.id,
+      userId: row.user_id,
+      runId: row.run_id,
+      presetKey: row.preset,
+      prompt: row.prompt,
+      status: row.status,
+      createdAt: row.created_at,
+      message: 'Neo Tokyo Glitch record created successfully'
+    });
 
   } catch (error: any) {
     console.error('💥 [NeoGlitch] Create error:', error);

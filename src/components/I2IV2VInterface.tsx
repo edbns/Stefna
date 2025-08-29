@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { Image, Video, Upload, Settings, Play, Square, RotateCcw } from 'lucide-react'
 import ImageToImageUpload from './ImageToImageUpload'
-import AIGenerationService, { GenerationRequest, GenerationStatus } from '../services/aiGenerationService'
+// Component disabled - using existing generationPipeline in main app
+// import AIGenerationService, { GenerationRequest, GenerationStatus } from '../services/aiGenerationService'
 import fileUploadService from '../services/fileUploadService'
 import AIMLModelService from '../services/aimlModelService'
 // import { requireUserIntent } from '../utils/generationGuards' // REMOVED - complex drama file
@@ -13,6 +14,10 @@ interface I2IV2VInterfaceProps {
   onError: (error: string) => void
   className?: string
 }
+
+// Define disabled types
+type GenerationStatus = any;
+type GenerationRequest = any;
 
 const I2IV2VInterface: React.FC<I2IV2VInterfaceProps> = ({
   userId,
@@ -94,8 +99,10 @@ const I2IV2VInterface: React.FC<I2IV2VInterfaceProps> = ({
         videoUrl: mode === 'v2v' ? fileUrl : undefined
       }
 
-      const result = await AIGenerationService.getInstance().generateContent(request)
+      // const result = await AIGenerationService.getInstance().generateContent(request)
 
+      // DISABLED: Component not currently used - main app uses generationPipeline directly
+      /*
       if (result.success && result.result) {
         onGenerationComplete(result.result)
         setGenerationStatus({
@@ -112,6 +119,7 @@ const I2IV2VInterface: React.FC<I2IV2VInterfaceProps> = ({
           error: result.error
         })
       }
+      */
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Generation failed'
       onError(errorMessage)

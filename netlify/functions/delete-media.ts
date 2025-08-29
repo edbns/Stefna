@@ -1,11 +1,9 @@
 // netlify/functions/delete-media.ts
-// Deletes media assets using Prisma for consistent database access
+// Deletes media assets using raw SQL for consistent database access
 
 import type { Handler } from '@netlify/functions';
 import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
-
-
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -15,15 +13,22 @@ export const handler: Handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'DELETE, OPTIONS'
-      }
+        'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
+        'Content-Type': 'application/json'
+      },
+      body: ''
     };
   }
 
   if (event.httpMethod !== 'DELETE') {
     return {
       statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -63,12 +68,11 @@ export const handler: Handler = async (event) => {
     // Try Custom Prompt Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await q(customPromptMedia.delete({
-          where: {
-            id: mediaId,
-            userId: userId
-          }
-        });
+        deletedMedia = await q(`
+          DELETE FROM custom_prompt_media 
+          WHERE id = $1 AND user_id = $2
+          RETURNING id
+        `, [mediaId, userId]);
         deletedFromTable = 'customPromptMedia';
       } catch (error: any) {
         if (error.code !== 'P2025') {
@@ -80,12 +84,11 @@ export const handler: Handler = async (event) => {
     // Try Emotion Mask Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await q(emotionMaskMedia.delete({
-          where: {
-            id: mediaId,
-            userId: userId
-          }
-        });
+        deletedMedia = await q(`
+          DELETE FROM emotion_mask_media 
+          WHERE id = $1 AND user_id = $2
+          RETURNING id
+        `, [mediaId, userId]);
         deletedFromTable = 'emotionMaskMedia';
       } catch (error: any) {
         if (error.code !== 'P2025') {
@@ -97,12 +100,11 @@ export const handler: Handler = async (event) => {
     // Try Ghibli Reaction Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await q(ghibliReactionMedia.delete({
-          where: {
-            id: mediaId,
-            userId: userId
-          }
-        });
+        deletedMedia = await q(`
+          DELETE FROM ghibli_reaction_media 
+          WHERE id = $1 AND user_id = $2
+          RETURNING id
+        `, [mediaId, userId]);
         deletedFromTable = 'ghibliReactionMedia';
       } catch (error: any) {
         if (error.code !== 'P2025') {
@@ -114,12 +116,11 @@ export const handler: Handler = async (event) => {
     // Try Presets Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await q(presetsMedia.delete({
-          where: {
-            id: mediaId,
-            userId: userId
-          }
-        });
+        deletedMedia = await q(`
+          DELETE FROM presets_media 
+          WHERE id = $1 AND user_id = $2
+          RETURNING id
+        `, [mediaId, userId]);
         deletedFromTable = 'presetsMedia';
       } catch (error: any) {
         if (error.code !== 'P2025') {
@@ -131,12 +132,11 @@ export const handler: Handler = async (event) => {
     // Try Story Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await q(story.delete({
-          where: {
-            id: mediaId,
-            userId: userId
-          }
-        });
+        deletedMedia = await q(`
+          DELETE FROM story 
+          WHERE id = $1 AND user_id = $2
+          RETURNING id
+        `, [mediaId, userId]);
         deletedFromTable = 'story';
       } catch (error: any) {
         if (error.code !== 'P2025') {
@@ -158,19 +158,11 @@ export const handler: Handler = async (event) => {
       return json({ error: 'Media not found or access denied' }, { status: 404 });
     }
 
-  } catch (error: any) {
-    console.error('💥 [delete-media] Delete error:', error);
-    
-    if (error.code === 'P2025') {
-      return json({ error: 'Media not found' }, { status: 404 });
-    }
-    
+  } catch (error) {
+    console.error('💥 [delete-media] Error:', error);
     return json({ 
-      error: 'DELETE_FAILED',
-      message: error.message,
-      status: 'failed'
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
-  } finally {
-    
   }
 };

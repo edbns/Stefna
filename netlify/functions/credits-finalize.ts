@@ -4,12 +4,12 @@ import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
 
 // ============================================================================
-// VERSION: 6.0 - PRISMA MIGRATION
+// VERSION: 7.0 - RAW SQL MIGRATION
 // ============================================================================
-// This function has been migrated to use Prisma instead of raw SQL
-// - Replaced getDb() with PrismaClient
-// - Removed dependency on non-existent database functions
-// - Implemented actual credit refund logic
+// This function uses raw SQL queries through the _db helper
+// - Replaced Prisma with direct SQL queries
+// - Uses q, qOne, qCount for database operations
+// - Maintains credit refund and commit logic
 // ============================================================================
 
 
@@ -17,14 +17,15 @@ import { json } from "./_lib/http";
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-      }
-    };
+          return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        },
+        body: ''
+      };
   }
 
   console.log('💰 [credits-finalize] Starting credits finalization...');
@@ -33,7 +34,11 @@ export const handler: Handler = async (event) => {
   
   try {
     if (event.httpMethod !== 'POST') {
-      return json({ ok: false, error: 'Method not allowed' }, { status: 405 });
+      return {
+        statusCode: 405,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+        body: JSON.stringify({ ok: false, error: 'Method not allowed' })
+      };
     }
 
     const { userId } = requireAuth(event.headers.authorization);
@@ -49,17 +54,29 @@ export const handler: Handler = async (event) => {
     // Validation
     if (!userId) {
       console.error("❌ userId is missing or undefined");
-      return json({ ok: false, error: 'Missing or invalid userId' }, { status: 400 });
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+        body: JSON.stringify({ ok: false, error: 'Missing or invalid userId' })
+      };
     }
     
     if (!request_id) {
       console.error("❌ request_id is missing");
-      return json({ ok: false, error: 'Missing request_id' }, { status: 400 });
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+        body: JSON.stringify({ ok: false, error: 'Missing request_id' })
+      };
     }
     
     if (!disposition || !['commit', 'refund'].includes(disposition)) {
       console.error("❌ Invalid disposition:", disposition);
-      return json({ ok: false, error: 'Invalid disposition - must be "commit" or "refund"' }, { status: 400 });
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+        body: JSON.stringify({ ok: false, error: 'Invalid disposition - must be "commit" or "refund"' })
+      };
     }
 
     try {
@@ -70,11 +87,15 @@ export const handler: Handler = async (event) => {
 
       if (!creditTransaction) {
         console.error("❌ Credit transaction not found:", request_id);
-        return json({ 
-          ok: false, 
-          error: "TRANSACTION_NOT_FOUND",
-          message: "Credit transaction not found"
-        }, { status: 404 });
+        return {
+          statusCode: 404,
+          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+          body: JSON.stringify({
+            ok: false,
+            error: "TRANSACTION_NOT_FOUND",
+            message: "Credit transaction not found"
+          })
+        };
       }
 
       // Verify the transaction belongs to this user
@@ -83,21 +104,29 @@ export const handler: Handler = async (event) => {
           transactionUserId: creditTransaction.user_id,
           requestUserId: userId
         });
-          return json({ 
-            ok: false, 
-          error: "UNAUTHORIZED",
-          message: "Transaction belongs to different user"
-        }, { status: 403 });
+        return {
+          statusCode: 403,
+          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+          body: JSON.stringify({
+            ok: false,
+            error: "UNAUTHORIZED",
+            message: "Transaction belongs to different user"
+          })
+        };
       }
 
       // Verify the transaction is still reserved
       if (creditTransaction.status !== 'reserved') {
         console.error("❌ Transaction already processed:", creditTransaction.status);
-        return json({ 
-          ok: false, 
-          error: "ALREADY_PROCESSED",
-          message: "Transaction already processed"
-        }, { status: 400 });
+        return {
+          statusCode: 400,
+          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+          body: JSON.stringify({
+            ok: false,
+            error: "ALREADY_PROCESSED",
+            message: "Transaction already processed"
+          })
+        };
       }
 
       console.log('💰 Processing credit transaction:', {
@@ -135,20 +164,28 @@ export const handler: Handler = async (event) => {
             newCredits
           });
 
-          return json({
-            ok: true,
-            disposition: 'refund',
-            refundAmount,
-            newCredits,
-            message: 'Credits refunded successfully'
-          });
+          return {
+            statusCode: 200,
+            headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+            body: JSON.stringify({
+              ok: true,
+              disposition: 'refund',
+              refundAmount,
+              newCredits,
+              message: 'Credits refunded successfully'
+            })
+          };
         } else {
           console.error('❌ User credits record not found for refund');
-          return json({ 
-            ok: false, 
-            error: "USER_CREDITS_NOT_FOUND",
-            message: "User credits record not found"
-          }, { status: 500 });
+          return {
+            statusCode: 500,
+            headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+            body: JSON.stringify({
+              ok: false,
+              error: "USER_CREDITS_NOT_FOUND",
+              message: "User credits record not found"
+            })
+          };
         }
 
       } else if (disposition === 'commit') {
@@ -162,30 +199,54 @@ export const handler: Handler = async (event) => {
 
         console.log('✅ Credits committed successfully');
 
-        return json({
-          ok: true,
-          disposition: 'commit',
-          message: 'Credits committed successfully'
-        });
+        return {
+          statusCode: 200,
+          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+          body: JSON.stringify({
+            ok: true,
+            disposition: 'commit',
+            message: 'Credits committed successfully'
+          })
+        };
+      } else {
+        // This should never happen due to validation above, but handle it just in case
+        console.error("❌ Invalid disposition after validation:", disposition);
+        return {
+          statusCode: 400,
+          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+          body: JSON.stringify({
+            ok: false,
+            error: "INVALID_DISPOSITION",
+            message: "Invalid disposition value"
+          })
+        };
       }
       
     } catch (dbError) {
       console.error("💥 DB finalization failed:", dbError);
-      return json({ 
-        ok: false, 
-        error: "DB_FINALIZATION_FAILED",
-        message: dbError instanceof Error ? dbError.message : String(dbError),
-        stack: dbError instanceof Error ? dbError.stack : undefined
-      }, { status: 500 });
+      return {
+        statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+        body: JSON.stringify({
+          ok: false,
+          error: "DB_FINALIZATION_FAILED",
+          message: dbError instanceof Error ? dbError.message : String(dbError),
+          stack: dbError instanceof Error ? dbError.stack : undefined
+        })
+      };
     }
     
   } catch (error) {
     console.error("💥 Top-level error in credits-finalize:", error);
-    return json({
-      ok: false,
-      error: "Internal server error",
-      details: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    }, { status: 500 });
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+      body: JSON.stringify({
+        ok: false,
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      })
+    };
   }
 };

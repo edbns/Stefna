@@ -48,7 +48,7 @@ Stefna is a cutting-edge AI photo editing platform that transforms your photos u
 
 ### **Backend**
 - **Netlify Functions** (serverless)
-- **PostgreSQL** with Prisma ORM
+- **PostgreSQL** with raw SQL queries
 - **Cloudinary** for image optimization and storage
 - **JWT** authentication
 
@@ -57,11 +57,11 @@ Stefna is a cutting-edge AI photo editing platform that transforms your photos u
 - **AIML API**: Fallback provider and primary for other presets
 - **Kling V1.6**: Image-to-Video generation for Story Time
 
-### **Migration Journey**
-- **From Raw SQL**: Legacy functions using direct database queries
-- **To Prisma ORM**: Modern, type-safe database operations
+### **Database Architecture**
+- **Raw SQL Queries**: Optimized PostgreSQL queries with connection pooling
+- **Custom DB Helper**: Centralized database operations (`q`, `qOne`, `qCount`)
+- **Type Safety**: TypeScript interfaces for database results
 - **Unified System**: Consistent API patterns across all functions
-- **Future-Proof**: Scalable architecture for new features
 
 ---
 
@@ -104,8 +104,8 @@ cp env.example .env
 # Edit .env with your API keys and database URLs
 
 # Set up database
-npx prisma generate
-npx prisma db push
+# Database schema is defined in database-schema.sql
+# Use your preferred PostgreSQL client to run the schema
 
 # Start development server
 npm run dev
@@ -164,10 +164,10 @@ src/
 └── types/              # TypeScript type definitions
 
 netlify/
-└── functions/          # Serverless backend functions
+├── functions/          # Serverless backend functions
+└── functions/_db.ts    # Database helper with raw SQL queries
 
-prisma/
-└── schema.prisma       # Database schema
+database-schema.sql     # PostgreSQL database schema
 ```
 
 ### **Key Components**
@@ -194,7 +194,8 @@ npm run dev
 netlify dev
 
 # Database operations
-npx prisma studio
+# Use your preferred PostgreSQL client (pgAdmin, DBeaver, etc.)
+# Schema: database-schema.sql
 ```
 
 ### **Production Testing**
@@ -224,7 +225,7 @@ npx prisma studio
 ### **Common Issues**
 - **Generation Fails**: Check API keys and quotas
 - **Slow Loading**: Verify Cloudinary configuration
-- **Database Errors**: Check Prisma schema and connections
+- **Database Errors**: Check database-schema.sql and connection string
 - **Story Time Issues**: Verify Kling V1.6 API endpoint and credentials
 
 ### **Debug Mode**
@@ -238,9 +239,9 @@ Enable debug logging in development:
 )}
 ```
 
-### **Migration Support**
-- **Prisma Issues**: Run `npx prisma generate` and `npx prisma db push`
-- **Schema Conflicts**: Use `npx prisma migrate resolve` for existing tables
+### **Database Support**
+- **Schema Setup**: Run database-schema.sql in your PostgreSQL database
+- **Connection Issues**: Verify DATABASE_URL and connection pooling settings
 - **Local Development**: `npx netlify dev` for function testing
 
 ---
@@ -277,16 +278,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🎉 **Recent Updates**
 
-### **🚀 Beautiful Migration Complete!**
-- ✅ **Prisma ORM Migration**: Converted from raw SQL to modern Prisma ORM
-- ✅ **Database Schema Modernization**: Clean, type-safe database operations
+### **🚀 Raw SQL Migration Complete!**
+- ✅ **Direct SQL Integration**: Converted from Prisma ORM to optimized raw SQL queries
+- ✅ **Custom Database Helper**: Centralized database operations with connection pooling
 - ✅ **Story Time Feature**: AI-powered photo-to-video storytelling with Kling V1.6
 - ✅ **Video Generation**: Cinematic video creation from static photos
 - ✅ **Enhanced User Experience**: Smooth video playback and progress tracking
 
 ### **🔧 Technical Improvements**
-- **Type Safety**: Full TypeScript integration with Prisma
-- **Performance**: Optimized database queries and caching
+- **Performance**: Optimized raw SQL queries with proper indexing
+- **Type Safety**: TypeScript interfaces for database results
 - **Scalability**: Modern serverless architecture with Netlify Functions
 - **Code Quality**: Clean, maintainable codebase with proper error handling
 
@@ -298,8 +299,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Feed Integration**: Seamless video display in unified feed
 
 ### **✅ Current Status**
-- **Core Feed**: Fully restored with all media types
+- **Core Feed**: Fully functional with all media types
 - **All Media Types**: Ghibli, Emotion Mask, Presets, Custom Prompt, Neo Tokyo Glitch
+- **Raw SQL Database**: All functions converted from Prisma to optimized raw SQL
 - **Story Time**: Models defined, ready for deployment
 - **Next Steps**: Deploy Story Time models and test video generation
 

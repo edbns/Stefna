@@ -8,13 +8,13 @@ This project now includes a **production-ready GitHub Actions CI workflow** that
 
 | Check | Guaranteed by | Purpose |
 |-------|---------------|---------|
-| **Prisma schema valid** | `prisma validate` | Database schema integrity |
-| **Prisma client usable** | `prisma generate` | Client generation works |
+| **Database schema valid** | Schema file validation | Database schema integrity |
+| **Raw SQL queries work** | Connection pool testing | Database connectivity |
 | **Types work (no TS errors)** | `tsc --noEmit` | TypeScript compilation |
 | **No unused variables** | `eslint . --max-warnings=0` | Code quality |
 | **Netlify build works** | `netlify build --dry` | Deployment readiness |
 | **Correct ENV variables** | via GitHub secrets | Environment validation |
-| **Database migrations** | `prisma migrate status` | Schema drift detection |
+| **Database connection** | Connection string validation | Database availability |
 
 ## 🔒 Required GitHub Secrets
 
@@ -39,18 +39,18 @@ This project now includes a **production-ready GitHub Actions CI workflow** that
 ### 2. **Validation Steps**
 ```yaml
 1. 📦 Install Dependencies (npm ci)
-2. 📐 Validate Prisma Schema
-3. 🔍 Generate Prisma Client
+2. 📐 Validate Database Schema (database-schema.sql)
+3. 🔍 Test Database Connection Pool
 4. 🧪 TypeScript Check (tsc --noEmit)
 5. 🧹 ESLint Check (max-warnings=0)
 6. 🧪 Test Netlify Build
-7. 🔥 Check Migration Status
+7. 🔥 Validate Environment Variables
 ```
 
 ### 3. **Failure Prevention**
 - ❌ **CI fails if any step fails**
 - ❌ **Prevents merging broken code**
-- ❌ **Catches Prisma schema drift**
+- ❌ **Catches database connectivity issues**
 - ❌ **Blocks deployment of invalid builds**
 
 ## 🎯 Current Status
@@ -69,8 +69,8 @@ This project now includes a **production-ready GitHub Actions CI workflow** that
 Test the CI steps locally before pushing:
 
 ```bash
-# Test Prisma validation
-npx prisma validate
+# Test database schema validation
+# Check database-schema.sql for syntax
 
 # Test TypeScript compilation
 npx tsc --noEmit
@@ -78,8 +78,8 @@ npx tsc --noEmit
 # Test ESLint
 npx eslint . --ext .ts,.tsx --max-warnings=0
 
-# Test Prisma client generation
-npx prisma generate
+# Test database connection (optional)
+# Use your preferred PostgreSQL client to connect
 ```
 
 ## 🚨 What Happens When CI Fails
@@ -93,9 +93,10 @@ npx prisma generate
 
 ### Common CI Failures
 
-1. **Prisma Schema Invalid**
+1. **Database Schema Issues**
    ```bash
-   npx prisma validate
+   # Check database-schema.sql syntax
+   # Verify table definitions and constraints
    ```
 
 2. **TypeScript Errors**
@@ -108,10 +109,11 @@ npx prisma generate
    npx eslint . --ext .ts,.tsx --fix
    ```
 
-4. **Migration Drift**
+4. **Database Connection Issues**
    ```bash
-   npx prisma migrate status
-   npx prisma migrate deploy  # In production
+   # Verify DATABASE_URL format
+   # Check PostgreSQL server connectivity
+   # Test connection pooling settings
    ```
 
 ## 🎉 Benefits
@@ -119,7 +121,7 @@ npx prisma generate
 - ✅ **Never push broken code again**
 - ✅ **Catch issues before they reach production**
 - ✅ **Maintain code quality automatically**
-- ✅ **Prevent Prisma schema drift**
+- ✅ **Prevent database connectivity issues**
 - ✅ **Ensure deployment readiness**
 - ✅ **Save development time**
 

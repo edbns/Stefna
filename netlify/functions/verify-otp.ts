@@ -15,21 +15,25 @@ export const handler: Handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
       },
       body: ''
     };
   }
   
     if (event.httpMethod !== 'POST') {
-      return { 
-        statusCode: 405, 
+      return {
+        statusCode: 405,
         headers: {
           'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Content-Type': 'application/json'
         },
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+        body: JSON.stringify({ error: 'Method not allowed' })
+      };
+    }
   }
 
   try {
@@ -38,10 +42,12 @@ export const handler: Handler = async (event) => {
     console.log('Parsed code:', code);
 
     if (!email || !code) {
-      return { 
-        statusCode: 400, 
+      return {
+        statusCode: 400,
         headers: {
           'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ error: 'Email and code are required' })
@@ -55,10 +61,12 @@ export const handler: Handler = async (event) => {
     );
 
     if (!otpRecord) {
-      return { 
+      return {
         statusCode: 400,
         headers: {
           'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ error: 'Invalid OTP' })
@@ -70,6 +78,8 @@ export const handler: Handler = async (event) => {
         statusCode: 400,
         headers: {
           'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ error: 'OTP already used' })
@@ -81,6 +91,8 @@ export const handler: Handler = async (event) => {
         statusCode: 400,
         headers: {
           'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ error: 'OTP expired' })
@@ -127,6 +139,8 @@ export const handler: Handler = async (event) => {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -143,11 +157,13 @@ export const handler: Handler = async (event) => {
       statusCode: 500,
       headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         error: 'Internal server error',
-        message: error.message 
+        message: error.message
       })
     };
   }

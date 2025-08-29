@@ -300,10 +300,18 @@ export const handler: Handler = async (event) => {
   // Initialize Prisma client inside handler to avoid bundling issues
   
   
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+      body: ''
+    };
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -336,7 +344,7 @@ export const handler: Handler = async (event) => {
     if (missingFields.length > 0) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'VALIDATION_FAILED',
           message: `Missing required fields: ${missingFields.join(', ')}`,
@@ -357,29 +365,31 @@ export const handler: Handler = async (event) => {
     console.log('🔍 [EmotionMask] Checking for existing run with runId:', runId.toString());
 
     // Check for existing run
-    const existingRun = await q(emotionMaskMedia.findUnique({
-      where: { runId: runId.toString() }
-    });
+    const existingRun = await qOne(`
+      SELECT id, status, image_url, created_at
+      FROM emotion_mask_media
+      WHERE run_id = $1
+    `, [runId.toString()]);
 
     if (existingRun) {
       console.log('🔄 [EmotionMask] Found existing run:', {
         id: existingRun.id,
         status: existingRun.status,
-        hasImageUrl: !!existingRun.imageUrl,
-        createdAt: existingRun.createdAt
+        hasImageUrl: !!existingRun.image_url,
+        createdAt: existingRun.created_at
       });
       
-      if (existingRun.status === 'completed' && existingRun.imageUrl) {
+      if (existingRun.status === 'completed' && existingRun.image_url) {
         console.log('🔄 [EmotionMask] Run already completed, returning cached result');
         return {
           statusCode: 200,
-          headers: { 'Access-Control-Allow-Origin': '*' },
+          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
           body: JSON.stringify(existingRun)
         };
       } else {
         console.warn('⚠️ [EmotionMask] Run exists but incomplete, cleaning up and retrying');
         // Delete old failed/incomplete record to retry clean
-        await q(emotionMaskMedia.delete({ where: { id: existingRun.id } });
+        await q(`DELETE FROM emotion_mask_media WHERE id = $1`, [existingRun.id]);
         console.log('🧹 [EmotionMask] Cleaned up incomplete run, proceeding with new generation');
       }
     } else {
@@ -391,7 +401,7 @@ export const handler: Handler = async (event) => {
     if (!validPresets.includes(presetKey)) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'INVALID_PRESET',
           message: `Invalid preset key. Must be one of: ${validPresets.join(', ')}`,
@@ -405,7 +415,7 @@ export const handler: Handler = async (event) => {
     if (!sourceUrl.startsWith('http')) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'INVALID_IMAGE_URL',
           message: 'Source URL must be a valid HTTP(S) URL',
@@ -437,7 +447,7 @@ export const handler: Handler = async (event) => {
       console.error('❌ [EmotionMask] Credit reservation failed:', creditError);
       return {
         statusCode: 402,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'INSUFFICIENT_CREDITS',
           message: 'Not enough credits for generation',
@@ -568,7 +578,7 @@ export const handler: Handler = async (event) => {
         
         return {
           statusCode: 200,
-          headers: { 'Access-Control-Allow-Origin': '*' },
+          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
           body: JSON.stringify({
             message: 'Generation completed successfully',
             jobId: initialRecord.id,
@@ -584,13 +594,11 @@ export const handler: Handler = async (event) => {
       console.error('❌ [EmotionMask] Generation failed:', generationError);
       
       // Update database record with failed status
-      await q(emotionMaskMedia.update({
-        where: { id: initialRecord.id },
-        data: {
-          status: 'failed',
-          imageUrl: sourceUrl // Keep source URL
-        }
-      });
+      await q(`
+        UPDATE emotion_mask_media
+        SET status = 'failed', image_url = $1, updated_at = NOW()
+        WHERE id = $2
+      `, [sourceUrl, initialRecord.id]);
       
       // Refund credits since generation failed with fresh token
       await fetch(`${process.env.URL}/.netlify/functions/credits-finalize`, {
@@ -611,7 +619,7 @@ export const handler: Handler = async (event) => {
       
       return {
         statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'GENERATION_FAILED',
           message: 'Emotion Mask generation failed',
@@ -627,7 +635,7 @@ export const handler: Handler = async (event) => {
     if (isTokenExpiredError(error.message)) {
       return {
         statusCode: 401,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'TOKEN_EXPIRED',
           message: 'Your session has expired. Please refresh the page and try again.',
@@ -636,10 +644,10 @@ export const handler: Handler = async (event) => {
         })
       };
     }
-    
+
     return {
       statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
       body: JSON.stringify({
         error: 'INTERNAL_ERROR',
         message: 'Unexpected error occurred',
@@ -647,4 +655,10 @@ export const handler: Handler = async (event) => {
       })
     };
   }
+
+  return {
+    statusCode: 500,
+    headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+    body: JSON.stringify({ error: 'UNEXPECTED_FALLTHROUGH' })
+  };
 };

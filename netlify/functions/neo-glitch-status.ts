@@ -50,16 +50,13 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      }
+      },
+      body: ''
     };
   }
 
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+    return json({ error: 'Method not allowed' }, { status: 405 });
   }
 
   try {
@@ -131,35 +128,33 @@ export const handler: Handler = async (event) => {
       });
 
       // Return the actual status from the database
-      if (jobRecord.status === 'completed' && jobRecord.imageUrl) {
+      if (jobRecord.status === 'completed' && jobRecord.image_url) {
         return json({
           id: jobRecord.id,
           status: 'completed',
           message: 'Generation completed successfully',
-          imageUrl: jobRecord.imageUrl,
-          runId: jobRecord.runId
+          imageUrl: jobRecord.image_url,
+          runId: jobRecord.run_id
         });
       } else if (jobRecord.status === 'failed') {
         return json({
           id: jobRecord.id,
           status: 'failed',
           message: 'Generation failed',
-          runId: jobRecord.runId
+          runId: jobRecord.run_id
         });
-      } else if (jobRecord.status === 'processing' && !jobRecord.runId) {
+      } else if (jobRecord.status === 'processing' && !jobRecord.run_id) {
         // Check if job has been stuck too long (more than 5 minutes)
-        const jobAge = Date.now() - new Date(jobRecord.createdAt).getTime();
+        const jobAge = Date.now() - new Date(jobRecord.created_at).getTime();
         const maxAge = 5 * 60 * 1000; // 5 minutes
         
         if (jobAge > maxAge) {
           // Job is stuck - mark as failed
-          await q(neoGlitchMedia.update({
-            where: { id: jobRecord.id },
-            data: { 
-              status: 'failed',
-              imageUrl: jobRecord.imageUrl || '' // Keep existing imageUrl or use empty string as fallback
-            }
-          });
+          await q(`
+            UPDATE neo_glitch_media
+            SET status = $1, image_url = COALESCE(image_url, $2), updated_at = NOW()
+            WHERE id = $3
+          `, ['failed', jobRecord.image_url || '', jobRecord.id]);
           
           return json({
             id: jobRecord.id,
@@ -180,50 +175,46 @@ export const handler: Handler = async (event) => {
           warning: 'This job may be stuck in initialization. Consider retrying the generation.',
           jobAge: Math.round(jobAge / 1000) + 's'
         });
-      } else if (jobRecord.status === 'processing' && jobRecord.runId) {
+      } else if (jobRecord.status === 'processing' && jobRecord.run_id) {
         // 🔍 ACTUALLY CHECK STABILITY.AI STATUS - Don't just assume it's processing!
         console.log('🔄 [NeoGlitch] Job is processing, checking Stability.ai status...');
         
         try {
           // Check if Stability.ai job is actually complete
-          const stabilityStatus = await checkStabilityAIStatus(jobRecord.runId);
+          const stabilityStatus = await checkStabilityAIStatus(jobRecord.run_id);
           
           if (stabilityStatus.status === 'completed' && stabilityStatus.imageUrl) {
             console.log('✅ [NeoGlitch] Stability.ai job completed, updating database');
             
             // Update database with completed status
-            await q(neoGlitchMedia.update({
-              where: { id: jobRecord.id },
-              data: {
-                status: 'completed',
-                imageUrl: stabilityStatus.imageUrl
-              }
-            });
+            await q(`
+              UPDATE neo_glitch_media
+              SET status = $1, image_url = $2, updated_at = NOW()
+              WHERE id = $3
+            `, ['completed', stabilityStatus.imageUrl, jobRecord.id]);
             
             return json({
               id: jobRecord.id,
               status: 'completed',
               message: 'Generation completed successfully',
               imageUrl: stabilityStatus.imageUrl,
-              runId: jobRecord.runId
+              runId: jobRecord.run_id
             });
           } else if (stabilityStatus.status === 'failed') {
             console.log('❌ [NeoGlitch] Stability.ai job failed, marking as failed');
             
             // Update database with failed status
-            await q(neoGlitchMedia.update({
-              where: { id: jobRecord.id },
-              data: {
-                status: 'failed',
-                imageUrl: jobRecord.imageUrl || ''
-              }
-            });
+            await q(`
+              UPDATE neo_glitch_media
+              SET status = $1, image_url = COALESCE(image_url, $2), updated_at = NOW()
+              WHERE id = $3
+            `, ['failed', jobRecord.image_url || '', jobRecord.id]);
             
             return json({
               id: jobRecord.id,
               status: 'failed',
               message: 'Stability.ai generation failed',
-              runId: jobRecord.runId,
+              runId: jobRecord.run_id,
               error: stabilityStatus.error || 'Generation failed'
             });
           } else {
@@ -232,7 +223,7 @@ export const handler: Handler = async (event) => {
               id: jobRecord.id,
               status: 'processing',
               message: 'Job is being processed by Stability.ai',
-              runId: jobRecord.runId
+              runId: jobRecord.run_id
             });
           }
         } catch (stabilityError) {
@@ -243,7 +234,7 @@ export const handler: Handler = async (event) => {
             id: jobRecord.id,
             status: 'processing',
             message: 'Job is being processed by Stability.ai',
-            runId: jobRecord.runId,
+            runId: jobRecord.run_id,
             warning: 'Unable to check Stability.ai status'
           });
         }
@@ -253,7 +244,7 @@ export const handler: Handler = async (event) => {
           id: jobRecord.id,
           status: 'unknown',
           message: 'Unknown job status',
-          runId: jobRecord.runId
+          runId: jobRecord.run_id
         });
       }
 

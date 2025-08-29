@@ -45,7 +45,7 @@ export const handler: Handler = async (event, context) => {
     }
 
     // Verify JWT token
-    let claims;
+    let claims: jwt.JwtPayload | string;
     try {
       claims = jwt.verify(token, jwtSecret, { clockTolerance: 5 });
     } catch (jwtError) {
@@ -53,13 +53,22 @@ export const handler: Handler = async (event, context) => {
       return resp(401, { error: 'Unauthorized - Invalid token' });
     }
 
-    // Extract user ID from claims
-    const uid = claims.sub || claims.user_id || claims.uid || claims.id || claims.userId;
+    // Ensure claims is an object (not a string)
+    if (typeof claims === 'string') {
+      return resp(401, { error: 'Unauthorized - Invalid token format' });
+    }
+
+    // Extract user ID from claims with proper type checking
+    const uid = (claims as any).sub ||
+                (claims as any).user_id ||
+                (claims as any).uid ||
+                (claims as any).id ||
+                (claims as any).userId;
     if (!uid) {
       return resp(401, { error: 'Unauthorized - No user ID in token' });
     }
 
-    const email = claims.email || `user-${uid}@placeholder.com`;
+    const email = (claims as any).email || `user-${uid}@placeholder.com`;
 
     console.log('🔐 Auth context:', { uid, email, claims });
 
@@ -98,16 +107,13 @@ export const handler: Handler = async (event, context) => {
 
       // SECOND: Initialize user credits if they don't exist
       try {
-        await q(userCredits.upsert({
-          where: { user_id: uid },
-          update: {}, // Don't update if exists
-          create: {
-            user_id: uid,
-            balance: 30,
-            updated_at: new Date()
-          }
-        });
-        
+        // Use raw SQL upsert (ON CONFLICT DO NOTHING)
+        await q(`
+          INSERT INTO user_credits (user_id, credits, created_at, updated_at)
+          VALUES ($1, $2, NOW(), NOW())
+          ON CONFLICT (user_id) DO NOTHING
+        `, [uid, 30]);
+
         console.log('✅ User credits initialized successfully');
       } catch (creditsError) {
         console.error('Failed to initialize user credits:', creditsError);
