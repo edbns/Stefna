@@ -199,8 +199,11 @@ export const handler: Handler = async (event) => {
       },
       body: JSON.stringify({
         success: true,
-        userId: user.id,
-        email: user.email,
+        token: `user_${user.id}`, // Generate a simple token
+        user: {
+          id: user.id,
+          email: user.email
+        },
         message: 'OTP verified successfully'
       })
     };

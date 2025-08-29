@@ -22,6 +22,7 @@ const AuthScreen: React.FC = () => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
+    setSuccess('') // Clear any previous success message
 
     try {
       const response = await fetch('/.netlify/functions/request-otp', {
@@ -60,6 +61,7 @@ const AuthScreen: React.FC = () => {
 
     setIsLoading(true)
     setError('')
+    setSuccess('') // Clear any previous success message
 
     try {
       const response = await fetch('/.netlify/functions/verify-otp', {
@@ -67,7 +69,7 @@ const AuthScreen: React.FC = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, otp: otpValue, referrerEmail: referrerEmail || undefined })
+        body: JSON.stringify({ email, code: otpValue, referrerEmail: referrerEmail || undefined })
       })
 
       const data = await response.json()
@@ -188,6 +190,12 @@ const AuthScreen: React.FC = () => {
                     const newOtp = e.target.value.replace(/\D/g, '').slice(0, 6)
                     setOtp(newOtp)
                     
+                    // Clear any previous error/success messages when typing
+                    if (newOtp.length > 0) {
+                      setError('')
+                      setSuccess('')
+                    }
+                    
                     // Auto-verify when 6 digits are entered
                     if (newOtp.length === 6 && !isLoading) {
                       // Small delay to ensure state is updated
@@ -197,7 +205,7 @@ const AuthScreen: React.FC = () => {
                     }
                   }}
                   placeholder="Enter 6-digit code"
-                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10 text-center text-lg tracking-widest"
+                  className="w-full px-4 py-4 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10 text-center text-lg tracking-widest"
                   maxLength={6}
                   required
                 />
