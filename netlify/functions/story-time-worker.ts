@@ -110,13 +110,11 @@ async function processStoryTimeJob(job: any, storyId: string) {
     console.log(`🔒 [Story Time] Using preset: ${job.preset} with IPA integration`);
     
     // Update progress to processing
-    await q(story.update({
-      where: { id: storyId },
-      data: { 
-        status: 'processing',
-        progress: 10
-      }
-    });
+    await q(`
+      UPDATE story 
+      SET status = $1, progress = $2, updated_at = NOW()
+      WHERE id = $3
+    `, ['processing', 10, storyId]);
 
     // 1) Analyze each photo and generate AI descriptions
     const photoDescriptions: string[] = [];
@@ -135,17 +133,19 @@ async function processStoryTimeJob(job: any, storyId: string) {
       photoDescriptions.push(photoDescription);
       
       // Update photo record with AI description
-      await q(storyPhoto.update({
-        where: { id: photo.id },
-        data: { prompt: photoDescription }
-      });
+      await q(`
+        UPDATE story_photo 
+        SET prompt = $1, updated_at = NOW()
+        WHERE id = $2
+      `, [photoDescription, photo.id]);
       
       // Update progress
       const progress = Math.round(((i + 1) / job.photos.length) * 40) + 10; // 10-50%
-      await q(story.update({
-        where: { id: storyId },
-        data: { progress }
-      });
+      await q(`
+        UPDATE story 
+        SET progress = $1, updated_at = NOW()
+        WHERE id = $2
+      `, [progress, storyId]);
     }
     
     // 2) Generate videos from each photo using Kling V1.6
