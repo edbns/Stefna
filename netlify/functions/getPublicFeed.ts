@@ -72,6 +72,16 @@ export const handler: Handler = async (event) => {
     
     const rows = await q(sql, [limit, offset]);
     console.info('🔒 [getPublicFeed] Feed items found:', rows.length);
+    
+    // Debug: Log first few items to see their structure
+    if (rows.length > 0) {
+      console.info('🔍 [getPublicFeed] Sample item structure:', {
+        firstItem: rows[0],
+        hasImageUrl: !!rows[0]?.finalUrl,
+        imageUrlValue: rows[0]?.finalUrl,
+        totalItems: rows.length
+      });
+    }
 
     return {
       statusCode: 200,
