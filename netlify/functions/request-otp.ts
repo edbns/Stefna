@@ -78,14 +78,11 @@ export const handler: Handler = async (event) => {
     let otpInserted = false;
     try {
       console.log('=== INSERTING OTP WITH PRISMA ===');
-      const insertResult = await q(authOtp.create({
-        data: {
-          id: uuidv4(),
-          email: email.toLowerCase(),
-          code: otp,
-          expiresAt: expiresAt
-        }
-      });
+      const insertResult = await q(`
+        INSERT INTO auth_otps (id, email, code, expires_at, created_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        RETURNING id
+      `, [uuidv4(), email.toLowerCase(), otp, expiresAt]);
       
       console.log('OTP inserted successfully:', insertResult.id);
       otpInserted = true;
@@ -273,7 +270,5 @@ It expires in 10 minutes. If you didn't request this code, you can ignore this e
         details: error.message || 'Unknown error occurred'
       })
     };
-  } finally {
-    
   }
 };

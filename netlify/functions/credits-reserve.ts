@@ -96,9 +96,9 @@ export const handler: Handler = async (event) => {
       // Check user's current credit balance
       console.log('🔍 Checking user credit balance before reservation...');
       
-      let userCredits = await q(userCredits.findUnique({
-        where: { userId: userId }
-      });
+      let userCredits = await qOne(`
+        SELECT user_id, credits, balance FROM user_credits WHERE user_id = $1
+      `, [userId]);
       
       // Initialize user credits if they don't exist
       if (!userCredits) {
@@ -106,13 +106,11 @@ export const handler: Handler = async (event) => {
         
         try {
           // Create new user credits record with starter balance
-          userCredits = await q(userCredits.create({
-            data: {
-              userId: userId,
-              credits: 30, // Default starter credits
-              updatedAt: new Date()
-            }
-          });
+                  userCredits = await qOne(`
+          INSERT INTO user_credits (user_id, credits, balance, updated_at)
+          VALUES ($1, 30, 0, NOW())
+          RETURNING user_id, credits, balance
+        `, [userId]);
           
           console.log(`✅ Successfully initialized user with 30 starter credits`);
         } catch (initError) {
@@ -146,10 +144,9 @@ export const handler: Handler = async (event) => {
       if (currentBalance <= 6) { // 6 credits = 3 images remaining
         try {
           // Get user email from the database
-          const user = await q(user.findUnique({
-            where: { id: userId },
-            select: { email: true }
-          });
+          const user = await qOne(`
+            SELECT email FROM users WHERE id = $1
+          `, [userId]);
           
           if (user?.email) {
             const usagePercentage = Math.round(((30 - currentBalance) / 30) * 100);

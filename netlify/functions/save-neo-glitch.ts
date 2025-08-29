@@ -80,9 +80,9 @@ export const handler: Handler = async (event) => {
     });
 
     // Step 1: Check if this generation already exists using Prisma
-    const existingRecord = await q(neoGlitchMedia.findUnique({
-      where: { runId: stabilityJobId }
-    });
+    const existingRecord = await qOne(`
+      SELECT id, status FROM neo_glitch_media WHERE run_id = $1
+    `, [stabilityJobId]);
 
     if (existingRecord) {
       console.log('⚠️ [SaveNeoGlitch] Generation already exists:', existingRecord.id, existingRecord.status);
@@ -101,13 +101,12 @@ export const handler: Handler = async (event) => {
     if (existingRecord) {
       console.log('🔄 [SaveNeoGlitch] Updating existing record...');
       
-      const updatedRecord = await q(neoGlitchMedia.update({
-        where: { id: existingRecord.id },
-        data: {
-          status: 'completed',
-          imageUrl: cloudinaryUrl
-        }
-      });
+      const updatedRecord = await qOne(`
+        UPDATE neo_glitch_media 
+        SET status = $1, image_url = $2, updated_at = NOW()
+        WHERE id = $3
+        RETURNING id, image_url
+      `, ['completed', cloudinaryUrl, existingRecord.id]);
 
       console.log('✅ [SaveNeoGlitch] Record updated successfully:', updatedRecord.id);
       
@@ -123,18 +122,11 @@ export const handler: Handler = async (event) => {
     // Step 3: Create new record if none exists
     console.log('🆕 [SaveNeoGlitch] Creating new record...');
     
-    const newRecord = await q(neoGlitchMedia.create({
-      data: {
-        runId: stabilityJobId,
-        userId: userId,
-        sourceUrl: sourceUrl,
-        imageUrl: cloudinaryUrl,
-        prompt: generationMeta.prompt || '',
-        preset: presetKey,
-        status: 'completed',
-        createdAt: new Date()
-      }
-    });
+    const newRecord = await qOne(`
+      INSERT INTO neo_glitch_media (run_id, user_id, source_url, image_url, prompt, preset, status, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      RETURNING id
+    `, [stabilityJobId, userId, sourceUrl, cloudinaryUrl, generationMeta.prompt || '', presetKey, 'completed']);
 
     console.log('✅ [SaveNeoGlitch] New record created successfully:', newRecord.id);
 

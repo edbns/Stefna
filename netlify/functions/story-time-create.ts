@@ -61,27 +61,18 @@ export const handler: Handler = async (event) => {
     
 
     // Create the story
-    const story = await q(story.create({
-      data: {
-        userId,
-        title: title || `My ${preset === 'auto' ? 'Adventure' : preset} Story`,
-        description,
-        preset,
-        status: 'pending',
-        progress: 0
-      }
-    });
+    const story = await qOne(`
+      INSERT INTO story (user_id, title, description, preset, status, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      RETURNING id, title, status, created_at
+    `, [userId, title || `My ${preset === 'auto' ? 'Adventure' : preset} Story`, description, preset, 'pending']);
 
     // Create photo records
     const photoPromises = photos.map((photo: any, index: number) => 
-      q(storyPhoto.create({
-        data: {
-          storyId: story.id,
-          order: index + 1,
-          imageUrl: photo.imageUrl || photo.url,
-          prompt: null // Will be filled by AI later
-        }
-      })
+      q(`
+        INSERT INTO story_photo (story_id, order_index, photo_url, created_at, updated_at)
+        VALUES ($1, $2, $3, NOW(), NOW())
+      `, [story.id, index + 1, photo.imageUrl || photo.url])
     );
 
     const storyPhotos = await Promise.all(photoPromises);
@@ -95,10 +86,9 @@ export const handler: Handler = async (event) => {
       finalPreset = themes[Math.floor(Math.random() * themes.length)];
       
       // Update story with detected preset
-      await q(story.update({
-        where: { id: story.id },
-        data: { preset: finalPreset }
-      });
+      await q(`
+        UPDATE story SET preset = $1, updated_at = NOW() WHERE id = $2
+      `, [finalPreset, story.id]);
     }
 
     

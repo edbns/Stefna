@@ -94,18 +94,11 @@ export const handler: Handler = async (event) => {
 
     // Create initial job record in database
     try {
-      const jobRecord = await q(neoGlitchMedia.create({
-        data: {
-          id: jobId,
-          userId: userId,
-          sourceUrl: sourceUrl,
-          prompt: prompt,
-          presetKey: presetKey,
-          status: 'processing',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
+      const jobRecord = await qOne(`
+        INSERT INTO neo_glitch_media (id, user_id, source_url, prompt, preset, status, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        RETURNING id
+      `, [jobId, userId, sourceUrl, prompt, presetKey, 'processing']);
       console.log('[start-glitch-job] Job record created:', jobRecord.id);
     } catch (dbError: any) {
       console.error('[start-glitch-job] Failed to create job record:', dbError);
@@ -140,14 +133,11 @@ export const handler: Handler = async (event) => {
         console.error('[start-glitch-job] Credit reservation failed:', errorText);
         
         // Update job status to failed
-        await q(neoGlitchMedia.update({
-          where: { id: jobId },
-          data: { 
-            status: 'failed',
-            errorMessage: `Credit reservation failed: ${errorText}`,
-            updatedAt: new Date()
-          }
-        });
+        await q(`
+          UPDATE neo_glitch_media 
+          SET status = $1, metadata = jsonb_set(COALESCE(metadata, '{}'), '{error_message}', $2), updated_at = NOW()
+          WHERE id = $3
+        `, ['failed', `Credit reservation failed: ${errorText}`, jobId]);
 
         return {
           statusCode: 402,
@@ -166,14 +156,11 @@ export const handler: Handler = async (event) => {
       console.error('[start-glitch-job] Credit reservation error:', creditError);
       
       // Update job status to failed
-      await q(neoGlitchMedia.update({
-        where: { id: jobId },
-        data: { 
-          status: 'failed',
-          errorMessage: `Credit reservation error: ${creditError.message}`,
-          updatedAt: new Date()
-        }
-      });
+      await q(`
+        UPDATE neo_glitch_media 
+        SET status = $1, metadata = jsonb_set(COALESCE(metadata, '{}'), '{error_message}', $2), updated_at = NOW()
+        WHERE id = $3
+      `, ['failed', `Credit reservation error: ${creditError.message}`, jobId]);
 
       return {
         statusCode: 500,
@@ -204,14 +191,11 @@ export const handler: Handler = async (event) => {
         console.error('[start-glitch-job] Background generation failed for job:', jobId, error);
         
         // Update job status to failed
-        await q(neoGlitchMedia.update({
-          where: { id: jobId },
-          data: { 
-            status: 'failed',
-            errorMessage: `Generation failed: ${error.message}`,
-            updatedAt: new Date()
-          }
-        });
+        await q(`
+          UPDATE neo_glitch_media 
+          SET status = $1, metadata = jsonb_set(COALESCE(metadata, '{}'), '{error_message}', $2), updated_at = NOW()
+          WHERE id = $3
+        `, ['failed', `Generation failed: ${error.message}`, jobId]);
       }
     }, 100); // Small delay to ensure response is sent first
 
@@ -241,7 +225,5 @@ export const handler: Handler = async (event) => {
         details: error.message
       })
     };
-  } finally {
-    
   }
 };

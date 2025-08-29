@@ -117,18 +117,11 @@ export const handler: Handler = async (event, context) => {
     
     // Create job record in database
     try {
-      const jobRecord = await q(ghibliReactionMedia.create({
-        data: {
-          id: jobId,
-          userId: userId,
-          prompt: prompt,
-          presetKey: presetKey,
-          sourceUrl: sourceUrl,
-          status: 'processing',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
+      const jobRecord = await qOne(`
+        INSERT INTO ghibli_reaction_media (id, user_id, prompt, preset, source_url, status, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        RETURNING id
+      `, [jobId, userId, prompt, presetKey, sourceUrl, 'processing']);
       
       console.log('✅ [Ghibli] Job record created:', jobRecord.id);
     } catch (error) {
@@ -168,7 +161,7 @@ export const handler: Handler = async (event, context) => {
       
       // Clean up job record if credit reservation fails
       try {
-        await q(ghibliReactionMedia.delete({ where: { id: jobId } });
+        await q(`DELETE FROM ghibli_reaction_media WHERE id = $1`, [jobId]);
         console.log('🧹 [Ghibli] Cleaned up job record after credit reservation failure');
       } catch (cleanupError) {
         console.error('❌ [Ghibli] Failed to cleanup job record:', cleanupError);
@@ -197,14 +190,11 @@ export const handler: Handler = async (event, context) => {
         
         // Update job status to failed
         try {
-          await q(ghibliReactionMedia.update({
-            where: { id: jobId },
-            data: {
-              status: 'failed',
-              errorMessage: error instanceof Error ? error.message : 'Unknown error',
-              updatedAt: new Date()
-            }
-          });
+          await q(`
+            UPDATE ghibli_reaction_media 
+            SET status = $1, metadata = jsonb_set(COALESCE(metadata, '{}'), '{error_message}', $2), updated_at = NOW()
+            WHERE id = $3
+          `, ['failed', error instanceof Error ? error.message : 'Unknown error', jobId]);
         } catch (updateError) {
           console.error('❌ [Ghibli] Failed to update job status to failed:', updateError);
         }
@@ -233,7 +223,5 @@ export const handler: Handler = async (event, context) => {
         error: 'Internal server error'
       })
     };
-  } finally {
-    
   }
 };
