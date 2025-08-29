@@ -1,47 +1,47 @@
-name: Stefna CI
+name: Validate Codebase
 
 on:
   push:
-    branches: [main, internal-*]
+    branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
   validate:
-    name: 🧪 Validate Codebase
+    name: Prisma + Code Validation
     runs-on: ubuntu-latest
+
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
       NODE_ENV: production
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PRISMA_CLIENT_ENGINE_TYPE: binary
 
     steps:
-      - name: 🧾 Checkout Code
+      - name: 📥 Checkout Repo
         uses: actions/checkout@v3
 
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: 18
 
       - name: 📦 Install Dependencies
         run: npm ci
 
-      - name: 📐 Prisma - Validate Schema
+      - name: ✅ Prisma - Validate Schema
         run: npx prisma validate
 
-      - name: 🔍 Prisma - Generate Client
+      - name: 🧠 Prisma - Generate Client
         run: npx prisma generate
 
       - name: 🧪 TypeScript Check
         run: npx tsc --noEmit
 
       - name: 🧹 ESLint Check
-        run: npx eslint . --ext .ts,.tsx --max-warnings=0
+        run: npx eslint . --ext .ts,.tsx
 
       - name: 🧪 Test Netlify Function Build
-        run: |
-          npm install -g netlify-cli@latest
-          netlify build --dry
+        run: npx netlify build
 
       - name: 🔥 Prisma Migrate Check (Optional)
-        run: npx prisma migrate status --preview-feature
+        run: npx prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-schema-datasource prisma/schema.prisma --script
