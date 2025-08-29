@@ -49,33 +49,27 @@ export const handler: Handler = async (event) => {
     try {
       // Get user info, credits, and media assets
       const [userCredits, userMedia, userNeoGlitch] = await Promise.all([
-        q(userCredits.findUnique({
-          where: { userId: userId },
-          select: { credits: true }
-        }),
+        qOne(`
+          SELECT credits FROM user_credits WHERE user_id = $1
+        `, [userId]),
         // Get media from all dedicated tables
         Promise.all([
-          q(ghibliReactionMedia.findMany({
-            where: { userId: userId },
-            select: { id: true, prompt: true, status: true, createdAt: true }
-          }),
-          q(emotionMaskMedia.findMany({
-            where: { userId: userId },
-            select: { id: true, prompt: true, status: true, createdAt: true }
-          }),
-          q(presetsMedia.findMany({
-            where: { userId: userId },
-            select: { id: true, prompt: true, status: true, createdAt: true }
-          }),
-          q(customPromptMedia.findMany({
-            where: { userId: userId },
-            select: { id: true, prompt: true, status: true, createdAt: true }
-          })
+          q(`
+            SELECT id, prompt, status, created_at FROM ghibli_reaction_media WHERE user_id = $1
+          `, [userId]),
+          q(`
+            SELECT id, prompt, status, created_at FROM emotion_mask_media WHERE user_id = $1
+          `, [userId]),
+          q(`
+            SELECT id, prompt, status, created_at FROM presets_media WHERE user_id = $1
+          `, [userId]),
+          q(`
+            SELECT id, prompt, status, created_at FROM custom_prompt_media WHERE user_id = $1
+          `, [userId])
         ]).then(results => results.flat()),
-        q(neoGlitchMedia.findMany({
-          where: { userId: userId },
-          select: { id: true, prompt: true, status: true, createdAt: true }
-        })
+        q(`
+          SELECT id, prompt, status, created_at FROM neo_glitch_media WHERE user_id = $1
+        `, [userId])
       ]);
 
       const balance = userCredits?.credits ?? 30; // Default to 30 credits

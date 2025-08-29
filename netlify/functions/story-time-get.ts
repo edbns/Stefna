@@ -34,39 +34,44 @@ export const handler: Handler = async (event) => {
     
 
     // Get user's stories with photos
-    const stories = await q(story.findMany({
-      where: { userId },
-      include: {
-        photos: {
-          orderBy: { order: 'asc' },
-          select: {
-            id: true,
-            order: true,
-            imageUrl: true,
-            prompt: true,
-            createdAt: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const stories = await q(`
+      SELECT s.id, s.title, s.description, s.preset, s.status, s.created_at, s.updated_at
+      FROM story s
+      WHERE s.user_id = $1 
+      ORDER BY s.created_at DESC
+    `, [userId]);
+
+    // Get photos for each story
+    const storyPhotos = await q(`
+      SELECT sp.story_id, sp.id, sp.order_index, sp.photo_url, sp.created_at
+      FROM story_photo sp
+      JOIN story s ON sp.story_id = s.id
+      WHERE s.user_id = $1
+      ORDER BY sp.story_id, sp.order_index
+    `, [userId]);
 
     
 
     // Format stories for response
-    const formattedStories = stories.map(story => ({
-      id: story.id,
-      title: story.title,
-      description: story.description,
-      preset: story.preset,
-      status: story.status,
-      progress: story.progress,
-      storyText: story.storyText,
-      photoCount: story.photos.length,
-      photos: story.photos,
-      createdAt: story.createdAt,
-      updatedAt: story.updatedAt
-    }));
+    const formattedStories = stories.map(story => {
+      const photos = storyPhotos.filter(photo => photo.story_id === story.id);
+      return {
+        id: story.id,
+        title: story.title,
+        description: story.description,
+        preset: story.preset,
+        status: story.status,
+        photoCount: photos.length,
+        photos: photos.map(photo => ({
+          id: photo.id,
+          order: photo.order_index,
+          imageUrl: photo.photo_url,
+          createdAt: photo.created_at
+        })),
+        createdAt: story.created_at,
+        updatedAt: story.updated_at
+      };
+    });
 
     return json({
       ok: true,

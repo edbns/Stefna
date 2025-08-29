@@ -71,9 +71,11 @@ export const handler: Handler = async (event, context) => {
     
     // Fetch job status from database
     try {
-      const jobRecord = await q(ghibliReactionMedia.findUnique({
-        where: { id: jobId }
-      });
+      const jobRecord = await qOne(`
+        SELECT id, user_id, prompt, preset, source_url, image_url, status, created_at, updated_at
+        FROM ghibli_reaction_media 
+        WHERE id = $1
+      `, [jobId]);
       
       if (!jobRecord) {
         console.error('❌ [Ghibli] Job not found:', jobId);
@@ -87,8 +89,8 @@ export const handler: Handler = async (event, context) => {
       }
       
       // Verify job belongs to authenticated user
-      if (jobRecord.userId !== userId) {
-        console.error('❌ [Ghibli] Job access denied - user mismatch:', { jobUserId: jobRecord.userId, requestUserId: userId });
+      if (jobRecord.user_id !== userId) {
+        console.error('❌ [Ghibli] Job access denied - user mismatch:', { jobUserId: jobRecord.user_id, requestUserId: userId });
         return {
           statusCode: 403,
           body: JSON.stringify({ 
@@ -108,12 +110,11 @@ export const handler: Handler = async (event, context) => {
           jobId: jobRecord.id,
           status: jobRecord.status,
           prompt: jobRecord.prompt,
-          presetKey: jobRecord.presetKey,
-          sourceUrl: jobRecord.sourceUrl,
-          imageUrl: jobRecord.imageUrl || null,
-          errorMessage: jobRecord.errorMessage || null,
-          createdAt: jobRecord.createdAt,
-          updatedAt: jobRecord.updatedAt
+          presetKey: jobRecord.preset,
+          sourceUrl: jobRecord.source_url,
+          imageUrl: jobRecord.image_url || null,
+          createdAt: jobRecord.created_at,
+          updatedAt: jobRecord.updated_at
         })
       };
       
@@ -137,7 +138,5 @@ export const handler: Handler = async (event, context) => {
         error: 'Internal server error'
       })
     };
-  } finally {
-    
   }
 };

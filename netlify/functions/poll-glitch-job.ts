@@ -65,17 +65,11 @@ export const handler: Handler = async (event) => {
     }
 
     // Find the job record
-    const jobRecord = await q(neoGlitchMedia.findUnique({
-      where: { id: jobId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true
-          }
-        }
-      }
-    });
+    const jobRecord = await qOne(`
+      SELECT id, user_id, source_url, prompt, preset, status, image_url, created_at, updated_at
+      FROM neo_glitch_media 
+      WHERE id = $1
+    `, [jobId]);
 
     if (!jobRecord) {
       return {
@@ -95,18 +89,18 @@ export const handler: Handler = async (event) => {
       ok: true,
       jobId: jobRecord.id,
       status: jobRecord.status,
-      createdAt: jobRecord.createdAt,
-      updatedAt: jobRecord.updatedAt,
-      sourceUrl: jobRecord.sourceUrl,
+      createdAt: jobRecord.created_at,
+      updatedAt: jobRecord.updated_at,
+      sourceUrl: jobRecord.source_url,
       prompt: jobRecord.prompt,
-      presetKey: jobRecord.presetKey,
-      userId: jobRecord.userId
+      presetKey: jobRecord.preset,
+      userId: jobRecord.user_id
     };
 
     // Add status-specific data
     switch (jobRecord.status) {
       case 'completed':
-        response.imageUrl = jobRecord.imageUrl;
+        response.imageUrl = jobRecord.image_url;
         break;
 
       case 'failed':
@@ -138,7 +132,5 @@ export const handler: Handler = async (event) => {
         details: error.message
       })
     };
-  } finally {
-    
   }
 };

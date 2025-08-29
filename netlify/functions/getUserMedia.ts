@@ -52,36 +52,41 @@ export const handler: Handler = async (event) => {
 
     // Fetch user's media using Prisma - from all new dedicated tables
     const [ghibliReactionMedia, emotionMaskMedia, presetsMedia, customPromptMedia, neoGlitchMedia] = await Promise.all([
-      q(ghibliReactionMedia.findMany({
-        where: { userId: userId },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset
-      }),
-      q(emotionMaskMedia.findMany({
-        where: { userId: userId },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset
-      }),
-      q(presetsMedia.findMany({
-        where: { userId: userId },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset
-      }),
-      q(customPromptMedia.findMany({
-        where: { userId: userId },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset
-      }),
-      q(neoGlitchMedia.findMany({
-        where: { userId: userId },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset
-      })
+      q(`
+        SELECT id, user_id, image_url, prompt, preset, created_at
+        FROM ghibli_reaction_media 
+        WHERE user_id = $1 
+        ORDER BY created_at DESC 
+        LIMIT $2 OFFSET $3
+      `, [userId, limit, offset]),
+      q(`
+        SELECT id, user_id, image_url, prompt, preset, created_at
+        FROM emotion_mask_media 
+        WHERE user_id = $1 
+        ORDER BY created_at DESC 
+        LIMIT $2 OFFSET $3
+      `, [userId, limit, offset]),
+      q(`
+        SELECT id, user_id, image_url, prompt, preset, created_at
+        FROM presets_media 
+        WHERE user_id = $1 
+        ORDER BY created_at DESC 
+        LIMIT $2 OFFSET $3
+      `, [userId, limit, offset]),
+      q(`
+        SELECT id, user_id, image_url, prompt, preset, created_at
+        FROM custom_prompt_media 
+        WHERE user_id = $1 
+        ORDER BY created_at DESC 
+        LIMIT $2 OFFSET $3
+      `, [userId, limit, offset]),
+      q(`
+        SELECT id, user_id, image_url, prompt, preset, created_at
+        FROM neo_glitch_media 
+        WHERE user_id = $1 
+        ORDER BY created_at DESC 
+        LIMIT $2 OFFSET $3
+      `, [userId, limit, offset])
     ]);
 
     console.log('✅ [getUserMedia] Retrieved user media:', {
@@ -95,18 +100,18 @@ export const handler: Handler = async (event) => {
     // Transform Ghibli Reaction media
     const ghibliItems = ghibliReactionMedia.map(item => ({
       id: item.id,
-      userId: item.userId,
-      finalUrl: item.imageUrl,
+      userId: item.user_id,
+      finalUrl: item.image_url,
       mediaType: 'image',
       prompt: item.prompt,
-      presetKey: item.presetKey,
+      presetKey: item.preset,
       status: 'ready',
       isPublic: false,
       allowRemix: false,
-      createdAt: item.createdAt,
+      createdAt: item.created_at,
       type: 'ghibli-reaction',
       metadata: {
-        presetKey: item.presetKey,
+        presetKey: item.preset,
         presetType: 'ghibli-reaction',
         quality: 'high',
         generationTime: 0,
@@ -117,18 +122,18 @@ export const handler: Handler = async (event) => {
     // Transform Emotion Mask media
     const emotionMaskItems = emotionMaskMedia.map(item => ({
       id: item.id,
-      userId: item.userId,
-      finalUrl: item.imageUrl,
+      userId: item.user_id,
+      finalUrl: item.image_url,
       mediaType: 'image',
       prompt: item.prompt,
-      presetKey: item.presetKey,
+      presetKey: item.preset,
       status: 'ready',
       isPublic: false,
       allowRemix: false,
-      createdAt: item.createdAt,
+      createdAt: item.created_at,
       type: 'emotion-mask',
       metadata: {
-        presetKey: item.presetKey,
+        presetKey: item.preset,
         presetType: 'emotion-mask',
         quality: 'high',
         generationTime: 0,
