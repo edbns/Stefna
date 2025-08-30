@@ -35,8 +35,10 @@ export const handler: Handler = async (event) => {
     if (!userId) {
       return {
         statusCode: 400,
-        headers: { 
+        headers: {
           'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ error: 'userId parameter is required' })
@@ -52,8 +54,10 @@ export const handler: Handler = async (event) => {
     if (!userCredits) {
       return {
         statusCode: 404,
-        headers: { 
+        headers: {
           'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ error: 'User credits not found' })
@@ -62,8 +66,10 @@ export const handler: Handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 
+      headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -77,8 +83,10 @@ export const handler: Handler = async (event) => {
     console.error('Error checking credits:', error);
     return {
       statusCode: 500,
-      headers: { 
+      headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 

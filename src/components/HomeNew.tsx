@@ -3637,6 +3637,19 @@ const HomeNew: React.FC = () => {
       setIsComposerOpen(true);
       
             // Keep preset selected for user convenience (stateless generation doesn't need clearing)
+    } catch (error) {
+      console.error('handleGenerate error:', error);
+      
+      // Clear generation state on error
+      endGeneration(genId);
+      setNavGenerating(false);
+      setIsComposerOpen(true);
+      
+      // Show user-friendly error message
+      notifyError({ 
+        title: 'Generation Failed', 
+        message: 'Please try again with a different image or prompt.' 
+      });
     }
   }
 
