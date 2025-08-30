@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import tokenService from '../services/tokenService'
+import TokenService from '../services/tokenService'
 
 interface TokenCounterProps {
   userId: string
@@ -24,7 +24,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({
 
   const loadTokenCount = async () => {
     try {
-      const usage = await tokenService.getUserUsage(userId)
+      const usage = await TokenService.getInstance().getUserUsage(userId)
       const newTokens = usage.dailyLimit - usage.dailyUsage
       
       // Check if tokens changed for animation

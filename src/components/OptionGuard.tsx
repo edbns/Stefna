@@ -17,7 +17,7 @@ const OptionGuard: React.FC<OptionGuardProps> = ({
   children, 
   fallback = null 
 }) => {
-  const configured = OPTION_GROUPS[group]?.options?.[optionKey] !== undefined;
+  const configured = OPTION_GROUPS[group]?.options?.[optionKey as keyof typeof OPTION_GROUPS[typeof group]['options']] !== undefined;
   
   if (!configured) {
     return <>{fallback}</>;
@@ -71,7 +71,7 @@ export function useOptionConfiguration(group: keyof typeof OPTION_GROUPS) {
   return {
     hasOptions: configuredCount > 0,
     optionCount: configuredCount,
-    isConfigured: (optionKey: string) => isConfigured(group, optionKey),
+    isConfigured: (optionKey: string) => OPTION_GROUPS[group]?.options?.[optionKey as keyof typeof OPTION_GROUPS[typeof group]['options']] !== undefined,
     getConfiguredKeys: () => groupOptions ? Object.keys(groupOptions) : []
   };
 }

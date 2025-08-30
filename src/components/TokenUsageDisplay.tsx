@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { User, Zap, Clock, AlertCircle } from 'lucide-react'
-import tokenService, { TokenUsage } from '../services/tokenService'
+import TokenService, { TokenUsage } from '../services/tokenService'
 import { authenticatedFetch } from '../utils/apiClient'
 
 interface TokenUsageDisplayProps {
@@ -23,7 +23,7 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
 
   const loadUserUsage = async () => {
     try {
-      const userUsage = await tokenService.getUserUsage(userId)
+      const userUsage = await TokenService.getInstance().getUserUsage(userId)
       setUsage(userUsage)
     } catch (error) {
       console.error('Failed to load token usage:', error)

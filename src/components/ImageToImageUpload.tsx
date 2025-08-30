@@ -234,7 +234,7 @@ const ImageToImageUpload: React.FC<ImageToImageUploadProps> = ({
                   src={previewUrl}
                   className="w-full h-32 object-cover rounded"
                   controls
-                  referrerPolicy="no-referrer" as const
+                  referrerPolicy="no-referrer"
                 />
               ) : null}
             </div>
