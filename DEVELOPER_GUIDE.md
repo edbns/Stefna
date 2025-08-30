@@ -27,11 +27,12 @@ This document outlines the complete fal.ai migration that has been implemented. 
 
 ### **1. New Centralized Generation Function**
 - **File**: `netlify/functions/fal-generate.ts`
-- **Purpose**: Handles ALL fal.ai image generation
+- **Purpose**: Handles ALL fal.ai image generation using official client
 - **Features**: 
-  - Model fallback system (Ghibli → Realism → PixArt)
-  - Async mode to prevent Netlify timeouts
-  - 20-second timeout (Netlify limit is 26s)
+  - Uses `@fal-ai/client` for reliable queue management
+  - Model fallback system (Ghiblify → Realistic Vision → Fast SDXL)
+  - Real-time logs and status updates
+  - No more 504 timeouts - fal.ai handles async processing
   - Automatic Cloudinary integration
 
 ### **2. Updated Generation Functions**
@@ -52,7 +53,7 @@ All these functions now delegate to `fal-generate.ts`:
 
 ### **4. Preset Updates**
 - **File**: `src/presets/ghibliReact.ts`
-- **Model**: Changed from `flux/dev/image-to-image` to `fal:flux/ghibli`
+- **Model**: Changed from `flux/dev/image-to-image` to `fal-ai/ghiblify`
 - **Preset IDs**: Kept original names (`ghibli_tears`, `ghibli_shock`, `ghibli_sparkle`)
 
 ---
@@ -107,9 +108,9 @@ AIML_API_URL=...
 ### **1. Model Names**
 ```typescript
 // ✅ KEEP THESE EXACTLY AS IS
-"fal:flux/ghibli"      // For Ghibli and Emotion Mask
-"fal:flux/realism"     // For realistic styles
-"fal:pixart-alpha"     // For high quality
+"fal-ai/ghiblify"      // For Ghibli and Emotion Mask
+"fal-ai/realistic-vision-v5"     // For realistic styles
+"fal-ai/fast-sdxl"     // For high quality
 ```
 
 ### **2. Credit Amounts**
@@ -118,10 +119,12 @@ AIML_API_URL=...
 amount: 2  // In all generation functions
 ```
 
-### **3. Timeout Settings**
+### **3. fal.ai Client Usage**
 ```typescript
-// ✅ KEEP AT 20 SECONDS
-signal: AbortSignal.timeout(20 * 1000)
+// ✅ USE OFFICIAL CLIENT
+import { fal } from '@fal-ai/client';
+fal.config({ credentials: process.env.FAL_KEY });
+const result = await fal.subscribe("fal-ai/ghiblify", { input: {...} });
 ```
 
 ---
@@ -181,9 +184,10 @@ signal: AbortSignal.timeout(20 * 1000)
 
 ### **What We Achieved**
 - ✅ **Zero AIML dependencies**
-- ✅ **Unified fal.ai generation system**
+- ✅ **Unified fal.ai generation system using official client**
 - ✅ **Consistent 2-credit pricing**
 - ✅ **No more 504 timeout errors**
+- ✅ **Real-time logs and queue management**
 - ✅ **Reliable image generation**
 - ✅ **Clean, maintainable codebase**
 
