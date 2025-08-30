@@ -249,6 +249,12 @@ const ProfileScreen: React.FC = () => {
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null)
   const [userMedia, setUserMedia] = useState<UserMedia[]>([])
   const [draftMedia, setDraftMedia] = useState<UserMedia[]>([])
+  
+  // 🚀 INFINITE SCROLL: Pagination state for user media
+  const [mediaPage, setMediaPage] = useState(0)
+  const [hasMoreMedia, setHasMoreMedia] = useState(true)
+  const [isLoadingMoreMedia, setIsLoadingMoreMedia] = useState(false)
+  const [mediaPageSize] = useState(20) // Load 20 items per page
   const [currentUserId, setCurrentUserId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [viewerOpen, setViewerOpen] = useState(false)
@@ -628,8 +634,8 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
-  // Load user media from database using new Netlify Function
-  const loadUserMedia = async () => {
+  // 🚀 INFINITE SCROLL: Load user media with pagination support
+  const loadUserMedia = async (isInitialLoad: boolean = true) => {
     try {
       // Get current user ID from auth service or use stored ID from profile
       const user = authService.getCurrentUser()
@@ -698,7 +704,7 @@ const ProfileScreen: React.FC = () => {
         // Removed tier system - all users get same experience
       }
 
-      // Load all user media from database using new Netlify Function
+      // 🚀 INFINITE SCROLL: Load user media with pagination
       try {
         const jwt = authService.getToken() || localStorage.getItem('auth_token');
         
@@ -708,8 +714,18 @@ const ProfileScreen: React.FC = () => {
           const allMedia = await userMediaService.getAllUserMedia(userId);
           setUserMedia(allMedia);
         } else {
-          // Authenticated user: fetch from server with JWT
-          const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=50`, {
+          // Authenticated user: fetch from server with JWT and pagination
+          const offset = isInitialLoad ? 0 : mediaPage * mediaPageSize;
+          const limit = mediaPageSize;
+          
+          console.log('🚀 [ProfileScroll] Loading media page:', {
+            page: mediaPage,
+            offset,
+            limit,
+            isInitialLoad
+          });
+          
+          const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=${limit}&offset=${offset}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json'
@@ -758,8 +774,21 @@ const ProfileScreen: React.FC = () => {
               };
             });
             
-            console.log('📊 Setting userMedia with', transformedMedia.length, 'items')
-            setUserMedia(transformedMedia);
+            // 🚀 INFINITE SCROLL: Handle pagination logic
+            if (isInitialLoad) {
+              // Initial load: replace all media
+              console.log('📊 Setting userMedia with', transformedMedia.length, 'items (initial load)');
+              setUserMedia(transformedMedia);
+              setMediaPage(0);
+            } else {
+              // Load more: append to existing media
+              console.log('📊 Appending', transformedMedia.length, 'more items to existing media');
+              setUserMedia(prev => [...prev, ...transformedMedia]);
+              setMediaPage(prev => prev + 1);
+            }
+            
+            // Update hasMore flag based on response
+            setHasMoreMedia(result.hasMore !== false);
             
                     // Remix functionality removed - no more remix processing
           } else {
@@ -782,7 +811,11 @@ const ProfileScreen: React.FC = () => {
         }
       } finally {
         // Always clear loading state
-        setIsLoading(false);
+        if (isInitialLoad) {
+          setIsLoading(false);
+        } else {
+          setIsLoadingMoreMedia(false);
+        }
       }
 
       // Remix functionality removed - no more remix processing
@@ -791,7 +824,28 @@ const ProfileScreen: React.FC = () => {
       setDraftMedia([])
       
       // Load drafts from localStorage
-      try {
+    } catch (error) {
+      console.error('Error in loadUserMedia:', error);
+    }
+  };
+
+  // 🚀 INFINITE SCROLL: Load more media function
+  const loadMoreMedia = async () => {
+    if (!hasMoreMedia || isLoadingMoreMedia) return;
+    
+    console.log('🚀 [ProfileScroll] Loading more media...');
+    setIsLoadingMoreMedia(true);
+    
+    try {
+      await loadUserMedia(false); // false = not initial load
+    } catch (error) {
+      console.error('❌ [ProfileScroll] Failed to load more media:', error);
+    } finally {
+      setIsLoadingMoreMedia(false);
+    }
+  };
+
+  // Load profile data when component mounts and user is authenticated
         const user = authService.getCurrentUser()
         if (user?.id) {
           const key = `user_drafts_${user.id}`
