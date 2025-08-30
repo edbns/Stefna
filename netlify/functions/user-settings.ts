@@ -63,8 +63,11 @@ export const handler: Handler = async (event) => {
         RETURNING *
       `, [
         userId, 
-        body.media_upload_agreed !== undefined ? body.media_upload_agreed : false,
-        body.share_to_feed !== undefined ? body.share_to_feed : true
+        // Handle both camelCase (frontend) and snake_case (backend) field names
+        body.media_upload_agreed !== undefined ? body.media_upload_agreed : 
+        body.mediaUploadAgreed !== undefined ? body.mediaUploadAgreed : false,
+        body.share_to_feed !== undefined ? body.share_to_feed : 
+        body.shareToFeed !== undefined ? body.shareToFeed : true
       ]);
 
       if (!updated || updated.length === 0) {

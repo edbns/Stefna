@@ -48,8 +48,12 @@ async function loadTFModel(): Promise<any> {
   isModelLoading = true;
   try {
     console.log('🎭 [IPA] Loading TensorFlow.js Face Landmarks Detection model...');
-    tfModel = await createDetector(SupportedModels.MediaPipeFaceMesh);
-    console.log('✅ [IPA] Face detection model loaded successfully');
+    // Force TensorFlow.js backend, not MediaPipe (which needs navigator)
+    tfModel = await createDetector(SupportedModels.MediaPipeFaceMesh, {
+      runtime: 'tfjs', // Force TensorFlow.js runtime
+      refineLandmarks: true // Required for TensorFlow.js backend
+    });
+    console.log('✅ [IPA] Face detection model loaded successfully with TensorFlow.js backend');
     return tfModel;
   } catch (error) {
     console.error('❌ [IPA] Failed to load face detection model:', error);
