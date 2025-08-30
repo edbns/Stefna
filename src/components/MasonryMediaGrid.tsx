@@ -189,7 +189,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         onMouseEnter={(e) => e.currentTarget.play()}
                         onMouseLeave={(e) => e.currentTarget.pause()}
                       />
-                  ) : item.type === 'story-time' && item.metadata?.videoResults && item.metadata.videoResults.length > 0 ? (
+                  ) : (item.type as any) === 'story-time' && item.metadata?.videoResults && item.metadata.videoResults.length > 0 ? (
                       // Story Time with videos - show first video as main content
                       <div className="relative">
                         <video
@@ -207,7 +207,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                           </div>
                         )}
                       </div>
-                  ) : item.type === 'story-time' && item.status === 'processing' ? (
+                  ) : (item.type as any) === 'story-time' && (item.status as any) === 'processing' ? (
                       // Story Time processing - show progress with photo
                       <div className="relative">
                         <img

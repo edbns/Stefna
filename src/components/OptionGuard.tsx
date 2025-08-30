@@ -17,7 +17,7 @@ const OptionGuard: React.FC<OptionGuardProps> = ({
   children, 
   fallback = null 
 }) => {
-  const configured = isConfigured(group, optionKey);
+  const configured = OPTION_GROUPS[group]?.options?.[optionKey] !== undefined;
   
   if (!configured) {
     return <>{fallback}</>;
