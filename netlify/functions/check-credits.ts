@@ -35,7 +35,12 @@ export const handler: Handler = async (event) => {
     if (!userId) {
       return {
         statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ error: 'userId parameter is required' })
       };
     }
@@ -49,14 +54,24 @@ export const handler: Handler = async (event) => {
     if (!userCredits) {
       return {
         statusCode: 404,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ error: 'User credits not found' })
       };
     }
 
     return {
       statusCode: 200,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
         userId,
         credits: userCredits.credits,
@@ -68,10 +83,15 @@ export const handler: Handler = async (event) => {
     console.error('Error checking credits:', error);
     return {
       statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ 
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
         error: 'Internal server error',
-        message: error.message 
+        message: error.message
       })
     };
   }

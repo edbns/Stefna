@@ -1,29 +1,26 @@
 import React, { useRef, useState } from 'react';
-import { 
-  generateGhibliOverlay, 
-  generateGhibliReaction,
-  ExpressionType,
-  GhibliReactionOptions,
-  GhibliReactionResult 
+import {
+  applyGhibliReactionFX,
+  GhibliReactionOptions
 } from '../hooks/useGhibliReaction';
 
 export const GhibliReactionTool = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
-  const [ghibliLayer, setGhibliLayer] = useState<string | null>(null);
   const [mergedResult, setMergedResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<GhibliReactionResult | null>(null);
 
   // Ghibli reaction options
   const [options, setOptions] = useState<GhibliReactionOptions>({
-    expression: 'crying',
-    intensity: 3,
-    opacity: 0.8,
-    blendMode: 'normal',
-    enableShadows: true,
-    enableHighlights: true
+    enableTears: true,
+    enableHearts: false,
+    enableBlush: false,
+    enableEyeShine: false,
+    tearIntensity: 0.8,
+    heartOpacity: 0.7,
+    blushIntensity: 0.6,
+    eyeShineBrightness: 0.9
   });
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,9 +29,7 @@ export const GhibliReactionTool = () => {
 
     setIsProcessing(true);
     setError(null);
-    setGhibliLayer(null);
     setMergedResult(null);
-    setResult(null);
 
     try {
       const img = new Image();
@@ -43,17 +38,13 @@ export const GhibliReactionTool = () => {
           setOriginalImage(URL.createObjectURL(file));
 
           // Generate Ghibli reaction
-          const reactionResult = await generateGhibliReaction(img, options);
+          const imageUrl = URL.createObjectURL(file);
+          const processedImageUrl = await applyGhibliReactionFX(imageUrl, options);
+
+          setOriginalImage(imageUrl);
+          setMergedResult(processedImageUrl);
           
-          // Convert canvases to data URLs for display
-          const ghibliDataUrl = reactionResult.ghibliLayer.toDataURL('image/png');
-          const mergedDataUrl = reactionResult.mergedCanvas.toDataURL('image/png');
-          
-          setGhibliLayer(ghibliDataUrl);
-          setMergedResult(mergedDataUrl);
-          setResult(reactionResult);
-          
-          console.log('Ghibli reaction generated:', reactionResult.metadata);
+          console.log('Ghibli reaction generated successfully');
         } catch (reactionError) {
           setError(`Ghibli reaction generation failed: ${reactionError}`);
           console.error('Reaction generation error:', reactionError);
@@ -84,16 +75,11 @@ export const GhibliReactionTool = () => {
       const img = new Image();
       img.onload = async () => {
         try {
-          const reactionResult = await generateGhibliReaction(img, options);
-          
-          const ghibliDataUrl = reactionResult.ghibliLayer.toDataURL('image/png');
-          const mergedDataUrl = reactionResult.mergedCanvas.toDataURL('image/png');
-          
-          setGhibliLayer(ghibliDataUrl);
-          setMergedResult(mergedDataUrl);
-          setResult(reactionResult);
-          
-          console.log('Ghibli reaction regenerated:', reactionResult.metadata);
+          const processedImageUrl = await applyGhibliReactionFX(originalImage!, options);
+
+          setMergedResult(processedImageUrl);
+
+          console.log('Ghibli reaction regenerated successfully');
         } catch (reactionError) {
           setError(`Regeneration failed: ${reactionError}`);
         } finally {
@@ -108,50 +94,32 @@ export const GhibliReactionTool = () => {
     }
   };
 
-  const handleDownload = (type: 'ghibli' | 'merged') => {
-    if (type === 'ghibli' && ghibliLayer) {
-      const link = document.createElement('a');
-      link.download = `ghibli-layer-${options.expression}.png`;
-      link.href = ghibliLayer;
-      link.click();
-    } else if (type === 'merged' && mergedResult) {
-      const link = document.createElement('a');
-      link.download = `ghibli-reaction-${options.expression}.png`;
-      link.href = mergedResult;
-      link.click();
-    }
+  const updateOption = <K extends keyof GhibliReactionOptions>(
+    key: K,
+    value: GhibliReactionOptions[K]
+  ) => {
+    setOptions(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleDownload = (imageUrl: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleClear = () => {
     setOriginalImage(null);
-    setGhibliLayer(null);
     setMergedResult(null);
-    setResult(null);
     setError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const updateOption = (key: keyof GhibliReactionOptions, value: any) => {
-    setOptions(prev => ({ ...prev, [key]: value }));
-  };
 
-  const expressions: { value: ExpressionType; label: string; emoji: string }[] = [
-    { value: 'crying', label: 'Crying', emoji: '😢' },
-    { value: 'sparkle', label: 'Sparkle', emoji: '✨' },
-    { value: 'sweat', label: 'Sweat', emoji: '😅' },
-    { value: 'anger', label: 'Anger', emoji: '😠' },
-    { value: 'surprise', label: 'Surprise', emoji: '😲' },
-    { value: 'love', label: 'Love', emoji: '🥰' }
-  ];
-
-  const blendModes = [
-    { value: 'normal', label: 'Normal' },
-    { value: 'multiply', label: 'Multiply' },
-    { value: 'screen', label: 'Screen' },
-    { value: 'overlay', label: 'Overlay' }
-  ];
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -174,107 +142,135 @@ export const GhibliReactionTool = () => {
       {/* Reaction Options */}
       {originalImage && (
         <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
-          <h3 className="font-semibold mb-3 text-purple-800">🎭 Reaction Options</h3>
-          
-          {/* Expression Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Expression</label>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-              {expressions.map((expr) => (
-                <button
-                  key={expr.value}
-                  onClick={() => updateOption('expression', expr.value)}
-                  className={`p-3 rounded-lg border-2 transition-colors ${
-                    options.expression === expr.value
-                      ? 'border-purple-600 bg-purple-100 text-purple-800'
-                      : 'border-gray-200 hover:border-purple-300'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">{expr.emoji}</div>
-                  <div className="text-xs">{expr.label}</div>
-                </button>
-              ))}
+          <h3 className="font-semibold mb-3 text-purple-800">🎭 Ghibli Reaction Effects</h3>
+
+          {/* Effect Toggles */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="enableTears"
+                checked={options.enableTears}
+                onChange={(e) => updateOption('enableTears', e.target.checked)}
+                className="mr-2"
+              />
+              <label htmlFor="enableTears" className="text-sm font-medium">Tears 😢</label>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="enableHearts"
+                checked={options.enableHearts}
+                onChange={(e) => updateOption('enableHearts', e.target.checked)}
+                className="mr-2"
+              />
+              <label htmlFor="enableHearts" className="text-sm font-medium">Hearts 💖</label>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="enableBlush"
+                checked={options.enableBlush}
+                onChange={(e) => updateOption('enableBlush', e.target.checked)}
+                className="mr-2"
+              />
+              <label htmlFor="enableBlush" className="text-sm font-medium">Blush 😊</label>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="enableEyeShine"
+                checked={options.enableEyeShine}
+                onChange={(e) => updateOption('enableEyeShine', e.target.checked)}
+                className="mr-2"
+              />
+              <label htmlFor="enableEyeShine" className="text-sm font-medium">Eye Shine ✨</label>
             </div>
           </div>
 
-          {/* Intensity and Opacity */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Intensity</label>
+          {/* Intensity Controls */}
+          {options.enableTears && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Tear Intensity</label>
               <input
                 type="range"
-                min="1"
-                max="5"
-                step="1"
-                value={options.intensity}
-                onChange={(e) => updateOption('intensity', parseInt(e.target.value))}
+                min="0.1"
+                max="1.0"
+                step="0.1"
+                value={options.tearIntensity}
+                onChange={(e) => updateOption('tearIntensity', parseFloat(e.target.value))}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-gray-600">
+                <span>Light</span>
+                <span className="font-medium">{Math.round(options.tearIntensity * 100)}%</span>
+                <span>Heavy</span>
+              </div>
+            </div>
+          )}
+
+          {options.enableHearts && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Heart Opacity</label>
+              <input
+                type="range"
+                min="0.1"
+                max="1.0"
+                step="0.1"
+                value={options.heartOpacity}
+                onChange={(e) => updateOption('heartOpacity', parseFloat(e.target.value))}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-gray-600">
+                <span>Faint</span>
+                <span className="font-medium">{Math.round(options.heartOpacity * 100)}%</span>
+                <span>Bright</span>
+              </div>
+            </div>
+          )}
+
+          {options.enableBlush && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Blush Intensity</label>
+              <input
+                type="range"
+                min="0.1"
+                max="1.0"
+                step="0.1"
+                value={options.blushIntensity}
+                onChange={(e) => updateOption('blushIntensity', parseFloat(e.target.value))}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-gray-600">
                 <span>Subtle</span>
-                <span className="font-medium">{options.intensity}</span>
-                <span>Dramatic</span>
+                <span className="font-medium">{Math.round(options.blushIntensity * 100)}%</span>
+                <span>Strong</span>
               </div>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Opacity</label>
+          )}
+
+          {options.enableEyeShine && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Eye Shine Brightness</label>
               <input
                 type="range"
                 min="0.1"
-                max="1"
+                max="1.0"
                 step="0.1"
-                value={options.opacity}
-                onChange={(e) => updateOption('opacity', parseFloat(e.target.value))}
+                value={options.eyeShineBrightness}
+                onChange={(e) => updateOption('eyeShineBrightness', parseFloat(e.target.value))}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-gray-600">
-                <span>Transparent</span>
-                <span className="font-medium">{Math.round(options.opacity! * 100)}%</span>
-                <span>Opaque</span>
+                <span>Dim</span>
+                <span className="font-medium">{Math.round(options.eyeShineBrightness * 100)}%</span>
+                <span>Brilliant</span>
               </div>
             </div>
-          </div>
-
-          {/* Advanced Options */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Blend Mode</label>
-              <select
-                value={options.blendMode}
-                onChange={(e) => updateOption('blendMode', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                {blendModes.map((mode) => (
-                  <option key={mode.value} value={mode.value}>
-                    {mode.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={options.enableShadows}
-                  onChange={(e) => updateOption('enableShadows', e.target.checked)}
-                  className="mr-2"
-                />
-                <span className="text-sm">Shadows</span>
-              </label>
-              
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={options.enableHighlights}
-                  onChange={(e) => updateOption('enableHighlights', e.target.checked)}
-                  className="mr-2"
-                />
-                <span className="text-sm">Highlights</span>
-              </label>
-            </div>
-          </div>
+          )}
 
           {/* Regenerate Button */}
           <div className="mt-4">
@@ -307,70 +303,56 @@ export const GhibliReactionTool = () => {
       )}
 
       {/* Results Display */}
-      {originalImage && ghibliLayer && mergedResult && (
+      {originalImage && mergedResult && (
         <div className="mb-6">
           <h3 className="text-lg font-semibold mb-4">🎭 Generated Results</h3>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Original Image */}
             <div>
               <h4 className="font-medium mb-2">Original Image</h4>
-              <img 
-                src={originalImage} 
-                alt="Original" 
+              <img
+                src={originalImage}
+                alt="Original"
                 className="w-full h-auto rounded-lg border border-gray-200"
               />
             </div>
-            
-            {/* Ghibli Layer */}
+
+            {/* Processed Result */}
             <div>
-              <h4 className="font-medium mb-2">Ghibli Effect Layer</h4>
-              <img 
-                src={ghibliLayer} 
-                alt="Ghibli Layer" 
-                className="w-full h-auto rounded-lg border border-gray-200 bg-gray-100"
-              />
-            </div>
-            
-            {/* Merged Result */}
-            <div>
-              <h4 className="font-medium mb-2">Final Result</h4>
-              <img 
-                src={mergedResult} 
-                alt="Merged Result" 
+              <h4 className="font-medium mb-2">Ghibli Reaction Result</h4>
+              <img
+                src={mergedResult}
+                alt="Ghibli Reaction Result"
                 className="w-full h-auto rounded-lg border border-gray-200"
               />
             </div>
           </div>
 
-          {/* Metadata */}
-          {result && (
-            <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-              <h4 className="font-medium mb-2">Generated Metadata</h4>
-              <div className="text-sm text-purple-800 space-y-1">
-                <div>Expression: <span className="font-medium">{result.metadata.expression}</span></div>
-                <div>Intensity: <span className="font-medium">{result.metadata.intensity}</span></div>
-                <div>Timestamp: <span className="font-medium">{new Date(result.metadata.timestamp).toLocaleString()}</span></div>
-              </div>
+          {/* Effect Summary */}
+          <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+            <h4 className="font-medium mb-2">Applied Effects</h4>
+            <div className="text-sm text-purple-800 space-y-1">
+              {options.enableTears && <div>😢 Tears: {Math.round(options.tearIntensity * 100)}% intensity</div>}
+              {options.enableHearts && <div>💖 Hearts: {Math.round(options.heartOpacity * 100)}% opacity</div>}
+              {options.enableBlush && <div>😊 Blush: {Math.round(options.blushIntensity * 100)}% intensity</div>}
+              {options.enableEyeShine && <div>✨ Eye Shine: {Math.round(options.eyeShineBrightness * 100)}% brightness</div>}
+              {!options.enableTears && !options.enableHearts && !options.enableBlush && !options.enableEyeShine && (
+                <div className="text-gray-500">No effects enabled</div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
 
       {/* Action Buttons */}
-      {ghibliLayer && mergedResult && (
+      {originalImage && mergedResult && (
         <div className="flex flex-wrap gap-4 mb-6">
           <button
-            onClick={() => handleDownload('ghibli')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            📥 Download Effect Layer
-          </button>
-          <button
-            onClick={() => handleDownload('merged')}
+            onClick={() => handleDownload(mergedResult!, 'ghibli-reaction-result.png')}
             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
-            📥 Download Final Result
+            📥 Download Result
           </button>
           <button
             onClick={handleClear}
@@ -386,11 +368,11 @@ export const GhibliReactionTool = () => {
         <h3 className="font-semibold mb-2">How it works:</h3>
         <ul className="text-sm text-gray-600 space-y-1">
           <li>• Upload an image with a clear face</li>
-          <li>• TensorFlow.js detects facial landmarks for precise placement</li>
-          <li>• Choose from 6 emotional expressions with customizable intensity</li>
-          <li>• Adjust opacity, blend modes, shadows, and highlights</li>
-          <li>• Download the effect layer or final merged result</li>
-          <li>• Non-destructive: keeps real facial structure intact</li>
+          <li>• Enable the Ghibli reaction effects you want to apply</li>
+          <li>• Adjust intensity levels for each effect</li>
+          <li>• Generate and preview the result</li>
+          <li>• Download the processed image with Ghibli-style effects</li>
+          <li>• Non-destructive: keeps original image intact</li>
         </ul>
       </div>
     </div>

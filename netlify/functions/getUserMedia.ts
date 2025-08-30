@@ -42,7 +42,12 @@ export const handler: Handler = async (event) => {
     if (!userId) {
       return {
         statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ error: 'userId parameter is required' })
       };
     }
@@ -236,9 +241,11 @@ export const handler: Handler = async (event) => {
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         error: 'MEDIA_FETCH_FAILED',
         message: error.message,
         status: 'failed'

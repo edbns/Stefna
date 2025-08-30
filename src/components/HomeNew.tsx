@@ -2401,8 +2401,8 @@ const HomeNew: React.FC = () => {
 
       // Reserve credits before generation - dynamically calculate based on variations
       let creditsNeeded = 2; // Default for single generation (premium images)
-      
-      if (kind === 'ghiblireact' || kind === 'neotokyoglitch') {
+
+      if ((kind as string) === 'ghiblireact' || (kind as string) === 'neotokyoglitch') {
         creditsNeeded = 2; // Single generation for new modes (premium images)
       } else {
                   creditsNeeded = 2; // Single generation (preset, custom single, emotionmask) - premium images
@@ -2418,8 +2418,8 @@ const HomeNew: React.FC = () => {
       });
       
       // Map generation modes to valid credit reservation actions
-      let creditAction = kind;
-      if (kind === 'ghiblireact' || kind === 'neotokyoglitch') {
+      let creditAction: string = kind;
+      if ((kind as string) === 'ghiblireact' || (kind as string) === 'neotokyoglitch') {
         creditAction = 'image.gen'; // Map new modes to standard image generation
       }
       
@@ -2504,7 +2504,7 @@ const HomeNew: React.FC = () => {
       }
 
       // 🎭 NEO TOKYO GLITCH: Follow Ghibli's exact pattern but with Stability.ai backend
-      if (kind === 'neotokyoglitch') {
+      if ((kind as string) === 'neotokyoglitch') {
         console.log('🚀 [NeoGlitch] Starting generation following Ghibli pattern');
         
         try {

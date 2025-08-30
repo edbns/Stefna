@@ -1,6 +1,6 @@
 import { presetsStore } from '../stores/presetsStore'
-import { runGeneration } from '../services/generationPipeline'
-import { GenerateJob } from '../types/generation'
+import GenerationPipeline from '../services/generationPipeline'
+import { GenerationRequest } from '../services/generationPipeline'
 
 // Asset store interface (you'll need to implement this)
 interface AssetStore {
@@ -45,8 +45,8 @@ const uiStore = {
   })
 }
 
-// Build I2I job helper
-function buildI2IJob({ presetId, source }: { presetId: string; source?: { file?: File; url?: string } }): Promise<GenerateJob | null> {
+// Build I2I generation request helper
+function buildI2IGenerationRequest({ presetId, source }: { presetId: string; source?: { file?: File; url?: string } }): Promise<GenerationRequest | null> {
   return new Promise((resolve) => {
     const preset = presetsStore.getState().byId[presetId]
     if (!preset) {
@@ -54,13 +54,14 @@ function buildI2IJob({ presetId, source }: { presetId: string; source?: { file?:
       resolve(null)
       return
     }
-    
+
     resolve({
-      mode: 'i2i' as const,
-      presetId,
+      type: 'presets',
       prompt: preset.prompt,
-      params: preset.params || {},
-      source
+      presetKey: presetId,
+      sourceAssetId: source?.url || '',
+      userId: '', // This should be provided by the caller
+      runId: crypto.randomUUID()
     })
   })
 }
@@ -90,24 +91,30 @@ export async function handlePresetClick(presetId: string) {
   }
 
   // We have an asset, run generation immediately
-  await runGeneration(() => buildI2IJob({ presetId, source: { url: source.url } }))
+  const generationPipeline = GenerationPipeline.getInstance();
+  const request = await buildI2IGenerationRequest({ presetId, source: { url: source.url } });
+  if (request) {
+    await generationPipeline.generate(request);
+  }
 }
 
 // Legacy function for backward compatibility
-export function onPresetClick(presetId: string, file?: File, sourceUrl?: string) {
-  return runGeneration(async () => {
-    const preset = presetsStore.getState().byId[presetId]
-    if (!preset) {
-      console.warn(`Preset "${presetId}" not found`)
-      return null
-    }
-    
-    return {
-      mode: 'i2i' as const,
-      presetId,
-      prompt: preset.prompt,
-      params: preset.params || {},
-      source: file ? { file } : sourceUrl ? { url: sourceUrl } : undefined
-    }
-  })
+export async function onPresetClick(presetId: string, file?: File, sourceUrl?: string) {
+  const generationPipeline = GenerationPipeline.getInstance();
+  const preset = presetsStore.getState().byId[presetId]
+  if (!preset) {
+    console.warn(`Preset "${presetId}" not found`)
+    return null
+  }
+
+  const request: GenerationRequest = {
+    type: 'presets',
+    prompt: preset.prompt,
+    presetKey: presetId,
+    sourceAssetId: sourceUrl || '',
+    userId: '', // This should be provided by the caller
+    runId: crypto.randomUUID()
+  };
+
+  return await generationPipeline.generate(request);
 }
