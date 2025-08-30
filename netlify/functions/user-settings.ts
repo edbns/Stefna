@@ -51,6 +51,20 @@ export const handler: Handler = async (event) => {
       const { userId } = requireAuth(event.headers.authorization);
       const body = JSON.parse(event.body || '{}')
       
+      // Get existing settings first to preserve values
+      const existingSettings = await qOne(`
+        SELECT media_upload_agreed, share_to_feed FROM user_settings WHERE user_id = $1
+      `, [userId]);
+      
+      // Use existing values as defaults, or body values if provided
+      const mediaUploadAgreed = body.media_upload_agreed !== undefined ? body.media_upload_agreed : 
+                                body.mediaUploadAgreed !== undefined ? body.mediaUploadAgreed : 
+                                (existingSettings?.media_upload_agreed ?? false);
+      
+      const shareToFeed = body.share_to_feed !== undefined ? body.share_to_feed : 
+                          body.shareToFeed !== undefined ? body.shareToFeed : 
+                          (existingSettings?.share_to_feed ?? true); // Default to true for new users
+      
       // Upsert user settings
       const updated = await q(`
         INSERT INTO user_settings (user_id, media_upload_agreed, share_to_feed, updated_at)
@@ -61,14 +75,7 @@ export const handler: Handler = async (event) => {
           share_to_feed = EXCLUDED.share_to_feed,
           updated_at = NOW()
         RETURNING *
-      `, [
-        userId, 
-        // Handle both camelCase (frontend) and snake_case (backend) field names
-        body.media_upload_agreed !== undefined ? body.media_upload_agreed : 
-        body.mediaUploadAgreed !== undefined ? body.mediaUploadAgreed : false,
-        body.share_to_feed !== undefined ? body.share_to_feed : 
-        body.shareToFeed !== undefined ? body.shareToFeed : true
-      ]);
+      `, [userId, mediaUploadAgreed, shareToFeed]);
 
       if (!updated || updated.length === 0) {
         throw new Error('Failed to update user settings');

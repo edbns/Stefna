@@ -1,5 +1,6 @@
 import type { Handler } from '@netlify/functions';
 import { qOne } from './_db';
+import { requireAuth } from './_lib/auth';
 
 export const handler: Handler = async (event) => {
   // Handle CORS
@@ -25,26 +26,14 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify({ error: 'Method not allowed' });
     };
   }
 
   try {
-    const userId = event.queryStringParameters?.userId;
+    // Get userId from Authorization header instead of query parameters
+    const { userId } = requireAuth(event.headers.authorization);
     
-    if (!userId) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ error: 'userId parameter is required' })
-      };
-    }
-
     // Get user credits using pg
     const userCredits = await qOne<{ credits: number; balance: number }>(
       'SELECT credits, balance FROM user_credits WHERE user_id = $1',
@@ -60,7 +49,7 @@ export const handler: Handler = async (event) => {
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ error: 'User credits not found' })
+        body: JSON.stringify({ error: 'User credits not found' });
       };
     }
 
@@ -76,7 +65,7 @@ export const handler: Handler = async (event) => {
         userId,
         credits: userCredits.credits,
         balance: userCredits.balance
-      })
+      });
     };
 
   } catch (error: any) {
@@ -92,7 +81,7 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({
         error: 'Internal server error',
         message: error.message
-      })
+      });
     };
   }
 };
