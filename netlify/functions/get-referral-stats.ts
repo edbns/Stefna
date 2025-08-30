@@ -36,52 +36,23 @@ export const handler: Handler = async (event) => {
     
     console.log('📊 [Referral Stats] Getting stats for user:', userId);
 
-    // Get user's referral code
+    // Check if user exists (referral system was removed during cleanup)
     const user = await qOne(`
-      SELECT referral_code FROM users WHERE id = $1
+      SELECT id FROM users WHERE id = $1
     `, [userId]);
 
-    if (!user || !user.referral_code) {
-      return json({ error: 'User not found or no referral code' }, { status: 404 });
+    if (!user) {
+      return json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Count referrals by this user
-    const referralCount = await qCount(`
-      SELECT COUNT(*) FROM credits_ledger 
-      WHERE reason = 'referral_signup' AND action = 'referral'
-      AND user_id IN (
-        SELECT id FROM users WHERE referred_by = $1
-      )
-    `, [user.referral_code]);
-
-    // Get total credits earned from referrals
-    const referralCredits = await qOne(`
-      SELECT COALESCE(SUM(amount), 0) as total_credits 
-      FROM credits_ledger 
-      WHERE user_id = $1 AND reason = 'referral_signup' AND action = 'referral'
-    `, [userId]);
-
-    // Get recent referrals
-    const recentReferrals = await q(`
-      SELECT u.email, cl.created_at, cl.amount
-      FROM credits_ledger cl
-      JOIN users u ON cl.user_id = u.id
-      WHERE cl.reason = 'referral_signup' AND cl.action = 'referral'
-      AND u.referred_by = $1
-      ORDER BY cl.created_at DESC
-      LIMIT 10
-    `, [user.referral_code]);
-
+    // Referral system was removed during cleanup - return empty stats
     const stats = {
-      referralCode: user.referral_code,
-      totalReferrals: referralCount,
-      totalCreditsEarned: referralCredits?.total_credits || 0,
-      recentReferrals: recentReferrals.map(ref => ({
-        email: ref.email,
-        date: ref.created_at,
-        creditsEarned: ref.amount
-      })),
-      timestamp: new Date().toISOString()
+      referralCode: null,
+      totalReferrals: 0,
+      totalCreditsEarned: 0,
+      recentReferrals: [],
+      timestamp: new Date().toISOString(),
+      note: 'Referral system has been removed'
     };
 
     console.log('✅ [Referral Stats] Retrieved stats:', stats);
