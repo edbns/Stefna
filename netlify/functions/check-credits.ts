@@ -26,7 +26,7 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ error: 'Method not allowed' });
+      body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
 
@@ -49,7 +49,7 @@ export const handler: Handler = async (event) => {
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ error: 'User credits not found' });
+        body: JSON.stringify({ error: 'User credits not found' })
       };
     }
 
@@ -65,7 +65,7 @@ export const handler: Handler = async (event) => {
         userId,
         credits: userCredits.credits,
         balance: userCredits.balance
-      });
+      })
     };
 
   } catch (error: any) {
@@ -81,7 +81,7 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({
         error: 'Internal server error',
         message: error.message
-      });
+      })
     };
   }
 };
