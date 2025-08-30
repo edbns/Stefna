@@ -7,69 +7,73 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Fix ALL tables that use gen_random_uuid() to use uuid_generate_v4() instead
 -- This prevents the "null value in column id" error across all tables
 
--- Users table
+-- Users table (TEXT type)
 ALTER TABLE users 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- User credits table
+-- User credits table (TEXT type)
 ALTER TABLE user_credits 
 ALTER COLUMN user_id SET DEFAULT uuid_generate_v4()::text;
 
--- Credits ledger table
+-- Credits ledger table (TEXT type)
 ALTER TABLE credits_ledger 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Custom prompt media table
+-- Custom prompt media table (TEXT type)
 ALTER TABLE custom_prompt_media 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Emotion mask media table
+-- Emotion mask media table (TEXT type)
 ALTER TABLE emotion_mask_media 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Ghibli reaction media table
+-- Ghibli reaction media table (TEXT type)
 ALTER TABLE ghibli_reaction_media 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Neo glitch media table
+-- Neo glitch media table (TEXT type)
 ALTER TABLE neo_glitch_media 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Presets media table
+-- Presets media table (TEXT type)
 ALTER TABLE presets_media 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Story table
+-- Story table (TEXT type)
 ALTER TABLE story 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Story photo table
+-- Story photo table (TEXT type)
 ALTER TABLE story_photo 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Video jobs table
+-- Video jobs table (TEXT type)
 ALTER TABLE video_jobs 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Referral signups table (actual table name)
+-- Referral signups table (TEXT type)
 ALTER TABLE referral_signups 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- AI generations table
+-- AI generations table (TEXT type)
 ALTER TABLE ai_generations 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Assets table
+-- Assets table (TEXT type)
 ALTER TABLE assets 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Presets config table
+-- Presets config table (TEXT type)
 ALTER TABLE presets_config 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- App config table
+-- App config table (TEXT type)
 ALTER TABLE app_config 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
+
+-- Auth OTPs table (UUID type - needs different default)
+ALTER TABLE auth_otps 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4();
 
 -- Ensure all id columns are NOT NULL
 ALTER TABLE users ALTER COLUMN id SET NOT NULL;
