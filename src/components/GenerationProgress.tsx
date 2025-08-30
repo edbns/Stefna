@@ -29,7 +29,7 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
 }) => {
 
   const [isImageEnlarged, setIsImageEnlarged] = useState(false)
-  const [shareToFeed, setShareToFeed] = useState(false)
+  const [shareToFeed, setShareToFeed] = useState(true) // Default to true, will be overridden by user's actual preference
   // allowRemix state removed
 
   // Load user's saved settings on mount
@@ -38,14 +38,14 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
       try {
         const savedProfile = localStorage.getItem('userProfile')
         if (savedProfile) {
-          const profile = JSON.parse(savedProfile)
-          setShareToFeed(profile.shareToFeed ?? false)  // 🔒 PRIVACY FIRST: Default to private
+                  const profile = JSON.parse(savedProfile)
+        setShareToFeed(profile.shareToFeed ?? true)  // Default to true if no preference set
           // allowRemix removed
         }
       } catch (error) {
         console.warn('Failed to load user settings:', error)
         // Use defaults
-        setShareToFeed(false)  // 🔒 PRIVACY FIRST: Default to private
+        setShareToFeed(true)  // Default to true if no preference set
         // allowRemix removed
       }
     }
