@@ -11,3 +11,6 @@ declare global {
 }
 
 console.log('✅ Application bootstrap completed')
+
+// Export to make this a module
+export {}

@@ -4,7 +4,7 @@ export class AppErrorBoundary extends React.Component<
   { children: React.ReactNode }, 
   { hasError: boolean; err?: any }
 > {
-  state = { hasError: false, err: null };
+  state: { hasError: boolean; err?: any } = { hasError: false, err: null };
   
   static getDerivedStateFromError(err: any) { 
     return { hasError: true, err }; 
