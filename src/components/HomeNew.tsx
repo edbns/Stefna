@@ -1710,7 +1710,7 @@ const HomeNew: React.FC = () => {
       if (savedProfile) {
         const profile = JSON.parse(savedProfile)
         return {
-          shareToFeed: profile.shareToFeed ?? false,  // 🔒 PRIVACY FIRST: Default to private
+          shareToFeed: profile.shareToFeed ?? true,  // Default to true if no preference set
           // allowRemix removed
         }
       }
