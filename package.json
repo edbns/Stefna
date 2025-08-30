@@ -8,14 +8,9 @@
     "build": "vite build",
     "build:fast": "vite build --mode production --minify",
     "build:preview": "vite build --mode production && npx vite-bundle-analyzer dist",
-    "preview": "vite preview",
-    "build:analyze": "vite build --mode production && npx vite-bundle-analyzer dist",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
     "test": "echo 'No tests configured yet'",
-    "postinstall:dev": "husky install",
-    "db:reset": "echo 'Database reset - use raw SQL scripts'",
-    "db:nuclear": "echo 'Database reset - use raw SQL scripts'",
     "ensure-esbuild": "npm install --save-dev @esbuild/linux-x64 --force"
   },
   "dependencies": {
@@ -61,7 +56,6 @@
     "eslint": "^8.45.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
-    "husky": "^9.1.7",
     "netlify-cli": "^23.4.2",
     "terser": "^5.43.1",
     "ts-node": "^10.9.2",
