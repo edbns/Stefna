@@ -1812,9 +1812,9 @@ const HomeNew: React.FC = () => {
     
     // 🛡️ Model Validation Guard - Ensure only supported models are used
     const ALLOWED_MODELS = [
-              "triposr",
-      "flux-pro/v1.1-ultra",
-      "flux-realism",
+              "fal:flux/ghibli",
+      "fal:flux/realism",
+      "fal:pixart-alpha",
       "dall-e-2",
       "dall-e-3"
     ];
@@ -1824,7 +1824,7 @@ const HomeNew: React.FC = () => {
     if (!ALLOWED_MODELS.includes(model)) {
       console.error("🚫 Invalid model:", model);
               notifyError({ title: 'Failed', message: 'Try again' });
-              return "triposr"; // Fallback to known working model
+              return "fal:flux/ghibli"; // Fallback to known working model
     }
     return model;
   };
@@ -1953,7 +1953,7 @@ const HomeNew: React.FC = () => {
         mode: 'emotionmask', 
         emotionMaskPresetId, 
         emotionMaskPresetLabel: emotionMaskPreset.label,
-        model: "triposr", // Use known working model
+        model: "fal:flux/ghibli", // Use known working model
         strength: adjustedStrength, // Use preset strength
         guidance_scale: 7.5, // Standard guidance for consistency
         cfg_scale: 7.0, // Balanced creativity vs adherence
@@ -1989,7 +1989,7 @@ const HomeNew: React.FC = () => {
           mode: 'ghiblireact', 
           ghibliReactionPresetId, 
           ghibliReactionLabel: ghibliReactionPreset.label, 
-          model: "triposr", // Use known working model for Ghibli style
+          model: "fal:flux/ghibli", // Use known working model for Ghibli style
           strength: ghibliReactionPreset.strength, // Use actual preset strength
           guidance_scale: 7.5, // Standard guidance for consistency
           cfg_scale: 7.0, // Balanced creativity vs adherence
@@ -1999,7 +1999,7 @@ const HomeNew: React.FC = () => {
           ipaRetries: 2, // Moderate fallback
           ipaBlocking: true // Must pass to proceed
         };
-              console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: triposr');
+              console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: fal:flux/ghibli');
       
     } else if (kind === 'neotokyoglitch') {
       // NEO TOKYO GLITCH MODE: Use Replicate integration for maximum glitch intensity
@@ -2382,74 +2382,11 @@ const HomeNew: React.FC = () => {
                      /\/video\/upload\//.test(sourceUrl || '') ||
                      /\.(mp4|mov|webm|m4v)(\?|$)/i.test(sourceUrl || '');
 
-      // Model normalization function - AIML API only (NO Stability.ai for non-Neo-Glitch)
-      const normalizeModel = (model?: string, mode?: string) => {
-        // 🎯 AIML-ONLY STRATEGY: Use flux/dev for all non-Neo-Glitch modes
-        // Neo Glitch uses Stability.ai (3-tier) + AIML fallback
-        // All other presets use AIML API only
-        
-        // Primary model for ALL non-Neo-Glitch modes
-        const primaryModel = 'triposr';
-        
-        // Fallback model if primary fails (higher quality, different approach)
-        const fallbackModel = 'flux-pro/v1.1-ultra';
-        
-        // For now, always use primary model to ensure consistency
-        // Fallback logic can be added later when we implement retry mechanisms
-        // 
-        // FALLBACK STRATEGY (Future Implementation):
-        // 1. Try primaryModel (flux/dev/image-to-image) first
-        // 2. If primary fails, retry with fallbackModel (flux-pro/v1.1-ultra)
-        // 3. This ensures users always get results, even if primary model is down
-        return primaryModel;
-      };
 
-      // Build AIML API payload for standard presets (flux/dev + flux/pro fallback)
-      const payload: any = {
-        mode: kind,
-        prompt: effectivePrompt, // server will prepend the identity prelude
-        image_url: sourceUrl,
-        strength: generationMeta?.strength || 0.85, // Use preset strength or default
-        model: normalizeModel(generationMeta?.model || 'flux/dev', kind), // AIML models only
-        num_variations: 1,
-        seed: Date.now(), // Fixed seed for consistency - same input = same output
-        single_image: true, // Force single output to prevent variations
-      };
+      // All generation now uses the new GenerationPipeline system
 
-      // Video-specific parameters for V2V
-      if (isVideoPreview) {
-        payload.video_settings = {
-          fps: 24,
-          duration: 3, // 3 seconds
-          quality: 'high',
-          stabilization: true
-        };
-        console.log('🎬 V2V payload with video settings:', payload.video_settings);
-      }
-
-      // Add test parameters for "Make it obvious" mode
-      if (makeItObvious) {
-        payload.strength = 0.9;              // make it obvious
-        payload.num_inference_steps = 36;
-        payload.guidance_scale = 7.5;
-        payload.seed = Date.now();           // bust provider-side dedupe caches
-        console.log('🔎 Using test parameters:', { strength: payload.strength, steps: payload.num_inference_steps, seed: payload.seed });
-      }
-
-      // Include preset data if applicable
-      if (selectedPreset && PRESETS[selectedPreset]) {
-        const preset = PRESETS[selectedPreset];
-        if (preset.negative_prompt) payload.negative_prompt = preset.negative_prompt;
-        if (typeof preset.strength === 'number') payload.strength = preset.strength;
-        if (preset.negative_prompt) payload.negative_prompt = preset.negative_prompt;
-        if (typeof preset.strength === 'number') payload.strength = preset.strength;
-        payload.presetName = selectedPreset;
-      }
-
-      console.info(`🎯 AIML API payload for preset: ${kind}`, payload);
-      
-      // Enhanced logging for clarity
-      console.log(`[AIML] Invoking image-to-image for mode: ${kind} using model: ${payload.model || 'flux/dev'}`);
+      // All generation now uses the new GenerationPipeline system
+      // No need to build old AIML payloads
 
       // Reserve credits before generation - dynamically calculate based on variations
       let creditsNeeded = 2; // Default for single generation (premium images)
@@ -2793,19 +2730,6 @@ const HomeNew: React.FC = () => {
       let variationsGenerated: number;
       let body: any;
       let res: Response | null = null; // Declare res at top level
-
-      // 🧪 DEBUG: Log complete payload before API call
-      console.log('🧪 DEBUG: Complete aimlApi payload:', {
-        prompt: effectivePrompt,
-        image_url: payload.image_url || payload.init_image,
-        model: payload.model || 'default',
-        strength: payload.strength || 'default',
-        guidance_scale: payload.guidance_scale || 'default',
-        cfg_scale: payload.cfg_scale || 'default',
-        denoising_strength: payload.denoising_strength || 'default',
-        generation_meta: generationMeta,
-        full_payload: payload
-      });
 
       // All generation now uses the new GenerationPipeline system
       // Add timeout guard to prevent 504 errors

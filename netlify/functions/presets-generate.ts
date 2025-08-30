@@ -110,7 +110,7 @@ async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey:
 
   // Define AIML models in order of preference (cheap → expensive → best quality)
   const aimlModels = [
-    { model: 'triposr', name: 'Triposr', cost: 'low', priority: 1 },
+          { model: 'fal:flux/ghibli', name: 'Flux Ghibli', cost: 'low', priority: 1 },
     { model: 'recraft-v3', name: 'Recraft V3', cost: 'medium', priority: 2 },
     { model: 'google/imagen4/preview', name: 'Google Imagen 4', cost: 'high', priority: 3 }
   ];

@@ -31,7 +31,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     negative_prompt: "cartoon, anime, ugly face, poorly drawn, overexaggerated",
     vibe: "I'm feeling bittersweet joy and sadness.",
     strength: 0.45,
-    model: "triposr", // Updated to use supported AIML model
+    model: "fal:flux/ghibli", // Updated to use fal.ai model
     guidance_scale: 7.5,
     num_inference_steps: 30,
     face_fix: true,
@@ -53,7 +53,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     negative_prompt: "cartoon, anime, deformed face, smiling",
     vibe: "I'm feeling strong yet vulnerable.",
     strength: 0.45,
-    model: "triposr", // Updated to use supported AIML model
+    model: "fal:flux/ghibli", // Updated to use fal.ai model
     guidance_scale: 7.5,
     num_inference_steps: 30,
     face_fix: true,
@@ -75,7 +75,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     negative_prompt: "sad, crying, anime style, overly dramatic",
     vibe: "I'm feeling nostalgic and distant.",
     strength: 0.45,
-    model: "triposr", // Updated to use supported AIML model
+    model: "fal:flux/ghibli", // Updated to use fal.ai model
     guidance_scale: 7.5,
     num_inference_steps: 30,
     face_fix: true,
@@ -97,7 +97,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     negative_prompt: "cartoon, fake, unnatural lighting, unrealistic face",
     vibe: "I'm feeling peaceful yet afraid.",
     strength: 0.45,
-    model: "triposr", // Updated to use supported AIML model
+    model: "fal:flux/ghibli", // Updated to use fal.ai model
     guidance_scale: 7.5,
     num_inference_steps: 30,
     face_fix: true,

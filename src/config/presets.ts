@@ -81,7 +81,7 @@ export const PRESETS: Record<PresetKey, PresetConfig> = (() => {
 // Helper to build your I2I payload (Flux I2I)
 export function buildI2IPayload(preset: PresetConfig, image_url: string) {
   return {
-    model: 'triposr',
+    model: 'fal:flux/ghibli',
     prompt: preset.prompt,
     image_url,
     strength: preset.strength,

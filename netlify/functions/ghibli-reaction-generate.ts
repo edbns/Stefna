@@ -172,7 +172,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Reserve credits first
-    console.log('💰 [GhibliReaction] Reserving 1 credit for generation...');
+    console.log('💰 [GhibliReaction] Reserving 2 credits for generation...');
     const creditReservation = await fetch(`${process.env.URL}/.netlify/functions/credits-reserve`, {
       method: 'POST',
       headers: {
@@ -181,7 +181,7 @@ export const handler: Handler = async (event) => {
       },
       body: JSON.stringify({
         userId,
-        amount: 1,
+        amount: 2,
         requestId: runId,
         action: 'ghibli_reaction_generation',
         meta: { presetKey, prompt: prompt.substring(0, 100) }
