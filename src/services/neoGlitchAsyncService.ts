@@ -30,7 +30,7 @@ export class NeoGlitchAsyncService {
    */
   static async startJob(request: NeoGlitchJobRequest, authToken: string): Promise<string> {
     try {
-      const response = await fetch('/.netlify/functions/start-glitch-job', {
+      const response = await fetch('/.netlify/functions/neo-glitch-generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

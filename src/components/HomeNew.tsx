@@ -2177,8 +2177,8 @@ const HomeNew: React.FC = () => {
           return;
         }
         
-        // Call our new async start-glitch-job function
-        const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/start-glitch-job', {
+        // Call our new async neo-glitch-generate function
+        const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-generate', {
           method: 'POST',
           body: JSON.stringify({
             prompt: effectivePrompt,
@@ -2506,8 +2506,8 @@ const HomeNew: React.FC = () => {
         try {
           // Call Neo Tokyo Glitch backend directly (like Ghibli calls AIML API)
           
-          // Call our new async start-glitch-job function
-          const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/start-glitch-job', {
+                  // Call our new async neo-glitch-generate function
+        const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -2631,7 +2631,7 @@ const HomeNew: React.FC = () => {
             // Start simple polling for completion (not complex service)
             const pollForCompletion = async () => {
               try {
-                const statusResponse = await authenticatedFetch(`/.netlify/functions/neo-glitch-status?jobId=${neoGlitchBody.jobId}`);
+                const statusResponse = await authenticatedFetch(`/.netlify/functions/neo-glitch-generate?jobId=${neoGlitchBody.jobId}`);
                 if (statusResponse.ok) {
                   const statusBody = await statusResponse.json();
                   

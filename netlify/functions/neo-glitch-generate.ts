@@ -27,7 +27,7 @@ cloudinary.config({
 
 
 
-// Background generation function that can be called from start-glitch-job
+// Main NeoGlitch generation function
 export async function startBackgroundGeneration(
   jobId: string,
   sourceUrl: string,
@@ -372,7 +372,7 @@ export const handler: Handler = async (event) => {
         jobId: initialRecord.id,
         runId: runId.toString(),
         status: 'processing',
-        pollUrl: '/.netlify/functions/neo-glitch-status'
+        pollUrl: '/.netlify/functions/neo-glitch-generate'
       })
     };
 
