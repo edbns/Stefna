@@ -4346,6 +4346,9 @@ const HomeNew: React.FC = () => {
       if (!isAuthenticated) return;
       
       try {
+        const token = authService.getToken();
+        if (!token) return;
+        
         const response = await fetch('/.netlify/functions/user-settings', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -4370,7 +4373,7 @@ const HomeNew: React.FC = () => {
     };
     
     loadUserAgreementStatus();
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated]);
   
   // Composer clearing function - defined early to avoid reference errors
   
