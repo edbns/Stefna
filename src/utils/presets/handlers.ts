@@ -4,6 +4,7 @@ import { OPTION_GROUPS, resolvePreset } from './types';
 import { runGeneration } from '../../services/generationPipeline';
 import type { GenerateJob } from '../../types/generation';
 import { getCurrentSourceUrl } from '../../stores/sourceStore';
+import { getActivePresets, PRESETS, type PresetConfig } from '../../config/presets';
 
 
 function showToast(type: 'success' | 'error', message: string): void {
@@ -25,20 +26,22 @@ function validateHttpsSource(sourceUrl?: string | null): string | undefined {
     return undefined;
   }
   console.info('✅ HTTPS source validated:', sourceUrl);
-  return sourceUrl;
+  return sourceUrl || undefined;
 }
 
 // Core preset execution function with proper runId tracking
-export async function runPreset(preset: Preset, srcOverride?: string, metadata?: { group?: string; optionKey?: string }): Promise<any> {
+export async function runPreset(preset: PresetConfig | Preset, srcOverride?: string, metadata?: { group?: string; optionKey?: string }): Promise<any> {
   const runId = crypto.randomUUID();
   console.info(`🎯 [${runId}] Running preset:`, preset.label);
   
   try {
     // 1) Source: prefer override (fresh Cloudinary URL), else global store
-    let src: string | undefined = preset.requiresSource ? (srcOverride ?? (getCurrentSourceUrl() || undefined)) : undefined;
+    // PresetConfig doesn't have mode, so assume i2i for presets
+    const isI2IMode = 'mode' in preset ? preset.mode === 'i2i' : true;
+    let src: string | undefined = isI2IMode ? (srcOverride ?? (getCurrentSourceUrl() || undefined)) : undefined;
 
     // 2) Preflight HTTPS validation - never pass blob:/data:/preview into API
-    if (preset.requiresSource) {
+    if (isI2IMode) {
       const validSrc = validateHttpsSource(src);
       if (!validSrc) {
         console.warn(`🚫 [${runId}] Blocked non-https source:`, src);
@@ -50,27 +53,23 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
 
     // 3) Create generation job with both image_url and sourceUrl for compatibility
     const job: GenerateJob = {
-      mode: preset.mode as any,
-      presetId: preset.id,
+      id: crypto.randomUUID(),
+      userId: 'current-user', // This should come from auth context
+      mode: ('mode' in preset ? preset.mode : 'i2i') as any,
       prompt: preset.prompt,
-      params: {
-        strength: preset.strength || 0.7,
-        negative_prompt: preset.negative_prompt,
-        model: preset.model || 'eagle',
-        post: preset.post,
-        image_url: src || undefined,    // server expects image_url
-        sourceUrl: src || undefined     // keep old field for readers
-      },
-      source: src ? { url: src } : undefined,
-      runId,
-      group: metadata?.group as any || null,
-      optionKey: metadata?.optionKey || null,
-      parentId: null // Will be set by the generation pipeline if needed
+      negativePrompt: 'negative_prompt' in preset ? preset.negative_prompt : undefined,
+      strength: preset.strength || 0.7,
+      guidanceScale: undefined,
+      numInferenceSteps: undefined,
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      group: metadata?.group as any || null
     };
 
     // 4) Final HTTPS gate before API call (no more preview/blob causing 400s)
-    if (preset.requiresSource && job.params.image_url) {
-      const imageUrl = String(job.params.image_url);
+    if (isI2IMode && src) {
+      const imageUrl = String(src);
       if (!hasHttpsUrl(imageUrl)) {
         console.warn(`🚫 [${runId}] Blocked non-https source in payload:`, imageUrl);
         showToast('error', 'Invalid source URL. Please upload a new file.');
@@ -79,7 +78,20 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
     }
 
     // 5) Use the existing generation pipeline
-    const result = await runGeneration(() => Promise.resolve(job));
+    const request: any = {
+      type: 'presets',
+      prompt: preset.prompt,
+      presetKey: 'id' in preset ? preset.id : 'default-preset',
+      sourceAssetId: src || '',
+      userId: 'current-user',
+      runId,
+      meta: {
+        strength: preset.strength || 0.7,
+        negativePrompt: 'negative_prompt' in preset ? preset.negative_prompt : undefined,
+        model: 'model' in preset ? preset.model : 'eagle'
+      }
+    };
+    const result = await runGeneration(request);
     
     // 6) Check if this is a stale result (race condition protection)
     if (!result) {
@@ -112,7 +124,7 @@ let isGenerating = false;
 // Direct preset click handler with HTTPS validation and queueing
 export async function onPresetClick(presetId: PresetId, srcOverride?: string): Promise<void> {
   try {
-    const preset = resolvePreset(presetId);
+    const preset = PRESETS[presetId as keyof typeof PRESETS];
     
     // Don't start until we actually have an https URL
     if (!hasHttpsUrl(srcOverride ?? getCurrentSourceUrl()) || isGenerating) {
@@ -133,24 +145,30 @@ export async function onPresetClick(presetId: PresetId, srcOverride?: string): P
 // Option click handler with HTTPS validation and queueing
 export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: string, srcOverride?: string): Promise<void> {
   try {
-    const opt = OPTION_GROUPS[group]?.[key];
+    const opt = (OPTION_GROUPS as any)[group]?.[key];
     if (!opt) { 
       console.warn(`Option ${group}/${key} not configured`);
       showToast('error', 'Coming soon!'); 
       return; 
     }
     
-    const preset = resolvePreset(opt.use, opt.overrides);
+    const preset = PRESETS[opt.use as keyof typeof PRESETS];
+    if (!preset) {
+      console.warn(`Option ${group}/${key} not found in presets`);
+      showToast('error', 'Preset not available');
+      return;
+    }
+
     console.log(`🔧 Resolved option ${group}/${key} to preset:`, preset.label);
     console.info('🧭 Using new preset system', { mode: group, key });
-    
+
     // Don't start until we actually have an https URL
     if (!hasHttpsUrl(srcOverride ?? getCurrentSourceUrl()) || isGenerating) {
       pendingPreset = { presetId: opt.use, srcOverride };
       showToast('error', 'Add/upload media first (we\'ll auto-run when it\'s ready).');
       return;
     }
-    
+
     await generatePreset(preset, srcOverride, { group, optionKey: key });
   } catch (error) {
     console.error(`❌ Option click failed for ${group}/${key}:`, error);
@@ -161,7 +179,7 @@ export async function onOptionClick(group: keyof typeof OPTION_GROUPS, key: stri
 
 
 // Core generation function with proper state management
-async function generatePreset(preset: Preset, srcOverride?: string, metadata?: { group?: string; optionKey?: string }): Promise<void> {
+async function generatePreset(preset: PresetConfig | Preset, srcOverride?: string, metadata?: { group?: string; optionKey?: string }): Promise<void> {
   if (isGenerating) {
     console.warn('🚫 Generation already in progress, ignoring new request');
     return;
@@ -179,8 +197,12 @@ async function generatePreset(preset: Preset, srcOverride?: string, metadata?: {
       pendingPreset = null; // Clear before running to prevent loops
       
       console.info('🔄 Running pending preset:', presetId);
-      const preset = resolvePreset(presetId);
-      await generatePreset(preset, pendingSrc);
+      const preset = PRESETS[presetId as keyof typeof PRESETS];
+      if (preset) {
+        await generatePreset(preset, pendingSrc);
+      } else {
+        console.warn(`Pending preset ${presetId} not found`);
+      }
     }
   }
 }

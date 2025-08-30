@@ -89,9 +89,9 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         error: 'Internal server error',
-        message: error.message 
+        message: error.message
       })
     };
   }

@@ -1792,6 +1792,11 @@ const HomeNew: React.FC = () => {
     }
   ) {
     const t0 = performance.now();
+
+    // Declare finalizeCredits at function scope so it's accessible throughout
+    let finalizeCredits: ((disposition: 'commit' | 'refund') => Promise<void>) | null = async () => {
+      console.warn('finalizeCredits called before initialization');
+    };
     
     // Generate run ID to avoid cross-talk
     const runId = crypto.randomUUID();
@@ -2448,10 +2453,10 @@ const HomeNew: React.FC = () => {
 
       // Reserve credits before generation - dynamically calculate based on variations
       let creditsNeeded = 2; // Default for single generation (premium images)
-      
+
       // Use type assertion to prevent narrowing
       const generationKind = kind as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch';
-      
+
       if (generationKind === 'ghiblireact' || generationKind === 'neotokyoglitch') {
         creditsNeeded = 2; // Single generation for new modes (premium images)
       } else {
@@ -2513,8 +2518,7 @@ const HomeNew: React.FC = () => {
 
       // Add credit finalization tracking
       let creditsFinalized = false;
-      let finalizeCredits: ((disposition: 'commit' | 'refund') => Promise<void>) | null = null;
-      
+
       // Define the finalizeCredits function after we have the requestId
       const defineFinalizeCredits = (requestId: string) => {
         finalizeCredits = async (disposition: 'commit' | 'refund') => {
@@ -3320,9 +3324,9 @@ const HomeNew: React.FC = () => {
           } else {
             console.log(`🎭 ${composerState.mode} mode - no additional save needed`);
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error(`❌ Save error:`, error);
-          console.error('❌ Save failed:', error instanceof Error ? error.message : 'Unknown error')
+          console.error('❌ Save failed:', error instanceof Error ? (error as Error).message : 'Unknown error')
           
           // 🚨 CRITICAL: If save failed, refund the reserved credits
           console.log('🚨 Save failed - refunding reserved credits to prevent charging for failed saves');
@@ -3400,6 +3404,7 @@ const HomeNew: React.FC = () => {
           const resolvedPreset = resolvePresetForMode({
             mode: selectedMode,
             option: (selectedTheme || selectedEra || selectedOp) as string,
+            activePresets: PROFESSIONAL_PRESETS as any
           });
           
           console.log('📊 Mode analytics - success:', {
@@ -3435,7 +3440,7 @@ const HomeNew: React.FC = () => {
         } else if (body.status === 'completed') {
           notifyReady({ title: 'Your media is ready', message: 'Tap to open' });
           // Finalize credits as committed since generation was successful
-          if (typeof finalizeCredits === 'function') {
+          if (finalizeCredits) {
             await finalizeCredits('commit');
           }
           // Clear all options after successful generation
@@ -3504,7 +3509,7 @@ const HomeNew: React.FC = () => {
       console.error('❌ Error! Please try again:', errorMessage)
       
       // Refund credits since generation failed
-      if (typeof finalizeCredits === 'function') {
+      if (finalizeCredits) {
         await finalizeCredits('refund');
       }
       
@@ -3690,14 +3695,14 @@ const HomeNew: React.FC = () => {
     setComposerState(s => ({
       ...s,
       mode: 'preset',
-      selectedPresetId: presetName,
+      selectedPresetId: String(presetName),
       status: 'idle',
       error: null,
       runOnOpen: false
     }))
     
     // Set the selected preset in the store
-    setSelectedPreset(presetName)
+    setSelectedPreset(presetName as any)
     console.log('✅ Preset set in store:', presetName)
     
     // Check if we can auto-generate
@@ -3720,7 +3725,7 @@ const HomeNew: React.FC = () => {
     
     try {
       await dispatchGenerate('preset', {
-        presetId: presetName,
+        presetId: String(presetName),
         presetData: PRESETS[presetName]
       })
     } catch (error) {
@@ -3751,7 +3756,7 @@ const HomeNew: React.FC = () => {
     setComposerState(s => ({
       ...s,
       mode: 'preset',
-      selectedPresetId: presetName,
+      selectedPresetId: String(presetName),
       customPrompt: '', // Clear custom prompt
       status: 'idle',
       error: null,
@@ -4517,7 +4522,7 @@ const HomeNew: React.FC = () => {
             <div className="relative w-full max-w-2xl px-6">
               <div ref={containerRef} className="w-full flex items-center justify-center">
                 {isVideoPreview ? (
-                  <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} referrerPolicy="no-referrer" />
+                  <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
                 ) : (
                   <>
                     {/* Main image */}
@@ -4655,7 +4660,7 @@ const HomeNew: React.FC = () => {
                       title={isAuthenticated ? 'Choose AI style presets' : 'Sign up to use AI presets'}
                       disabled={!isAuthenticated}
                     >
-                      {selectedPreset ? getPresetLabel(selectedPreset, PRESETS) : 'Presets'}
+                      {selectedPreset ? getPresetLabel(selectedPreset) : 'Presets'}
                     </button>
                     
                     {/* Presets dropdown - clean and simple */}
@@ -4677,7 +4682,7 @@ const HomeNew: React.FC = () => {
                                   : 'text-white hover:text-white hover:bg-white/20'
                               }`}
                             >
-                              <span>{getPresetLabel(name, PRESETS)}</span>
+                              <span>{getPresetLabel(String(name))}</span>
                               {selectedPreset === name ? (
                                 <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
                               ) : (
@@ -4736,7 +4741,7 @@ const HomeNew: React.FC = () => {
                     {composerState.mode === 'emotionmask' && emotionMaskDropdownOpen && (
                       <div className="absolute bottom-full left-0 mb-2 z-50">
                         <EmotionMaskPicker
-                          value={selectedEmotionMaskPreset}
+                          value={selectedEmotionMaskPreset || undefined}
                             onChange={async (presetId) => {
                             setSelectedEmotionMaskPreset(presetId || null)
                             setEmotionMaskDropdownOpen(false)
@@ -5109,13 +5114,13 @@ const HomeNew: React.FC = () => {
                         // Ghibli Reaction mode - use dispatchGenerate directly
                         console.log('🎭 Ghibli Reaction mode - calling dispatchGenerate')
                         await dispatchGenerate('ghiblireact', {
-                          ghibliReactionPresetId: selectedGhibliReactionPreset
+                          ghibliReactionPresetId: selectedGhibliReactionPreset || undefined
                         })
                       } else if (composerState.mode === 'neotokyoglitch') {
                         // Neo Tokyo Glitch mode - use dispatchGenerate directly
                         console.log('🎭 Neo Tokyo Glitch mode - calling dispatchGenerate')
                         await dispatchGenerate('neotokyoglitch', {
-                          neoTokyoGlitchPresetId: selectedNeoTokyoGlitchPreset
+                          neoTokyoGlitchPresetId: selectedNeoTokyoGlitchPreset || undefined
                         })
                         } else {
                         // Fallback - determine mode and generate
@@ -5123,8 +5128,7 @@ const HomeNew: React.FC = () => {
                         // Run preset generation
                           await dispatchGenerate('preset', {
                           presetId: selectedPreset,
-                          presetData: PRESETS[selectedPreset],
-                          promptOverride: prompt
+                          presetData: PRESETS[selectedPreset]
                         })
                           // Clear composer after successful generation
                           setTimeout(() => {
@@ -5133,7 +5137,7 @@ const HomeNew: React.FC = () => {
                       } else {
                         // Run custom generation
                           await dispatchGenerate('custom', {
-                          promptOverride: prompt
+                          customPrompt: prompt
                         })
                           // Clear composer after successful generation
                           setTimeout(() => {
@@ -5154,7 +5158,7 @@ const HomeNew: React.FC = () => {
                       if (!previewUrl) return 'Upload media first';
 
                       if (mode === 'presets' && !prompt.trim() && !selectedPreset) return 'Enter a prompt or select a preset first';
-                      if (selectedPreset) return `Generate with ${getPresetLabel(selectedPreset, PRESETS)} preset`;
+                      if (selectedPreset) return `Generate with ${getPresetLabel(selectedPreset)} preset`;
                       return 'Generate AI content';
                     })()}
                   >

@@ -59,6 +59,6 @@
     "netlify-cli": "^23.4.2",
     "terser": "^5.43.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.0.2"
+    "typescript": "^5.9.2"
   }
 }

@@ -1993,7 +1993,7 @@ const ProfileScreen: React.FC = () => {
                 <div className="relative">
                   <div className="w-24 h-24 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
                     {previewPhoto ? (
-                      <img src={previewPhoto} alt="Profile preview" className="w-full h-full object-cover" />
+                      <img src={previewPhoto || undefined} alt="Profile preview" className="w-full h-full object-cover" />
                     ) : (
                       <User size={32} className="text-white/40" />
                     )}

@@ -2,21 +2,16 @@
 import { Handler } from '@netlify/functions';
 import { Resend } from 'resend';
 
-// Helper function to create consistent response headers
-function createResponseHeaders(): Record<string, string> {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json'
-  };
-}
-
 export const handler: Handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: createResponseHeaders(),
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+      },
       body: ''
     };
   }
@@ -24,7 +19,12 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: createResponseHeaders(),
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -35,7 +35,12 @@ export const handler: Handler = async (event) => {
     if (!to || !referrerEmail) {
       return {
         statusCode: 400,
-        headers: createResponseHeaders(),
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ error: 'Email address and referrer email are required' })
       };
     }
@@ -45,7 +50,12 @@ export const handler: Handler = async (event) => {
       console.error('Missing RESEND_API_KEY environment variable');
       return {
         statusCode: 500,
-        headers: createResponseHeaders(),
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ error: 'Email service not configured' })
       };
     }
@@ -184,29 +194,33 @@ When you sign up, make sure to mention that ${referrerEmail} invited you to get 
 — The Stefna Team`
     });
 
-    return {
+        return {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ 
-        ok: true, 
-        message: 'Referral invite email sent successfully' 
+      body: JSON.stringify({
+        ok: true,
+        message: 'Referral invite email sent successfully'
       })
     };
 
   } catch (error) {
     console.error('❌  glitchsend-referral-invite error:', error);
     
-    return {
+        return {
       statusCode: 500,
       headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ 
-        ok: false, 
+      body: JSON.stringify({
+        ok: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       })
     };

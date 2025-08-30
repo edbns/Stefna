@@ -89,7 +89,12 @@ export const handler: Handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: createResponseHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      },
       body: JSON.stringify({ 
         items: processedRows || [], 
         limit, 
@@ -102,10 +107,11 @@ export const handler: Handler = async (event) => {
     console.error('💥 [getPublicFeed] Error:', err?.message || err);
     return {
       statusCode: 500,
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
       },
       body: JSON.stringify({ 
         error: 'FEED_FETCH_FAILED',
