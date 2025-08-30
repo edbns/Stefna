@@ -24,7 +24,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({
 
   const loadTokenCount = async () => {
     try {
-      const usage = await tokenService.getUserUsage(userId)
+      const usage = await tokenService.getInstance().getUserUsage(userId)
       const newTokens = usage.dailyLimit - usage.dailyUsage
       
       // Check if tokens changed for animation

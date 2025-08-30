@@ -235,7 +235,7 @@ class AIGenerationService {
   async getStatus(jobId: string): Promise<GenerationStatus> {
     // Implement status checking - this would typically poll the backend
     // For now, return a placeholder
-    return GenerationStatus.IDLE;
+    return { status: 'idle' };
   }
 }
 

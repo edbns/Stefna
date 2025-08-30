@@ -2,16 +2,22 @@
 import { Handler } from '@netlify/functions';
 import { Resend } from 'resend';
 
+// Helper function to create consistent response headers
+function createResponseHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json',
+    ...additionalHeaders
+  };
+}
+
 export const handler: Handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Content-Type': 'application/json'
-      },
+      headers: createResponseHeaders(),
       body: ''
     };
   }
@@ -21,6 +27,8 @@ export const handler: Handler = async (event) => {
       statusCode: 405,
       headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ error: 'Method not allowed' })
@@ -192,6 +200,8 @@ When you sign up, make sure to mention that ${referrerEmail} invited you to get 
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
@@ -207,6 +217,8 @@ When you sign up, make sure to mention that ${referrerEmail} invited you to get 
       statusCode: 500,
       headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 

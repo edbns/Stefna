@@ -6,6 +6,17 @@ import type { Handler } from '@netlify/functions';
 import { json } from './_lib/http';
 import { q, qOne, qCount } from './_db';
 
+// Helper function to create consistent response headers
+function createResponseHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Content-Type': 'application/json',
+    ...additionalHeaders
+  };
+}
+
 
 
 export const handler: Handler = async (event) => {
@@ -42,7 +53,7 @@ export const handler: Handler = async (event) => {
     if (!userId) {
       return {
         statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({ error: 'userId parameter is required' })
       };
     }

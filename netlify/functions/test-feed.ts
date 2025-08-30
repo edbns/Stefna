@@ -4,17 +4,23 @@
 import type { Handler } from '@netlify/functions';
 import { q } from './_db';
 
+// Helper function to create consistent response headers
+function createResponseHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Content-Type': 'application/json',
+    ...additionalHeaders
+  };
+}
+
 export const handler: Handler = async (event) => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Content-Type': 'application/json'
-      },
+      headers: createResponseHeaders(),
       body: ''
     };
   }
@@ -81,10 +87,7 @@ export const handler: Handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createResponseHeaders(),
       body: JSON.stringify({
         diagnostics: {
           users: usersCount[0]?.count || 0,
@@ -108,10 +111,7 @@ export const handler: Handler = async (event) => {
     console.error('💥 [Test Feed] Error:', error);
     return {
       statusCode: 500,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createResponseHeaders(),
       body: JSON.stringify({ 
         error: 'TEST_FAILED',
         message: error?.message || 'Unknown error',

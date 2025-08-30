@@ -1,6 +1,6 @@
 // src/services/uploadSource.ts
-import { uploadToCloudinary } from '../lib/cloudinaryUtils'
-import { UserMedia } from '../types/media'
+import { uploadToCloudinary } from '../lib/cloudinaryUpload'
+import { UserMedia } from './userMediaService'
 
 type Source = { file?: File; url?: string }
 

@@ -7,7 +7,7 @@ import { useIntentQueue } from '../state/intentQueue';
 export function HiddenUploader() {
   const [key, setKey] = useState(0);
   const ref = useRef<HTMLInputElement>(null);
-  const { addToast } = useToasts();
+  const { notifyError } = useToasts();
   const { setSourceUrl } = useIntentQueue();
 
   // Listen for reset events from composer
@@ -31,7 +31,7 @@ export function HiddenUploader() {
     console.info('📁 File selected:', file.name);
     
     try {
-      addToast('Uploading...', 'info');
+      // Upload starting (no toast needed)
       const secureUrl = await handleUploadSelectedFile(file);
       
       // Call back into the queue on success
@@ -44,7 +44,7 @@ export function HiddenUploader() {
       
     } catch (error) {
       console.error('Upload failed:', error);
-      addToast('Upload failed. Please try again.', 'error');
+      notifyError({ title: 'Upload failed', message: 'Please try again' });
     } finally {
       // Allow immediate re-select same file without page refresh
       console.info('📁 Resetting file input for next upload');

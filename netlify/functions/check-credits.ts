@@ -1,17 +1,23 @@
 import type { Handler } from '@netlify/functions';
 import { qOne } from './_db';
 
+// Helper function to create consistent response headers
+function createResponseHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Content-Type': 'application/json',
+    ...additionalHeaders
+  };
+}
+
 export const handler: Handler = async (event) => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Content-Type': 'application/json'
-      },
+      headers: createResponseHeaders(),
       body: ''
     };
   }
@@ -19,12 +25,7 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Content-Type': 'application/json'
-      },
+      headers: createResponseHeaders(),
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -35,7 +36,7 @@ export const handler: Handler = async (event) => {
     if (!userId) {
       return {
         statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({ error: 'userId parameter is required' })
       };
     }
@@ -49,7 +50,7 @@ export const handler: Handler = async (event) => {
     if (!userCredits) {
       return {
         statusCode: 404,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({ error: 'User credits not found' })
       };
     }

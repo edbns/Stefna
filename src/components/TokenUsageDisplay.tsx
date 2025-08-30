@@ -23,7 +23,7 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
 
   const loadUserUsage = async () => {
     try {
-      const userUsage = await tokenService.getUserUsage(userId)
+      const userUsage = await tokenService.getInstance().getUserUsage(userId)
       setUsage(userUsage)
     } catch (error) {
       console.error('Failed to load token usage:', error)
@@ -94,7 +94,7 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
           </span>
         </div>
         
-        {usage.isRateLimited && (
+        {usage.dailyUsage >= usage.dailyLimit && (
           <div className="flex items-center space-x-1 text-red-400">
             <AlertCircle size={14} />
             <span className="text-xs">Rate Limited</span>
@@ -160,7 +160,7 @@ const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
       )}
 
       {/* Rate Limit Warning */}
-      {usage.isRateLimited && (
+      {usage.dailyUsage >= usage.dailyLimit && (
         <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-400">
           <div className="flex items-center space-x-1">
             <Clock size={12} />

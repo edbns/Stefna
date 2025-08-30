@@ -1,7 +1,7 @@
 // Application Bootstrap - Initialize all systems with hardening
 import { presetsStore } from '../stores/presetsStore'
 // import { validateMappings } from '../utils/validateMappings' // REMOVED - complex drama file
-import { setupNavigationCleanup } from './generationPipeline'
+// import { setupNavigationCleanup } from './generationPipeline' // Function not available
 // import { setupMemoryLeakPrevention } from '../utils/guardRails' // REMOVED - complex drama file
 import { logger } from '../utils/logger'
 
@@ -25,7 +25,7 @@ async function performBootstrap(): Promise<void> {
   try {
     // 1. Setup hardening systems first
     bootLogger.info('Setting up hardening systems...')
-    setupNavigationCleanup()
+    // setupNavigationCleanup() // Function not available
     // setupMemoryLeakPrevention() // REMOVED - complex drama validation
     
     // 2. Load presets

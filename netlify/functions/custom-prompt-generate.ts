@@ -23,6 +23,17 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Helper function to create consistent response headers
+function createResponseHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+    'Content-Type': 'application/json',
+    ...additionalHeaders
+  };
+}
+
 
 
 
@@ -215,11 +226,7 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      },
+      headers: createResponseHeaders(),
       body: ''
     };
   }
@@ -227,7 +234,7 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: createResponseHeaders(),
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -260,7 +267,7 @@ export const handler: Handler = async (event) => {
     if (missingFields.length > 0) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({
           error: 'VALIDATION_FAILED',
           message: `Missing required fields: ${missingFields.join(', ')}`,
@@ -273,7 +280,7 @@ export const handler: Handler = async (event) => {
     if (!prompt || prompt.trim().length < 10) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({
           error: 'INVALID_PROMPT',
           message: 'Custom prompt must be at least 10 characters long',
@@ -287,7 +294,7 @@ export const handler: Handler = async (event) => {
     if (prompt.length > 1000) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({
           error: 'PROMPT_TOO_LONG',
           message: 'Custom prompt must be less than 1000 characters',
@@ -327,7 +334,7 @@ export const handler: Handler = async (event) => {
         console.log('🔄 [CustomPrompt] Run already completed, returning cached result');
         return {
           statusCode: 200,
-          headers: { 'Access-Control-Allow-Origin': '*' },
+          headers: createResponseHeaders(),
           body: JSON.stringify(existingRun)
         };
       } else {
@@ -345,7 +352,7 @@ export const handler: Handler = async (event) => {
     if (!validPresets.includes(presetKey)) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({
           error: 'INVALID_PRESET',
           message: `Invalid preset key. Must be one of: ${validPresets.join(', ')}`,
@@ -359,7 +366,7 @@ export const handler: Handler = async (event) => {
     if (!sourceUrl.startsWith('http')) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({
           error: 'INVALID_IMAGE_URL',
           message: 'Source URL must be a valid HTTP(S) URL',
@@ -390,7 +397,7 @@ export const handler: Handler = async (event) => {
       console.error('❌ [CustomPrompt] Credit reservation failed:', creditError);
       return {
         statusCode: 402,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({
           error: 'INSUFFICIENT_CREDITS',
           message: 'Not enough credits for generation',
@@ -465,7 +472,7 @@ export const handler: Handler = async (event) => {
         
         return {
           statusCode: 200,
-          headers: { 'Access-Control-Allow-Origin': '*' },
+          headers: createResponseHeaders(),
           body: JSON.stringify({
             message: 'Generation completed successfully',
             jobId: initialRecord.id,
@@ -507,7 +514,7 @@ export const handler: Handler = async (event) => {
       
       return {
         statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({
           error: 'GENERATION_FAILED',
           message: 'Custom prompt generation failed',
@@ -515,6 +522,16 @@ export const handler: Handler = async (event) => {
         })
       };
     }
+
+    // Fallback return for any unhandled code paths
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        error: 'UNHANDLED_PATH',
+        message: 'Generation completed but no response was generated'
+      })
+    };
 
   } catch (error) {
     console.error('❌ [CustomPrompt] Unexpected error:', error);

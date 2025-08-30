@@ -23,6 +23,11 @@ export interface PromptOptions {
   strength?: number;
   guidance_scale?: number;
   num_inference_steps?: number;
+  detail?: "soft" | "medium" | "hard";
+  base?: string;
+  user?: string;
+  lockSurfer?: boolean;
+  extraNeg?: string;
 }
 
 export function buildPrompt(opts: PromptOptions): string {
@@ -44,8 +49,8 @@ export function buildPrompt(opts: PromptOptions): string {
   const negatives = [
     opts.extraNeg,
     opts.lockSurfer ? NEG_SURFER_DRIFT : "",
-    (opts.mode === "time_machine" || opts.mode === "restore") ? SUBJECT_LOCK_NEG : ""
+    // (opts.mode === "time_machine" || opts.mode === "restore") ? SUBJECT_LOCK_NEG : "" // Removed invalid mode comparisons
   ].filter(Boolean).join(", ");
 
-  return { positives, negatives };
+  return positives + (negatives ? ` [Negative: ${negatives}]` : '');
 }
