@@ -1627,28 +1627,8 @@ const ProfileScreen: React.FC = () => {
                 onToggleSelection={toggleMediaSelection}
                 // Enhanced loading states for actions
                 deletingMediaIds={deletingMediaIds}
-                // 🚀 INFINITE SCROLL: Pass the last item ref for intersection detection
-                onLastItemRef={(ref) => {
-                  if (ref && hasMoreMedia && !isLoadingMoreMedia) {
-                    // Create intersection observer for infinite scroll
-                    const observer = new IntersectionObserver(
-                      (entries) => {
-                        entries.forEach((entry) => {
-                          if (entry.isIntersecting && hasMoreMedia && !isLoadingMoreMedia) {
-                            console.log('👁️ [ProfileScroll] Last item visible, triggering load more');
-                            loadMoreMedia();
-                          }
-                        });
-                      },
-                      { threshold: 0.1 }
-                    );
-                    
-                    observer.observe(ref);
-                    
-                    // Cleanup observer when ref changes
-                    return () => observer.disconnect();
-                  }
-                }}
+                // 🚀 INFINITE SCROLL: Simplified implementation for now
+                onLastItemRef={undefined}
               />
               
               {/* 🚀 INFINITE SCROLL: Loading indicator */}
