@@ -49,9 +49,9 @@ const PresetTag: React.FC<PresetTagProps> = ({
       default:
         // Fallback to presetKey if type is not available
         if (presetKey) {
-          if (presetKey.startsWith('ghibli_')) return 'Ghibli Reaction'
-          if (presetKey.startsWith('emotion_') || presetKey.includes('joy_') || presetKey.includes('strength_') || presetKey.includes('nostalgia_') || presetKey.includes('peace_')) return 'Emotion Mask'
-          if (presetKey.startsWith('neo_')) return 'Neo Tokyo Glitch'
+          if (presetKey.startsWith('ghibli_') || presetKey.includes('ghibli')) return 'Ghibli Reaction'
+          if (presetKey.startsWith('emotion_') || presetKey.includes('emotion') || presetKey.includes('joy_') || presetKey.includes('strength_') || presetKey.includes('nostalgia_') || presetKey.includes('peace_')) return 'Emotion Mask'
+          if (presetKey.startsWith('neo_') || presetKey.includes('neo') || presetKey.includes('glitch')) return 'Neo Tokyo Glitch'
           if (presetKey === 'custom' || presetKey === 'custom_prompt') return 'Custom Prompt'
           if (presetKey.startsWith('story_') || presetKey === 'auto' || presetKey === 'adventure' || presetKey === 'romance' || presetKey === 'mystery' || presetKey === 'comedy' || presetKey === 'fantasy' || presetKey === 'travel') return 'Story Time'
           return 'Presets'
@@ -100,15 +100,9 @@ const PresetTag: React.FC<PresetTagProps> = ({
       `}
       title={`Generated with ${getPresetTypeLabel()}${presetKey && presetKey !== 'custom' && presetKey !== 'custom_prompt' ? ` - ${presetKey}` : ''}`}
       onClick={clickable ? (e) => onClick?.(e) : undefined}
-      style={{ 
-        backgroundColor: '#212529', 
-        color: '#f8f9fa', 
-        borderColor: '#495057',
-        zIndex: 1000,
-        position: 'relative'
-      }}
+
     >
-      🔍 {getDisplayText()}
+      {getDisplayText()}
     </div>
   )
 }
