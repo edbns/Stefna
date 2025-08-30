@@ -4,7 +4,7 @@
 // Global file state for fallback
 declare global {
   interface Window {
-    __lastSelectedFile?: File
+    __lastSelectedFile?: File | Blob
     __styleClashLeft?: string
     __styleClashRight?: string
   }

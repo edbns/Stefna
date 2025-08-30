@@ -31,7 +31,7 @@ export function HiddenUploader() {
     console.info('📁 File selected:', file.name);
     
     try {
-      addToast('Uploading...', 'info');
+      addToast({ title: 'Uploading...', message: 'Please wait...' });
       const secureUrl = await handleUploadSelectedFile(file);
       
       // Call back into the queue on success
@@ -44,7 +44,7 @@ export function HiddenUploader() {
       
     } catch (error) {
       console.error('Upload failed:', error);
-      addToast('Upload failed. Please try again.', 'error');
+      addToast({ title: 'Upload failed', message: 'Please try again.' });
     } finally {
       // Allow immediate re-select same file without page refresh
       console.info('📁 Resetting file input for next upload');
