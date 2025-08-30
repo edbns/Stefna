@@ -93,6 +93,7 @@ import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
 import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
 import NeoGlitchService from '../services/neoGlitchService'
 import GenerationPipeline from '../services/generationPipeline'
+import { resolvePresetForMode } from '../utils/resolvePresetForMode'
 
 // Create a PRESETS object that maps to the new system for backward compatibility
 const PRESETS = Object.fromEntries(
@@ -1730,6 +1731,52 @@ const HomeNew: React.FC = () => {
     closeAllDropdowns() // Close all dropdowns when composer closes
   }
 
+  // Load user profile from database
+  const loadUserProfileFromDatabase = async () => {
+    try {
+      const token = authService.getToken()
+      if (!token) {
+        console.warn('⚠️ Cannot load profile: no authentication token')
+        return
+      }
+
+      console.log('🔄 Loading user profile from database...', { 
+        hasToken: !!token, 
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'none' 
+      })
+      const response = await fetch('/.netlify/functions/get-user-profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const userData = await response.json()
+        console.log('✅ User profile loaded from database:', userData)
+        
+        // Store full user profile for onboarding check
+        // Profile data is now managed by ProfileContext
+        
+        // Profile setup is now handled through the edit profile modal in ProfileScreen
+        
+        // Update localStorage with profile data
+        const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
+        const updatedProfile = { 
+          ...currentProfile, 
+          name: userData.name || '',
+          avatar: userData.avatar || ''
+        }
+        localStorage.setItem('userProfile', JSON.stringify(updatedProfile))
+      } else {
+        console.warn('⚠️ Failed to load user profile from database')
+      }
+    } catch (error) {
+      console.error('❌ Failed to load user profile from database:', error)
+    }
+  }
+
   // NEW CLEAN GENERATION DISPATCHER - NO MORE MIXED LOGIC
   async function dispatchGenerate(
     kind: 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch', // remix removed
@@ -2402,24 +2449,27 @@ const HomeNew: React.FC = () => {
       // Reserve credits before generation - dynamically calculate based on variations
       let creditsNeeded = 2; // Default for single generation (premium images)
       
-      if (kind === 'ghiblireact' || kind === 'neotokyoglitch') {
+      // Use type assertion to prevent narrowing
+      const generationKind = kind as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch';
+      
+      if (generationKind === 'ghiblireact' || generationKind === 'neotokyoglitch') {
         creditsNeeded = 2; // Single generation for new modes (premium images)
       } else {
-                  creditsNeeded = 2; // Single generation (preset, custom single, emotionmask) - premium images
+        creditsNeeded = 2; // Single generation (preset, custom single, emotionmask) - premium images
       }
       
       console.log(`💰 Reserving ${creditsNeeded} credits before generation...`);
       console.log('🔍 Credit reservation debug:', { 
-        kind, 
+        kind: generationKind, 
         mode, 
         creditsNeeded, 
-        kindType: typeof kind, 
+        kindType: typeof generationKind, 
         modeType: typeof mode 
       });
       
       // Map generation modes to valid credit reservation actions
-      let creditAction = kind;
-      if (kind === 'ghiblireact' || kind === 'neotokyoglitch') {
+      let creditAction: string = generationKind;
+      if (generationKind === 'ghiblireact' || generationKind === 'neotokyoglitch') {
         creditAction = 'image.gen'; // Map new modes to standard image generation
       }
       
@@ -2460,32 +2510,40 @@ const HomeNew: React.FC = () => {
       if (!requestId) {
         throw new Error('No request_id returned from credits reservation');
       }
+      
+      // Define the finalizeCredits function now that we have the requestId
+      defineFinalizeCredits(requestId);
 
       // Add credit finalization tracking
       let creditsFinalized = false;
-      const finalizeCredits = async (disposition: 'commit' | 'refund') => {
-        if (creditsFinalized) return; // Prevent double finalization
-        
-        try {
-          const finalizeResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              request_id: requestId,
-              disposition
-            })
-          });
+      let finalizeCredits: ((disposition: 'commit' | 'refund') => Promise<void>) | null = null;
+      
+      // Define the finalizeCredits function after we have the requestId
+      const defineFinalizeCredits = (requestId: string) => {
+        finalizeCredits = async (disposition: 'commit' | 'refund') => {
+          if (creditsFinalized) return; // Prevent double finalization
+          
+          try {
+            const finalizeResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                request_id: requestId,
+                disposition
+              })
+            });
 
-          if (finalizeResponse.ok) {
-            const finalizeResult = await finalizeResponse.json();
-            console.log(`✅ Credits ${disposition}ed successfully. New balance: ${finalizeResult.newBalance}`);
-            creditsFinalized = true;
-          } else {
-            console.warn(`⚠️ Failed to ${disposition} credits: ${finalizeResponse.status}`);
+            if (finalizeResponse.ok) {
+              const finalizeResult = await finalizeResponse.json();
+              console.log(`✅ Credits ${disposition}ed successfully. New balance: ${finalizeResult.newBalance}`);
+              creditsFinalized = true;
+            } else {
+              console.warn(`⚠️ Failed to ${disposition} credits: ${finalizeResponse.status}`);
+            }
+          } catch (error) {
+            console.error(`❌ Error finalizing credits (${disposition}):`, error);
           }
-        } catch (error) {
-          console.error(`❌ Error finalizing credits (${disposition}):`, error);
-        }
+        };
       };
 
       // Video pathway → use start-v2v + poll-v2v
@@ -3566,114 +3624,19 @@ const HomeNew: React.FC = () => {
       
       // 🎯 All generation now goes through GenerationPipeline - no direct aimlApi calls
       console.log('🆕 [New System] All generation goes through GenerationPipeline');
-      throw new Error('Direct aimlApi calls are deprecated - use GenerationPipeline');
       
-      // Keep preset selected for user convenience (stateless generation doesn't need clearing)
+      // Since this function is deprecated, just show an error and redirect
+      notifyError({ 
+        title: 'Deprecated Function', 
+        message: 'This generation method is no longer supported. Please use the new interface.' 
+      });
       
-      // Clear mode state after successful generation
-      if (selectedMode) {
-        // Track mode success analytics before clearing
-        try {
-          const resolvedPreset = resolvePresetForMode({
-            mode: selectedMode,
-            option: (selectedTheme || selectedEra || selectedOp) as string,
-          });
-          
-          console.log('📊 Mode analytics - success (alt path):', {
-            mode: selectedMode,
-            theme: selectedTheme,
-            era: selectedEra,
-            op: selectedOp,
-            preset: resolvedPreset,
-            timestamp: new Date().toISOString()
-          });
-          
-          // TODO: Send to analytics service when available
-          // analytics.track('mode_generation_completed', { mode: selectedMode, theme: selectedTheme, era: selectedEra, op: selectedOp, preset: resolvedPreset });
-        } catch (error) {
-          console.warn('⚠️ Analytics tracking failed:', error);
-        }
-        
-        // Clear all mode selections after successful generation (per architecture)
-        clearAllOptionsAfterGeneration();
-      }
+      // Clear generation state
+      endGeneration(genId);
+      setNavGenerating(false);
+      setIsComposerOpen(true);
       
-      // 💰 Finalize credits (commit) after successful generation
-      try {
-        console.log('💰 Alt path: Finalizing credits (commit)...');
-        const finalizeResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            request_id: creditsResult.request_id,
-            disposition: 'commit'
-          })
-        });
-        
-        if (finalizeResponse.ok) {
-          const finalizeResult = await finalizeResponse.json();
-          console.log('✅ Alt path: Credits finalized successfully:', finalizeResult);
-        } else {
-          console.error('❌ Alt path: Credits finalization failed:', finalizeResponse.status);
-          // Don't throw here - generation succeeded, just log the credit issue
-        }
-      } catch (finalizeError) {
-        console.error('❌ Alt path: Credits finalization error:', finalizeError);
-        // Don't throw here - generation succeeded, just log the credit issue
-      }
-      
-      // Optionally refresh quota
-      try {
-        const qRes = await authenticatedFetch('/.netlify/functions/getQuota')
-        if (qRes.ok) setQuota(await qRes.json())
-      } catch {}
-    } catch (e) {
-      console.error('Generate error', e)
-      
-      // 🔍 CRITICAL FIX: Handle credit errors with user-friendly messages
-      let errorMessage = 'Please try again';
-      if (e instanceof Error) {
-        if (e.message.includes('Insufficient credits') || e.message.includes('credits but only have')) {
-          errorMessage = 'Not enough credits. Please wait for daily reset or upgrade your plan.';
-        } else if (e.message.includes('Daily cap reached')) {
-          errorMessage = 'Daily limit reached. Please try again tomorrow.';
-        } else if (e.message.includes('Generation blocked')) {
-          errorMessage = 'Generation blocked. Please wait until tomorrow for new credits.';
-        }
-      }
-      
-      // Show user-friendly error message
-      console.error('❌ Failed:', errorMessage)
-      
-      // 💰 Refund credits if generation failed
-      if (creditsResult?.request_id) {
-        try {
-          console.log('💰 Alt path: Refunding credits due to generation failure...');
-          const refundResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              request_id: creditsResult.request_id,
-              disposition: 'refund'
-            })
-          });
-          
-          if (refundResponse.ok) {
-            const refundResult = await refundResponse.json();
-            console.log('✅ Alt path: Credits refunded successfully:', refundResult);
-          } else {
-            console.error('❌ Alt path: Credits refund failed:', refundResponse.status);
-          }
-        } catch (refundError) {
-          console.error('❌ Alt path: Credits refund error:', refundError);
-        }
-      }
-      
-      // Clear composer state even on failure
-      resetComposerState();
-      
-      endGeneration(genId)
-      setNavGenerating(false)
+            // Keep preset selected for user convenience (stateless generation doesn't need clearing)
     }
   }
 
@@ -4227,51 +4190,7 @@ const HomeNew: React.FC = () => {
     return originalPrompt + randomEnhancement
   }
 
-  // Load user profile from database
-  const loadUserProfileFromDatabase = async () => {
-    try {
-      const token = authService.getToken()
-      if (!token) {
-        console.warn('⚠️ Cannot load profile: no authentication token')
-        return
-      }
 
-      console.log('🔄 Loading user profile from database...', { 
-        hasToken: !!token, 
-        tokenPreview: token ? `${token.substring(0, 20)}...` : 'none' 
-      })
-      const response = await fetch('/.netlify/functions/get-user-profile', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (response.ok) {
-        const userData = await response.json()
-        console.log('✅ User profile loaded from database:', userData)
-        
-        // Store full user profile for onboarding check
-        // Profile data is now managed by ProfileContext
-        
-        // Profile setup is now handled through the edit profile modal in ProfileScreen
-        
-        // Update localStorage with profile data
-        const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
-        const updatedProfile = { 
-          ...currentProfile, 
-          name: userData.name || '',
-          avatar: userData.avatar || ''
-        }
-        localStorage.setItem('userProfile', JSON.stringify(updatedProfile))
-      } else {
-        console.warn('⚠️ Failed to load user profile from database')
-      }
-    } catch (error) {
-      console.error('❌ Failed to load user profile from database:', error)
-    }
-  }
 
   // Tier promotions removed - simplified credit system
 
