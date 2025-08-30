@@ -77,11 +77,22 @@ export const handler: Handler = async (event) => {
     if (rows.length > 0) {
       console.info('🔍 [getPublicFeed] Sample item structure:', {
         firstItem: rows[0],
-        hasImageUrl: !!rows[0]?.finalUrl,
-        imageUrlValue: rows[0]?.finalUrl,
+        hasImageUrl: !!rows[0]?.imageUrl,
+        imageUrlValue: rows[0]?.imageUrl,
         totalItems: rows.length
       });
     }
+
+    // Process rows to ensure proper field names (PostgreSQL returns lowercase)
+    const processedRows = rows.map(row => ({
+      ...row,
+      // Ensure field names match what frontend expects
+      finalUrl: row.finalurl || row.finalUrl,
+      imageUrl: row.imageurl || row.imageUrl,
+      mediaType: row.mediatype || row.mediaType,
+      presetKey: row.presetkey || row.presetKey,
+      createdAt: row.created_at || row.createdAt
+    }));
 
     return {
       statusCode: 200,
@@ -91,11 +102,11 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       },
       body: JSON.stringify({ 
-        items: rows || [], 
+        items: processedRows || [], 
         limit, 
         offset,
         totalUsers: allowedUsersCount[0]?.count || 0,
-        message: rows.length > 0 ? `Found ${rows.length} items` : 'No public items available yet'
+        message: processedRows.length > 0 ? `Found ${processedRows.length} items` : 'No public items available yet'
       }),
     };
   } catch (err: any) {
