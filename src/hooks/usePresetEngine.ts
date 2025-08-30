@@ -88,13 +88,21 @@ export function usePresetEngine(): PresetEngineState & PresetEngineActions {
     setState(prev => ({ ...prev, selectedCategory: category }));
   }, []);
 
+  const performPresetSearch = useCallback((query: string) => {
+    // Simple search implementation
+    return state.activePresets.filter((preset: any) => 
+      preset.displayName?.toLowerCase().includes(query.toLowerCase()) ||
+      preset.category?.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [state.activePresets]);
+
   const searchPresets = useCallback((query: string) => {
     setState(prev => ({ ...prev, searchQuery: query }));
     
     if (query.trim()) {
       try {
-        const results = searchPresets(query);
-        const mappedResults = results.map(preset => ({
+        const results = performPresetSearch(query);
+        const mappedResults = results.map((preset: any) => ({
           presetKey: preset.key,
           displayName: preset.displayName,
           category: preset.category,

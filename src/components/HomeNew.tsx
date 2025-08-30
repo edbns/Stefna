@@ -3341,8 +3341,9 @@ const HomeNew: React.FC = () => {
         // Track mode success analytics before clearing
         try {
           const resolvedPreset = resolvePresetForMode({
-            mode: selectedMode,
+            mode: selectedMode as "presets",
             option: (selectedTheme || selectedEra || selectedOp) as string,
+            activePresets: PRESETS || {}
           });
           
           console.log('📊 Mode analytics - success:', {
@@ -3459,21 +3460,7 @@ const HomeNew: React.FC = () => {
       console.error('❌ Error! Please try again:', errorMessage)
       
       // Refund credits since generation failed
-      try {
-        const finalizeResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            request_id: requestId,
-            disposition: 'refund'
-          })
-        });
-        if (finalizeResponse.ok) {
-          console.log('✅ Credits refunded successfully');
-        }
-      } catch (error) {
-        console.error('❌ Credits refund failed:', error);
-      }
+      // Note: Credits refund is handled by the generation pipeline automatically on failure
       
       // Clear all options after generation failure
       clearAllOptionsAfterGeneration();
@@ -3600,8 +3587,9 @@ const HomeNew: React.FC = () => {
         // Track mode success analytics before clearing
         try {
           const resolvedPreset = resolvePresetForMode({
-            mode: selectedMode,
+            mode: selectedMode as "presets",
             option: (selectedTheme || selectedEra || selectedOp) as string,
+            activePresets: PRESETS || {}
           });
           
           console.log('📊 Mode analytics - success (alt path):', {
@@ -4727,7 +4715,7 @@ const HomeNew: React.FC = () => {
                       title={isAuthenticated ? 'Choose AI style presets' : 'Sign up to use AI presets'}
                       disabled={!isAuthenticated}
                     >
-                      {selectedPreset ? getPresetLabel(selectedPreset, PRESETS) : 'Presets'}
+                      {selectedPreset ? getPresetLabel(selectedPreset) : 'Presets'}
                     </button>
                     
                     {/* Presets dropdown - clean and simple */}
@@ -4749,7 +4737,7 @@ const HomeNew: React.FC = () => {
                                   : 'text-white hover:text-white hover:bg-white/20'
                               }`}
                             >
-                              <span>{getPresetLabel(name, PRESETS)}</span>
+                              <span>{getPresetLabel(String(name))}</span>
                               {selectedPreset === name ? (
                                 <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
                               ) : (
@@ -4808,7 +4796,7 @@ const HomeNew: React.FC = () => {
                     {composerState.mode === 'emotionmask' && emotionMaskDropdownOpen && (
                       <div className="absolute bottom-full left-0 mb-2 z-50">
                         <EmotionMaskPicker
-                          value={selectedEmotionMaskPreset}
+                          value={selectedEmotionMaskPreset || undefined}
                             onChange={async (presetId) => {
                             setSelectedEmotionMaskPreset(presetId || null)
                             setEmotionMaskDropdownOpen(false)
@@ -5181,13 +5169,13 @@ const HomeNew: React.FC = () => {
                         // Ghibli Reaction mode - use dispatchGenerate directly
                         console.log('🎭 Ghibli Reaction mode - calling dispatchGenerate')
                         await dispatchGenerate('ghiblireact', {
-                          ghibliReactionPresetId: selectedGhibliReactionPreset
+                          ghibliReactionPresetId: selectedGhibliReactionPreset || undefined
                         })
                       } else if (composerState.mode === 'neotokyoglitch') {
                         // Neo Tokyo Glitch mode - use dispatchGenerate directly
                         console.log('🎭 Neo Tokyo Glitch mode - calling dispatchGenerate')
                         await dispatchGenerate('neotokyoglitch', {
-                          neoTokyoGlitchPresetId: selectedNeoTokyoGlitchPreset
+                          neoTokyoGlitchPresetId: selectedNeoTokyoGlitchPreset || undefined
                         })
                         } else {
                         // Fallback - determine mode and generate
@@ -5196,7 +5184,7 @@ const HomeNew: React.FC = () => {
                           await dispatchGenerate('preset', {
                           presetId: selectedPreset,
                           presetData: PRESETS[selectedPreset],
-                          promptOverride: prompt
+                          customPrompt: prompt
                         })
                           // Clear composer after successful generation
                           setTimeout(() => {
@@ -5205,7 +5193,7 @@ const HomeNew: React.FC = () => {
                       } else {
                         // Run custom generation
                           await dispatchGenerate('custom', {
-                          promptOverride: prompt
+                          customPrompt: prompt
                         })
                           // Clear composer after successful generation
                           setTimeout(() => {
@@ -5226,7 +5214,7 @@ const HomeNew: React.FC = () => {
                       if (!previewUrl) return 'Upload media first';
 
                       if (mode === 'presets' && !prompt.trim() && !selectedPreset) return 'Enter a prompt or select a preset first';
-                      if (selectedPreset) return `Generate with ${getPresetLabel(selectedPreset, PRESETS)} preset`;
+                      if (selectedPreset) return `Generate with ${getPresetLabel(selectedPreset)} preset`;
                       return 'Generate AI content';
                     })()}
                   >

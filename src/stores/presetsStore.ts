@@ -48,8 +48,8 @@ export const presetsStore = create<PresetsState>((set, get) => ({
           id: preset.id,
           label: preset.label,
           description: preset.description,
-          prompt: preset.prompt,
-          negative_prompt: preset.negative_prompt,
+          prompt: preset.promptAdd,
+          negative_prompt: '', // Not available in ProfessionalPresetConfig
           strength: preset.strength,
           model: 'flux' as const,
           mode: preset.mode,

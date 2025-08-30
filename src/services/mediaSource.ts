@@ -13,7 +13,7 @@ declare global {
 export async function getHttpsSource({ file, url }: { file?: File|Blob; url?: string }) {
   // Prefer the file; never fetch blob: (CSP will block).
   if (file) {
-    const result = await uploadToCloudinary(file, 'stefna/sources')
+    const result = await uploadToCloudinary(file as File, 'stefna/sources')
     return result.secure_url
   }
 

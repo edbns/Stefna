@@ -127,7 +127,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
       await tf.setBackend('webgl');
       
       // Load face landmarks detection model
-      const model = await createDetector(SupportedModels.FaceLandmarks);
+      const model = await createDetector(SupportedModels.MediaPipeFaceMesh);
 
       // Store model and update state
       tfModel = model;

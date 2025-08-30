@@ -123,7 +123,7 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                           },
-                          body: JSON.stringify({ shareToFeed: newValue, allowRemix })
+                          body: JSON.stringify({ shareToFeed: newValue })
                         })
                       }
                     } catch (error) {

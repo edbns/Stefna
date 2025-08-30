@@ -49,7 +49,7 @@ async function loadTFModel(): Promise<any> {
   isModelLoading = true;
   try {
     console.log('🎭 Loading TensorFlow.js Face Landmarks Detection model...');
-    tfModel = await createDetector(SupportedModels.FaceLandmarks);
+    tfModel = await createDetector(SupportedModels.MediaPipeFaceMesh);
     console.log('✅ Face detection model loaded successfully');
     return tfModel;
   } catch (error) {

@@ -1,6 +1,6 @@
 // User Service - Handles user data through Netlify Functions with Neon backend
 
-import { User } from '../types/user'
+import { User } from './authService'
 
 class UserService {
   private baseUrl: string
@@ -64,7 +64,7 @@ class UserService {
       id: userData.user_id || userData.id,
       email: userData.email,
       name: userData.display_name || userData.name,
-      avatarUrl: userData.avatar_url,
+              // avatarUrl: userData.avatar_url, // Property not available in User interface
       // Simplified: All users get the same limits
       dailyLimit: 30,
       weeklyLimit: 150
