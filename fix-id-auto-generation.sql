@@ -1,21 +1,89 @@
--- Fix id column auto-generation for ghibli_reaction_media table
--- Ensure UUID extension is enabled and id column generates properly
+-- Fix id column auto-generation for ALL tables
+-- Ensure UUID extension is enabled and all id columns generate properly
 
 -- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Fix the id column to use proper UUID generation
+-- Fix ALL tables that use gen_random_uuid() to use uuid_generate_v4() instead
+-- This prevents the "null value in column id" error across all tables
+
+-- Users table
+ALTER TABLE users 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
+
+-- User credits table
+ALTER TABLE user_credits 
+ALTER COLUMN user_id SET DEFAULT uuid_generate_v4()::text;
+
+-- Credits ledger table
+ALTER TABLE credits_ledger 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
+
+-- Custom prompt media table
+ALTER TABLE custom_prompt_media 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
+
+-- Emotion mask media table
+ALTER TABLE emotion_mask_media 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
+
+-- Ghibli reaction media table
 ALTER TABLE ghibli_reaction_media 
 ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Ensure the column is NOT NULL and has proper constraints
-ALTER TABLE ghibli_reaction_media 
-ALTER COLUMN id SET NOT NULL;
+-- Neo glitch media table
+ALTER TABLE neo_glitch_media 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
 
--- Add comment for clarity
+-- Presets media table
+ALTER TABLE presets_media 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
+
+-- Story table
+ALTER TABLE story 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
+
+-- Story photo table
+ALTER TABLE story_photo 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
+
+-- Video jobs table
+ALTER TABLE video_jobs 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
+
+-- Referrals table
+ALTER TABLE referrals 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
+
+-- Notifications table
+ALTER TABLE notifications 
+ALTER COLUMN id SET DEFAULT uuid_generate_v4()::text;
+
+-- Ensure all id columns are NOT NULL
+ALTER TABLE users ALTER COLUMN id SET NOT NULL;
+ALTER TABLE user_credits ALTER COLUMN user_id SET NOT NULL;
+ALTER TABLE credits_ledger ALTER COLUMN id SET NOT NULL;
+ALTER TABLE custom_prompt_media ALTER COLUMN id SET NOT NULL;
+ALTER TABLE emotion_mask_media ALTER COLUMN id SET NOT NULL;
+ALTER TABLE ghibli_reaction_media ALTER COLUMN id SET NOT NULL;
+ALTER TABLE neo_glitch_media ALTER COLUMN id SET NOT NULL;
+ALTER TABLE presets_media ALTER COLUMN id SET NOT NULL;
+ALTER TABLE story ALTER COLUMN id SET NOT NULL;
+ALTER TABLE story_photo ALTER COLUMN id SET NOT NULL;
+ALTER TABLE video_jobs ALTER COLUMN id SET NOT NULL;
+ALTER TABLE referrals ALTER COLUMN id SET NOT NULL;
+ALTER TABLE notifications ALTER COLUMN id SET NOT NULL;
+
+-- Add comments for clarity
+COMMENT ON COLUMN users.id IS 'Auto-generated UUID primary key for user accounts';
 COMMENT ON COLUMN ghibli_reaction_media.id IS 'Auto-generated UUID primary key for ghibli reaction media records';
+COMMENT ON COLUMN neo_glitch_media.id IS 'Auto-generated UUID primary key for neo glitch media records';
+COMMENT ON COLUMN presets_media.id IS 'Auto-generated UUID primary key for presets media records';
+COMMENT ON COLUMN emotion_mask_media.id IS 'Auto-generated UUID primary key for emotion mask media records';
+COMMENT ON COLUMN custom_prompt_media.id IS 'Auto-generated UUID primary key for custom prompt media records';
 
--- Verify the fix by checking the table structure
--- SELECT column_name, data_type, is_nullable, column_default 
+-- Verify the fixes by checking all table structures
+-- SELECT table_name, column_name, data_type, is_nullable, column_default 
 -- FROM information_schema.columns 
--- WHERE table_name = 'ghibli_reaction_media' AND column_name = 'id';
+-- WHERE table_name IN ('users', 'ghibli_reaction_media', 'neo_glitch_media', 'presets_media', 'emotion_mask_media', 'custom_prompt_media') 
+-- AND column_name = 'id';
