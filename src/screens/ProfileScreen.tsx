@@ -824,6 +824,20 @@ const ProfileScreen: React.FC = () => {
       setDraftMedia([])
       
       // Load drafts from localStorage
+      try {
+        const user = authService.getCurrentUser()
+        if (user?.id) {
+          const key = `user_drafts_${user.id}`
+          const savedDrafts = localStorage.getItem(key)
+          if (savedDrafts) {
+            const drafts = JSON.parse(savedDrafts)
+            console.log('📝 Loaded drafts from localStorage:', drafts.length)
+            setDraftMedia(drafts)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load drafts from localStorage:', error)
+      }
     } catch (error) {
       console.error('Error in loadUserMedia:', error);
     }
@@ -846,26 +860,6 @@ const ProfileScreen: React.FC = () => {
   };
 
   // Load profile data when component mounts and user is authenticated
-        const user = authService.getCurrentUser()
-        if (user?.id) {
-          const key = `user_drafts_${user.id}`
-          const savedDrafts = localStorage.getItem(key)
-          if (savedDrafts) {
-            const drafts = JSON.parse(savedDrafts)
-            console.log('📝 Loaded drafts from localStorage:', drafts.length)
-            setDraftMedia(drafts)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load drafts from localStorage:', error)
-      }
-      
-      setIsLoading(false)
-    } catch (error) {
-      console.error('Failed to load user media:', error)
-      setIsLoading(false)
-    }
-  }
 
   // Load user media on component mount and when updated
   useEffect(() => {
