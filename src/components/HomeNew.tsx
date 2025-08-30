@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Plus, X, ArrowUp, Filter, FileText } from 'lucide-react'
+// Generate simple unique ID for runId
+const generateRunId = () => `run_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 import { authenticatedFetch, signedFetch } from '../utils/apiClient'
 import authService from '../services/authService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
@@ -2183,7 +2185,9 @@ const HomeNew: React.FC = () => {
           body: JSON.stringify({
             prompt: effectivePrompt,
             presetKey: generationMeta?.presetKey || 'base',
-            sourceUrl
+            sourceUrl,
+            userId: authService.getCurrentUser()?.id || '',
+            runId: generateRunId() // Generate a unique run ID
           })
         });
         
