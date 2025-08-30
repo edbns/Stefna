@@ -17,28 +17,14 @@ CREATE TABLE IF NOT EXISTS user_credits_new (
     updated_at TIMESTAMPTZ(6) DEFAULT NOW()
 );
 
--- Copy data from old table to new table
--- Use existing credits if available, otherwise default to 30
--- Use existing balance if available, otherwise default to 0
+-- Copy user IDs from old table and set default values
+-- Since the old table structure is broken, we'll just get the user IDs
+-- and set everyone to default 30 credits and 0 balance
 INSERT INTO user_credits_new (user_id, credits, balance, created_at, updated_at)
 SELECT 
     user_id,
-    COALESCE(
-        CASE 
-            WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_credits' AND column_name = 'credits') 
-            THEN (SELECT credits FROM user_credits WHERE user_credits.user_id = user_credits.user_id)
-            ELSE 30
-        END,
-        30
-    ) as credits,
-    COALESCE(
-        CASE 
-            WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_credits' AND column_name = 'balance') 
-            THEN (SELECT balance FROM user_credits WHERE user_credits.user_id = user_credits.user_id)
-            ELSE 0
-        END,
-        0
-    ) as balance,
+    30 as credits,  -- Default daily limit
+    0 as balance,   -- Default lifetime balance
     COALESCE(created_at, NOW()) as created_at,
     COALESCE(updated_at, NOW()) as updated_at
 FROM user_credits;
