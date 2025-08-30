@@ -10,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Users table (simplified - only what we actually use)
 CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4()::text,
     email TEXT UNIQUE,
     name TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS emotion_mask_media (
 
 -- Ghibli reaction media table
 CREATE TABLE IF NOT EXISTS ghibli_reaction_media (
-    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4()::text,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     image_url TEXT, -- Nullable: populated when job completes
     source_url TEXT NOT NULL,
