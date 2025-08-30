@@ -3,6 +3,8 @@ export interface User {
   email: string;
   name?: string;
   avatarUrl?: string;
+  dailyLimit?: number;
+  weeklyLimit?: number;
   createdAt: Date;
   updatedAt: Date;
 }

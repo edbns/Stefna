@@ -9,10 +9,8 @@ export * from './integration';
 
 // Re-export the most commonly used functions
 export { 
-  PRESETS, 
   OPTION_GROUPS, 
   resolvePreset,
-  getOptionEntries,
   isConfigured 
 } from './types';
 
@@ -28,6 +26,4 @@ export {
 
 
 
-export {
-  ACTIVE_PRESET_IDS
-} from './types';
+

@@ -38,6 +38,7 @@ const ProfileScreen: React.FC = () => {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
 
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
   // Upload functionality
@@ -1357,7 +1358,7 @@ const ProfileScreen: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
-                      <IconComponent size={16} className="text-current" />
+                      {IconComponent && <IconComponent size={16} className="text-current" />}
                     </div>
                     <span className="text-xs font-medium">{item.label}</span>
                   </button>

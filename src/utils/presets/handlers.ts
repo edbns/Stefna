@@ -1,7 +1,8 @@
 // utils/presets/handlers.ts
 import type { Preset, PresetId } from './types';
 import { OPTION_GROUPS, resolvePreset } from './types';
-import { runGeneration, GenerateJob } from '../../services/generationPipeline';
+import { runGeneration } from '../../services/generationPipeline';
+import type { GenerateJob } from '../../types/generation';
 import { getCurrentSourceUrl } from '../../stores/sourceStore';
 
 

@@ -2562,7 +2562,7 @@ const HomeNew: React.FC = () => {
       }
 
       // 🎭 NEO TOKYO GLITCH: Follow Ghibli's exact pattern but with Stability.ai backend
-      if (kind === 'neotokyoglitch') {
+      if ((kind as any) === 'neotokyoglitch') {
         console.log('🚀 [NeoGlitch] Starting generation following Ghibli pattern');
         
         try {
@@ -2838,11 +2838,11 @@ const HomeNew: React.FC = () => {
           
           if (generationResult.success && generationResult.status === 'completed') {
             // New system completed immediately
-            resultUrl = generationResult.imageUrl;
+            resultUrl = generationResult.imageUrl || '';
             allResultUrls = [resultUrl];
             variationsGenerated = 1;
             body = { success: true, system: 'new' };
-            res = { ok: true, status: 200 };
+            res = { ok: true, status: 200 } as Response;
           } else if (generationResult.success && generationResult.status === 'processing') {
             // New system is processing
             throw new Error('Generation in progress - please wait');
@@ -2853,7 +2853,7 @@ const HomeNew: React.FC = () => {
           }
         } catch (error) {
           clearTimeout(timeoutId); // Clear timeout on error
-          if (error.name === 'AbortError') {
+          if (error instanceof Error && error.name === 'AbortError') {
             console.warn('⚠️ Request aborted due to timeout');
             throw new Error('Request timed out. Please try again with a smaller image or different prompt.');
           }

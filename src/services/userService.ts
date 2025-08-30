@@ -67,7 +67,9 @@ class UserService {
       avatarUrl: userData.avatar_url,
       // Simplified: All users get the same limits
       dailyLimit: 30,
-      weeklyLimit: 150
+      weeklyLimit: 150,
+      createdAt: new Date(userData.created_at || Date.now()),
+      updatedAt: new Date(userData.updated_at || Date.now())
     }
   }
 }
