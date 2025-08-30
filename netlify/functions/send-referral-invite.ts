@@ -2,16 +2,21 @@
 import { Handler } from '@netlify/functions';
 import { Resend } from 'resend';
 
+// Helper function to create consistent response headers
+function createResponseHeaders(): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json'
+  };
+}
+
 export const handler: Handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Content-Type': 'application/json'
-      },
+      headers: createResponseHeaders(),
       body: ''
     };
   }
@@ -19,10 +24,7 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
+      headers: createResponseHeaders(),
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -33,10 +35,7 @@ export const handler: Handler = async (event) => {
     if (!to || !referrerEmail) {
       return {
         statusCode: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
+        headers: createResponseHeaders(),
         body: JSON.stringify({ error: 'Email address and referrer email are required' })
       };
     }
@@ -46,10 +45,7 @@ export const handler: Handler = async (event) => {
       console.error('Missing RESEND_API_KEY environment variable');
       return {
         statusCode: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
+        headers: createResponseHeaders(),
         body: JSON.stringify({ error: 'Email service not configured' })
       };
     }

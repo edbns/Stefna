@@ -4,17 +4,22 @@
 import type { Handler } from '@netlify/functions';
 import { q } from './_db';
 
+// Helper function to create consistent response headers
+function createResponseHeaders(): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Content-Type': 'application/json'
+  };
+}
+
 export const handler: Handler = async (event) => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Content-Type': 'application/json'
-      },
+      headers: createResponseHeaders(),
       body: ''
     };
   }
@@ -81,10 +86,7 @@ export const handler: Handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createResponseHeaders(),
       body: JSON.stringify({
         diagnostics: {
           users: usersCount[0]?.count || 0,

@@ -6,6 +6,16 @@ import type { Handler } from '@netlify/functions';
 import { json } from './_lib/http';
 import { q, qOne, qCount } from './_db';
 
+// Helper function to create consistent response headers
+function createResponseHeaders(): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Content-Type': 'application/json'
+  };
+}
+
 
 
 export const handler: Handler = async (event) => {
@@ -13,22 +23,14 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return json('', { 
       status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      }
+      headers: createResponseHeaders()
     });
   }
 
   if (event.httpMethod !== 'GET') {
     return json({ error: 'Method not allowed' }, { 
       status: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      }
+      headers: createResponseHeaders()
     });
   }
 
@@ -42,7 +44,7 @@ export const handler: Handler = async (event) => {
     if (!userId) {
       return {
         statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({ error: 'userId parameter is required' })
       };
     }
