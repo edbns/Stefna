@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS user_settings (
 -- User credits table
 CREATE TABLE IF NOT EXISTS user_credits (
     user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    credits INTEGER DEFAULT 30,
+    credits INTEGER DEFAULT 30,  -- Daily spending limit (resets daily)
+    balance INTEGER DEFAULT 0,   -- Total lifetime balance (for referral bonuses)
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW()
 );
