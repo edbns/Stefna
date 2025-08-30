@@ -4340,6 +4340,40 @@ const HomeNew: React.FC = () => {
 
   const { mode, setMode } = useGenerationMode()
   
+  // Load user's media upload agreement status from database
+  useEffect(() => {
+    const loadUserAgreementStatus = async () => {
+      if (!isAuthenticated) return;
+      
+      try {
+        const response = await fetch('/.netlify/functions/user-settings', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.settings && data.settings.media_upload_agreed) {
+            setUserHasAgreed(true);
+            console.log('✅ User has agreed to media upload');
+          } else {
+            setUserHasAgreed(false);
+            console.log('⚠️ User has not agreed to media upload');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load user agreement status:', error);
+        // Default to false if we can't load the status
+        setUserHasAgreed(false);
+      }
+    };
+    
+    loadUserAgreementStatus();
+  }, [isAuthenticated, token]);
+  
+  // Composer clearing function - defined early to avoid reference errors
+  
   return (
     <div className="flex min-h-screen bg-black relative overflow-hidden w-full">
       {/* Hidden file uploader for intent-based uploads */}
