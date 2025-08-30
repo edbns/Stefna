@@ -499,10 +499,10 @@ export const handler: Handler = async (event) => {
 
     // Create initial record
     const initialRecord = await qOne(`
-      INSERT INTO presets_media (user_id, source_url, prompt, preset, run_id, status, image_url, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      INSERT INTO presets_media (id, user_id, source_url, prompt, preset, run_id, status, image_url, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
       RETURNING id
-    `, [userId, sourceUrl, prompt, presetKey, runId.toString(), 'pending', sourceUrl]);
+    `, [uuidv4(), userId, sourceUrl, prompt, presetKey, runId.toString(), 'pending', sourceUrl]);
 
     console.log('✅ [Presets] Initial record created:', initialRecord.id);
 

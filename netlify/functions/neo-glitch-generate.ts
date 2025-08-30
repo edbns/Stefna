@@ -321,12 +321,12 @@ export const handler: Handler = async (event) => {
     // Create initial record
     const initialRows = await q(`
       INSERT INTO neo_glitch_media (
-        run_id, user_id, source_url, prompt, preset, status, image_url, created_at, updated_at
+        id, run_id, user_id, source_url, prompt, preset, status, image_url, created_at, updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, 'processing', $3, NOW(), NOW()
+        $1, $2, $3, $4, $5, $6, 'processing', $4, NOW(), NOW()
       )
       RETURNING id
-    `, [runId.toString(), userId, sourceUrl, prompt, presetKey]);
+    `, [uuidv4(), runId.toString(), userId, sourceUrl, prompt, presetKey]);
 
     const initialRecord = { id: initialRows[0].id } as any;
 
