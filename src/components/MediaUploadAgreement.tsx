@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from '../utils/motionShim';
 import { Shield } from 'lucide-react';
 import { authenticatedFetch } from '../utils/apiClient';
+import { useProfile } from '../contexts/ProfileContext';
 
 interface MediaUploadAgreementProps {
   isOpen: boolean;
@@ -22,6 +23,9 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
   const [contentPolicyChecked, setContentPolicyChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
+  
+  // Get user's actual shareToFeed preference from ProfileContext
+  const { profileData } = useProfile();
   
   // Use parent's state instead of local state
   const hasUserAgreed = parentUserHasAgreed;
@@ -71,7 +75,7 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          shareToFeed: true, // Keep existing setting
+          shareToFeed: profileData.shareToFeed, // Use user's actual preference
           mediaUploadAgreed: true
         })
       });
