@@ -13,10 +13,8 @@ import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 
-// 🚀 BACKGROUND MODE: Allow function to run for up to 15 minutes
-export const config = {
-  type: "background",
-};
+// 🚀 SYNCHRONOUS MODE: Process generation immediately like NeoGlitch
+// No more background processing or polling needed
 
 // Configure Cloudinary
 cloudinary.config({
@@ -80,7 +78,9 @@ async function retryWithLowerStrength(sourceUrl: string, prompt: string, presetK
         'Authorization': `Bearer ${AIML_API_KEY}`,
         'Accept': 'application/json'
       },
-      body: JSON.stringify(retryPayload)
+      body: JSON.stringify(retryPayload),
+      // Add timeout to prevent stuck jobs (3 minutes max)
+      signal: AbortSignal.timeout(3 * 60 * 1000)
     });
     
     if (!response.ok) {
@@ -237,6 +237,8 @@ async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey:
         num_inference_steps: 30,
         seed: Math.floor(Math.random() * 1000000)
       }),
+      // Add timeout to prevent stuck jobs (3 minutes max)
+      signal: AbortSignal.timeout(3 * 60 * 1000)
     });
 
     if (!response.ok) {
