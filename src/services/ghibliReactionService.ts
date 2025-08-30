@@ -52,19 +52,19 @@ class GhibliReactionService {
   }
 
   /**
-   * Start a Ghibli Reaction generation using AIML API
-   * Creates record in ghibli_reaction_media and starts AIML generation
+   * Start a Ghibli Reaction generation using fal.ai
+   * Creates record in ghibli_reaction_media and starts fal.ai generation
    */
   async startGeneration(request: GhibliReactionGenerationRequest): Promise<GhibliReactionGenerationResult> {
     try {
-      console.log('🎭 [GhibliReaction] Starting generation with AIML API:', {
+      console.log('🎭 [GhibliReaction] Starting generation with fal.ai:', {
         presetKey: request.presetKey,
         runId: request.runId,
         hasSource: !!request.sourceAssetId
       });
 
-      // Start AIML generation directly
-      const aimlRes = await authenticatedFetch('/.netlify/functions/ghibli-reaction-generate', {
+      // Start fal.ai generation via backend function
+      const falRes = await authenticatedFetch('/.netlify/functions/ghibli-reaction-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -77,63 +77,61 @@ class GhibliReactionService {
         })
       });
 
-      if (!aimlRes.ok) {
-        const error = await aimlRes.json().catch(() => ({}));
-        throw new Error(error.error || `Failed to start AIML generation: ${aimlRes.status}`);
+      if (!falRes.ok) {
+        const error = await falRes.json().catch(() => ({}));
+        throw new Error(error.error || `Failed to start fal.ai generation: ${falRes.status}`);
       }
 
-      const aimlResult = await aimlRes.json();
-      console.log('🚀 [GhibliReaction] AIML generation response:', {
-        status: aimlResult.status,
-        provider: aimlResult.provider,
-        jobId: aimlResult.jobId,
-        imageUrl: aimlResult.imageUrl,
-        fullResponse: aimlResult
+      const falResult = await falRes.json();
+      console.log('🚀 [GhibliReaction] fal.ai generation response:', {
+        status: falResult.status,
+        provider: falResult.provider,
+        jobId: falResult.jobId,
+        imageUrl: falResult.imageUrl,
+        fullResponse: falResult
       });
 
       // Handle immediate completion from backend
-      if (aimlResult.status === 'completed' && aimlResult.imageUrl) {
+      if (falResult.status === 'completed' && falResult.imageUrl) {
         console.log('🎉 [GhibliReaction] Generation completed immediately!');
         return {
           success: true,
-          jobId: aimlResult.jobId,
-          runId: aimlResult.runId,
+          jobId: falResult.jobId,
+          runId: falResult.runId,
           status: 'completed',
-          imageUrl: aimlResult.imageUrl,
-          aimlJobId: aimlResult.aimlJobId,
-          provider: aimlResult.provider
+          imageUrl: falResult.imageUrl,
+          provider: falResult.provider
         };
       }
 
       // Handle processing status
-      if (aimlResult.status === 'processing' || aimlResult.status === 'pending') {
+      if (falResult.status === 'processing' || falResult.status === 'pending') {
         console.log('🔄 [GhibliReaction] Generation in progress, will need polling');
         return {
           success: true,
-          jobId: aimlResult.jobId,
-          runId: aimlResult.runId,
+          jobId: falResult.jobId,
+          runId: falResult.runId,
           status: 'processing',
-          aimlJobId: aimlResult.aimlJobId,
-          provider: aimlResult.provider
+          provider: falResult.provider
         };
       }
 
       // Handle failed status
-      if (aimlResult.status === 'failed') {
-        console.error('❌ [GhibliReaction] Generation failed:', aimlResult);
+      if (falResult.status === 'failed') {
+        console.error('❌ [GhibliReaction] Generation failed:', falResult);
         return {
           success: false,
           status: 'failed',
-          error: aimlResult.error || 'Generation failed'
+          error: falResult.error || 'Generation failed'
         };
       }
 
       // Unexpected response
-      console.warn('⚠️ [GhibliReaction] Unexpected response status:', aimlResult.status);
+      console.warn('⚠️ [GhibliReaction] Unexpected response status:', falResult.status);
       return {
         success: false,
         status: 'failed',
-        error: `Unexpected status: ${aimlResult.status}`
+        error: `Unexpected status: ${falResult.status}`
       };
 
     } catch (error) {

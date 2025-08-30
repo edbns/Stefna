@@ -210,9 +210,9 @@ export const handler: Handler = async (event) => {
 
     // Create initial database record
     const initialRecord = await qOne(`
-               INSERT INTO ghibli_reaction_media (
-           user_id, run_id, preset, prompt, source_url, status, created_at
-         ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      INSERT INTO ghibli_reaction_media (
+        user_id, run_id, preset, prompt, source_url, status, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
       RETURNING id
     `, [userId, runId, presetKey, prompt, sourceUrl, 'processing']);
 
