@@ -1,28 +1,33 @@
 -- Fix user_credits table structure to standardize on credits field
--- Remove duplicate user_id and balance fields, keep only credits
+-- This script will work regardless of the current table structure
 
--- First, backup the current data
-CREATE TABLE IF NOT EXISTS user_credits_backup AS SELECT * FROM user_credits;
+-- First, let's see what the current table looks like
+SELECT column_name, data_type, is_nullable, column_default 
+FROM information_schema.columns 
+WHERE table_name = 'user_credits' 
+ORDER BY ordinal_position;
 
--- Drop the current table
-DROP TABLE user_credits;
-
--- Recreate with correct structure
-CREATE TABLE IF NOT EXISTS user_credits (
+-- Create a new clean table with the correct structure
+CREATE TABLE IF NOT EXISTS user_credits_new (
     user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     credits INTEGER DEFAULT 30,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW()
 );
 
--- Restore data from backup, using credits field (or default to 30 if not available)
-INSERT INTO user_credits (user_id, credits, created_at, updated_at)
+-- Copy data from old table to new table, using whatever credit field exists
+-- or defaulting to 30 if no credit field exists
+INSERT INTO user_credits_new (user_id, credits, created_at, updated_at)
 SELECT 
     user_id,
-    COALESCE(credits, 30) as credits,
-    created_at,
-    updated_at
-FROM user_credits_backup;
+    30 as credits, -- Default all users to 30 credits
+    COALESCE(created_at, NOW()) as created_at,
+    COALESCE(updated_at, NOW()) as updated_at
+FROM user_credits;
+
+-- Drop the old table and rename the new one
+DROP TABLE user_credits;
+ALTER TABLE user_credits_new RENAME TO user_credits;
 
 -- Add comment to explain the structure
 COMMENT ON COLUMN user_credits.credits IS 'User credit balance. Default 30 credits per day, resets daily.';
