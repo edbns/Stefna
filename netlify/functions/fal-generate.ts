@@ -1,6 +1,12 @@
 // netlify/functions/fal-generate.ts
 // Fal.ai Image Generation Handler
 // Replaces AIML API for all image generation needs
+// 
+// TIMEOUT HANDLING:
+// - Netlify functions have 26s hard limit
+// - fal.ai can be slow, so we use async mode
+// - Function returns job ID immediately, frontend polls for results
+// - Individual API calls timeout at 20s to prevent 504 errors
 import { Handler } from '@netlify/functions';
 import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
@@ -199,7 +205,7 @@ async function attemptFalGeneration(
   const payload = {
     prompt: prompt,
     image_url: sourceUrl,
-    sync_mode: true, // Synchronous generation
+    sync_mode: false, // Asynchronous generation to avoid timeouts
     image_strength: 0.85,
     num_images: 1,
     guidance_scale: 7.5,
@@ -215,8 +221,8 @@ async function attemptFalGeneration(
       'Accept': 'application/json'
     },
     body: JSON.stringify(payload),
-    // Add timeout to prevent stuck jobs (3 minutes max)
-    signal: AbortSignal.timeout(3 * 60 * 1000)
+    // Add timeout to prevent stuck jobs (20 seconds max - Netlify limit is 26s)
+    signal: AbortSignal.timeout(20 * 1000)
   });
 
   if (!response.ok) {
@@ -231,7 +237,21 @@ async function attemptFalGeneration(
     resultKeys: result ? Object.keys(result) : 'none'
   });
 
-  // Extract image URL from fal.ai response format
+  // Handle async mode response
+  if (result.id) {
+    // Async job started - return job ID for polling
+    console.log(`🔄 [Fal.ai] ${falModel.name} async job started:`, result.id);
+    return {
+      status: 'processing',
+      jobId: result.id,
+      falJobId: `${falModel.name.toLowerCase().replace(/\s+/g, '_')}_${runId}`,
+      model: falModel.model,
+      modelName: falModel.name,
+      message: 'Generation started, use job ID to poll for results'
+    };
+  }
+
+  // Handle sync mode response (fallback)
   let imageUrl = null;
   
   // Handle fal.ai response format: result.images[0].url
@@ -249,7 +269,7 @@ async function attemptFalGeneration(
   }
 
   console.log(`🎉 [Fal.ai] ${falModel.name} generation successful:`, {
-    imageUrl: imageUrl.substring(0, 60) + '...',
+    imageUrl: imageUrl.substring(0, 100) + '...',
     generationType,
     model: falModel.model
   });
