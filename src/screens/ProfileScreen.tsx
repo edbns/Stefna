@@ -1607,46 +1607,48 @@ const ProfileScreen: React.FC = () => {
                 <p className="text-white/60 text-lg text-center">No media yet</p>
               </div>
             ) : (
-              <MasonryMediaGrid
-                media={userMedia.map(m => ({
-                  ...m,
-                  aspectRatio: m.width && m.height ? m.width / Math.max(1, m.height) : (m.aspectRatio || 4/3),
-                  width: m.width || 800,
-                  height: m.height || Math.round((m.width || 800) / (m.aspectRatio || 4/3))
-                }))}
-                columns={3}
-                onMediaClick={handleMediaClick}
-                onDownload={handleDownload}
-                onShare={handleShare}
-                onDelete={handleDeleteMedia}
-                showActions={true}
-                className="pb-20"
-                // Selection props
-                isSelectionMode={isSelectionMode}
-                selectedMediaIds={selectedMediaIds}
-                onToggleSelection={toggleMediaSelection}
-                // Enhanced loading states for actions
-                deletingMediaIds={deletingMediaIds}
-                // 🚀 INFINITE SCROLL: Simplified implementation for now
-                onLastItemRef={undefined}
-              />
-              
-              {/* 🚀 INFINITE SCROLL: Loading indicator */}
-              {isLoadingMoreMedia && hasMoreMedia && (
-                <div className="flex justify-center py-8">
-                  <div className="flex items-center space-x-3 text-white/60">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Loading more media...</span>
+              <>
+                <MasonryMediaGrid
+                  media={userMedia.map(m => ({
+                    ...m,
+                    aspectRatio: m.width && m.height ? m.width / Math.max(1, m.height) : (m.aspectRatio || 4/3),
+                    width: m.width || 800,
+                    height: m.height || Math.round((m.width || 800) / (m.aspectRatio || 4/3))
+                  }))}
+                  columns={3}
+                  onMediaClick={handleMediaClick}
+                  onDownload={handleDownload}
+                  onShare={handleShare}
+                  onDelete={handleDeleteMedia}
+                  showActions={true}
+                  className="pb-20"
+                  // Selection props
+                  isSelectionMode={isSelectionMode}
+                  selectedMediaIds={selectedMediaIds}
+                  onToggleSelection={toggleMediaSelection}
+                  // Enhanced loading states for actions
+                  deletingMediaIds={deletingMediaIds}
+                  // 🚀 INFINITE SCROLL: Simplified implementation for now
+                  onLastItemRef={undefined}
+                />
+                
+                {/* 🚀 INFINITE SCROLL: Loading indicator */}
+                {isLoadingMoreMedia && hasMoreMedia && (
+                  <div className="flex justify-center py-8">
+                    <div className="flex items-center space-x-3 text-white/60">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Loading more media...</span>
+                    </div>
                   </div>
-                </div>
-              )}
-              
-              {/* 🚀 INFINITE SCROLL: End of media indicator */}
-              {!hasMoreMedia && userMedia.length > 0 && (
-                <div className="text-center py-8 text-white/40">
-                  <p>You've reached the end of your media</p>
-                </div>
-              )}
+                )}
+                
+                {/* 🚀 INFINITE SCROLL: End of media indicator */}
+                {!hasMoreMedia && userMedia.length > 0 && (
+                  <div className="text-center py-8 text-white/40">
+                    <p>You've reached the end of your media</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
