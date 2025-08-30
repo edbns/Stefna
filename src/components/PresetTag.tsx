@@ -79,7 +79,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
         .trim()
       
       if (cleanKey) {
-        return `${typeLabel}: ${cleanKey}`
+        return `${typeLabel} - ${cleanKey}`
       }
     }
     

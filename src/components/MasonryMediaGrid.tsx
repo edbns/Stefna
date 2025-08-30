@@ -244,45 +244,43 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                     return (
                       <>
 
-                        {/* Preset Tag - Bottom Left */}
-                        {(item.metadata?.presetKey || item.presetKey) && (
-                          <div className="absolute bottom-2 left-2">
-                            <PresetTag 
-                              presetKey={item.metadata?.presetKey || item.presetKey} 
-                              type={item.metadata?.presetType}
-                              size="sm"
-                              clickable={!!onPresetTagClick}
-                              onClick={(e) => {
-                                e.stopPropagation() // Prevent click from bubbling to media card
-                                if (onPresetTagClick) {
-                                  // Use the metadata.presetType field from new dedicated tables
-                                  let presetType = item.metadata?.presetType;
-                                  
-                                  // Fallback logic for items that might not have the presetType field
-                                  if (!presetType) {
-                                    if (item.presetKey?.includes('ghibli') || item.presetKey?.includes('ghibli_reaction')) {
-                                      presetType = 'ghibli-reaction';
-                                    } else if (item.presetKey?.includes('emotion') || item.presetKey?.includes('emotion_mask')) {
-                                      presetType = 'emotion-mask';
-                                    } else if (item.presetKey?.includes('neo') || item.presetKey?.includes('neo_glitch')) {
-                                      presetType = 'neo-glitch';
-                                    } else if (item.presetKey?.includes('preset') || item.presetKey?.includes('professional')) {
-                                      presetType = 'presets';
-                                    } else if (item.presetKey?.includes('custom') || item.prompt) {
-                                      presetType = 'custom-prompt';
-                                    } else if (item.presetKey?.includes('story') || item.presetKey === 'auto' || item.presetKey === 'adventure' || item.presetKey === 'romance' || item.presetKey === 'mystery' || item.presetKey === 'comedy' || item.presetKey === 'fantasy' || item.presetKey === 'travel') {
-                                      presetType = 'story-time';
-                                    } else {
-                                      presetType = 'presets'; // Default fallback
-                                    }
+                                                {/* Preset Tag - Bottom Left */}
+                        <div className="absolute bottom-2 left-2">
+                          <PresetTag 
+                            presetKey={item.metadata?.presetKey || item.presetKey} 
+                            type={item.metadata?.presetType}
+                            size="sm"
+                            clickable={!!onPresetTagClick}
+                            onClick={(e) => {
+                              e.stopPropagation() // Prevent click from bubbling to media card
+                              if (onPresetTagClick) {
+                                // Use the metadata.presetType field from new dedicated tables
+                                let presetType = item.metadata?.presetType;
+                                
+                                // Fallback logic for items that might not have the presetType field
+                                if (!presetType) {
+                                  if (item.presetKey?.includes('ghibli') || item.presetKey?.includes('ghibli_reaction')) {
+                                    presetType = 'ghibli-reaction';
+                                  } else if (item.presetKey?.includes('emotion') || item.presetKey?.includes('emotion_mask')) {
+                                    presetType = 'emotion-mask';
+                                  } else if (item.presetKey?.includes('neo') || item.presetKey?.includes('neo_glitch')) {
+                                    presetType = 'neo-glitch';
+                                  } else if (item.presetKey?.includes('preset') || item.presetKey?.includes('professional')) {
+                                    presetType = 'presets';
+                                  } else if (item.presetKey?.includes('custom') || item.prompt) {
+                                    presetType = 'custom-prompt';
+                                  } else if (item.presetKey?.includes('story') || item.presetKey === 'auto' || item.presetKey === 'adventure' || item.presetKey === 'romance' || item.presetKey === 'mystery' || item.presetKey === 'comedy' || item.presetKey === 'fantasy' || item.presetKey === 'travel') {
+                                    presetType = 'story-time';
+                                  } else {
+                                    presetType = 'presets'; // Default fallback
                                   }
-                                  
-                                  onPresetTagClick(presetType)
                                 }
-                              }}
-                            />
-                          </div>
-                        )}
+                                
+                                onPresetTagClick(presetType)
+                              }
+                            }}
+                          />
+                        </div>
 
                         {/* Actions - Bottom */}
                         {showActions && (
