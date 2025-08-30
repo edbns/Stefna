@@ -210,11 +210,11 @@ export const handler: Handler = async (event) => {
 
     // Create initial database record
     const initialRecord = await qOne(`
-      INSERT INTO ghibli_reaction_media (
-        user_id, run_id, preset, prompt, source_url, status, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
-      RETURNING id
-    `, [userId, runId, presetKey, prompt, sourceUrl, 'processing']);
+               INSERT INTO ghibli_reaction_media (
+           user_id, run_id, preset, prompt, source_url, status, fal_job_id, created_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+         RETURNING id
+       `, [userId, runId, presetKey, prompt, sourceUrl, 'processing', null]);
 
     console.log('✅ [GhibliReaction] Database record created:', initialRecord.id);
 
@@ -226,6 +226,17 @@ export const handler: Handler = async (event) => {
         console.log('🎉 [GhibliReaction] Generation successful, processing result...');
         
         const finalImageUrl = generationResult.imageUrl;
+        const falJobId = generationResult.falJobId || generationResult.jobId || null;
+        
+        // Update database record with fal.ai job ID
+        if (falJobId) {
+          await q(`
+            UPDATE ghibli_reaction_media
+            SET fal_job_id = $1, updated_at = NOW()
+            WHERE id = $2
+          `, [falJobId, initialRecord.id]);
+          console.log('✅ [GhibliReaction] Fal.ai job ID stored:', falJobId);
+        }
         
         // 🔒 REAL IDENTITY PRESERVATION CHECK
         console.log('🔒 [GhibliReaction] Starting real identity preservation check...');
@@ -257,6 +268,8 @@ export const handler: Handler = async (event) => {
           'completed', 
           finalImageUrl, 
           JSON.stringify({
+            falJobId: falJobId,
+            falModel: generationResult.falModel || 'unknown',
             ipaPassed: ipaResult?.passed || false,
             ipaSimilarity: ipaResult ? Math.round(ipaResult.similarity * 100) / 100 : 0,
             ipaThreshold: getIPAThreshold('ghibli_reaction'),
