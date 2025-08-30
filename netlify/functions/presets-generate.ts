@@ -25,8 +25,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Prisma client will be initialized inside handler
-
 // Helper function to check identity similarity (placeholder for now)
 async function checkIdentitySimilarity(sourceUrl: string, generatedUrl: string): Promise<number> {
   try {
@@ -339,9 +337,6 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
 }
 
 export const handler: Handler = async (event) => {
-  // Initialize Prisma client inside handler to avoid bundling issues
-  
-  
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,

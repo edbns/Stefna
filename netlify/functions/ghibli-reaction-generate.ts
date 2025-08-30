@@ -24,8 +24,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Prisma client will be initialized inside handler
-
 // Helper function to check identity similarity (placeholder for now)
 async function checkIdentitySimilarity(sourceUrl: string, generatedUrl: string): Promise<number> {
   try {
@@ -325,9 +323,6 @@ async function processGenerationAsync(
   console.log('🔄 [Ghibli] Processing generation asynchronously for job:', jobId);
   
   try {
-    // Initialize Prisma client
-    
-    
     // Update job status to processing
     await q(`
       UPDATE ghibli_reaction_media 
@@ -405,9 +400,6 @@ async function processGenerationAsync(
 
 // Main handler for direct calls (legacy support)
 export const handler: Handler = async (event) => {
-  // Initialize Prisma client inside handler to avoid bundling issues
-  
-  
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,

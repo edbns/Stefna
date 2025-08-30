@@ -112,23 +112,23 @@ export const handler: Handler = async (event) => {
     if (userResult.rows.length === 0) {
       console.log('👤 [OTP] User not found, creating new user:', email);
 
-      // Create new user
+      // Create new user (simplified structure after cleanup)
       const userId = uuidv4();
       await client.query(
-        'INSERT INTO users (id, email, created_at) VALUES ($1, $2, NOW())',
-        [userId, email.toLowerCase()]
+        'INSERT INTO users (id, email, name, created_at) VALUES ($1, $2, $3, NOW())',
+        [userId, email.toLowerCase(), email.split('@')[0]] // Use email prefix as name
       );
 
-      // Create user credits
+      // Create user credits (simplified structure after cleanup)
       await client.query(
-        'INSERT INTO user_credits (user_id, credits, balance) VALUES ($1, 30, 0)',
-        [userId]
+        'INSERT INTO user_credits (user_id, balance) VALUES ($1, $2)',
+        [userId, 30]
       );
 
-      // Create user settings
+      // Create user settings (simplified structure after cleanup)
       await client.query(
-        'INSERT INTO user_settings (id, user_id, share_to_feed, allow_remix) VALUES ($1, $2, true, true)',
-        [uuidv4(), userId]
+        'INSERT INTO user_settings (user_id, media_upload_agreed, share_to_feed) VALUES ($1, $2, $3)',
+        [userId, false, true] // Default: no upload consent, share to feed
       );
 
       console.log('✅ [OTP] New user created:', userId);

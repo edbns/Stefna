@@ -295,7 +295,6 @@ CREATE TABLE IF NOT EXISTS _extensions (
 -- Users indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_users_tier ON users(tier);
 
 -- User settings indexes
 CREATE INDEX IF NOT EXISTS idx_user_settings_updated_at ON user_settings(updated_at DESC);

@@ -11,12 +11,7 @@
 import { Handler } from '@netlify/functions';
 import { q, qOne, qCount } from './_db';
 
-// Prisma client will be initialized inside handler
-
 export const handler: Handler = async (event) => {
-  // Initialize Prisma client inside handler to avoid bundling issues
-  
-  
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,

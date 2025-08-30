@@ -1,5 +1,5 @@
 // netlify/functions/getUserMedia.ts
-// User media function - fetches user's media assets using Prisma
+// User media function - fetches user's media assets using raw SQL
 // Provides user-specific media data
 
 import type { Handler } from '@netlify/functions';
@@ -55,7 +55,7 @@ export const handler: Handler = async (event) => {
       offset
     });
 
-    // Fetch user's media using Prisma - from all new dedicated tables
+    // Fetch user's media using raw SQL - from all new dedicated tables
     const [ghibliReactionMedia, emotionMaskMedia, presetsMedia, customPromptMedia, neoGlitchMedia] = await Promise.all([
       q(`
         SELECT id, user_id, image_url, prompt, preset, created_at

@@ -1,6 +1,6 @@
 // Dedicated Neo Tokyo Glitch Save Function
 // Handles complete workflow: Stability.ai → Cloudinary → Database → Profile linking
-// Uses Prisma for type-safe database operations
+// Uses raw SQL for database operations
 
 import type { Handler } from '@netlify/functions';
 import { requireAuth } from './_lib/auth';
@@ -84,7 +84,7 @@ export const handler: Handler = async (event) => {
       stabilityJobId
     });
 
-    // Step 1: Check if this generation already exists using Prisma
+    // Step 1: Check if this generation already exists using SQL
     const existingRecord = await qOne(`
       SELECT id, status FROM neo_glitch_media WHERE run_id = $1
     `, [stabilityJobId]);
