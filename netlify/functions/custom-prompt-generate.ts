@@ -23,96 +23,9 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Helper function to check identity similarity (placeholder for now)
-async function checkIdentitySimilarity(sourceUrl: string, generatedUrl: string): Promise<number> {
-  try {
-    // TODO: Implement actual face embedding comparison with TensorFlow.js
-    // For now, return a placeholder similarity score
-    console.log('🔒 [IPA] Placeholder similarity check - will implement actual face comparison');
-    
-    // Simulate similarity check (replace with real implementation)
-    // In production, this would:
-    // 1. Extract face embeddings from both images
-    // 2. Calculate cosine similarity between embeddings
-    // 3. Return similarity score (0.0 to 1.0)
-    
-    const similarity = 0.75; // Placeholder value - replace with real calculation
-    return similarity;
-  } catch (error) {
-    console.error('❌ [IPA] Similarity check failed:', error);
-    return 0.5; // Default to 50% similarity on error
-  }
-}
 
-// Helper function to retry generation with lower strength
-async function retryWithLowerStrength(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string): Promise<{ imageUrl: string; aimlJobId?: string } | null> {
-  try {
-    console.log('🔄 [IPA] Retrying with lower strength for better identity preservation...');
-    
-    // Reduce strength by 20% for retry
-    const reducedStrength = 0.4; // 0.5 * 0.8 = 0.4
-    
-    // Call AIML API with lower strength
-    const retryPayload = {
-      model: 'stable-diffusion-v35-large',
-      prompt: prompt,
-      init_image: sourceUrl,
-      image_strength: reducedStrength, // Lower strength for better identity preservation
-      num_images: 1,
-      guidance_scale: 7.5,
-      num_inference_steps: 30,
-      seed: Math.floor(Math.random() * 1000000)
-    };
-    
-    const AIML_API_KEY = process.env.AIML_API_KEY;
-    const AIML_API_URL = process.env.AIML_API_URL;
-    
-    if (!AIML_API_KEY || !AIML_API_URL) {
-      throw new Error('AIML API configuration missing for retry');
-    }
-    
-    const response = await fetch(`${AIML_API_URL}/v1/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${AIML_API_KEY}`,
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(retryPayload),
-      // Add timeout to prevent stuck jobs (3 minutes max)
-      signal: AbortSignal.timeout(3 * 60 * 1000)
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`AIML API retry failed: ${response.status} - ${errorText}`);
-    }
-    
-    const result = await response.json();
-    console.log('✅ [IPA] Retry generation successful');
-    
-    // Extract image URL from response
-    let imageUrl = null;
-    if (result.output && result.output.choices && result.output.choices[0]?.image_base64) {
-      // Handle base64 response
-      const cloudinaryUrl = await uploadBase64ToCloudinary(result.output.choices[0].image_base64);
-      imageUrl = cloudinaryUrl;
-    } else if (result.image_url) {
-      imageUrl = result.image_url;
-    } else if (result.images && Array.isArray(result.images) && result.images[0]?.url) {
-      imageUrl = result.images[0].url;
-    }
-    
-    if (!imageUrl) {
-      throw new Error('No image URL in retry response');
-    }
-    
-    return { imageUrl };
-  } catch (error) {
-    console.error('❌ [IPA] Retry with lower strength failed:', error);
-    return null;
-  }
-}
+
+
 
 // Helper function to upload AIML results to Cloudinary
 async function uploadAIMLToCloudinary(imageUrl: string, presetKey: string): Promise<{ url: string; publicId: string }> {
@@ -189,7 +102,7 @@ async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey:
         'Accept': 'application/json'
       },
       body: JSON.stringify({
-        model: 'stable-diffusion-v35-large',
+        model: 'flux/dev/image-to-image',
         prompt: prompt,
         init_image: sourceUrl,
         image_strength: 0.5,
@@ -520,72 +433,12 @@ export const handler: Handler = async (event) => {
           // Fallback to original URL if Cloudinary fails
         }
         
-        // 🔒 IDENTITY PRESERVATION CHECK
-        console.log('🔒 [CustomPrompt] Starting identity preservation check...');
-        let ipaPassed = true;
-        let ipaSimilarity = 1.0;
-        
-        try {
-          // Simple similarity check - compare source and generated images
-          // In production, this would use TensorFlow.js face embeddings
-          const similarity = await checkIdentitySimilarity(sourceUrl, finalImageUrl);
-          ipaSimilarity = similarity;
-          
-          // Custom Prompt uses balanced IPA threshold (0.65)
-          const ipaThreshold = 0.65;
-          ipaPassed = similarity >= ipaThreshold;
-          
-          console.log(`🔒 [CustomPrompt] IPA check: ${(similarity * 100).toFixed(1)}% similarity, threshold: ${(ipaThreshold * 100).toFixed(1)}%, passed: ${ipaPassed}`);
-          
-          if (!ipaPassed) {
-            console.log('⚠️ [CustomPrompt] IPA failed, attempting retry with lower strength...');
-            
-            // Retry with lower strength for better identity preservation
-            const retryResult = await retryWithLowerStrength(sourceUrl, prompt, presetKey, userId, runId);
-            if (retryResult && retryResult.imageUrl) {
-              console.log('🔄 [CustomPrompt] Retry successful, updating with new result');
-              finalImageUrl = retryResult.imageUrl;
-              
-              // Re-upload to Cloudinary if needed
-              try {
-                const retryCloudinaryResult = await uploadAIMLToCloudinary(retryResult.imageUrl, presetKey);
-                finalImageUrl = retryCloudinaryResult.url;
-                cloudinaryPublicId = retryCloudinaryResult.publicId;
-                console.log('✅ [CustomPrompt] Retry result uploaded to Cloudinary');
-              } catch (retryCloudinaryError) {
-                console.warn('⚠️ [CustomPrompt] Retry Cloudinary upload failed, using original URL');
-              }
-              
-              // Re-check IPA on retry result
-              const retrySimilarity = await checkIdentitySimilarity(sourceUrl, finalImageUrl);
-              ipaSimilarity = retrySimilarity;
-              ipaPassed = retrySimilarity >= ipaThreshold;
-              console.log(`🔒 [CustomPrompt] Retry IPA: ${(retrySimilarity * 100).toFixed(1)}% similarity, passed: ${ipaPassed}`);
-            }
-          }
-        } catch (ipaError) {
-          console.warn('⚠️ [CustomPrompt] IPA check failed, proceeding with original result:', ipaError);
-          // Continue with original result if IPA fails
-        }
-        
-        // If IPA still fails after retry, log warning but continue
-        if (!ipaPassed) {
-          console.warn(`⚠️ [CustomPrompt] IPA failed after retry: ${(ipaSimilarity * 100).toFixed(1)}% similarity < ${(0.65 * 100).toFixed(1)}% threshold`);
-          console.warn('⚠️ [CustomPrompt] Proceeding with result but identity preservation may be poor');
-        }
-        
-        // Update database record with completed status and IPA results
+                // Update database record with completed status
         await q(`
-          UPDATE custom_prompt_media 
-          SET status = $1, image_url = $2, metadata = $3, updated_at = NOW()
-          WHERE id = $4
-        `, ['completed', finalImageUrl, JSON.stringify({
-          ipaPassed,
-          ipaSimilarity: Math.round(ipaSimilarity * 100) / 100, // Round to 2 decimal places
-          ipaThreshold: 0.65,
-          ipaRetries: ipaPassed ? 0 : 1, // 1 retry if IPA failed initially
-          ipaStrategy: ipaPassed ? 'first_try' : 'lower_strength_retry'
-        }), initialRecord.id]);
+          UPDATE custom_prompt_media
+          SET status = $1, image_url = $2, updated_at = NOW()
+          WHERE id = $3
+        `, ['completed', finalImageUrl, initialRecord.id]);
         
         console.log('✅ [CustomPrompt] Database updated with completed status');
         
