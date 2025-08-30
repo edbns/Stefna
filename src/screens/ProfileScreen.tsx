@@ -518,7 +518,7 @@ const ProfileScreen: React.FC = () => {
     } finally {
       setIsDeletingAll(false)
       setDeletingMediaIds(new Set())
-      setConfirm({ open: false, media: null })
+      setConfirm({ open: false, media: undefined })
     }
   }
 
@@ -630,7 +630,7 @@ const ProfileScreen: React.FC = () => {
     } finally {
       setIsDeletingSelected(false)
       setDeletingMediaIds(new Set())
-      setConfirm({ open: false, media: null })
+      setConfirm({ open: false, media: undefined })
     }
   }
 

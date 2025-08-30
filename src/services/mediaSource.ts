@@ -13,8 +13,15 @@ declare global {
 export async function getHttpsSource({ file, url }: { file?: File|Blob; url?: string }) {
   // Prefer the file; never fetch blob: (CSP will block).
   if (file) {
-    const result = await uploadToCloudinary(file, 'stefna/sources')
-    return result.secure_url
+    // Convert Blob to File if needed, or skip if it's not a File
+    if (file instanceof File) {
+      const result = await uploadToCloudinary(file, 'stefna/sources')
+      return result.secure_url
+    } else {
+      // Skip Blob objects for now - they need to be converted to File first
+      console.warn('Blob objects are not yet supported for direct upload')
+      throw new Error('Blob objects must be converted to File before upload')
+    }
   }
 
   if (!url) throw new Error('No source provided')

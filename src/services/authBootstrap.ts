@@ -1,7 +1,7 @@
 // src/services/authBootstrap.ts
 import authService from './authService';
 import { ensureAndUpdateProfile, needsOnboarding } from './profile';
-import { UserMedia } from '../types/media'
+import { UserMediaItem as UserMedia } from '../types/media'
 
 let isBootstrapInitialized = false;
 

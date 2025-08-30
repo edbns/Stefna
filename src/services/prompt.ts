@@ -52,5 +52,5 @@ export function buildPrompt(opts: PromptOptions): string {
     (opts.mode === "time_machine" || opts.mode === "restore") ? SUBJECT_LOCK_NEG : ""
   ].filter(Boolean).join(", ");
 
-  return { positives, negatives };
+  return positives;
 }
