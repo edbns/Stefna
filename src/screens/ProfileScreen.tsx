@@ -38,6 +38,7 @@ const ProfileScreen: React.FC = () => {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
 
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
   // Upload functionality
@@ -518,7 +519,7 @@ const ProfileScreen: React.FC = () => {
     } finally {
       setIsDeletingAll(false)
       setDeletingMediaIds(new Set())
-      setConfirm({ open: false, media: null })
+      setConfirm({ open: false, media: undefined })
     }
   }
 
@@ -630,7 +631,7 @@ const ProfileScreen: React.FC = () => {
     } finally {
       setIsDeletingSelected(false)
       setDeletingMediaIds(new Set())
-      setConfirm({ open: false, media: null })
+      setConfirm({ open: false, media: undefined })
     }
   }
 
@@ -1357,7 +1358,7 @@ const ProfileScreen: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
-                      <IconComponent size={16} className="text-current" />
+                      {IconComponent && <IconComponent size={16} className="text-current" />}
                     </div>
                     <span className="text-xs font-medium">{item.label}</span>
                   </button>
@@ -1992,7 +1993,7 @@ const ProfileScreen: React.FC = () => {
                 <div className="relative">
                   <div className="w-24 h-24 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
                     {previewPhoto ? (
-                      <img src={previewPhoto} alt="Profile preview" className="w-full h-full object-cover" />
+                      <img src={previewPhoto || undefined} alt="Profile preview" className="w-full h-full object-cover" />
                     ) : (
                       <User size={32} className="text-white/40" />
                     )}

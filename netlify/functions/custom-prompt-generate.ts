@@ -516,6 +516,16 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    // Fallback return for any unhandled code paths
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        error: 'UNHANDLED_PATH',
+        message: 'Generation completed but no response was generated'
+      })
+    };
+
   } catch (error) {
     console.error('❌ [CustomPrompt] Unexpected error:', error);
     

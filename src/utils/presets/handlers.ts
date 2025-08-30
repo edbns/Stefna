@@ -1,7 +1,14 @@
 // utils/presets/handlers.ts
-import type { Preset, PresetId } from './types';
-import { OPTION_GROUPS, resolvePreset } from './types';
-import { runGeneration, GenerateJob } from '../../services/generationPipeline';
+// Types for presets
+interface Preset {
+  id: string;
+  label: string;
+  prompt: string;
+  strength?: number;
+  mode: string;
+  requiresSource?: boolean;
+}
+import GenerationPipeline, { GenerationRequest } from '../../services/generationPipeline';
 import { getCurrentSourceUrl } from '../../stores/sourceStore';
 
 
@@ -48,7 +55,7 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
     }
 
     // 3) Create generation job with both image_url and sourceUrl for compatibility
-    const job: GenerateJob = {
+    const job: any = {
       mode: preset.mode as any,
       presetId: preset.id,
       prompt: preset.prompt,
@@ -78,7 +85,17 @@ export async function runPreset(preset: Preset, srcOverride?: string, metadata?:
     }
 
     // 5) Use the existing generation pipeline
-    const result = await runGeneration(() => Promise.resolve(job));
+    const pipeline = GenerationPipeline.getInstance();
+    const generationRequest: GenerationRequest = {
+      type: 'presets',
+      prompt: job.prompt || '',
+      presetKey: job.presetId || '',
+      sourceAssetId: job.params?.image_url || '',
+      userId: '', // TODO: Get from auth context
+      runId: job.runId || '',
+      meta: job.params
+    };
+    const result = await pipeline.generate(generationRequest);
     
     // 6) Check if this is a stale result (race condition protection)
     if (!result) {
