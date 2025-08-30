@@ -1812,9 +1812,9 @@ const HomeNew: React.FC = () => {
     
     // 🛡️ Model Validation Guard - Ensure only supported models are used
     const ALLOWED_MODELS = [
-              "fal:flux/ghibli",
-      "fal:flux/realism",
-      "fal:pixart-alpha",
+              "fast-sdxl",
+      "realistic-vision-v5",
+      "stable-diffusion-xl",
       "dall-e-2",
       "dall-e-3"
     ];
@@ -1824,7 +1824,7 @@ const HomeNew: React.FC = () => {
     if (!ALLOWED_MODELS.includes(model)) {
       console.error("🚫 Invalid model:", model);
               notifyError({ title: 'Failed', message: 'Try again' });
-              return "fal:flux/ghibli"; // Fallback to known working model
+              return "fal-ai/ghiblify"; // Fallback to known working model
     }
     return model;
   };
@@ -1953,7 +1953,7 @@ const HomeNew: React.FC = () => {
         mode: 'emotionmask', 
         emotionMaskPresetId, 
         emotionMaskPresetLabel: emotionMaskPreset.label,
-        model: "fal:flux/ghibli", // Use known working model
+        model: "fal-ai/ghiblify", // Use known working model
         strength: adjustedStrength, // Use preset strength
         guidance_scale: 7.5, // Standard guidance for consistency
         cfg_scale: 7.0, // Balanced creativity vs adherence
@@ -1989,7 +1989,7 @@ const HomeNew: React.FC = () => {
           mode: 'ghiblireact', 
           ghibliReactionPresetId, 
           ghibliReactionLabel: ghibliReactionPreset.label, 
-          model: "fal:flux/ghibli", // Use known working model for Ghibli style
+          model: "fal-ai/ghiblify", // Use known working model for Ghibli style
           strength: ghibliReactionPreset.strength, // Use actual preset strength
           guidance_scale: 7.5, // Standard guidance for consistency
           cfg_scale: 7.0, // Balanced creativity vs adherence
@@ -1999,7 +1999,7 @@ const HomeNew: React.FC = () => {
           ipaRetries: 2, // Moderate fallback
           ipaBlocking: true // Must pass to proceed
         };
-              console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: fal:flux/ghibli');
+              console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: fal-ai/ghiblify');
       
     } else if (kind === 'neotokyoglitch') {
       // NEO TOKYO GLITCH MODE: Use Replicate integration for maximum glitch intensity

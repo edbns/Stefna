@@ -22,7 +22,7 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     prompt: `Transform the human face into a Studio Ghibli-style emotional reaction while preserving realistic skin, hair, and facial structure. Add glistening anime-inspired tears under the eyes. Eyes should appear larger and wetter, with soft sparkles and emotional intensity. Preserve skin tone, gender, and facial integrity. Lighting should be soft and warm, like sunset glow. Keep hairstyle and identity intact.`,
     negative_prompt: `anime face replacement, distorted features, overexaggerated proportions, fake texture, plastic skin, full anime rendering, gender swap, photorealism, 3D look, harsh shadows`,
     strength: 0.35,
-    model: 'fal:flux/ghibli', // Updated to use fal.ai
+    model: 'fal-ai/ghiblify', // Updated to use fal.ai
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
@@ -37,7 +37,7 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     prompt: `Transform the human face into a shocked Studio Ghibli-style reaction while preserving identity and facial realism. Exaggerate expression with widened anime-style eyes and slightly parted lips. Add subtle sparkles, blush, or trembling mouth expression. Retain hair, skin texture, gender, and core facial structure. Background and lighting should feel soft and dreamy, like a still from a Ghibli film.`,
     negative_prompt: `cartoon face, huge bug eyes, distorted anatomy, face merged or replaced, fake skin, photorealism, bland expression, anime mask overlay`,
     strength: 0.35,
-    model: 'fal:flux/ghibli', // Updated to use fal.ai
+    model: 'fal-ai/ghiblify', // Updated to use fal.ai
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
@@ -52,7 +52,7 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     prompt: `Transform the human face into a dreamy Ghibli-style expression with sparkles and soft blush. Retain the subject's identity, facial proportions, and realism. Enhance the eyes with light shimmer and gentle expression. Add whimsical sparkle particles around the cheeks and subtle pink blush. Skin, hair, and gender should stay accurate to the source. Use golden hour or pastel lighting for warmth and nostalgia.`,
     negative_prompt: `overdone sparkle, anime face swap, distorted head, full cartoon rendering, hard shadows, gender change, poor skin texture`,
     strength: 0.35,
-    model: 'fal:flux/ghibli', // Updated to use fal.ai
+    model: 'fal-ai/ghiblify', // Updated to use fal.ai
     mode: 'i2i',
     input: 'image',
     requiresSource: true,

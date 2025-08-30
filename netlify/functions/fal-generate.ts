@@ -1,13 +1,14 @@
 // netlify/functions/fal-generate.ts
-// Fal.ai Image Generation Handler
+// Fal.ai Image Generation Handler using Official Client
 // Replaces AIML API for all image generation needs
 // 
-// TIMEOUT HANDLING:
-// - Netlify functions have 26s hard limit
-// - fal.ai can be slow, so we use async mode
-// - Function returns job ID immediately, frontend polls for results
-// - Individual API calls timeout at 20s to prevent 504 errors
+// QUEUE HANDLING:
+// - Uses fal.subscribe() for reliable queue management
+// - No more 504 timeouts - fal.ai handles async processing
+// - Real-time logs and status updates
+// - Automatic retries and error handling
 import { Handler } from '@netlify/functions';
+import { fal } from '@fal-ai/client';
 import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
@@ -19,28 +20,34 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Fal.ai supported models in order of preference (cheap → expensive → best quality)
+// Configure fal.ai client
+fal.config({
+  credentials: process.env.FAL_KEY
+});
+
+// Fal.ai supported models using official client format
+// Updated to use current working models with proper fal-ai/ prefix
 const FAL_MODELS = [
   { 
-    model: 'fal:flux/ghibli', 
-    name: 'Flux Ghibli', 
+    model: 'fal-ai/ghiblify', 
+    name: 'Ghiblify', 
     cost: 'low', 
     priority: 1,
-    endpoint: 'https://fal.run/fal-ai/flux/ghibli'
+    description: 'Studio Ghibli style transformations'
   },
   { 
-    model: 'fal:flux/realism', 
-    name: 'Flux Realism', 
+    model: 'fal-ai/realistic-vision-v5', 
+    name: 'Realistic Vision V5', 
     cost: 'medium', 
     priority: 2,
-    endpoint: 'https://fal.run/fal-ai/flux/realism'
+    description: 'Photorealistic image generation'
   },
   { 
-    model: 'fal:pixart-alpha', 
-    name: 'PixArt Alpha', 
+    model: 'fal-ai/fast-sdxl', 
+    name: 'Fast SDXL', 
     cost: 'high', 
     priority: 3,
-    endpoint: 'https://fal.run/fal-ai/pixart-alpha'
+    description: 'Fast high-quality generation'
   }
 ];
 
@@ -184,7 +191,7 @@ async function startFalGeneration(
   throw new Error(`All fal.ai models failed. Last error: ${lastError?.message || 'Unknown error'}`);
 }
 
-// Individual fal.ai generation attempt
+// Individual fal.ai generation attempt using official client
 async function attemptFalGeneration(
   sourceUrl: string, 
   prompt: string, 
@@ -193,92 +200,76 @@ async function attemptFalGeneration(
   runId: string, 
   falModel: any
 ) {
-  const FAL_KEY = process.env.FAL_KEY;
-
   console.log(`📤 [Fal.ai] Sending to ${falModel.name} API:`, {
     model: falModel.model,
     generationType,
     promptLength: prompt.length
   });
 
-  // Prepare fal.ai API payload
-  const payload = {
-    prompt: prompt,
-    image_url: sourceUrl,
-    sync_mode: false, // Asynchronous generation to avoid timeouts
-    image_strength: 0.85,
-    num_images: 1,
-    guidance_scale: 7.5,
-    num_inference_steps: 30,
-    seed: Math.floor(Math.random() * 1000000)
-  };
+  try {
+    // Use fal.subscribe() for reliable queue-based generation
+    const result = await fal.subscribe(falModel.model, {
+      input: {
+        image_url: sourceUrl,
+        prompt: prompt,
+        image_strength: 0.85,
+        num_images: 1,
+        guidance_scale: 7.5,
+        num_inference_steps: 30,
+        seed: Math.floor(Math.random() * 1000000)
+      },
+      logs: true,
+      onQueueUpdate: (update) => {
+        if (update.status === "IN_PROGRESS") {
+          console.log(`🔄 [Fal.ai] ${falModel.name} progress:`, update.status);
+          update.logs?.map(log => log.message).forEach(message => {
+            console.log(`📝 [Fal.ai] ${falModel.name}: ${message}`);
+          });
+        }
+      }
+    });
 
-  const response = await fetch(falModel.endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Key ${FAL_KEY}`,
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify(payload),
-    // Add timeout to prevent stuck jobs (20 seconds max - Netlify limit is 26s)
-    signal: AbortSignal.timeout(20 * 1000)
-  });
+    console.log(`✅ [Fal.ai] ${falModel.name} generation completed:`, {
+      hasData: !!result.data,
+      requestId: result.requestId,
+      generationType,
+      model: falModel.model
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`❌ [Fal.ai] ${falModel.name} API error:`, response.status, errorText);
-    throw new Error(`${falModel.name} API failed: ${response.status} - ${errorText}`);
-  }
+    // Extract image URL from result
+    let imageUrl = null;
+    
+    if (result.data?.images && Array.isArray(result.data.images) && result.data.images[0]?.url) {
+      imageUrl = result.data.images[0].url;
+    } else if (result.data?.image_url) {
+      imageUrl = result.data.image_url;
+    } else if (result.data?.url) {
+      imageUrl = result.data.url;
+    }
+    
+    if (!imageUrl) {
+      console.error(`❌ [Fal.ai] No image URL in ${falModel.name} response:`, result.data);
+      throw new Error(`${falModel.name} API returned no image URL`);
+    }
 
-  const result = await response.json();
-  console.log(`✅ [Fal.ai] ${falModel.name} API response received:`, {
-    hasResult: !!result,
-    resultKeys: result ? Object.keys(result) : 'none'
-  });
+    console.log(`🎉 [Fal.ai] ${falModel.name} generation successful:`, {
+      imageUrl: imageUrl.substring(0, 100) + '...',
+      generationType,
+      model: falModel.model,
+      requestId: result.requestId
+    });
 
-  // Handle async mode response
-  if (result.id) {
-    // Async job started - return job ID for polling
-    console.log(`🔄 [Fal.ai] ${falModel.name} async job started:`, result.id);
     return {
-      status: 'processing',
-      jobId: result.id,
-      falJobId: `${falModel.name.toLowerCase().replace(/\s+/g, '_')}_${runId}`,
+      status: 'completed',
+      imageUrl: imageUrl,
+      falJobId: result.requestId || `${falModel.name.toLowerCase().replace(/\s+/g, '_')}_${runId}`,
       model: falModel.model,
       modelName: falModel.name,
-      message: 'Generation started, use job ID to poll for results'
+      requestId: result.requestId
     };
-  }
 
-  // Handle sync mode response (fallback)
-  let imageUrl = null;
-  
-  // Handle fal.ai response format: result.images[0].url
-  if (result.images && Array.isArray(result.images) && result.images[0]?.url) {
-    console.log(`✅ [Fal.ai] Found fal.ai response format with image URL from ${falModel.name}`);
-    imageUrl = result.images[0].url;
-  } else if (result.image_url) {
-    // Fallback to direct URL if present
-    imageUrl = result.image_url;
+  } catch (error: any) {
+    console.error(`❌ [Fal.ai] ${falModel.name} API error:`, error);
+    throw new Error(`${falModel.name} API failed: ${error.message}`);
   }
-  
-  if (!imageUrl) {
-    console.error(`❌ [Fal.ai] No image URL in ${falModel.name} response:`, result);
-    throw new Error(`${falModel.name} API returned no image URL`);
-  }
-
-  console.log(`🎉 [Fal.ai] ${falModel.name} generation successful:`, {
-    imageUrl: imageUrl.substring(0, 100) + '...',
-    generationType,
-    model: falModel.model
-  });
-
-  return {
-    status: 'completed',
-    imageUrl: imageUrl,
-    falJobId: `${falModel.name.toLowerCase().replace(/\s+/g, '_')}_${runId}`,
-    model: falModel.model,
-    modelName: falModel.name
-  };
 }
