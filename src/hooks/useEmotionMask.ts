@@ -48,7 +48,7 @@ export function useEmotionMask() {
     return new Promise<HTMLCanvasElement>(async (resolve, reject) => {
       try {
         // Use TensorFlow.js face landmarks detection
-        const detector = await createDetector(SupportedModels.FaceLandmarks);
+        const detector = await createDetector(SupportedModels.MediaPipeFaceMesh);
         
         if (!detector) {
           throw new Error('Face detector not initialized');
