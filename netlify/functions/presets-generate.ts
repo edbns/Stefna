@@ -93,7 +93,7 @@ async function isPresetCurrentlyAvailable(presetKey: string): Promise<boolean> {
   }
 }
 
-// AIML API Generation Function
+// AIML API Generation Function with Fallback System
 async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
   const AIML_API_KEY = process.env.AIML_API_KEY;
   const AIML_API_URL = process.env.AIML_API_URL;
@@ -102,115 +102,163 @@ async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey:
     throw new Error('AIML API configuration missing');
   }
 
-  console.log('🚀 [Presets] Starting AIML generation:', {
+  console.log('🚀 [Presets] Starting AIML generation with fallback system:', {
     presetKey,
     promptLength: prompt.length,
     hasSource: !!sourceUrl
   });
 
-  try {
-    // Get preset configuration
-    const presetConfig = await getPresetConfig(presetKey);
-    
-    // Build AIML payload using preset configuration
-    const payload = {
-      model: 'flux/dev/image-to-image',
-      preset: presetKey,
-      kind: 'professional',
-      image_url: sourceUrl,
-      isVideo: false,
-      generateTwo: false,
-      fps: 24,
-      prompt: presetConfig.preset_prompt,
-      negative_prompt: presetConfig.preset_negative_prompt || 'blurry, low quality, distorted, deformed, ugly, bad anatomy, duplicate faces, extra limbs'
-    };
+  // Define AIML models in order of preference (cheap → expensive → best quality)
+  const aimlModels = [
+    { model: 'flux/dev/image-to-image', name: 'Flux Dev', cost: 'low', priority: 1 },
+    { model: 'flux/pro/image-to-image', name: 'Flux Pro', cost: 'medium', priority: 2 },
+    { model: 'flux/realism/image-to-image', name: 'Flux Realism', cost: 'high', priority: 3 }
+  ];
 
-    console.log('📤 [Presets] Sending to AIML API:', {
-      model: payload.model,
-      preset: payload.preset,
-      promptLength: payload.prompt.length,
-      presetWeek: presetConfig.preset_week,
-      presetRotationIndex: presetConfig.preset_rotation_index
-    });
+  let lastError: Error | null = null;
+  let attemptCount = 0;
 
-    const response = await fetch(`${AIML_API_URL}/v1/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${AIML_API_KEY}`,
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'flux/dev/image-to-image',
-        prompt: prompt,
-        init_image: sourceUrl,
-        image_strength: 0.85,
-        num_images: 1,
-        guidance_scale: 7.5,
-        num_inference_steps: 30,
-        seed: Math.floor(Math.random() * 1000000)
-      }),
-      // Add timeout to prevent stuck jobs (3 minutes max)
-      signal: AbortSignal.timeout(3 * 60 * 1000)
-    });
+  // Try each AIML model until one succeeds
+  for (const aimlModel of aimlModels) {
+    attemptCount++;
+    console.log(`🔄 [Presets] Attempt ${attemptCount}/${aimlModels.length}: ${aimlModel.name} (${aimlModel.cost} cost)`);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ [Presets] AIML API error:', response.status, errorText);
-      throw new Error(`AIML API failed: ${response.status} - ${errorText}`);
-    }
+    try {
+      const result = await attemptAIMLGeneration(
+        sourceUrl, 
+        prompt, 
+        presetKey, 
+        userId, 
+        runId, 
+        aimlModel.model,
+        aimlModel.name
+      );
 
-    const result = await response.json();
-    console.log('✅ [Presets] AIML API response received:', {
-      hasResult: !!result,
-      resultKeys: result ? Object.keys(result) : 'none'
-    });
+      console.log(`✅ [Presets] ${aimlModel.name} generation successful on attempt ${attemptCount}`);
+      return {
+        ...result,
+        aimlModel: aimlModel.name,
+        attemptCount,
+        fallbackUsed: attemptCount > 1
+      };
 
-    // Extract image URL from AIML v1 API response format
-    let imageUrl = null;
-    
-    // Handle v1 response format: result.output.choices[0].image_base64
-    if (result.output && result.output.choices && result.output.choices[0]?.image_base64) {
-      console.log('✅ [Presets] Found v1 response format with base64 image');
-      try {
-        // Convert base64 to Cloudinary URL
-        const cloudinaryUrl = await uploadBase64ToCloudinary(result.output.choices[0].image_base64);
-        imageUrl = cloudinaryUrl;
-        console.log('☁️ [Presets] Image successfully uploaded to Cloudinary:', cloudinaryUrl);
-      } catch (uploadError: any) {
-        console.error('❌ [Presets] Cloudinary upload failed:', uploadError);
-        throw new Error(`Failed to upload generated image: ${uploadError.message}`);
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`⚠️ [Presets] ${aimlModel.name} failed (attempt ${attemptCount}):`, error.message);
+      
+      // If this isn't the last attempt, continue to next model
+      if (attemptCount < aimlModels.length) {
+        console.log(`🔄 [Presets] Trying next model: ${aimlModels[attemptCount].name}`);
+        continue;
       }
-    } else if (result.image_url) {
-      // Fallback to direct URL if present
-      imageUrl = result.image_url;
-    } else if (result.images && Array.isArray(result.images) && result.images[0]?.url) {
-      // Fallback to images array if present
-      imageUrl = result.images[0].url;
     }
-    
-    if (!imageUrl) {
-      console.error('❌ [Presets] No image URL in AIML response:', result);
-      throw new Error('AIML API returned no image URL');
-    }
-
-    console.log('🎉 [Presets] AIML generation successful:', {
-      imageUrl: imageUrl.substring(0, 60) + '...',
-      presetKey,
-      presetWeek: presetConfig.preset_week
-    });
-
-    return {
-      status: 'completed',
-      imageUrl: imageUrl,
-      aimlJobId: `aiml_${runId}`,
-      presetConfig
-    };
-
-  } catch (error) {
-    console.error('❌ [Presets] AIML generation failed:', error);
-    throw error;
   }
+
+  // All AIML models failed
+  console.error('❌ [Presets] All AIML models failed after', attemptCount, 'attempts');
+  throw new Error(`All AIML models failed. Last error: ${lastError?.message || 'Unknown error'}`);
+}
+
+// Individual AIML generation attempt
+async function attemptAIMLGeneration(
+  sourceUrl: string, 
+  prompt: string, 
+  presetKey: string, 
+  userId: string, 
+  runId: string, 
+  model: string,
+  modelName: string
+) {
+  const AIML_API_KEY = process.env.AIML_API_KEY;
+  const AIML_API_URL = process.env.AIML_API_URL;
+
+  // Get preset configuration
+  const presetConfig = await getPresetConfig(presetKey);
+
+  console.log(`📤 [Presets] Sending to ${modelName} API:`, {
+    model,
+    preset: presetKey,
+    promptLength: prompt.length,
+    presetWeek: presetConfig.preset_week,
+    presetRotationIndex: presetConfig.preset_rotation_index
+  });
+
+  const response = await fetch(`${AIML_API_URL}/v1/images/generations`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AIML_API_KEY}`,
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+      model: model,
+      prompt: prompt,
+      init_image: sourceUrl,
+      image_strength: 0.85,
+      num_images: 1,
+      guidance_scale: 7.5,
+      num_inference_steps: 30,
+      seed: Math.floor(Math.random() * 1000000)
+    }),
+    // Add timeout to prevent stuck jobs (3 minutes max)
+    signal: AbortSignal.timeout(3 * 60 * 1000)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ [Presets] ${modelName} API error:`, response.status, errorText);
+    throw new Error(`${modelName} API failed: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json();
+  console.log(`✅ [Presets] ${modelName} API response received:`, {
+    hasResult: !!result,
+    resultKeys: result ? Object.keys(result) : 'none'
+  });
+
+  // Extract image URL from AIML v1 API response format
+  let imageUrl = null;
+  
+  // Handle v1 response format: result.output.choices[0].image_base64
+  if (result.output && result.output.choices && result.output.choices[0]?.image_base64) {
+    console.log(`✅ [Presets] Found v1 response format with base64 image from ${modelName}`);
+    try {
+      // Convert base64 to Cloudinary URL
+      const cloudinaryUrl = await uploadBase64ToCloudinary(result.output.choices[0].image_base64);
+      imageUrl = cloudinaryUrl;
+      console.log(`☁️ [Presets] Image successfully uploaded to Cloudinary from ${modelName}:`, cloudinaryUrl);
+    } catch (uploadError: any) {
+      console.error(`❌ [Presets] Cloudinary upload failed for ${modelName}:`, uploadError);
+      throw new Error(`Failed to upload generated image from ${modelName}: ${uploadError.message}`);
+    }
+  } else if (result.image_url) {
+    // Fallback to direct URL if present
+    imageUrl = result.image_url;
+  } else if (result.images && Array.isArray(result.images) && result.images[0]?.url) {
+    // Fallback to images array if present
+    imageUrl = result.images[0].url;
+  }
+  
+  if (!imageUrl) {
+    console.error(`❌ [Presets] No image URL in ${modelName} response:`, result);
+    throw new Error(`${modelName} API returned no image URL`);
+  }
+
+  console.log(`🎉 [Presets] ${modelName} generation successful:`, {
+    imageUrl: imageUrl.substring(0, 60) + '...',
+    presetKey,
+    presetWeek: presetConfig.preset_week,
+    model
+  });
+
+  return {
+    status: 'completed',
+    imageUrl: imageUrl,
+    aimlJobId: `${modelName.toLowerCase().replace(/\s+/g, '_')}_${runId}`,
+    presetConfig,
+    model: model,
+    modelName: modelName
+  };
 }
 
 // Cloudinary Upload Function for base64 images
@@ -444,12 +492,19 @@ export const handler: Handler = async (event) => {
           // Fallback to original URL if Cloudinary fails
         }
         
-                // Update database record with completed status
+                // Update database record with completed status and fallback info
         await q(`
           UPDATE presets_media
-          SET status = $1, image_url = $2, updated_at = NOW()
-          WHERE id = $3
-        `, ['completed', finalImageUrl, initialRecord.id]);
+          SET status = $1, image_url = $2, updated_at = NOW(), metadata = $3
+          WHERE id = $4
+        `, ['completed', finalImageUrl, JSON.stringify({
+          aimlModel: generationResult.modelName,
+          aimlModelId: generationResult.model,
+          attemptCount: generationResult.attemptCount,
+          fallbackUsed: generationResult.fallbackUsed,
+          cloudinaryPublicId: cloudinaryPublicId,
+          generationPath: 'aiml_fallback_system'
+        }), initialRecord.id]);
         
         console.log('✅ [Presets] Database updated with completed status');
         
@@ -486,6 +541,9 @@ export const handler: Handler = async (event) => {
             imageUrl: finalImageUrl,
             aimlJobId: generationResult.aimlJobId,
             provider: 'aiml',
+            aimlModel: generationResult.modelName,
+            fallbackUsed: generationResult.fallbackUsed,
+            attemptCount: generationResult.attemptCount,
             presetInfo: {
               name: presetConfig.preset_name,
               description: presetConfig.preset_description,
