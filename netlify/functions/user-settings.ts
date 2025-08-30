@@ -65,6 +65,18 @@ export const handler: Handler = async (event) => {
                           body.shareToFeed !== undefined ? body.shareToFeed : 
                           (existingSettings?.share_to_feed ?? true); // Default to true for new users
       
+      // 🔧 DEBUG: Log the exact values being processed
+      console.log('🔧 [User Settings] Processing update:', {
+        userId,
+        bodyKeys: Object.keys(body),
+        bodyValues: body,
+        existingSettings,
+        finalMediaUploadAgreed: mediaUploadAgreed,
+        finalShareToFeed: shareToFeed,
+        existingShareToFeed: existingSettings?.share_to_feed,
+        existingMediaUploadAgreed: existingSettings?.media_upload_agreed
+      });
+      
       console.log('🔧 [User Settings] Update request:', {
         userId,
         body,
