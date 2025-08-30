@@ -77,14 +77,6 @@ export const handler: Handler = async (event) => {
         existingMediaUploadAgreed: existingSettings?.media_upload_agreed
       });
       
-      console.log('🔧 [User Settings] Update request:', {
-        userId,
-        body,
-        existingSettings,
-        finalMediaUploadAgreed: mediaUploadAgreed,
-        finalShareToFeed: shareToFeed
-      });
-      
       // Upsert user settings
       const updated = await q(`
         INSERT INTO user_settings (user_id, media_upload_agreed, share_to_feed, updated_at)
