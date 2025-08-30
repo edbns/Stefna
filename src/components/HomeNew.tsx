@@ -2081,7 +2081,7 @@ const HomeNew: React.FC = () => {
           console.log(`🔄 [NeoGlitch] Polling attempt ${attempts}/${maxAttempts}`);
           
           try {
-            const statusResponse = await authenticatedFetch(`/.netlify/functions/poll-glitch-job?jobId=${jobId}`, {
+            const statusResponse = await authenticatedFetch(`/.netlify/functions/neo-glitch-generate?jobId=${jobId}`, {
               method: 'GET'
             });
             

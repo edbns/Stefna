@@ -161,7 +161,7 @@ class EmotionMaskService {
         
         try {
           // Check status by querying the database directly
-          const statusRes = await authenticatedFetch('/.netlify/functions/emotion-mask-status', {
+          const statusRes = await authenticatedFetch('/.netlify/functions/emotion-mask-generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ aimlJobId })

@@ -165,7 +165,7 @@ class CustomPromptService {
         
         try {
           // Check status by querying the database directly
-          const statusRes = await authenticatedFetch('/.netlify/functions/custom-prompt-status', {
+          const statusRes = await authenticatedFetch('/.netlify/functions/custom-prompt-generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ aimlJobId })

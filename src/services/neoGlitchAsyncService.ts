@@ -1,10 +1,10 @@
 // src/services/neoGlitchAsyncService.ts
-// NeoGlitch Async Generation Service
+// NeoGlitch Synchronous Generation Service
 // 
-// 🎯 PURPOSE: Handle NeoGlitch generation using the new async job system
-// This avoids timeout issues by using start → poll pattern
+// 🎯 PURPOSE: Handle NeoGlitch generation synchronously
+// No more polling - direct generation with timeout
 // 
-// 🔄 FLOW: Start Job → Show Queue Toast → Poll Status → Show Ready Toast
+// 🔄 FLOW: Generate → Wait → Return Result
 import { useToasts } from '../components/ui/Toasts';
 
 export interface NeoGlitchJobRequest {
@@ -22,121 +22,45 @@ export interface NeoGlitchJobStatus {
 }
 
 export class NeoGlitchAsyncService {
-  private static readonly POLL_INTERVAL = 3000; // 3 seconds
-  private static readonly MAX_POLL_ATTEMPTS = 60; // 3 minutes max
-
   /**
-   * Start a NeoGlitch generation job
+   * Generate NeoGlitch synchronously - no polling needed
    */
-  static async startJob(request: NeoGlitchJobRequest, authToken: string): Promise<string> {
+  static async generateSynchronously(
+    request: NeoGlitchJobRequest, 
+    authToken: string
+  ): Promise<NeoGlitchJobStatus> {
     try {
+      console.log('🚀 [NeoGlitch] Starting synchronous generation...');
+      
+      // Call the generate function directly
       const response = await fetch('/.netlify/functions/neo-glitch-generate', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authToken
+          'Authorization': authToken,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(request)
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to start job: ${response.status} - ${errorText}`);
+        console.error(`❌ [NeoGlitch] Generation failed: ${response.status} - ${errorText}`);
+        throw new Error(`Generation failed: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      
-      if (!result.ok) {
-        throw new Error(result.message || 'Failed to start job');
-      }
-
-      return result.jobId;
-    } catch (error: any) {
-      throw new Error(`Job start failed: ${error.message}`);
-    }
-  }
-
-  /**
-   * Poll for job status
-   */
-  static async pollJobStatus(jobId: string, authToken: string): Promise<NeoGlitchJobStatus> {
-    try {
-      const response = await fetch(`/.netlify/functions/poll-glitch-job?jobId=${jobId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': authToken
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to poll job: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      
-      if (!result.ok) {
-        throw new Error(result.message || 'Failed to poll job');
-      }
-
+      console.log('✅ [NeoGlitch] Generation completed!', result);
       return result;
+
     } catch (error: any) {
-      throw new Error(`Job polling failed: ${error.message}`);
+      console.error('❌ [NeoGlitch] Synchronous generation failed:', error);
+      throw error;
     }
-  }
-
-  /**
-   * Start job and poll until completion
-   */
-  static async generateWithPolling(
-    request: NeoGlitchJobRequest, 
-    authToken: string,
-    onProgress?: (status: NeoGlitchJobStatus) => void
-  ): Promise<NeoGlitchJobStatus> {
-    
-    // Start the job
-    const jobId = await this.startJob(request, authToken);
-    console.log('[NeoGlitch] Job started:', jobId);
-
-    // Poll for completion
-    let pollAttempts = 0;
-    
-    while (pollAttempts < this.MAX_POLL_ATTEMPTS) {
-      pollAttempts++;
-      
-      // Wait before polling
-      await new Promise(resolve => setTimeout(resolve, this.POLL_INTERVAL));
-      
-      // Check status
-      const status = await this.pollJobStatus(jobId, authToken);
-      console.log(`[NeoGlitch] Poll ${pollAttempts}:`, status.status);
-      
-      // Report progress
-      if (onProgress) {
-        onProgress(status);
-      }
-      
-      // Check if complete
-      if (status.status === 'completed') {
-        console.log('[NeoGlitch] Job completed successfully');
-        return status;
-      }
-      
-      if (status.status === 'failed') {
-        console.log('[NeoGlitch] Job failed');
-        throw new Error(status.errorMessage || 'Generation failed');
-      }
-      
-      // Still processing, continue polling
-      console.log('[NeoGlitch] Job still processing, continuing to poll...');
-    }
-    
-    throw new Error('Job timed out after maximum polling attempts');
   }
 }
 
 /**
- * React Hook for NeoGlitch Async Generation
+ * React Hook for NeoGlitch Synchronous Generation
  * Integrates with your unified toast system
  */
 export function useNeoGlitchAsync() {
@@ -154,16 +78,10 @@ export function useNeoGlitchAsync() {
         message: "We'll start processing shortly."
       });
 
-      // Start generation with polling
-      const result = await NeoGlitchAsyncService.generateWithPolling(
+      // Generate synchronously
+      const result = await NeoGlitchAsyncService.generateSynchronously(
         request,
-        authToken,
-        (status) => {
-          // Progress updates (optional)
-          if (status.status === 'processing') {
-            console.log('[NeoGlitch] Processing...');
-          }
-        }
+        authToken
       );
 
       // Show "Ready" toast with thumbnail
