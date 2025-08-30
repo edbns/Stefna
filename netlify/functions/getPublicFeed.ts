@@ -47,15 +47,15 @@ export const handler: Handler = async (event) => {
       select user_id from user_settings where share_to_feed = true
     ),
     feed as (
-      select 'neo_glitch'      as type, id, user_id, image_url as finalUrl, image_url as imageUrl, source_url, preset, status, created_at, 'neo-glitch' as mediaType, preset as presetKey, prompt from neo_glitch_media      where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'neo_glitch'      as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'neo-glitch' as "mediaType", preset as "presetKey", prompt from neo_glitch_media      where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'presets'         as type, id, user_id, image_url as finalUrl, image_url as imageUrl, source_url, preset, status, created_at, 'preset' as mediaType, preset as presetKey, prompt from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'presets'         as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'preset' as "mediaType", preset as "presetKey", prompt from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'emotion_mask'    as type, id, user_id, image_url as finalUrl, image_url as imageUrl, source_url, preset, status, created_at, 'emotionmask' as mediaType, preset as presetKey, prompt from emotion_mask_media    where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'emotion_mask'    as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'emotionmask' as "mediaType", preset as "presetKey", prompt from emotion_mask_media    where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'ghibli_reaction' as type, id, user_id, image_url as finalUrl, image_url as imageUrl, source_url, preset, status, created_at, 'ghiblireact' as mediaType, preset as presetKey, prompt from ghibli_reaction_media where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'ghibli_reaction' as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'ghiblireact' as "mediaType", preset as "presetKey", prompt from ghibli_reaction_media where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'custom_prompt'   as type, id, user_id, image_url as finalUrl, image_url as imageUrl, source_url, preset, status, created_at, 'custom' as mediaType, preset as presetKey, prompt from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'custom_prompt'   as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom' as "mediaType", preset as "presetKey", prompt from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
     )
     select f.*
     from feed f
@@ -84,16 +84,8 @@ export const handler: Handler = async (event) => {
       });
     }
 
-    // Process rows to ensure proper field names (PostgreSQL returns lowercase)
-    const processedRows = rows.map(row => ({
-      ...row,
-      // Ensure field names match what frontend expects
-      finalUrl: row.finalurl || row.finalUrl,
-      imageUrl: row.imageurl || row.imageUrl,
-      mediaType: row.mediatype || row.mediaType,
-      presetKey: row.presetkey || row.presetKey,
-      createdAt: row.created_at || row.createdAt
-    }));
+    // Field names are now properly aliased in SQL, no processing needed
+    const processedRows = rows;
 
     return {
       statusCode: 200,
