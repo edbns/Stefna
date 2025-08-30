@@ -218,7 +218,8 @@ export const handler: Handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
       },
       body: ''
     };
@@ -227,7 +228,12 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -260,7 +266,12 @@ export const handler: Handler = async (event) => {
     if (missingFields.length > 0) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           error: 'VALIDATION_FAILED',
           message: `Missing required fields: ${missingFields.join(', ')}`,
@@ -273,7 +284,12 @@ export const handler: Handler = async (event) => {
     if (!prompt || prompt.trim().length < 10) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           error: 'INVALID_PROMPT',
           message: 'Custom prompt must be at least 10 characters long',
@@ -287,7 +303,12 @@ export const handler: Handler = async (event) => {
     if (prompt.length > 1000) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           error: 'PROMPT_TOO_LONG',
           message: 'Custom prompt must be less than 1000 characters',
@@ -327,7 +348,12 @@ export const handler: Handler = async (event) => {
         console.log('🔄 [CustomPrompt] Run already completed, returning cached result');
         return {
           statusCode: 200,
-          headers: { 'Access-Control-Allow-Origin': '*' },
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify(existingRun)
         };
       } else {
@@ -345,7 +371,12 @@ export const handler: Handler = async (event) => {
     if (!validPresets.includes(presetKey)) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           error: 'INVALID_PRESET',
           message: `Invalid preset key. Must be one of: ${validPresets.join(', ')}`,
@@ -359,7 +390,12 @@ export const handler: Handler = async (event) => {
     if (!sourceUrl.startsWith('http')) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           error: 'INVALID_IMAGE_URL',
           message: 'Source URL must be a valid HTTP(S) URL',
@@ -390,7 +426,12 @@ export const handler: Handler = async (event) => {
       console.error('❌ [CustomPrompt] Credit reservation failed:', creditError);
       return {
         statusCode: 402,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           error: 'INSUFFICIENT_CREDITS',
           message: 'Not enough credits for generation',
@@ -415,8 +456,8 @@ export const handler: Handler = async (event) => {
     
     try {
       const generationResult = await startAIMLGeneration(sourceUrl, prompt, presetKey, userId, runId);
-      
-      if (generationResult && generationResult.imageUrl) {
+
+      if (generationResult?.imageUrl) {
         console.log('🎉 [CustomPrompt] Generation completed immediately!');
         
         // Upload to Cloudinary
@@ -465,7 +506,12 @@ export const handler: Handler = async (event) => {
         
         return {
           statusCode: 200,
-          headers: { 'Access-Control-Allow-Origin': '*' },
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({
             message: 'Generation completed successfully',
             jobId: initialRecord.id,
@@ -476,8 +522,24 @@ export const handler: Handler = async (event) => {
             customPrompt: prompt.substring(0, 100) + '...'
           })
         };
+      } else {
+        // This should not happen based on startAIMLGeneration logic, but handle it just in case
+        console.error('❌ [CustomPrompt] Generation completed but no image URL returned');
+        return {
+          statusCode: 500,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            error: 'GENERATION_FAILED',
+            message: 'Generation completed but no image was returned'
+          })
+        };
       }
-      
+
     } catch (generationError: any) {
       console.error('❌ [CustomPrompt] Generation failed:', generationError);
       
@@ -507,7 +569,12 @@ export const handler: Handler = async (event) => {
       
       return {
         statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           error: 'GENERATION_FAILED',
           message: 'Custom prompt generation failed',
@@ -521,7 +588,12 @@ export const handler: Handler = async (event) => {
     
     return {
       statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
         error: 'INTERNAL_ERROR',
         message: 'Unexpected error occurred',
