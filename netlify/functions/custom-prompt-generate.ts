@@ -471,7 +471,7 @@ export const handler: Handler = async (event) => {
         
         return {
           statusCode: 200,
-          headers: { 'Access-Control-Allow-Origin': '*' },
+          headers: createResponseHeaders(),
           body: JSON.stringify({
             message: 'Generation completed successfully',
             jobId: initialRecord.id,
@@ -513,7 +513,7 @@ export const handler: Handler = async (event) => {
       
       return {
         statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: createResponseHeaders(),
         body: JSON.stringify({
           error: 'GENERATION_FAILED',
           message: 'Custom prompt generation failed',
@@ -527,7 +527,7 @@ export const handler: Handler = async (event) => {
     
     return {
       statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: createResponseHeaders(),
       body: JSON.stringify({
         error: 'INTERNAL_ERROR',
         message: 'Unexpected error occurred',

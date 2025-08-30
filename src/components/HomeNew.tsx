@@ -2510,9 +2510,6 @@ const HomeNew: React.FC = () => {
       if (!requestId) {
         throw new Error('No request_id returned from credits reservation');
       }
-      
-      // Define the finalizeCredits function now that we have the requestId
-      defineFinalizeCredits(requestId);
 
       // Add credit finalization tracking
       let creditsFinalized = false;
@@ -2545,6 +2542,9 @@ const HomeNew: React.FC = () => {
           }
         };
       };
+      
+      // Define the finalizeCredits function now that we have the requestId
+      defineFinalizeCredits(requestId);
 
       // Video pathway → use start-v2v + poll-v2v
       if (isVideoPreview) {
