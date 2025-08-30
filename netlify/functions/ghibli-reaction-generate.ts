@@ -135,8 +135,7 @@ export const handler: Handler = async (event) => {
 
     // Validate preset key - accept all Ghibli Reaction preset values
     const validPresets = [
-      'ghibli_shock', 'ghibli_blush', 'ghibli_sparkle', 'ghibli_dreamy', 
-      'ghibli_magical', 'ghibli_tears', 'ghibli_reaction', 'ghibli_default'
+      'ghibli_joy', 'ghibli_wonder', 'ghibli_peace'
     ];
     if (!validPresets.includes(presetKey)) {
       return {
@@ -234,7 +233,7 @@ export const handler: Handler = async (event) => {
         
         try {
           const ipaThreshold = getIPAThreshold('ghibli_reaction');
-          ipaResult = await checkIdentityPreservation(sourceUrl, finalImageUrl, ipaThreshold);
+          ipaResult = await checkIdentityPreservation(sourceUrl, finalImageUrl, 'ghibli_reaction');
           
           console.log(`🔒 [GhibliReaction] IPA check completed: ${(ipaResult.similarity * 100).toFixed(1)}% similarity, threshold: ${(ipaThreshold * 100).toFixed(1)}%, passed: ${ipaResult.passed}`);
           
