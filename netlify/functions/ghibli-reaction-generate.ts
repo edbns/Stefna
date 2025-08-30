@@ -135,7 +135,7 @@ export const handler: Handler = async (event) => {
 
     // Validate preset key - accept all Ghibli Reaction preset values
     const validPresets = [
-      'ghibli_joy', 'ghibli_wonder', 'ghibli_peace'
+      'ghibli_tears', 'ghibli_shock', 'ghibli_sparkle'
     ];
     if (!validPresets.includes(presetKey)) {
       return {
@@ -210,9 +210,9 @@ export const handler: Handler = async (event) => {
 
     // Create initial database record
     const initialRecord = await qOne(`
-      INSERT INTO ghibli_reaction_media (
-        user_id, run_id, preset_key, prompt, source_url, status, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+               INSERT INTO ghibli_reaction_media (
+           user_id, run_id, preset, prompt, source_url, status, created_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
       RETURNING id
     `, [userId, runId, presetKey, prompt, sourceUrl, 'processing']);
 
