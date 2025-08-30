@@ -19,6 +19,8 @@ const PresetTag: React.FC<PresetTagProps> = ({
   clickable = false,
   showPresetKey = true
 }) => {
+  // Debug logging to see what data is being passed
+  console.log('🔍 [PresetTag] Rendering with:', { presetKey, type, showPresetKey });
   // Size classes
   const sizeClasses = {
     sm: 'px-2 py-1 text-xs',
@@ -27,7 +29,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
   }
   
   // Unified glossy black styling for all preset types
-  const unifiedStyle = 'bg-glossy-black-800 text-glossy-white-50 border-glossy-black-600 hover:bg-glossy-black-700'
+  const unifiedStyle = 'bg-black/80 text-white/90 border-white/20 hover:bg-black/90'
   
   // Get the preset type label
   const getPresetTypeLabel = () => {
