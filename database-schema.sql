@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS credits_ledger (
 CREATE TABLE IF NOT EXISTS custom_prompt_media (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
+    image_url TEXT, -- Nullable: populated when job completes
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS custom_prompt_media (
 CREATE TABLE IF NOT EXISTS emotion_mask_media (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
+    image_url TEXT, -- Nullable: populated when job completes
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS emotion_mask_media (
 CREATE TABLE IF NOT EXISTS ghibli_reaction_media (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
+    image_url TEXT, -- Nullable: populated when job completes
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS ghibli_reaction_media (
 CREATE TABLE IF NOT EXISTS neo_glitch_media (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
+    image_url TEXT, -- Nullable: populated when job completes
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS neo_glitch_media (
 CREATE TABLE IF NOT EXISTS presets_media (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
+    image_url TEXT, -- Nullable: populated when job completes
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
