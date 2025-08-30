@@ -12,10 +12,8 @@ import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 
-// 🚀 BACKGROUND MODE: Allow function to run for up to 15 minutes
-export const config = {
-  type: "background",
-};
+// 🚀 SYNCHRONOUS MODE: Process generation immediately like NeoGlitch
+// No more background processing or polling needed
 
 // Configure Cloudinary
 cloudinary.config({
@@ -196,6 +194,8 @@ async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey:
         num_inference_steps: 30,
         seed: Math.floor(Math.random() * 1000000)
       }),
+      // Add timeout to prevent stuck jobs (3 minutes max)
+      signal: AbortSignal.timeout(3 * 60 * 1000)
     });
 
     if (!response.ok) {
@@ -293,110 +293,7 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
   }
 }
 
-// Background generation function for async jobs
-export async function startBackgroundGeneration(
-  jobId: string, 
-  prompt: string, 
-  presetKey: string, 
-  sourceUrl: string, 
-  userId: string
-): Promise<void> {
-  console.log('🚀 [Ghibli] Starting background generation for job:', jobId);
-  
-  try {
-    // Process the generation asynchronously
-    await processGenerationAsync(jobId, prompt, presetKey, sourceUrl, userId);
-  } catch (error) {
-    console.error('❌ [Ghibli] Background generation failed:', error);
-    throw error;
-  }
-}
 
-// Async generation processing function
-async function processGenerationAsync(
-  jobId: string, 
-  prompt: string, 
-  presetKey: string, 
-  sourceUrl: string, 
-  userId: string
-): Promise<void> {
-  console.log('🔄 [Ghibli] Processing generation asynchronously for job:', jobId);
-  
-  try {
-    // Update job status to processing
-    await q(`
-      UPDATE ghibli_reaction_media 
-      SET status = 'processing', updated_at = NOW()
-      WHERE id = $1
-    `, [jobId]);
-    
-    // Call AIML API for generation
-    const aimlResponse = await fetch(`${process.env.AIML_API_URL}/v1/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.AIML_API_KEY}`,
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'stable-diffusion-v35-large',
-        prompt: prompt,
-        init_image: sourceUrl,
-        image_strength: 0.35,
-        num_images: 1,
-        guidance_scale: 7.5,
-        num_inference_steps: 30,
-        seed: Math.floor(Math.random() * 1000000)
-      })
-    });
-    
-    if (!aimlResponse.ok) {
-      throw new Error(`AIML API failed: ${aimlResponse.status}`);
-    }
-    
-    const aimlResult = await aimlResponse.json();
-    
-    // Extract image URL and upload to Cloudinary
-    let imageUrl = null;
-    if (aimlResult.output && aimlResult.output.choices && aimlResult.output.choices[0]?.image_base64) {
-      // Handle base64 response
-      const cloudinaryUrl = await uploadBase64ToCloudinary(aimlResult.output.choices[0].image_base64);
-      imageUrl = cloudinaryUrl;
-    } else if (aimlResult.output && aimlResult.output.choices && aimlResult.output.choices[0]?.image_url) {
-      // Handle URL response
-      imageUrl = aimlResult.output.choices[0].image_url;
-    } else {
-      throw new Error('No image data in AIML response');
-    }
-    
-    // Update job with completed status and image URL
-    await q(`
-      UPDATE ghibli_reaction_media
-      SET status = 'completed', image_url = $1, updated_at = NOW()
-      WHERE id = $2
-    `, [imageUrl, jobId]);
-    
-    console.log('✅ [Ghibli] Background generation completed successfully for job:', jobId);
-    
-    
-  } catch (error) {
-    console.error('❌ [Ghibli] Background generation failed for job:', jobId, error);
-    
-    // Update job with failed status
-    try {
-      await q(`
-        UPDATE ghibli_reaction_media
-        SET status = 'failed', updated_at = NOW()
-        WHERE id = $1
-      `, [jobId]);
-      
-    } catch (updateError) {
-      console.error('❌ [Ghibli] Failed to update job status to failed:', updateError);
-    }
-    
-    throw error;
-  }
-}
 
 // Main handler for direct calls (legacy support)
 export const handler: Handler = async (event) => {
