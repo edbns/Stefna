@@ -46,7 +46,7 @@ const uiStore = {
 }
 
 // Build I2I job helper
-function buildI2IJob({ presetId, source }: { presetId: string; source?: { file?: File; url?: string } }): Promise<GenerateJob | null> {
+function buildI2IJob({ presetId, source }: { presetId: string; source?: { file?: File; url?: string } }): Promise<{ mode: 'i2i'; presetId: string; prompt: string; params: any; source?: { file?: File; url?: string } } | null> {
   return new Promise((resolve) => {
     const preset = presetsStore.getState().byId[presetId]
     if (!preset) {
@@ -58,7 +58,7 @@ function buildI2IJob({ presetId, source }: { presetId: string; source?: { file?:
     resolve({
       mode: 'i2i' as const,
       presetId,
-      prompt: preset.prompt,
+      prompt: preset.prompt || '',
       params: preset.params || {},
       source
     })
