@@ -1,5 +1,8 @@
 -- 🗄️ Complete Database Schema for Stefna - Raw SQL (No Prisma)
 -- This replaces Prisma completely with all tables your functions need
+-- 
+-- IMPORTANT: This schema requires the uuid-ossp extension to be enabled
+-- All UUID generation uses uuid_generate_v4() for reliability
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -42,7 +45,7 @@ CREATE TABLE IF NOT EXISTS user_credits (
 
 -- OTP authentication table
 CREATE TABLE IF NOT EXISTS auth_otps (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT NOT NULL,
     code TEXT NOT NULL,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
@@ -233,7 +236,7 @@ CREATE TABLE IF NOT EXISTS ai_generations (
 
 -- Assets table
 CREATE TABLE IF NOT EXISTS assets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     url TEXT NOT NULL,
     public_id TEXT,
@@ -249,7 +252,7 @@ CREATE TABLE IF NOT EXISTS assets (
 
 -- Presets configuration table
 CREATE TABLE IF NOT EXISTS presets_config (
-    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4()::text,
     preset_key TEXT UNIQUE NOT NULL,
     preset_name TEXT NOT NULL,
     preset_description TEXT,
