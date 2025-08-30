@@ -56,7 +56,7 @@ export const handler: Handler = async (event) => {
         SELECT media_upload_agreed, share_to_feed FROM user_settings WHERE user_id = $1
       `, [userId]);
       
-      // Use existing values as defaults, or body values if provided
+      // Use body values if provided, otherwise keep existing values
       const mediaUploadAgreed = body.media_upload_agreed !== undefined ? body.media_upload_agreed : 
                                 body.mediaUploadAgreed !== undefined ? body.mediaUploadAgreed : 
                                 (existingSettings?.media_upload_agreed ?? false);
@@ -64,6 +64,14 @@ export const handler: Handler = async (event) => {
       const shareToFeed = body.share_to_feed !== undefined ? body.share_to_feed : 
                           body.shareToFeed !== undefined ? body.shareToFeed : 
                           (existingSettings?.share_to_feed ?? true); // Default to true for new users
+      
+      console.log('🔧 [User Settings] Update request:', {
+        userId,
+        body,
+        existingSettings,
+        finalMediaUploadAgreed: mediaUploadAgreed,
+        finalShareToFeed: shareToFeed
+      });
       
       // Upsert user settings
       const updated = await q(`
