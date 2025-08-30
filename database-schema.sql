@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS custom_prompt_media (
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
-    run_id TEXT NOT NULL,
+    run_id TEXT, -- Nullable: populated when AI generation starts
     aiml_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS emotion_mask_media (
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
-    run_id TEXT UNIQUE NOT NULL,
+    run_id TEXT UNIQUE, -- Nullable: populated when AI generation starts
     aiml_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS ghibli_reaction_media (
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
-    run_id TEXT NOT NULL,
+    run_id TEXT, -- Nullable: populated when AI generation starts
     aiml_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS neo_glitch_media (
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
-    run_id TEXT NOT NULL,
+    run_id TEXT, -- Nullable: populated when AI generation starts
     stability_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS presets_media (
     source_url TEXT NOT NULL,
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
-    run_id TEXT NOT NULL,
+    run_id TEXT, -- Nullable: populated when AI generation starts
     aiml_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
