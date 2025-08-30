@@ -120,7 +120,7 @@ NETLIFY_DATABASE_URL=postgres://...
 # AI Providers
 STABILITY_API_KEY=your_stability_key
 AIML_API_KEY=your_aiml_key
-AIML_API_URL=https://api.aimlapi.com
+FAL_KEY=your_fal_api_key
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME=your_cloud_name

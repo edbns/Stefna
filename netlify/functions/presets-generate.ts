@@ -110,9 +110,9 @@ async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey:
 
   // Define AIML models in order of preference (cheap → expensive → best quality)
   const aimlModels = [
-    { model: 'flux/dev/image-to-image', name: 'Flux Dev', cost: 'low', priority: 1 },
-    { model: 'flux/pro/image-to-image', name: 'Flux Pro', cost: 'medium', priority: 2 },
-    { model: 'flux/realism/image-to-image', name: 'Flux Realism', cost: 'high', priority: 3 }
+    { model: 'triposr', name: 'Triposr', cost: 'low', priority: 1 },
+    { model: 'recraft-v3', name: 'Recraft V3', cost: 'medium', priority: 2 },
+    { model: 'google/imagen4/preview', name: 'Google Imagen 4', cost: 'high', priority: 3 }
   ];
 
   let lastError: Error | null = null;

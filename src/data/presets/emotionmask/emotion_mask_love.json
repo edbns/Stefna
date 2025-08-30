@@ -3,6 +3,6 @@
   "name": "Nostalgia + Distance",
   "prompt": "Portrait reflecting longing and emotional distance. Dreamy lighting, blurred background, subject gazing away as if lost in memory.",
   "negative_prompt": "chaotic, blurry subject, busy background",
-  "model": "flux-image-to-image-v1",
+  "model": "triposr",
   "face_fix": true
 }

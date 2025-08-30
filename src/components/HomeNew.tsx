@@ -1812,7 +1812,7 @@ const HomeNew: React.FC = () => {
     
     // 🛡️ Model Validation Guard - Ensure only supported models are used
     const ALLOWED_MODELS = [
-      "flux/dev/image-to-image",
+              "triposr",
       "flux-pro/v1.1-ultra",
       "flux-realism",
       "dall-e-2",
@@ -1824,7 +1824,7 @@ const HomeNew: React.FC = () => {
     if (!ALLOWED_MODELS.includes(model)) {
       console.error("🚫 Invalid model:", model);
               notifyError({ title: 'Failed', message: 'Try again' });
-      return "flux/dev/image-to-image"; // Fallback to known working model
+              return "triposr"; // Fallback to known working model
     }
     return model;
   };
@@ -1953,7 +1953,7 @@ const HomeNew: React.FC = () => {
         mode: 'emotionmask', 
         emotionMaskPresetId, 
         emotionMaskPresetLabel: emotionMaskPreset.label,
-        model: "flux/dev/image-to-image", // Use known working model
+        model: "triposr", // Use known working model
         strength: adjustedStrength, // Use preset strength
         guidance_scale: 7.5, // Standard guidance for consistency
         cfg_scale: 7.0, // Balanced creativity vs adherence
@@ -1989,7 +1989,7 @@ const HomeNew: React.FC = () => {
           mode: 'ghiblireact', 
           ghibliReactionPresetId, 
           ghibliReactionLabel: ghibliReactionPreset.label, 
-          model: "flux/dev/image-to-image", // Use known working model for Ghibli style
+          model: "triposr", // Use known working model for Ghibli style
           strength: ghibliReactionPreset.strength, // Use actual preset strength
           guidance_scale: 7.5, // Standard guidance for consistency
           cfg_scale: 7.0, // Balanced creativity vs adherence
@@ -1999,7 +1999,7 @@ const HomeNew: React.FC = () => {
           ipaRetries: 2, // Moderate fallback
           ipaBlocking: true // Must pass to proceed
         };
-              console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: flux/dev/image-to-image');
+              console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: triposr');
       
     } else if (kind === 'neotokyoglitch') {
       // NEO TOKYO GLITCH MODE: Use Replicate integration for maximum glitch intensity
@@ -2389,7 +2389,7 @@ const HomeNew: React.FC = () => {
         // All other presets use AIML API only
         
         // Primary model for ALL non-Neo-Glitch modes
-        const primaryModel = 'flux/dev/image-to-image';
+        const primaryModel = 'triposr';
         
         // Fallback model if primary fails (higher quality, different approach)
         const fallbackModel = 'flux-pro/v1.1-ultra';
