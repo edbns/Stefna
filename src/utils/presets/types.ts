@@ -5,6 +5,9 @@ export interface Preset {
   description?: string;
   category: string;
   group: string;
+  mode?: 'i2i' | 'txt2img';
+  model?: 'eagle' | 'flux' | 'other';
+  input?: 'image' | 'video';
   options: Record<string, any>;
   params?: Record<string, any>;
 }
