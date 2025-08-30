@@ -5,9 +5,13 @@ export interface Preset {
   description?: string;
   category: string;
   group: string;
-  mode?: 'i2i' | 'txt2img';
+  mode: 'i2i' | 'txt2img';
   model?: 'eagle' | 'flux' | 'other';
-  input?: 'image' | 'video';
+  input: 'image' | 'video';
+  prompt: string;
+  negative_prompt?: string;
+  strength?: number;
+  post?: { upscale?: 'x2' | 'x4'; sharpen?: boolean };
   options: Record<string, any>;
   params?: Record<string, any>;
 }
