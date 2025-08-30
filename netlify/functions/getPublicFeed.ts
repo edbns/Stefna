@@ -46,15 +46,15 @@ export const handler: Handler = async (event) => {
       select user_id from user_settings where share_to_feed = true
     ),
     feed as (
-      select 'neo_glitch'      as type, id, user_id, image_url as finalUrl, source_url, preset, status, created_at, 'neo-glitch' as mediaType, preset as presetKey from neo_glitch_media      where status = 'completed'
+      select 'neo_glitch'      as type, id, user_id, image_url as finalUrl, image_url as imageUrl, source_url, preset, status, created_at, 'neo-glitch' as mediaType, preset as presetKey, prompt from neo_glitch_media      where status = 'completed'
       union all
-      select 'presets'         as type, id, user_id, image_url as finalUrl, source_url, preset, status, created_at, 'preset' as mediaType, preset as presetKey from presets_media         where status = 'completed'
+      select 'presets'         as type, id, user_id, image_url as finalUrl, image_url as imageUrl, source_url, preset, status, created_at, 'preset' as mediaType, preset as presetKey, prompt from presets_media         where status = 'completed'
       union all
-      select 'emotion_mask'    as type, id, user_id, image_url as finalUrl, source_url, preset, status, created_at, 'emotionmask' as mediaType, preset as presetKey from emotion_mask_media    where status = 'completed'
+      select 'emotion_mask'    as type, id, user_id, image_url as finalUrl, image_url as imageUrl, source_url, preset, status, created_at, 'emotionmask' as mediaType, preset as presetKey, prompt from emotion_mask_media    where status = 'completed'
       union all
-      select 'ghibli_reaction' as type, id, user_id, image_url as finalUrl, source_url, preset, status, created_at, 'ghiblireact' as mediaType, preset as presetKey from ghibli_reaction_media where status = 'completed'
+      select 'ghibli_reaction' as type, id, user_id, image_url as finalUrl, image_url as imageUrl, source_url, preset, status, created_at, 'ghiblireact' as mediaType, preset as presetKey, prompt from ghibli_reaction_media where status = 'completed'
       union all
-      select 'custom_prompt'   as type, id, user_id, image_url as finalUrl, source_url, preset, status, created_at, 'custom' as mediaType, preset as presetKey from custom_prompt_media   where status = 'completed'
+      select 'custom_prompt'   as type, id, user_id, image_url as finalUrl, image_url as imageUrl, source_url, preset, status, created_at, 'custom' as mediaType, preset as presetKey, prompt from custom_prompt_media   where status = 'completed'
     )
     select f.*
     from feed f
