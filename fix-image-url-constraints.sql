@@ -23,6 +23,41 @@ COMMENT ON COLUMN emotion_mask_media.image_url IS 'Final generated image URL. Nu
 COMMENT ON COLUMN ghibli_reaction_media.image_url IS 'Final generated image URL. Null when job is processing, populated when completed.';
 COMMENT ON COLUMN custom_prompt_media.image_url IS 'Final generated image URL. Null when job is processing, populated when completed.';
 
+-- Check Story Time tables for any constraint issues
+-- Story Time tables should be fine since they create records with immediate data
+-- but let's verify their structure
+
+-- Verify Story Time table structure
+SELECT 
+  'story' as table_name,
+  column_name,
+  is_nullable,
+  data_type,
+  column_default
+FROM information_schema.columns 
+WHERE table_name = 'story' 
+ORDER BY ordinal_position;
+
+SELECT 
+  'story_photo' as table_name,
+  column_name,
+  is_nullable,
+  data_type,
+  column_default
+FROM information_schema.columns 
+WHERE table_name = 'story_photo' 
+ORDER BY ordinal_position;
+
+SELECT 
+  'video_jobs' as table_name,
+  column_name,
+  is_nullable,
+  data_type,
+  column_default
+FROM information_schema.columns 
+WHERE table_name = 'video_jobs' 
+ORDER BY ordinal_position;
+
 -- Verify the changes
 SELECT 
   table_name,

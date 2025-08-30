@@ -29,12 +29,10 @@ CREATE TABLE IF NOT EXISTS user_settings (
 
 -- User credits table
 CREATE TABLE IF NOT EXISTS user_credits (
-    user_id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    balance INTEGER DEFAULT 0,
+    credits INTEGER DEFAULT 30,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
-    updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
-    credits INTEGER DEFAULT 30
+    updated_at TIMESTAMPTZ(6) DEFAULT NOW()
 );
 
 -- ========================================
