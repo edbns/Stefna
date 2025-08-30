@@ -4,6 +4,8 @@ export interface ProfessionalPresetConfig {
   category: string;
   description: string;
   promptAdd: string; // free-form text you append to the base prompt
+  prompt?: string; // full prompt text
+  negative_prompt?: string; // negative prompt text
   strength: number;
   model: string;
   mode: 'i2i';

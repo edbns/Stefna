@@ -317,3 +317,14 @@ class GenerationPipeline {
 }
 
 export default GenerationPipeline;
+
+// Export the missing functions that other files are trying to import
+export async function runGeneration(request: GenerationRequest): Promise<GenerationResult> {
+  const pipeline = GenerationPipeline.getInstance();
+  return pipeline.generate(request);
+}
+
+export function setupNavigationCleanup(): void {
+  // Cleanup function for navigation - can be implemented as needed
+  console.log('🧹 [GenerationPipeline] Navigation cleanup setup');
+}

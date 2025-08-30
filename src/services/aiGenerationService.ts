@@ -25,10 +25,12 @@ export interface GenerationResult {
   style?: string;
 }
 
-export interface GenerationStatus {
-  status: 'idle' | 'processing' | 'completed' | 'failed' | 'error';
-  message?: string;
-  progress?: number;
+export enum GenerationStatus {
+  IDLE = 'idle',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  ERROR = 'error'
 }
 
 class AIGenerationService {

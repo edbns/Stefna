@@ -17,12 +17,17 @@ export const SUBJECT_LOCK_NEG =
   "deformed subject, new faces, age change, child, baby, extra people, different subject, face swap, plastic skin, waxy skin, heavy smoothing";
 
 export interface PromptOptions {
-  mode?: "story";
+  mode?: "story" | "time_machine" | "restore";
   prompt?: string;
   negative_prompt?: string;
   strength?: number;
   guidance_scale?: number;
   num_inference_steps?: number;
+  detail?: DetailLevel;
+  base?: string;
+  user?: string;
+  lockSurfer?: boolean;
+  extraNeg?: string;
 }
 
 export function buildPrompt(opts: PromptOptions): string {

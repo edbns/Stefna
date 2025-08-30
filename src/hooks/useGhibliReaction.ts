@@ -7,6 +7,12 @@ export interface GhibliReactionOptions {
   heartOpacity: number; // 0.1-1.0
   blushIntensity: number; // 0.1-1.0
   eyeShineBrightness: number; // 0.1-1.0
+  expression?: string;
+  intensity?: number;
+  opacity?: number;
+  blendMode?: string;
+  enableShadows?: boolean;
+  enableHighlights?: boolean;
 }
 
 export interface GhibliReactionResult {

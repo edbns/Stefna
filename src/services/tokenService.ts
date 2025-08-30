@@ -3,6 +3,7 @@ export interface TokenUsage {
   dailyLimit: number;
   totalUsage: number;
   lastReset: string;
+  isRateLimited?: boolean;
 }
 
 export interface TokenGeneration {

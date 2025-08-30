@@ -40,6 +40,7 @@ export interface ToastContextValue {
   notifyReady: (opts: { title?: string; message?: string; thumbUrl?: string; onClickThumb?: () => void }) => void;
   notifyError: (opts: { title?: string; message?: string }) => void;
   notifySuccess: (opts: { title?: string; message?: string }) => void;
+  addToast: (opts: { title?: string; message?: string }) => void; // Alias for notifyQueue for backward compatibility
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -114,7 +115,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     enqueue({ id: crypto.randomUUID(), kind: "success", title, message });
   }, [enqueue]);
 
-  const value = useMemo(() => ({ notifyQueue, notifyReady, notifyError, notifySuccess }), [notifyQueue, notifyReady, notifyError, notifySuccess]);
+  const value = useMemo(() => ({ 
+    notifyQueue, 
+    notifyReady, 
+    notifyError, 
+    notifySuccess,
+    addToast: notifyQueue // Alias for backward compatibility
+  }), [notifyQueue, notifyReady, notifyError, notifySuccess]);
 
   return (
     <ToastContext.Provider value={value}>
