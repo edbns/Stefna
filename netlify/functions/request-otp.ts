@@ -121,13 +121,13 @@ export const handler: Handler = async (event) => {
 
       // Create user credits (simplified structure after cleanup)
       await client.query(
-        'INSERT INTO user_credits (user_id, balance) VALUES ($1, $2)',
+        'INSERT INTO user_credits (user_id, balance, updated_at) VALUES ($1, $2, NOW())',
         [userId, 30]
       );
 
       // Create user settings (simplified structure after cleanup)
       await client.query(
-        'INSERT INTO user_settings (user_id, media_upload_agreed, share_to_feed) VALUES ($1, $2, $3)',
+        'INSERT INTO user_settings (user_id, media_upload_agreed, share_to_feed, updated_at) VALUES ($1, $2, $3, NOW())',
         [userId, false, true] // Default: no upload consent, share to feed
       );
 
