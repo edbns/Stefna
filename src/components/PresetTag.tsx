@@ -29,7 +29,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
   }
   
   // Unified glossy black styling for all preset types
-  const unifiedStyle = 'bg-black/80 text-white/90 border-white/20 hover:bg-black/90'
+  const unifiedStyle = 'bg-glossy-black-800 text-glossy-white-50 border-glossy-black-600 hover:bg-glossy-black-700'
   
   // Get the preset type label
   const getPresetTypeLabel = () => {
@@ -100,8 +100,15 @@ const PresetTag: React.FC<PresetTagProps> = ({
       `}
       title={`Generated with ${getPresetTypeLabel()}${presetKey && presetKey !== 'custom' && presetKey !== 'custom_prompt' ? ` - ${presetKey}` : ''}`}
       onClick={clickable ? (e) => onClick?.(e) : undefined}
+      style={{ 
+        backgroundColor: '#212529', 
+        color: '#f8f9fa', 
+        borderColor: '#495057',
+        zIndex: 1000,
+        position: 'relative'
+      }}
     >
-      {getDisplayText()}
+      🔍 {getDisplayText()}
     </div>
   )
 }
