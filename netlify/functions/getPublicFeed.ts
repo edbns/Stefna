@@ -2,7 +2,7 @@
 // 🗄️ Public Feed using standardized _db helper
 // Unified feed across all media tables
 
-import type { Handler } from '@netlify/functions';
+import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions';
 import { q } from './_db';
 
 
