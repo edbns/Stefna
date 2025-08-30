@@ -51,7 +51,7 @@ export const handler: Handler = async (event) => {
       // Get user info, credits, and media assets
       const [userCredits, userMedia, userNeoGlitch] = await Promise.all([
         qOne(`
-          SELECT credits FROM user_credits WHERE user_id = $1
+          SELECT credits, balance FROM user_credits WHERE user_id = $1
         `, [userId]),
         // Get media from all dedicated tables
         Promise.all([
@@ -73,7 +73,7 @@ export const handler: Handler = async (event) => {
         `, [userId])
       ]);
 
-      const balance = userCredits?.credits ?? 30; // Default to 30 credits
+      const balance = userCredits?.balance ?? 30; // Use balance (lifetime credits) or default to 30
       const dailyCap = await getDailyCreditLimit(); // Get from app_config.daily_cap
 
       
@@ -82,7 +82,10 @@ export const handler: Handler = async (event) => {
         ok: true,
         user: { id: userId, email },
         daily_cap: dailyCap,
-        credits: { balance },
+        credits: { 
+          balance,
+          daily: userCredits?.credits ?? 30 // Daily spending limit
+        },
         media: {
           count: userMedia.length,
           items: userMedia.map(item => ({

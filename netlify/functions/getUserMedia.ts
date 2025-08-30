@@ -3,6 +3,7 @@
 // Provides user-specific media data
 
 import type { Handler } from '@netlify/functions';
+import { json } from './_lib/http';
 import { q, qOne, qCount } from './_db';
 
 
@@ -10,28 +11,25 @@ import { q, qOne, qCount } from './_db';
 export const handler: Handler = async (event) => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
+    return json('', { 
+      status: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      },
-      body: ''
-    };
+      }
+    });
   }
 
   if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
+    return json({ error: 'Method not allowed' }, { 
+      status: 405,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      }
+    });
   }
 
   try {
@@ -149,18 +147,18 @@ export const handler: Handler = async (event) => {
     // Transform Presets media
     const presetsItems = presetsMedia.map(item => ({
       id: item.id,
-      userId: item.userId,
-      finalUrl: item.imageUrl,
+      userId: item.user_id,
+      finalUrl: item.image_url,
       mediaType: 'image',
       prompt: item.prompt,
-      presetKey: item.presetKey,
+      presetKey: item.preset,
       status: 'ready',
       isPublic: false,
       allowRemix: false,
-      createdAt: item.createdAt,
+      createdAt: item.created_at,
       type: 'presets',
       metadata: {
-        presetKey: item.presetKey,
+        presetKey: item.preset,
         presetType: 'presets',
         quality: 'high',
         generationTime: 0,
@@ -171,18 +169,18 @@ export const handler: Handler = async (event) => {
     // Transform Custom Prompt media
     const customPromptItems = customPromptMedia.map(item => ({
       id: item.id,
-      userId: item.userId,
-      finalUrl: item.imageUrl,
+      userId: item.user_id,
+      finalUrl: item.image_url,
       mediaType: 'image',
       prompt: item.prompt,
-      presetKey: item.presetKey,
+      presetKey: item.preset,
       status: 'ready',
       isPublic: false,
       allowRemix: false,
-      createdAt: item.createdAt,
+      createdAt: item.created_at,
       type: 'custom-prompt',
       metadata: {
-        presetKey: item.presetKey,
+        presetKey: item.preset,
         presetType: 'custom-prompt',
         quality: 'high',
         generationTime: 0,
@@ -193,19 +191,19 @@ export const handler: Handler = async (event) => {
     // Transform NeoGlitch media
     const neoGlitchItems = neoGlitchMedia.map(item => ({
       id: item.id,
-      userId: item.userId,
-      finalUrl: item.imageUrl,
+      userId: item.user_id,
+      finalUrl: item.image_url,
       mediaType: 'image',
       prompt: item.prompt,
-      presetKey: item.presetKey,
+      presetKey: item.preset,
       status: 'ready',
       isPublic: false, // NeoGlitch media is always private by default
       allowRemix: false, // NeoGlitch doesn't support remixing
-      createdAt: item.createdAt,
+      createdAt: item.created_at,
       type: 'neo-glitch',
       // Include metadata for preset information
       metadata: {
-        presetKey: item.presetKey,
+        presetKey: item.preset,
         presetType: 'neo-glitch',  // ✅ Neo Glitch specific type
         quality: 'high',
         generationTime: 0,
@@ -224,19 +222,12 @@ export const handler: Handler = async (event) => {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, limit);
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        success: true,
-        items: allMediaItems,
-        total: allMediaItems.length,
-        hasMore: allMediaItems.length === limit
-      })
-    };
+    return json({
+      success: true,
+      items: allMediaItems,
+      total: allMediaItems.length,
+      hasMore: allMediaItems.length === limit
+    });
 
   } catch (error: any) {
     console.error('💥 [getUserMedia] Media fetch error:', error);
