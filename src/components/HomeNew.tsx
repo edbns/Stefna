@@ -1472,7 +1472,7 @@ const HomeNew: React.FC = () => {
           
           return ({
             id: item.id,
-            userId: item.userId || '', // Use actual user ID or empty string to hide tooltip
+            userId: item.user_id || '', // Backend sends user_id (snake_case)
             userAvatar: item.user?.avatar || undefined, // Use actual user avatar if available
             userTier: item.user?.tier || undefined, // Use actual user tier if available
             type: item.mediaType === 'video' ? 'video' : 'photo',
@@ -1483,8 +1483,8 @@ const HomeNew: React.FC = () => {
             aspectRatio: 4/3, // Default aspect ratio
             width: 800, // Default width
             height: 600, // Default height
-            timestamp: item.createdAt,
-            originalMediaId: item.sourceAssetId || undefined,
+            timestamp: item.created_at, // Backend sends created_at (snake_case)
+            originalMediaId: item.source_url || undefined, // Backend sends source_url
             tokensUsed: item.mediaType === 'video' ? 5 : 2,
             likes: 0, // Not exposed in public feed
             isPublic: true,
@@ -1493,8 +1493,8 @@ const HomeNew: React.FC = () => {
               quality: 'high', 
               generationTime: 0, 
               modelVersion: '1.0',
-              presetKey: item.presetKey, // Add preset key from backend
-              presetType: item.type, // Add preset type from backend
+              presetKey: item.presetKey, // Backend sends presetKey (camelCase)
+              presetType: item.type, // Backend sends type
               // Story Time video metadata
               videoResults: item.metadata?.videoResults,
               totalVideos: item.metadata?.totalVideos,
