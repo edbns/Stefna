@@ -1633,7 +1633,46 @@ const ProfileScreen: React.FC = () => {
                 onToggleSelection={toggleMediaSelection}
                 // Enhanced loading states for actions
                 deletingMediaIds={deletingMediaIds}
+                // 🚀 INFINITE SCROLL: Pass the last item ref for intersection detection
+                onLastItemRef={(ref) => {
+                  if (ref && hasMoreMedia && !isLoadingMoreMedia) {
+                    // Create intersection observer for infinite scroll
+                    const observer = new IntersectionObserver(
+                      (entries) => {
+                        entries.forEach((entry) => {
+                          if (entry.isIntersecting && hasMoreMedia && !isLoadingMoreMedia) {
+                            console.log('👁️ [ProfileScroll] Last item visible, triggering load more');
+                            loadMoreMedia();
+                          }
+                        });
+                      },
+                      { threshold: 0.1 }
+                    );
+                    
+                    observer.observe(ref);
+                    
+                    // Cleanup observer when ref changes
+                    return () => observer.disconnect();
+                  }
+                }}
               />
+              
+              {/* 🚀 INFINITE SCROLL: Loading indicator */}
+              {isLoadingMoreMedia && hasMoreMedia && (
+                <div className="flex justify-center py-8">
+                  <div className="flex items-center space-x-3 text-white/60">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Loading more media...</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* 🚀 INFINITE SCROLL: End of media indicator */}
+              {!hasMoreMedia && userMedia.length > 0 && (
+                <div className="text-center py-8 text-white/40">
+                  <p>You've reached the end of your media</p>
+                </div>
+              )}
             )}
           </div>
         )}
