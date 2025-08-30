@@ -2,6 +2,7 @@ import type { Handler } from "@netlify/functions";
 import { q, qOne, qCount } from './_db';
 import { requireAuth } from "./_auth";
 import { json } from "./_lib/http";
+import { getDailyCreditLimit } from './_lib/appConfig';
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -73,7 +74,7 @@ export const handler: Handler = async (event) => {
       ]);
 
       const balance = userCredits?.credits ?? 30; // Default to 30 credits
-      const dailyCap = 30; // Hardcoded for now since appConfig table doesn't exist
+      const dailyCap = await getDailyCreditLimit(); // Get from app_config.daily_cap
 
       
 
