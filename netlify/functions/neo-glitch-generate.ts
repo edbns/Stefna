@@ -1166,17 +1166,12 @@ async function attemptStabilityGeneration(
     console.log('🔍 [Stability.ai Support] API Key present:', !!apiToken);
     console.log('🔍 [Stability.ai Support] Source image size check:', sourceUrl);
     
-    // Wrap API call with timeout protection
-    const apiController = new AbortController();
-    const apiTimeout = setTimeout(() => {
-      console.error('⏱ [NeoGlitch] API call timeout - aborting');
-      apiController.abort();
-    }, 20000); // 20s timeout for API call
-
+    // Wrap API call with hard timeout using Promise.race (module does not support AbortController)
+    const tierTimeoutMs = 20000; // 20s per tier
     let result;
     try {
       console.log('🌐 [NeoGlitch] Making Stability.ai API call...');
-      result = await generateImageWithStability({
+      const apiCall = generateImageWithStability({
         prompt: `${prompt}, preserve facial identity, maintain original face structure`,
         sourceUrl,
         modelTier: modelType,
@@ -1185,15 +1180,19 @@ async function attemptStabilityGeneration(
         cfgScale: config.guidance_scale,
         stabilityApiKey: apiToken
       });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => {
+          console.error('⏱ [NeoGlitch] API call timeout - proceeding to next tier');
+          reject(new Error('API_TIMEOUT'));
+        }, tierTimeoutMs)
+      );
+      result = await Promise.race([apiCall, timeoutPromise]) as any;
       console.log('✅ [NeoGlitch] Stability.ai API call completed');
     } catch (apiError: any) {
-      if (apiError.name === 'AbortError') {
-        console.error('⏱ [NeoGlitch] API call timed out');
+      if (apiError && apiError.message === 'API_TIMEOUT') {
         throw new Error('Stability.ai API call timed out');
       }
       throw apiError;
-    } finally {
-      clearTimeout(apiTimeout);
     }
 
     // 🔍 DETAILED LOGGING: Log the successful response for Stability.ai support
@@ -1225,6 +1224,7 @@ async function attemptStabilityGeneration(
 
   } catch (error: any) {
     console.error('❌ [NeoGlitch] Error in Stability.ai generation attempt:', error);
+    // Bubble to caller to advance to next tier or Fal.ai fallback
     throw error;
   }
 }
