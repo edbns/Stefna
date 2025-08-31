@@ -152,11 +152,11 @@ class CustomPromptService {
 
   /**
    * Poll for generation completion
-   * Since AIML returns immediately, this is mainly for status checking
+   * Since AIML returns immediately, this is mainly for status verification
    */
-  async pollForCompletion(aimlJobId: string, maxAttempts: number = 10): Promise<CustomPromptStatus> {
+  async pollForCompletion(jobId: string, maxAttempts: number = 10): Promise<CustomPromptStatus> {
     try {
-      console.log('🔍 [CustomPrompt] Polling for completion:', aimlJobId);
+      console.log('🔍 [CustomPrompt] Polling for completion:', jobId);
       
       // For Custom Prompt, AIML usually returns immediately
       // This polling is mainly for status verification
@@ -164,11 +164,10 @@ class CustomPromptService {
         console.log(`🔍 [CustomPrompt] Poll attempt ${attempt}/${maxAttempts}`);
         
         try {
-          // Check status by querying the database directly
-          const statusRes = await authenticatedFetch('/.netlify/functions/custom-prompt-generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ aimlJobId })
+          // Check status by querying the database directly via a status endpoint
+          const statusRes = await authenticatedFetch(`/.netlify/functions/custom-prompt-generate?jobId=${jobId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
           });
 
           if (statusRes.ok) {

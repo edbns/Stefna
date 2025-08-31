@@ -200,12 +200,85 @@ async function uploadAIMLToCloudinary(imageUrl: string, presetKey: string): Prom
 import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
 
 export const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: { 
+        'Access-Control-Allow-Origin': '*', 
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+      },
+      body: ''
+    };
+  }
+
+  if (event.httpMethod !== 'POST' && event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: { 
+        'Access-Control-Allow-Origin': '*', 
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+      },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
+  }
+
+  // Handle GET requests for status checking
+  if (event.httpMethod === 'GET') {
+    const jobId = event.queryStringParameters?.jobId;
+    if (!jobId) {
+      return {
+        statusCode: 400,
+        headers: { 
+          'Access-Control-Allow-Origin': '*', 
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+        },
+        body: JSON.stringify({ error: 'jobId parameter required' })
+      };
+    }
+
+    try {
+      const status = await qOne(`
+        SELECT id, status, image_url, created_at, preset, prompt, stability_job_id
+        FROM neo_glitch_media
+        WHERE id = $1
+      `, [jobId]);
+
+      if (!status) {
+        return {
+          statusCode: 404,
+          headers: { 
+            'Access-Control-Allow-Origin': '*', 
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+          },
+          body: JSON.stringify({ error: 'Job not found' })
+        };
+      }
+
+      return {
+        statusCode: 200,
+        headers: { 
+          'Access-Control-Allow-Origin': '*', 
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+        },
+        body: JSON.stringify(status)
+      };
+    } catch (error) {
+      console.error('❌ [NeoGlitch] Status check failed:', error);
+      return {
+        statusCode: 500,
+        headers: { 
+          'Access-Control-Allow-Origin': '*', 
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+        },
+        body: JSON.stringify({ error: 'Status check failed' })
+      };
+    }
   }
 
   try {

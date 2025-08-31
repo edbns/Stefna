@@ -174,11 +174,11 @@ class PresetsService {
 
   /**
    * Poll for generation completion
-   * Since AIML returns immediately, this is mainly for status checking
+   * Since AIML returns immediately, this is mainly for status verification
    */
-  async pollForCompletion(aimlJobId: string, maxAttempts: number = 10): Promise<PresetStatus> {
+  async pollForCompletion(jobId: string, maxAttempts: number = 10): Promise<PresetStatus> {
     try {
-      console.log('🔍 [Presets] Polling for completion:', aimlJobId);
+      console.log('🔍 [Presets] Polling for completion:', jobId);
       
       // For Professional Presets, AIML usually returns immediately
       // This polling is mainly for status verification
@@ -186,11 +186,10 @@ class PresetsService {
         console.log(`🔍 [Presets] Poll attempt ${attempt}/${maxAttempts}`);
         
         try {
-          // Check status by querying the database directly
-          const statusRes = await authenticatedFetch('/.netlify/functions/presets-generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ aimlJobId })
+          // Check status by querying the database directly via a status endpoint
+          const statusRes = await authenticatedFetch(`/.netlify/functions/presets-generate?jobId=${jobId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
           });
 
           if (statusRes.ok) {

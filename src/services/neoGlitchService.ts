@@ -138,15 +138,13 @@ class NeoGlitchService {
    */
   async checkStatus(jobId: string, provider: string = 'stability'): Promise<NeoGlitchStatus> {
     try {
-      const endpoint = '/.netlify/functions/neo-glitch-generate';
-      const body = { stabilityJobId: jobId };
+      const endpoint = `/.netlify/functions/neo-glitch-generate?jobId=${jobId}`;
       
-      console.log('🔍 [NeoGlitch] checkStatus called with:', { jobId, provider, body });
+      console.log('🔍 [NeoGlitch] checkStatus called with:', { jobId, provider });
 
       const response = await authenticatedFetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
 
       if (!response.ok) {
