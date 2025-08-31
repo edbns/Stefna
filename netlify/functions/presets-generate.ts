@@ -388,8 +388,12 @@ export const handler: Handler = async (event) => {
       generationMeta = {}
     } = body;
 
-    // Validation
-    const requiredFields = { prompt, userId, presetKey, runId, sourceUrl };
+    // Normalize preset from generationMeta aliases, fallback to presetKey
+    const metaPreset: string = (generationMeta.presetKey || generationMeta.preset || generationMeta.label || '').toString();
+    const effectivePresetKey = (metaPreset || presetKey || '').toString();
+
+    // Validation (excluding preset here; we validate availability for effectivePresetKey below)
+    const requiredFields = { prompt, userId, runId, sourceUrl };
     const missingFields = Object.entries(requiredFields)
       .filter(([key, value]) => !value)
       .map(([key]) => key);
@@ -411,20 +415,20 @@ export const handler: Handler = async (event) => {
       runId: runId.toString(), 
       runIdType: typeof runId,
       sourceUrl, 
-      presetKey, 
+      presetKey: effectivePresetKey, 
       userId 
     });
 
     // Check if preset is currently available
-    const isAvailable = await isPresetCurrentlyAvailable(presetKey);
+    const isAvailable = await isPresetCurrentlyAvailable(effectivePresetKey);
     if (!isAvailable) {
       return {
         statusCode: 422,
         headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'PRESET_NOT_AVAILABLE',
-          message: `Preset ${presetKey} is not available this week. Check back next week for new presets!`,
-          presetKey,
+          message: `Preset ${effectivePresetKey} is not available this week. Check back next week for new presets!`,
+          presetKey: effectivePresetKey,
           suggestion: 'Try a different preset or wait for next week\'s rotation'
         })
       };
@@ -511,14 +515,14 @@ export const handler: Handler = async (event) => {
     console.log('✅ [Presets] Credit reserved successfully');
 
     // Get preset configuration for database record
-    const presetConfig = await getPresetConfig(presetKey);
+    const presetConfig = await getPresetConfig(effectivePresetKey);
 
     // Create initial record
     const initialRecord = await qOne(`
       INSERT INTO presets_media (id, user_id, source_url, prompt, preset, run_id, status, image_url, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
       RETURNING id
-    `, [uuidv4(), userId, sourceUrl, prompt, presetKey, runId.toString(), 'pending', sourceUrl]);
+    `, [uuidv4(), userId, sourceUrl, prompt, effectivePresetKey, runId.toString(), 'pending', sourceUrl]);
 
     console.log('✅ [Presets] Initial record created:', initialRecord.id);
 
@@ -526,7 +530,7 @@ export const handler: Handler = async (event) => {
     console.log('🚀 [Presets] Starting FAL.ai generation...');
     
     try {
-      const generationResult = await startFALGeneration(sourceUrl, prompt, presetKey, userId, runId);
+      const generationResult = await startFALGeneration(sourceUrl, prompt, effectivePresetKey, userId, runId);
       
       if (generationResult && generationResult.imageUrl) {
         console.log('🎉 [Presets] Generation completed immediately!');
@@ -536,7 +540,7 @@ export const handler: Handler = async (event) => {
         let cloudinaryPublicId: string | null = null;
         
         try {
-          const cloudinaryResult = await uploadAIMLToCloudinary(generationResult.imageUrl, presetKey);
+          const cloudinaryResult = await uploadAIMLToCloudinary(generationResult.imageUrl, effectivePresetKey);
           finalImageUrl = cloudinaryResult.url;
           cloudinaryPublicId = cloudinaryResult.publicId;
           console.log('✅ [Presets] Result uploaded to Cloudinary successfully');
@@ -573,7 +577,7 @@ export const handler: Handler = async (event) => {
             requestId: runId,
             success: true,
             meta: { 
-              presetKey, 
+              presetKey: effectivePresetKey, 
               presetName: presetConfig.preset_name,
               presetWeek: presetConfig.preset_week,
               finalImageUrl: finalImageUrl.substring(0, 100) 
@@ -592,9 +596,9 @@ export const handler: Handler = async (event) => {
             runId: runId.toString(),
             status: 'completed',
             imageUrl: finalImageUrl,
-            aimlJobId: generationResult.aimlJobId,
-            provider: 'aiml',
-            aimlModel: generationResult.modelName,
+            falJobId: generationResult.falJobId,
+            provider: 'fal',
+            falModel: generationResult.modelName,
             fallbackUsed: generationResult.fallbackUsed,
             attemptCount: generationResult.attemptCount,
             presetInfo: {

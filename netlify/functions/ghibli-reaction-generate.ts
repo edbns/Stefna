@@ -125,8 +125,19 @@ export const handler: Handler = async (event) => {
     // Handle sourceUrl field (frontend sends it directly)
     const finalSourceUrl = sourceUrl || sourceAssetId;
 
-    // Validation
-    const requiredFields = { prompt, userId, presetKey, runId, sourceUrl: finalSourceUrl };
+    // Derive effective preset from generationMeta aliases if present
+    const metaPreset: string = (generationMeta.ghibliReactionPresetId || generationMeta.ghibliReactionLabel || generationMeta.presetKey || '').toString();
+    const normalizedMetaPreset = (metaPreset || '').toLowerCase();
+    const presetAliasMap: Record<string, string> = {
+      sparkle: 'ghibli_sparkle',
+      shock: 'ghibli_shock',
+      tears: 'ghibli_tears'
+    };
+    const aliasResolved = presetAliasMap[normalizedMetaPreset] || normalizedMetaPreset;
+    const effectivePresetKey = (aliasResolved || presetKey || '').toString();
+
+    // Validation (excluding preset here; we validate effectivePresetKey below)
+    const requiredFields = { prompt, userId, runId, sourceUrl: finalSourceUrl };
     const missingFields = Object.entries(requiredFields)
       .filter(([key, value]) => !value)
       .map(([key]) => key);
@@ -214,7 +225,7 @@ export const handler: Handler = async (event) => {
     const validPresets = [
       'ghibli_tears', 'ghibli_shock', 'ghibli_sparkle'
     ];
-    if (!validPresets.includes(presetKey)) {
+    if (!validPresets.includes(effectivePresetKey)) {
       return {
         statusCode: 422,
         headers: { 
@@ -225,7 +236,7 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify({
           error: 'INVALID_PRESET',
           message: `Invalid preset key. Must be one of: ${validPresets.join(', ')}`,
-          received: presetKey,
+          received: effectivePresetKey,
           valid: validPresets
         })
       };
@@ -276,13 +287,13 @@ export const handler: Handler = async (event) => {
            user_id, run_id, preset, prompt, source_url, status, fal_job_id, created_at
          ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
          RETURNING id
-       `, [userId, runId, presetKey, prompt, finalSourceUrl, 'processing', null]);
+       `, [userId, runId, effectivePresetKey, prompt, finalSourceUrl, 'processing', null]);
 
     console.log('✅ [GhibliReaction] Database record created:', initialRecord.id);
 
     try {
       // Start Fal.ai generation via centralized function
-      const generationResult = await startFalGeneration(finalSourceUrl, prompt, presetKey, userId, runId);
+      const generationResult = await startFalGeneration(finalSourceUrl, prompt, effectivePresetKey, userId, runId);
       
       if (generationResult && generationResult.imageUrl) {
         console.log('🎉 [GhibliReaction] Generation successful, processing result...');
@@ -330,7 +341,7 @@ export const handler: Handler = async (event) => {
             userId,
             requestId: runId,
             success: true,
-            meta: { presetKey, finalImageUrl: finalImageUrl.substring(0, 100) }
+            meta: { presetKey: effectivePresetKey, finalImageUrl: finalImageUrl.substring(0, 100) }
           })
         });
         

@@ -194,8 +194,12 @@ export const handler: Handler = async (event) => {
       generationMeta = {}
     } = body;
 
-    // Validation
-    const requiredFields = { prompt, userId, presetKey, runId, sourceUrl };
+    // Normalize preset from generationMeta aliases
+    const metaPreset: string = (generationMeta.presetKey || generationMeta.emotionPreset || generationMeta.label || '').toString();
+    const effectivePresetKey = (metaPreset || presetKey || '').toString();
+
+    // Validation (excluding preset here; validate effectivePresetKey below)
+    const requiredFields = { prompt, userId, runId, sourceUrl };
     const missingFields = Object.entries(requiredFields)
       .filter(([key, value]) => !value)
       .map(([key]) => key);
@@ -257,14 +261,14 @@ export const handler: Handler = async (event) => {
 
     // Validate preset key
     const validPresets = ['happy', 'sad', 'angry', 'surprised', 'disgusted', 'fearful', 'neutral'];
-    if (!validPresets.includes(presetKey)) {
+    if (!validPresets.includes(effectivePresetKey)) {
       return {
         statusCode: 422,
         headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
         body: JSON.stringify({
           error: 'INVALID_PRESET',
           message: `Invalid preset key. Must be one of: ${validPresets.join(', ')}`,
-          received: presetKey,
+          received: effectivePresetKey,
           valid: validPresets
         })
       };
@@ -322,7 +326,7 @@ export const handler: Handler = async (event) => {
       INSERT INTO emotion_mask_media (id, user_id, source_url, prompt, preset, run_id, status, image_url, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
       RETURNING id
-    `, [uuidv4(), userId, sourceUrl, prompt, presetKey, runId.toString(), 'pending', sourceUrl]);
+    `, [uuidv4(), userId, sourceUrl, prompt, effectivePresetKey, runId.toString(), 'pending', sourceUrl]);
 
     console.log('✅ [EmotionMask] Initial record created:', initialRecord.id);
 
@@ -392,12 +396,11 @@ export const handler: Handler = async (event) => {
           SET status = $1, image_url = $2, updated_at = NOW(), metadata = $3
           WHERE id = $4
         `, ['completed', finalImageUrl, JSON.stringify({
-          aimlModel: generationResult.modelName,
-          aimlModelId: generationResult.model,
+          falModel: generationResult.falModel,
           attemptCount: generationResult.attemptCount,
           fallbackUsed: generationResult.fallbackUsed,
           cloudinaryPublicId: cloudinaryPublicId,
-          generationPath: 'aiml_fallback_system'
+          generationPath: 'fal_fallback_system'
         }), initialRecord.id]);
         
         console.log('✅ [EmotionMask] Database updated with completed status');
@@ -428,8 +431,8 @@ export const handler: Handler = async (event) => {
             runId: runId.toString(),
             status: 'completed',
             imageUrl: finalImageUrl,
-            provider: 'aiml',
-            aimlModel: generationResult.modelName,
+            provider: 'fal',
+            falModel: generationResult.falModel,
             fallbackUsed: generationResult.fallbackUsed,
             attemptCount: generationResult.attemptCount,
 
