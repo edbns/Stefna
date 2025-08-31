@@ -1261,16 +1261,12 @@ const ProfileScreen: React.FC = () => {
         const s = await r.json()
         console.log('✅ [User Settings] Updated successfully:', s);
         updateProfile({ shareToFeed: !!s.settings?.share_to_feed })
-        
-        // 🔒 PRIVACY: Feed visibility is controlled by user_settings.share_to_feed
-        // No need to update media status - getPublicFeed() filters by user preference
         console.log('🔒 [Privacy] User share preference updated. Feed will reflect changes immediately.');
       } else {
         console.error('❌ [User Settings] Update failed:', r.status, r.statusText);
       }
     } catch (e) {
       console.error('❌ [User Settings] Update error:', e);
-      // keep local state; will retry next time
     }
   }
 
@@ -1322,7 +1318,7 @@ const ProfileScreen: React.FC = () => {
               
               // Handle toggle items
               if (item.type === 'toggle') {
-                const settingValue = item.setting === 'autoShareToFeed' ? profileData.shareToFeed : false
+                const settingValue = item.setting === 'autoShareToFeed' ? !!profileData.shareToFeed : false
                 return (
                   <div key={item.id} className="flex items-center justify-between py-1.5 px-3">
                 <div className="flex items-center space-x-2">

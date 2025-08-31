@@ -29,7 +29,7 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
 }) => {
 
   const [isImageEnlarged, setIsImageEnlarged] = useState(false)
-  const [shareToFeed, setShareToFeed] = useState(true) // Default to true, will be overridden by user's actual preference
+  const [shareToFeed, setShareToFeed] = useState(false) // Privacy-first default
   // allowRemix state removed
 
   // Load user's saved settings on mount
@@ -39,7 +39,7 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
         const savedProfile = localStorage.getItem('userProfile')
         if (savedProfile) {
                   const profile = JSON.parse(savedProfile)
-        setShareToFeed(profile.shareToFeed ?? true)  // Default to true if no preference set
+        setShareToFeed(!!profile.shareToFeed)
           // allowRemix removed
         }
       } catch (error) {
@@ -123,7 +123,7 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                           },
-                          body: JSON.stringify({ shareToFeed: newValue })
+                          body: JSON.stringify({ share_to_feed: newValue })
                         })
                       }
                     } catch (error) {

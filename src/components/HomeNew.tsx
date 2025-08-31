@@ -4378,7 +4378,10 @@ const HomeNew: React.FC = () => {
           'Authorization': `Bearer ${authService.getToken()}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(updatedSettings)
+        body: JSON.stringify({
+          media_upload_agreed: updatedSettings.mediaUploadAgreed ?? updatedSettings.media_upload_agreed ?? false,
+          share_to_feed: updatedSettings.shareToFeed ?? updatedSettings.share_to_feed ?? false
+        })
       })
 
       if (response.ok) {
