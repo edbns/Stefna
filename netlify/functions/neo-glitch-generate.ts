@@ -1225,8 +1225,6 @@ async function attemptStabilityGeneration(
     } catch (fallbackError: any) {
       console.error('❌ [NeoGlitch] Fal.ai fallback also failed:', fallbackError);
       throw new Error(`Stability.ai failed, and Fal.ai fallback failed: ${fallbackError.message}`);
-    } finally {
-      // Fallback cleanup if needed
     }
   }
 }
