@@ -63,9 +63,10 @@ export const handler: Handler = async (event) => {
     tomorrow.setUTCHours(0, 0, 0, 0);
 
     const quota = {
-      dailyCredits,
-      usedCredits: Math.max(0, usedCredits),
-      remainingCredits: Math.max(0, remainingCredits),
+      daily_limit: dailyCredits,
+      daily_used: Math.max(0, usedCredits),
+      remaining: Math.max(0, remainingCredits),
+      weekly_used: 0, // For compatibility with TokenService
       dailyReset: tomorrow.toISOString(),
       currentBalance: currentCredits,
       timestamp: now.toISOString()
