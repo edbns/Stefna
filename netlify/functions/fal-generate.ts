@@ -36,18 +36,18 @@ const FAL_MODELS = [
     description: 'Studio Ghibli style transformations'
   },
   { 
-    model: 'fal-ai/realistic-vision-v5', 
-    name: 'Realistic Vision V5', 
+    model: 'fal-ai/hyper-sdxl/image-to-image', 
+    name: 'Hyper SDXL I2I', 
     cost: 'medium', 
     priority: 2,
-    description: 'Photorealistic image generation'
+    description: 'High-quality image-to-image generation'
   },
   { 
-    model: 'fal-ai/fast-sdxl', 
-    name: 'Fast SDXL', 
+    model: 'fal-ai/stable-diffusion-xl', 
+    name: 'Stable Diffusion XL', 
     cost: 'high', 
     priority: 3,
-    description: 'Fast high-quality generation'
+    description: 'Premium quality generation'
   }
 ];
 
@@ -239,7 +239,9 @@ async function attemptFalGeneration(
     // Extract image URL from result
     let imageUrl = null;
     
-    if (result.data?.images && Array.isArray(result.data.images) && result.data.images[0]?.url) {
+    if (result.data?.image?.url) {
+      imageUrl = result.data.image.url;
+    } else if (result.data?.images && Array.isArray(result.data.images) && result.data.images[0]?.url) {
       imageUrl = result.data.images[0].url;
     } else if (result.data?.image_url) {
       imageUrl = result.data.image_url;
@@ -248,7 +250,14 @@ async function attemptFalGeneration(
     }
     
     if (!imageUrl) {
-      console.error(`❌ [Fal.ai] No image URL in ${falModel.name} response:`, result.data);
+      console.error(`❌ [Fal.ai] No image URL in ${falModel.name} response:`, {
+        resultData: result.data,
+        resultDataKeys: result.data ? Object.keys(result.data) : 'none',
+        resultDataImage: result.data?.image,
+        resultDataImages: result.data?.images,
+        resultDataImageUrl: result.data?.image_url,
+        resultDataUrl: result.data?.url
+      });
       throw new Error(`${falModel.name} API returned no image URL`);
     }
 
@@ -259,9 +268,62 @@ async function attemptFalGeneration(
       requestId: result.requestId
     });
 
+    // 🔄 CRITICAL: Re-upload to Cloudinary for persistence
+    console.log(`☁️ [Cloudinary] Re-uploading fal.ai result to Cloudinary...`);
+    let cloudinaryUrl = imageUrl; // Fallback to original URL if re-upload fails
+    
+    try {
+      // Download the image from fal.ai and upload to Cloudinary
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to download image from fal.ai: ${response.status}`);
+      }
+      
+      const imageBuffer = await response.arrayBuffer();
+      const imageBlob = new Blob([imageBuffer]);
+      
+      // Upload to Cloudinary using the existing cloudinary config
+             const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+         const uploadStream = cloudinary.uploader.upload_stream(
+           {
+             folder: 'stefna/generated',
+             public_id: `ghibli_${runId}`,
+             resource_type: 'image',
+             overwrite: true
+           },
+           (error, result) => {
+             if (error) {
+               console.error('❌ [Cloudinary] Upload failed:', error);
+               reject(error);
+             } else if (result) {
+               console.log('✅ [Cloudinary] Re-upload successful:', result.secure_url);
+               resolve(result);
+             } else {
+               reject(new Error('Cloudinary upload returned no result'));
+             }
+           }
+         );
+        
+        // Convert blob to stream and pipe to upload
+        const reader = new FileReader();
+        reader.onload = () => {
+          uploadStream.end(Buffer.from(reader.result as ArrayBuffer));
+        };
+        reader.readAsArrayBuffer(imageBlob);
+      });
+      
+             cloudinaryUrl = uploadResult.secure_url;
+      console.log(`✅ [Cloudinary] Final URL: ${cloudinaryUrl}`);
+      
+    } catch (uploadError) {
+      console.error('❌ [Cloudinary] Re-upload failed, using original URL:', uploadError);
+      // Continue with original fal.ai URL as fallback
+    }
+
     return {
       status: 'completed',
-      imageUrl: imageUrl,
+      imageUrl: cloudinaryUrl, // Use Cloudinary URL for persistence
+      originalFalUrl: imageUrl, // Keep original for reference
       falJobId: result.requestId || `${falModel.name.toLowerCase().replace(/\s+/g, '_')}_${runId}`,
       model: falModel.model,
       modelName: falModel.name,
