@@ -281,6 +281,8 @@ export const handler: Handler = async (event) => {
     }
   }
 
+  // Continue with POST request handling...
+
   try {
     // Extract user's JWT token for internal credit calls
     const userToken = event.headers.authorization?.replace('Bearer ', '') || '';
