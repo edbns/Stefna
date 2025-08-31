@@ -83,7 +83,9 @@ export const handler: Handler = async (event) => {
       'preset', 'presets', 'presets_generation',
       'custom', 'custom_prompt_generation',
       'ghiblireact', 'ghibli_reaction_generation',
-      'neotokyoglitch', 'neo_glitch_generation'
+      'neotokyoglitch', 'neo_glitch_generation',
+      // storytime aliases
+      'storytime', 'story_time', 'story-time', 'story_time_create', 'story_time_generate', 'story_time_gen'
     ];
     if (!allowedActions.includes(action)) {
       console.error("❌ Invalid action:", action, "Allowed:", allowedActions);
