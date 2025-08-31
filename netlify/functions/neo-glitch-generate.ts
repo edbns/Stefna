@@ -1324,6 +1324,8 @@ async function attemptStabilityGeneration(
       throw apiError;
     } finally {
       clearTimeout(apiTimeout);
+    } finally {
+      clearTimeout(apiTimeout);
     }
 
     // 🔍 DETAILED LOGGING: Log the successful response for Stability.ai support
