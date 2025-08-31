@@ -2635,7 +2635,11 @@ const HomeNew: React.FC = () => {
 
         try {
           // 🆕 Use NEW GenerationPipeline for rock-solid stability
-          console.log('🚀 [GenerationPipeline] Using new NeoGlitch-style system');
+          const generationType = kind === 'preset' ? 'presets' : 
+                                kind === 'custom' ? 'custom-prompt' : 
+                                kind === 'emotionmask' ? 'emotion-mask' : 
+                                kind === 'ghiblireact' ? 'ghibli-reaction' : 'presets';
+          console.log(`🚀 [GenerationPipeline] Using unified ${generationType} system`);
           
           const generationPipeline = GenerationPipeline.getInstance();
           const generationResult = await generationPipeline.generate({
