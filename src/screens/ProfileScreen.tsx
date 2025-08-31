@@ -13,7 +13,6 @@ import authService from '../services/authService'
 import ConfirmModal from '../components/ConfirmModal'
 import tokenService from '../services/tokenService'
 import { authenticatedFetch } from '../utils/apiClient'
-import { togglePublish } from '../lib/api'
 import { useToasts } from '../components/ui/Toasts'
 import ProfileIcon from '../components/ProfileIcon'
 
@@ -1263,44 +1262,15 @@ const ProfileScreen: React.FC = () => {
         console.log('✅ [User Settings] Updated successfully:', s);
         updateProfile({ shareToFeed: !!s.settings?.share_to_feed })
         
-        // 🔒 PRIVACY MANAGEMENT: Update all user's media visibility based on share preference
-        console.log('🔒 [Privacy] Managing feed visibility for all user media...');
-        await manageUserMediaVisibility(shareToFeed);
+        // 🔒 PRIVACY: Feed visibility is controlled by user_settings.share_to_feed
+        // No need to update media status - getPublicFeed() filters by user preference
+        console.log('🔒 [Privacy] User share preference updated. Feed will reflect changes immediately.');
       } else {
         console.error('❌ [User Settings] Update failed:', r.status, r.statusText);
       }
     } catch (e) {
       console.error('❌ [User Settings] Update error:', e);
       // keep local state; will retry next time
-    }
-  }
-
-  // Manage all user's media visibility based on share preference
-  const manageUserMediaVisibility = async (shouldBePublic: boolean) => {
-    try {
-      // Get all user's media from different tables
-      const mediaResponse = await authenticatedFetch('/.netlify/functions/getUserMedia', {
-        method: 'GET'
-      });
-      
-      if (mediaResponse.ok) {
-        const userMedia = await mediaResponse.json();
-        console.log(`🔒 [Privacy] Found ${userMedia.length} media items to update visibility`);
-        
-        // Update visibility for each media item
-        for (const media of userMedia) {
-          try {
-            await togglePublish(media.id, shouldBePublic);
-            console.log(`✅ [Privacy] Updated ${media.id} to ${shouldBePublic ? 'public' : 'private'}`);
-          } catch (error) {
-            console.error(`❌ [Privacy] Failed to update ${media.id}:`, error);
-          }
-        }
-        
-        console.log(`✅ [Privacy] Completed visibility update for ${userMedia.length} items`);
-      }
-    } catch (error) {
-      console.error('❌ [Privacy] Failed to manage media visibility:', error);
     }
   }
 
