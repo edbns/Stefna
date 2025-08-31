@@ -558,25 +558,25 @@ async function processGenerationAsync(
     } catch (stabilityError: any) {
       console.error('❌ [NeoGlitch] Stability.ai generation failed:', stabilityError);
       
-      // 🚨 STABILITY.AI FAILED - Now fallback to AIML (prevents double billing)
-      console.log('🔄 [NeoGlitch] Stability.ai failed, attempting AIML fallback...');
+      // 🚨 STABILITY.AI FAILED - Now fallback to Fal.ai (prevents double billing)
+      console.log('🔄 [NeoGlitch] Stability.ai failed, attempting Fal.ai fallback...');
       
       try {
-        // Attempt AIML fallback
-        const aimlResult = await attemptAIMLFallback(sourceUrl, prompt, presetKey, userId, runId);
+        // Attempt Fal.ai fallback
+        const falResult = await attemptFalFallback(sourceUrl, prompt, presetKey, userId, runId);
         
-        if (aimlResult && aimlResult.imageUrl) {
-          console.log('✅ [NeoGlitch] AIML fallback succeeded!');
+        if (falResult && falResult.imageUrl) {
+          console.log('✅ [NeoGlitch] Fal.ai fallback succeeded!');
           
-          // 🚀 UNIFIED CLOUDINARY PIPELINE: Upload AIML result to Cloudinary
-          let finalImageUrl = aimlResult.imageUrl;
+          // 🚀 UNIFIED CLOUDINARY PIPELINE: Upload Fal.ai result to Cloudinary
+          let finalImageUrl = falResult.imageUrl;
           let cloudinaryPublicId: string | null = null;
           
           try {
-            const cloudinaryResult = await uploadAIMLToCloudinary(aimlResult.imageUrl, presetKey);
+            const cloudinaryResult = await uploadAIMLToCloudinary(falResult.imageUrl, presetKey);
             finalImageUrl = cloudinaryResult.url;
             cloudinaryPublicId = cloudinaryResult.publicId;
-            console.log('✅ [NeoGlitch] AIML result uploaded to Cloudinary successfully');
+            console.log('✅ [NeoGlitch] Fal.ai result uploaded to Cloudinary successfully');
           } catch (cloudinaryError) {
             console.warn('⚠️ [NeoGlitch] Cloudinary upload failed, using original AIML URL:', cloudinaryError);
             // Fallback to original URL if Cloudinary fails
@@ -1020,6 +1020,71 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
     };
   } catch (error: any) {
     console.error('❌ [NeoGlitch] AIML fallback error:', error);
+    throw error;
+  }
+}
+
+// Fal.ai Fallback Function
+async function attemptFalFallback(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
+  const FAL_KEY = process.env.FAL_KEY;
+
+  if (!FAL_KEY) {
+    throw new Error('FAL_KEY not configured for fallback');
+  }
+
+  console.log('🔄 [NeoGlitch] Attempting Fal.ai fallback generation');
+  
+  try {
+    // Import fal.ai client
+    const { fal } = await import('@fal-ai/client');
+    
+    // Configure fal.ai client
+    fal.config({
+      credentials: FAL_KEY
+    });
+
+    // Use fal.ai's ghiblify model for Neo Tokyo Glitch fallback
+    const result = await fal.subscribe('fal-ai/ghiblify', {
+      input: {
+        image_url: sourceUrl,
+        image_strength: 0.85,
+        num_images: 1,
+        guidance_scale: 7.5,
+        num_inference_steps: 30,
+        seed: Math.floor(Math.random() * 1000000)
+      },
+      logs: true
+    });
+
+    console.log('✅ [NeoGlitch] Fal.ai fallback generation successful');
+    
+    // Extract image URL from fal.ai result
+    let imageUrl = null;
+    
+    if (result.data?.image?.url) {
+      imageUrl = result.data.image.url;
+    } else if (result.data?.image) {
+      imageUrl = result.data.image;
+    }
+    
+    if (!imageUrl) {
+      throw new Error('Fal.ai fallback succeeded but no image URL found in response');
+    }
+
+    // Add randomization to prevent cache hits
+    const randomSeed = Math.floor(Math.random() * 1000000);
+    
+    return {
+      stabilityJobId: `fal_${Date.now()}`,
+      model: 'fal-ai/ghiblify',
+      strategy: 'fal_fallback',
+      provider: 'fal', // Explicitly mark as Fal.ai fallback
+      imageUrl,
+      status: 'completed',
+      seed: randomSeed
+    };
+  } catch (error: any) {
+    console.error('❌ [NeoGlitch] Fal.ai fallback error:', error);
     throw error;
   }
 }
