@@ -12,7 +12,7 @@ import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
-import { getIPAThreshold, checkTensorFlowIPA } from './_lib/tensorflowIPA';
+import { getIPAThreshold, checkSimpleIPA } from './_lib/simpleIPA';
 
 // 🚀 SYNCHRONOUS MODE: Process generation immediately like NeoGlitch
 // No more background processing or polling needed
@@ -456,7 +456,7 @@ export const handler: Handler = async (event) => {
         const ipaThreshold = getIPAThreshold('emotion-mask');
         
         try {
-          ipaResult = await checkTensorFlowIPA(
+          ipaResult = await checkSimpleIPA(
             sourceUrl, // Original image
             finalImageUrl, // Generated image
             ipaThreshold
