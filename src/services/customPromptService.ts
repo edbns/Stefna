@@ -179,7 +179,7 @@ class CustomPromptService {
                 id: status.id,
                 status: 'completed',
                 imageUrl: status.imageUrl,
-                aimlJobId: status.aimlJobId,
+                aimlJobId: status.aiml_job_id,
                 createdAt: new Date(status.createdAt),
                 preset: status.preset,
                 prompt: status.prompt

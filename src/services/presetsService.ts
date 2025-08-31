@@ -201,12 +201,12 @@ class PresetsService {
                 id: status.id,
                 status: 'completed',
                 imageUrl: status.imageUrl,
-                aimlJobId: status.aimlJobId,
+                aimlJobId: status.aiml_job_id,
                 createdAt: new Date(status.createdAt),
                 preset: status.preset,
                 prompt: status.prompt,
-                presetWeek: status.presetWeek,
-                presetRotationIndex: status.presetRotationIndex
+                presetWeek: status.preset_week,
+                presetRotationIndex: status.preset_rotation_index
               };
             }
             
