@@ -1041,89 +1041,31 @@ const HomeNew: React.FC = () => {
                 onClick={async () => {
                   setSelectedStoryTimePreset(preset.id)
 
-                  // Check if we have enough images for Story Time
+                  // Auto-generate immediately when style is selected (like other modes)
                   if (preset.id && canGenerateStory && isAuthenticated) {
-                    console.log('Generating Story Time with preset:', preset.id)
+                    console.log('🎬 Auto-generating Story Time with preset:', preset.id)
 
-                    // Create Story Time story with multiple images
                     try {
-                      const formData = new FormData()
-
-                      // Add main image
-                      if (selectedFile) {
-                        formData.append('photos', selectedFile)
-                      }
-
-                      // Add additional images
-                      additionalStoryImages.forEach((file, index) => {
-                        if (file) {
-                          formData.append('photos', file)
-                        }
+                      // Use the unified dispatchGenerate system like other modes
+                      await dispatchGenerate('storytime', {
+                        storyTimeImages: [selectedFile!, ...additionalStoryImages.filter(Boolean)],
+                        storyTimePresetId: preset.id
                       })
-
-                      formData.append('preset', preset.id)
-
-                      const response = await fetch('/.netlify/functions/story-time-create', {
-                        method: 'POST',
-                        headers: {
-                          'Authorization': `Bearer ${authService.getToken()}`
-                        },
-                        body: formData
-                      })
-
-                      if (response.ok) {
-                        const story = await response.json()
-                        console.log('Story Time story created:', story)
-
-                        // Show success toast
-                        notifyReady({
-                          title: 'Your story is ready',
-                          message: 'Tap to open',
-                          thumbUrl: story.videoUrl,
-                          onClickThumb: () => {
-                            setViewerMedia([{
-                              id: 'story-' + Date.now(),
-                              userId: 'current-user',
-                              type: 'video',
-                              url: story.videoUrl,
-                              prompt: 'Story Time creation',
-                              aspectRatio: 16/9,
-                              width: 1920,
-                              height: 1080,
-                              timestamp: new Date().toISOString(),
-                              tokensUsed: 5,
-                              likes: 0,
-                              isPublic: profileData.shareToFeed,
-                              tags: [],
-                              metadata: { quality: 'high', generationTime: Date.now(), modelVersion: 'story-time-v1' }
-                            }]);
-                            setViewerStartIndex(0);
-                            setViewerOpen(true);
-                          }
-                        });
-
-                        // Clear composer after successful story creation
-                        setTimeout(() => {
-                          handleClearComposerState()
-                        }, 1000)
-                      } else {
-                        const error = await response.json()
-                        console.error('Story Time creation failed:', error)
-                        notifyError({ title: 'Story creation failed', message: error.message || 'Please try again' });
-                        // Clear composer after error
-                        setTimeout(() => handleClearComposerState(), 1000);
-                      }
                     } catch (error) {
-                      console.error('Story Time creation failed:', error)
-                      notifyError({ title: 'Story creation failed', message: 'Please try again' });
-                      // Clear composer after error
-                      setTimeout(() => handleClearComposerState(), 1000);
+                      console.error('❌ Story Time auto-generation failed:', error)
+                      // Error handling is done in dispatchGenerate, no need to duplicate
                     }
-                                                                      } else if (!canGenerateStory) {
-                                        console.log('Need more images for Story Time generation')
-                                        // Show message that more images are needed
-                                      }
-                                    }}
+                  } else if (!canGenerateStory) {
+                    console.log('⚠️ Need more images for Story Time generation')
+                    notifyError({
+                      title: 'Need more photos',
+                      message: 'Add at least 3 photos for Story Time'
+                    })
+                  } else if (!isAuthenticated) {
+                    console.log('🔐 Authentication required for Story Time')
+                    navigate('/auth')
+                  }
+                }}
                                     disabled={!canGenerateStory}
                                     className={(() => {
                                       const baseClass = 'px-4 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap';
@@ -5114,8 +5056,20 @@ const HomeNew: React.FC = () => {
                     <button
                       onClick={async () => {
                         if (composerState.mode === 'storytime') {
-                          // Already in Story Time mode - just close other dropdowns
-                          closeAllDropdowns()
+                          // Already in Story Time mode - auto-generate if ready
+                          if (selectedStoryTimePreset && canGenerateStory && isAuthenticated) {
+                            console.log('🎬 Auto-generating Story Time from button click')
+                            try {
+                              await dispatchGenerate('storytime', {
+                                storyTimeImages: [selectedFile!, ...additionalStoryImages.filter(Boolean)],
+                                storyTimePresetId: selectedStoryTimePreset
+                              })
+                            } catch (error) {
+                              console.error('❌ Story Time generation failed:', error)
+                            }
+                          } else {
+                            closeAllDropdowns()
+                          }
                         } else {
                           // Switch to Story Time mode
                           closeAllDropdowns()
@@ -5131,8 +5085,9 @@ const HomeNew: React.FC = () => {
                       }
                       title={isAuthenticated ? 'Switch to Story Time mode' : 'Explore Story Time mode'}
                     >
-                      {selectedStoryTimePreset ? 
-                        selectedStoryTimePreset === 'auto' ? 'Story Time (Auto)' : `Story Time (${selectedStoryTimePreset})`
+                      {selectedStoryTimePreset ?
+                        selectedStoryTimePreset === 'auto' ? 'Story Time (Auto)' :
+                        selectedStoryTimePreset.charAt(0).toUpperCase() + selectedStoryTimePreset.slice(1)
                         : 'Story Time'
                       }
                     </button>
