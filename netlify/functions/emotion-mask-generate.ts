@@ -60,165 +60,8 @@ async function uploadAIMLToCloudinary(imageUrl: string, presetKey: string): Prom
 }
 
 // AIML API Generation Function with Fallback System
-async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
-  const AIML_API_KEY = process.env.AIML_API_KEY;
-  const AIML_API_URL = process.env.AIML_API_URL;
-
-  if (!AIML_API_KEY || !AIML_API_URL) {
-    throw new Error('AIML API configuration missing');
-  }
-
-  console.log('🚀 [EmotionMask] Starting AIML generation with fallback system:', {
-    presetKey,
-    promptLength: prompt.length,
-    hasSource: !!sourceUrl
-  });
-
-  // Define AIML models in order of preference (cheap → expensive → best quality)
-  const aimlModels = [
-          { model: 'fal-ai/ghiblify', name: 'Ghiblify', cost: 'low', priority: 1 },
-    { model: 'recraft-v3', name: 'Recraft V3', cost: 'medium', priority: 2 },
-    { model: 'google/imagen4/preview', name: 'Google Imagen 4', cost: 'high', priority: 3 }
-  ];
-
-  let lastError: Error | null = null;
-  let attemptCount = 0;
-
-  // Try each AIML model until one succeeds
-  for (const aimlModel of aimlModels) {
-    attemptCount++;
-    console.log(`🔄 [EmotionMask] Attempt ${attemptCount}/${aimlModels.length}: ${aimlModel.name} (${aimlModel.cost} cost)`);
-
-    try {
-      const result = await attemptAIMLGeneration(
-        sourceUrl, 
-        prompt, 
-        presetKey, 
-        userId, 
-        runId, 
-        aimlModel.model,
-        aimlModel.name
-      );
-
-      console.log(`✅ [EmotionMask] ${aimlModel.name} generation successful on attempt ${attemptCount}`);
-      return {
-        ...result,
-        aimlModel: aimlModel.name,
-        attemptCount,
-        fallbackUsed: attemptCount > 1
-      };
-
-    } catch (error: any) {
-      lastError = error;
-      console.warn(`⚠️ [EmotionMask] ${aimlModel.name} failed (attempt ${attemptCount}):`, error.message);
-      
-      // If this isn't the last attempt, continue to next model
-      if (attemptCount < aimlModels.length) {
-        console.log(`🔄 [EmotionMask] Trying next model: ${aimlModels[attemptCount].name}`);
-        continue;
-      }
-    }
-  }
-
-  // All AIML models failed
-  console.error('❌ [EmotionMask] All AIML models failed after', attemptCount, 'attempts');
-  throw new Error(`All AIML models failed. Last error: ${lastError?.message || 'Unknown error'}`);
-}
-
-// Individual AIML generation attempt
-async function attemptAIMLGeneration(
-  sourceUrl: string, 
-  prompt: string, 
-  presetKey: string, 
-  userId: string, 
-  runId: string, 
-  model: string,
-  modelName: string
-) {
-  const AIML_API_KEY = process.env.AIML_API_KEY;
-  const AIML_API_URL = process.env.AIML_API_URL;
-
-  console.log(`📤 [EmotionMask] Sending to ${modelName} API:`, {
-    model,
-    preset: 'emotion_mask',
-    promptLength: prompt.length
-  });
-
-  const response = await fetch(`${AIML_API_URL}/v1/images/generations`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${AIML_API_KEY}`,
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-      model: model,
-      prompt: prompt,
-      init_image: sourceUrl,
-      image_strength: 0.45,
-      num_images: 1,
-      guidance_scale: 7.5,
-      num_inference_steps: 30,
-      seed: Math.floor(Math.random() * 1000000)
-    }),
-    // Add timeout to prevent stuck jobs (3 minutes max)
-    signal: AbortSignal.timeout(3 * 60 * 1000)
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`❌ [EmotionMask] ${modelName} API error:`, response.status, errorText);
-    throw new Error(`${modelName} API failed: ${response.status} - ${errorText}`);
-  }
-
-  const result = await response.json();
-  console.log(`✅ [EmotionMask] ${modelName} API response received:`, {
-    hasResult: !!result,
-    resultKeys: result ? Object.keys(result) : 'none'
-  });
-
-  // Extract image URL from AIML v1 API response format
-  let imageUrl = null;
-  
-  // Handle v1 response format: result.output.choices[0].image_base64
-  if (result.output && result.output.choices && result.output.choices[0]?.image_base64) {
-    console.log(`✅ [EmotionMask] Found v1 response format with base64 image from ${modelName}`);
-    try {
-      // Convert base64 to Cloudinary URL
-      const cloudinaryUrl = await uploadBase64ToCloudinary(result.output.choices[0].image_base64);
-      imageUrl = cloudinaryUrl;
-      console.log(`☁️ [EmotionMask] Image successfully uploaded to Cloudinary from ${modelName}:`, cloudinaryUrl);
-    } catch (uploadError: any) {
-      console.error(`❌ [EmotionMask] Cloudinary upload failed for ${modelName}:`, uploadError);
-      throw new Error(`Failed to upload generated image from ${modelName}: ${uploadError.message}`);
-    }
-  } else if (result.image_url) {
-    // Fallback to direct URL if present
-    imageUrl = result.image_url;
-  } else if (result.images && Array.isArray(result.images) && result.images[0]?.url) {
-    // Fallback to images array if present
-    imageUrl = result.images[0].url;
-  }
-  
-  if (!imageUrl) {
-    console.error(`❌ [EmotionMask] No image URL in ${modelName} response:`, result);
-    throw new Error(`${modelName} API returned no image URL`);
-  }
-
-  console.log(`🎉 [EmotionMask] ${modelName} generation successful:`, {
-    imageUrl: imageUrl.substring(0, 60) + '...',
-    presetKey,
-    model
-  });
-
-  return {
-    status: 'completed',
-    imageUrl: imageUrl,
-    aimlJobId: `${modelName.toLowerCase().replace(/\s+/g, '_')}_${runId}`,
-    model: model,
-    modelName: modelName
-  };
-}
+// Main emotion mask processing logic using FAL.ai generated image
+// The FAL.ai generation has already happened, now we continue with emotion mask overlay processing
 
 // Cloudinary Upload Function for base64 images
 async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
@@ -484,10 +327,45 @@ export const handler: Handler = async (event) => {
     console.log('✅ [EmotionMask] Initial record created:', initialRecord.id);
 
     // Start generation immediately
-    console.log('🚀 [EmotionMask] Starting AIML generation...');
-    
+    console.log('🚀 [EmotionMask] Starting FAL.ai generation...');
+
     try {
-      const generationResult = await startAIMLGeneration(sourceUrl, prompt, presetKey, userId, runId);
+      // Call centralized FAL.ai function with emotion_mask generation type
+      // This will use PHOTO_MODELS: Hyper SDXL → Stable Diffusion XL → Realistic Vision V5
+      const response = await fetch(`${process.env.URL}/.netlify/functions/fal-generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sourceUrl,
+          prompt,
+          generationType: 'emotion_mask',
+          userId,
+          runId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`FAL.ai generation failed: ${response.statusText}`);
+      }
+
+      const falResult = await response.json();
+
+      // Process the FAL.ai result
+      console.log('✅ [EmotionMask] FAL.ai generation successful:', {
+        falModel: falResult.falModel,
+        attemptCount: falResult.attemptCount,
+        fallbackUsed: falResult.fallbackUsed
+      });
+
+      const generationResult = {
+        imageUrl: falResult.imageUrl,
+        status: 'completed',
+        falModel: falResult.falModel,
+        attemptCount: falResult.attemptCount,
+        fallbackUsed: falResult.fallbackUsed
+      };
       
       if (generationResult && generationResult.imageUrl) {
         console.log('🎉 [EmotionMask] Generation completed immediately!');
@@ -502,7 +380,7 @@ export const handler: Handler = async (event) => {
           cloudinaryPublicId = cloudinaryResult.publicId;
           console.log('✅ [EmotionMask] Result uploaded to Cloudinary successfully');
         } catch (cloudinaryError) {
-          console.warn('⚠️ [EmotionMask] Cloudinary upload failed, using original AIML URL:', cloudinaryError);
+          console.warn('⚠️ [EmotionMask] Cloudinary upload failed, using original FAL.ai URL:', cloudinaryError);
           // Fallback to original URL if Cloudinary fails
         }
         

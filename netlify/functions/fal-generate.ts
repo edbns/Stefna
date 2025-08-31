@@ -25,31 +25,104 @@ fal.config({
   credentials: process.env.FAL_KEY
 });
 
-// Fal.ai supported models using official client format
-// Updated to use current working models with proper fal-ai/ prefix
-const FAL_MODELS = [
-  { 
-    model: 'fal-ai/ghiblify', 
-    name: 'Ghiblify', 
-    cost: 'low', 
+// Mode-specific FAL.ai model configurations
+// Each generation mode gets semantically appropriate models
+
+// Photo-realistic models for presets, custom prompts, emotion masks
+const PHOTO_MODELS = [
+  {
+    model: 'fal-ai/hyper-sdxl/image-to-image',
+    name: 'Hyper SDXL I2I',
+    cost: 'medium',
+    priority: 1,
+    description: 'High-quality photo-realistic image-to-image'
+  },
+  {
+    model: 'fal-ai/stable-diffusion-xl',
+    name: 'Stable Diffusion XL',
+    cost: 'high',
+    priority: 2,
+    description: 'Premium photo-realistic generation'
+  },
+  {
+    model: 'fal-ai/realistic-vision-v5',
+    name: 'Realistic Vision V5',
+    cost: 'high',
+    priority: 3,
+    description: 'Ultra-realistic photo generation'
+  }
+];
+
+// Anime/cartoon models for Ghibli reactions
+const GHIBLI_MODELS = [
+  {
+    model: 'fal-ai/ghiblify',
+    name: 'Ghiblify',
+    cost: 'low',
     priority: 1,
     description: 'Studio Ghibli style transformations'
   },
-  { 
-    model: 'fal-ai/hyper-sdxl/image-to-image', 
-    name: 'Hyper SDXL I2I', 
-    cost: 'medium', 
+  {
+    model: 'fal-ai/hyper-sdxl/image-to-image',
+    name: 'Hyper SDXL I2I',
+    cost: 'medium',
     priority: 2,
-    description: 'High-quality image-to-image generation'
+    description: 'High-quality anime-style generation'
   },
-  { 
-    model: 'fal-ai/stable-diffusion-xl', 
-    name: 'Stable Diffusion XL', 
-    cost: 'high', 
+  {
+    model: 'fal-ai/stable-diffusion-xl',
+    name: 'Stable Diffusion XL',
+    cost: 'high',
     priority: 3,
-    description: 'Premium quality generation'
+    description: 'Premium anime-style generation'
   }
 ];
+
+// Video generation models for Story Time
+const VIDEO_MODELS = [
+  {
+    model: 'fal-ai/stable-video-diffusion',
+    name: 'Stable Video Diffusion',
+    cost: 'medium',
+    priority: 1,
+    description: 'High-quality video generation from images'
+  },
+  {
+    model: 'fal-ai/fast-sdxl',
+    name: 'Fast SDXL Video',
+    cost: 'low',
+    priority: 2,
+    description: 'Fast video generation from images'
+  }
+];
+
+// Legacy universal models (for backward compatibility)
+const FAL_MODELS = PHOTO_MODELS; // Default to photo models
+
+/**
+ * Get appropriate FAL.ai models for a specific generation type
+ */
+function getModelsForGenerationType(generationType: string) {
+  switch (generationType) {
+    case 'ghibli_reaction':
+    case 'ghibli_reaction_moderate_ipa':
+      return GHIBLI_MODELS;
+
+    case 'story_time':
+    case 'story_time_moderate_ipa':
+    case 'story_time_auto_ipa':
+      return VIDEO_MODELS;
+
+    case 'presets':
+    case 'preset_moderate_ipa':
+    case 'custom':
+    case 'custom_balanced_ipa':
+    case 'emotion_mask':
+    case 'emotion_mask_strict_ipa':
+    default:
+      return PHOTO_MODELS;
+  }
+}
 
 // Main handler
 export const handler: Handler = async (event) => {
@@ -151,10 +224,13 @@ async function startFalGeneration(
   let lastError: Error | null = null;
   let attemptCount = 0;
 
-  // Try each fal.ai model until one succeeds
-  for (const falModel of FAL_MODELS) {
+  // Get appropriate models for this generation type
+  const modelsForType = getModelsForGenerationType(generationType);
+
+  // Try each appropriate fal.ai model until one succeeds
+  for (const falModel of modelsForType) {
     attemptCount++;
-    console.log(`🔄 [Fal.ai] Attempt ${attemptCount}/${FAL_MODELS.length}: ${falModel.name} (${falModel.cost} cost)`);
+    console.log(`🔄 [Fal.ai] Attempt ${attemptCount}/${modelsForType.length}: ${falModel.name} (${falModel.cost} cost) for ${generationType}`);
 
     try {
       const result = await attemptFalGeneration(
@@ -179,8 +255,8 @@ async function startFalGeneration(
       console.warn(`⚠️ [Fal.ai] ${falModel.name} failed (attempt ${attemptCount}):`, error.message);
       
       // If this isn't the last attempt, continue to next model
-      if (attemptCount < FAL_MODELS.length) {
-        console.log(`🔄 [Fal.ai] Trying next model: ${FAL_MODELS[attemptCount].name}`);
+      if (attemptCount < modelsForType.length) {
+        console.log(`🔄 [Fal.ai] Trying next model: ${modelsForType[attemptCount].name}`);
         continue;
       }
     }

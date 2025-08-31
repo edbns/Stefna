@@ -94,69 +94,65 @@ async function isPresetCurrentlyAvailable(presetKey: string): Promise<boolean> {
 }
 
 // AIML API Generation Function with Fallback System
-async function startAIMLGeneration(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
-  const AIML_API_KEY = process.env.AIML_API_KEY;
-  const AIML_API_URL = process.env.AIML_API_URL;
-
-  if (!AIML_API_KEY || !AIML_API_URL) {
-    throw new Error('AIML API configuration missing');
-  }
-
-  console.log('🚀 [Presets] Starting AIML generation with fallback system:', {
+async function startFALGeneration(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
+  console.log('🚀 [Presets] Starting FAL.ai generation with semantic fallback system:', {
     presetKey,
     promptLength: prompt.length,
-    hasSource: !!sourceUrl
+    hasSource: !!sourceUrl,
+    generationType: 'presets'
   });
 
-  // Define AIML models in order of preference (cheap → expensive → best quality)
-  const aimlModels = [
-          { model: 'fal-ai/ghiblify', name: 'Ghiblify', cost: 'low', priority: 1 },
-    { model: 'recraft-v3', name: 'Recraft V3', cost: 'medium', priority: 2 },
-    { model: 'google/imagen4/preview', name: 'Google Imagen 4', cost: 'high', priority: 3 }
-  ];
+  // Call centralized FAL.ai function with presets generation type
+  // This will use PHOTO_MODELS: Hyper SDXL → Stable Diffusion XL → Realistic Vision V5
+  const response = await fetch(`${process.env.URL}/.netlify/functions/fal-generate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sourceUrl,
+      prompt,
+      generationType: 'presets',
+      userId,
+      runId
+    })
+  });
 
-  let lastError: Error | null = null;
-  let attemptCount = 0;
-
-  // Try each AIML model until one succeeds
-  for (const aimlModel of aimlModels) {
-    attemptCount++;
-    console.log(`🔄 [Presets] Attempt ${attemptCount}/${aimlModels.length}: ${aimlModel.name} (${aimlModel.cost} cost)`);
-
-    try {
-      const result = await attemptAIMLGeneration(
-        sourceUrl, 
-        prompt, 
-        presetKey, 
-        userId, 
-        runId, 
-        aimlModel.model,
-        aimlModel.name
-      );
-
-      console.log(`✅ [Presets] ${aimlModel.name} generation successful on attempt ${attemptCount}`);
-      return {
-        ...result,
-        aimlModel: aimlModel.name,
-        attemptCount,
-        fallbackUsed: attemptCount > 1
-      };
-
-    } catch (error: any) {
-      lastError = error;
-      console.warn(`⚠️ [Presets] ${aimlModel.name} failed (attempt ${attemptCount}):`, error.message);
-      
-      // If this isn't the last attempt, continue to next model
-      if (attemptCount < aimlModels.length) {
-        console.log(`🔄 [Presets] Trying next model: ${aimlModels[attemptCount].name}`);
-        continue;
-      }
-    }
+  if (!response.ok) {
+    throw new Error(`FAL.ai generation failed: ${response.statusText}`);
   }
 
-  // All AIML models failed
-  console.error('❌ [Presets] All AIML models failed after', attemptCount, 'attempts');
-  throw new Error(`All AIML models failed. Last error: ${lastError?.message || 'Unknown error'}`);
+  const falResult = await response.json();
+
+  // Process the FAL.ai result and continue with the rest of the preset logic
+  console.log('✅ [Presets] FAL.ai generation successful:', {
+    falModel: falResult.falModel,
+    attemptCount: falResult.attemptCount,
+    fallbackUsed: falResult.fallbackUsed
+  });
+
+  // Extract the image URL and continue with existing logic
+  const imageUrl = falResult.imageUrl;
+
+  if (!imageUrl) {
+    throw new Error('No image URL returned from FAL.ai generation');
+  }
+
+  console.log(`🎉 [Presets] FAL.ai generation successful:`, {
+    imageUrl: imageUrl.substring(0, 60) + '...',
+    presetKey,
+    falModel: falResult.falModel
+  });
+
+  return {
+    status: 'completed',
+    imageUrl: imageUrl,
+    falJobId: `${falResult.falModel.toLowerCase().replace(/\s+/g, '_')}_${runId}`,
+    model: falResult.falModel,
+    modelName: falResult.falModel,
+    attemptCount: falResult.attemptCount,
+    fallbackUsed: falResult.fallbackUsed
+  };
 }
 
 // Individual AIML generation attempt
@@ -527,10 +523,10 @@ export const handler: Handler = async (event) => {
     console.log('✅ [Presets] Initial record created:', initialRecord.id);
 
     // Start generation immediately
-    console.log('🚀 [Presets] Starting AIML generation...');
+    console.log('🚀 [Presets] Starting FAL.ai generation...');
     
     try {
-      const generationResult = await startAIMLGeneration(sourceUrl, prompt, presetKey, userId, runId);
+      const generationResult = await startFALGeneration(sourceUrl, prompt, presetKey, userId, runId);
       
       if (generationResult && generationResult.imageUrl) {
         console.log('🎉 [Presets] Generation completed immediately!');

@@ -63,6 +63,36 @@ export interface PresetConfig {
   isCurrentlyAvailable: boolean;
 }
 
+export interface DatabasePreset {
+  id: string;
+  key: string;
+  label: string;
+  description: string;
+  category: string;
+  prompt: string;
+  negativePrompt: string;
+  strength: number;
+  rotationIndex: number;
+  week: number;
+  isActive: boolean;
+}
+
+export interface PresetsResponse {
+  success: boolean;
+  data?: {
+    presets: DatabasePreset[];
+    currentWeek: number;
+    totalAvailable: number;
+    rotationInfo: {
+      totalPresetsInSystem: number;
+      weeksInCycle: number;
+      presetsPerWeek: number;
+    };
+  };
+  error?: string;
+  message?: string;
+}
+
 class PresetsService {
   private static instance: PresetsService;
 
@@ -73,6 +103,41 @@ class PresetsService {
       PresetsService.instance = new PresetsService();
     }
     return PresetsService.instance;
+  }
+
+  /**
+   * Fetch available presets from database with rotation system
+   * Returns currently available presets for the main presets mode
+   */
+  async getAvailablePresets(): Promise<PresetsResponse> {
+    try {
+      console.log('🎨 [PresetsService] Fetching available presets from database');
+
+      const response = await authenticatedFetch('/.netlify/functions/get-presets', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data: PresetsResponse = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || data.message || 'Failed to fetch presets');
+      }
+
+      console.log('✅ [PresetsService] Successfully fetched', data.data?.totalAvailable, 'presets');
+      return data;
+
+    } catch (error) {
+      console.error('❌ [PresetsService] Failed to fetch presets:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 
   /**

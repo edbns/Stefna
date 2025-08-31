@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, X, ArrowUp } from 'lucide-react'
+import { Plus } from 'lucide-react'
 // Generate simple unique ID for runId
 const generateRunId = () => `run_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 import { authenticatedFetch, signedFetch } from '../utils/apiClient'
@@ -14,7 +14,7 @@ import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
 import { usePresetRunner } from '../hooks/usePresetRunner'
 import { IdentityPreservationService } from '../services/identityPreservationService'
-import { runGeneration } from '../services/generationPipeline'
+import SimpleGenerationService, { GenerationMode, SimpleGenerationRequest } from '../services/simpleGenerationService'
 import { useSelectedPreset } from '../stores/selectedPreset'
 import { HiddenUploader } from './HiddenUploader'
 
@@ -27,7 +27,7 @@ import { GhibliReactionPicker } from './GhibliReactionPicker'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
 import { MediaUploadAgreement } from './MediaUploadAgreement'
 import { paramsForI2ISharp } from '../services/infer-params'
-// import { clampStrength } from '../lib/strengthPolicy' // REMOVED - drama file deleted
+
 
 // Identity-safe generation fallback system (integrated with IPA)
 // Uses Replicate's face-preserving models when primary generation fails
@@ -85,53 +85,40 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   }
 }
 
-import { PROFESSIONAL_PRESETS, ProfessionalPresetConfig } from '../config/professional-presets'
+
+import { DatabasePreset } from '../services/presetsService'
+// Preset collections now handled by database and simplified service
+// Individual preset services removed - using direct function calls
 import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
 import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
 import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
-import NeoGlitchService from '../services/neoGlitchService'
-import GenerationPipeline from '../services/generationPipeline'
 import { resolvePresetForMode } from '../utils/resolvePresetForMode'
 
-// Create a PRESETS object that maps to the new system for backward compatibility
-const PRESETS = Object.fromEntries(
-  Object.entries(PROFESSIONAL_PRESETS).map(([key, preset]) => [
-    key,
-    {
-      label: preset.label,
-      prompt: `Transform this image with ${preset.promptAdd.toLowerCase()}. Keep the original composition and subject identity intact.`,
-      negative_prompt: 'blurry, low quality, distorted, deformed, ugly, bad anatomy, duplicate faces, extra limbs',
-      strength: preset.strength,
-      description: preset.description
-    }
-  ])
-)
+// Database presets are now loaded dynamically - no need for static PRESETS object
 
-// Helper function to get preset by ID from the new system
-const getPresetById = (presetId: string): ProfessionalPresetConfig | undefined => {
-  return PROFESSIONAL_PRESETS[presetId as keyof typeof PROFESSIONAL_PRESETS]
+// Database-driven preset functions (replaces hardcoded PROFESSIONAL_PRESETS)
+const getPresetById = (presetId: string, availablePresets: DatabasePreset[]): DatabasePreset | undefined => {
+  return availablePresets.find(preset => preset.id === presetId || preset.key === presetId)
 }
 
-// Helper function to get preset label
-const getPresetLabel = (presetId: string): string => {
-  const preset = getPresetById(presetId)
+const getPresetLabel = (presetId: string, availablePresets: DatabasePreset[]): string => {
+  const preset = getPresetById(presetId, availablePresets)
   return preset?.label || 'Unknown Preset'
 }
 
-// Helper function to get preset prompt
-const getPresetPrompt = (presetId: string): string => {
-  const preset = getPresetById(presetId)
-  return preset?.promptAdd || 'Transform this image'
+const getPresetPrompt = (presetId: string, availablePresets: DatabasePreset[]): string => {
+  const preset = getPresetById(presetId, availablePresets)
+  return preset?.prompt || 'Transform this image'
 }
 
 import FullScreenMediaViewer from './FullScreenMediaViewer'
 import ShareModal from './ShareModal'
-// import { validateModeMappings } from '../utils/validateMappings' // REMOVED - complex drama file
 
 
-// import { requireUserIntent } from '../utils/generationGuards' // REMOVED - complex drama file
+
+
 import userMediaService from '../services/userMediaService'
-// import { pickResultUrl, ensureRemoteUrl } from '../utils/aimlUtils' // REMOVED - drama file deleted
+
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
 import { saveMedia, togglePublish } from '../lib/api'
@@ -175,6 +162,11 @@ const HomeNew: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isEnhancing, setIsEnhancing] = useState(false)
   const [prompt, setPrompt] = useState('')
+
+  // Database-driven presets for main presets mode (moved to very beginning)
+  const [availablePresets, setAvailablePresets] = useState<DatabasePreset[]>([])
+  const [presetsLoading, setPresetsLoading] = useState(true)
+  const [presetsError, setPresetsError] = useState<string | null>(null)
   
   // Mode state
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null)
@@ -227,7 +219,7 @@ const HomeNew: React.FC = () => {
   
   
   useEffect(() => { 
-    selectedPresetRef.current = selectedPreset 
+    selectedPresetRef.current = selectedPreset as string | null
   }, [selectedPreset])
   
   // Generation lifecycle functions
@@ -393,13 +385,13 @@ const HomeNew: React.FC = () => {
     }
   }, [location.state, navigate])
 
-  // Initialize sticky preset system when PROFESSIONAL_PRESETS are loaded
+  // Initialize sticky preset system when database presets are loaded
   useEffect(() => {
-    if (Object.keys(PROFESSIONAL_PRESETS).length > 0) {
-      const activePresets = Object.keys(PROFESSIONAL_PRESETS) as (keyof typeof PROFESSIONAL_PRESETS)[]
-      ensureDefault(activePresets)
+    if (availablePresets.length > 0) {
+      const activePresetKeys = availablePresets.map(p => p.key)
+      ensureDefault(activePresetKeys as any)
     }
-  }, [PROFESSIONAL_PRESETS, ensureDefault])
+  }, [availablePresets, ensureDefault])
 
   // Close all dropdowns when clicking outside
   useEffect(() => {
@@ -424,13 +416,13 @@ const HomeNew: React.FC = () => {
   useEffect(() => {
     console.log('🔍 selectedPreset changed to:', selectedPreset)
     if (selectedPreset) {
-      console.log('🎨 Preset details:', getPresetById(selectedPreset))
+      console.log('🎨 Preset details:', getPresetById(selectedPreset as string, availablePresets))
       // Update the ref for compatibility
-      selectedPresetRef.current = selectedPreset
+      selectedPresetRef.current = selectedPreset as string | null
     } else {
       selectedPresetRef.current = null
     }
-  }, [selectedPreset, PROFESSIONAL_PRESETS])
+  }, [selectedPreset, availablePresets])
 
   // Debug composer state changes
   useEffect(() => {
@@ -444,18 +436,20 @@ const HomeNew: React.FC = () => {
     })
   }, [composerState])
 
-  // Debug PRESETS object
+  // Debug database presets
   useEffect(() => {
-    console.log('🎨 PRESETS object updated:', {
-              count: Object.keys(PROFESSIONAL_PRESETS).length,
-        keys: Object.keys(PROFESSIONAL_PRESETS),
-              sample: Object.keys(PROFESSIONAL_PRESETS).slice(0, 3).map(key => ({
-        key,
-        label: getPresetLabel(key),
-        prompt: getPresetPrompt(key)?.substring(0, 50) + '...'
+    if (availablePresets.length > 0) {
+      console.log('🎨 Database presets loaded:', {
+        count: availablePresets.length,
+        keys: availablePresets.map(p => p.key),
+        sample: availablePresets.slice(0, 3).map(preset => ({
+          key: preset.key,
+          label: preset.label,
+          prompt: preset.prompt?.substring(0, 50) + '...'
       }))
     })
-  }, [PRESETS])
+    }
+  }, [availablePresets])
 
   // Close emotion mask dropdown when clicking outside or when other modes are selected
   useEffect(() => {
@@ -503,54 +497,30 @@ const HomeNew: React.FC = () => {
   }, []);
 
 
-  // Get active presets from the rotation service
+  // Get active presets from database
   const weeklyPresetNames = useMemo(() => {
     try {
-      // Use direct preset keys instead of complex rotation service
-      const presetKeys = Object.keys(PRESETS) as (keyof typeof PRESETS)[]
+      // Use database presets instead of hardcoded ones
+      const presetKeys = availablePresets.map(preset => preset.key)
       if (import.meta.env.DEV) {
-        console.log('🎨 Active presets for UI:', presetKeys)
+        console.log('🎨 Active database presets for UI:', presetKeys)
       }
       
       // If no presets available, return empty array
       if (presetKeys.length === 0) {
         if (import.meta.env.DEV) {
-          console.debug('⚠️ No active presets from API, using rotation fallback')
+          console.debug('⚠️ No database presets loaded yet')
         }
-        // Fallback to hardcoded presets if the rotation service fails
-        const fallbackPresets: (keyof typeof PRESETS)[] = [
-          'cinematic_glow',
-          'bright_airy', 
-          'vivid_pop',
-          'vintage_film_35mm',
-          'tropical_boost',
-          'urban_grit'
-        ]
-        if (import.meta.env.DEV) {
-          console.debug('🔄 Using fallback presets:', fallbackPresets)
-        }
-        return fallbackPresets
+        return []
       }
-      
-      // Return first 6 presets for UI display
-      return presetKeys.slice(0, 6)
+
+      // Return all available presets (database already handles rotation)
+      return presetKeys
     } catch (error) {
-      console.error('❌ Error getting active presets:', error)
-      // Fallback to hardcoded presets
-      const fallbackPresets: (keyof typeof PRESETS)[] = [
-        'cinematic_glow',
-        'bright_airy', 
-        'vivid_pop',
-        'vintage_film_35mm',
-        'tropical_boost',
-        'urban_grit'
-      ]
-      if (import.meta.env.DEV) {
-        console.debug('🔄 Using fallback presets due to error:', fallbackPresets)
-      }
-      return fallbackPresets
+      console.error('❌ Error getting database presets:', error)
+      return []
     }
-  }, [PRESETS]) // Add PRESETS as dependency so it updates when presets change
+  }, [availablePresets])
   const [quota, setQuota] = useState<{ daily_used: number; daily_limit: number; weekly_used: number; weekly_limit: number } | null>(null)
   const [feed, setFeed] = useState<UserMedia[]>([])
   const [isLoadingFeed, setIsLoadingFeed] = useState(true)
@@ -601,8 +571,37 @@ const HomeNew: React.FC = () => {
   const [selectedNeoTokyoGlitchPreset, setSelectedNeoTokyoGlitchPreset] = useState<string | null>(null)
   const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(false)
   const [selectedStoryTimePreset, setSelectedStoryTimePreset] = useState<string | null>(null)
-  const [storyTimeDropdownOpen, setStoryTimeDropdownOpen] = useState(false)
+
   const [additionalStoryImages, setAdditionalStoryImages] = useState<File[]>([])
+
+  // Fetch available presets from database on mount
+  useEffect(() => {
+    const fetchPresets = async () => {
+      try {
+        setPresetsLoading(true)
+        setPresetsError(null)
+
+        const presetsService = (await import('../services/presetsService')).default.getInstance()
+        const response = await presetsService.getAvailablePresets()
+
+        if (response.success && response.data) {
+          setAvailablePresets(response.data.presets)
+          console.log('🎨 [HomeNew] Loaded', response.data.presets.length, 'presets for week', response.data.currentWeek)
+        } else {
+          setPresetsError(response.error || 'Failed to load presets')
+          console.error('❌ [HomeNew] Failed to load presets:', response.error)
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        setPresetsError(errorMessage)
+        console.error('❌ [HomeNew] Error fetching presets:', error)
+      } finally {
+        setPresetsLoading(false)
+      }
+    }
+
+    fetchPresets()
+  }, [])
 
   
 
@@ -695,7 +694,6 @@ const HomeNew: React.FC = () => {
     setEmotionMaskDropdownOpen(false)
     setGhibliReactionDropdownOpen(false)
     setNeoTokyoGlitchDropdownOpen(false)
-    setStoryTimeDropdownOpen(false)
     setProfileDropdownOpen(false)
   }
 
@@ -882,6 +880,295 @@ const HomeNew: React.FC = () => {
   }, [composerState.mode, storyCardStyles])
 
   // Story Image Card Component
+  // Story Time Composer Component
+  const StoryTimeComposer = ({
+    selectedFile,
+    additionalImages,
+    onFileUpload,
+    onAdditionalUpload,
+    onAdditionalRemove,
+    onFileRemove
+  }: {
+    selectedFile: File | null
+    additionalImages: File[]
+    onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
+    onAdditionalUpload: (file: File, slotIndex: number) => void
+    onAdditionalRemove: (slotIndex: number) => void
+    onFileRemove: () => void
+  }) => {
+    const bulkInputRef = useRef<HTMLInputElement>(null)
+    const mainInputRef = useRef<HTMLInputElement>(null)
+    const additionalInputRefs = Array.from({ length: 4 }, () => useRef<HTMLInputElement>(null))
+
+    const handleBulkUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(event.target.files || [])
+      files.forEach((file, index) => {
+        if (!selectedFile && index === 0) {
+          // First file goes to main slot
+          const fakeEvent = {
+            target: { files: [file] }
+          } as React.ChangeEvent<HTMLInputElement>
+          onFileUpload(fakeEvent)
+        } else {
+          // Subsequent files go to additional slots
+          const slotIndex = selectedFile ? index - 1 : index
+          if (slotIndex < 4) { // Max 4 additional images
+            onAdditionalUpload(file, slotIndex)
+          }
+        }
+      })
+    }
+
+    const handleAdditionalUpload = (event: React.ChangeEvent<HTMLInputElement>, slotIndex: number) => {
+      const file = event.target.files?.[0]
+      if (file) {
+        onAdditionalUpload(file, slotIndex)
+      }
+    }
+
+    const totalImages = (selectedFile ? 1 : 0) + additionalImages.filter(Boolean).length
+    const hasMinimumImages = totalImages >= 3
+
+    return (
+      <div className="story-time-composer">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <p className="text-white/90 text-lg">
+            Add multiple photos to create an animated story
+          </p>
+        </div>
+
+
+
+        {/* Photos Layout - Main and Additional in Same Row */}
+        <div className="mb-6">
+
+          <div className="flex justify-center items-start gap-4 flex-wrap">
+            {/* Main Photo */}
+            <div className="flex flex-col items-center">
+              <span className="text-white/80 text-sm mb-2">Main</span>
+              {selectedFile ? (
+                <div className="relative group">
+                  <img
+                    src={URL.createObjectURL(selectedFile)}
+                    alt="Main story photo"
+                    className="w-28 h-28 object-cover rounded-lg border-2 border-white/30"
+                  />
+                  <button
+                    onClick={onFileRemove}
+                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => mainInputRef.current?.click()}
+                  className="w-28 h-28 border-2 border-dashed border-white/50 rounded-lg flex flex-col items-center justify-center text-white/60 hover:border-white/80 hover:text-white/80 transition-colors"
+                >
+                  <Plus size={20} className="mb-1" />
+                  <span className="text-xs">Add</span>
+                </button>
+              )}
+            </div>
+
+            {/* Additional Photos */}
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <span className="text-white/80 text-sm mb-2">{i + 2}</span>
+                {additionalImages[i] ? (
+                  <div className="relative group">
+                    <img
+                      src={URL.createObjectURL(additionalImages[i])}
+                      alt={`Story photo ${i + 2}`}
+                      className="w-24 h-24 object-cover rounded-lg border-2 border-white/30"
+                    />
+                    <button
+                      onClick={() => onAdditionalRemove(i)}
+                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => additionalInputRefs[i].current?.click()}
+                    className="w-24 h-24 border-2 border-dashed border-white/30 rounded-lg flex flex-col items-center justify-center text-white/50 hover:border-white/60 hover:text-white/70 transition-colors"
+                  >
+                    <Plus size={16} className="mb-1" />
+                    <span className="text-xs">Add</span>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bulk Upload Button */}
+        <div className="text-center mb-8">
+          <button
+            onClick={() => bulkInputRef.current?.click()}
+            className="inline-flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-full transition-colors border border-white/30 hover:border-white/50"
+          >
+            <Plus size={20} className="mr-2" />
+            Add Multiple Photos
+          </button>
+          <p className="text-white/60 text-sm mt-2">
+            Select multiple photos at once for faster setup
+          </p>
+        </div>
+
+        {/* Story Time Presets */}
+        <div className="mb-6">
+          <div className="text-center mb-4">
+            <span className="text-white/90 font-medium">Choose Story Style</span>
+          </div>
+
+
+
+          <div className="flex flex-wrap gap-2 justify-center">
+            {[
+              { id: 'auto', label: 'Auto Mode' },
+              { id: 'adventure', label: 'Adventure' },
+              { id: 'romance', label: 'Romance' },
+              { id: 'mystery', label: 'Mystery' },
+              { id: 'comedy', label: 'Comedy' },
+              { id: 'fantasy', label: 'Fantasy' },
+              { id: 'travel', label: 'Travel' }
+            ].map((preset) => (
+              <button
+                key={preset.id}
+                onClick={async () => {
+                  setSelectedStoryTimePreset(preset.id)
+
+                  // Check if we have enough images for Story Time
+                  if (preset.id && canGenerateStory && isAuthenticated) {
+                    console.log('Generating Story Time with preset:', preset.id)
+
+                    // Create Story Time story with multiple images
+                    try {
+                      const formData = new FormData()
+
+                      // Add main image
+                      formData.append('photos', selectedFile)
+
+                      // Add additional images
+                      additionalStoryImages.forEach((file, index) => {
+                        if (file) {
+                          formData.append('photos', file)
+                        }
+                      })
+
+                      formData.append('preset', preset.id)
+
+                      const response = await fetch('/.netlify/functions/story-time-create', {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${authService.getToken()}`
+                        },
+                        body: formData
+                      })
+
+                      if (response.ok) {
+                        const story = await response.json()
+                        console.log('Story Time story created:', story)
+
+                        // Show success toast
+                        notifyReady({
+                          title: 'Your story is ready',
+                          message: 'Tap to open',
+                          thumbUrl: story.videoUrl,
+                          onClickThumb: () => {
+                            setViewerMedia([{
+                              id: 'story-' + Date.now(),
+                              userId: 'current-user',
+                              type: 'video',
+                              url: story.videoUrl,
+                              prompt: 'Story Time creation',
+                              aspectRatio: 16/9,
+                              width: 1920,
+                              height: 1080,
+                              timestamp: new Date().toISOString(),
+                              tokensUsed: 5,
+                              likes: 0,
+                              isPublic: profileData.shareToFeed,
+                              tags: [],
+                              metadata: { quality: 'high', generationTime: Date.now(), modelVersion: 'story-time-v1' }
+                            }]);
+                            setViewerStartIndex(0);
+                            setViewerOpen(true);
+                          }
+                        });
+
+                        // Clear composer after successful story creation
+                        setTimeout(() => {
+                          handleClearComposerState()
+                        }, 1000)
+                      } else {
+                        const error = await response.json()
+                        console.error('Story Time creation failed:', error)
+                        notifyError({ title: 'Story creation failed', message: error.message || 'Please try again' });
+                        // Clear composer after error
+                        setTimeout(() => handleClearComposerState(), 1000);
+                      }
+                    } catch (error) {
+                      console.error('Story Time creation failed:', error)
+                      notifyError({ title: 'Story creation failed', message: 'Please try again' });
+                      // Clear composer after error
+                      setTimeout(() => handleClearComposerState(), 1000);
+                    }
+                                                                      } else if (!canGenerateStory) {
+                                        console.log('Need more images for Story Time generation')
+                                        // Show message that more images are needed
+                                      }
+                                    }}
+                                    disabled={!canGenerateStory}
+                                    className={(() => {
+                                      const baseClass = 'px-4 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap';
+                                      const activeClass = 'bg-white/90 backdrop-blur-md text-black';
+                                      const inactiveClass = canGenerateStory
+                                        ? 'text-white hover:text-white hover:bg-white/20'
+                                        : 'text-white/50 cursor-not-allowed';
+                                      return `${baseClass} ${selectedStoryTimePreset === preset.id ? activeClass : inactiveClass}`;
+                                    })()}
+                                  >
+                                    {preset.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+        {/* Hidden file inputs */}
+        <input
+          ref={bulkInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleBulkUpload}
+          className="hidden"
+        />
+        <input
+          ref={mainInputRef}
+          type="file"
+          accept="image/*"
+          onChange={onFileUpload}
+          className="hidden"
+        />
+        {/* Individual additional photo inputs */}
+        {additionalInputRefs.map((ref, index) => (
+          <input
+            key={index}
+            ref={ref}
+            type="file"
+            accept="image/*"
+            onChange={(event) => handleAdditionalUpload(event, index)}
+            className="hidden"
+          />
+        ))}
+      </div>
+    )
+  }
+
   const StoryImageCard = ({ 
     index, 
     image, 
@@ -962,13 +1249,25 @@ const HomeNew: React.FC = () => {
   }
 
   const handleUploadClick = () => {
+    console.log('🎯 Upload button clicked')
     closeAllDropdowns() // Close all dropdowns when opening composer
-    fileInputRef.current?.click()
+    console.log('📁 File input ref:', fileInputRef.current)
+    if (fileInputRef.current) {
+      console.log('🖱️ Triggering file input click')
+      fileInputRef.current.click()
+    } else {
+      console.error('❌ File input ref is null')
+    }
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📂 handleFileChange triggered')
     const file = e.target.files?.[0]
-    if (!file) return
+    console.log('📁 Files array:', e.target.files)
+    if (!file) {
+      console.log('❌ No file selected')
+      return
+    }
 
     console.log('📁 File selected:', { name: file.name, size: file.size, type: file.type })
     console.log('🔍 User agreement status:', { userHasAgreed })
@@ -1622,15 +1921,17 @@ const HomeNew: React.FC = () => {
 
   // Restore preset selection from localStorage on mount
   useEffect(() => {
-    const savedPreset = localStorage.getItem('selectedPreset') as keyof typeof PROFESSIONAL_PRESETS | null
-    if (savedPreset && PROFESSIONAL_PRESETS[savedPreset]) {
+    if (availablePresets.length > 0) {
+      const savedPreset = localStorage.getItem('selectedPreset')
+          if (savedPreset && availablePresets.some(p => p.key === savedPreset)) {
       console.log('🔄 Restoring preset from localStorage:', savedPreset)
-      setSelectedPreset(savedPreset)
-    } else if (savedPreset && !PROFESSIONAL_PRESETS[savedPreset]) {
+      setSelectedPreset(savedPreset as any)
+    } else if (savedPreset && !availablePresets.some(p => p.key === savedPreset)) {
       console.warn('⚠️ Invalid preset in localStorage, clearing:', savedPreset)
       localStorage.removeItem('selectedPreset')
     }
-  }, [PROFESSIONAL_PRESETS]) // Add PROFESSIONAL_PRESETS as dependency so it runs when presets are loaded
+    }
+  }, [availablePresets]) // Run when database presets are loaded
 
   useEffect(() => {
     loadFeed()
@@ -1792,7 +2093,7 @@ const HomeNew: React.FC = () => {
 
   // NEW CLEAN GENERATION DISPATCHER - NO MORE MIXED LOGIC
   async function dispatchGenerate(
-    kind: 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch', // remix removed
+    kind: 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime', // remix removed
     options?: {
       presetId?: string;
       presetData?: any;
@@ -1801,6 +2102,8 @@ const HomeNew: React.FC = () => {
       ghibliReactionPresetId?: string;
       neoTokyoGlitchPresetId?: string;
       customPrompt?: string;
+      storyTimeImages?: File[];
+      storyTimePresetId?: string;
       // sourceUrl and originalPrompt removed - no more remix functionality
     }
   ) {
@@ -1817,7 +2120,7 @@ const HomeNew: React.FC = () => {
     console.info('▶ NEW dispatchGenerate', { kind, options, runId });
     
     // 🛡️ Runtime Guard (For Safety) - Prevent unknown modes from crashing the app
-    if (!['preset', 'custom', 'emotionmask', 'ghiblireact', 'neotokyoglitch'].includes(kind)) {
+    if (!['preset', 'custom', 'emotionmask', 'ghiblireact', 'neotokyoglitch', 'storytime'].includes(kind)) {
       console.warn("[dispatchGenerate] Unknown mode: ", kind);
               notifyError({ title: 'Failed', message: 'Try again' });
       return;
@@ -1913,18 +2216,30 @@ const HomeNew: React.FC = () => {
     } else if (kind === 'preset') {
       // PRESET MODE: Use ONLY the selected preset
       const presetId = options?.presetId || selectedPreset;
-      if (!presetId || !PRESETS[presetId]) {
+      if (!presetId) {
+        console.error('❌ No preset ID provided');
+        notifyError({ title: 'Failed', message: 'Try again' });
+        endGeneration(genId);
+        setNavGenerating(false);
+        // Clear composer after error
+        setTimeout(() => handleClearComposerState(), 1000);
+        return;
+      }
+      const preset = getPresetById(presetId as string, availablePresets);
+      if (!preset) {
         console.error('❌ Invalid preset:', presetId);
         notifyError({ title: 'Failed', message: 'Try again' });
         endGeneration(genId);
         setNavGenerating(false);
+        // Clear composer after error
+        setTimeout(() => handleClearComposerState(), 1000);
         return;
       }
-      effectivePrompt = PRESETS[presetId].prompt;
+      effectivePrompt = preset.prompt;
       generationMeta = { 
         mode: 'preset', 
         presetId, 
-        presetLabel: PRESETS[presetId].label,
+        presetLabel: preset.label,
         generation_type: "preset_moderate_ipa", // Moderate identity preservation
         ipaThreshold: 0.65, // Balanced similarity required
         ipaRetries: 2, // Moderate fallback
@@ -2070,6 +2385,31 @@ const HomeNew: React.FC = () => {
         };
       console.log('🎭 NEO TOKYO GLITCH MODE: Using Stability.ai + AIML fallback:', neoTokyoGlitchPreset.label, 'Preset:', presetKey);
       
+    } else if (kind === 'storytime') {
+      // STORY TIME MODE: Use multiple images for video generation
+      const storyImages = options?.storyTimeImages || [];
+      if (storyImages.length < 3) {
+        console.error('❌ Story Time requires at least 3 images');
+        notifyError({ title: 'Failed', message: 'Story Time requires at least 3 photos' });
+        endGeneration(genId);
+        setNavGenerating(false);
+        // Clear composer after error
+        setTimeout(() => handleClearComposerState(), 1000);
+        return;
+      }
+
+      effectivePrompt = 'Create an animated story from these photos'; // Default prompt for story time
+      generationMeta = {
+        mode: 'storytime',
+        storyTimeImages: storyImages,
+        storyTimePresetId: options?.storyTimePresetId,
+        generation_type: "story_time_moderate_ipa", // Moderate identity preservation for stories
+        ipaThreshold: 0.55, // Moderate similarity for storytelling
+        ipaRetries: 2, // Moderate fallback
+        ipaBlocking: true // Must pass to proceed
+      };
+      console.log('📖 STORY TIME MODE: Using', storyImages.length, 'images for video generation');
+      
     } else {
       console.error('❌ Unknown generation kind:', kind);
               console.error('❌ Generation error: Unknown generation type')
@@ -2138,9 +2478,11 @@ const HomeNew: React.FC = () => {
         const poll = async () => {
           if (attempts >= maxAttempts) {
             console.error('❌ [NeoGlitch] Job polling timed out');
-            notifyError({ title: 'Generation failed', message: 'Job timed out' });
+            notifyError({ title: 'Taking too long', message: 'Please try again' });
             endGeneration(genId);
             setNavGenerating(false);
+            // Clear composer after timeout error
+            setTimeout(() => handleClearComposerState(), 1000);
             return;
           }
           
@@ -2197,15 +2539,17 @@ const HomeNew: React.FC = () => {
               
               // Clear composer after delay
               setTimeout(() => {
-                resetComposerState();
+                handleClearComposerState();
               }, 3000);
               
               return;
             } else if (status.status === 'failed') {
               console.error('❌ [NeoGlitch] Job failed:', status.errorMessage);
-              notifyError({ title: 'Generation failed', message: status.errorMessage || 'Unknown error' });
+              notifyError({ title: 'Something went wrong', message: 'Please try again' });
               endGeneration(genId);
               setNavGenerating(false);
+              // Clear composer after error
+              setTimeout(() => handleClearComposerState(), 1000);
               return;
             } else {
               // Still processing, continue polling
@@ -2214,7 +2558,7 @@ const HomeNew: React.FC = () => {
             }
           } catch (error) {
             console.error('❌ [NeoGlitch] Polling error:', error);
-            notifyError({ title: 'Status check failed', message: 'Please try again' });
+            notifyError({ title: 'Something went wrong', message: 'Please try again' });
             endGeneration(genId);
             setNavGenerating(false);
           }
@@ -2396,9 +2740,9 @@ const HomeNew: React.FC = () => {
                      /\.(mp4|mov|webm|m4v)(\?|$)/i.test(sourceUrl || '');
 
 
-      // All generation now uses the new GenerationPipeline system
+      // All generation now uses the simplified direct service
 
-      // All generation now uses the new GenerationPipeline system
+      // All generation now uses the simplified direct service
       // No need to build old AIML payloads
 
       // Reserve credits before generation - dynamically calculate based on variations
@@ -2510,9 +2854,9 @@ const HomeNew: React.FC = () => {
           navigate('/auth');
           return;
         }
-        // 🆕 [New System] All generation now goes through GenerationPipeline - no direct start-gen calls
-        console.log('🆕 [New System] Video generation handled by GenerationPipeline');
-        throw new Error('Direct start-gen calls are deprecated - use GenerationPipeline');
+        // 🆕 [New System] All generation now uses simplified service - direct function calls
+        console.log('🆕 [New System] Video generation handled by simplified service');
+        throw new Error('Direct start-gen calls are deprecated - use simplified service');
       }
 
       // 🎭 NEO TOKYO GLITCH: Use unified pipeline
@@ -2520,14 +2864,16 @@ const HomeNew: React.FC = () => {
         console.log('🚀 [NeoGlitch] Using unified generation pipeline');
         
         try {
-          // Use unified pipeline for Neo Tokyo Glitch
-          const result = await runGeneration({
-            type: 'neo-glitch',
+          // Use simplified service for Neo Tokyo Glitch
+          const simpleGenService = SimpleGenerationService.getInstance();
+          const result = await simpleGenService.generate({
+            mode: 'neo-glitch',
             prompt: effectivePrompt,
             presetKey: generationMeta.presetKey,
             sourceAssetId: sourceUrl || '',
             userId: authService.getCurrentUser()?.id || '',
             runId: generateRunId(),
+            neoGlitchPresetId: selectedNeoTokyoGlitchPreset || undefined,
             meta: generationMeta
           });
           
@@ -2622,7 +2968,7 @@ const HomeNew: React.FC = () => {
       let body: any;
       let res: Response | null = null; // Declare res at top level
 
-      // All generation now uses the new GenerationPipeline system
+      // All generation now uses the simplified direct service
       // Add timeout guard to prevent 504 errors
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
@@ -2631,33 +2977,33 @@ const HomeNew: React.FC = () => {
       }, 24000); // 24s cushion before Netlify's 26s limit
 
         try {
-          // 🆕 Use NEW GenerationPipeline for rock-solid stability
-          const generationType = kind === 'preset' ? 'presets' : 
+          // 🆕 Use SIMPLIFIED service for direct function calls
+          const generationMode: GenerationMode = kind === 'preset' ? 'presets' :
                                 kind === 'custom' ? 'custom-prompt' : 
                                 kind === 'emotionmask' ? 'emotion-mask' : 
-                                kind === 'ghiblireact' ? 'ghibli-reaction' : 'presets';
-          console.log(`🚀 [GenerationPipeline] Using unified ${generationType} system`);
-          
-          const generationPipeline = GenerationPipeline.getInstance();
-          const generationResult = await generationPipeline.generate({
-            type: kind === 'preset' ? 'presets' : 
-                  kind === 'custom' ? 'custom-prompt' : 
-                  kind === 'emotionmask' ? 'emotion-mask' : 
-                  kind === 'ghiblireact' ? 'ghibli-reaction' : 'presets',
+                                                kind === 'ghiblireact' ? 'ghibli-reaction' :
+                                                kind === 'neotokyoglitch' ? 'neo-glitch' :
+                                                'presets';
+
+          console.log(`🚀 [SimpleGeneration] Using direct ${generationMode} function call`);
+
+          const simpleGenService = SimpleGenerationService.getInstance();
+          const generationResult = await simpleGenService.generate({
+            mode: generationMode,
             prompt: effectivePrompt,
-            presetKey: kind === 'preset' ? (options?.presetId || selectedPreset) : 
-                      kind === 'ghiblireact' ? (generationMeta?.ghibliReactionPresetId || 'ghibli_default') :
-                      kind === 'emotionmask' ? (generationMeta?.emotionMaskPresetId || 'emotion_default') :
-                      kind === 'custom' ? 'custom_prompt' : 'default',
+            presetKey: kind === 'preset' ? (options?.presetId || (selectedPreset as string)) : undefined,
             sourceAssetId: sourceUrl || '',
             userId: authService.getCurrentUser()?.id || '',
             runId: runId,
+            emotionMaskPresetId: kind === 'emotionmask' ? (selectedEmotionMaskPreset || undefined) : undefined,
+            ghibliReactionPresetId: kind === 'ghiblireact' ? (selectedGhibliReactionPreset || undefined) : undefined,
+            neoGlitchPresetId: (kind as any) === 'neotokyoglitch' ? (selectedNeoTokyoGlitchPreset || undefined) : undefined,
             meta: generationMeta
           });
           
           clearTimeout(timeoutId); // Clear timeout if request completes
 
-          console.info('🆕 [GenerationPipeline] Result:', generationResult);
+          console.info('🆕 [SimpleGeneration] Result:', generationResult);
           
           if (generationResult.success && generationResult.status === 'completed') {
             // New system completed immediately
@@ -2671,7 +3017,7 @@ const HomeNew: React.FC = () => {
             throw new Error('Generation in progress - please wait');
           } else {
             // New system failed - no fallback to old system
-            console.error('❌ [GenerationPipeline] New system failed:', generationResult.error);
+            console.error('❌ [SimpleGeneration] Simplified service failed:', generationResult.error);
             throw new Error(generationResult.error || 'Generation failed');
           }
         } catch (error) {
@@ -2689,7 +3035,7 @@ const HomeNew: React.FC = () => {
           console.log('🆕 [New System] Skipping old system processing');
         } else {
           // Process aimlApi results (old system) - but this should never happen now
-          console.warn('⚠️ [GenerationPipeline] Unexpected old system path - this should not happen');
+          console.warn('⚠️ [SimpleGeneration] Unexpected path - this should not happen');
           throw new Error('Unexpected old system path - all generation should use new system');
         }
 
@@ -2936,7 +3282,7 @@ const HomeNew: React.FC = () => {
         const assetResult = await createAsset({
           sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
           mediaType: 'image', // Default to image for now
-            presetKey: selectedPreset,
+            presetKey: selectedPreset as string | null | undefined,
               prompt: effectivePrompt,
         });
 
@@ -3229,7 +3575,7 @@ const HomeNew: React.FC = () => {
           const resolvedPreset = resolvePresetForMode({
             mode: selectedMode,
             option: (selectedTheme || selectedEra || selectedOp) as string,
-            activePresets: PROFESSIONAL_PRESETS as any
+            activePresets: Object.fromEntries(availablePresets.map(p => [p.key, p])) as any
           });
           
           console.log('📊 Mode analytics - success:', {
@@ -3304,17 +3650,17 @@ const HomeNew: React.FC = () => {
         if (e.message.includes('Insufficient credits') || e.message.includes('credits but only have')) {
           errorMessage = 'Not enough credits. Please wait for daily reset or upgrade your plan.';
         } else if (e.message.includes('cloud_name is disabled') || e.message.includes('cloud_name')) {
-          errorMessage = 'Upload service temporarily unavailable';
+          errorMessage = 'Service busy - please try again in a moment';
         } else if (e.message.includes('Invalid api_key') || e.message.includes('api_key')) {
-          errorMessage = 'Upload service temporarily unavailable';
+          errorMessage = 'Service busy - please try again in a moment';
         } else if (e.message.includes('timeout') || e.message.includes('ERR_TIMED_OUT')) {
-          errorMessage = 'Upload took too long, please try again with a smaller file';
+          errorMessage = 'Taking too long - please try with a smaller file';
         } else if (e.message.includes('Failed to fetch') || e.message.includes('ERR_TIMED_OUT')) {
-          errorMessage = 'Network timeout - please check your connection and try again';
+          errorMessage = 'Connection issue - please check your internet and try again';
         } else if (e.message.includes('unauthorized') || e.message.includes('401')) {
           errorMessage = 'Please sign in again';
         } else if (e.message.includes('quota') || e.message.includes('credits')) {
-          errorMessage = 'You\'ve reached your daily limit';
+          errorMessage = 'Daily limit reached - please try again tomorrow';
         } else {
           errorMessage = 'Something went wrong, please try again';
         }
@@ -3322,7 +3668,7 @@ const HomeNew: React.FC = () => {
         const errorObj = e as any;
         if (errorObj.error?.message) {
           if (errorObj.error.message.includes('cloud_name is disabled') || errorObj.error.message.includes('Invalid api_key')) {
-            errorMessage = 'Upload service temporarily unavailable';
+            errorMessage = 'Service busy - please try again in a moment';
           } else if (errorObj.error.message.includes('unauthorized')) {
             errorMessage = 'Please sign in again';
           } else {
@@ -3407,11 +3753,13 @@ const HomeNew: React.FC = () => {
       
 
       // If a preset is selected, include its negative prompt and strength
-      if (selectedPreset && PRESETS[selectedPreset]) {
-        const preset = PRESETS[selectedPreset]
-        if (preset.negative_prompt) body.negative_prompt = preset.negative_prompt
+      if (selectedPreset) {
+        const preset = getPresetById(selectedPreset as string, availablePresets)
+        if (preset) {
+          if (preset.negativePrompt) body.negative_prompt = preset.negativePrompt
         if (typeof preset.strength === 'number') body.strength = preset.strength
-        body.presetName = selectedPreset
+          body.presetName = selectedPreset as string
+        }
       }
       
       // Reserve credits before generation for this path
@@ -3457,8 +3805,8 @@ const HomeNew: React.FC = () => {
       
       // Since this function is deprecated, just show an error and redirect
       notifyError({ 
-        title: 'Deprecated Function', 
-        message: 'This generation method is no longer supported. Please use the new interface.' 
+        title: 'Feature updated',
+        message: 'Please use the new interface.'
       });
       
       // Clear generation state
@@ -3477,7 +3825,7 @@ const HomeNew: React.FC = () => {
       
       // Show user-friendly error message
       notifyError({ 
-        title: 'Generation Failed', 
+        title: 'Something went wrong',
         message: 'Please try again with a different image or prompt.' 
       });
     }
@@ -3512,7 +3860,7 @@ const HomeNew: React.FC = () => {
 
 
   // Handle preset click - immediately generates with preset style (one-click)
-  const handlePresetClick = async (presetName: keyof typeof PRESETS) => {
+  const handlePresetClick = async (presetName: string) => {
     console.log('🎨 Preset clicked:', presetName)
     console.log('🔍 Current state:', { selectedFile: !!selectedFile, isAuthenticated, selectedPreset: selectedPreset })
     
@@ -3551,7 +3899,7 @@ const HomeNew: React.FC = () => {
     try {
       await dispatchGenerate('preset', {
         presetId: String(presetName),
-        presetData: PRESETS[presetName]
+        presetData: getPresetById(presetName, availablePresets)
       })
     } catch (error) {
       console.log('❌ Preset generation failed:', error)
@@ -3567,7 +3915,7 @@ const HomeNew: React.FC = () => {
 
 
   // Auto-generate with preset - simplified to use existing dispatchGenerate
-  const handlePresetAutoGeneration = async (presetName: keyof typeof PRESETS) => {
+  const handlePresetAutoGeneration = async (presetName: string) => {
     console.log('🚀 handlePresetAutoGeneration called with:', presetName)
     
     if (!previewUrl) {
@@ -3638,7 +3986,7 @@ const HomeNew: React.FC = () => {
     setComposerState(s => ({
       ...s,
       mode: 'preset',
-      selectedPresetId: selectedPreset,
+      selectedPresetId: selectedPreset as string | null,
       customPrompt: '', // Clear custom prompt
       status: 'idle',
       error: null
@@ -3646,8 +3994,8 @@ const HomeNew: React.FC = () => {
     
     // Generate with ONLY the preset - no custom prompt contamination
     await dispatchGenerate('preset', {
-      presetId: selectedPreset,
-      presetData: PRESETS[selectedPreset]
+      presetId: selectedPreset as string,
+      presetData: getPresetById(selectedPreset as string, availablePresets)
     })
     
     // Clear composer after successful generation
@@ -4346,11 +4694,26 @@ const HomeNew: React.FC = () => {
           <div className="absolute inset-0 flex items-center justify-center pb-48">
             <div className="relative w-full max-w-2xl px-6">
               <div ref={containerRef} className="w-full flex items-center justify-center">
-                {isVideoPreview ? (
-                  <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
+                {/* Story Time Mode - Special UI */}
+                {composerState.mode === 'storytime' ? (
+                  <StoryTimeComposer
+                    selectedFile={selectedFile}
+                    additionalImages={additionalStoryImages}
+                    onFileUpload={handleFileChange}
+                    onAdditionalUpload={handleAdditionalStoryImageUpload}
+                    onAdditionalRemove={handleAdditionalStoryImageRemove}
+                    onFileRemove={() => {
+                      setSelectedFile(null)
+                      setPreviewUrl(null)
+                    }}
+                  />
                 ) : (
+                  /* Regular modes - show normal image/video preview */
                   <>
-                    {/* Main image */}
+                    {previewUrl ? (
+                      isVideoPreview ? (
+                        <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
+                      ) : (
                     <img 
                       ref={(el) => (mediaRef.current = el as HTMLImageElement)} 
                       src={previewUrl || ''} 
@@ -4371,22 +4734,15 @@ const HomeNew: React.FC = () => {
                         })
                       }}
                     />
-                    
-                    {/* Story Time stacked cards - show when in storytime mode */}
-                    {composerState.mode === 'storytime' && (
-                      <div className="story-stacked-cards">
-                        <div className="stacked-images">
-                          {Array.from({ length: 4 }, (_, i) => (
-                            <StoryImageCard
-                              key={i}
-                              index={i}
-                              image={additionalStoryImages[i]}
-                              isRequired={i < 2} // First 2 slots required
-                              onUpload={handleAdditionalStoryImageUpload}
-                              onRemove={handleAdditionalStoryImageRemove}
-                            />
-                          ))}
+                      )
+                    ) : (
+                      /* No file selected - show upload prompt */
+                      <div className="text-center">
+                        <div className="w-24 h-24 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center border-2 border-dashed border-white/30">
+                          <Plus size={32} className="text-white/60" />
                         </div>
+                        <p className="text-white/80 text-lg mb-2">Upload an image to get started</p>
+                        <p className="text-white/60 text-sm">Drag & drop or click to browse</p>
                       </div>
                     )}
                   </>
@@ -4466,26 +4822,20 @@ const HomeNew: React.FC = () => {
                   <div className="relative" data-presets-dropdown>
                     <button
                                               onClick={() => {
-                          if (!isAuthenticated) {
-                            // Sign up required - no notification needed
-                            navigate('/auth')
-                            return
-                          }
-                          // Close all other dropdowns and toggle presets
+                          // Allow exploration - close all other dropdowns and toggle presets
                           closeAllDropdowns()
                           setPresetsOpen((v) => !v)
                         }}
                       className={`px-3 py-1.5 rounded-2xl text-xs transition-colors ${
                         isAuthenticated 
                           ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30' 
-                          : 'bg-white/5 text-white/40 cursor-not-allowed'
+                          : 'bg-white/10 backdrop-blur-md text-white hover:bg-white/20'
                       }`}
                       data-nav-button
                       data-nav-type="presets"
-                      title={isAuthenticated ? 'Choose AI style presets' : 'Sign up to use AI presets'}
-                      disabled={!isAuthenticated}
+                      title={isAuthenticated ? 'Choose AI style presets' : 'Explore AI style presets'}
                     >
-                      {selectedPreset ? getPresetLabel(selectedPreset) : 'Presets'}
+                      {selectedPreset ? getPresetLabel(selectedPreset as string, availablePresets) : 'Presets'}
                     </button>
                     
                     {/* Presets dropdown - clean and simple */}
@@ -4493,8 +4843,22 @@ const HomeNew: React.FC = () => {
                                              <div className="absolute bottom-full left-0 mb-2 rounded-xl p-3 w-80 z-50 shadow-2xl shadow-black/20" style={{ backgroundColor: '#333333' }}>
                         {/* Preset options - all visible, no scrolling */}
                         <div className="space-y-1">
+                          {/* Loading state */}
+                          {presetsLoading && (
+                            <div className="px-3 py-2 text-sm text-white/70">
+                              Loading presets...
+                            </div>
+                          )}
+
+                          {/* Error state */}
+                          {presetsError && (
+                            <div className="px-3 py-2 text-sm text-red-400">
+                              Failed to load presets
+                            </div>
+                          )}
+
                           {/* Preset options */}
-                          {weeklyPresetNames.map((name) => (
+                          {!presetsLoading && !presetsError && weeklyPresetNames.map((name) => (
                             <button
                               key={name}
                               onClick={() => {
@@ -4507,7 +4871,7 @@ const HomeNew: React.FC = () => {
                                   : 'text-white hover:text-white hover:bg-white/20'
                               }`}
                             >
-                              <span>{getPresetLabel(String(name))}</span>
+                              <span>{getPresetLabel(String(name), availablePresets)}</span>
                               {selectedPreset === name ? (
                                 <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
                               ) : (
@@ -4528,11 +4892,6 @@ const HomeNew: React.FC = () => {
                   <div className="relative" data-emotionmask-dropdown>
                     <button
                       onClick={async () => {
-                        if (!isAuthenticated) {
-                          navigate('/auth')
-                          return
-                        }
-                        
                         if (composerState.mode === 'emotionmask') {
                           // Already in Emotion Mask mode - toggle dropdown
                           closeAllDropdowns()
@@ -4547,14 +4906,11 @@ const HomeNew: React.FC = () => {
                         }
                       }}
                       className={
-                        !isAuthenticated
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/5 text-white/40 cursor-not-allowed'
-                          : composerState.mode === 'emotionmask'
+                        composerState.mode === 'emotionmask'
                           ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                           : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
                       }
-                      title={isAuthenticated ? 'Switch to Emotion Mask™ mode' : 'Sign up to use Emotion Mask™'}
-                      disabled={!isAuthenticated}
+                      title={isAuthenticated ? 'Switch to Emotion Mask™ mode' : 'Explore Emotion Mask™ mode'}
                     >
                       {selectedEmotionMaskPreset ? 
                         EMOTION_MASK_PRESETS.find(p => p.id === selectedEmotionMaskPreset)?.label || 'Emotion Mask™' 
@@ -4603,11 +4959,6 @@ const HomeNew: React.FC = () => {
                   <div className="relative" data-ghiblireact-dropdown>
                     <button
                       onClick={async () => {
-                        if (!isAuthenticated) {
-                          navigate('/auth')
-                          return
-                        }
-                        
                         if (composerState.mode === 'ghiblireact') {
                           // Already in Ghibli Reaction mode - toggle dropdown
                           closeAllDropdowns()
@@ -4622,14 +4973,11 @@ const HomeNew: React.FC = () => {
                         }
                       }}
                       className={
-                        !isAuthenticated
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/5 text-white/40 cursor-not-allowed'
-                          : composerState.mode === 'ghiblireact'
+                        composerState.mode === 'ghiblireact'
                           ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                           : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
                       }
-                      title={isAuthenticated ? 'Switch to Studio Ghibli Reaction mode' : 'Sign up to use Studio Ghibli Reaction'}
-                      disabled={!isAuthenticated}
+                      title={isAuthenticated ? 'Switch to Studio Ghibli Reaction mode' : 'Explore Studio Ghibli Reaction mode'}
                     >
                       {selectedGhibliReactionPreset ? 
                         GHIBLI_REACTION_PRESETS.find(p => p.id === selectedGhibliReactionPreset)?.label || 'Ghibli Reaction' 
@@ -4678,11 +5026,6 @@ const HomeNew: React.FC = () => {
                   <div className="relative" data-neotokyoglitch-dropdown>
                     <button
                       onClick={async () => {
-                        if (!isAuthenticated) {
-                          navigate('/auth')
-                          return
-                        }
-                        
                         if (composerState.mode === 'neotokyoglitch') {
                           // Already in Neo Tokyo Glitch mode - toggle dropdown
                           closeAllDropdowns()
@@ -4697,14 +5040,11 @@ const HomeNew: React.FC = () => {
                         }
                       }}
                       className={
-                        !isAuthenticated
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/5 text-white/40 cursor-not-allowed'
-                          : composerState.mode === 'neotokyoglitch'
+                        composerState.mode === 'neotokyoglitch'
                           ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                           : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
                       }
-                      title={isAuthenticated ? 'Switch to Neo Tokyo Glitch mode' : 'Sign up to use Neo Tokyo Glitch'}
-                      disabled={!isAuthenticated}
+                      title={isAuthenticated ? 'Switch to Neo Tokyo Glitch mode' : 'Explore Neo Tokyo Glitch mode'}
                     >
                       {selectedNeoTokyoGlitchPreset ? 
                         NEO_TOKYO_GLITCH_PRESETS.find(p => p.id === selectedNeoTokyoGlitchPreset)?.label || 'Neo Tokyo Glitch' 
@@ -4751,33 +5091,23 @@ const HomeNew: React.FC = () => {
                   <div className="relative" data-storytime-dropdown>
                     <button
                       onClick={async () => {
-                        if (!isAuthenticated) {
-                          navigate('/auth')
-                          return
-                        }
-                        
                         if (composerState.mode === 'storytime') {
-                          // Already in Story Time mode - toggle dropdown
+                          // Already in Story Time mode - just close other dropdowns
                           closeAllDropdowns()
-                          setStoryTimeDropdownOpen((v) => !v)
                         } else {
-                          // Switch to Story Time mode AND show dropdown immediately
+                          // Switch to Story Time mode
                           closeAllDropdowns()
                           setComposerState(s => ({ ...s, mode: 'storytime' }))
                           setSelectedMode('presets') // Set selectedMode to match the new system
                           setSelectedStoryTimePreset(null)
-                          setStoryTimeDropdownOpen(true) // Show dropdown immediately
                         }
                       }}
                       className={
-                        !isAuthenticated
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/5 text-white/40 cursor-not-allowed'
-                          : composerState.mode === 'storytime'
+                        composerState.mode === 'storytime'
                           ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                           : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
                       }
-                      title={isAuthenticated ? 'Switch to Story Time mode' : 'Sign up to use Story Time'}
-                      disabled={!isAuthenticated}
+                      title={isAuthenticated ? 'Switch to Story Time mode' : 'Explore Story Time mode'}
                     >
                       {selectedStoryTimePreset ? 
                         selectedStoryTimePreset === 'auto' ? 'Story Time (Auto)' : `Story Time (${selectedStoryTimePreset})`
@@ -4785,107 +5115,7 @@ const HomeNew: React.FC = () => {
                       }
                     </button>
                     
-                    {/* Story Time presets dropdown - show when in Story Time mode */}
-                    {composerState.mode === 'storytime' && storyTimeDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 z-50">
-                        <div className="rounded-xl shadow-2xl p-3 w-80" style={{ backgroundColor: '#333333' }}>
-                          {/* Status indicator */}
-                          <div className="mb-3 p-2 rounded-lg text-xs text-center" style={{ backgroundColor: canGenerateStory ? '#22c55e20' : '#f59e0b20' }}>
-                            {canGenerateStory 
-                              ? `✅ Ready to generate with ${additionalStoryImages.filter(Boolean).length + 1} images`
-                              : `📸 Need ${3 - (additionalStoryImages.filter(Boolean).length + 1)} more images (minimum 3)`
-                            }
-                          </div>
-                          
-                          <div className="space-y-1">
-                            {/* Story Time preset options */}
-                            {[
-                              { id: 'auto', label: 'Auto Mode' },
-                              { id: 'adventure', label: 'Adventure Mode' },
-                              { id: 'romance', label: 'Romance Mode' },
-                              { id: 'mystery', label: 'Mystery Mode' },
-                              { id: 'comedy', label: 'Comedy Mode' },
-                              { id: 'fantasy', label: 'Fantasy Mode' },
-                              { id: 'travel', label: 'Travel Mode' }
-                            ].map((preset) => (
-                              <button
-                                key={preset.id}
-                                onClick={async () => {
-                                  setSelectedStoryTimePreset(preset.id)
-                                  setStoryTimeDropdownOpen(false)
-                                  
-                                  // Check if we have enough images for Story Time
-                                  if (preset.id && canGenerateStory && isAuthenticated) {
-                                    console.log('📖 Generating Story Time with preset:', preset.id)
-                                    
-                                    // Create Story Time story with multiple images
-                                    try {
-                                      const formData = new FormData()
-                                      
-                                      // Add main image
-                                      formData.append('photos', selectedFile)
-                                      
-                                      // Add additional images
-                                      additionalStoryImages.forEach((file, index) => {
-                                        if (file) {
-                                          formData.append('photos', file)
-                                        }
-                                      })
-                                      
-                                      formData.append('preset', preset.id)
-                                      
-                                      const response = await fetch('/.netlify/functions/story-time-create', {
-                                        method: 'POST',
-                                        headers: {
-                                          'Authorization': `Bearer ${authService.getToken()}`
-                                        },
-                                        body: formData
-                                      })
-                                      
-                                      if (response.ok) {
-                                        const story = await response.json()
-                                        console.log('📖 Story Time story created:', story)
-                                        
-                                        // Clear composer after successful story creation
-                                        setTimeout(() => {
-                                          handleClearComposerState()
-                                        }, 1000)
-                                      } else {
-                                        const error = await response.json()
-                                        console.error('❌ Story Time creation failed:', error)
-                                      }
-                                    } catch (error) {
-                                      console.error('❌ Story Time creation failed:', error)
-                                    }
-                                                                      } else if (!canGenerateStory) {
-                                      console.log('📖 Need more images for Story Time generation')
-                                      // Show message that more images are needed
-                                    }
-                                  }}
-                                  disabled={!canGenerateStory}
-                                  className={(() => {
-                                    const baseClass = 'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm text-left';
-                                    const activeClass = 'bg-white/90 backdrop-blur-md text-black';
-                                    const inactiveClass = canGenerateStory 
-                                      ? 'text-white hover:text-white hover:bg-white/20' 
-                                      : 'text-white/50 cursor-not-allowed';
-                                    return `${baseClass} ${selectedStoryTimePreset === preset.id ? activeClass : inactiveClass}`;
-                                  })()}
-                              >
-                                <div>
-                                  <div className="font-medium">{preset.label}</div>
-                                </div>
-                                {selectedStoryTimePreset === preset.id ? (
-                                  <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
-                                ) : (
-                                  <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+
                   </div>
                 </div>
 
@@ -4947,13 +5177,22 @@ const HomeNew: React.FC = () => {
                         await dispatchGenerate('neotokyoglitch', {
                           neoTokyoGlitchPresetId: selectedNeoTokyoGlitchPreset || undefined
                         })
+                      } else if (composerState.mode === 'storytime') {
+                        // Story Time mode - use dispatchGenerate with all images
+                        console.log('📖 Story Time mode - calling dispatchGenerate')
+                        if (canGenerateStory) {
+                          await dispatchGenerate('storytime', {
+                            storyTimeImages: [selectedFile!, ...additionalStoryImages.filter(Boolean)],
+                            storyTimePresetId: selectedStoryTimePreset || undefined
+                          })
+                        }
                         } else {
                         // Fallback - determine mode and generate
                         if (selectedPreset) {
                         // Run preset generation
                           await dispatchGenerate('preset', {
-                          presetId: selectedPreset,
-                          presetData: PRESETS[selectedPreset]
+                          presetId: selectedPreset as string,
+                          presetData: getPresetById(selectedPreset as string, availablePresets)
                         })
                           // Clear composer after successful generation
                           setTimeout(() => {
@@ -4971,19 +5210,34 @@ const HomeNew: React.FC = () => {
                         }
                       }
                     }} 
-                    disabled={!selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset) || navGenerating} 
+                    disabled={
+                      (composerState.mode === 'storytime' && !canGenerateStory) ||
+                      (composerState.mode !== 'storytime' && !selectedFile) ||
+                      (composerState.mode === 'presets' && !prompt.trim() && !selectedPreset) ||
+                      navGenerating
+                    } 
                     className={
-                      (!selectedFile || (mode === 'presets' && !prompt.trim() && !selectedPreset) || navGenerating)
+                      ((composerState.mode === 'storytime' && !canGenerateStory) ||
+                       (composerState.mode !== 'storytime' && !selectedFile) ||
+                       (composerState.mode === 'presets' && !prompt.trim() && !selectedPreset) ||
+                       navGenerating)
                         ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
                         : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
                     }
                     aria-label="Generate"
                     title={(() => {
                       if (!isAuthenticated) return 'Sign up to generate AI content';
+                      if (composerState.mode === 'storytime') {
+                        if (!canGenerateStory) {
+                          const totalImages = (selectedFile ? 1 : 0) + additionalStoryImages.filter(Boolean).length;
+                          return `Add ${3 - totalImages} more photos (minimum 3 needed)`;
+                        }
+                        return `Generate animated story with ${additionalStoryImages.filter(Boolean).length + 1} photos`;
+                      }
                       if (!previewUrl) return 'Upload media first';
 
                       if (mode === 'presets' && !prompt.trim() && !selectedPreset) return 'Enter a prompt or select a preset first';
-                      if (selectedPreset) return `Generate with ${getPresetLabel(selectedPreset)} preset`;
+                      if (selectedPreset) return `Generate with ${getPresetLabel(selectedPreset as string, availablePresets)} preset`;
                       return 'Generate AI content';
                     })()}
                   >

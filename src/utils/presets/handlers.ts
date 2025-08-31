@@ -1,7 +1,7 @@
 // utils/presets/handlers.ts
 import type { Preset, PresetId } from './types';
 import { OPTION_GROUPS, resolvePreset } from './types';
-import { runGeneration } from '../../services/generationPipeline';
+import SimpleGenerationService from '../../services/simpleGenerationService';
 import type { GenerateJob } from '../../types/generation';
 import { getCurrentSourceUrl } from '../../stores/sourceStore';
 import { getActivePresets, PRESETS, type PresetConfig } from '../../config/presets';
@@ -77,9 +77,10 @@ export async function runPreset(preset: PresetConfig | Preset, srcOverride?: str
       }
     }
 
-    // 5) Use the existing generation pipeline
-    const request: any = {
-      type: 'presets',
+    // 5) Use the simplified generation service
+    const simpleGenService = SimpleGenerationService.getInstance();
+    const result = await simpleGenService.generate({
+      mode: 'presets',
       prompt: preset.prompt,
       presetKey: 'id' in preset ? preset.id : 'default-preset',
       sourceAssetId: src || '',
@@ -90,15 +91,14 @@ export async function runPreset(preset: PresetConfig | Preset, srcOverride?: str
         negativePrompt: 'negative_prompt' in preset ? preset.negative_prompt : undefined,
         model: 'model' in preset ? preset.model : 'eagle'
       }
-    };
-    const result = await runGeneration(request);
+    });
     
     // 6) Check if this is a stale result (race condition protection)
     if (!result) {
-      console.warn(`⚠️ [${runId}] No result returned from generation pipeline`);
+      console.warn(`⚠️ [${runId}] No result returned from simplified service`);
       return null;
     }
-    
+
     if (!result.success) {
       console.warn(`❌ [${runId}] Generation failed:`, result);
       showToast('error', result?.error ?? 'Generation failed. Please try again.');
