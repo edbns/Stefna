@@ -203,10 +203,10 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: { 
-        'Access-Control-Allow-Origin': '*', 
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
       },
       body: ''
     };
@@ -215,10 +215,10 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST' && event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
-      headers: { 
-        'Access-Control-Allow-Origin': '*', 
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
       },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
@@ -230,10 +230,10 @@ export const handler: Handler = async (event) => {
     if (!jobId) {
       return {
         statusCode: 400,
-        headers: { 
-          'Access-Control-Allow-Origin': '*', 
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
         },
         body: JSON.stringify({ error: 'jobId parameter required' })
       };
@@ -260,10 +260,10 @@ export const handler: Handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 
-          'Access-Control-Allow-Origin': '*', 
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
         },
         body: JSON.stringify(status)
       };
@@ -271,10 +271,10 @@ export const handler: Handler = async (event) => {
       console.error('❌ [NeoGlitch] Status check failed:', error);
       return {
         statusCode: 500,
-        headers: { 
-          'Access-Control-Allow-Origin': '*', 
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
         },
         body: JSON.stringify({ error: 'Status check failed' })
       };
@@ -290,7 +290,11 @@ export const handler: Handler = async (event) => {
     if (!userToken) {
       return {
         statusCode: 401,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        },
         body: JSON.stringify({ 
           error: 'AUTH_REQUIRED',
           message: 'Authorization token required' 
@@ -304,7 +308,11 @@ export const handler: Handler = async (event) => {
     if (userToken.split('.').length !== 3) {
       return {
         statusCode: 401,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        },
         body: JSON.stringify({ 
           error: 'INVALID_TOKEN_FORMAT',
           message: 'Invalid JWT token format' 
@@ -335,7 +343,11 @@ export const handler: Handler = async (event) => {
     if (missingFields.length > 0) {
       return {
         statusCode: 422,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        },
         body: JSON.stringify({
           error: 'VALIDATION_FAILED',
           message: `Missing required fields: ${missingFields.join(', ')}`,
@@ -380,7 +392,11 @@ export const handler: Handler = async (event) => {
         console.log('🔄 [NeoGlitch] Run already completed, returning cached result');
       return {
         statusCode: 200,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        },
         body: JSON.stringify(existingRun)
       };
       } else {
@@ -424,7 +440,11 @@ export const handler: Handler = async (event) => {
       console.log('🎉 [NeoGlitch] Generation completed immediately! Returning completed status');
       return {
         statusCode: 200, // OK - completed
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        },
         body: JSON.stringify({
           message: 'Generation completed successfully',
           jobId: initialRecord.id,
@@ -458,7 +478,11 @@ export const handler: Handler = async (event) => {
     if (isTokenExpiredError(error.message)) {
       return {
         statusCode: 401,
-        headers: { 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        },
         body: JSON.stringify({
           error: 'TOKEN_EXPIRED',
           message: 'Your session has expired. Please refresh the page and try again.',
@@ -1024,7 +1048,32 @@ async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey:
   }
 }
 
-// Fal.ai Fallback Function
+// FAL.ai Model configurations for semantic fallback
+const PHOTO_MODELS = [
+  {
+    model: 'fal-ai/hyper-sdxl/image-to-image',
+    name: 'Hyper SDXL I2I',
+    cost: 'medium',
+    priority: 1,
+    description: 'High-quality photo-realistic image-to-image'
+  },
+  {
+    model: 'fal-ai/stable-diffusion-xl',
+    name: 'Stable Diffusion XL',
+    cost: 'high',
+    priority: 2,
+    description: 'Premium photo-realistic generation'
+  },
+  {
+    model: 'fal-ai/realistic-vision-v5',
+    name: 'Realistic Vision V5',
+    cost: 'high',
+    priority: 3,
+    description: 'Ultra-realistic photo generation'
+  }
+];
+
+// Fal.ai Fallback Function with proper model selection
 async function attemptFalFallback(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
   const FAL_KEY = process.env.FAL_KEY;
 
@@ -1032,59 +1081,80 @@ async function attemptFalFallback(sourceUrl: string, prompt: string, presetKey: 
     throw new Error('FAL_KEY not configured for fallback');
   }
 
-  console.log('🔄 [NeoGlitch] Attempting Fal.ai fallback generation');
-  
+  console.log('🔄 [NeoGlitch] Attempting Fal.ai fallback generation with semantic models');
+
   try {
     // Import fal.ai client
     const { fal } = await import('@fal-ai/client');
-    
+
     // Configure fal.ai client
     fal.config({
       credentials: FAL_KEY
     });
 
-    // Use fal.ai's ghiblify model for Neo Tokyo Glitch fallback
-    const result = await fal.subscribe('fal-ai/ghiblify', {
-      input: {
-        image_url: sourceUrl,
-        image_strength: 0.85,
-        num_images: 1,
-        guidance_scale: 7.5,
-        num_inference_steps: 30,
-        seed: Math.floor(Math.random() * 1000000)
-      },
-      logs: true
-    });
+    // Try FAL.ai models in priority order (same as main FAL function)
+    let lastError: any = null;
 
-    console.log('✅ [NeoGlitch] Fal.ai fallback generation successful');
-    
-    // Extract image URL from fal.ai result
-    let imageUrl = null;
-    
-    if (result.data?.image?.url) {
-      imageUrl = result.data.image.url;
-    } else if (result.data?.image) {
-      imageUrl = result.data.image;
-    }
-    
-    if (!imageUrl) {
-      throw new Error('Fal.ai fallback succeeded but no image URL found in response');
+    for (const modelConfig of PHOTO_MODELS) {
+      try {
+        console.log(`🖼️ [NeoGlitch] Trying FAL.ai model: ${modelConfig.name} (${modelConfig.model})`);
+
+        const result = await fal.subscribe(modelConfig.model, {
+          input: {
+            image_url: sourceUrl,
+            prompt: `${prompt}, cyberpunk, neon, glitch effects, maintain face identity`,
+            image_strength: 0.75, // Lower strength for better identity preservation
+            num_images: 1,
+            guidance_scale: 7.5,
+            num_inference_steps: 30,
+            seed: Math.floor(Math.random() * 1000000)
+          },
+          logs: true
+        });
+
+        console.log(`✅ [NeoGlitch] FAL.ai ${modelConfig.name} generation successful!`);
+
+        // Extract image URL from fal.ai result
+        let imageUrl = null;
+
+        if (result.data?.image?.url) {
+          imageUrl = result.data.image.url;
+        } else if (result.data?.image) {
+          imageUrl = result.data.image;
+        }
+
+        if (!imageUrl) {
+          throw new Error('FAL.ai succeeded but no image URL found in response');
+        }
+
+        // Add randomization to prevent cache hits
+        const randomSeed = Math.floor(Math.random() * 1000000);
+
+        return {
+          stabilityJobId: `fal_${Date.now()}`,
+          model: modelConfig.model,
+          strategy: 'fal_fallback',
+          provider: 'fal',
+          imageUrl,
+          status: 'completed',
+          seed: randomSeed
+        };
+
+      } catch (modelError: any) {
+        console.warn(`⚠️ [NeoGlitch] FAL.ai ${modelConfig.name} failed:`, modelError.message);
+        lastError = modelError;
+
+        // Continue to next model in priority order
+        continue;
+      }
     }
 
-    // Add randomization to prevent cache hits
-    const randomSeed = Math.floor(Math.random() * 1000000);
-    
-    return {
-      stabilityJobId: `fal_${Date.now()}`,
-      model: 'fal-ai/ghiblify',
-      strategy: 'fal_fallback',
-      provider: 'fal', // Explicitly mark as Fal.ai fallback
-      imageUrl,
-      status: 'completed',
-      seed: randomSeed
-    };
+    // All FAL.ai models failed
+    console.error('❌ [NeoGlitch] All FAL.ai models failed:', lastError?.message);
+    throw new Error(`All FAL.ai models failed: ${lastError?.message || 'Unknown error'}`);
+
   } catch (error: any) {
-    console.error('❌ [NeoGlitch] Fal.ai fallback error:', error);
+    console.error('❌ [NeoGlitch] FAL.ai fallback error:', error);
     throw error;
   }
 }
