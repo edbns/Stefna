@@ -12,7 +12,7 @@ import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
-import { checkIdentityPreservation, getIPAThreshold, meetsIPAQualityStandards } from './_lib/ipaUtils';
+import { getIPAThreshold, checkTensorFlowIPA } from './_lib/tensorflowIPA';
 
 // 🚀 SYNCHRONOUS MODE: Process generation immediately like NeoGlitch
 // No more background processing or polling needed
@@ -453,13 +453,13 @@ export const handler: Handler = async (event) => {
         console.log('🔒 [EmotionMask] Starting IPA check for generated image');
         let ipaResult = null;
         let ipaPassed = false;
+        const ipaThreshold = getIPAThreshold('emotion-mask');
         
         try {
-          ipaResult = await checkIdentityPreservation(
+          ipaResult = await checkTensorFlowIPA(
             sourceUrl, // Original image
             finalImageUrl, // Generated image
-            'emotion-mask', // Generation type
-            { enableReplicate: true } // Enable Replicate fallback
+            ipaThreshold
           );
           
           ipaPassed = ipaResult.passed;
@@ -475,7 +475,7 @@ export const handler: Handler = async (event) => {
           if (!ipaPassed) {
             console.warn('⚠️ [EmotionMask] IPA check failed, but continuing with generation:', {
               similarity: ipaResult.similarity,
-              threshold: ipaResult.threshold,
+              threshold: ipaThreshold,
               method: ipaResult.method
             });
           }
@@ -501,7 +501,7 @@ export const handler: Handler = async (event) => {
           ipa: ipaResult ? {
             passed: ipaResult.passed,
             similarity: ipaResult.similarity,
-            threshold: ipaResult.threshold,
+            threshold: ipaThreshold,
             method: ipaResult.method,
             fallbackUsed: ipaResult.fallbackUsed,
             qualityScore: ipaResult.qualityScore,
@@ -548,7 +548,7 @@ export const handler: Handler = async (event) => {
             ipa: ipaResult ? {
               passed: ipaResult.passed,
               similarity: ipaResult.similarity,
-              threshold: ipaResult.threshold,
+              threshold: ipaThreshold,
               method: ipaResult.method,
               fallbackUsed: ipaResult.fallbackUsed,
               qualityScore: ipaResult.qualityScore
