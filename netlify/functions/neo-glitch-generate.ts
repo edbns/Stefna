@@ -1,13 +1,12 @@
 // netlify/functions/neo-glitch-generate.ts
 // Neo Tokyo Glitch Generation Handler
-// 
+//
 // 🎯 GENERATION STRATEGY:
-// 1. PRIMARY: Use Stability.ai Core (SD3) for all NeoGlitch generations
-// 2. FALLBACK: Only use AIML API if Stability.ai succeeds but returns no usable image
-// 3. CREDITS: Charge 1 credit total (either Stability.ai success OR AIML fallback)
-// 
-// ⚠️ IMPORTANT: This is NOT "Stability.ai + AIML fallback" - it's "Stability.ai with AIML emergency fallback"
-// The misleading message has been removed to prevent confusion about billing and generation flow.
+// 1. PRIMARY: Use Stability.ai (3-tier fallback: Ultra → Core → SD3)
+// 2. FALLBACK: Use Fal.ai photo models if Stability.ai fails completely
+// 3. CREDITS: Charge 1 credit total (Stability.ai success OR Fal.ai fallback)
+//
+// ⚠️ IMPORTANT: Clean fallback chain - no more AIML dependency
 import { Handler } from '@netlify/functions';
 import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
@@ -97,95 +96,27 @@ async function checkIdentitySimilarity(sourceUrl: string, generatedUrl: string):
   }
 }
 
-// Helper function to retry generation with lower strength
-async function retryWithLowerStrength(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string): Promise<{ imageUrl: string; aimlJobId?: string } | null> {
+// Helper function to upload Fal.ai results to Cloudinary (replaces AIML function)
+async function uploadFalToCloudinary(imageUrl: string, presetKey: string): Promise<{ url: string; publicId: string }> {
   try {
-    console.log('🔄 [IPA] Retrying with lower strength for better identity preservation...');
-    
-    // Reduce strength by 20% for retry
-    const reducedStrength = 0.4; // 0.5 * 0.8 = 0.4 (Neo Glitch uses 0.5 base)
-    
-    // Call AIML API with lower strength
-    const retryPayload = {
-      model: 'stable-diffusion-v35-large',
-      prompt: prompt,
-      init_image: sourceUrl,
-      image_strength: reducedStrength, // Lower strength for better identity preservation
-      num_images: 1,
-      guidance_scale: 7.5,
-      num_inference_steps: 30,
-      seed: Math.floor(Math.random() * 1000000)
-    };
-    
-    const AIML_API_KEY = process.env.AIML_API_KEY;
-    const AIML_API_URL = process.env.AIML_API_URL;
-    
-    if (!AIML_API_KEY || !AIML_API_URL) {
-      throw new Error('AIML API configuration missing for retry');
-    }
-    
-    const response = await fetch(`${AIML_API_URL}/v1/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${AIML_API_KEY}`,
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(retryPayload)
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`AIML API retry failed: ${response.status} - ${errorText}`);
-    }
-    
-    const result = await response.json();
-    console.log('✅ [IPA] Retry generation successful');
-    
-    // Extract image URL from response
-    let imageUrl = null;
-    if (result.output && result.output.choices && result.output.choices[0]?.image_base64) {
-      // Handle base64 response
-      const cloudinaryUrl = await uploadBase64ToCloudinary(result.output.choices[0].image_base64);
-      imageUrl = cloudinaryUrl;
-    } else if (result.image_url) {
-      imageUrl = result.image_url;
-    } else if (result.images && Array.isArray(result.images) && result.images[0]?.url) {
-      imageUrl = result.images[0].url;
-    }
-    
-    if (!imageUrl) {
-      throw new Error('No image URL in retry response');
-    }
-    
-    return { imageUrl };
-  } catch (error) {
-    console.error('❌ [IPA] Retry with lower strength failed:', error);
-    return null;
-  }
-}
+    console.log('☁️ [NeoGlitch] Uploading Fal.ai result to Cloudinary:', imageUrl.substring(0, 60) + '...');
 
-// Helper function to upload AIML results to Cloudinary
-async function uploadAIMLToCloudinary(imageUrl: string, presetKey: string): Promise<{ url: string; publicId: string }> {
-  try {
-    console.log('☁️ [NeoGlitch] Uploading AIML result to Cloudinary:', imageUrl.substring(0, 60) + '...');
-    
     const result = await cloudinary.uploader.upload(imageUrl, {
       resource_type: 'image',
-      tags: ['neo-glitch', 'aiml-fallback', `preset:${presetKey}`],
+      tags: ['neo-glitch', 'fal-fallback', `preset:${presetKey}`],
       folder: 'neo-glitch',
       transformation: [
         { quality: 'auto:good', fetch_format: 'auto' },
         { width: 1024, height: 1024, crop: 'limit' }
       ]
     });
-    
+
     console.log('✅ [NeoGlitch] Cloudinary upload successful:', {
       publicId: result.public_id,
       url: result.secure_url,
       size: result.bytes
     });
-    
+
     return {
       url: result.secure_url,
       publicId: result.public_id
@@ -833,9 +764,9 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
       console.log('⚠️ [NeoGlitch] SD3 failed, all Stability.ai tiers exhausted', sd3Error.message);
     }
     
-    // 🚨 ALL STABILITY.AI FAILED - Fallback to AIML
-    console.log('❌ [NeoGlitch] All 3 Stability.ai tiers failed, falling back to AIML');
-    throw new Error('All Stability.ai tiers failed - proceeding to AIML fallback');
+    // 🚨 ALL STABILITY.AI FAILED - Fallback to Fal.ai
+    console.log('❌ [NeoGlitch] All 3 Stability.ai tiers failed, falling back to Fal.ai');
+    throw new Error('All Stability.ai tiers failed - proceeding to Fal.ai fallback');
     
   } catch (error: any) {
     console.error('❌ [NeoGlitch] Stability.ai generation failed:', error.message);
@@ -844,7 +775,7 @@ async function startStabilityGeneration(sourceUrl: string, prompt: string, prese
 }
 
 // Credit Deduction Function with token refresh
-async function deductCredits(userId: string, provider: 'stability' | 'aiml', runId: string, userToken: string) {
+async function deductCredits(userId: string, provider: 'stability' | 'fal', runId: string, userToken: string) {
   try {
     // Refresh token before making credit calls
     const freshToken = await getFreshToken(userToken);
@@ -995,96 +926,8 @@ async function finalizeCreditsOnce(userId: string, runId: string, success: boole
   }
 }
 
-// AIML Fallback Function
-async function attemptAIMLFallback(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
-  const AIML_API_URL = process.env.AIML_API_URL || 'https://api.aimlapi.com';
-  const AIML_API_KEY = process.env.AIML_API_KEY;
+// Fal.ai Fallback Function
 
-  if (!AIML_API_KEY) {
-    throw new Error('AIML_API_KEY not configured for fallback');
-  }
-  if (!AIML_API_URL) {
-    throw new Error('AIML_API_URL not configured for fallback');
-  }
-
-  console.log('🔄 [NeoGlitch] Attempting AIML fallback generation');
-  console.log('🌐 [NeoGlitch] Using AIML API endpoint:', AIML_API_URL);
-  
-  try {
-    // Use AIML's working endpoint for image generation (v1 - proven to work)
-    const response = await fetch(`${AIML_API_URL}/v1/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${AIML_API_KEY}`,
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'stable-diffusion-v35-large', // Neo Tokyo Glitch specific model
-        prompt,
-        init_image: sourceUrl, // ✅ Correct v1 parameter for image-to-image
-        image_strength: 0.75, // ✅ Correct parameter name for v1
-        num_images: 1, // ✅ Correct parameter name for v1
-        guidance_scale: 7.5, // ✅ Add guidance scale for better control
-        num_inference_steps: 30, // ✅ Add inference steps for quality
-        seed: Math.floor(Math.random() * 1000000) // Add randomization to prevent cache hits
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`AIML API failed (${response.status}): ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.log('✅ [NeoGlitch] AIML fallback generation successful');
-    
-    // AIML v1 API response format for stable-diffusion-v35-large
-    let imageUrl = null;
-    
-    // Handle v1 response format: result.output.choices[0].image_base64
-    if (result.output && result.output.choices && result.output.choices[0]?.image_base64) {
-      console.log('✅ [NeoGlitch] Found v1 response format with base64 image');
-      try {
-        // Convert base64 to Cloudinary URL
-        const cloudinaryUrl = await uploadBase64ToCloudinary(result.output.choices[0].image_base64);
-        imageUrl = cloudinaryUrl;
-        console.log('☁️ [NeoGlitch] Image successfully uploaded to Cloudinary:', cloudinaryUrl);
-      } catch (uploadError: any) {
-        console.error('❌ [NeoGlitch] Cloudinary upload failed:', uploadError);
-        throw new Error(`Failed to upload generated image: ${uploadError.message}`);
-      }
-    } else if (result.image_url) {
-      // Fallback to direct URL if present
-      imageUrl = result.image_url;
-    } else if (result.images && Array.isArray(result.images) && result.images[0]?.url) {
-      // Fallback to images array if present
-      imageUrl = result.images[0].url;
-    }
-    
-    if (!imageUrl) {
-      throw new Error('AIML fallback succeeded but no image URL found in response');
-    }
-
-    // Add randomization to prevent cache hits
-    const randomSeed = Math.floor(Math.random() * 1000000);
-    
-    // REMOVED: Individual credit deduction - will be handled at the end
-    
-    return {
-      stabilityJobId: `aiml_${Date.now()}`,
-      model: 'stable-diffusion-v35-large', // Neo Tokyo Glitch specific model
-      strategy: 'aiml_fallback',
-      provider: 'aiml', // Explicitly mark as AIML fallback
-      imageUrl,
-      status: 'completed',
-      seed: randomSeed
-    };
-  } catch (error: any) {
-    console.error('❌ [NeoGlitch] AIML fallback error:', error);
-    throw error;
-  }
-}
 
 // FAL.ai Model configurations for semantic fallback
 const PHOTO_MODELS = [
@@ -1373,15 +1216,15 @@ async function attemptStabilityGeneration(
 
     console.error(`❌ [NeoGlitch] Stability.ai ${modelType.toUpperCase()} generation failed:`, stabilityError.message);
   
-    // 🚨 STABILITY.AI FAILED - Now fallback to AIML (this prevents double billing)
-    console.log('🔄 [NeoGlitch] Stability.ai failed - falling back to AIML API');
-    console.warn(`🧭 Generation Path: Stability.ai failed → Fallback to AIML`);
+    // 🚨 STABILITY.AI FAILED - Now fallback to Fal.ai (this prevents double billing)
+    console.log('🔄 [NeoGlitch] Stability.ai failed - falling back to Fal.ai');
+    console.warn(`🧭 Generation Path: Stability.ai failed → Fal.ai fallback`);
   
     try {
-      return await attemptAIMLFallback(sourceUrl, prompt, presetKey, userId, runId);
+      return await attemptFalFallback(sourceUrl, prompt, presetKey, userId, runId);
     } catch (fallbackError: any) {
-      console.error('❌ [NeoGlitch] AIML fallback also failed:', fallbackError);
-      throw new Error(`Stability.ai failed, and AIML fallback failed: ${fallbackError.message}`);
+      console.error('❌ [NeoGlitch] Fal.ai fallback also failed:', fallbackError);
+      throw new Error(`Stability.ai failed, and Fal.ai fallback failed: ${fallbackError.message}`);
     } finally {
       // Fallback cleanup if needed
     }
