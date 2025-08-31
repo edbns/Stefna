@@ -200,13 +200,37 @@ async function uploadAIMLToCloudinary(imageUrl: string, presetKey: string): Prom
 import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
 
 export const handler: Handler = async (event) => {
-  console.log('🚀 [NeoGlitch] Handler started:', {
+  console.log('🚀 [NeoGlitch] Function started at:', new Date().toISOString());
+  console.log('📊 Request details:', {
     method: event.httpMethod,
+    path: event.path,
     hasBody: !!event.body,
+    hasHeaders: !!event.headers,
     timestamp: new Date().toISOString()
   });
 
-  if (event.httpMethod === 'OPTIONS') {
+  try {
+    // Parse body early to catch JSON parsing errors
+    let body = {};
+    if (event.body) {
+      try {
+        body = JSON.parse(event.body);
+        console.log('📦 Parsed payload successfully');
+      } catch (parseError) {
+        console.error('❌ JSON parsing failed:', parseError);
+        return {
+          statusCode: 400,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+          },
+          body: JSON.stringify({ error: 'Invalid JSON in request body' })
+        };
+      }
+    }
+
+    if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
       headers: {
@@ -1231,8 +1255,26 @@ async function attemptStabilityGeneration(
   console.log(`🔧 [NeoGlitch] Using preset config:`, config);
 
   try {
-    // 🚀 NEW: Use the modular Stability.ai generator
-    const { generateImageWithStability } = await import('../src/lib/stability-generator.js');
+    console.log('📦 [NeoGlitch] Importing stability-generator module...');
+
+    // 🚀 NEW: Use the modular Stability.ai generator with timeout protection
+    const controller = new AbortController();
+    const importTimeout = setTimeout(() => {
+      console.error('⏱ [NeoGlitch] Import timeout - aborting');
+      controller.abort();
+    }, 10000); // 10s timeout for import
+
+    let generateImageWithStability;
+    try {
+      const module = await import('../src/lib/stability-generator.js');
+      generateImageWithStability = module.generateImageWithStability;
+      console.log('✅ [NeoGlitch] Successfully imported stability-generator');
+    } catch (importError: any) {
+      console.error('❌ [NeoGlitch] Failed to import stability-generator:', importError);
+      throw new Error(`Module import failed: ${importError.message}`);
+    } finally {
+      clearTimeout(importTimeout);
+    }
     
     // 🔍 DETAILED LOGGING: Log the request details for Stability.ai support
     const requestDetails = {
@@ -1251,15 +1293,35 @@ async function attemptStabilityGeneration(
     console.log('🔍 [Stability.ai Support] API Key present:', !!apiToken);
     console.log('🔍 [Stability.ai Support] Source image size check:', sourceUrl);
     
-    const result = await generateImageWithStability({
-      prompt: `${prompt}, preserve facial identity, maintain original face structure`,
-      sourceUrl,
-      modelTier: modelType,
-      strength: config.strength,
-      steps: config.steps,
-      cfgScale: config.guidance_scale,
-      stabilityApiKey: apiToken
-    });
+    // Wrap API call with timeout protection
+    const apiController = new AbortController();
+    const apiTimeout = setTimeout(() => {
+      console.error('⏱ [NeoGlitch] API call timeout - aborting');
+      apiController.abort();
+    }, 20000); // 20s timeout for API call
+
+    let result;
+    try {
+      console.log('🌐 [NeoGlitch] Making Stability.ai API call...');
+      result = await generateImageWithStability({
+        prompt: `${prompt}, preserve facial identity, maintain original face structure`,
+        sourceUrl,
+        modelTier: modelType,
+        strength: config.strength,
+        steps: config.steps,
+        cfgScale: config.guidance_scale,
+        stabilityApiKey: apiToken
+      });
+      console.log('✅ [NeoGlitch] Stability.ai API call completed');
+    } catch (apiError: any) {
+      if (apiError.name === 'AbortError') {
+        console.error('⏱ [NeoGlitch] API call timed out');
+        throw new Error('Stability.ai API call timed out');
+      }
+      throw apiError;
+    } finally {
+      clearTimeout(apiTimeout);
+    }
 
     // 🔍 DETAILED LOGGING: Log the successful response for Stability.ai support
     console.log('🔍 [Stability.ai Support] FULL RESPONSE DETAILS:', {

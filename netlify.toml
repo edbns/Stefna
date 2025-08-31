@@ -29,6 +29,9 @@
 # Function optimization
 [functions]
   node_bundler = "esbuild"
+
+[functions.neo-glitch-generate]
+  timeout = 26
   # Keep native / build-time-only deps out of the bundle:
   external_node_modules = [
     "@tensorflow/tfjs-node",
