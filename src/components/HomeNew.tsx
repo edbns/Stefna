@@ -208,7 +208,7 @@ const HomeNew: React.FC = () => {
 
   // Stable ref for selectedPreset to prevent re-render issues during generation
   const selectedPresetRef = useRef<string | null>(null)
-  const genIdRef = useRef(0) // increments per job to prevent race conditions
+  const genIdRef = useRef<string>('') // tracks current generation job id
   const [currentRunId, setCurrentRunId] = useState<string | null>(null)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   
@@ -229,21 +229,17 @@ const HomeNew: React.FC = () => {
   
   // Generation lifecycle functions
   function startGeneration() {
-    // Generate a unique ID using timestamp + increment to prevent duplicates
-    const timestamp = Date.now();
-    const increment = genIdRef.current + 1;
-    genIdRef.current = increment;
-    
-    const uniqueId = `${timestamp}_${increment}`;
-    console.log('🆔 [Generation] Generated unique ID:', uniqueId, { timestamp, increment });
-    
+    // Generate a unique string ID using timestamp + random suffix
+    const uniqueId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    genIdRef.current = uniqueId
+    console.log('🆔 [Generation] Generated unique ID:', uniqueId)
     setIsGenerating(true)
     return uniqueId
   }
 
   function endGeneration(id: string | number) {
     // only end if this is the latest job
-    if (id === genIdRef.current) {
+    if (String(id) === genIdRef.current) {
       setIsGenerating(false)
     }
   }
