@@ -1,6 +1,6 @@
 // netlify/functions/neo-glitch-generate.ts
 // Neo Tokyo Glitch Generation Handler
-//
+// 
 // 🎯 GENERATION STRATEGY:
 // 1. PRIMARY: Use Stability.ai (3-tier fallback: Ultra → Core → SD3)
 // 2. FALLBACK: Use Fal.ai photo models if Stability.ai fails completely
@@ -100,7 +100,7 @@ async function checkIdentitySimilarity(sourceUrl: string, generatedUrl: string):
 async function uploadFalToCloudinary(imageUrl: string, presetKey: string): Promise<{ url: string; publicId: string }> {
   try {
     console.log('☁️ [NeoGlitch] Uploading Fal.ai result to Cloudinary:', imageUrl.substring(0, 60) + '...');
-
+    
     const result = await cloudinary.uploader.upload(imageUrl, {
       resource_type: 'image',
       tags: ['neo-glitch', 'fal-fallback', `preset:${presetKey}`],
@@ -110,13 +110,13 @@ async function uploadFalToCloudinary(imageUrl: string, presetKey: string): Promi
         { width: 1024, height: 1024, crop: 'limit' }
       ]
     });
-
+    
     console.log('✅ [NeoGlitch] Cloudinary upload successful:', {
       publicId: result.public_id,
       url: result.secure_url,
       size: result.bytes
     });
-
+    
     return {
       url: result.secure_url,
       publicId: result.public_id
@@ -161,13 +161,13 @@ export const handler: Handler = async (event) => {
       }
     }
 
-    if (event.httpMethod === 'OPTIONS') {
+  if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      headers: { 
+        'Access-Control-Allow-Origin': '*', 
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
       },
       body: ''
     };
@@ -176,10 +176,10 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST' && event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      headers: { 
+        'Access-Control-Allow-Origin': '*', 
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
       },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
@@ -191,10 +191,10 @@ export const handler: Handler = async (event) => {
     if (!jobId) {
       return {
         statusCode: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        headers: { 
+          'Access-Control-Allow-Origin': '*', 
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
         },
         body: JSON.stringify({ error: 'jobId parameter required' })
       };
@@ -221,10 +221,10 @@ export const handler: Handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        headers: { 
+          'Access-Control-Allow-Origin': '*', 
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
         },
         body: JSON.stringify(status)
       };
@@ -232,10 +232,10 @@ export const handler: Handler = async (event) => {
       console.error('❌ [NeoGlitch] Status check failed:', error);
       return {
         statusCode: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        headers: { 
+          'Access-Control-Allow-Origin': '*', 
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
         },
         body: JSON.stringify({ error: 'Status check failed' })
       };
@@ -399,7 +399,7 @@ export const handler: Handler = async (event) => {
       console.log('✅ [NeoGlitch] processGenerationAsync completed:', !!generationResult);
     } catch (error) {
       console.error('❌ [NeoGlitch] processGenerationAsync failed:', error);
-      // Update status to failed in database
+        // Update status to failed in database
       await q(`UPDATE neo_glitch_media SET status = 'failed' WHERE id = $1`, [initialRecord.id]);
       throw error;
     }
@@ -471,7 +471,7 @@ export const handler: Handler = async (event) => {
       })
     };
   }
-};
+}
 
 // 🔄 ASYNC GENERATION PROCESSOR
 async function processGenerationAsync(
@@ -963,11 +963,11 @@ async function attemptFalFallback(sourceUrl: string, prompt: string, presetKey: 
   }
 
   console.log('🔄 [NeoGlitch] Attempting Fal.ai fallback generation with semantic models');
-
+  
   try {
     // Import fal.ai client
     const { fal } = await import('@fal-ai/client');
-
+    
     // Configure fal.ai client
     fal.config({
       credentials: FAL_KEY
@@ -981,45 +981,45 @@ async function attemptFalFallback(sourceUrl: string, prompt: string, presetKey: 
         console.log(`🖼️ [NeoGlitch] Trying FAL.ai model: ${modelConfig.name} (${modelConfig.model})`);
 
         const result = await fal.subscribe(modelConfig.model, {
-          input: {
-            image_url: sourceUrl,
+      input: {
+        image_url: sourceUrl,
             prompt: `${prompt}, cyberpunk, neon, glitch effects, maintain face identity`,
             image_strength: 0.75, // Lower strength for better identity preservation
-            num_images: 1,
-            guidance_scale: 7.5,
-            num_inference_steps: 30,
-            seed: Math.floor(Math.random() * 1000000)
-          },
-          logs: true
-        });
+        num_images: 1,
+        guidance_scale: 7.5,
+        num_inference_steps: 30,
+        seed: Math.floor(Math.random() * 1000000)
+      },
+      logs: true
+    });
 
         console.log(`✅ [NeoGlitch] FAL.ai ${modelConfig.name} generation successful!`);
-
-        // Extract image URL from fal.ai result
-        let imageUrl = null;
-
-        if (result.data?.image?.url) {
-          imageUrl = result.data.image.url;
-        } else if (result.data?.image) {
-          imageUrl = result.data.image;
-        }
-
-        if (!imageUrl) {
+    
+    // Extract image URL from fal.ai result
+    let imageUrl = null;
+    
+    if (result.data?.image?.url) {
+      imageUrl = result.data.image.url;
+    } else if (result.data?.image) {
+      imageUrl = result.data.image;
+    }
+    
+    if (!imageUrl) {
           throw new Error('FAL.ai succeeded but no image URL found in response');
-        }
+    }
 
-        // Add randomization to prevent cache hits
-        const randomSeed = Math.floor(Math.random() * 1000000);
-
-        return {
-          stabilityJobId: `fal_${Date.now()}`,
+    // Add randomization to prevent cache hits
+    const randomSeed = Math.floor(Math.random() * 1000000);
+    
+    return {
+      stabilityJobId: `fal_${Date.now()}`,
           model: modelConfig.model,
-          strategy: 'fal_fallback',
+      strategy: 'fal_fallback',
           provider: 'fal',
-          imageUrl,
-          status: 'completed',
-          seed: randomSeed
-        };
+      imageUrl,
+      status: 'completed',
+      seed: randomSeed
+    };
 
       } catch (modelError: any) {
         console.warn(`⚠️ [NeoGlitch] FAL.ai ${modelConfig.name} failed:`, modelError.message);
@@ -1150,14 +1150,14 @@ async function attemptStabilityGeneration(
     try {
       console.log('🌐 [NeoGlitch] Making Stability.ai API call...');
       result = await generateImageWithStability({
-        prompt: `${prompt}, preserve facial identity, maintain original face structure`,
-        sourceUrl,
-        modelTier: modelType,
-        strength: config.strength,
-        steps: config.steps,
-        cfgScale: config.guidance_scale,
-        stabilityApiKey: apiToken
-      });
+      prompt: `${prompt}, preserve facial identity, maintain original face structure`,
+      sourceUrl,
+      modelTier: modelType,
+      strength: config.strength,
+      steps: config.steps,
+      cfgScale: config.guidance_scale,
+      stabilityApiKey: apiToken
+    });
       console.log('✅ [NeoGlitch] Stability.ai API call completed');
     } catch (apiError: any) {
       if (apiError.name === 'AbortError') {
@@ -1195,7 +1195,7 @@ async function attemptStabilityGeneration(
       imageUrl: cloudinaryUrl,
       status: 'completed'
     };
-
+  
   } catch (error: any) {
     console.error('❌ [NeoGlitch] Error in Stability.ai generation attempt:', error);
     throw error;
