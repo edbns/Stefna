@@ -28,8 +28,15 @@
 
 # Function optimization
 [functions]
-  # Using default bundler instead of esbuild to avoid dependency issues
-  # No need for Prisma includes if you don't import it at runtime
+  node_bundler = "esbuild"
+  # Keep native / build-time-only deps out of the bundle:
+  external_node_modules = [
+    "@tensorflow/tfjs-node",
+    "@mapbox/node-pre-gyp", 
+    "mock-aws-s3",
+    "aws-sdk",
+    "nock"
+  ]
 
 # Function-specific configurations
 [functions."aimlApi"]
