@@ -94,7 +94,7 @@ export const handler: Handler = async (event) => {
 
     try {
       const status = await qOne(`
-        SELECT id, status, preset, created_at, updated_at
+        SELECT id, status, preset, fal_job_id, created_at, updated_at
         FROM story
         WHERE id = $1
       `, [storyId]);
@@ -113,7 +113,7 @@ export const handler: Handler = async (event) => {
 
       // Get story photos with video status
       const photos = await q(`
-        SELECT id, order_index, photo_url, video_url, status, created_at
+        SELECT id, order_index, photo_url, video_url, status, fal_job_id, created_at
         FROM story_photo
         WHERE story_id = $1
         ORDER BY order_index
@@ -216,17 +216,43 @@ export const handler: Handler = async (event) => {
       try {
         console.log(`🎬 [StoryTime] Generating video for photo ${photo.order_index}/${photos.length}`);
         
+        // Generate unique fal job ID for this photo
+        const falJobId = uuidv4();
+        
+        // Update story_photo with fal_job_id and processing status
+        await q(`
+          UPDATE story_photo
+          SET fal_job_id = $1, status = 'processing', updated_at = NOW()
+          WHERE id = $2
+        `, [falJobId, photo.id]);
+        
+        // 🎭 APPLY IPA (Identity Preservation Algorithm) if needed
+        let processedImageUrl = photo.photo_url;
+        const shouldApplyIPA = await checkIfIPANeeded(photo.photo_url, story.preset);
+        
+        if (shouldApplyIPA) {
+          console.log(`🎭 [StoryTime] Applying IPA to photo ${photo.order_index}`);
+          try {
+            processedImageUrl = await applyIPA(photo.photo_url, story.preset);
+            console.log(`✅ [StoryTime] IPA applied successfully to photo ${photo.order_index}`);
+          } catch (ipaError) {
+            console.warn(`⚠️ [StoryTime] IPA failed for photo ${photo.order_index}, using original:`, ipaError);
+            // Continue with original image if IPA fails
+          }
+        }
+        
         const videoResult = await generateVideoFromImage(
-          photo.photo_url,
+          processedImageUrl, // Use processed image if IPA was applied
           story.preset,
           photo.order_index,
-          photos.length
+          photos.length,
+          falJobId
         );
 
         // Upload video to Cloudinary
         const videoUrl = await uploadVideoToCloudinary(videoResult.videoUrl, `story_${storyId}_photo_${photo.order_index}`);
 
-        // Update story_photo with video URL
+        // Update story_photo with video URL and completed status
         await q(`
           UPDATE story_photo
           SET video_url = $1, status = 'completed', updated_at = NOW()
@@ -242,7 +268,7 @@ export const handler: Handler = async (event) => {
 
         console.log(`✅ [StoryTime] Video generated for photo ${photo.order_index}:`, videoUrl);
 
-      } catch (error) {
+      } catch (error: any) {
         console.error(`❌ [StoryTime] Video generation failed for photo ${photo.order_index}:`, error);
         lastError = error;
 
@@ -324,8 +350,8 @@ export const handler: Handler = async (event) => {
 };
 
 // Generate video from image using fal.ai
-async function generateVideoFromImage(imageUrl: string, preset: string, photoIndex: number, totalPhotos: number) {
-  console.log(`🎬 [StoryTime] Starting video generation for photo ${photoIndex}/${totalPhotos}`);
+async function generateVideoFromImage(imageUrl: string, preset: string, photoIndex: number, totalPhotos: number, falJobId: string) {
+  console.log(`🎬 [StoryTime] Starting video generation for photo ${photoIndex}/${totalPhotos} with job ID: ${falJobId}`);
 
   let lastError: Error | null = null;
   let attemptCount = 0;
@@ -449,4 +475,53 @@ async function uploadVideoToCloudinary(videoUrl: string, publicId: string): Prom
     console.error('❌ [StoryTime] Video upload failed:', error);
     throw error;
   }
+}
+
+// 🎭 IPA (Identity Preservation Algorithm) Functions for Story Time
+
+// Check if IPA should be applied based on preset
+async function checkIfIPANeeded(imageUrl: string, preset: string): Promise<boolean> {
+  // Apply IPA for presets that benefit from identity preservation
+  const ipaPresets = ['romance', 'adventure', 'travel'];
+  return ipaPresets.includes(preset);
+}
+
+// Apply IPA to image using fal.ai
+async function applyIPA(imageUrl: string, preset: string): Promise<string> {
+  console.log(`🎭 [StoryTime] Applying IPA for ${preset} preset`);
+  
+  try {
+    // Use fal.ai for IPA processing (similar to other generation types)
+    const result = await fal.subscribe('fal-ai/stable-diffusion-xl', {
+      input: {
+        image_url: imageUrl,
+        prompt: getIPAPrompt(preset),
+        strength: 0.7, // Moderate strength to preserve identity
+        guidance_scale: 7.5,
+        num_inference_steps: 20
+      },
+      logs: true
+    });
+
+    if (result.data?.image?.url) {
+      console.log('✅ [StoryTime] IPA applied successfully');
+      return result.data.image.url;
+    } else {
+      throw new Error('IPA processing returned no image URL');
+    }
+  } catch (error) {
+    console.error('❌ [StoryTime] IPA processing failed:', error);
+    throw error;
+  }
+}
+
+// Get IPA-specific prompt based on preset
+function getIPAPrompt(preset: string): string {
+  const ipaPrompts = {
+    'romance': 'romantic scene, soft lighting, intimate moment, preserve facial features, cinematic quality',
+    'adventure': 'epic adventure scene, dramatic lighting, preserve character identity, cinematic composition',
+    'travel': 'travel documentary style, natural lighting, preserve person identity, wanderlust feeling'
+  };
+  
+  return ipaPrompts[preset as keyof typeof ipaPrompts] || 'cinematic scene, preserve identity, professional quality';
 }

@@ -5,6 +5,7 @@ import type { Handler } from '@netlify/functions';
 import { q, qOne, qCount } from './_db';
 import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
+import { v4 as uuidv4 } from 'uuid';
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -69,10 +70,10 @@ export const handler: Handler = async (event) => {
 
     // Create the story
     const story = await qOne(`
-      INSERT INTO story (user_id, title, description, preset, status, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      INSERT INTO story (user_id, title, description, preset, status, fal_job_id, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
       RETURNING id, title, status, created_at
-    `, [userId, title || `My ${preset === 'auto' ? 'Adventure' : preset} Story`, description, preset, 'pending']);
+    `, [userId, title || `My ${preset === 'auto' ? 'Adventure' : preset} Story`, description, preset, 'pending', uuidv4()]);
 
     // Create photo records
     const photoPromises = photos.map((photo: any, index: number) => 
