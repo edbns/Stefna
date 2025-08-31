@@ -118,12 +118,15 @@ export const handler: Handler = async (event) => {
       presetKey,
       runId = (body.runId || uuidv4()).toString(),
       sourceAssetId,
-      sourceUrl = sourceAssetId,
+      sourceUrl,
       generationMeta = {}
     } = body;
 
+    // Handle sourceUrl field (frontend sends it directly)
+    const finalSourceUrl = sourceUrl || sourceAssetId;
+
     // Validation
-    const requiredFields = { prompt, userId, presetKey, runId, sourceUrl };
+    const requiredFields = { prompt, userId, presetKey, runId, sourceUrl: finalSourceUrl };
     const missingFields = Object.entries(requiredFields)
       .filter(([key, value]) => !value)
       .map(([key]) => key);
@@ -144,12 +147,12 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    console.log('✅ [GhibliReaction] Normalized fields:', { 
-      prompt: prompt.substring(0, 100) + '...', 
+    console.log('✅ [GhibliReaction] Normalized fields:', {
+      prompt: prompt.substring(0, 100) + '...',
       runId: runId,
-      sourceUrl, 
-      presetKey, 
-      userId 
+      sourceUrl: finalSourceUrl,
+      presetKey,
+      userId
     });
 
     console.log('🔍 [GhibliReaction] Checking for existing run with runId:', runId);
@@ -160,6 +163,23 @@ export const handler: Handler = async (event) => {
       FROM ghibli_reaction_media
       WHERE run_id = $1
     `, [runId]);
+
+    // Validate image URL
+    if (!finalSourceUrl.startsWith('http')) {
+      return {
+        statusCode: 422,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        },
+        body: JSON.stringify({
+          error: 'INVALID_IMAGE_URL',
+          message: 'Source URL must be a valid HTTP(S) URL',
+          received: finalSourceUrl
+        })
+      };
+    }
 
     if (existingRun) {
       console.log('🔄 [GhibliReaction] Found existing run:', {
@@ -211,22 +231,7 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Validate image URL
-    if (!sourceUrl.startsWith('http')) {
-      return {
-        statusCode: 422,
-        headers: { 
-          'Access-Control-Allow-Origin': '*', 
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-          'Access-Control-Allow-Methods': 'POST, OPTIONS' 
-        },
-        body: JSON.stringify({
-          error: 'INVALID_IMAGE_URL',
-          message: 'Source URL must be a valid HTTP(S) URL',
-          received: sourceUrl
-        })
-      };
-    }
+
 
     // Reserve credits first
     console.log('💰 [GhibliReaction] Reserving 2 credits for generation...');
@@ -271,13 +276,13 @@ export const handler: Handler = async (event) => {
            user_id, run_id, preset, prompt, source_url, status, fal_job_id, created_at
          ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
          RETURNING id
-       `, [userId, runId, presetKey, prompt, sourceUrl, 'processing', null]);
+       `, [userId, runId, presetKey, prompt, finalSourceUrl, 'processing', null]);
 
     console.log('✅ [GhibliReaction] Database record created:', initialRecord.id);
 
     try {
       // Start Fal.ai generation via centralized function
-      const generationResult = await startFalGeneration(sourceUrl, prompt, presetKey, userId, runId);
+      const generationResult = await startFalGeneration(finalSourceUrl, prompt, presetKey, userId, runId);
       
       if (generationResult && generationResult.imageUrl) {
         console.log('🎉 [GhibliReaction] Generation successful, processing result...');
@@ -357,7 +362,7 @@ export const handler: Handler = async (event) => {
         UPDATE ghibli_reaction_media
         SET status = 'failed', image_url = $1, updated_at = NOW()
         WHERE id = $2
-      `, [sourceUrl, initialRecord.id]);
+      `, [finalSourceUrl, initialRecord.id]);
       
       // Refund credits since generation failed
       await fetch(`${process.env.URL}/.netlify/functions/credits-finalize`, {
@@ -421,11 +426,11 @@ export const handler: Handler = async (event) => {
 };
 
 // Fal.ai API Generation Function - calls the centralized fal-generate function
-async function startFalGeneration(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
+async function startFalGeneration(finalSourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
   console.log('🚀 [GhibliReaction] Starting Fal.ai generation via centralized function:', {
     presetKey,
     promptLength: prompt.length,
-    hasSource: !!sourceUrl
+    hasSource: !!finalSourceUrl
   });
 
   try {
@@ -436,7 +441,7 @@ async function startFalGeneration(sourceUrl: string, prompt: string, presetKey: 
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        sourceUrl,
+        sourceUrl: finalSourceUrl,
         prompt,
         generationType: 'ghibli_reaction',
         userId,
