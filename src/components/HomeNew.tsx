@@ -3020,14 +3020,34 @@ const HomeNew: React.FC = () => {
           } else {
             // New system failed - no fallback to old system
             console.error('❌ [SimpleGeneration] Simplified service failed:', generationResult.error);
-            throw new Error(generationResult.error || 'Generation failed');
+
+            // Show error toast immediately for failed generations
+            const errorMessage = generationResult.error || 'Generation failed';
+            notifyError({
+              title: 'Generation failed',
+              message: errorMessage
+            });
+
+            throw new Error(errorMessage);
           }
         } catch (error) {
           clearTimeout(timeoutId); // Clear timeout on error
           if (error instanceof Error && error.name === 'AbortError') {
             console.warn('⚠️ Request aborted due to timeout');
-            throw new Error('Request timed out. Please try again with a smaller image or different prompt.');
+            const timeoutError = new Error('Request timed out. Please try again with a smaller image or different prompt.');
+            notifyError({
+              title: 'Taking too long',
+              message: 'Please try again'
+            });
+            throw timeoutError;
           }
+
+          // Show error toast for other errors too
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          notifyError({
+            title: 'Something went wrong',
+            message: 'Please try again'
+          });
           throw error; // Re-throw other errors
         }
 
