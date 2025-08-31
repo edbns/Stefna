@@ -102,6 +102,32 @@ export const handler: Handler = async (event) => {
 
     console.log(`📖 [Story Time] Created story ${story.id} with ${storyPhotos.length} photos, preset: ${finalPreset}`);
 
+    // 🎬 AUTOMATICALLY START VIDEO GENERATION
+    try {
+      console.log('🎬 [Story Time] Starting automatic video generation...');
+      
+      // Trigger video generation in background (don't wait for completion)
+      fetch(`${process.env.URL}/.netlify/functions/story-time-generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': event.headers.authorization || ''
+        },
+        body: JSON.stringify({
+          storyId: story.id,
+          userId: userId
+        })
+      }).catch(error => {
+        console.error('❌ [Story Time] Failed to trigger video generation:', error);
+        // Don't fail the story creation if video generation fails
+      });
+
+      console.log('🎬 [Story Time] Video generation triggered successfully');
+    } catch (error) {
+      console.error('❌ [Story Time] Error triggering video generation:', error);
+      // Don't fail the story creation if video generation fails
+    }
+
     return json({
       ok: true,
       story: {
