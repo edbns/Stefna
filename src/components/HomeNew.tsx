@@ -17,6 +17,7 @@ import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
 import { usePresetRunner } from '../hooks/usePresetRunner'
 import { IdentityPreservationService } from '../services/identityPreservationService'
+import { runGeneration } from '../services/generationPipeline'
 import { useSelectedPreset } from '../stores/selectedPreset'
 import { HiddenUploader } from './HiddenUploader'
 
@@ -222,7 +223,7 @@ const HomeNew: React.FC = () => {
   
   // Media upload agreement state
   const [showUploadAgreement, setShowUploadAgreement] = useState(false)
-  const [userHasAgreed, setUserHasAgreed] = useState(false)
+  const [userHasAgreed, setUserHasAgreed] = useState<boolean | null>(null) // null = loading, true/false = loaded
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   
   // Composer clearing function - defined early to avoid reference errors
@@ -976,6 +977,14 @@ const HomeNew: React.FC = () => {
     console.log('🔍 User agreement status:', { userHasAgreed })
 
     // Check if user has already agreed to the upload agreement
+    // If still loading user agreement status, show agreement to be safe
+    if (userHasAgreed === null) {
+      console.log('⏳ User agreement status still loading, showing agreement popup')
+      setPendingFile(file)
+      setShowUploadAgreement(true)
+      return
+    }
+    
     if (userHasAgreed) {
       // User has agreed, proceed directly to upload
       console.log('✅ User has agreed, proceeding with direct upload')
@@ -1564,8 +1573,14 @@ const HomeNew: React.FC = () => {
               if (response.ok) {
                 const data = await response.json()
                 const settings = data.settings
-                setUserHasAgreed(settings.media_upload_agreed || false)
-                console.log('✅ User agreement status loaded from database:', settings.media_upload_agreed)
+                console.log('🔍 [User Settings] Raw response:', data)
+                console.log('🔍 [User Settings] Settings object:', settings)
+                const hasAgreed = settings?.media_upload_agreed || false
+                setUserHasAgreed(hasAgreed)
+                console.log('✅ User agreement status loaded from database:', hasAgreed)
+              } else {
+                console.error('❌ [User Settings] Failed to load:', response.status, response.statusText)
+                setUserHasAgreed(false)
               }
             } catch (error) {
               console.error('Failed to load user agreement status:', error)
@@ -2284,7 +2299,7 @@ const HomeNew: React.FC = () => {
               width: 1024, // Default dimensions
               height: 1024,
               tokensUsed: 1, // Default token usage
-              isPublic: true, // Share to feed by default
+              isPublic: profileData.shareToFeed,
               tags: [],
               metadata: {
                 quality: 'high' as const,
@@ -2503,101 +2518,52 @@ const HomeNew: React.FC = () => {
         throw new Error('Direct start-gen calls are deprecated - use GenerationPipeline');
       }
 
-      // 🎭 NEO TOKYO GLITCH: Follow Ghibli's exact pattern but with Stability.ai backend
+      // 🎭 NEO TOKYO GLITCH: Use unified pipeline
       if ((kind as any) === 'neotokyoglitch') {
-        console.log('🚀 [NeoGlitch] Starting generation following Ghibli pattern');
+        console.log('🚀 [NeoGlitch] Using unified generation pipeline');
         
         try {
-          // Call Neo Tokyo Glitch backend directly (like Ghibli calls AIML API)
-          
-                  // Call our new async neo-glitch-generate function
-        const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              prompt: effectivePrompt,
-              presetKey: generationMeta.presetKey,
-              sourceUrl: sourceUrl
-            })
+          // Use unified pipeline for Neo Tokyo Glitch
+          const result = await runGeneration({
+            type: 'neo-glitch',
+            prompt: effectivePrompt,
+            presetKey: generationMeta.presetKey,
+            sourceAssetId: sourceUrl || '',
+            userId: authService.getCurrentUser()?.id || '',
+            runId: generateRunId(),
+            meta: generationMeta
           });
           
-          if (!neoGlitchResponse.ok) {
-            throw new Error(`Neo Tokyo Glitch generation failed: ${neoGlitchResponse.status}`);
+          if (!result.success) {
+            throw new Error(`Neo Tokyo Glitch generation failed: ${result.error}`);
           }
           
-          const neoGlitchBody = await neoGlitchResponse.json();
-          console.log('✅ [NeoGlitch] Backend response:', neoGlitchBody);
+          console.log('✅ [NeoGlitch] Unified pipeline result:', result);
           
-          // Handle new async job system response
-          if (neoGlitchBody.ok && neoGlitchBody.jobId) {
-            console.log('🔄 [NeoGlitch] Job started successfully, job ID:', neoGlitchBody.jobId);
+          // Handle completed generation
+          if (result.status === 'completed' && result.imageUrl) {
+            console.log('🎉 [NeoGlitch] Generation completed successfully!');
             
-            // Show "Added to queue" toast
-            notifyQueue({ 
-              title: 'Add to queue', 
-              message: 'We\'ll start processing it shortly.'
-            });
-            
-            // Start polling for job completion
-            pollForJobCompletion(neoGlitchBody.jobId, effectivePrompt, generationMeta);
-            
-            return;
-          }
-          
-          // Handle immediate completion (Stability.ai returns immediately - like Ghibli)
-          if (neoGlitchBody.status === 'completed' && neoGlitchBody.imageUrl) {
-            console.log('🎉 [NeoGlitch] Generation completed immediately with Stability.ai!');
-            
-            // Save the generated media to user profile (following Ghibli pattern exactly)
-            try {
-              const mediaToSave = {
-                userId: authService.getCurrentUser()?.id || '',
-                type: 'photo' as const,
-                url: neoGlitchBody.imageUrl,
-                thumbnailUrl: neoGlitchBody.imageUrl,
-                prompt: effectivePrompt,
-                aspectRatio: 1,
-                width: 1024,
-                height: 1024,
-                tokensUsed: 1,
-                isPublic: true,
-                tags: [],
-                metadata: {
-                  quality: 'high' as const,
-                  generationTime: Date.now(),
-                  modelVersion: 'stability-ai',
-                  presetId: generationMeta?.neoTokyoGlitchPresetId,
-                  mode: 'i2i' as const,
-                  group: null
-                }
-              };
-              
-              // 🚨 CRITICAL FIX: Don't save here - backend already saved it!
-              console.log('✅ [NeoGlitch] Backend already saved media, skipping duplicate save');
-              
-              // Refresh the public feed to show new media (following Ghibli pattern)
-              loadFeed();
-              
-              // Show unified toast with thumbnail (following Ghibli pattern exactly)
-              notifyReady({ 
-                title: 'Your media is ready', 
-                message: 'Tap to open',
-                thumbUrl: neoGlitchBody.imageUrl,
-                onClickThumb: () => {
-                  // Open the media viewer to show the generated image (following Ghibli pattern)
-                  setViewerMedia([{
-                    id: 'generated-' + Date.now(),
-                    userId: 'current-user',
-                    type: 'photo',
-                    url: neoGlitchBody.imageUrl,
-                    prompt: effectivePrompt,
-                    aspectRatio: 1,
-                    width: 1024,
-                    height: 1024,
-                    timestamp: new Date().toISOString(),
-                    tokensUsed: 1,
-                    likes: 0,
-                    isPublic: true,
+            // Show unified toast with thumbnail
+            notifyReady({ 
+              title: 'Your media is ready', 
+              message: 'Tap to open',
+              thumbUrl: result.imageUrl,
+              onClickThumb: () => {
+                // Open the media viewer to show the generated image
+                setViewerMedia([{
+                  id: 'generated-' + Date.now(),
+                  userId: 'current-user',
+                  type: 'photo',
+                  url: result.imageUrl || '',
+                  prompt: effectivePrompt,
+                  aspectRatio: 1,
+                  width: 1024,
+                  height: 1024,
+                  timestamp: new Date().toISOString(),
+                  tokensUsed: 1,
+                  likes: 0,
+                  isPublic: true,
                     tags: [],
                     metadata: { quality: 'high', generationTime: Date.now(), modelVersion: 'stability-ai' }
                   }]);
@@ -2616,113 +2582,40 @@ const HomeNew: React.FC = () => {
                 resetComposerState();
               }, 3000); // 3 seconds delay
               
-              return; // Don't start polling if already complete
-            } catch (error) {
-              console.error('❌ [NeoGlitch] Failed to save media:', error);
-              endGeneration(genId);
-              setNavGenerating(false);
               return;
             }
-          }
-          
-                    // Handle processing status (needs polling - simple, not complex service)
-          if (neoGlitchBody.status === 'processing') {
-            console.log('🔄 [NeoGlitch] Generation in progress, starting simple polling...');
             
-            // Show processing toast (following Ghibli pattern)
-            console.log('🔄 Add to queue: We\'ll start processing it shortly.')
+            // Handle processing status
+            if (result.status === 'processing') {
+              console.log('🔄 [NeoGlitch] Generation in progress, unified pipeline handles polling');
+              
+              // Show processing toast
+              notifyQueue({ 
+                title: 'Add to queue', 
+                message: 'We\'ll start processing it shortly.'
+              });
+              
+              // Unified pipeline handles polling - just return
+              return;
+            }
             
-            // Start simple polling for completion (not complex service)
-            const pollForCompletion = async () => {
-              try {
-                const statusResponse = await authenticatedFetch(`/.netlify/functions/neo-glitch-generate?jobId=${neoGlitchBody.jobId}`);
-                if (statusResponse.ok) {
-                  const statusBody = await statusResponse.json();
-                  
-                  if (statusBody.status === 'completed' && statusBody.imageUrl) {
-                    console.log('✅ [NeoGlitch] Polling completed successfully!');
-                    
-                    // Save the generated media (following Ghibli pattern)
-                    const mediaToSave = {
-                      userId: authService.getCurrentUser()?.id || '',
-                      type: 'photo' as const,
-                      url: statusBody.imageUrl,
-                      thumbnailUrl: statusBody.imageUrl,
-                      prompt: effectivePrompt,
-                      aspectRatio: 1,
-                      width: 1024,
-                      height: 1024,
-                      tokensUsed: 1,
-                      isPublic: true,
-                      tags: [],
-                      metadata: {
-                        quality: 'high' as const,
-                        generationTime: Date.now(),
-                        modelVersion: 'stability-ai',
-                        presetId: generationMeta?.neoTokyoGlitchPresetId,
-                        mode: 'i2i' as const,
-                        group: null
-                      }
-                    };
-                    
-                    // 🚨 CRITICAL FIX: Don't save here - backend already saved it!
-                    console.log('✅ [NeoGlitch] Backend already saved media, skipping duplicate save');
-                    
-                    // Refresh the public feed (following Ghibli pattern)
-                    loadFeed();
-                    
-                    // Show unified toast with thumbnail (following Ghibli pattern)
-                    console.log('✅ Your media is ready: Tap to open')
-                    
-                    // End generation successfully (following Ghibli pattern)
-                    endGeneration(genId);
-                    setNavGenerating(false);
-                    
-                    // Clear composer after delay (following Ghibli pattern)
-                    setTimeout(() => {
-                      console.log('🧹 [NeoGlitch] Clearing composer after polling completion');
-                      resetComposerState();
-                    }, 3000);
-                    
-                    return;
-                  } else if (statusBody.status === 'failed') {
-                    throw new Error(statusBody.error || 'Generation failed');
-                  }
-                  
-                  // Still processing, continue polling
-                  setTimeout(pollForCompletion, 2000);
-                } else {
-                  throw new Error(`Status check failed: ${statusResponse.status}`);
-                }
-              } catch (error) {
-                console.error('❌ [NeoGlitch] Polling failed:', error);
-                endGeneration(genId);
-                setNavGenerating(false);
-                resetComposerState();
-              }
-            };
+            // Handle failed status
+            if (result.status === 'failed') {
+              throw new Error(result.error || 'Neo Tokyo Glitch generation failed');
+            }
             
-            // Start polling
-            pollForCompletion();
+            // Handle other statuses
+            throw new Error(`Unexpected Neo Tokyo Glitch status: ${result.status}`);
             
-            // 🔧 FIX: Don't skip AIML API for Neo Glitch - let it fallback through IPA system
-            // This ensures identity preservation when Stability.ai fails and AIML fallback happens
-            console.log('🎭 [NeoGlitch] Starting polling, but allowing AIML fallback through IPA system');
+          } catch (error) {
+            console.error('❌ [NeoGlitch] Generation failed:', error);
+            endGeneration(genId);
+            setNavGenerating(false);
+            
+            // Reset composer state even on failure
+            resetComposerState();
             return;
           }
-          
-          // Handle other statuses
-          throw new Error(`Unexpected Neo Tokyo Glitch status: ${neoGlitchBody.status}`);
-          
-        } catch (error) {
-          console.error('❌ [NeoGlitch] Generation failed:', error);
-          endGeneration(genId);
-          setNavGenerating(false);
-          
-          // Reset composer state even on failure
-          resetComposerState();
-          return;
-        }
       }
 
       // Declare variables that will be used later
@@ -2755,7 +2648,7 @@ const HomeNew: React.FC = () => {
                       kind === 'ghiblireact' ? (generationMeta?.ghibliReactionPresetId || 'ghibli_default') :
                       kind === 'emotionmask' ? (generationMeta?.emotionMaskPresetId || 'emotion_default') :
                       kind === 'custom' ? 'custom_prompt' : 'default',
-            sourceAssetId: sourceUrl,
+            sourceAssetId: sourceUrl || '',
             userId: authService.getCurrentUser()?.id || '',
             runId: runId,
             meta: generationMeta
@@ -2817,12 +2710,12 @@ const HomeNew: React.FC = () => {
       // 🔒 IDENTITY PRESERVATION CHECK - automatic based on preset type
       let finalResultUrl = resultUrl;
 
-      // Skip IPA for new system (already handled by dedicated functions)
-      if (body?.system === 'new') {
-        console.log('🆕 [New System] Skipping IPA - already handled by dedicated function');
-      } else if (generationMeta?.generation_type && sourceUrl) {
+      // 🔒 IDENTITY PRESERVATION CHECK - automatic based on preset type
+      if (generationMeta?.generation_type && sourceUrl) {
         try {
           console.log('🔒 [IPA] Starting identity preservation check for:', generationMeta.generation_type);
+          console.log('🔒 [IPA] Source URL:', sourceUrl);
+          console.log('🔒 [IPA] Result URL:', resultUrl);
           
           const ipaResult = await IdentityPreservationService.runIPA(
             sourceUrl,
@@ -2856,6 +2749,12 @@ const HomeNew: React.FC = () => {
           console.error('❌ [IPA] Error during identity preservation check:', ipaError);
           finalResultUrl = resultUrl; // Fallback to original result
         }
+      } else {
+        console.log('🔒 [IPA] Skipping - missing generation_type or sourceUrl:', {
+          hasGenerationType: !!generationMeta?.generation_type,
+          hasSourceUrl: !!sourceUrl,
+          generationType: generationMeta?.generation_type
+        });
       }
 
                 // 🔧 CLOUDINARY CONVERSION - Convert AIML API URLs to Cloudinary URLs for Ghibli
@@ -2949,7 +2848,7 @@ const HomeNew: React.FC = () => {
           width: 800, // Default dimensions
           height: 600,
           tokensUsed: variationsGenerated, // Use actual variations generated
-          isPublic: true, // Share to feed by default
+          isPublic: profileData.shareToFeed,
           tags: [generationMeta?.mode || 'ai-generated', 'generated'],
           metadata: {
             quality: 'high' as const,
@@ -2963,7 +2862,7 @@ const HomeNew: React.FC = () => {
         
         // 🔧 FIX: Remove duplicate save - generation pipeline handles all saving now
         // Only save locally for immediate UI display
-        await userMediaService.saveMedia(mediaToSave, { shareToFeed: true });
+        await userMediaService.saveMedia(mediaToSave, { shareToFeed: profileData.shareToFeed });
         console.log('✅ [Media] Saved successfully to local profile (backend save handled by generation pipeline)');
         
       } catch (error) {
@@ -2994,7 +2893,7 @@ const HomeNew: React.FC = () => {
             timestamp: new Date().toISOString(),
             tokensUsed: 2,
             likes: 0,
-                    isPublic: false,
+                    isPublic: profileData.shareToFeed,
             tags: [],
             metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
           }]);
@@ -5126,7 +5025,7 @@ const HomeNew: React.FC = () => {
         onClose={handleUploadAgreementCancel}
         onAccept={handleUploadAgreementAccept}
         onAgreementAccepted={() => setUserHasAgreed(true)}
-        userHasAgreed={userHasAgreed}
+        userHasAgreed={userHasAgreed || false}
       />
 
     </div>

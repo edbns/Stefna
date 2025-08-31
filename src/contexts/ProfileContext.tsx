@@ -26,7 +26,7 @@ const defaultProfileData: ProfileData = {
   name: '',
   username: '',
   avatar: '',
-  shareToFeed: true, // 🔓 SHARING FIRST: Default to public so users can share their generations
+  shareToFeed: false, // 🔒 PRIVACY FIRST: Default to private so users control their sharing
   onboarding_completed: false,
   createdAt: new Date().toISOString()
 }
@@ -71,19 +71,20 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
           console.log('✅ Loaded profile from database:', userData)
           
           // Also load user settings to get the latest shareToFeed preference
-          let shareToFeed = true // 🔓 SHARING FIRST: Default to public so users can share their generations
+          let shareToFeed = false // 🔒 PRIVACY FIRST: Default to private so users control their sharing
           try {
             const settingsResponse = await authenticatedFetch('/.netlify/functions/user-settings', {
               method: 'GET'
             })
             if (settingsResponse.ok) {
               const settings = await settingsResponse.json()
-              shareToFeed = settings.shareToFeed
-              console.log('✅ Loaded user settings:', settings)
+              console.log('🔍 [ProfileContext] Raw user settings response:', settings)
+              shareToFeed = settings.settings?.share_to_feed ?? false
+              console.log('✅ Loaded user settings share_to_feed:', shareToFeed)
             }
           } catch (settingsError) {
             console.warn('⚠️ Failed to load user settings, using profile data:', settingsError)
-            shareToFeed = userData.share_to_feed !== undefined ? userData.share_to_feed : true
+            shareToFeed = userData.share_to_feed !== undefined ? userData.share_to_feed : false
           }
           
           const profileData = {

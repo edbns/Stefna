@@ -4,6 +4,28 @@
 -- IMPORTANT: This schema requires the uuid-ossp extension to be enabled
 -- All UUID generation uses uuid_generate_v4() for reliability
 
+-- 🔒 PRIVACY-FIRST DESIGN PRINCIPLES
+-- ========================================
+-- This database implements a privacy-first approach where:
+-- 1. Users are PRIVATE by default (share_to_feed = FALSE)
+-- 2. Users must explicitly opt-in to share their media publicly
+-- 3. The public feed only shows media from users who have enabled sharing
+-- 4. New user registrations automatically start with private sharing
+-- 5. Users can toggle their sharing preference at any time
+-- 
+-- FEED VISIBILITY LOGIC:
+-- - getPublicFeed() only shows media from users with share_to_feed = TRUE
+-- - Media tables use 'status' field for generation state (completed/failed/processing)
+-- - User privacy is controlled by user_settings.share_to_feed, not media status
+-- - Toggle "Share to Feed" in UI updates user_settings.share_to_feed
+-- 
+-- MEDIA TABLE STATUS VALUES:
+-- - 'completed': Generation finished successfully
+-- - 'processing': Generation in progress
+-- - 'failed': Generation failed
+-- - 'pending': Job created but not started
+-- ============================================================================
+
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -22,10 +44,11 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- User settings table (simplified - only what we actually use)
+-- 🔒 PRIVACY-FIRST: share_to_feed defaults to FALSE for user privacy
 CREATE TABLE IF NOT EXISTS user_settings (
     user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     media_upload_agreed BOOLEAN DEFAULT FALSE,
-    share_to_feed BOOLEAN DEFAULT TRUE,
+    share_to_feed BOOLEAN DEFAULT FALSE, -- 🔒 PRIVACY-FIRST: Users are private by default
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW()
 );
@@ -74,8 +97,17 @@ CREATE TABLE IF NOT EXISTS credits_ledger (
 );
 
 -- ========================================
--- MEDIA TABLES
+-- MEDIA TABLES (PRIVACY-CONTROLLED)
 -- ========================================
+-- These tables store user-generated media. Feed visibility is controlled by:
+-- 1. user_settings.share_to_feed (user-level privacy setting)
+-- 2. getPublicFeed() function (filters by user privacy preference)
+-- 
+-- Media is only visible in public feed if:
+-- - user_settings.share_to_feed = TRUE for the user
+-- - media.status = 'completed' (generation finished)
+-- - media.image_url IS NOT NULL (has valid image)
+-- ============================================================================
 
 -- Custom prompt media table
 CREATE TABLE IF NOT EXISTS custom_prompt_media (

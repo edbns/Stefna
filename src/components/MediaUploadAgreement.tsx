@@ -69,14 +69,15 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
     
     try {
       // Save user agreement preference to database
+      console.log('💾 [Media Upload Agreement] Saving agreement to database...');
       const response = await authenticatedFetch('/.netlify/functions/user-settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          shareToFeed: profileData.shareToFeed, // Use user's actual preference
-          mediaUploadAgreed: true
+          share_to_feed: profileData.shareToFeed, // Use user's actual preference
+          media_upload_agreed: true
         })
       });
 

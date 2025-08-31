@@ -8,10 +8,13 @@
 // 4. Scalable and maintainable design
 
 import { authenticatedFetch } from '../utils/apiClient';
+import { IdentityPreservationService } from './identityPreservationService';
+
+// Import all services for the unified pipeline
 import EmotionMaskService from './emotionMaskService';
-import PresetsService from './presetsService';
 import GhibliReactionService from './ghibliReactionService';
 import CustomPromptService from './customPromptService';
+import PresetsService from './presetsService';
 
 export interface GenerationRequest {
   type: 'emotion-mask' | 'presets' | 'ghibli-reaction' | 'custom-prompt' | 'neo-glitch';
@@ -36,26 +39,16 @@ export interface GenerationResult {
   type: string;
 }
 
-export interface GenerationType {
-  type: 'emotion-mask' | 'presets' | 'ghibli-reaction' | 'custom-prompt' | 'neo-glitch';
-}
-
 class GenerationPipeline {
   private static instance: GenerationPipeline;
-  private emotionMaskService: EmotionMaskService;
-  private presetsService: PresetsService;
-  private ghibliReactionService: GhibliReactionService;
-  private customPromptService: CustomPromptService;
+  
+  // Initialize all services
+  private emotionMaskService = EmotionMaskService.getInstance();
+  private ghibliReactionService = GhibliReactionService.getInstance();
+  private customPromptService = CustomPromptService.getInstance();
+  private presetsService = PresetsService.getInstance();
 
-  private constructor() {
-    // Initialize service instances for dedicated functions
-    this.emotionMaskService = EmotionMaskService.getInstance();
-    this.presetsService = PresetsService.getInstance();
-    this.ghibliReactionService = GhibliReactionService.getInstance();
-    this.customPromptService = CustomPromptService.getInstance();
-
-    console.log('🚀 [GenerationPipeline] Initialized with dedicated services');
-  }
+  private constructor() {}
 
   static getInstance(): GenerationPipeline {
     if (!GenerationPipeline.instance) {
@@ -65,93 +58,44 @@ class GenerationPipeline {
   }
 
   /**
-   * Determine if a user should use the new system
-   * This enables gradual rollout and A/B testing
-   */
-  private shouldUseNewSystem(type: string): boolean {
-    // Check environment variables for feature flags (browser-compatible)
-    try {
-      const envFlag = import.meta.env[`VITE_${type.toUpperCase().replace('-', '_')}_NEW_SYSTEM`];
-      if (envFlag) {
-        return envFlag === 'true';
-      }
-    } catch (error) {
-      console.log('🔄 [GenerationPipeline] Environment check failed, using fallback logic');
-    }
-
-    // Check user ID for beta testing (last 2 digits determine system)
-    // This enables 50/50 split for testing
-    const userId = this.getCurrentUserId();
-    if (userId) {
-      const lastTwoDigits = parseInt(userId.slice(-2));
-      return lastTwoDigits >= 50; // 50% of users get new system
-    }
-
-    // Default to old system for safety
-    return false;
-  }
-
-  /**
-   * Get current user ID from auth context
-   */
-  private getCurrentUserId(): string | null {
-    // This should be implemented based on your auth system
-    // For now, return null to use environment-based flags
-    return null;
-  }
-
-
-
-  /**
-   * Main generation method - routes to appropriate system
+   * Unified generation entry point for ALL generation types
    */
   async generate(request: GenerationRequest): Promise<GenerationResult> {
+    console.log('🆕 [GenerationPipeline] Unified generation for:', request.type);
+    
     try {
-      console.log('🚀 [GenerationPipeline] Starting generation:', {
-        type: request.type,
-        presetKey: request.presetKey,
-        runId: request.runId,
-        userId: request.userId
-      });
-
-      // Route to appropriate system based on type and feature flags
+      // Route to appropriate handler based on type
       switch (request.type) {
         case 'emotion-mask':
           return await this.handleEmotionMaskGeneration(request);
-        
         case 'presets':
           return await this.handlePresetsGeneration(request);
-        
         case 'ghibli-reaction':
           return await this.handleGhibliReactionGeneration(request);
-        
         case 'custom-prompt':
           return await this.handleCustomPromptGeneration(request);
-        
         case 'neo-glitch':
           return await this.handleNeoGlitchGeneration(request);
-        
         default:
           throw new Error(`Unknown generation type: ${request.type}`);
       }
-
-  } catch (error) {
+    } catch (error) {
       console.error('❌ [GenerationPipeline] Generation failed:', error);
-    return {
-      success: false,
+      return {
+        success: false,
         status: 'failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-        system: 'new', // All systems now use new architecture
+        error: error instanceof Error ? error.message : 'Unknown error',
+        system: 'new',
         type: request.type
       };
     }
   }
 
   /**
-   * Handle Emotion Mask generation
+   * Handle Emotion Mask generation (unified)
    */
   private async handleEmotionMaskGeneration(request: GenerationRequest): Promise<GenerationResult> {
-    console.log('🆕 [GenerationPipeline] Using NEW Emotion Mask system');
+    console.log('🆕 [GenerationPipeline] Using UNIFIED Emotion Mask system');
     try {
       const result = await this.emotionMaskService.startGeneration({
         prompt: request.prompt,
@@ -162,6 +106,46 @@ class GenerationPipeline {
         meta: request.meta
       });
 
+      // 🔒 Apply IPA check for Emotion Mask
+      if (result.success && result.imageUrl && request.sourceAssetId) {
+        try {
+          console.log('🔒 [IPA] Running Emotion Mask identity preservation check...');
+          
+          const ipaResult = await IdentityPreservationService.runIPA(
+            request.sourceAssetId,
+            result.imageUrl,
+            {
+              ipaThreshold: 0.7, // Strict threshold for Emotion Mask
+              ipaRetries: 3,
+              ipaBlocking: true,
+              generation_type: 'emotion_mask_strict_ipa'
+            }
+          );
+          
+          console.log('🔒 [IPA] Emotion Mask result:', {
+            similarity: (ipaResult.similarity * 100).toFixed(1) + '%',
+            passed: ipaResult.passed,
+            strategy: ipaResult.strategy
+          });
+
+          if (ipaResult.passed) {
+            console.log('✅ [IPA] Emotion Mask identity preservation passed');
+            return {
+              ...result,
+              system: 'new',
+              type: 'emotion-mask',
+              imageUrl: ipaResult.finalUrl // Use IPA-verified URL
+            };
+          } else {
+            console.log('❌ [IPA] Emotion Mask identity preservation failed');
+            throw new Error(`IPA failed: ${(ipaResult.similarity * 100).toFixed(1)}% similarity < 70% threshold`);
+          }
+        } catch (ipaError) {
+          console.error('❌ [IPA] Emotion Mask IPA check failed:', ipaError);
+          throw new Error('Identity preservation check failed');
+        }
+      }
+
       return {
         ...result,
         system: 'new',
@@ -169,15 +153,15 @@ class GenerationPipeline {
       };
     } catch (error) {
       console.error('❌ [GenerationPipeline] Emotion Mask generation failed:', error);
-      throw error; // No fallback - let error bubble up
+      throw error;
     }
   }
 
   /**
-   * Handle Professional Presets generation
+   * Handle Professional Presets generation (unified)
    */
   private async handlePresetsGeneration(request: GenerationRequest): Promise<GenerationResult> {
-    console.log('🆕 [GenerationPipeline] Using NEW Presets system');
+    console.log('🆕 [GenerationPipeline] Using UNIFIED Presets system');
     try {
       const result = await this.presetsService.startGeneration({
         prompt: request.prompt,
@@ -188,6 +172,46 @@ class GenerationPipeline {
         meta: request.meta
       });
 
+      // 🔒 Apply IPA check for Professional Presets
+      if (result.success && result.imageUrl && request.sourceAssetId) {
+        try {
+          console.log('🔒 [IPA] Running Professional Presets identity preservation check...');
+          
+          const ipaResult = await IdentityPreservationService.runIPA(
+            request.sourceAssetId,
+            result.imageUrl,
+            {
+              ipaThreshold: 0.65, // Balanced threshold for Presets
+              ipaRetries: 2,
+              ipaBlocking: true,
+              generation_type: 'preset_moderate_ipa'
+            }
+          );
+          
+          console.log('🔒 [IPA] Professional Presets result:', {
+            similarity: (ipaResult.similarity * 100).toFixed(1) + '%',
+            passed: ipaResult.passed,
+            strategy: ipaResult.strategy
+          });
+
+          if (ipaResult.passed) {
+            console.log('✅ [IPA] Professional Presets identity preservation passed');
+            return {
+              ...result,
+              system: 'new',
+              type: 'presets',
+              imageUrl: ipaResult.finalUrl // Use IPA-verified URL
+            };
+          } else {
+            console.log('❌ [IPA] Professional Presets identity preservation failed');
+            throw new Error(`IPA failed: ${(ipaResult.similarity * 100).toFixed(1)}% similarity < 65% threshold`);
+          }
+        } catch (ipaError) {
+          console.error('❌ [IPA] Professional Presets IPA check failed:', ipaError);
+          throw new Error('Identity preservation check failed');
+        }
+      }
+
       return {
         ...result,
         system: 'new',
@@ -195,15 +219,15 @@ class GenerationPipeline {
       };
     } catch (error) {
       console.error('❌ [GenerationPipeline] Presets generation failed:', error);
-      throw error; // No fallback - let error bubble up
+      throw error;
     }
   }
 
   /**
-   * Handle Ghibli Reaction generation
+   * Handle Ghibli Reaction generation (unified)
    */
   private async handleGhibliReactionGeneration(request: GenerationRequest): Promise<GenerationResult> {
-    console.log('🆕 [GenerationPipeline] Using NEW Ghibli Reaction system');
+    console.log('🆕 [GenerationPipeline] Using UNIFIED Ghibli Reaction system');
     try {
       const result = await this.ghibliReactionService.startGeneration({
         prompt: request.prompt,
@@ -214,6 +238,46 @@ class GenerationPipeline {
         meta: request.meta
       });
 
+      // 🔒 Apply IPA check for Ghibli Reaction
+      if (result.success && result.imageUrl && request.sourceAssetId) {
+        try {
+          console.log('🔒 [IPA] Running Ghibli Reaction identity preservation check...');
+          
+          const ipaResult = await IdentityPreservationService.runIPA(
+            request.sourceAssetId,
+            result.imageUrl,
+            {
+              ipaThreshold: 0.6, // Moderate threshold for Ghibli Reaction
+              ipaRetries: 2,
+              ipaBlocking: true,
+              generation_type: 'ghibli_reaction_moderate_ipa'
+            }
+          );
+          
+          console.log('🔒 [IPA] Ghibli Reaction result:', {
+            similarity: (ipaResult.similarity * 100).toFixed(1) + '%',
+            passed: ipaResult.passed,
+            strategy: ipaResult.strategy
+          });
+
+          if (ipaResult.passed) {
+            console.log('✅ [IPA] Ghibli Reaction identity preservation passed');
+            return {
+              ...result,
+              system: 'new',
+              type: 'ghibli-reaction',
+              imageUrl: ipaResult.finalUrl // Use IPA-verified URL
+            };
+          } else {
+            console.log('❌ [IPA] Ghibli Reaction identity preservation failed');
+            throw new Error(`IPA failed: ${(ipaResult.similarity * 100).toFixed(1)}% similarity < 60% threshold`);
+          }
+        } catch (ipaError) {
+          console.error('❌ [IPA] Ghibli Reaction IPA check failed:', ipaError);
+          throw new Error('Identity preservation check failed');
+        }
+      }
+
       return {
         ...result,
         system: 'new',
@@ -221,15 +285,15 @@ class GenerationPipeline {
       };
     } catch (error) {
       console.error('❌ [GenerationPipeline] Ghibli Reaction generation failed:', error);
-      throw error; // No fallback - let error bubble up
+      throw error;
     }
   }
 
   /**
-   * Handle Custom Prompt generation
+   * Handle Custom Prompt generation (unified)
    */
   private async handleCustomPromptGeneration(request: GenerationRequest): Promise<GenerationResult> {
-    console.log('🆕 [GenerationPipeline] Using NEW Custom Prompt system');
+    console.log('🆕 [GenerationPipeline] Using UNIFIED Custom Prompt system');
     try {
       const result = await this.customPromptService.startGeneration({
         prompt: request.prompt,
@@ -240,6 +304,46 @@ class GenerationPipeline {
         meta: request.meta
       });
 
+      // 🔒 Apply IPA check for Custom Prompt
+      if (result.success && result.imageUrl && request.sourceAssetId) {
+        try {
+          console.log('🔒 [IPA] Running Custom Prompt identity preservation check...');
+          
+          const ipaResult = await IdentityPreservationService.runIPA(
+            request.sourceAssetId,
+            result.imageUrl,
+            {
+              ipaThreshold: 0.65, // Balanced threshold for Custom Prompt
+              ipaRetries: 2,
+              ipaBlocking: true,
+              generation_type: 'custom_balanced_ipa'
+            }
+          );
+          
+          console.log('🔒 [IPA] Custom Prompt result:', {
+            similarity: (ipaResult.similarity * 100).toFixed(1) + '%',
+            passed: ipaResult.passed,
+            strategy: ipaResult.strategy
+          });
+
+          if (ipaResult.passed) {
+            console.log('✅ [IPA] Custom Prompt identity preservation passed');
+            return {
+              ...result,
+              system: 'new',
+              type: 'custom-prompt',
+              imageUrl: ipaResult.finalUrl // Use IPA-verified URL
+            };
+          } else {
+            console.log('❌ [IPA] Custom Prompt identity preservation failed');
+            throw new Error(`IPA failed: ${(ipaResult.similarity * 100).toFixed(1)}% similarity < 65% threshold`);
+          }
+        } catch (ipaError) {
+          console.error('❌ [IPA] Custom Prompt IPA check failed:', ipaError);
+          throw new Error('Identity preservation check failed');
+        }
+      }
+
       return {
         ...result,
         system: 'new',
@@ -247,15 +351,15 @@ class GenerationPipeline {
       };
     } catch (error) {
       console.error('❌ [GenerationPipeline] Custom Prompt generation failed:', error);
-      throw error; // No fallback - let error bubble up
+      throw error;
     }
   }
 
   /**
-   * Handle NeoGlitch generation (always uses new system)
+   * Handle NeoGlitch generation (unified)
    */
   private async handleNeoGlitchGeneration(request: GenerationRequest): Promise<GenerationResult> {
-    console.log('🆕 [GenerationPipeline] Using NEW NeoGlitch system (always stable)');
+    console.log('🆕 [GenerationPipeline] Using UNIFIED NeoGlitch system');
     
     try {
       const response = await authenticatedFetch('/.netlify/functions/neo-glitch-generate', {
@@ -277,6 +381,72 @@ class GenerationPipeline {
       }
 
       const result = await response.json();
+      
+      // 🔒 Apply IPA check for Neo Tokyo Glitch (relaxed threshold)
+      if (result.success && result.imageUrl && request.sourceAssetId) {
+        try {
+          console.log('🔒 [IPA] Running Neo Tokyo Glitch identity preservation check...');
+          
+          const ipaResult = await IdentityPreservationService.runIPA(
+            request.sourceAssetId,
+            result.imageUrl,
+            {
+              ipaThreshold: 0.4, // Relaxed threshold for Neo Tokyo Glitch (creative freedom)
+              ipaRetries: 1,
+              ipaBlocking: false, // Non-blocking for creative freedom
+              generation_type: 'neo_tokyo_relaxed_ipa'
+            }
+          );
+          
+          console.log('🔒 [IPA] Neo Tokyo Glitch result:', {
+            similarity: (ipaResult.similarity * 100).toFixed(1) + '%',
+            passed: ipaResult.passed,
+            strategy: ipaResult.strategy
+          });
+
+          if (ipaResult.passed) {
+            console.log('✅ [IPA] Neo Tokyo Glitch identity preservation passed');
+            return {
+              success: true,
+              jobId: result.jobId,
+              runId: result.runId,
+              status: result.status,
+              imageUrl: ipaResult.finalUrl, // Use IPA-verified URL
+              aimlJobId: result.aimlJobId,
+              provider: result.provider,
+              system: 'new',
+              type: 'neo-glitch'
+            };
+          } else {
+            console.log('⚠️ [IPA] Neo Tokyo Glitch identity preservation failed but non-blocking');
+            return {
+              success: true,
+              jobId: result.jobId,
+              runId: result.runId,
+              status: result.status,
+              imageUrl: ipaResult.finalUrl, // Use best available result
+              aimlJobId: result.aimlJobId,
+              provider: result.provider,
+              system: 'new',
+              type: 'neo-glitch'
+            };
+          }
+        } catch (ipaError) {
+          console.error('❌ [IPA] Neo Tokyo Glitch IPA check failed:', ipaError);
+          // Continue with original result for Neo Tokyo Glitch (creative freedom)
+          return {
+            success: true,
+            jobId: result.jobId,
+            runId: result.runId,
+            status: result.status,
+            imageUrl: result.imageUrl,
+            aimlJobId: result.aimlJobId,
+            provider: result.provider,
+            system: 'new',
+            type: 'neo-glitch'
+          };
+        }
+      }
       
       return {
         success: true,
@@ -310,7 +480,7 @@ class GenerationPipeline {
     status: string;
   } {
     return {
-      system: 'dedicated',
+      system: 'unified',
       status: 'active'
     };
   }

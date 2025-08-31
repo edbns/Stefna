@@ -38,7 +38,7 @@ export const handler: Handler = async (event) => {
         // Return default settings if none exist
         const defaultSettings = {
           media_upload_agreed: false,
-          share_to_feed: true
+          share_to_feed: false
         };
         
         return json({ settings: defaultSettings });
@@ -63,7 +63,7 @@ export const handler: Handler = async (event) => {
       
       const shareToFeed = body.share_to_feed !== undefined ? body.share_to_feed : 
                           body.shareToFeed !== undefined ? body.shareToFeed : 
-                          (existingSettings?.share_to_feed ?? true); // Default to true for new users
+                          (existingSettings?.share_to_feed ?? false); // Default to false for privacy
       
       // 🔧 DEBUG: Log the exact values being processed
       console.log('🔧 [User Settings] Processing update:', {
