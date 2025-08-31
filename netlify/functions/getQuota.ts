@@ -1,6 +1,6 @@
 import type { Handler } from "@netlify/functions";
 import { requireAuth } from './_lib/auth';
-import { q, qOne, qCount } from './_db';
+import { qOne } from './_db';
 import { json } from './_lib/http';
 
 // ============================================================================

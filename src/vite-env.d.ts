@@ -1,4 +1,7 @@
 /// <reference types="vite/client" />
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
+/// <reference lib="webworker" />
 
 interface ImportMetaEnv {
   readonly VITE_AIML_API_KEY: string

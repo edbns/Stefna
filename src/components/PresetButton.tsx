@@ -1,4 +1,5 @@
 // src/components/PresetButton.tsx
+import React from 'react';
 import { ensureSourceThenRun } from '../state/intentQueue';
 import { useSelectedPreset } from '../stores/selectedPreset';
 import { PROFESSIONAL_PRESETS } from '../config/professional-presets';

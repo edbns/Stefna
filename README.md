@@ -1,40 +1,40 @@
 # 🚀 **Stefna AI Photo Platform**
 
-**Professional AI-powered photo editing with automatic identity preservation, multiple AI providers, and seamless user experience. Now featuring Story Time - AI-powered photo-to-video storytelling!**
+**Professional AI-powered photo editing with FAL.ai integration, automatic identity preservation, and seamless user experience. Now featuring Story Time - AI-powered photo-to-video storytelling!**
 
 ---
 
 ## 🎯 **What is Stefna?**
 
-Stefna is a cutting-edge AI photo editing platform that transforms your photos using advanced AI models while preserving the original identity and composition. Built with modern web technologies, it offers a seamless, professional-grade editing experience.
+Stefna is a cutting-edge AI photo editing platform that transforms your photos using advanced AI models from FAL.ai while preserving the original identity and composition. Built with modern web technologies, it offers a seamless, professional-grade editing experience.
 
 ---
 
 ## ✨ **Key Features**
 
 ### **🎨 AI Generation Modes**
-- **Neo Tokyo Glitch**: Cyberpunk aesthetic with Stability.ai + AIML fallback
-- **Ghibli Reaction**: Anime-style transformations with AIML API
-- **Emotion Mask**: Emotional expression overlays with AIML API
-- **Custom Presets**: Professional-grade transformations with AIML API
-- **Custom Prompt**: User-defined transformations with AIML API
+- **Neo Tokyo Glitch**: Cyberpunk aesthetic with Stability.ai integration
+- **Ghibli Reaction**: Anime-style transformations with FAL.ai
+- **Emotion Mask**: Emotional expression overlays with FAL.ai
+- **Custom Presets**: Professional-grade transformations with FAL.ai
+- **Custom Prompt**: User-defined transformations with FAL.ai
 - **🎬 Story Time**: AI-powered photo-to-video storytelling with Kling V1.6
 
 ### **🔒 Identity Preservation**
-- **Automatic IPA**: Built-in face preservation without user intervention
-- **Multi-tier Validation**: Ensures generated content maintains original identity
-- **Configurable Thresholds**: Adjustable similarity requirements per preset
+- **Cloudinary Integration**: Automatic re-upload for image persistence
+- **Privacy-First Design**: User content is private by default
+- **Credit System**: 2 credits per generation with reservation system
 
 ### **🤖 AI Providers**
-- **Stability.ai**: Primary provider for Neo Tokyo Glitch (cost-effective, high-quality)
-- **AIML API**: Fallback provider and primary for other presets (reliable, feature-rich)
-- **Kling V1.6**: Image-to-Video generation for Story Time (cinematic storytelling)
-- **Smart Routing**: Automatic fallback and provider selection
+- **FAL.ai**: Primary provider for all image generation (high-quality, reliable)
+- **Stability.ai**: Specialized provider for Neo Tokyo Glitch effects
+- **Kling V1.6**: Image-to-Video generation for Story Time
+- **Smart Routing**: Optimized provider selection per generation type
 
 ### **💳 Credit System**
-- **1 Credit per Generation**: Simple, predictable pricing
-- **Reservation System**: Prevents double-charging
-- **Automatic Refunds**: Credits returned on failures
+- **2 Credits per Generation**: Standardized pricing across all modes
+- **Reservation System**: Prevents double-charging with automatic refunds
+- **Referral Bonuses**: 50 credits for referrers, 25 credits for new users
 
 ---
 
@@ -48,31 +48,31 @@ Stefna is a cutting-edge AI photo editing platform that transforms your photos u
 
 ### **Backend**
 - **Netlify Functions** (serverless)
-- **PostgreSQL** with raw SQL queries
+- **PostgreSQL** with raw SQL queries (no Prisma ORM)
 - **Cloudinary** for image optimization and storage
-- **JWT** authentication
+- **JWT** authentication with OTP verification
 
 ### **AI Services**
-- **Stability.ai**: Primary provider for Neo Tokyo Glitch
-- **AIML API**: Fallback provider and primary for other presets
+- **FAL.ai**: Primary provider for all image transformations
+- **Stability.ai**: Specialized for Neo Tokyo Glitch effects
 - **Kling V1.6**: Image-to-Video generation for Story Time
 
 ### **Database Architecture**
 - **Raw SQL Queries**: Optimized PostgreSQL queries with connection pooling
 - **Custom DB Helper**: Centralized database operations (`q`, `qOne`, `qCount`)
+- **Privacy-First**: User content is private by default (`share_to_feed = FALSE`)
 - **Type Safety**: TypeScript interfaces for database results
-- **Unified System**: Consistent API patterns across all functions
 
 ---
 
 ## 🚀 **Quick Start**
 
 ### **Prerequisites**
-- Node.js 18+ 
-- PostgreSQL database
+- Node.js 20+
+- PostgreSQL database (Neon recommended)
 - Cloudinary account
-- Stability.ai API key
-- AIML API key
+- FAL.ai API key
+- Stability.ai API key (optional, for Neo Tokyo Glitch)
 
 ### **Admin Dashboard Setup**
 The admin dashboard provides full control over users, media, credits, and system configuration.
@@ -104,7 +104,7 @@ cp env.example .env
 # Edit .env with your API keys and database URLs
 
 # Set up database
-# Database schema is defined in database-schema.sql
+# Database schema and migrations are in the database/ directory
 # Use your preferred PostgreSQL client to run the schema
 
 # Start development server
@@ -113,24 +113,24 @@ npm run dev
 
 ### **Environment Variables**
 ```bash
-# Database
-DATABASE_URL=postgres://...
-NETLIFY_DATABASE_URL=postgres://...
+# Database (Netlify Functions use this directly)
+DATABASE_URL=postgresql://username:password@host:5432/database
 
 # AI Providers
-STABILITY_API_KEY=your_stability_key
-AIML_API_KEY=your_aiml_key
-FAL_KEY=your_fal_api_key
+FAL_KEY=your_fal_api_key_here
+STABILITY_API_KEY=your_stability_key_here
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-# JWT
-JWT_SECRET=your_jwt_secret
-JWT_ISSUER=your_issuer
-JWT_AUDIENCE=your_audience
+# Authentication
+JWT_SECRET=your_secure_jwt_secret_here
+ADMIN_SECRET=your_admin_secret_here
+
+# Email (optional)
+RESEND_API_KEY=your_resend_api_key_here
 ```
 
 ---
@@ -156,30 +156,38 @@ JWT_AUDIENCE=your_audience
 ### **Project Structure**
 ```
 src/
-├── components/          # React components
-├── services/           # Business logic and API calls
-├── hooks/              # Custom React hooks
-├── stores/             # Zustand state stores
-├── utils/              # Utility functions
-└── types/              # TypeScript type definitions
+├── components/          # React components (50+ files)
+├── services/           # Business logic and API calls (34 files)
+├── hooks/              # Custom React hooks (10 files)
+├── stores/             # Zustand state stores (7 files)
+├── utils/              # Utility functions (27 files)
+├── config/             # Configuration files and presets
+├── contexts/           # React context providers
+├── screens/            # Page/screen components
+├── types/              # TypeScript type definitions
+├── features/           # Feature-specific modules
+└── state/              # State management utilities
 
 netlify/
-├── functions/          # Serverless backend functions
-└── functions/_db.ts    # Database helper with raw SQL queries
+├── functions/          # Serverless backend functions (48 files)
+├── functions/_db.ts    # Database helper with raw SQL queries
+└── functions/_lib/     # Shared utilities for functions
 
-database-schema.sql     # PostgreSQL database schema
+database/               # Database schema, migrations, and fixes
+scripts/               # Build and deployment scripts
 ```
 
 ### **Key Components**
-- **HomeNew.tsx**: Main application interface
-- **MasonryMediaGrid**: Responsive image grid
-- **PresetSelector**: AI preset management
-- **GenerationProgress**: Real-time generation status
+- **HomeNew.tsx**: Main application interface with generation pipeline
+- **I2IV2VInterface.tsx**: Image-to-video interface for Story Time
+- **MasonryMediaGrid**: Responsive media grid with privacy controls
+- **PresetSelector**: Professional preset management system
+- **GenerationProgress**: Real-time generation status with queue management
 
 ### **State Management**
-- **useGenerationStore**: Generation state and queue
-- **useUserMedia**: User media management
-- **usePresetEngine**: Preset configuration and execution
+- **useGenerationStore**: Generation state and queue management
+- **useUserMedia**: User media management with privacy controls
+- **usePresetEngine**: Professional preset configuration system
 
 ---
 
@@ -190,18 +198,27 @@ database-schema.sql     # PostgreSQL database schema
 # Start development server
 npm run dev
 
-# Test Netlify functions locally
-netlify dev
+# Test Netlify functions locally (requires netlify-cli)
+npx netlify dev
+
+# Build for production
+npm run build
 
 # Database operations
 # Use your preferred PostgreSQL client (pgAdmin, DBeaver, etc.)
 # Schema: database-schema.sql
 ```
 
-### **Production Testing**
-- **Deploy to Netlify**: Automatic deployment on push to main
-- **Database**: Production PostgreSQL with Neon
-- **CDN**: Cloudinary for global image delivery
+### **Environment Setup**
+1. **Copy environment template**: `cp env.example .env`
+2. **Configure required variables**: DATABASE_URL, FAL_KEY, etc.
+3. **Database setup**: Run `database-schema.sql` in your PostgreSQL instance
+4. **Test locally**: `npm run dev` and `npx netlify dev`
+
+### **Production Deployment**
+- **Netlify**: Automatic deployment on push to main branch
+- **Database**: PostgreSQL with connection pooling
+- **CDN**: Cloudinary for global image delivery and persistence
 
 ---
 
@@ -276,50 +293,37 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 🎉 **Recent Updates**
+## 🎉 **Current Status**
 
-### **🚀 Raw SQL Migration Complete!**
-- ✅ **Direct SQL Integration**: Converted from Prisma ORM to optimized raw SQL queries
-- ✅ **Custom Database Helper**: Centralized database operations with connection pooling
-- ✅ **Story Time Feature**: AI-powered photo-to-video storytelling with Kling V1.6
-- ✅ **Video Generation**: Cinematic video creation from static photos
-- ✅ **Enhanced User Experience**: Smooth video playback and progress tracking
+### **🚀 FAL.ai Integration Complete**
+- ✅ **Primary AI Provider**: FAL.ai for all image generation (high-quality, reliable)
+- ✅ **Cloudinary Persistence**: Automatic re-upload for image persistence
+- ✅ **Smart Routing**: Optimized provider selection per generation type
+- ✅ **Credit System**: 2 credits per generation with reservation system
+- ✅ **Privacy-First**: User content private by default (`share_to_feed = FALSE`)
 
-### **🔧 Technical Improvements**
-- **Performance**: Optimized raw SQL queries with proper indexing
-- **Type Safety**: TypeScript interfaces for database results
-- **Scalability**: Modern serverless architecture with Netlify Functions
-- **Code Quality**: Clean, maintainable codebase with proper error handling
+### **🔧 Technical Architecture**
+- **Frontend**: React 18 + TypeScript + Tailwind CSS + Zustand
+- **Backend**: Netlify Functions + Raw SQL + PostgreSQL
+- **AI Services**: FAL.ai (primary) + Stability.ai (Neo Tokyo Glitch) + Kling V1.6 (Story Time)
+- **Storage**: Cloudinary CDN with automatic persistence
+- **Database**: PostgreSQL with connection pooling and raw queries
 
-### **🎬 New Story Time Features**
-- **Image-to-Video**: Kling V1.6 AI model integration
-- **Smart Presets**: Adventure, Romance, Mystery, Comedy, Fantasy, Travel
-- **Progress Tracking**: Real-time video generation updates
-- **Video Playback**: Hover-to-play with smooth transitions
-- **Feed Integration**: Seamless video display in unified feed
+### **🎨 Available Features**
+- **Image Generation**: 15 professional presets with FAL.ai
+- **Neo Tokyo Glitch**: Cyberpunk effects with Stability.ai
+- **Ghibli Style**: Anime transformations with FAL.ai
+- **Emotion Masks**: Emotional expression overlays
+- **Custom Prompts**: User-defined transformations
+- **Story Time**: Photo-to-video with Kling V1.6 (in development)
+- **Admin Dashboard**: Complete user and system management
 
-### **✅ Current Status**
-- **Core Feed**: Fully functional with all media types
-- **All Media Types**: Ghibli, Emotion Mask, Presets, Custom Prompt, Neo Tokyo Glitch
-- **Raw SQL Database**: All functions converted from Prisma to optimized raw SQL
-- **Story Time**: Models defined, ready for deployment
-- **Next Steps**: Deploy Story Time models and test video generation
-
----
-
-## 🧹 **Project Cleanup**
-
-### **Recent Optimizations**
-- **Removed 57 unnecessary files** including legacy SQL scripts and deployment files
-- **Eliminated 5,544 lines of legacy code** for cleaner codebase
-- **Streamlined documentation** with focused, relevant information
-- **Modernized build process** with proper ES module support
-
-### **Code Quality**
-- **Type Safety**: Full TypeScript integration
-- **Linting**: ESLint and Prettier for consistent code style
-- **Testing**: Comprehensive error handling and validation
-- **Documentation**: Clear, up-to-date README and inline comments
+### **✅ Production Ready**
+- **Database Schema**: Complete with all tables and indexes
+- **Authentication**: JWT with OTP verification
+- **Credit System**: Reservation and refund system implemented
+- **Error Handling**: Comprehensive error boundaries and logging
+- **Privacy Controls**: User-level content sharing preferences
 
 ---
 

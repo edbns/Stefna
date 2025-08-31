@@ -1,17 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, X, ArrowUp, Filter, FileText } from 'lucide-react'
+import { Plus, X, ArrowUp } from 'lucide-react'
 // Generate simple unique ID for runId
 const generateRunId = () => `run_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 import { authenticatedFetch, signedFetch } from '../utils/apiClient'
 import authService from '../services/authService'
-import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import MasonryMediaGrid from './MasonryMediaGrid'
 import SkeletonGrid from './SkeletonGrid'
 
-import interactionService from '../services/interactionService'
 import type { UserMedia } from '../services/userMediaService'
-import NotificationBell from './NotificationBell'
 import { useToasts } from './ui/Toasts'
 import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'

@@ -4,7 +4,7 @@
 
 import type { Handler } from '@netlify/functions';
 import { json } from './_lib/http';
-import { q, qOne, qCount } from './_db';
+import { q } from './_db';
 
 // Helper function to create consistent response headers
 function createResponseHeaders(): Record<string, string> {
