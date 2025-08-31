@@ -1382,6 +1382,8 @@ async function attemptStabilityGeneration(
     } catch (fallbackError: any) {
       console.error('❌ [NeoGlitch] AIML fallback also failed:', fallbackError);
       throw new Error(`Stability.ai failed, and AIML fallback failed: ${fallbackError.message}`);
+    } finally {
+      // Fallback cleanup if needed
     }
   }
 }
