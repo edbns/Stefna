@@ -200,6 +200,12 @@ async function uploadAIMLToCloudinary(imageUrl: string, presetKey: string): Prom
 import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
 
 export const handler: Handler = async (event) => {
+  console.log('🚀 [NeoGlitch] Handler started:', {
+    method: event.httpMethod,
+    hasBody: !!event.body,
+    timestamp: new Date().toISOString()
+  });
+
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -283,9 +289,12 @@ export const handler: Handler = async (event) => {
 
   // Continue with POST request handling...
 
+  console.log('🔄 [NeoGlitch] Processing POST request...');
+
   try {
     // Extract user's JWT token for internal credit calls
     const userToken = event.headers.authorization?.replace('Bearer ', '') || '';
+    console.log('🔑 [NeoGlitch] Token extracted:', !!userToken);
     
     if (!userToken) {
       return {
@@ -428,7 +437,9 @@ export const handler: Handler = async (event) => {
     console.log('🚀 [NeoGlitch] Starting Stability.ai generation process...');
     
     // Process the generation immediately (Stability.ai is synchronous)
+    console.log('🚀 [NeoGlitch] About to call processGenerationAsync...');
     const generationResult = await processGenerationAsync(initialRecord.id, sourceUrl, prompt, presetKey, userId, runId, userToken)
+    console.log('✅ [NeoGlitch] processGenerationAsync completed:', !!generationResult);
       .catch(error => {
         console.error('❌ [NeoGlitch] Async generation failed:', error);
         // Update status to failed in database
@@ -1221,7 +1232,7 @@ async function attemptStabilityGeneration(
 
   try {
     // 🚀 NEW: Use the modular Stability.ai generator
-    const { generateImageWithStability } = await import('../../src/lib/stability-generator.js');
+    const { generateImageWithStability } = await import('../src/lib/stability-generator.js');
     
     // 🔍 DETAILED LOGGING: Log the request details for Stability.ai support
     const requestDetails = {
