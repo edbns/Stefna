@@ -1324,8 +1324,6 @@ async function attemptStabilityGeneration(
       throw apiError;
     } finally {
       clearTimeout(apiTimeout);
-    } finally {
-      clearTimeout(apiTimeout);
     }
 
     // 🔍 DETAILED LOGGING: Log the successful response for Stability.ai support
@@ -1354,7 +1352,12 @@ async function attemptStabilityGeneration(
       imageUrl: cloudinaryUrl,
       status: 'completed'
     };
-  
+
+  } catch (error: any) {
+    console.error('❌ [NeoGlitch] Error in Stability.ai generation attempt:', error);
+    throw error;
+  }
+
   } catch (stabilityError: any) {
     // 🔍 DETAILED LOGGING: Log the failed response for Stability.ai support
     console.log('🔍 [Stability.ai Support] FULL ERROR RESPONSE:', {
