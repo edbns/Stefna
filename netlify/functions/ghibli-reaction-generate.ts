@@ -11,7 +11,8 @@ import { Handler } from '@netlify/functions';
 import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
-import { checkIdentityPreservation, getIPAThreshold } from './_lib/ipaUtils';
+import { getIPAThreshold } from './_lib/ipaUtils';
+import { checkTensorFlowIPA } from './_lib/tensorflowIPA';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -238,15 +239,15 @@ export const handler: Handler = async (event) => {
           console.log('✅ [GhibliReaction] Fal.ai job ID stored:', falJobId);
         }
         
-        // 🔒 REAL IDENTITY PRESERVATION CHECK
-        console.log('🔒 [GhibliReaction] Starting real identity preservation check...');
+        // 🔒 TENSORFLOW.JS IDENTITY PRESERVATION CHECK
+        console.log('🔒 [GhibliReaction] Starting TensorFlow.js identity preservation check...');
         let ipaResult = null;
         
         try {
           const ipaThreshold = getIPAThreshold('ghibli_reaction');
-          ipaResult = await checkIdentityPreservation(sourceUrl, finalImageUrl, 'ghibli_reaction');
+          ipaResult = await checkTensorFlowIPA(sourceUrl, finalImageUrl, ipaThreshold);
           
-          console.log(`🔒 [GhibliReaction] IPA check completed: ${(ipaResult.similarity * 100).toFixed(1)}% similarity, threshold: ${(ipaThreshold * 100).toFixed(1)}%, passed: ${ipaResult.passed}`);
+          console.log(`🔒 [GhibliReaction] TensorFlow.js IPA check completed: ${(ipaResult.similarity * 100).toFixed(1)}% similarity, threshold: ${(ipaThreshold * 100).toFixed(1)}%, passed: ${ipaResult.passed}`);
           
           if (ipaResult.passed) {
             console.log('✅ [GhibliReaction] Identity preservation passed - excellent result!');
@@ -255,7 +256,7 @@ export const handler: Handler = async (event) => {
             console.log(`🔒 [GhibliReaction] Breakdown - Face: ${(ipaResult.facePreservation * 100).toFixed(1)}%, Animal: ${(ipaResult.animalPreservation * 100).toFixed(1)}%, Group: ${(ipaResult.groupPreservation * 100).toFixed(1)}%, Gender: ${(ipaResult.genderPreservation * 100).toFixed(1)}%`);
           }
         } catch (ipaError) {
-          console.warn('⚠️ [GhibliReaction] IPA check failed, proceeding with result:', ipaError);
+          console.warn('⚠️ [GhibliReaction] TensorFlow.js IPA check failed, proceeding with result:', ipaError);
           // Continue with generation result even if IPA fails
         }
         
@@ -274,7 +275,7 @@ export const handler: Handler = async (event) => {
             ipaSimilarity: ipaResult ? Math.round(ipaResult.similarity * 100) / 100 : 0,
             ipaThreshold: getIPAThreshold('ghibli_reaction'),
             ipaRetries: 0,
-            ipaStrategy: 'real_tensorflow_check',
+            ipaStrategy: 'tensorflow_face_landmarks',
             ipaDetails: ipaResult ? {
               facePreservation: Math.round(ipaResult.facePreservation * 100) / 100,
               animalPreservation: Math.round(ipaResult.animalPreservation * 100) / 100,
