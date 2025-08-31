@@ -9,6 +9,7 @@
 // 
 // ⚠️ IMPORTANT: This follows the unified generation pattern
 import { Handler } from '@netlify/functions';
+import { requireAuth } from './_lib/auth';
 import { fal } from '@fal-ai/client';
 import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
@@ -146,7 +147,20 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const { storyId, userId } = JSON.parse(event.body || '{}');
+    const body = JSON.parse(event.body || '{}');
+    const generationMeta = body.generationMeta || body.meta || {};
+    const storyId: string = body.storyId || generationMeta.storyId || body.runId || '';
+
+    // Resolve userId from body or Authorization token
+    let userId: string = body.userId;
+    if (!userId && event.headers.authorization) {
+      try {
+        const auth = requireAuth(event.headers.authorization);
+        userId = auth.userId;
+      } catch (e) {
+        // ignore; will fail validation below if still missing
+      }
+    }
 
     if (!storyId || !userId) {
       return {
