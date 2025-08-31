@@ -75,6 +75,33 @@ export async function startBackgroundGeneration(
   }
 }
 
+// Minimal retry helper: use Fal.ai with lower strength to improve identity preservation
+async function retryWithLowerStrength(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
+  try {
+    const { fal } = await import('@fal-ai/client');
+    if (!process.env.FAL_KEY) {
+      throw new Error('FAL_KEY not configured for retry');
+    }
+    fal.config({ credentials: process.env.FAL_KEY });
+    const result = await fal.subscribe('fal-ai/hyper-sdxl/image-to-image', {
+      input: {
+        image_url: sourceUrl,
+        prompt: `${prompt}, preserve facial identity, maintain original face structure`,
+        image_strength: 0.55,
+        guidance_scale: 6.5,
+        num_inference_steps: 25,
+        seed: Math.floor(Math.random() * 1000000)
+      },
+      logs: false
+    });
+    const imageUrl = result?.data?.image?.url || result?.data?.image || null;
+    if (!imageUrl) return null;
+    return { imageUrl };
+  } catch (e) {
+    return null;
+  }
+}
+
 // Helper function to check identity similarity (placeholder for now)
 async function checkIdentitySimilarity(sourceUrl: string, generatedUrl: string): Promise<number> {
   try {
@@ -140,8 +167,7 @@ export const handler: Handler = async (event) => {
     timestamp: new Date().toISOString()
   });
  
-  try {
-  // Parse body early to catch JSON parsing errors
+    // Parse body early to catch JSON parsing errors
     let body = {};
     if (event.body) {
       try {
@@ -241,6 +267,8 @@ export const handler: Handler = async (event) => {
       };
     }
 
+  }
+  
   // Continue with POST request handling...
 
   console.log('🔄 [NeoGlitch] Processing POST request...');
@@ -499,7 +527,7 @@ async function processGenerationAsync(
         let cloudinaryPublicId: string | null = null;
         
         try {
-          const cloudinaryResult = await uploadAIMLToCloudinary(stabilityResult.imageUrl, presetKey);
+          const cloudinaryResult = await uploadFalToCloudinary(stabilityResult.imageUrl, presetKey);
           finalImageUrl = cloudinaryResult.url;
           cloudinaryPublicId = cloudinaryResult.publicId;
           console.log('✅ [NeoGlitch] Stability.ai result uploaded to Cloudinary successfully');
@@ -565,7 +593,7 @@ async function processGenerationAsync(
           let cloudinaryPublicId: string | null = null;
           
           try {
-            const cloudinaryResult = await uploadAIMLToCloudinary(falResult.imageUrl, presetKey);
+            const cloudinaryResult = await uploadFalToCloudinary(falResult.imageUrl, presetKey);
             finalImageUrl = cloudinaryResult.url;
             cloudinaryPublicId = cloudinaryResult.publicId;
             console.log('✅ [NeoGlitch] Fal.ai result uploaded to Cloudinary successfully');
@@ -602,7 +630,7 @@ async function processGenerationAsync(
                 
                 // Re-upload to Cloudinary if needed
                 try {
-                  const retryCloudinaryResult = await uploadAIMLToCloudinary(retryResult.imageUrl, presetKey);
+                  const retryCloudinaryResult = await uploadFalToCloudinary(retryResult.imageUrl, presetKey);
                   finalImageUrl = retryCloudinaryResult.url;
                   cloudinaryPublicId = retryCloudinaryResult.publicId;
                   console.log('✅ [NeoGlitch] Retry result uploaded to Cloudinary');
@@ -1111,7 +1139,7 @@ async function attemptStabilityGeneration(
 
     let generateImageWithStability;
     try {
-      const module = await import('../src/lib/stability-generator.js');
+      const module = await import('../../src/lib/stability-generator');
       generateImageWithStability = module.generateImageWithStability;
       console.log('✅ [NeoGlitch] Successfully imported stability-generator');
     } catch (importError: any) {
