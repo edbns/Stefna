@@ -291,121 +291,31 @@ export const handler: Handler = async (event) => {
 
     console.log('✅ [GhibliReaction] Database record created:', initialRecord.id);
 
-    try {
-      // Start Fal.ai generation via centralized function
-      const generationResult = await startFalGeneration(finalSourceUrl, prompt, effectivePresetKey, userId, runId);
-      
-      if (generationResult && generationResult.imageUrl) {
-        console.log('🎉 [GhibliReaction] Generation successful, processing result...');
-        
-        const finalImageUrl = generationResult.imageUrl;
-        const falJobId = generationResult.falJobId || generationResult.jobId || null;
-        
-        // Update database record with fal.ai job ID
-        if (falJobId) {
-          await q(`
-            UPDATE ghibli_reaction_media
-            SET fal_job_id = $1, updated_at = NOW()
-            WHERE id = $2
-          `, [falJobId, initialRecord.id]);
-          console.log('✅ [GhibliReaction] Fal.ai job ID stored:', falJobId);
-        }
-        
+    // Kick background worker and return immediately
+    await fetch(`${process.env.URL}/.netlify/functions/ghibli-reaction-worker`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userToken}`
+      },
+      body: JSON.stringify({ jobId: initialRecord.id, userId, runId, presetKey: effectivePresetKey, sourceUrl: finalSourceUrl })
+    }).catch(() => {});
 
-        
-        // Update database record with completed status
-        await q(`
-          UPDATE ghibli_reaction_media
-          SET status = $1, image_url = $2, metadata = $3, updated_at = NOW()
-          WHERE id = $4
-        `, [
-          'completed', 
-          finalImageUrl, 
-          JSON.stringify({
-            falJobId: falJobId,
-            falModel: generationResult.falModel || 'unknown'
-          }),
-          initialRecord.id
-        ]);
-        
-        console.log('✅ [GhibliReaction] Database updated with completed status');
-        
-        // Finalize credits
-        await fetch(`${process.env.URL}/.netlify/functions/credits-finalize`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`
-          },
-          body: JSON.stringify({
-            userId,
-            requestId: runId,
-            success: true,
-            meta: { presetKey: effectivePresetKey, finalImageUrl: finalImageUrl.substring(0, 100) }
-          })
-        });
-        
-        console.log('✅ [GhibliReaction] Credits finalized successfully');
-        
-        return {
-          statusCode: 200,
-          headers: { 
-            'Access-Control-Allow-Origin': '*', 
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-            'Access-Control-Allow-Methods': 'POST, OPTIONS' 
-          },
-                  body: JSON.stringify({
-          message: 'Generation completed successfully',
-          jobId: initialRecord.id,
-          runId: runId.toString(),
-          status: 'completed',
-          imageUrl: finalImageUrl,
-          provider: 'fal'
-        })
-        };
-      }
-      
-    } catch (generationError: any) {
-      console.error('❌ [GhibliReaction] Generation failed:', generationError);
-      
-      // Update database record with failed status
-      await q(`
-        UPDATE ghibli_reaction_media
-        SET status = 'failed', image_url = $1, updated_at = NOW()
-        WHERE id = $2
-      `, [finalSourceUrl, initialRecord.id]);
-      
-      // Refund credits since generation failed
-      await fetch(`${process.env.URL}/.netlify/functions/credits-finalize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userToken}`
-        },
-        body: JSON.stringify({
-          userId,
-          requestId: runId,
-          success: false,
-          meta: { presetKey, error: generationError.message }
-        })
-      });
-      
-      console.log('✅ [GhibliReaction] Credits refunded due to generation failure');
-      
-      return {
-        statusCode: 500,
-        headers: { 
-          'Access-Control-Allow-Origin': '*', 
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-          'Access-Control-Allow-Methods': 'POST, OPTIONS' 
-        },
-        body: JSON.stringify({
-          error: 'GENERATION_FAILED',
-          message: 'Ghibli Reaction generation failed',
-          details: generationError.message
-        })
-      };
-    }
+    return {
+      statusCode: 202,
+      headers: { 
+        'Access-Control-Allow-Origin': '*', 
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+        'Access-Control-Allow-Methods': 'POST, OPTIONS' 
+      },
+      body: JSON.stringify({
+        message: 'Processing',
+        jobId: initialRecord.id,
+        runId: runId.toString(),
+        status: 'processing',
+        pollUrl: '/.netlify/functions/ghibli-reaction-generate?jobId=' + initialRecord.id
+      })
+    };
 
   } catch (error) {
     console.error('❌ [GhibliReaction] Unexpected error:', error);
