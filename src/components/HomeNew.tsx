@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, X, FileText, ArrowUp } from 'lucide-react'
 // Generate simple unique ID for runId
 const generateRunId = () => `run_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 import { authenticatedFetch, signedFetch } from '../utils/apiClient'
@@ -907,7 +907,7 @@ const HomeNew: React.FC = () => {
           // First file goes to main slot
           const fakeEvent = {
             target: { files: [file] }
-          } as React.ChangeEvent<HTMLInputElement>
+          } as unknown as React.ChangeEvent<HTMLInputElement>
           onFileUpload(fakeEvent)
         } else {
           // Subsequent files go to additional slots
@@ -1050,7 +1050,9 @@ const HomeNew: React.FC = () => {
                       const formData = new FormData()
 
                       // Add main image
-                      formData.append('photos', selectedFile)
+                      if (selectedFile) {
+                        formData.append('photos', selectedFile)
+                      }
 
                       // Add additional images
                       additionalStoryImages.forEach((file, index) => {
@@ -2982,7 +2984,7 @@ const HomeNew: React.FC = () => {
                                 kind === 'custom' ? 'custom-prompt' : 
                                 kind === 'emotionmask' ? 'emotion-mask' : 
                                                 kind === 'ghiblireact' ? 'ghibli-reaction' :
-                                                kind === 'neotokyoglitch' ? 'neo-glitch' :
+                                                kind === 'storytime' ? 'story-time' :
                                                 'presets';
 
           console.log(`🚀 [SimpleGeneration] Using direct ${generationMode} function call`);
@@ -5213,13 +5215,13 @@ const HomeNew: React.FC = () => {
                     disabled={
                       (composerState.mode === 'storytime' && !canGenerateStory) ||
                       (composerState.mode !== 'storytime' && !selectedFile) ||
-                      (composerState.mode === 'presets' && !prompt.trim() && !selectedPreset) ||
+                      (composerState.mode === 'preset' && !prompt.trim() && !selectedPreset) ||
                       navGenerating
                     } 
                     className={
                       ((composerState.mode === 'storytime' && !canGenerateStory) ||
                        (composerState.mode !== 'storytime' && !selectedFile) ||
-                       (composerState.mode === 'presets' && !prompt.trim() && !selectedPreset) ||
+                       (composerState.mode === 'preset' && !prompt.trim() && !selectedPreset) ||
                        navGenerating)
                         ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
                         : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
