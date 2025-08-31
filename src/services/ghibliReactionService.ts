@@ -146,23 +146,22 @@ class GhibliReactionService {
 
   /**
    * Poll for generation completion
-   * Since AIML returns immediately, this is mainly for status checking
+   * Since fal.ai returns immediately, this is mainly for status verification
    */
-  async pollForCompletion(aimlJobId: string, maxAttempts: number = 10): Promise<GhibliReactionStatus> {
+  async pollForCompletion(jobId: string, maxAttempts: number = 10): Promise<GhibliReactionStatus> {
     try {
-      console.log('🔍 [GhibliReaction] Polling for completion:', aimlJobId);
+      console.log('🔍 [GhibliReaction] Polling for completion:', jobId);
       
-      // For Ghibli Reaction, AIML usually returns immediately
+      // For Ghibli Reaction, fal.ai usually returns immediately
       // This polling is mainly for status verification
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         console.log(`🔍 [GhibliReaction] Poll attempt ${attempt}/${maxAttempts}`);
         
         try {
-          // Check status by querying the database directly
-          const statusRes = await authenticatedFetch('/.netlify/functions/ghibli-reaction-generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ aimlJobId })
+          // Check status by querying the database directly via a status endpoint
+          const statusRes = await authenticatedFetch(`/.netlify/functions/ghibli-reaction-generate?jobId=${jobId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
           });
 
           if (statusRes.ok) {
@@ -174,7 +173,7 @@ class GhibliReactionService {
                 id: status.id,
                 status: 'completed',
                 imageUrl: status.imageUrl,
-                aimlJobId: status.aimlJobId,
+                aimlJobId: status.falJobId,
                 createdAt: new Date(status.createdAt),
                 preset: status.preset,
                 prompt: status.prompt

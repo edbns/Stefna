@@ -28,22 +28,79 @@ export const handler: Handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
       },
       body: ''
     };
   }
 
-  if (event.httpMethod !== 'POST') {
+  if (event.httpMethod !== 'POST' && event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
       headers: { 
         'Access-Control-Allow-Origin': '*', 
         'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-        'Access-Control-Allow-Methods': 'POST, OPTIONS' 
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
       },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
+  }
+
+  // Handle GET requests for status checking
+  if (event.httpMethod === 'GET') {
+    const jobId = event.queryStringParameters?.jobId;
+    if (!jobId) {
+      return {
+        statusCode: 400,
+        headers: { 
+          'Access-Control-Allow-Origin': '*', 
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+        },
+        body: JSON.stringify({ error: 'jobId parameter required' })
+      };
+    }
+
+    try {
+      const status = await qOne(`
+        SELECT id, status, image_url, created_at, preset, prompt, fal_job_id
+        FROM ghibli_reaction_media
+        WHERE id = $1
+      `, [jobId]);
+
+      if (!status) {
+        return {
+          statusCode: 404,
+          headers: { 
+            'Access-Control-Allow-Origin': '*', 
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+          },
+          body: JSON.stringify({ error: 'Job not found' })
+        };
+      }
+
+      return {
+        statusCode: 200,
+        headers: { 
+          'Access-Control-Allow-Origin': '*', 
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+        },
+        body: JSON.stringify(status)
+      };
+    } catch (error) {
+      console.error('❌ [GhibliReaction] Status check failed:', error);
+      return {
+        statusCode: 500,
+        headers: { 
+          'Access-Control-Allow-Origin': '*', 
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' 
+        },
+        body: JSON.stringify({ error: 'Status check failed' })
+      };
+    }
   }
 
   try {
