@@ -362,8 +362,12 @@ export const handler: Handler = async (event) => {
       generationMeta = {}
     } = body;
 
-    // Validation
-    const requiredFields = { prompt, userId, presetKey, runId, sourceUrl };
+    // Normalize preset: always treat as 'custom', but accept aliases in generationMeta
+    const metaPreset = (generationMeta.presetKey || generationMeta.preset || generationMeta.label || '').toString().toLowerCase();
+    const effectivePresetKey = (metaPreset || presetKey || 'custom').toString();
+
+    // Validation (do not require presetKey explicitly; we default to 'custom')
+    const requiredFields = { prompt, userId, runId, sourceUrl };
     const missingFields = Object.entries(requiredFields)
       .filter(([key, value]) => !value)
       .map(([key]) => key);
@@ -428,7 +432,7 @@ export const handler: Handler = async (event) => {
       runId: runId.toString(), 
       runIdType: typeof runId,
       sourceUrl, 
-      presetKey, 
+      presetKey: effectivePresetKey, 
       userId 
     });
 
@@ -473,7 +477,7 @@ export const handler: Handler = async (event) => {
 
     // Validate preset key
     const validPresets = ['custom'];
-    if (!validPresets.includes(presetKey)) {
+    if (!validPresets.includes(effectivePresetKey)) {
       return {
         statusCode: 422,
         headers: {
@@ -485,7 +489,7 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify({
           error: 'INVALID_PRESET',
           message: `Invalid preset key. Must be one of: ${validPresets.join(', ')}`,
-          received: presetKey,
+          received: effectivePresetKey,
           valid: validPresets
         })
       };
@@ -522,7 +526,7 @@ export const handler: Handler = async (event) => {
         amount: 1,
         requestId: runId,
         action: 'custom_prompt_generation',
-        meta: { presetKey, prompt: prompt.substring(0, 100) }
+        meta: { presetKey: effectivePresetKey, prompt: prompt.substring(0, 100) }
       })
     });
 
@@ -552,7 +556,7 @@ export const handler: Handler = async (event) => {
       INSERT INTO custom_prompt_media (id, user_id, source_url, prompt, preset, run_id, status, image_url, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
       RETURNING id
-    `, [uuidv4(), userId, sourceUrl, prompt, presetKey, runId.toString(), 'pending', sourceUrl]);
+    `, [uuidv4(), userId, sourceUrl, prompt, effectivePresetKey, runId.toString(), 'pending', sourceUrl]);
 
     console.log('✅ [CustomPrompt] Initial record created:', initialRecord.id);
 
@@ -560,7 +564,7 @@ export const handler: Handler = async (event) => {
     console.log('🚀 [CustomPrompt] Starting FAL.ai generation...');
     
     try {
-      const generationResult = await startFALGeneration(sourceUrl, prompt, presetKey, userId, runId);
+      const generationResult = await startFALGeneration(sourceUrl, prompt, effectivePresetKey, userId, runId);
 
       if (generationResult?.imageUrl) {
         console.log('🎉 [CustomPrompt] Generation completed immediately!');
@@ -570,7 +574,7 @@ export const handler: Handler = async (event) => {
         let cloudinaryPublicId: string | null = null;
         
         try {
-          const cloudinaryResult = await uploadAIMLToCloudinary(generationResult.imageUrl, presetKey);
+          const cloudinaryResult = await uploadAIMLToCloudinary(generationResult.imageUrl, effectivePresetKey);
           finalImageUrl = cloudinaryResult.url;
           cloudinaryPublicId = cloudinaryResult.publicId;
           console.log('✅ [CustomPrompt] Result uploaded to Cloudinary successfully');
@@ -600,7 +604,7 @@ export const handler: Handler = async (event) => {
             requestId: runId,
             success: true,
             meta: { 
-              presetKey, 
+              presetKey: effectivePresetKey, 
               customPrompt: prompt.substring(0, 100),
               finalImageUrl: finalImageUrl.substring(0, 100) 
             }
@@ -623,7 +627,7 @@ export const handler: Handler = async (event) => {
             runId: runId.toString(),
             status: 'completed',
             imageUrl: finalImageUrl,
-            provider: 'aiml',
+            provider: 'fal',
             customPrompt: prompt.substring(0, 100) + '...'
           })
         };
@@ -666,7 +670,7 @@ export const handler: Handler = async (event) => {
           userId,
           requestId: runId,
           success: false,
-          meta: { presetKey, error: generationError.message }
+          meta: { presetKey: effectivePresetKey, error: generationError.message }
         })
       });
       
