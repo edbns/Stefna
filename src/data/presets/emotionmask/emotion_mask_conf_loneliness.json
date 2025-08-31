@@ -1,8 +1,0 @@
-{
-  "id": "emotion_mask_conf_loneliness",
-  "name": "Confidence + Loneliness",
-  "prompt": "Powerful pose with solitary atmosphere. Strong gaze, isolated composition, contrast between inner resilience and quiet sadness.",
-  "negative_prompt": "crowded scene, blurry face, expressionless",
-  "model": "fal-ai/ghiblify",
-  "face_fix": true
-}

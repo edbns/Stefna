@@ -1,8 +1,0 @@
-{
-  "id": "emotion_mask_strength_vuln",
-  "name": "Strength + Vulnerability",
-  "prompt": "A cinematic portrait showing inner strength with a subtle vulnerability. Intense eyes, guarded posture, but soft facial micro-expressions.",
-  "negative_prompt": "cartoonish, distorted anatomy, flat lighting",
-  "model": "flux-image-to-image-v1",
-  "face_fix": true
-}

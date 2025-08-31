@@ -17,64 +17,79 @@ export type EmotionMaskPreset = {
 
 export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
   {
-    id: 'emotion_mask_love',
-    label: 'Love',
-    prompt: `Transform the human face into a loving, affectionate expression while preserving realistic skin, hair, and facial structure. Add soft, warm lighting that enhances the emotional depth. Eyes should convey warmth and tenderness. Preserve skin tone, gender, and facial integrity. Lighting should be soft and romantic, like candlelight or sunset. Keep hairstyle and identity intact.`,
-    negative_prompt: `distorted features, overexaggerated proportions, fake texture, plastic skin, full anime rendering, gender swap, photorealism, 3D look, harsh shadows`,
+    id: 'emotion_mask_nostalgia_distance',
+    label: 'Nostalgia + Distance',
+    prompt: 'Portrait reflecting longing and emotional distance. Dreamy lighting, blurred background, subject gazing away as if lost in memory.',
+    negative_prompt: 'chaotic, blurry subject, busy background',
     strength: 0.35,
-    model: "fal-ai/ghiblify", // Updated to use fal.ai model
+    model: 'fal-ai/ghiblify',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'emotion_mask',
     guidance_scale: 9,
     num_inference_steps: 28,
-    features: ['emotional_reaction', 'love', 'soft_lighting', 'identity_preserved']
+    features: ['emotional_reaction', 'nostalgia', 'distance', 'dreamy_lighting', 'identity_preserved']
   },
   {
-    id: 'emotion_mask_joy',
-    label: 'Joy',
-    prompt: `Transform the human face into a joyful, happy expression while preserving realistic skin, hair, and facial structure. Add bright, cheerful lighting that enhances the positive emotion. Eyes should sparkle with happiness and laughter. Preserve skin tone, gender, and facial integrity. Lighting should be bright and uplifting, like morning sunlight. Keep hairstyle and identity intact.`,
-    negative_prompt: `distorted features, overexaggerated proportions, fake texture, plastic skin, full anime rendering, gender swap, photorealism, 3D look, harsh shadows`,
+    id: 'emotion_mask_joy_sadness',
+    label: 'Joy + Sadness',
+    prompt: 'Portrait capturing bittersweet emotions, smiling through tears, hopeful eyes with a melancholic undertone. Soft lighting and delicate emotional tension.',
+    negative_prompt: 'flat emotion, robotic expression, blurry, extra limbs',
     strength: 0.35,
-    model: "fal-ai/ghiblify", // Updated to use fal.ai model
+    model: 'flux-image-to-image-v1',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'emotion_mask',
     guidance_scale: 9,
     num_inference_steps: 28,
-    features: ['emotional_reaction', 'joy', 'bright_lighting', 'identity_preserved']
-  },
-  {
-    id: 'emotion_mask_sadness',
-    label: 'Sadness',
-    prompt: `Transform the human face into a sad, melancholic expression while preserving realistic skin, hair, and facial structure. Add soft, muted lighting that enhances the emotional depth. Eyes should convey sorrow and vulnerability. Preserve skin tone, gender, and facial integrity. Lighting should be gentle and subdued, like overcast daylight. Keep hairstyle and identity intact.`,
-    negative_prompt: `distorted features, overexaggerated proportions, fake texture, plastic skin, full anime rendering, gender swap, photorealism, 3D look, harsh shadows`,
-    strength: 0.35,
-    model: "fal-ai/ghiblify", // Updated to use fal.ai model
-    mode: 'i2i',
-    input: 'image',
-    requiresSource: true,
-    source: 'emotion_mask',
-    guidance_scale: 9,
-    num_inference_steps: 28,
-    features: ['emotional_reaction', 'sadness', 'soft_lighting', 'identity_preserved']
+    features: ['emotional_reaction', 'joy', 'sadness', 'bittersweet', 'soft_lighting', 'identity_preserved']
   },
   {
     id: 'emotion_mask_conf_loneliness',
-    label: 'Confusion/Loneliness',
-    prompt: `Transform the human face into a confused, lonely expression while preserving realistic skin, hair, and facial structure. Add soft, uncertain lighting that enhances the emotional complexity. Eyes should convey confusion and isolation. Preserve skin tone, gender, and facial integrity. Lighting should be dim and contemplative, like evening shadows. Keep hairstyle and identity intact.`,
-    negative_prompt: `distorted features, overexaggerated proportions, fake texture, plastic skin, full anime rendering, gender swap, photorealism, 3D look, harsh shadows`,
+    label: 'Confidence + Loneliness',
+    prompt: 'Powerful pose with solitary atmosphere. Strong gaze, isolated composition, contrast between inner resilience and quiet sadness.',
+    negative_prompt: 'crowded scene, blurry face, expressionless',
     strength: 0.35,
-    model: "fal-ai/ghiblify", // Updated to use fal.ai model
+    model: 'fal-ai/ghiblify',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'emotion_mask',
     guidance_scale: 9,
     num_inference_steps: 28,
-    features: ['emotional_reaction', 'confusion', 'loneliness', 'soft_lighting', 'identity_preserved']
+    features: ['emotional_reaction', 'confidence', 'loneliness', 'strong_gaze', 'identity_preserved']
+  },
+  {
+    id: 'emotion_mask_peace_fear',
+    label: 'Peace + Fear',
+    prompt: 'Emotive portrait with calm expression under tense atmosphere. Soft smile with flickers of anxiety in the eyes, dual-toned lighting (cool and warm).',
+    negative_prompt: 'expressionless, poorly lit, chaotic background',
+    strength: 0.35,
+    model: 'flux-image-to-image-v1',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'emotion_mask',
+    guidance_scale: 9,
+    num_inference_steps: 28,
+    features: ['emotional_reaction', 'peace', 'fear', 'dual_lighting', 'identity_preserved']
+  },
+  {
+    id: 'emotion_mask_strength_vuln',
+    label: 'Strength + Vulnerability',
+    prompt: 'A cinematic portrait showing inner strength with a subtle vulnerability. Intense eyes, guarded posture, but soft facial micro-expressions.',
+    negative_prompt: 'cartoonish, distorted anatomy, flat lighting',
+    strength: 0.35,
+    model: 'flux-image-to-image-v1',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'emotion_mask',
+    guidance_scale: 9,
+    num_inference_steps: 28,
+    features: ['emotional_reaction', 'strength', 'vulnerability', 'cinematic', 'identity_preserved']
   }
 ];
 

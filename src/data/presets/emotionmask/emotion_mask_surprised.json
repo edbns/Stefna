@@ -1,8 +1,0 @@
-{
-  "id": "emotion_mask_peace_fear",
-  "name": "Peace + Fear",
-  "prompt": "Emotive portrait with calm expression under tense atmosphere. Soft smile with flickers of anxiety in the eyes, dual-toned lighting (cool and warm).",
-  "negative_prompt": "expressionless, poorly lit, chaotic background",
-  "model": "flux-image-to-image-v1",
-  "face_fix": true
-}

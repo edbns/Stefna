@@ -1,8 +1,0 @@
-{
-  "id": "emotion_mask_joy_sadness",
-  "name": "Joy + Sadness",
-  "prompt": "Portrait capturing bittersweet emotions, smiling through tears, hopeful eyes with a melancholic undertone. Soft lighting and delicate emotional tension.",
-  "negative_prompt": "flat emotion, robotic expression, blurry, extra limbs",
-  "model": "flux-image-to-image-v1",
-  "face_fix": true
-}

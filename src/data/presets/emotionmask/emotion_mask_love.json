@@ -1,8 +1,0 @@
-{
-  "id": "emotion_mask_nostalgia_distance",
-  "name": "Nostalgia + Distance",
-  "prompt": "Portrait reflecting longing and emotional distance. Dreamy lighting, blurred background, subject gazing away as if lost in memory.",
-  "negative_prompt": "chaotic, blurry subject, busy background",
-  "model": "fal-ai/ghiblify",
-  "face_fix": true
-}
