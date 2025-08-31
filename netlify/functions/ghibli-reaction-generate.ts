@@ -11,7 +11,7 @@ import { Handler } from '@netlify/functions';
 import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
-import { getIPAThreshold, checkSimpleIPA } from './_lib/simpleIPA';
+
 
 // Configure Cloudinary
 cloudinary.config({
@@ -238,28 +238,9 @@ export const handler: Handler = async (event) => {
           console.log('✅ [GhibliReaction] Fal.ai job ID stored:', falJobId);
         }
         
-        // 🔒 SIMPLE IDENTITY PRESERVATION CHECK
-        console.log('🔒 [GhibliReaction] Starting simple identity preservation check...');
-        let ipaResult = null;
+
         
-        try {
-          const ipaThreshold = getIPAThreshold('ghibli_reaction');
-          ipaResult = await checkSimpleIPA(sourceUrl, finalImageUrl, ipaThreshold);
-          
-          console.log(`🔒 [GhibliReaction] Simple IPA check completed: ${(ipaResult.similarity * 100).toFixed(1)}% similarity, threshold: ${(ipaThreshold * 100).toFixed(1)}%, passed: ${ipaResult.passed}`);
-          
-          if (ipaResult.passed) {
-            console.log('✅ [GhibliReaction] Identity preservation passed - excellent result!');
-          } else {
-            console.log('⚠️ [GhibliReaction] Identity preservation below threshold - but continuing with result');
-            console.log(`🔒 [GhibliReaction] Breakdown - Face: ${(ipaResult.facePreservation * 100).toFixed(1)}%, Animal: ${(ipaResult.animalPreservation * 100).toFixed(1)}%, Group: ${(ipaResult.groupPreservation * 100).toFixed(1)}%, Gender: ${(ipaResult.genderPreservation * 100).toFixed(1)}%`);
-          }
-        } catch (ipaError) {
-          console.warn('⚠️ [GhibliReaction] Simple IPA check failed, proceeding with result:', ipaError);
-          // Continue with generation result even if IPA fails
-        }
-        
-        // Update database record with completed status and IPA results
+        // Update database record with completed status
         await q(`
           UPDATE ghibli_reaction_media
           SET status = $1, image_url = $2, metadata = $3, updated_at = NOW()
@@ -269,18 +250,7 @@ export const handler: Handler = async (event) => {
           finalImageUrl, 
           JSON.stringify({
             falJobId: falJobId,
-            falModel: generationResult.falModel || 'unknown',
-            ipaPassed: ipaResult?.passed || false,
-            ipaSimilarity: ipaResult ? Math.round(ipaResult.similarity * 100) / 100 : 0,
-            ipaThreshold: getIPAThreshold('ghibli_reaction'),
-            ipaRetries: 0,
-            ipaStrategy: 'simple_image_analysis',
-            ipaDetails: ipaResult ? {
-              facePreservation: Math.round(ipaResult.facePreservation * 100) / 100,
-              animalPreservation: Math.round(ipaResult.animalPreservation * 100) / 100,
-              groupPreservation: Math.round(ipaResult.groupPreservation * 100) / 100,
-              genderPreservation: Math.round(ipaResult.genderPreservation * 100) / 100
-            } : null
+            falModel: generationResult.falModel || 'unknown'
           }),
           initialRecord.id
         ]);

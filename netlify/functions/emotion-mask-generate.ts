@@ -12,7 +12,7 @@ import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 import { getFreshToken, isTokenExpiredError } from './utils/tokenRefresh';
-import { getIPAThreshold, checkSimpleIPA } from './_lib/simpleIPA';
+
 
 // 🚀 SYNCHRONOUS MODE: Process generation immediately like NeoGlitch
 // No more background processing or polling needed
@@ -449,43 +449,9 @@ export const handler: Handler = async (event) => {
           // Fallback to original URL if Cloudinary fails
         }
         
-        // 🔒 [IPA] Perform Identity Preservation Check
-        console.log('🔒 [EmotionMask] Starting IPA check for generated image');
-        let ipaResult = null;
-        let ipaPassed = false;
-        const ipaThreshold = getIPAThreshold('emotion-mask');
+
         
-        try {
-          ipaResult = await checkSimpleIPA(
-            sourceUrl, // Original image
-            finalImageUrl, // Generated image
-            ipaThreshold
-          );
-          
-          ipaPassed = ipaResult.passed;
-          console.log('✅ [EmotionMask] IPA check completed:', {
-            passed: ipaPassed,
-            similarity: ipaResult.similarity,
-            method: ipaResult.method,
-            fallbackUsed: ipaResult.fallbackUsed,
-            qualityScore: ipaResult.qualityScore
-          });
-          
-          // If IPA failed but we have a result, log warning
-          if (!ipaPassed) {
-            console.warn('⚠️ [EmotionMask] IPA check failed, but continuing with generation:', {
-              similarity: ipaResult.similarity,
-              threshold: ipaThreshold,
-              method: ipaResult.method
-            });
-          }
-          
-        } catch (ipaError) {
-          console.warn('⚠️ [EmotionMask] IPA check failed, continuing without IPA:', ipaError);
-          // Continue generation even if IPA fails
-        }
-        
-        // Update database record with completed status, fallback info, and IPA results
+        // Update database record with completed status and fallback info
         await q(`
           UPDATE emotion_mask_media
           SET status = $1, image_url = $2, updated_at = NOW(), metadata = $3
@@ -496,20 +462,7 @@ export const handler: Handler = async (event) => {
           attemptCount: generationResult.attemptCount,
           fallbackUsed: generationResult.fallbackUsed,
           cloudinaryPublicId: cloudinaryPublicId,
-          generationPath: 'aiml_fallback_system',
-          // IPA Results
-          ipa: ipaResult ? {
-            passed: ipaResult.passed,
-            similarity: ipaResult.similarity,
-            threshold: ipaThreshold,
-            method: ipaResult.method,
-            fallbackUsed: ipaResult.fallbackUsed,
-            qualityScore: ipaResult.qualityScore,
-            animalPreservation: ipaResult.animalPreservation,
-            groupPreservation: ipaResult.groupPreservation,
-            genderPreservation: ipaResult.genderPreservation,
-            facePreservation: ipaResult.facePreservation
-          } : null
+          generationPath: 'aiml_fallback_system'
         }), initialRecord.id]);
         
         console.log('✅ [EmotionMask] Database updated with completed status');
@@ -544,15 +497,7 @@ export const handler: Handler = async (event) => {
             aimlModel: generationResult.modelName,
             fallbackUsed: generationResult.fallbackUsed,
             attemptCount: generationResult.attemptCount,
-            // IPA Results
-            ipa: ipaResult ? {
-              passed: ipaResult.passed,
-              similarity: ipaResult.similarity,
-              threshold: ipaThreshold,
-              method: ipaResult.method,
-              fallbackUsed: ipaResult.fallbackUsed,
-              qualityScore: ipaResult.qualityScore
-            } : null
+
           })
         };
       }
