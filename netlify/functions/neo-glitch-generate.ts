@@ -462,13 +462,16 @@ export const handler: Handler = async (event) => {
     
     // Process the generation immediately (Stability.ai is synchronous)
     console.log('🚀 [NeoGlitch] About to call processGenerationAsync...');
-    const generationResult = await processGenerationAsync(initialRecord.id, sourceUrl, prompt, presetKey, userId, runId, userToken)
-    console.log('✅ [NeoGlitch] processGenerationAsync completed:', !!generationResult);
-      .catch(error => {
-        console.error('❌ [NeoGlitch] Async generation failed:', error);
-        // Update status to failed in database
-        q(`UPDATE neo_glitch_media SET status = 'failed' WHERE id = $1`, [initialRecord.id]);
-      });
+    let generationResult;
+    try {
+      generationResult = await processGenerationAsync(initialRecord.id, sourceUrl, prompt, presetKey, userId, runId, userToken);
+      console.log('✅ [NeoGlitch] processGenerationAsync completed:', !!generationResult);
+    } catch (error) {
+      console.error('❌ [NeoGlitch] processGenerationAsync failed:', error);
+      // Update status to failed in database
+      await q(`UPDATE neo_glitch_media SET status = 'failed' WHERE id = $1`, [initialRecord.id]);
+      throw error;
+    }
 
     // 🔍 CRITICAL FIX: Check if generation completed immediately
     if (generationResult && generationResult.status === 'completed' && generationResult.imageUrl) {
