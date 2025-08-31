@@ -11,8 +11,7 @@ import { Handler } from '@netlify/functions';
 import { q, qOne, qCount } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
-import { getIPAThreshold } from './_lib/ipaUtils';
-import { checkTensorFlowIPA } from './_lib/tensorflowIPA';
+import { checkTensorFlowIPA, getIPAThreshold } from './_lib/tensorflowIPA';
 
 // Configure Cloudinary
 cloudinary.config({
