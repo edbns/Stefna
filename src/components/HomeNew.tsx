@@ -146,6 +146,11 @@ export const resetHiddenUploader = () => {
   window.dispatchEvent(new CustomEvent('reset-hidden-uploader'))
 }
 
+// Debounce flag for error toasts
+declare global {
+  interface Window { __lastGenErrorShownAt?: number }
+}
+
 const HomeNew: React.FC = () => {
   const { notifyQueue, notifyReady, notifyError } = useToasts()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -2489,11 +2494,10 @@ const HomeNew: React.FC = () => {
               return;
             } else if (status.status === 'failed') {
               console.error('❌ [NeoGlitch] Job failed:', status.errorMessage);
-              notifyError({ title: 'Something went wrong', message: 'Please try again' });
+              notifyError({ title: 'Failed', message: 'Try again' });
               endGeneration(genId);
               setNavGenerating(false);
-              // Clear composer after error
-              setTimeout(() => handleClearComposerState(), 1000);
+              resetComposerState();
               return;
             } else {
               // Still processing, continue polling
@@ -2502,9 +2506,10 @@ const HomeNew: React.FC = () => {
             }
           } catch (error) {
             console.error('❌ [NeoGlitch] Polling error:', error);
-            notifyError({ title: 'Something went wrong', message: 'Please try again' });
+            notifyError({ title: 'Failed', message: 'Try again' });
             endGeneration(genId);
             setNavGenerating(false);
+            resetComposerState();
           }
         };
         
@@ -2963,33 +2968,35 @@ const HomeNew: React.FC = () => {
             // New system failed - no fallback to old system
             console.error('❌ [SimpleGeneration] Simplified service failed:', generationResult.error);
 
-            // Show error toast immediately for failed generations
-            const errorMessage = generationResult.error || 'Generation failed';
-            notifyError({
-              title: 'Generation failed',
-              message: errorMessage
-            });
+            // Show error toast immediately for failed generations (unified copy)
+            if (!window.__lastGenErrorShownAt || Date.now() - window.__lastGenErrorShownAt > 1500) {
+              window.__lastGenErrorShownAt = Date.now();
+              notifyError({ title: 'Failed', message: 'Try again' });
+            }
 
-            throw new Error(errorMessage);
+            // Stop spinner and reset composer
+            endGeneration(genId);
+            resetComposerState();
+            throw new Error(generationResult.error || 'Generation failed');
           }
         } catch (error) {
           clearTimeout(timeoutId); // Clear timeout on error
           if (error instanceof Error && error.name === 'AbortError') {
             console.warn('⚠️ Request aborted due to timeout');
             const timeoutError = new Error('Request timed out. Please try again with a smaller image or different prompt.');
-            notifyError({
-              title: 'Taking too long',
-              message: 'Please try again'
-            });
+            notifyError({ title: 'Taking too long', message: 'Please try again' });
+            endGeneration(genId);
+            resetComposerState();
             throw timeoutError;
           }
 
-          // Show error toast for other errors too
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-          notifyError({
-            title: 'Something went wrong',
-            message: 'Please try again'
-          });
+          // Show error toast for other errors too (unified copy)
+          if (!window.__lastGenErrorShownAt || Date.now() - window.__lastGenErrorShownAt > 1500) {
+            window.__lastGenErrorShownAt = Date.now();
+            notifyError({ title: 'Failed', message: 'Try again' });
+          }
+          endGeneration(genId);
+          resetComposerState();
           throw error; // Re-throw other errors
         }
 
@@ -3000,6 +3007,9 @@ const HomeNew: React.FC = () => {
         } else {
           // Process aimlApi results (old system) - but this should never happen now
           console.warn('⚠️ [SimpleGeneration] Unexpected path - this should not happen');
+          notifyError({ title: 'Failed', message: 'Try again' });
+          endGeneration(genId);
+          resetComposerState();
           throw new Error('Unexpected old system path - all generation should use new system');
         }
 
@@ -5068,7 +5078,7 @@ const HomeNew: React.FC = () => {
                               console.error('❌ Story Time generation failed:', error)
                             }
                           } else {
-                            closeAllDropdowns()
+                          closeAllDropdowns()
                           }
                         } else {
                           // Switch to Story Time mode
@@ -5085,7 +5095,7 @@ const HomeNew: React.FC = () => {
                       }
                       title={isAuthenticated ? 'Switch to Story Time mode' : 'Explore Story Time mode'}
                     >
-                      {selectedStoryTimePreset ?
+                      {selectedStoryTimePreset ? 
                         selectedStoryTimePreset === 'auto' ? 'Story Time (Auto)' :
                         selectedStoryTimePreset.charAt(0).toUpperCase() + selectedStoryTimePreset.slice(1)
                         : 'Story Time'
