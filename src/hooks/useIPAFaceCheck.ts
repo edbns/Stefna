@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
 import * as tf from '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
+import '@tensorflow/tfjs-backend-wasm';
+import '@tensorflow/tfjs-backend-cpu';
 import { createDetector, SupportedModels } from '@tensorflow-models/face-landmarks-detection';
 
 export interface FaceEmbedding {
@@ -123,8 +125,27 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     isModelLoading = true;
     
     try {
-      // Set TensorFlow.js backend
-      await tf.setBackend('webgl');
+      // 🔧 FIX: Proper TensorFlow.js backend initialization with fallback
+      const backends = ['webgl', 'wasm', 'cpu'];
+      let backendInitialized = false;
+      
+      for (const backend of backends) {
+        try {
+          console.log(`[IPA] Attempting TFJS backend: ${backend}`);
+          await tf.setBackend(backend);
+          await tf.ready();
+          console.log(`✅ [IPA] TFJS backend initialized: ${backend}`);
+          backendInitialized = true;
+          break;
+        } catch (err) {
+          console.warn(`⚠️ [IPA] Backend ${backend} failed:`, err);
+          continue;
+        }
+      }
+      
+      if (!backendInitialized) {
+        throw new Error('All TensorFlow.js backends failed to initialize');
+      }
       
       // Load face landmarks detection model
       const model = await createDetector(SupportedModels.MediaPipeFaceMesh);
@@ -166,7 +187,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
           ctx.drawImage(img, 0, 0);
           
           // Process image with TensorFlow.js Face Landmarks Detection
-          const predictions = await model.estimateFaces({ input: img });
+          const predictions = await model.estimateFaces(img);
           
           if (!predictions || predictions.length === 0) {
             reject(new Error('No faces detected in image'));
@@ -377,7 +398,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
         img.onload = async () => {
           try {
             // Detect faces in the image
-            const predictions = await model.estimateFaces({ input: img });
+            const predictions = await model.estimateFaces(img);
             
             if (!predictions || predictions.length === 0) {
               resolve(1.0); // No faces = perfect group preservation
@@ -603,8 +624,8 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
         ]);
         
         const [origFaces, genFaces] = await Promise.all([
-          model.estimateFaces({ input: origImg }),
-          model.estimateFaces({ input: genImg })
+          model.estimateFaces(origImg),
+          model.estimateFaces(genImg)
         ]);
         
         // Penalize if face count changes
@@ -885,7 +906,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
           ctx.drawImage(img, 0, 0);
           
           // Get face keypoints using TensorFlow.js
-          const predictions = await model.estimateFaces({ input: img });
+          const predictions = await model.estimateFaces(img);
           
           if (!predictions || predictions.length === 0) {
             reject(new Error('No faces detected for mask creation'));
