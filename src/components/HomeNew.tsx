@@ -1562,9 +1562,10 @@ const HomeNew: React.FC = () => {
               })
               
               if (response.ok) {
-                const settings = await response.json()
-                setUserHasAgreed(settings.mediaUploadAgreed || false)
-                console.log('✅ User agreement status loaded from database:', settings.mediaUploadAgreed)
+                const data = await response.json()
+                const settings = data.settings
+                setUserHasAgreed(settings.media_upload_agreed || false)
+                console.log('✅ User agreement status loaded from database:', settings.media_upload_agreed)
               }
             } catch (error) {
               console.error('Failed to load user agreement status:', error)

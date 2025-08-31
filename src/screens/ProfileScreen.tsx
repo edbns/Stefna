@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, ChevronRight, Coins, Users, Plus } from 'lucide-react'
+import ProfileTokenDisplay from '../components/ProfileTokenDisplay'
 import { InstagramIcon, XIcon, FacebookIcon, TikTokIcon, ThreadsIcon, YouTubeIcon } from '../components/SocialIcons'
 // RemixIcon import removed - no more remix functionality
 import MasonryMediaGrid from '../components/MasonryMediaGrid'
@@ -1516,6 +1517,17 @@ const ProfileScreen: React.FC = () => {
 
         {/* Notification System disabled on profile screen (only show in Notification tab) */}
         {/* Content based on active tab */}
+        {activeTab === 'tokens' && (
+          <div className="flex-1 overflow-y-auto p-6 pt-24">
+            <div className="max-w-4xl mx-auto">
+              <ProfileTokenDisplay 
+                userId={currentUserId || authService.getCurrentUser()?.id || ''} 
+                className="mb-6"
+              />
+            </div>
+          </div>
+        )}
+
         {activeTab === 'all-media' && (
           <div className="flex-1 overflow-y-auto p-6 pt-24">
             {/* Selection Controls */}
