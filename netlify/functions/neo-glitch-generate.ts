@@ -117,7 +117,7 @@ async function checkIdentitySimilarity(sourceUrl: string, generatedUrl: string):
     
     const similarity = 0.75; // Placeholder value - replace with real calculation
     return similarity;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [IPA] Similarity check failed:', error);
     return 0.5; // Default to 50% similarity on error
   }
@@ -181,7 +181,7 @@ export const handler: Handler = async (event) => {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Headers': 'Content-Type, Authorization',
             'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-          },
+          } as Record<string, string>,
           body: JSON.stringify({ error: 'Invalid JSON in request body' })
         };
       }
@@ -471,7 +471,7 @@ export const handler: Handler = async (event) => {
     console.error('❌ [NeoGlitch] Unexpected error:', error);
     
     // Check if it's a token expiration error
-    if (isTokenExpiredError(error.message)) {
+    if (isTokenExpiredError((error as Error).message)) {
       return {
         statusCode: 401,
         headers: {
@@ -720,85 +720,9 @@ async function processGenerationAsync(
 
 // Stability.ai Generation Function
 async function startStabilityGeneration(sourceUrl: string, prompt: string, presetKey: string, userId: string, runId: string) {
-  const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
-
-  if (!STABILITY_API_KEY) {
-    throw new Error('STABILITY_API_KEY not configured');
-  }
-
-  console.log('🚀 [NeoGlitch] Starting 3-tier Stability.ai generation strategy:', {
-    hasStabilityToken: !!STABILITY_API_KEY,
-    sourceUrl,
-    promptLength: prompt.length,
-    presetKey
-  });
-
-  try {
-    // 🎯 3-TIER STABILITY.AI FALLBACK STRATEGY
-    console.log('🎯 [NeoGlitch] Attempting 3-tier Stability.ai fallback: Ultra → Core → SD3');
-    
-    // Tier 1: Ultra (highest quality)
-    try {
-      console.log('🖼️ [NeoGlitch] Tier 1: Attempting Stable Image Ultra...');
-      const ultraResult = await attemptStabilityGeneration(
-        STABILITY_API_KEY,
-        sourceUrl,
-        prompt,
-        presetKey,
-        userId,
-        runId,
-        'ultra'
-      );
-      console.log('✅ [NeoGlitch] Ultra succeeded! Using Ultra result');
-      return { ...ultraResult, strategy: 'stability_ultra' };
-    } catch (ultraError: any) {
-      console.log('⚠️ [NeoGlitch] Ultra failed, trying Core...', ultraError.message);
-    }
-    
-    // Tier 2: Core (fast and affordable)
-    try {
-      console.log('⚡ [NeoGlitch] Tier 2: Attempting Stable Image Core...');
-      const coreResult = await attemptStabilityGeneration(
-        STABILITY_API_KEY,
-        sourceUrl,
-        prompt,
-        presetKey,
-        userId,
-        runId,
-        'core'
-      );
-      console.log('✅ [NeoGlitch] Core succeeded! Using Core result');
-      return { ...coreResult, strategy: 'stability_core' };
-    } catch (coreError: any) {
-      console.log('⚠️ [NeoGlitch] Core failed, trying SD3...', coreError.message);
-    }
-    
-    // Tier 3: SD3 (balanced)
-    try {
-      console.log('🎨 [NeoGlitch] Tier 3: Attempting Stable Diffusion 3...');
-      const sd3Result = await attemptStabilityGeneration(
-        STABILITY_API_KEY,
-        sourceUrl,
-        prompt,
-        presetKey,
-        userId,
-        runId,
-        'sd3'
-      );
-      console.log('✅ [NeoGlitch] SD3 succeeded! Using SD3 result');
-      return { ...sd3Result, strategy: 'stability_sd3' };
-    } catch (sd3Error: any) {
-      console.log('⚠️ [NeoGlitch] SD3 failed, all Stability.ai tiers exhausted', sd3Error.message);
-    }
-    
-    // 🚨 ALL STABILITY.AI FAILED - Fallback to Fal.ai
-    console.log('❌ [NeoGlitch] All 3 Stability.ai tiers failed, falling back to Fal.ai');
-    throw new Error('All Stability.ai tiers failed - proceeding to Fal.ai fallback');
-    
-  } catch (error: any) {
-    console.error('❌ [NeoGlitch] Stability.ai generation failed:', error.message);
-    throw new Error(`Stability.ai generation failed: ${error.message}`);
-  }
+  console.log('🚀 [NeoGlitch] Using Fal.ai as primary generator');
+  // Directly use Fal.ai fallback path as primary now
+  return await attemptFalFallback(sourceUrl, prompt, presetKey, userId, runId);
 }
 
 // Credit Deduction Function with token refresh

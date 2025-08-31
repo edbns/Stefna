@@ -108,6 +108,10 @@ function getModelsForGenerationType(generationType: string) {
     case 'ghibli_reaction_moderate_ipa':
       return GHIBLI_MODELS;
 
+    case 'neo_glitch':
+    case 'neo_glitch_generation':
+      return PHOTO_MODELS;
+
     case 'story_time':
     case 'story_time_moderate_ipa':
     case 'story_time_auto_ipa':
