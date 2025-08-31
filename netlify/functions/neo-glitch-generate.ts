@@ -578,12 +578,12 @@ async function processGenerationAsync(
             cloudinaryPublicId = cloudinaryResult.publicId;
             console.log('✅ [NeoGlitch] Fal.ai result uploaded to Cloudinary successfully');
           } catch (cloudinaryError) {
-            console.warn('⚠️ [NeoGlitch] Cloudinary upload failed, using original AIML URL:', cloudinaryError);
+            console.warn('⚠️ [NeoGlitch] Cloudinary upload failed, using original Fal.ai URL:', cloudinaryError);
             // Fallback to original URL if Cloudinary fails
           }
           
-          // 🔒 IDENTITY PRESERVATION CHECK for AIML fallback
-          console.log('🔒 [NeoGlitch] Starting IPA check for AIML fallback...');
+          // 🔒 IDENTITY PRESERVATION CHECK for Fal.ai fallback
+          console.log('🔒 [NeoGlitch] Starting IPA check for Fal.ai fallback...');
           let ipaPassed = true;
           let ipaSimilarity = 1.0;
           
@@ -636,29 +636,29 @@ async function processGenerationAsync(
             console.warn('⚠️ [NeoGlitch] Proceeding with result but identity preservation may be poor');
           }
           
-          // Update database record with Cloudinary URL (or fallback to AIML URL) and IPA results
+          // Update database record with Cloudinary URL and Fal.ai results
           await q(`
             UPDATE neo_glitch_media
             SET status = $1, image_url = $2, stability_job_id = $3, metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{ipaPassed}', to_jsonb($4::boolean), true)
               || jsonb_build_object('ipaSimilarity', $5, 'ipaThreshold', $6, 'ipaRetries', $7, 'ipaStrategy', $8, 'generationPath', $9),
               updated_at = NOW()
             WHERE id = $10
-          `, ['completed', finalImageUrl, `aiml_${runId}`, ipaPassed, Math.round(ipaSimilarity * 100) / 100, 0.4, ipaPassed ? 0 : 1, ipaPassed ? 'first_try' : 'lower_strength_retry', 'aiml_fallback', recordId]);
+          `, ['completed', finalImageUrl, `fal_${runId}`, ipaPassed, Math.round(ipaSimilarity * 100) / 100, 0.4, ipaPassed ? 0 : 1, ipaPassed ? 'first_try' : 'lower_strength_retry', 'fal_fallback', recordId]);
           
-          // 🔒 CRITICAL FIX: Only charge credits ONCE for AIML fallback (no double billing)
+          // 🔒 CRITICAL FIX: Only charge credits ONCE for Fal.ai fallback (no double billing)
           await finalizeCreditsOnce(userId, runId, true, userToken);
           
-          console.log('✅ [NeoGlitch] Async generation completed with AIML fallback');
+          console.log('✅ [NeoGlitch] Async generation completed with Fal.ai fallback');
           return {
             status: 'completed',
-            imageUrl: finalImageUrl, // ✅ Return Cloudinary URL instead of AIML URL
-            stabilityJobId: `aiml_${runId}`
+            imageUrl: finalImageUrl, // ✅ Return Cloudinary URL instead of Fal.ai URL
+            stabilityJobId: `fal_${runId}`
           };
         } else {
-          throw new Error('AIML fallback failed to return valid image');
+          throw new Error('Fal.ai fallback failed to return valid image');
         }
-      } catch (aimlError: any) {
-        console.error('❌ [NeoGlitch] AIML fallback also failed:', aimlError);
+      } catch (falError: any) {
+        console.error('❌ [NeoGlitch] Fal.ai fallback also failed:', falError);
         
         // Update database record with failed status
         await q(`
@@ -673,7 +673,7 @@ async function processGenerationAsync(
         console.error('❌ [NeoGlitch] All generation methods failed');
         return {
           status: 'failed',
-          error: aimlError.message || 'All generation methods failed'
+          error: falError.message || 'All generation methods failed'
         };
       }
     }
