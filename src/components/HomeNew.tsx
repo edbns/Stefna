@@ -2506,8 +2506,14 @@ const HomeNew: React.FC = () => {
               
               return;
       } else if (result.success && result.status === 'processing') {
-        console.log('🔄 [Unified] Generation in progress, service handles polling');
-        // Initial queue toast already shown at start; avoid duplicate here
+        console.log('🔄 [Unified] Generation accepted (202) - running in background');
+        // Stop spinners immediately; we'll show media when feed refresh picks it up
+        endGeneration(genId);
+        setNavGenerating(false);
+        // Gentle auto-refresh to surface the new media when it lands
+        setTimeout(() => {
+          try { loadFeed(); } catch {}
+        }, 7000);
         return;
           } else {
         // Generation failed
