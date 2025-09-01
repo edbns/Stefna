@@ -135,9 +135,24 @@ export async function prepareSourceAsset(
   if (typeof activeFileOrUrl === 'string' && activeFileOrUrl.startsWith('blob:')) {
     const resp = await fetch(activeFileOrUrl);
     const blob = await resp.blob();
-    const ext = blob.type.startsWith('image/') ? (blob.type.split('/')[1] || 'png') :
-                blob.type.startsWith('video/') ? (blob.type.split('/')[1] || 'mp4') : 'bin';
-    file = new File([blob], `source.${ext}`, { type: blob.type || 'application/octet-stream' });
+    // Normalize unknown/empty types to safe defaults Cloudinary accepts
+    let mime = blob.type;
+    if (!mime || mime === 'application/octet-stream') {
+      // Assume image if unknown (most previews are images)
+      mime = 'image/png';
+    }
+    let ext: string;
+    if (mime.startsWith('image/')) {
+      ext = (mime.split('/')[1] || 'png').toLowerCase();
+      if (ext === 'jpeg') ext = 'jpg';
+    } else if (mime.startsWith('video/')) {
+      ext = (mime.split('/')[1] || 'mp4').toLowerCase();
+    } else {
+      // Fallback to image/png to avoid .bin errors
+      mime = 'image/png';
+      ext = 'png';
+    }
+    file = new File([blob], `source.${ext}`, { type: mime });
   } else {
     file = activeFileOrUrl as File;
   }
@@ -167,6 +182,7 @@ export async function prepareSourceAsset(
       form.append('timestamp', String(timestamp));
       form.append('signature', signature);
       form.append('api_key', apiKey);
+      // Prefer upload preset if provided (handles whitelisting and transformation)
       if (folder) form.append('folder', folder);
       if (upload_preset) form.append('upload_preset', upload_preset);
 
@@ -209,10 +225,11 @@ export async function prepareSourceAsset(
   const { timestamp, signature, apiKey, cloudName, folder, upload_preset } = await signRes.json();
 
   const form = new FormData();
-    form.append('file', file);
+  form.append('file', file);
   form.append('timestamp', String(timestamp));
   form.append('signature', signature);
   form.append('api_key', apiKey);
+  // Prefer upload preset if provided
   if (folder) form.append('folder', folder);
   if (upload_preset) form.append('upload_preset', upload_preset);
 
