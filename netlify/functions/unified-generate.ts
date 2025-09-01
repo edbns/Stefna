@@ -239,16 +239,31 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
       let result;
       
       if (mode === 'story_time') {
-        // Video generation
-        result = await fal.subscribe(modelConfig.model, {
-          input: {
-            image_url: params.sourceAssetId,
-            prompt: params.prompt,
-            num_frames: 24,
-            fps: 8
-          },
-          logs: true
-        });
+        // Video generation with retry logic
+        let result;
+        try {
+          result = await fal.subscribe(modelConfig.model, {
+            input: {
+              image_url: params.sourceAssetId,
+              prompt: params.prompt,
+              num_frames: 24,
+              fps: 8
+            },
+            logs: true
+          });
+        } catch (error) {
+          console.warn(`⚠️ [Unified] ${modelConfig.name} video generation failed, retrying in 2s...`, error);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          result = await fal.subscribe(modelConfig.model, {
+            input: {
+              image_url: params.sourceAssetId,
+              prompt: params.prompt,
+              num_frames: 24,
+              fps: 8
+            },
+            logs: true
+          });
+        }
         
         const videoUrl = result?.data?.video?.url;
         if (videoUrl) {
@@ -273,10 +288,21 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           seed: Math.floor(Math.random() * 1000000)
         };
         
-        result = await fal.subscribe(modelConfig.model, {
-          input,
-          logs: true
-        });
+        // Add retry logic for Fal.ai
+        let result;
+        try {
+          result = await fal.subscribe(modelConfig.model, {
+            input,
+            logs: true
+          });
+        } catch (error) {
+          console.warn(`⚠️ [Unified] ${modelConfig.name} failed, retrying in 2s...`, error);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          result = await fal.subscribe(modelConfig.model, {
+            input,
+            logs: true
+          });
+        }
         
         const imageUrl = result?.data?.image?.url;
         if (imageUrl) {
@@ -338,6 +364,7 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${STABILITY_API_KEY}`,
+            'Accept': 'application/json',
           },
           body: form,
           signal: AbortSignal.timeout(180000) // 3 minutes timeout
