@@ -693,39 +693,33 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     runId: request.runId
   });
 
-  // Check if this runId is already being processed to prevent duplicates
+  // Check for duplicate generations using existing media tables
   try {
-    const existingGeneration = await qOne(`
-      SELECT status FROM ai_generations
-      WHERE id = $1 AND status IN ('processing', 'pending')
-    `, [request.runId]);
+    // Check if this runId already exists in any media table (indicating duplicate)
+    const tablesToCheck = {
+      'neo_glitch': 'neo_glitch_media',
+      'presets': 'presets_media',
+      'custom': 'custom_prompt_media',
+      'emotion_mask': 'emotion_mask_media',
+      'ghibli_reaction': 'ghibli_reaction_media',
+      'story_time': 'video_jobs'
+    };
 
-    if (existingGeneration) {
-      console.warn(`⚠️ [Background] Generation ${request.runId} already in progress, skipping duplicate`);
-      return {
-        success: false,
-        status: 'failed',
-        error: 'Generation already in progress'
-      };
+    const tableName = tablesToCheck[request.mode as keyof typeof tablesToCheck];
+    if (tableName) {
+      const existing = await qOne(`
+        SELECT id FROM ${tableName} WHERE run_id = $1
+      `, [request.runId]);
+
+      if (existing) {
+        console.warn(`⚠️ [Background] Generation ${request.runId} already exists, skipping duplicate`);
+        return {
+          success: false,
+          status: 'failed',
+          error: 'Generation already completed'
+        };
+      }
     }
-
-    // Mark as processing to prevent duplicates
-    await q(`
-      INSERT INTO ai_generations (id, user_id, type, status, input_data, created_at)
-      VALUES ($1, $2, $3, 'processing', $4, NOW())
-      ON CONFLICT (id) DO UPDATE SET
-        status = 'processing',
-        updated_at = NOW()
-    `, [
-      request.runId,
-      request.userId,
-      request.mode,
-      JSON.stringify({
-        prompt: request.prompt,
-        sourceAssetId: request.sourceAssetId,
-        mode: request.mode
-      })
-    ]);
 
   } catch (dbError) {
     console.warn(`⚠️ [Background] Could not check for duplicates:`, dbError);
@@ -759,16 +753,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
         // Save result to database based on mode
     await saveGenerationResult(request, result);
 
-    // Mark generation as completed
-    try {
-      await q(`
-        UPDATE ai_generations
-        SET status = 'completed', output_data = $1, completed_at = NOW()
-        WHERE id = $2
-      `, [JSON.stringify({ outputUrl: result.outputUrl, provider: result.provider }), request.runId]);
-    } catch (dbError) {
-      console.warn(`⚠️ [Background] Could not update generation status:`, dbError);
-    }
+    // Generation will be saved to appropriate media table by saveGenerationResult()
 
     // Finalize credits on success
     await finalizeCredits(request.userId, action, request.runId, true);
@@ -784,16 +769,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
   } catch (error) {
     console.error(`❌ [Background] Generation failed:`, error);
 
-    // Mark generation as failed in database
-    try {
-      await q(`
-        UPDATE ai_generations
-        SET status = 'failed', error_message = $1, completed_at = NOW()
-        WHERE id = $2
-      `, [error instanceof Error ? error.message : 'Unknown error', request.runId]);
-    } catch (dbError) {
-      console.warn(`⚠️ [Background] Could not update generation status on failure:`, dbError);
-    }
+    // Error will be logged but generation status is tracked in credits_ledger
 
     // Finalize credits on failure (refund)
     await finalizeCredits(request.userId, action, request.runId, false);
