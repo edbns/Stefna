@@ -86,18 +86,25 @@ const PHOTO_MODELS = [
 
 const GHIBLI_MODELS = [
   {
-    model: 'fal-ai/ghiblify',
-    name: 'Ghiblify',
-    cost: 'low',
-    priority: 1,
-    description: 'Studio Ghibli style transformations'
-  },
-  {
     model: 'fal-ai/hyper-sdxl/image-to-image',
     name: 'Hyper SDXL I2I',
     cost: 'medium',
+    priority: 1,
+    description: 'High-quality image-to-image with subtle Ghibli elements'
+  },
+  {
+    model: 'fal-ai/pixart-alpha',
+    name: 'PixArt Alpha',
+    cost: 'medium',
     priority: 2,
-    description: 'High-quality image-to-image with Ghibli style'
+    description: 'Reliable SDXL-style with gentle Ghibli influence'
+  },
+  {
+    model: 'fal-ai/realvis-xl-v3',
+    name: 'RealVis XL V3',
+    cost: 'high',
+    priority: 3,
+    description: 'Photoreal with soft Ghibli aesthetic'
   }
 ];
 
@@ -410,9 +417,11 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Image generation with retry logic
         const input: any = {
           image_url: params.sourceAssetId,
-          prompt: params.prompt,
+          prompt: mode === 'ghibli_reaction' 
+            ? `${params.prompt}, subtle ghibli-inspired lighting, soft dreamy atmosphere, gentle anime influence, preserve original composition`
+            : params.prompt,
           image_strength: mode === 'ghibli_reaction' ? 0.35 : 0.7,
-          guidance_scale: 7.5,
+          guidance_scale: mode === 'ghibli_reaction' ? 6.0 : 7.5, // Lower guidance for subtler Ghibli effect
           num_inference_steps: 30,
           seed: Math.floor(Math.random() * 1000000)
         };
