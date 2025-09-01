@@ -2408,1231 +2408,116 @@ const HomeNew: React.FC = () => {
       // Just close the composer; keep using outer genId
       setIsComposerOpen(false);
 
-      // 🎭 NEO TOKYO GLITCH: Use Stability.ai (3-tier) + AIML fallback
+      // 🚀 UNIFIED GENERATION: Use SimpleGenerationService for all modes
+      console.log('🚀 [Unified] Using SimpleGenerationService for all generation modes');
       
-      // Poll for job completion function
-      const pollForJobCompletion = async (jobId: string, prompt: string, meta: any) => {
-        console.log('🔄 [NeoGlitch] Starting to poll for job completion:', jobId);
-        
-        const maxAttempts = 60; // 3 minutes max
-        let attempts = 0;
-        
-        const poll = async () => {
-          if (attempts >= maxAttempts) {
-            console.error('❌ [NeoGlitch] Job polling timed out');
-            notifyError({ title: 'Taking too long', message: 'Please try again' });
-            endGeneration(genId);
-            setNavGenerating(false);
-            // Clear composer after timeout error
-            setTimeout(() => handleClearComposerState(), 1000);
-            return;
-          }
-          
-          attempts++;
-          console.log(`🔄 [NeoGlitch] Polling attempt ${attempts}/${maxAttempts}`);
-          
-          try {
-            const statusResponse = await authenticatedFetch(`/.netlify/functions/neo-glitch-generate?jobId=${jobId}`, {
-              method: 'GET'
-            });
-            
-            if (!statusResponse.ok) {
-              throw new Error(`Status check failed: ${statusResponse.status}`);
-            }
-            
-            const status = await statusResponse.json();
-            console.log('📊 [NeoGlitch] Job status:', status);
-            
-            if (status.status === 'completed' && status.imageUrl) {
-              console.log('🎉 [NeoGlitch] Job completed successfully!');
-              
-              // Show "Ready" toast with thumbnail
-              notifyReady({ 
-                title: 'Your media is ready', 
-                message: 'Tap to open',
-                thumbUrl: status.imageUrl,
-                onClickThumb: () => {
-                  // Open the media viewer
-                  setViewerMedia([{
-                    id: 'generated-' + Date.now(),
-                    userId: 'current-user',
-                    type: 'photo',
-                    url: status.imageUrl,
-                    prompt: prompt,
-                    aspectRatio: 1,
-                    width: 1024,
-                    height: 1024,
-                    timestamp: new Date().toISOString(),
-                    tokensUsed: 1,
-                    likes: 0,
-                    isPublic: true,
-                    tags: [],
-                    metadata: { quality: 'high', generationTime: Date.now(), modelVersion: 'stability-ai' }
-                  }]);
-                  setViewerStartIndex(0);
-                  setViewerOpen(true);
-                }
-              });
-              
-              // End generation and refresh feed
-              endGeneration(genId);
-              setNavGenerating(false);
-              loadFeed();
-              
-              // Clear composer after delay
-              setTimeout(() => {
-                handleClearComposerState();
-              }, 3000);
-              
-              return;
-            } else if (status.status === 'failed') {
-              console.error('❌ [NeoGlitch] Job failed:', status.errorMessage);
-              notifyError({ title: 'Failed', message: 'Try again' });
-              endGeneration(genId);
-              setNavGenerating(false);
-              resetComposerState();
-              return;
-            } else {
-              // Still processing, continue polling
-              console.log('⏳ [NeoGlitch] Job still processing, continuing to poll...');
-              setTimeout(poll, 3000); // Poll every 3 seconds
-            }
-          } catch (error) {
-            console.error('❌ [NeoGlitch] Polling error:', error);
-            notifyError({ title: 'Failed', message: 'Try again' });
-            endGeneration(genId);
-            setNavGenerating(false);
-            resetComposerState();
-          }
-        };
-        
-        // Start polling
-        poll();
+      // Map generation kind to service mode
+      const getServiceMode = (kind: string): GenerationMode => {
+        switch (kind) {
+          case 'preset': return 'presets';
+          case 'custom': return 'custom-prompt';
+          case 'emotionmask': return 'emotion-mask';
+          case 'ghiblireact': return 'ghibli-reaction';
+          case 'neotokyoglitch': return 'neo-glitch';
+          case 'storytime': return 'story-time';
+          default: return 'presets';
+        }
       };
       
-      if (kind === 'neotokyoglitch') {
-        console.log('🚀 [NeoGlitch] Starting generation with Stability.ai (3-tier) + AIML fallback');
+      const serviceMode = getServiceMode(kind);
+      console.log(`🔄 [Unified] Mapped ${kind} → ${serviceMode}`);
+      
+      // Use the unified service
+      const simpleGenService = SimpleGenerationService.getInstance();
+      const result = await simpleGenService.generate({
+        mode: serviceMode,
+        prompt: effectivePrompt,
+        presetKey: generationMeta?.presetId || generationMeta?.presetKey,
+        sourceAssetId: previewUrl || '',
+        userId: authService.getCurrentUser()?.id || '',
+        runId: runId,
+        emotionMaskPresetId: generationMeta?.emotionMaskPresetId,
+        ghibliReactionPresetId: generationMeta?.ghibliReactionPresetId,
+        neoGlitchPresetId: generationMeta?.neoTokyoGlitchPresetId,
+        storyTimePresetId: generationMeta?.storyTimePresetId,
+        additionalImages: generationMeta?.storyTimeImages,
+        meta: generationMeta
+      });
+      
+      console.log('✅ [Unified] Service result:', result);
+      
+      // Handle the unified response
+      if (result.success && result.status === 'completed' && result.imageUrl) {
+        console.log('🎉 [Unified] Generation completed successfully!');
         
-        // Reserve credits before Neo Glitch generation
-        console.log('💰 [NeoGlitch] Reserving 2 credits before generation...');
-        const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'reserve',
-            credits_needed: 2, // Neo Glitch uses 2 credits
-            request_id: generateRunId()
-          })
-        });
-
-        if (!creditsResponse.ok) {
-          const errorData = await creditsResponse.json();
-          console.error('❌ [NeoGlitch] Credit reservation failed:', errorData);
-          
-          if (errorData.error === 'INSUFFICIENT_CREDITS') {
-            notifyError({ 
-              title: 'Not enough credits', 
-              message: `You need 2 credits. You have ${errorData.credits_available || 0}.` 
-            });
-          } else {
-            notifyError({ title: 'Failed', message: 'Try again' });
-          }
-          
-          endGeneration(genId);
-          setNavGenerating(false);
-          return;
-        }
-
-        const creditReservation = await creditsResponse.json();
-        console.log('✅ [NeoGlitch] Credits reserved:', creditReservation);
-        
-        // Upload source image to Cloudinary
-        const uploadResult = await uploadSourceToCloudinary({
-          file: selectedFile || undefined,
-          url: undefined
-        });
-        const sourceUrl = uploadResult.secureUrl;
-        
-        // Validate source URL
-        try {
-          assertIsSourceUrl(sourceUrl);
-        } catch (error) {
-          console.error('❌ Source URL validation failed:', error);
-          endGeneration(genId);
-          setNavGenerating(false);
-          return;
-        }
-        
-        // Call our new async neo-glitch-generate function
-        const neoGlitchResponse = await authenticatedFetch('/.netlify/functions/neo-glitch-generate', {
-          method: 'POST',
-          body: JSON.stringify({
-            prompt: effectivePrompt,
-            presetKey: generationMeta?.presetKey || 'base',
-            sourceUrl,
-            userId: authService.getCurrentUser()?.id || '',
-            runId: creditReservation.reservation_id || generateRunId() // Use reservation ID as runId
-          })
-        });
-        
-        if (!neoGlitchResponse.ok) {
-          throw new Error(`Neo Glitch generation failed: ${neoGlitchResponse.status}`);
-        }
-        
-        const neoGlitchResult = await neoGlitchResponse.json();
-        console.log('✅ [NeoGlitch] Generation result:', neoGlitchResult);
-        
-        // Handle new async job system response
-        if (neoGlitchResult.ok && neoGlitchResult.jobId) {
-          console.log('🔄 [NeoGlitch] Job started successfully, job ID:', neoGlitchResult.jobId);
-          
-          // Show "Added to queue" toast
-          notifyQueue({ 
-            title: 'Add to queue', 
-            message: 'We\'ll start processing it shortly.'
-          });
-          
-          // Start polling for job completion
-          pollForJobCompletion(neoGlitchResult.jobId, effectivePrompt, generationMeta);
-          
-          return;
-        }
-        
-        // Handle the response based on status
-        if (neoGlitchResult.status === 'completed' && neoGlitchResult.imageUrl) {
-          // Generation completed immediately
-          console.log('🎉 [NeoGlitch] Generation completed successfully');
-          
-          // Save the generated media to user profile
-          try {
-            const mediaToSave = {
-              userId: authService.getCurrentUser()?.id || '',
-              type: 'photo' as const,
-              url: neoGlitchResult.imageUrl,
-              thumbnailUrl: neoGlitchResult.imageUrl, // Use same URL for thumbnail
+        // Show unified toast with thumbnail
+        notifyReady({ 
+          title: 'Your media is ready', 
+          message: 'Tap to open',
+          thumbUrl: result.imageUrl,
+          onClickThumb: () => {
+            // Open the media viewer
+            setViewerMedia([{
+              id: 'generated-' + Date.now(),
+              userId: 'current-user',
+              type: 'photo',
+              url: result.imageUrl || '',
               prompt: effectivePrompt,
-              aspectRatio: 1, // Default to 1:1 for Neo Tokyo Glitch
-              width: 1024, // Default dimensions
+              aspectRatio: 1,
+              width: 1024,
               height: 1024,
-              tokensUsed: 1, // Default token usage
-              isPublic: profileData.shareToFeed,
+              timestamp: new Date().toISOString(),
+              tokensUsed: 1,
+              likes: 0,
+              isPublic: true,
               tags: [],
-              metadata: {
-                quality: 'high' as const,
-                generationTime: Date.now(),
-                modelVersion: neoGlitchResult.model || 'stability-ai',
-                presetId: generationMeta?.neoTokyoGlitchPresetId,
-                mode: 'i2i' as const,
-                group: null
+              metadata: { 
+                quality: 'high', 
+                generationTime: Date.now(), 
+                modelVersion: result.provider || 'unknown',
+                mode: kind,
+                ...generationMeta
               }
-            };
-            
-            // 🚨 CRITICAL FIX: Don't save here - backend already saved it!
-            console.log('✅ [NeoGlitch] Backend already saved media, skipping duplicate save');
-            
-            // Refresh the public feed to show new media
-            loadFeed();
-          } catch (error) {
-            console.error('❌ [NeoGlitch] Error in post-generation flow:', error);
+            }]);
+            setViewerStartIndex(0);
+            setViewerOpen(true);
           }
-          
-          // End generation successfully
-          endGeneration(genId);
-          setNavGenerating(false);
-          
-          // Show unified toast with thumbnail
-          console.log('✅ Your media is ready: Tap to open')
-          
-          return;
-        } else if (neoGlitchResult.status === 'generating' || neoGlitchResult.status === 'processing') {
-          // Generation is in progress - let the service handle polling
-          console.log(`🔄 [NeoGlitch] Generation in progress (${neoGlitchResult.status}), service will handle polling`);
-          
-          // Don't start frontend polling - the service handles it
-          // Just show a message that generation is in progress
-          notifyQueue({ 
-            title: 'Add to queue', 
-            message: 'We\'ll start processing it shortly.'
-          });
-          
-          return;
-        } else {
-          // 🔍 Better error handling for Neo Glitch responses
-          console.error('❌ [NeoGlitch] Unexpected response format:', neoGlitchResult);
-          console.error('❌ [NeoGlitch] Expected: status="completed" with imageUrl, or status="generating"/"processing" for polling');
-          
-          // Check if this is a new async response format
-          if (neoGlitchResult.jobId && neoGlitchResult.status === 'processing') {
-            console.log('🔄 [NeoGlitch] Detected new async response format, service will handle polling');
-            
-                      // Don't start frontend polling - the service handles it
-          // Just show a message that generation is in progress
-          console.log('🔄 Add to queue: We\'ll start processing it shortly.')
-            
-            return;
-          }
-          
-          // If we can't handle the response format, throw an error
-          throw new Error(`Unexpected Neo Glitch response: ${JSON.stringify(neoGlitchResult)}`);
-        }
-      }
-      
-      // 🎨 ALL OTHER PRESETS: Use AIML API with flux/dev + flux/pro fallback (NO Stability.ai)
-      console.log('🚀 Using AIML API flow for mode:', kind);
-      
-      // Upload source image to Cloudinary
-      const uploadResult = await uploadSourceToCloudinary({
-        file: selectedFile || undefined,
-        url: undefined
-      });
-      const sourceUrl = uploadResult.secureUrl;
-      
-      // Validate source URL
-      try {
-        assertIsSourceUrl(sourceUrl);
-              } catch (error) {
-          console.error('❌ Source URL validation failed:', error);
-          endGeneration(genId);
-          setNavGenerating(false);
-          return;
-        }
-      
-      // Final sanity check before API call
-      console.table({
-        hasActiveAssetUrl: !!previewUrl,
-        promptLen: prompt?.length ?? 0,
-        isGenerating,
-        isAuthenticated,
-        sourceUrl,
-        generationMeta,
-        effectivePrompt,
-        promptFieldValue: prompt
-      });
-
-      // Detect if source is a video based on multiple criteria
-      const isVideo = isVideoPreview || 
-                     /\/video\/upload\//.test(sourceUrl || '') ||
-                     /\.(mp4|mov|webm|m4v)(\?|$)/i.test(sourceUrl || '');
-
-
-      // All generation now uses the simplified direct service
-
-      // All generation now uses the simplified direct service
-      // No need to build old AIML payloads
-
-      // Reserve credits before generation - dynamically calculate based on variations
-      let creditsNeeded = 2; // Default for single generation (premium images)
-
-      // Use type assertion to prevent narrowing
-      const generationKind = kind as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch';
-
-      if (generationKind === 'ghiblireact' || generationKind === 'neotokyoglitch') {
-        creditsNeeded = 2; // Single generation for new modes (premium images)
-      } else {
-        creditsNeeded = 2; // Single generation (preset, custom single, emotionmask) - premium images
-      }
-      
-      console.log(`💰 Reserving ${creditsNeeded} credits before generation...`);
-      console.log('🔍 Credit reservation debug:', { 
-        kind: generationKind, 
-        mode, 
-        creditsNeeded, 
-        kindType: typeof generationKind, 
-        modeType: typeof mode 
-      });
-      
-      // Map generation modes to valid credit reservation actions
-      let creditAction: string = generationKind;
-      if (generationKind === 'ghiblireact' || generationKind === 'neotokyoglitch') {
-        creditAction = 'image.gen'; // Map new modes to standard image generation
-      }
-      
-      console.log(`💰 Credit reservation: mapping ${kind} → ${creditAction}`);
-      
-      const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: creditAction,  // Use mapped action for credit reservation
-          cost: creditsNeeded
-        })
-      });
-
-      if (!creditsResponse.ok) {
-        if (creditsResponse.status === 429) {
-          const errorData = await creditsResponse.json();
-          throw new Error(`Daily cap reached: ${errorData.error}`);
-        }
-        if (creditsResponse.status === 403) {
-          const errorData = await creditsResponse.json();
-          if (errorData.error === 'NEGATIVE_BALANCE_BLOCKED') {
-            throw new Error(`Generation blocked: ${errorData.message} You have ${errorData.currentBalance} credits. Please wait until tomorrow for new credits.`);
-          } else if (errorData.error === 'INSUFFICIENT_CREDITS') {
-            throw new Error(`Insufficient credits: ${errorData.message} You need ${errorData.requiredCredits} credits but only have ${errorData.currentBalance}.`);
-          } else {
-            throw new Error(`Credit error: ${errorData.message || errorData.error}`);
-          }
-        }
-        throw new Error(`Credits reservation failed: ${creditsResponse.status}`);
-      }
-
-      const creditsResult = await creditsResponse.json();
-      console.log(`✅ Credits reserved successfully. New balance: ${creditsResult.balance}`);
-      
-      // Store the request_id for finalization
-      const requestId = creditsResult.request_id;
-      if (!requestId) {
-        throw new Error('No request_id returned from credits reservation');
-      }
-
-      // Add credit finalization tracking
-      let creditsFinalized = false;
-
-      // Define the finalizeCredits function after we have the requestId
-      const defineFinalizeCredits = (requestId: string) => {
-        finalizeCredits = async (disposition: 'commit' | 'refund') => {
-          if (creditsFinalized) return; // Prevent double finalization
-          
-          try {
-            const finalizeResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                request_id: requestId,
-                disposition
-              })
-            });
-
-            if (finalizeResponse.ok) {
-              const finalizeResult = await finalizeResponse.json();
-              console.log(`✅ Credits ${disposition}ed successfully. New balance: ${finalizeResult.newBalance}`);
-              creditsFinalized = true;
-            } else {
-              console.warn(`⚠️ Failed to ${disposition} credits: ${finalizeResponse.status}`);
-            }
-          } catch (error) {
-            console.error(`❌ Error finalizing credits (${disposition}):`, error);
-          }
-        };
-      };
-      
-      // Define the finalizeCredits function now that we have the requestId
-      defineFinalizeCredits(requestId);
-
-      // Video pathway → use start-v2v + poll-v2v
-      if (isVideoPreview) {
-        const jwt = authService.getToken();
-        if (!jwt) {
-          console.error('Missing auth for start-v2v');
-          endGeneration(genId);
-          setNavGenerating(false);
-          navigate('/auth');
-          return;
-        }
-        // 🆕 [New System] All generation now uses simplified service - direct function calls
-        console.log('🆕 [New System] Video generation handled by simplified service');
-        throw new Error('Direct start-gen calls are deprecated - use simplified service');
-      }
-
-      // 🎭 NEO TOKYO GLITCH: Use unified pipeline
-      if ((kind as any) === 'neotokyoglitch') {
-        console.log('🚀 [NeoGlitch] Using unified generation pipeline');
-        
-        try {
-          // Use simplified service for Neo Tokyo Glitch
-          const simpleGenService = SimpleGenerationService.getInstance();
-          const result = await simpleGenService.generate({
-            mode: 'neo-glitch',
-            prompt: effectivePrompt,
-            presetKey: generationMeta.presetKey,
-            sourceAssetId: sourceUrl || '',
-            userId: authService.getCurrentUser()?.id || '',
-            runId: generateRunId(),
-            neoGlitchPresetId: selectedNeoTokyoGlitchPreset || undefined,
-            meta: generationMeta
-          });
-          
-          if (!result.success) {
-            throw new Error(`Neo Tokyo Glitch generation failed: ${result.error}`);
-          }
-          
-          console.log('✅ [NeoGlitch] Unified pipeline result:', result);
-          
-          // Handle completed generation
-          if (result.status === 'completed' && result.imageUrl) {
-            console.log('🎉 [NeoGlitch] Generation completed successfully!');
-            
-            // Show unified toast with thumbnail
-            notifyReady({ 
-              title: 'Your media is ready', 
-              message: 'Tap to open',
-              thumbUrl: result.imageUrl,
-              onClickThumb: () => {
-                // Open the media viewer to show the generated image
-                setViewerMedia([{
-                  id: 'generated-' + Date.now(),
-                  userId: 'current-user',
-                  type: 'photo',
-                  url: result.imageUrl || '',
-                  prompt: effectivePrompt,
-                  aspectRatio: 1,
-                  width: 1024,
-                  height: 1024,
-                  timestamp: new Date().toISOString(),
-                  tokensUsed: 1,
-                  likes: 0,
-                  isPublic: true,
-                    tags: [],
-                    metadata: { quality: 'high', generationTime: Date.now(), modelVersion: 'stability-ai' }
-                  }]);
-                  setViewerStartIndex(0);
-                  setViewerOpen(true);
-                }
-              });
-              
-              // End generation successfully (following Ghibli pattern)
-              endGeneration(genId);
-              setNavGenerating(false);
-              
-              // Clear composer after a delay so user can see their result (following Ghibli pattern)
-              setTimeout(() => {
-                console.log('🧹 [NeoGlitch] Clearing composer after generation completion');
-                resetComposerState();
-              }, 3000); // 3 seconds delay
-              
-              return;
-            }
-            
-            // Handle processing status
-            if (result.status === 'processing') {
-              console.log('🔄 [NeoGlitch] Generation in progress, unified pipeline handles polling');
-              
-              // Show processing toast
-              notifyQueue({ 
-                title: 'Add to queue', 
-                message: 'We\'ll start processing it shortly.'
-              });
-              
-              // Unified pipeline handles polling - just return
-              return;
-            }
-            
-            // Handle failed status
-            if (result.status === 'failed') {
-              throw new Error(result.error || 'Neo Tokyo Glitch generation failed');
-            }
-            
-            // Handle other statuses
-            throw new Error(`Unexpected Neo Tokyo Glitch status: ${result.status}`);
-            
-          } catch (error) {
-            console.error('❌ [NeoGlitch] Generation failed:', error);
-            endGeneration(genId);
-            setNavGenerating(false);
-            
-            // Reset composer state even on failure
-            resetComposerState();
-            return;
-          }
-      }
-
-      // Declare variables that will be used later
-      let resultUrl: string;
-      let allResultUrls: string[];
-      let variationsGenerated: number;
-      let body: any;
-      let res: Response | null = null; // Declare res at top level
-
-      // All generation now uses the simplified direct service
-      // Add timeout guard to prevent 504 errors
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.warn('⚠️ Request timeout approaching, aborting to prevent 504');
-        controller.abort();
-      }, 24000); // 24s cushion before Netlify's 26s limit
-
-        try {
-          // 🆕 Use SIMPLIFIED service for direct function calls
-          const generationMode: GenerationMode = kind === 'preset' ? 'presets' :
-                                kind === 'custom' ? 'custom-prompt' : 
-                                kind === 'emotionmask' ? 'emotion-mask' : 
-                                                kind === 'ghiblireact' ? 'ghibli-reaction' :
-                                                kind === 'storytime' ? 'story-time' :
-                                                'presets';
-
-          console.log(`🚀 [SimpleGeneration] Using direct ${generationMode} function call`);
-
-          const simpleGenService = SimpleGenerationService.getInstance();
-          const generationResult = await simpleGenService.generate({
-            mode: generationMode,
-            prompt: effectivePrompt,
-            presetKey: kind === 'preset' ? (options?.presetId || (selectedPreset as string)) : undefined,
-            sourceAssetId: sourceUrl || '',
-            userId: authService.getCurrentUser()?.id || '',
-            runId: runId,
-            emotionMaskPresetId: kind === 'emotionmask' ? (selectedEmotionMaskPreset || undefined) : undefined,
-            ghibliReactionPresetId: kind === 'ghiblireact' ? (selectedGhibliReactionPreset || undefined) : undefined,
-            neoGlitchPresetId: (kind as any) === 'neotokyoglitch' ? (selectedNeoTokyoGlitchPreset || undefined) : undefined,
-            meta: generationMeta
-          });
-          
-          clearTimeout(timeoutId); // Clear timeout if request completes
-
-          console.info('🆕 [SimpleGeneration] Result:', generationResult);
-          
-          if (generationResult.success && generationResult.status === 'completed') {
-            // New system completed immediately
-            resultUrl = generationResult.imageUrl || '';
-            allResultUrls = [resultUrl];
-            variationsGenerated = 1;
-            body = { success: true, system: 'new' };
-            res = { ok: true, status: 200 } as Response;
-          } else if (generationResult.success && generationResult.status === 'processing') {
-            // New system is processing
-            throw new Error('Generation in progress - please wait');
-          } else {
-            // New system failed - no fallback to old system
-            console.error('❌ [SimpleGeneration] Simplified service failed:', generationResult.error);
-
-            // Show error toast immediately for failed generations (unified copy)
-            if (!window.__lastGenErrorShownAt || Date.now() - window.__lastGenErrorShownAt > 1500) {
-              window.__lastGenErrorShownAt = Date.now();
-              notifyError({ title: 'Failed', message: 'Try again' });
-            }
-
-            // Stop spinner and reset composer
-            endGeneration(genId);
-            resetComposerState();
-            throw new Error(generationResult.error || 'Generation failed');
-          }
-        } catch (error) {
-          clearTimeout(timeoutId); // Clear timeout on error
-          if (error instanceof Error && error.name === 'AbortError') {
-            console.warn('⚠️ Request aborted due to timeout');
-            const timeoutError = new Error('Request timed out. Please try again with a smaller image or different prompt.');
-            notifyError({ title: 'Taking too long', message: 'Please try again' });
-            endGeneration(genId);
-            resetComposerState();
-            throw timeoutError;
-          }
-
-          // Show error toast for other errors too (unified copy)
-          if (!window.__lastGenErrorShownAt || Date.now() - window.__lastGenErrorShownAt > 1500) {
-            window.__lastGenErrorShownAt = Date.now();
-            notifyError({ title: 'Failed', message: 'Try again' });
-          }
-          endGeneration(genId);
-          resetComposerState();
-          throw error; // Re-throw other errors
-        }
-
-        // Process results based on system used
-        if (body?.system === 'new') {
-          // New system already processed - skip old system logic
-          console.log('🆕 [New System] Skipping old system processing');
-        } else {
-          // Process aimlApi results (old system) - but this should never happen now
-          console.warn('⚠️ [SimpleGeneration] Unexpected path - this should not happen');
-          notifyError({ title: 'Failed', message: 'Try again' });
-          endGeneration(genId);
-          resetComposerState();
-          throw new Error('Unexpected old system path - all generation should use new system');
-        }
-
-      // Handle video job creation (status 202) - only for old system responses
-      if (body?.system !== 'new' && res?.status === 202 && body?.job_id && isVideoPreview) {
-        setCurrentVideoJob({ id: body.job_id, status: 'queued' })
-        startVideoJobPolling(body.job_id, body.model, effectivePrompt)
-        endGeneration(genId)
-        setNavGenerating(false)
-        return
-      }
-
-      // Validate result URL
-      if (!resultUrl) {
-        console.error('No result URL in response:', body);
-        throw new Error('No result URL in API response');
-      }
-      
-      // 🔒 IDENTITY PRESERVATION CHECK - automatic based on preset type
-      let finalResultUrl = resultUrl;
-
-      // 🔒 IDENTITY PRESERVATION CHECK - automatic based on preset type
-      if (generationMeta?.generation_type && sourceUrl) {
-        try {
-          console.log('🔒 [IPA] Starting identity preservation check for:', generationMeta.generation_type);
-          console.log('🔒 [IPA] Source URL:', sourceUrl);
-          console.log('🔒 [IPA] Result URL:', resultUrl);
-          
-          const ipaResult = await IdentityPreservationService.runIPA(
-            sourceUrl,
-            resultUrl,
-            {
-              ipaThreshold: generationMeta.ipaThreshold || 0.5,
-              ipaRetries: generationMeta.ipaRetries || 1,
-              ipaBlocking: generationMeta.ipaBlocking || false,
-              generation_type: generationMeta.generation_type
-            }
-          );
-          
-          console.log('🔒 [IPA] Result:', {
-            similarity: ipaResult.similarity,
-            passed: ipaResult.passed,
-            retryCount: ipaResult.retryCount,
-            strategy: ipaResult.strategy
-          });
-
-          if (ipaResult.passed) {
-            finalResultUrl = ipaResult.finalUrl;
-            console.log('✅ [IPA] Identity preservation passed');
-          } else if (generationMeta.ipaBlocking) {
-            console.log('❌ [IPA] Identity preservation failed and blocking enabled');
-            throw new Error(`IPA failed: ${(ipaResult.similarity * 100).toFixed(1)}% similarity < ${((generationMeta.ipaThreshold || 0.5) * 100).toFixed(1)}% threshold`);
-          } else {
-            finalResultUrl = ipaResult.finalUrl;
-            console.log('⚠️ [IPA] Identity preservation failed but non-blocking, using best result');
-          }
-        } catch (ipaError) {
-          console.error('❌ [IPA] Error during identity preservation check:', ipaError);
-          finalResultUrl = resultUrl; // Fallback to original result
-        }
-      } else {
-        console.log('🔒 [IPA] Skipping - missing generation_type or sourceUrl:', {
-          hasGenerationType: !!generationMeta?.generation_type,
-          hasSourceUrl: !!sourceUrl,
-          generationType: generationMeta?.generation_type
         });
-      }
-
-                // 🔧 CLOUDINARY CONVERSION - Convert AIML API URLs to Cloudinary URLs for Ghibli
-          let cloudinaryConvertedUrl = finalResultUrl;
-          
-          // 🚨 REMOVED: Frontend Cloudinary upload - let backend handle it
-          // The backend save-media function will automatically convert AIML URLs to Cloudinary
-          // This prevents duplicate uploads and signature errors
-          
-          if (generationMeta?.mode === 'ghiblireact' && finalResultUrl && finalResultUrl.includes('cdn.aimlapi.com')) {
-            console.log('☁️ [Ghibli] AIML API URL detected, backend will handle Cloudinary conversion');
-            // Keep original URL - backend will convert it during save
-          }
-          
-          // 🎨 FX POST-PROCESSING - Apply visual effects based on generation mode
-          if (cloudinaryConvertedUrl && generationMeta?.mode) {
-            try {
-              let fxProcessedUrl = cloudinaryConvertedUrl;
-              
-              // Apply Neo Tokyo Glitch FX
-              if (generationMeta.mode === 'neotokyoglitch' && selectedNeoTokyoGlitchPreset) {
-                console.log('🎭 Applying Neo Tokyo Glitch FX...');
-                const { applyNeoTokyoGlitch } = await import('../hooks/useNeoTokyoGlitch');
-                
-                const fxOptions = {
-                  enableGlow: true,
-                  enableScanlines: true,
-                  enableGlitch: true,
-                  enableNeon: true,
-                  glowIntensity: 0.8,
-                  scanlineOpacity: 0.3,
-                  glitchAmount: 0.4,
-                  neonColor: '#00ffff'
-                };
-                
-                fxProcessedUrl = await applyNeoTokyoGlitch(cloudinaryConvertedUrl, fxOptions);
-                console.log('✅ Neo Tokyo FX applied successfully');
-              }
-              
-              // Apply Ghibli Reaction FX
-              else if (generationMeta.mode === 'ghiblireact' && selectedGhibliReactionPreset) {
-                console.log('🎭 Applying Ghibli Reaction FX...');
-                const { applyGhibliReactionFX } = await import('../hooks/useGhibliReaction');
-                
-                const fxOptions = {
-                  enableTears: true,
-                  enableHearts: true,
-                  enableBlush: true,
-                  enableEyeShine: true,
-                  tearIntensity: 0.7,
-                  heartOpacity: 0.6,
-                  blushIntensity: 0.5,
-                  eyeShineBrightness: 0.8
-            };
-            
-            fxProcessedUrl = await applyGhibliReactionFX(finalResultUrl, fxOptions);
-            console.log('✅ Ghibli Reaction FX applied successfully');
-          }
-          
-          // Apply Emotion Mask FX (subtle enhancement) - DISABLED: function not implemented
-          else if (generationMeta.mode === 'emotionmask' && selectedEmotionMaskPreset) {
-            console.log('🎭 Emotion Mask FX disabled - function not implemented');
-            // TODO: Implement applyEmotionMaskFX function in useEmotionMask hook
-            fxProcessedUrl = finalResultUrl; // Use original result for now
-          }
-          
-          // Update final result with FX processing
-          if (fxProcessedUrl !== finalResultUrl) {
-            finalResultUrl = fxProcessedUrl;
-            console.log('🎨 FX processing completed, final result updated');
-          }
-          
-        } catch (fxError) {
-          console.warn('⚠️ FX processing failed, using original result:', fxError);
-          // Continue with original result if FX fails
-        }
-      }
-
-      console.info(`Generated ${variationsGenerated} variation(s):`, allResultUrls);
-
-      // Save the generated media to user profile and feed
-      try {
-        // First save to local userMediaService for profile display
-        const mediaToSave = {
-          userId: authService.getCurrentUser()?.id || '',
-          type: 'photo' as const,
-          url: finalResultUrl,
-          thumbnailUrl: finalResultUrl, // Use same URL for thumbnail
-          prompt: effectivePrompt,
-          aspectRatio: 4/3, // Default aspect ratio
-          width: 800, // Default dimensions
-          height: 600,
-          tokensUsed: variationsGenerated, // Use actual variations generated
-          isPublic: profileData.shareToFeed,
-          tags: [generationMeta?.mode || 'ai-generated', 'generated'],
-          metadata: {
-            quality: 'high' as const,
-            generationTime: Date.now(),
-            modelVersion: body?.model || 'aiml-api',
-            presetId: generationMeta?.presetId || generationMeta?.ghibliReactionPresetId || generationMeta?.emotionMaskPresetId,
-            mode: generationMeta?.mode || 'custom',
-            group: null
-          }
-        };
         
-        // 🔧 FIX: Remove duplicate save - generation pipeline handles all saving now
-        // Only save locally for immediate UI display
-        await userMediaService.saveMedia(mediaToSave, { shareToFeed: profileData.shareToFeed });
-        console.log('✅ [Media] Saved successfully to local profile (backend save handled by generation pipeline)');
-        
-      } catch (error) {
-        console.error('❌ [Media] Failed to save media:', error);
-      }
-
-      // Show the final result (original or retry) with cache busting
-      const cacheBustedResultUrl = `${finalResultUrl}${finalResultUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
-      setPreviewUrl(cacheBustedResultUrl);
-      
-      // Show IPA results in notification if identity lock was enabled
-      // Show success notification
-      notifyReady({ 
-        title: 'Your media is ready', 
-        message: 'Tap to open', 
-        thumbUrl: finalResultUrl, 
-        onClickThumb: () => {
-          // Open the media viewer to show the generated image
-          setViewerMedia([{
-            id: 'generated-' + Date.now(),
-            userId: 'current-user',
-            type: 'photo',
-            url: finalResultUrl,
-            prompt: prompt,
-            aspectRatio: 4/3,
-            width: 800,
-            height: 600,
-            timestamp: new Date().toISOString(),
-            tokensUsed: 2,
-            likes: 0,
-                    isPublic: profileData.shareToFeed,
-            tags: [],
-            metadata: { quality: 'high', generationTime: 0, modelVersion: '1.0' }
-          }]);
-          setViewerStartIndex(0);
-          setViewerOpen(true);
-        } 
-      });
-
-      // Save the generated media to the database
-          try {
-            const jwt = authService.getToken();
-            const userId = authService.getCurrentUser()?.id;
-            
-            if (!jwt || !userId) {
-              console.error('No JWT or user ID for saveMedia');
-           console.error('❌ Something went wrong: Generated, but not saved (auth error)')
-              return;
-            }
-
-        // 🔧 FIX: Remove duplicate saveMedia call - generation pipeline handles all saving now
-        console.log('✅ Backend save handled by generation pipeline');
-        // Refresh both feed and user profile
-        setTimeout(() => window.dispatchEvent(new CustomEvent('refreshFeed')), 800)
+        // End generation and refresh feed
         endGeneration(genId);
         setNavGenerating(false);
+        loadFeed();
         
-        // Clear composer after a delay so user can see their result
+        // Clear composer after delay
         setTimeout(() => {
-          console.log('🧹 Clearing composer after generation completion');
           handleClearComposerState();
-        }, 3000); // 3 seconds delay
+        }, 3000);
         
-        return
-
-        // First, create an asset record (skip for Neo Tokyo Glitch only)
-        let assetId: string | null = null;
+        return;
+      } else if (result.success && result.status === 'processing') {
+        console.log('🔄 [Unified] Generation in progress, service handles polling');
         
-        if (composerState.mode !== 'neotokyoglitch') {
-        const assetResult = await createAsset({
-          sourcePublicId: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
-          mediaType: 'image', // Default to image for now
-            presetKey: selectedPreset as string | null | undefined,
-              prompt: effectivePrompt,
+        // Show processing toast
+        notifyQueue({ 
+          title: 'Add to queue', 
+          message: 'We\'ll start processing it shortly.'
         });
-
-        if (!assetResult.ok) {
-          console.error('Failed to create asset:', assetResult.error);
-          console.error('❌ Something went wrong: Failed to create asset record')
-          endGeneration(genId);
-          setNavGenerating(false);
-          return;
-        }
-
-          assetId = assetResult.data.id;
-        console.log('✅ Asset created:', assetId);
-        } else {
-          console.log(`🎭 ${composerState.mode} mode - skipping createAsset, will use save-media directly`);
-        }
-
-        // Save all variations to the database
-        console.log(`💾 Saving ${allResultUrls.length} variation(s) to database...`);
         
-        try {
-          // Prepare variations for batch endpoint
-          const variations = allResultUrls.map((url, index) => ({
-            image_url: url,
-            media_type: 'image',
-            prompt: effectivePrompt,
-            cloudinary_public_id: null,
-            source_public_id: sourceUrl || null,
-            meta: {
-              variationIndex: index,
-              totalVariations: allResultUrls.length,
-              prompt: effectivePrompt,
-              modeMeta: body.modeMeta,
-              userId,
-              shareNow: !!shareToFeed,
-              presetId: selectedPreset,
-              runId: genId
-            }
-          }));
-
-          // 🧪 DEBUG: Log batch save details
-          console.log('🧪 [Batch Save] Preparing variations:', variations.map(v => ({
-            source_public_id: v.source_public_id,
-            url: v.image_url,
-            meta: v.meta
-          })));
-
-          // Handle different generation modes - all now use dedicated tables
-          if (composerState.mode === 'emotionmask') {
-            console.log('🎭 Emotion Mask mode - media saved by dedicated pipeline');
-            // Media is already saved by the dedicated emotion-mask-generate function
-          } else if (composerState.mode === 'ghiblireact') {
-            console.log(`🎭 ${composerState.mode} mode - media saved by dedicated pipeline`);
-            // Media is already saved by the dedicated ghibli-reaction-generate function
-          } else if (composerState.mode === 'neotokyoglitch') {
-            console.log(`🎭 [NeoGlitch] Neo Tokyo Glitch mode - media already saved by first-class pipeline`);
-            console.log(`✅ [NeoGlitch] No additional save-media call needed - using dedicated glitch table`);
-            
-            // Neo Tokyo Glitch media is already saved by our first-class pipeline
-            // The media_assets_glitch table handles everything automatically
-            if (allResultUrls.length > 0) {
-              console.log(`✅ [NeoGlitch] Generation completed successfully with URL:`, allResultUrls[0]);
-              
-              // Refresh user media to show the new image
-              setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                detail: { count: 1, runId: genId } 
-              })), 800);
-            }
-          } else if (composerState.mode === 'preset' || composerState.mode === 'custom' || 
-                     composerState.mode === 'emotionmask' || composerState.mode === 'ghiblireact') {
-            console.log(`🎭 ${composerState.mode} mode - checking variation count: ${allResultUrls.length}`);
-            
-            if (allResultUrls.length === 1) {
-              // Single variation - update the asset directly
-              console.log(`🎭 ${composerState.mode} mode - single variation, updating asset`);
-              
-              // Skip asset update for new system (already saved by dedicated functions)
-              if (body?.system === 'new') {
-                console.log('🆕 [New System] Skipping asset update - already saved by dedicated function');
-                
-                // Refresh user media to show the new image
-                setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                  detail: { count: 1, runId: genId } 
-                })), 800);
-              } else if (allResultUrls.length > 0) {
-                // All AI types now use dedicated tables - no asset update needed
-                console.log(`🎭 ${composerState.mode} mode - media saved by dedicated pipeline, refreshing display`);
-                
-                // Refresh user media to show the new image
-                setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                  detail: { count: 1, runId: genId } 
-                })), 800);
-              } else {
-                console.warn(`⚠️ No result URLs available for ${composerState.mode}`);
-              }
-            } else if (allResultUrls.length > 1) {
-              // Multiple variations - use unified save-media
-              console.log(`🎭 ${composerState.mode} mode - multiple variations (${allResultUrls.length}), using unified save-media`);
-              
-              // Skip save-media for new system (already saved by dedicated functions)
-              if (body?.system === 'new') {
-                console.log('🆕 [New System] Skipping save-media - already saved by dedicated function');
-              } else {
-              try {
-              const saveRes = await authenticatedFetch('/.netlify/functions/save-media', {
-                method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json',
-                  'X-Idempotency-Key': genId // prevents double-saves on retries
-                },
-                body: JSON.stringify({
-                  finalUrl: allResultUrls[0], // Use first URL for single save
-                  media_type: 'image',
-                  preset_key: selectedPreset || 'custom',
-                  prompt: effectivePrompt,
-                  meta: {
-                    mode: composerState.mode,
-                    presetId: selectedPreset,
-                    runId: genId,
-                    userId,
-                    shareNow: !!shareToFeed,
-                    variation_index: 0,
-                    totalVariations: allResultUrls.length
-                  }
-                })
-              });
-              
-              const saveText = await saveRes.text();
-              let saveBody: any = {};
-              try { saveBody = JSON.parse(saveText); } catch {}
-              
-                if (saveRes.ok && saveBody?.success) {
-                  console.log(`✅ ${composerState.mode} batch save successful:`, saveBody);
-                
-                  // Refresh user media to show the new images
-                setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                    detail: { count: saveBody.count || allResultUrls.length, runId: genId } 
-                })), 800);
-              } else {
-                  console.warn(`⚠️ ${composerState.mode} batch save failed, falling back to individual saves:`, saveRes.status, saveBody || saveText);
-                  
-                  // 🧪 FALLBACK: Try saving each variation individually
-                  console.log('🧪 [Fallback] Attempting individual saves for each variation');
-                  
-                  let successfulSaves = 0;
-                  for (let i = 0; i < allResultUrls.length; i++) {
-                    try {
-                      const individualSaveRes = await authenticatedFetch('/.netlify/functions/save-media', {
-                        method: 'POST',
-                        headers: { 
-                          'Content-Type': 'application/json',
-                          'X-Idempotency-Key': `${genId}-variation-${i}` // unique idempotency key for each variation
-                        },
-                        body: JSON.stringify({
-                          finalUrl: allResultUrls[i],
-                          media_type: 'image',
-                          preset_key: selectedPreset || 'custom',
-                          prompt: effectivePrompt,
-                          source_public_id: sourceUrl ? sourceUrl.split('/').pop()?.split('.')[0] || '' : '',
-                          meta: {
-                            mode: composerState.mode,
-                            presetId: composerState.mode === 'ghiblireact' ? selectedGhibliReactionPreset :
-                                      composerState.mode === 'emotionmask' ? selectedEmotionMaskPreset :
-                                      selectedPreset,
-                            runId: genId,
-                            userId,
-                            shareNow: !!shareToFeed,
-                            variation_index: i,
-                            totalVariations: allResultUrls.length,
-                            fallback_save: true
-                          }
-                        })
-                      });
-                      
-                      const individualSaveText = await individualSaveRes.text();
-                      let individualSaveBody: any = {};
-                      try { individualSaveBody = JSON.parse(individualSaveText); } catch {}
-                      
-                      if (individualSaveRes.ok && individualSaveBody?.success) {
-                        console.log(`✅ [Fallback] Variation ${i} saved individually:`, individualSaveBody);
-                        successfulSaves++;
-                      } else {
-                        console.error(`❌ [Fallback] Variation ${i} individual save failed:`, individualSaveRes.status, individualSaveBody || individualSaveText);
-                      }
-                    } catch (individualSaveError) {
-                      console.error(`❌ [Fallback] Variation ${i} individual save error:`, individualSaveError);
-                    }
-                  }
-                  
-                  if (successfulSaves > 0) {
-                    console.log(`✅ [Fallback] ${successfulSaves}/${allResultUrls.length} variations saved individually`);
-                    
-                    // Refresh user media to show the successfully saved images
-                    setTimeout(() => window.dispatchEvent(new CustomEvent('userMediaUpdated', { 
-                      detail: { count: successfulSaves, runId: genId } 
-                    })), 800);
-                  } else {
-                    console.error(`❌ [Fallback] All individual saves failed for ${composerState.mode}`);
-                    console.error('❌ Save failed: Failed to save any variations')
-                  }
-                }
-              } catch (batchSaveError) {
-                console.error(`❌ ${composerState.mode} batch save error:`, batchSaveError);
-                console.error('❌ Save failed: Failed to save variations')
-              }
-              } // Close the if (body?.system === 'new') else block
-            } else {
-              console.warn(`⚠️ ${composerState.mode} mode - no result URLs to save`);
-            }
-          } else {
-            console.log(`🎭 ${composerState.mode} mode - no additional save needed`);
-          }
-        } catch (error: unknown) {
-          console.error(`❌ Save error:`, error);
-          console.error('❌ Save failed:', error instanceof Error ? (error as Error).message : 'Unknown error')
-          
-          // 🚨 CRITICAL: If save failed, refund the reserved credits
-          console.log('🚨 Save failed - refunding reserved credits to prevent charging for failed saves');
-          try {
-            const refundResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                request_id: requestId,
-                disposition: 'refund' // Refund instead of commit
-              })
-            });
-            
-            if (refundResponse.ok) {
-              const refundResult = await refundResponse.json();
-              console.log('✅ Credits refunded successfully after save failure:', refundResult);
-            } else {
-              console.error('❌ Credits refund failed after save failure:', refundResponse.status);
-            }
-          } catch (refundError) {
-            console.error('❌ Credits refund error after save failure:', refundError);
-          }
-          
-          return; // Exit early to prevent credits from being committed
-        }
-
-        // 💰 Finalize credits (commit) ONLY after successful save
-        try {
-          console.log('💰 Finalizing credits (commit) after successful save...');
-          const finalizeResponse = await authenticatedFetch('/.netlify/functions/credits-finalize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              request_id: requestId,
-              disposition: 'commit'
-            })
-          });
-          
-          if (finalizeResponse.ok) {
-            const finalizeResult = await finalizeResponse.json();
-            console.log('✅ Credits finalized successfully:', finalizeResult);
-          } else {
-            console.error('❌ Credits finalization failed:', finalizeResponse.status);
-            // Don't throw here - generation succeeded, just log the credit issue
-          }
-        } catch (finalizeError) {
-          console.error('❌ Credits finalization error:', finalizeError);
-          // Don't throw here - generation succeeded, just log the credit issue
-        }
-
+        // Service handles polling - just return
+        return;
+      } else {
+        // Generation failed
+        console.error('❌ [Unified] Generation failed:', result.error);
+        notifyError({ title: 'Failed', message: 'Try again' });
         endGeneration(genId);
         setNavGenerating(false);
-        return
-      } catch (error) {
-        console.error('❌ Error in save flow:', error);
-        console.error('❌ Something went wrong: Failed to save generated media')
-      }
-
-      // Success: stop progress
-      endGeneration(genId);
-      setNavGenerating(false);
-      
-      // 🛡️ RUN ID PROTECTION: Only handle success for current run
-      if (currentRunId !== runId) {
-        console.warn('⚠️ Ignoring success for stale run:', runId, 'current:', currentRunId);
+        resetComposerState();
         return;
       }
-      
-      // Keep preset selected for user convenience (stateless generation doesn't need clearing)
-      
-      // Clear mode state on success
-      if (selectedMode) {
-        // Track mode success analytics before clearing
-        try {
-          const resolvedPreset = resolvePresetForMode({
-            mode: selectedMode,
-            option: (selectedTheme || selectedEra || selectedOp) as string,
-            activePresets: Object.fromEntries(availablePresets.map(p => [p.key, p])) as any
-          });
-          
-          console.log('📊 Mode analytics - success:', {
-            mode: selectedMode,
-            theme: selectedTheme,
-            era: selectedEra,
-            op: selectedOp,
-            preset: resolvedPreset,
-            timestamp: new Date().toISOString()
-          });
-          
-          // TODO: Send to analytics service when available
-          // analytics.track('mode_generation_completed', { mode: selectedMode, theme: selectedTheme, era: selectedEra, op: selectedOp, preset: resolvedPreset });
-        } catch (error) {
-          console.warn('⚠️ Analytics tracking failed:', error);
-        }
-        
-        // Clear all mode selections after successful generation (per architecture)
-        clearAllOptionsAfterGeneration();
-      }
-      
-      // Dispatch generation success event to trigger composer clearing
-      window.dispatchEvent(new CustomEvent('generation-success', {
-        detail: { message: 'Generation completed successfully', mode: kind }
-      }));
-      
-      // Handle V2V processing status
-      if (isVideoPreview) {
-        if (body.status === 'processing' || body.status === 'queued') {
-          notifyQueue({ title: 'Added to queue', message: 'We will start processing shortly.' });
-          // TODO: Implement polling for V2V status updates
-          console.log('🎬 V2V job started:', body.job_id || 'unknown');
-        } else if (body.status === 'completed') {
-          notifyReady({ title: 'Your media is ready', message: 'Tap to open' });
-          // Finalize credits as committed since generation was successful
-          if (finalizeCredits) {
-            await finalizeCredits('commit');
-          }
-          // Clear all options after successful generation
-          clearAllOptionsAfterGeneration();
-          
-          // Dispatch generation success event to trigger composer clearing
-          window.dispatchEvent(new CustomEvent('generation-success', {
-            detail: { message: 'Generation completed successfully', mode: kind }
-          }));
-          
-          // Refresh user media to show the new video
-          // TODO: Implement user media refresh
-        }
-      }
 
-      // Refresh quota
-      try {
-        const qRes = await authenticatedFetch('/.netlify/functions/getQuota');
-        if (qRes.ok) setQuota(await qRes.json());
-      } catch {}
 
+      
     } catch (e) {
       console.error('dispatchGenerate error', e);
       
@@ -3649,51 +2534,25 @@ const HomeNew: React.FC = () => {
       if (e instanceof Error) {
         if (e.message.includes('Insufficient credits') || e.message.includes('credits but only have')) {
           errorMessage = 'Not enough credits. Please wait for daily reset or upgrade your plan.';
-        } else if (e.message.includes('cloud_name is disabled') || e.message.includes('cloud_name')) {
-          errorMessage = 'Service busy - please try again in a moment';
-        } else if (e.message.includes('Invalid api_key') || e.message.includes('api_key')) {
-          errorMessage = 'Service busy - please try again in a moment';
         } else if (e.message.includes('timeout') || e.message.includes('ERR_TIMED_OUT')) {
-          errorMessage = 'Taking too long - please try with a smaller file';
-        } else if (e.message.includes('Failed to fetch') || e.message.includes('ERR_TIMED_OUT')) {
-          errorMessage = 'Connection issue - please check your internet and try again';
-        } else if (e.message.includes('unauthorized') || e.message.includes('401')) {
-          errorMessage = 'Please sign in again';
-        } else if (e.message.includes('quota') || e.message.includes('credits')) {
-          errorMessage = 'Daily limit reached - please try again tomorrow';
+          errorMessage = 'Request timed out. Please try again with a smaller image or different prompt.';
         } else {
-          errorMessage = 'Something went wrong, please try again';
-        }
-      } else if (typeof e === 'object' && e !== null && 'error' in e) {
-        const errorObj = e as any;
-        if (errorObj.error?.message) {
-          if (errorObj.error.message.includes('cloud_name is disabled') || errorObj.error.message.includes('Invalid api_key')) {
-            errorMessage = 'Service busy - please try again in a moment';
-          } else if (errorObj.error.message.includes('unauthorized')) {
-            errorMessage = 'Please sign in again';
-          } else {
-            errorMessage = 'Something went wrong, please try again';
-          }
+          errorMessage = e.message;
         }
       }
       
-      console.error('❌ Error! Please try again:', errorMessage)
+      // Show error notification
+      notifyError({ title: 'Failed', message: errorMessage });
       
-      // Refund credits since generation failed
-      if (finalizeCredits) {
-        await finalizeCredits('refund');
-      }
-      
-      // Clear all options after generation failure
-      clearAllOptionsAfterGeneration();
-      
-      // Dispatch generation error event to trigger composer clearing
-      window.dispatchEvent(new CustomEvent('generation-error', {
-        detail: { message: 'Generation failed', mode: kind }
-      }));
-      
+      // Clear generation state on error
       endGeneration(genId);
       setNavGenerating(false);
+      
+      // Clear composer after error
+      setTimeout(() => {
+        handleClearComposerState();
+      }, 1000);
+      
     } finally {
       // Check if this is still the current run (ignore late completions)
       if (currentRunId === runId) {
@@ -3705,131 +2564,8 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  const handleGenerate = async (promptOverride?: string) => {
-    if (!previewUrl || !(promptOverride ?? prompt).trim()) {
-      return
-    }
-    
-    const token = authService.getToken()
-    if (!token) {
-      navigate('/auth')
-      return
-    }
-    
-    // Apply user intent guard
-    // if (requireUserIntent({ userInitiated: true, source: 'custom' })) { // REMOVED - drama function deleted
-    //   console.warn('⛔ Generation blocked by guard');
-    //   return;
-    // }
-    // Close composer immediately and show progress on avatar
-    const genId = startGeneration()
-    setIsComposerOpen(false)
-    setNavGenerating(true)
-    try {
-      // Get current profile settings from context (real-time state)
-      // Note: profileData is already available from the top-level useProfile() hook
-      const shareToFeed = profileData?.shareToFeed ?? false
-      
-      // Enforce server-side quota and generate via aimlApi
-      // Use new uploadSource service - never fetch blob URLs
-      const uploadResult = await uploadSourceToCloudinary({
-        file: selectedFile || undefined,
-        url: undefined  // Don't pass preview URL - use File object directly
-      })
-      const sourceUrl = uploadResult.secureUrl
-      
-      // Determine if this should be a video job
-      const shouldBeVideo = isVideoPreview;
-      
-      const body: Record<string, any> = {
-        prompt: (promptOverride ?? prompt).trim(),
-        image_url: sourceUrl,
-        resource_type: shouldBeVideo ? 'video' : 'image',
-        source: 'custom',
-        visibility: shareToFeed ? 'public' : 'private',
 
-        num_variations: 1, // Single generation only
-      }
-      
 
-      // If a preset is selected, include its negative prompt and strength
-      if (selectedPreset) {
-        const preset = getPresetById(selectedPreset as string, availablePresets)
-        if (preset) {
-          if (preset.negativePrompt) body.negative_prompt = preset.negativePrompt
-        if (typeof preset.strength === 'number') body.strength = preset.strength
-          body.presetName = selectedPreset as string
-        }
-      }
-      
-      // Reserve credits before generation for this path
-      const creditsNeeded = 2; // Single generation only (premium images)
-      console.log(`💰 Alt path: Reserving ${creditsNeeded} credits before generation...`);
-      console.log('🔍 Alt path credit debug:', { 
-        selectedMode, 
-        creditsNeeded 
-      });
-      
-      const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: selectedMode || 'custom',
-          cost: creditsNeeded
-        })
-      });
-
-      if (!creditsResponse.ok) {
-        if (creditsResponse.status === 429) {
-          const errorData = await creditsResponse.json();
-          throw new Error(`Daily cap reached: ${errorData.error}`);
-        }
-        if (creditsResponse.status === 403) {
-          const errorData = await creditsResponse.json();
-          if (errorData.error === 'NEGATIVE_BALANCE_BLOCKED') {
-            throw new Error(`Generation blocked: ${errorData.message} You have ${errorData.currentBalance} credits. Please wait until tomorrow for new credits.`);
-          } else if (errorData.error === 'INSUFFICIENT_CREDITS') {
-            throw new Error(`Insufficient credits: ${errorData.message} You need ${errorData.requiredCredits} credits but only have ${errorData.currentBalance}.`);
-          } else {
-            throw new Error(`Credit error: ${errorData.message || errorData.error}`);
-          }
-        }
-        throw new Error(`Credits reservation failed: ${creditsResponse.status}`);
-      }
-
-      const creditsResult = await creditsResponse.json();
-      console.log(`✅ Alt path: Credits reserved successfully. New balance: ${creditsResult.balance}`);
-      
-      // 🎯 All generation now goes through GenerationPipeline - no direct aimlApi calls
-      console.log('🆕 [New System] All generation goes through GenerationPipeline');
-      
-      // Since this function is deprecated, just show an error and redirect
-      notifyError({ 
-        title: 'Feature updated',
-        message: 'Please use the new interface.'
-      });
-      
-      // Clear generation state
-      endGeneration(genId);
-      setNavGenerating(false);
-      setIsComposerOpen(true);
-      
-            // Keep preset selected for user convenience (stateless generation doesn't need clearing)
-    } catch (error) {
-      console.error('handleGenerate error:', error);
-      
-      // Clear generation state on error
-      endGeneration(genId);
-      setNavGenerating(false);
-      setIsComposerOpen(true);
-      
-      // Show user-friendly error message
-      notifyError({ 
-        title: 'Something went wrong',
-        message: 'Please try again with a different image or prompt.' 
-      });
-    }
-  }
 
   // Helper to resolve source from various UI states
   function resolveSource(): {id: string, url: string} | null {
