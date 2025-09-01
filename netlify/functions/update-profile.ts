@@ -56,18 +56,27 @@ export const handler: Handler = async (event, context) => {
       `, [uid]);
       
       if (existingUser) {
-        // Update existing user
-        await q(`
-          UPDATE users 
-          SET email = $1, updated_at = NOW()
-          WHERE id = $2
-        `, [email || `user-${uid}@placeholder.com`, uid]);
+        // Update existing user - only update email if it's provided and not a placeholder
+        if (email && !email.includes('@placeholder.com')) {
+          await q(`
+            UPDATE users 
+            SET email = $1, updated_at = NOW()
+            WHERE id = $2
+          `, [email, uid]);
+        }
       } else {
-        // Create new user
-        await q(`
-          INSERT INTO users (id, email, name, created_at, updated_at)
-          VALUES ($1, $2, $3, NOW(), NOW())
-        `, [uid, email || `user-${uid}@placeholder.com`, body.username || `User ${uid}`]);
+        // DO NOT CREATE NEW USERS HERE!
+        // Users should only be created through the proper auth flow (verify-otp)
+        console.error('❌ User not found:', uid);
+        return {
+          statusCode: 404,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Allow-Methods': 'PUT, OPTIONS'
+          },
+          body: JSON.stringify({ error: 'User not found. Please sign up first.' })
+        };
       }
       
       const user = { id: uid };
