@@ -1941,8 +1941,8 @@ const ProfileScreen: React.FC = () => {
           setConfirm({ open: false })
         }}
       />
-      
 
+      {showDeleteAccountModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 
           <div className="relative bg-[#222222] border border-white/20 rounded-2xl max-w-md w-full p-6 shadow-2xl">
