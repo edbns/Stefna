@@ -116,24 +116,27 @@ class SimpleGenerationService {
         throw new Error(errorMessage);
       }
 
-      console.log('✅ [SimpleGeneration] Generation completed:', {
-        success: result.success,
-        status: result.status,
-        hasImage: !!result.imageUrl,
-        hasVideo: !!result.videoUrl
-      });
-
-      return {
-        success: result.success,
-        jobId: result.jobId,
-        runId: result.runId,
-        status: result.status,
-        imageUrl: result.imageUrl,
-        videoUrl: result.videoUrl,
+      // Normalize backend unified-generate-background response
+      const normalized = {
+        success: !!result.success,
+        jobId: result.jobId || result.runId || undefined,
+        runId: result.runId || undefined,
+        status: result.status === 'done' ? 'completed' : result.status,
+        imageUrl: result.imageUrl || result.outputUrl || undefined,
+        videoUrl: result.videoUrl || undefined,
         error: result.error,
         provider: result.provider,
-        type: request.mode
-      };
+        type: request.mode as GenerationMode
+      } as SimpleGenerationResult;
+
+      console.log('✅ [SimpleGeneration] Generation completed (normalized):', {
+        success: normalized.success,
+        status: normalized.status,
+        hasImage: !!normalized.imageUrl,
+        hasVideo: !!normalized.videoUrl
+      });
+
+      return normalized;
 
     } catch (error) {
       console.error('❌ [SimpleGeneration] Generation failed:', error);

@@ -29,17 +29,11 @@ class UserSettingsService {
     this.isLoading = true;
     
     try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        throw new Error('No auth token');
-      }
-
-      const response = await fetch('/.netlify/functions/user-settings', {
+      // Always use the unified authenticated client (handles token + app key)
+      const { authenticatedFetch } = await import('../utils/apiClient');
+      const response = await authenticatedFetch('/.netlify/functions/user-settings', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       });
 
       if (!response.ok) {
@@ -47,18 +41,21 @@ class UserSettingsService {
       }
 
       const result = await response.json();
-      this.settings = result.settings;
+      const newSettings: UserSettings = (result && result.settings && typeof result.settings.share_to_feed === 'boolean')
+        ? result.settings as UserSettings
+        : { media_upload_agreed: false, share_to_feed: false };
+      this.settings = newSettings;
       
       // Also update localStorage for backward compatibility
       const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
       const updatedProfile = { 
         ...currentProfile, 
-        shareToFeed: this.settings.share_to_feed 
+        shareToFeed: newSettings.share_to_feed 
       };
       localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
       
-      console.log('✅ [UserSettings] Loaded from database:', this.settings);
-      return this.settings;
+      console.log('✅ [UserSettings] Loaded from database:', newSettings);
+      return newSettings;
     } catch (error) {
       console.error('❌ [UserSettings] Failed to load settings:', error);
       
@@ -87,17 +84,10 @@ class UserSettingsService {
   // Update user settings
   async updateSettings(updates: Partial<UserSettings>): Promise<UserSettings> {
     try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        throw new Error('No auth token');
-      }
-
-      const response = await fetch('/.netlify/functions/user-settings', {
+      const { authenticatedFetch } = await import('../utils/apiClient');
+      const response = await authenticatedFetch('/.netlify/functions/user-settings', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
       });
 
@@ -106,19 +96,22 @@ class UserSettingsService {
       }
 
       const result = await response.json();
-      this.settings = result.settings;
+      const newSettings: UserSettings = (result && result.settings && typeof result.settings.share_to_feed === 'boolean')
+        ? result.settings as UserSettings
+        : { media_upload_agreed: false, share_to_feed: false };
+      this.settings = newSettings;
       
       // Also update localStorage for backward compatibility
       const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
       const updatedProfile = { 
         ...currentProfile, 
-        shareToFeed: this.settings.share_to_feed,
-        mediaUploadAgreed: this.settings.media_upload_agreed
+        shareToFeed: newSettings.share_to_feed,
+        mediaUploadAgreed: newSettings.media_upload_agreed
       };
       localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
       
-      console.log('✅ [UserSettings] Updated settings:', this.settings);
-      return this.settings;
+      console.log('✅ [UserSettings] Updated settings:', newSettings);
+      return newSettings;
     } catch (error) {
       console.error('❌ [UserSettings] Failed to update settings:', error);
       throw error;
