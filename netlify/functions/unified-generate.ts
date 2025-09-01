@@ -311,61 +311,76 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
   const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
   const STABILITY_API_URL = process.env.STABILITY_API_URL;
   
-  // Try Stability.ai first
-  if (STABILITY_API_KEY && STABILITY_API_URL) {
-    try {
-      console.log(`📤 [Unified] Trying Stability.ai for Neo Tokyo Glitch`);
-      
-      // Use v2beta endpoint with FormData (like the original stability-generator.ts)
-      const form = new FormData();
-      form.append("prompt", `${params.prompt}, neo tokyo glitch style, cyberpunk aesthetic`);
-      form.append("init_image", params.sourceAssetId);
-      form.append("image_strength", "0.35");
-      form.append("steps", "30");
-      form.append("cfg_scale", "7.5");
-      form.append("samples", "1");
+  // Try Stability.ai with 3-tier fallback: Ultra → Core → SD3
+  if (STABILITY_API_KEY) {
+    const MODEL_ENDPOINTS = {
+      ultra: "https://api.stability.ai/v2beta/stable-image/generate/ultra",
+      core: "https://api.stability.ai/v2beta/stable-image/generate/core", 
+      sd3: "https://api.stability.ai/v2beta/stable-image/generate/sd3",
+    };
 
-      const response = await fetch("https://api.stability.ai/v2beta/stable-image/generate/ultra", {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${STABILITY_API_KEY}`,
-        },
-        body: form,
-        signal: AbortSignal.timeout(180000) // 3 minutes timeout
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Stability.ai API failed: ${response.status} - ${errorText}`);
-      }
-      
-      const result = await response.json();
-      const imageUrl = result.artifacts?.[0]?.url;
-      
-      if (imageUrl) {
-        // Download the image and upload to Cloudinary
-        const imageResponse = await fetch(imageUrl);
-        const imageBuffer = await imageResponse.arrayBuffer();
-        const base64Data = Buffer.from(imageBuffer).toString('base64');
-        const cloudinaryUrl = await uploadBase64ToCloudinary(base64Data);
+    const tiers: Array<keyof typeof MODEL_ENDPOINTS> = ["ultra", "core", "sd3"];
+    let lastError = null;
+
+    for (const tier of tiers) {
+      try {
+        console.log(`📤 [Unified] Trying Stability.ai ${tier.toUpperCase()} for Neo Tokyo Glitch`);
         
-        return {
-          success: true,
-          status: 'completed',
-          jobId: params.runId,
-          runId: params.runId,
-          imageUrl: cloudinaryUrl,
-          provider: 'stability',
-          stabilityJobId: `stability_${params.runId}`
-        };
+        const form = new FormData();
+        form.append("prompt", `${params.prompt}, neo tokyo glitch style, cyberpunk aesthetic`);
+        form.append("init_image", params.sourceAssetId);
+        form.append("image_strength", "0.35");
+        form.append("steps", "30");
+        form.append("cfg_scale", "7.5");
+        form.append("samples", "1");
+
+        const response = await fetch(MODEL_ENDPOINTS[tier], {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${STABILITY_API_KEY}`,
+          },
+          body: form,
+          signal: AbortSignal.timeout(180000) // 3 minutes timeout
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Stability.ai ${tier} failed: ${response.status} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        const imageUrl = result.artifacts?.[0]?.url;
+        
+        if (imageUrl) {
+          // Download the image and upload to Cloudinary
+          const imageResponse = await fetch(imageUrl);
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const base64Data = Buffer.from(imageBuffer).toString('base64');
+          const cloudinaryUrl = await uploadBase64ToCloudinary(base64Data);
+          
+          console.log(`✅ [Unified] Success with Stability.ai ${tier.toUpperCase()}`);
+          return {
+            success: true,
+            status: 'completed',
+            jobId: params.runId,
+            runId: params.runId,
+            imageUrl: cloudinaryUrl,
+            provider: 'stability',
+            stabilityJobId: `stability_${tier}_${params.runId}`
+          };
+        }
+        
+        throw new Error(`No result from Stability.ai ${tier}`);
+        
+      } catch (error) {
+        lastError = error;
+        console.warn(`⚠️ [Unified] Stability.ai ${tier.toUpperCase()} failed:`, error);
+        continue; // Try next tier
       }
-      
-      throw new Error(`No result from Stability.ai`);
-      
-    } catch (error) {
-      console.warn(`⚠️ [Unified] Stability.ai failed, falling back to Fal.ai:`, error);
-      // Fall back to Fal.ai
     }
+    
+    // All Stability.ai tiers failed
+    console.warn(`⚠️ [Unified] All Stability.ai tiers failed, falling back to Fal.ai:`, lastError);
   } else {
     console.warn(`⚠️ [Unified] Stability.ai credentials not configured, using Fal.ai fallback`);
   }
