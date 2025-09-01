@@ -32,7 +32,7 @@
   external_node_modules = ["node-fetch"]
 
 [functions."unified-generate-background"]
-  timeout = 900
+  timeout = 720
   memory = 1536
 
 
