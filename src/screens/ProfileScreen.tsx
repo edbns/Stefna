@@ -30,7 +30,7 @@ import ProfileIcon from '../components/ProfileIcon'
 
 import userService from '../services/userService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
-import { ensureAndUpdateProfile } from '../services/profile'
+
 import { useProfile } from '../contexts/ProfileContext'
 
 
@@ -51,8 +51,8 @@ const ProfileScreen: React.FC = () => {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
 
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
-  const [showEditProfileModal, setShowEditProfileModal] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+
+
 
   // Upload functionality
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -92,21 +92,7 @@ const ProfileScreen: React.FC = () => {
     })
   }
   
-  // Local state for editing (synced with context)
-  const [editingProfileData, setEditingProfileData] = useState({
-    name: profileData.name,
-    avatar: profileData.avatar,
-    shareToFeed: profileData.shareToFeed
-  })
-  
-  // Sync editing state when profile context changes
-  useEffect(() => {
-    setEditingProfileData({
-      name: profileData.name,
-      avatar: profileData.avatar,
-      shareToFeed: profileData.shareToFeed
-    })
-  }, [profileData])
+
 
   // Handle navigation state for activeTab
   useEffect(() => {
@@ -957,50 +943,7 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
-  const handleSaveProfile = async () => {
-    try {
-      setIsSaving(true)
-      const profileDataToSave = { ...editingProfileData }
-      let avatarUrl: string | undefined = undefined
-      
-      // Handle avatar upload if it's a file
-      if (editingProfileData.avatar instanceof File) {
-        // Use the existing uploadToCloudinary function which handles signing correctly
-        const up = await uploadToCloudinary(editingProfileData.avatar, 'users')
-        avatarUrl = up.secure_url
-        profileDataToSave.avatar = avatarUrl
-      } else if (typeof editingProfileData.avatar === 'string') {
-        avatarUrl = editingProfileData.avatar
-      }
 
-      // Use the new profile service to update
-      await ensureAndUpdateProfile({
-        username: profileDataToSave.name, // Map name to username for now
-        avatar_url: avatarUrl,
-        share_to_feed: profileDataToSave.shareToFeed,
-
-      })
-
-      // Update the profile context - this will trigger updates across all components
-      updateProfile(profileDataToSave)
-      
-      // Update the preview photo state
-      if (avatarUrl) {
-        setPreviewPhoto(avatarUrl)
-      }
-      
-      notifyReady({ title: 'Profile Updated', message: 'Your profile has been saved successfully' })
-      setShowEditProfileModal(false)
-    } catch (e: any) {
-      console.error('Save profile failed:', e)
-      notifyError({ 
-        title: 'Update failed', 
-        message: e.message || 'Could not update profile' 
-      })
-    } finally {
-      setIsSaving(false)
-    }
-  }
 
   const handleDeleteAccount = () => {
     // Clear all user data
@@ -1999,17 +1942,12 @@ const ProfileScreen: React.FC = () => {
         }}
       />
       
-      {false && (
+
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowEditProfileModal(false)} />
+
           <div className="relative bg-[#222222] border border-white/20 rounded-2xl max-w-md w-full p-6 shadow-2xl">
             {/* Close Button */}
-            <button
-              onClick={() => setShowEditProfileModal(false)}
-              className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
-            >
-              <X size={24} />
-            </button>
+
 
             {/* Photo Upload */}
             <div className="mb-6">
@@ -2037,67 +1975,33 @@ const ProfileScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Name Input */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-white mb-2">Name</label>
-              <input
-                type="text"
-                value={editingProfileData.name}
-                onChange={(e) => setEditingProfileData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40"
-                placeholder="Enter your name"
-              />
-            </div>
-
-
-
             {/* Sharing Preferences - Compact Row Layout */}
             <div className="mb-6">
               <div className="flex items-center justify-between space-x-6">
                 <div className="flex items-center justify-between flex-1">
                   <label className="text-sm font-medium text-white">Share to Feed</label>
                   <button
-                    onClick={() => setEditingProfileData(prev => ({ ...prev, shareToFeed: !prev.shareToFeed }))}
+                    onClick={async () => {
+                      const newValue = !profileData.shareToFeed;
+                      console.log('🔄 [Share Toggle] Toggling to:', newValue);
+                      await updateUserSettings(newValue);
+                      updateProfile({ shareToFeed: newValue });
+                    }}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      editingProfileData.shareToFeed ? 'bg-white' : 'bg-white/20'
+                      profileData.shareToFeed ? 'bg-white' : 'bg-white/20'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${
-                        editingProfileData.shareToFeed ? 'translate-x-6' : 'translate-x-1'
+                        profileData.shareToFeed ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>
                 </div>
-
-
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <button
-                onClick={handleSaveProfile}
-                disabled={isSaving}
-                className="w-full bg-white text-black font-semibold py-3 rounded-xl hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {isSaving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin mr-2"></div>
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes'
-                )}
-              </button>
-              
-              <button
-                onClick={() => setShowEditProfileModal(false)}
-                className="w-full bg-white/5 text-white font-semibold py-3 rounded-xl hover:bg-white/10 transition-colors border border-white/20"
-              >
-                Cancel
-              </button>
-            </div>
+
           </div>
         </div>
       )}
