@@ -2,6 +2,27 @@ import { signedFetch } from '../lib/auth';
 import { sessionCache } from './sessionCache';
 import { backgroundUploadWithPreview, BackgroundUploadOptions } from './backgroundSync';
 
+// Convert data URL to Blob
+function dataURLtoBlob(dataUrl: string): Blob {
+  const parts = dataUrl.split(',');
+  const mimeMatch = parts[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+  const bstr = atob(parts[1] || '');
+  const n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  for (let i = 0; i < n; i++) u8arr[i] = bstr.charCodeAt(i);
+  return new Blob([u8arr], { type: mime });
+}
+
+function validateFileOrThrow(file: File) {
+  if (!file) throw new Error('Cannot upload empty or invalid file');
+  if (!('size' in file) || file.size === 0) throw new Error('Cannot upload empty file');
+  if (!file.type) throw new Error('File type is missing');
+  if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+    throw new Error('Only image or video files are supported');
+  }
+}
+
 // Retry configuration for Cloudinary uploads
 const UPLOAD_RETRY_CONFIG = {
   maxAttempts: 3,
@@ -132,9 +153,14 @@ export async function prepareSourceAsset(
 
   // If it's a blob URL string, convert to File first
   let file: File;
-  if (typeof activeFileOrUrl === 'string' && activeFileOrUrl.startsWith('blob:')) {
-    const resp = await fetch(activeFileOrUrl);
-    const blob = await resp.blob();
+  if (typeof activeFileOrUrl === 'string' && (activeFileOrUrl.startsWith('blob:') || activeFileOrUrl.startsWith('data:'))) {
+    let blob: Blob;
+    if (activeFileOrUrl.startsWith('data:')) {
+      blob = dataURLtoBlob(activeFileOrUrl);
+    } else {
+      const resp = await fetch(activeFileOrUrl);
+      blob = await resp.blob();
+    }
     // Normalize unknown/empty types to safe defaults Cloudinary accepts
     let mime = blob.type;
     if (!mime || mime === 'application/octet-stream') {
@@ -153,8 +179,10 @@ export async function prepareSourceAsset(
       ext = 'png';
     }
     file = new File([blob], `source.${ext}`, { type: mime });
+    validateFileOrThrow(file);
   } else {
     file = activeFileOrUrl as File;
+    validateFileOrThrow(file);
   }
 
   // Check cache first
@@ -178,6 +206,7 @@ export async function prepareSourceAsset(
       const { timestamp, signature, apiKey, cloudName, folder, upload_preset } = await signRes.json();
 
       const form = new FormData();
+      console.log('[uploading] file:', { name: file.name, size: file.size, type: file.type });
       form.append('file', file);
       form.append('timestamp', String(timestamp));
       form.append('signature', signature);
@@ -225,6 +254,7 @@ export async function prepareSourceAsset(
   const { timestamp, signature, apiKey, cloudName, folder, upload_preset } = await signRes.json();
 
   const form = new FormData();
+  console.log('[uploading] file:', { name: file.name, size: file.size, type: file.type });
   form.append('file', file);
   form.append('timestamp', String(timestamp));
   form.append('signature', signature);
