@@ -82,23 +82,29 @@ class SimpleGenerationService {
         body: JSON.stringify(payload)
       });
 
+      // Read response body once for both success and error cases
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        // If we can't parse JSON, create a synthetic error response
+        result = {
+          success: false,
+          status: 'failed',
+          error: `HTTP ${response.status}: ${response.statusText} (JSON parse failed)`
+        };
+      }
+
       if (!response.ok) {
-        // Try to get detailed error message from response body
+        // Use the parsed result if available, otherwise create error message
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        try {
-          const errorData = await response.json().catch(() => ({}));
-          if (errorData.error) {
-            errorMessage = errorData.error;
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
-          }
-        } catch {
-          // If we can't parse the error body, use the default message
+        if (result && result.error) {
+          errorMessage = result.error;
+        } else if (result && result.message) {
+          errorMessage = result.message;
         }
         throw new Error(errorMessage);
       }
-
-      const result = await response.json();
 
       console.log('✅ [SimpleGeneration] Generation completed:', {
         success: result.success,
@@ -220,23 +226,29 @@ class SimpleGenerationService {
         headers: { 'Content-Type': 'application/json' }
       });
 
+      // Read response body once for both success and error cases
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        // If we can't parse JSON, create a synthetic error response
+        result = {
+          success: false,
+          status: 'failed',
+          error: `HTTP ${response.status}: ${response.statusText} (JSON parse failed)`
+        };
+      }
+
       if (!response.ok) {
-        // Try to get detailed error message from response body
+        // Use the parsed result if available, otherwise create error message
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        try {
-          const errorData = await response.json().catch(() => ({}));
-          if (errorData.error) {
-            errorMessage = errorData.error;
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
-          }
-        } catch {
-          // If we can't parse the error body, use the default message
+        if (result && result.error) {
+          errorMessage = result.error;
+        } else if (result && result.message) {
+          errorMessage = result.message;
         }
         throw new Error(errorMessage);
       }
-
-      const result = await response.json();
 
       return {
         success: result.success,
