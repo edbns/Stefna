@@ -599,6 +599,10 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
       } else {
         // Convert Cloudinary signed URL to public URL for Fal.ai
         let processedImageUrl = params.sourceAssetId;
+        // Reject blob: URLs early and instruct caller to provide HTTP URL
+        if (processedImageUrl && processedImageUrl.startsWith('blob:')) {
+          throw new Error(`Invalid sourceAssetId: blob URLs are not accessible by Fal. Please upload and provide an https URL.`);
+        }
         if (processedImageUrl && processedImageUrl.includes('cloudinary.com')) {
           // Remove signature parameters from Cloudinary URL to make it publicly accessible
           try {
@@ -622,7 +626,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
             : params.prompt,
           image_strength: mode === 'ghibli_reaction' ? 0.35 : 0.7,
           guidance_scale: mode === 'ghibli_reaction' ? 6.0 : 7.5, // Lower guidance for subtler Ghibli effect
-          num_inference_steps: 4,
+          num_inference_steps: 8,
           seed: Math.floor(Math.random() * 1000000)
         };
         

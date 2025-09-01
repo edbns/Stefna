@@ -2497,15 +2497,8 @@ const HomeNew: React.FC = () => {
               return;
       } else if (result.success && result.status === 'processing') {
         console.log('🔄 [Unified] Generation in progress, service handles polling');
-              
-              // Show processing toast
-              notifyQueue({ 
-                title: 'Add to queue', 
-                message: 'We\'ll start processing it shortly.'
-              });
-              
-        // Service handles polling - just return
-              return;
+        // Initial queue toast already shown at start; avoid duplicate here
+        return;
           } else {
         // Generation failed
         console.error('❌ [Unified] Generation failed:', result.error);
