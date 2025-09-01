@@ -43,6 +43,7 @@ interface UnifiedGenerationRequest {
   presetKey?: string;
   sourceAssetId?: string;
   userId: string;
+  runId?: string;
   emotionMaskPresetId?: string;
   storyTimePresetId?: string;
   additionalImages?: string[];
@@ -298,23 +299,17 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
         
         const result = await response.json();
         console.log(`🔍 [Background] Stability.ai ${tier} response:`, {
-          hasArtifacts: !!result.artifacts,
-          artifactsCount: result.artifacts?.length || 0,
-          firstArtifact: result.artifacts?.[0] ? {
-            hasUrl: !!result.artifacts[0].url,
-            urlLength: result.artifacts[0].url?.length || 0
-          } : null,
+          hasImage: !!result.image,
+          imageLength: result.image?.length || 0,
+          isBase64: result.image?.startsWith('iVBORw0KGgo') || false,
           fullResponse: result
         });
         
-        const imageUrl = result.artifacts?.[0]?.url;
+        const base64Image = result.image;
         
-        if (imageUrl) {
-          // Download the image and upload to Cloudinary
-          const imageResponse = await fetch(imageUrl);
-          const imageBuffer = await imageResponse.arrayBuffer();
-          const base64Data = Buffer.from(imageBuffer).toString('base64');
-          const cloudinaryUrl = await uploadBase64ToCloudinary(base64Data);
+        if (base64Image && base64Image.length > 1000) {
+          // Stability.ai returns base64 data, upload it to Cloudinary
+          const cloudinaryUrl = await uploadBase64ToCloudinary(base64Image);
           
           console.log(`✅ [Background] Success with Stability.ai ${tier.toUpperCase()}`);
           return {
@@ -566,22 +561,20 @@ const handler: Handler = async (event, context) => {
       presetKey,
       sourceAssetId,
       userId,
+      runId: runId, // Ensure runId is always defined
       emotionMaskPresetId,
       storyTimePresetId,
       additionalImages,
       meta
     };
 
-    // Process generation with timeout protection
+    // Process generation with timeout protection (90 seconds)
     const result = await Promise.race([
       processGeneration(generationRequest),
       new Promise<UnifiedGenerationResponse>((_, reject) => 
-        setTimeout(() => reject(new Error('Generation exceeded allowed time')), 600000) // 10 minutes
+        setTimeout(() => reject(new Error('Generation timed out')), 90000) // 90 seconds
       )
     ]);
-
-    // Add runId to response
-    result.runId = runId;
 
     return {
       statusCode: 200,
