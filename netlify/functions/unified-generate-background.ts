@@ -693,7 +693,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     runId: request.runId
   });
 
-  // Check for duplicate generations using existing media tables
+  // Enhanced duplicate prevention - check multiple sources
   try {
     // Check if this runId already exists in any media table (indicating duplicate)
     const tablesToCheck = {
@@ -712,13 +712,30 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
       `, [request.runId]);
 
       if (existing) {
-        console.warn(`⚠️ [Background] Generation ${request.runId} already exists, skipping duplicate`);
+        console.warn(`⚠️ [Background] Generation ${request.runId} already exists in database, skipping duplicate`);
+        // Refund credits for duplicate attempt
+        await finalizeCredits(request.userId, request.mode + '_generation', request.runId, false);
         return {
           success: false,
           status: 'failed',
           error: 'Generation already completed'
         };
       }
+    }
+
+    // Also check credits_ledger for recent attempts with same request_id
+    const recentCredit = await qOne(`
+      SELECT id FROM credits_ledger
+      WHERE request_id = $1 AND created_at > NOW() - INTERVAL '5 minutes'
+    `, [request.runId]);
+
+    if (recentCredit) {
+      console.warn(`⚠️ [Background] Recent credit transaction found for ${request.runId}, possible duplicate`);
+      return {
+        success: false,
+        status: 'failed',
+        error: 'Request already processed recently'
+      };
     }
 
   } catch (dbError) {
