@@ -48,9 +48,8 @@ FROM credits_ledger
 WHERE user_id IN (SELECT id FROM placeholder_users);
 
 -- Step 5: CLEANUP - DELETE PLACEHOLDER USERS AND ALL THEIR DATA
--- IMPORTANT: Uncomment the section below to actually delete the placeholder users
+-- EXECUTING NOW - Deleting all placeholder users and their data
 
-/*
 -- Delete all data associated with placeholder users
 WITH placeholder_users AS (
     SELECT id FROM users WHERE email LIKE 'user-%@placeholder.com'
@@ -111,7 +110,6 @@ WHERE referrer_user_id IN (SELECT id FROM placeholder_users)
 
 -- Finally, delete the placeholder users themselves
 DELETE FROM users WHERE email LIKE 'user-%@placeholder.com';
-*/
 
 -- Step 6: Verify cleanup results
 SELECT 
