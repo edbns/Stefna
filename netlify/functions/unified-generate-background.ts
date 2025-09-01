@@ -220,6 +220,52 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
   }
 }
 
+// Upload a remote image URL to Cloudinary (URL → Blob → signed upload)
+async function uploadUrlToCloudinary(imageUrl: string): Promise<string> {
+  // If already Cloudinary, return as-is
+  if (imageUrl.includes('res.cloudinary.com')) return imageUrl;
+
+  const signUrl = process.env.URL
+    ? `${process.env.URL}/.netlify/functions/cloudinary-sign`
+    : `https://${process.env.CONTEXT === 'production' ? '' : process.env.BRANCH + '--'}stefna.netlify.app/.netlify/functions/cloudinary-sign`;
+
+  const signResponse = await fetch(signUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ folder: 'stefna/generated' })
+  });
+  if (!signResponse.ok) {
+    const errorText = await signResponse.text();
+    throw new Error(`Cloudinary sign failed: ${signResponse.status} - ${errorText}`);
+  }
+  const signData = await signResponse.json();
+
+  const remoteRes = await fetch(imageUrl);
+  if (!remoteRes.ok) {
+    const t = await remoteRes.text();
+    throw new Error(`Failed to fetch remote image: ${remoteRes.status} - ${t.substring(0,200)}`);
+  }
+  const blob = await remoteRes.blob();
+  const formData = new FormData();
+  formData.append('file', blob, 'generated.png');
+  formData.append('timestamp', signData.timestamp);
+  formData.append('signature', signData.signature);
+  formData.append('api_key', signData.apiKey);
+  formData.append('folder', 'stefna/generated');
+
+  const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${signData.cloudName}/auto/upload`, {
+    method: 'POST',
+    body: formData
+  });
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    throw new Error(`Cloudinary upload failed: ${uploadResponse.status} - ${errorText.substring(0,200)}`);
+  }
+  const uploadResult = await uploadResponse.json();
+  if (!uploadResult.secure_url) throw new Error('Cloudinary upload returned no secure_url');
+  return uploadResult.secure_url;
+}
+
 // Centralized credit handling
 async function reserveCredits(userId: string, action: string, creditsNeeded: number, requestId: string): Promise<boolean> {
   try {
@@ -634,11 +680,13 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         
         const resultImageUrl = result?.data?.image?.url || result?.image?.url || result?.image_url;
         if (resultImageUrl) {
+          // Always upload to Cloudinary before saving/returning
+          const cloudinaryUrl = await uploadUrlToCloudinary(resultImageUrl);
           return {
             success: true,
             status: 'done',
             provider: 'fal',
-            outputUrl: resultImageUrl
+            outputUrl: cloudinaryUrl
           };
         }
       }
