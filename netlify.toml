@@ -31,8 +31,8 @@
   node_bundler = "esbuild"
   external_node_modules = ["node-fetch"]
 
-[functions."unified-generate"]
-  timeout = 60
+[functions."unified-generate-background"]
+  timeout = 900
   memory = 1536
   # Keep native / build-time-only deps out of the bundle:
   external_node_modules = [

@@ -35,12 +35,12 @@ export interface SimpleGenerationResult {
 
 // All generation modes now use the unified endpoint
 const FUNCTION_ENDPOINTS: Record<GenerationMode, string> = {
-  'presets': '/.netlify/functions/unified-generate',
-  'custom-prompt': '/.netlify/functions/unified-generate',
-  'emotion-mask': '/.netlify/functions/unified-generate',
-  'ghibli-reaction': '/.netlify/functions/unified-generate',
-  'neo-glitch': '/.netlify/functions/unified-generate',
-  'story-time': '/.netlify/functions/unified-generate'
+  'presets': '/.netlify/functions/unified-generate-background',
+  'custom-prompt': '/.netlify/functions/unified-generate-background',
+  'emotion-mask': '/.netlify/functions/unified-generate-background',
+  'ghibli-reaction': '/.netlify/functions/unified-generate-background',
+  'neo-glitch': '/.netlify/functions/unified-generate-background',
+  'story-time': '/.netlify/functions/unified-generate-background'
 };
 
 class SimpleGenerationService {
