@@ -68,11 +68,11 @@ const PHOTO_MODELS = [
     description: 'Reliable SDXL-style fallback'
   },
   {
-    model: 'fal-ai/realvis-xl-v3',
-    name: 'RealVis XL V3',
+    model: 'fal-ai/stable-diffusion-xl',
+    name: 'Stable Diffusion XL',
     cost: 'high',
     priority: 3,
-    description: 'Another good photoreal fallback'
+    description: 'Premium photo-realistic generation'
   }
 ];
 
@@ -92,11 +92,11 @@ const GHIBLI_MODELS = [
     description: 'Reliable SDXL-style with gentle Ghibli influence'
   },
   {
-    model: 'fal-ai/realvis-xl-v3',
-    name: 'RealVis XL V3',
+    model: 'fal-ai/stable-diffusion-xl',
+    name: 'Stable Diffusion XL',
     cost: 'high',
     priority: 3,
-    description: 'Photoreal with soft Ghibli aesthetic'
+    description: 'Premium anime-style generation'
   }
 ];
 
