@@ -125,6 +125,33 @@ const VIDEO_MODELS = [
 // Stability.ai models for Neo Tokyo Glitch
 // Note: Uses Stability.ai as primary, Fal.ai as fallback
 
+// Helper function for Stability.ai requests
+async function makeStabilityRequest(tier: string, params: any, apiKey: string): Promise<Response> {
+  const MODEL_ENDPOINTS = {
+    ultra: "https://api.stability.ai/v2beta/stable-image/generate/ultra",
+    core: "https://api.stability.ai/v2beta/stable-image/generate/core", 
+    sd3: "https://api.stability.ai/v2beta/stable-image/generate/sd3",
+  };
+
+  const form = new FormData();
+  form.append("prompt", `${params.prompt}, neo tokyo glitch style, cyberpunk aesthetic`);
+  form.append("init_image", params.sourceAssetId);
+  form.append("image_strength", "0.35");
+  form.append("steps", "30");
+  form.append("cfg_scale", "7.5");
+  form.append("samples", "1");
+
+  return fetch(MODEL_ENDPOINTS[tier as keyof typeof MODEL_ENDPOINTS], {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Accept': 'application/json',
+    },
+    body: form,
+    signal: AbortSignal.timeout(180000) // 3 minutes timeout
+  });
+}
+
 // Centralized credit handling - direct database operations
 async function reserveCredits(userId: string, action: string, creditsNeeded: number, requestId: string): Promise<boolean> {
   try {
@@ -339,43 +366,48 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
   
   // Try Stability.ai with 3-tier fallback: Ultra → Core → SD3
   if (STABILITY_API_KEY) {
-    const MODEL_ENDPOINTS = {
-      ultra: "https://api.stability.ai/v2beta/stable-image/generate/ultra",
-      core: "https://api.stability.ai/v2beta/stable-image/generate/core", 
-      sd3: "https://api.stability.ai/v2beta/stable-image/generate/sd3",
-    };
-
-    const tiers: Array<keyof typeof MODEL_ENDPOINTS> = ["ultra", "core", "sd3"];
+    const tiers = ["ultra", "core", "sd3"] as const;
     let lastError = null;
 
     for (const tier of tiers) {
       try {
         console.log(`📤 [Unified] Trying Stability.ai ${tier.toUpperCase()} for Neo Tokyo Glitch`);
         
-        const form = new FormData();
-        form.append("prompt", `${params.prompt}, neo tokyo glitch style, cyberpunk aesthetic`);
-        form.append("init_image", params.sourceAssetId);
-        form.append("image_strength", "0.35");
-        form.append("steps", "30");
-        form.append("cfg_scale", "7.5");
-        form.append("samples", "1");
-
-        const response = await fetch(MODEL_ENDPOINTS[tier], {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${STABILITY_API_KEY}`,
-            'Accept': 'application/json',
-          },
-          body: form,
-          signal: AbortSignal.timeout(180000) // 3 minutes timeout
-        });
+        // Special retry logic for ULTRA tier
+        let response;
+        if (tier === 'ultra') {
+          try {
+            response = await makeStabilityRequest(tier, params, STABILITY_API_KEY);
+          } catch (error) {
+            console.warn(`⚠️ [Unified] ULTRA failed, retrying once in 1.5s...`, error);
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            response = await makeStabilityRequest(tier, params, STABILITY_API_KEY);
+          }
+        } else {
+          response = await makeStabilityRequest(tier, params, STABILITY_API_KEY);
+        }
         
         if (!response.ok) {
           const errorText = await response.text();
+          console.error(`❌ [Unified] Stability.ai ${tier} HTTP error:`, {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText
+          });
           throw new Error(`Stability.ai ${tier} failed: ${response.status} - ${errorText}`);
         }
         
         const result = await response.json();
+        console.log(`🔍 [Unified] Stability.ai ${tier} response:`, {
+          hasArtifacts: !!result.artifacts,
+          artifactsCount: result.artifacts?.length || 0,
+          firstArtifact: result.artifacts?.[0] ? {
+            hasUrl: !!result.artifacts[0].url,
+            urlLength: result.artifacts[0].url?.length || 0
+          } : null,
+          fullResponse: result
+        });
+        
         const imageUrl = result.artifacts?.[0]?.url;
         
         if (imageUrl) {
@@ -397,7 +429,8 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
           };
         }
         
-        throw new Error(`No result from Stability.ai ${tier}`);
+        console.warn(`⚠️ [Unified] No valid image URL in Stability.ai ${tier} response:`, result);
+        throw new Error(`No result from Stability.ai ${tier} - missing image URL`);
         
       } catch (error) {
         lastError = error;
