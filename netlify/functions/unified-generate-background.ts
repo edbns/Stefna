@@ -613,16 +613,16 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         }
       } else {
         // Convert Cloudinary signed URL to public URL for Fal.ai
-        let imageUrl = params.sourceAssetId;
-        if (imageUrl && imageUrl.includes('cloudinary.com')) {
+        let processedImageUrl = params.sourceAssetId;
+        if (processedImageUrl && processedImageUrl.includes('cloudinary.com')) {
           // Remove signature parameters from Cloudinary URL to make it publicly accessible
           try {
-            const url = new URL(imageUrl);
+            const url = new URL(processedImageUrl);
             // Remove authentication parameters
             url.searchParams.delete('signature');
             url.searchParams.delete('api_key');
             url.searchParams.delete('timestamp');
-            imageUrl = url.toString();
+            processedImageUrl = url.toString();
             console.log('🔄 [Fal.ai] Converted signed URL to public URL for Fal.ai');
           } catch (urlError) {
             console.warn('⚠️ [Fal.ai] Failed to parse Cloudinary URL:', urlError);
@@ -631,7 +631,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
 
         // Image generation with retry logic
         const input: any = {
-          image_url: imageUrl,
+          image_url: processedImageUrl,
           prompt: mode === 'ghibli_reaction'
             ? `${params.prompt}, subtle ghibli-inspired lighting, soft dreamy atmosphere, gentle anime influence, preserve original composition`
             : params.prompt,
@@ -655,13 +655,13 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           });
         }
         
-        const imageUrl = result?.data?.image?.url;
-        if (imageUrl) {
+        const resultImageUrl = result?.data?.image?.url;
+        if (resultImageUrl) {
           return {
             success: true,
             status: 'done',
             provider: 'fal',
-            outputUrl: imageUrl
+            outputUrl: resultImageUrl
           };
         }
       }
