@@ -4,7 +4,7 @@ import { ToastProvider } from './components/ui/Toasts'
 import { ProfileProvider } from './contexts/ProfileContext'
 // StickyFooter removed per new minimal UI
 import SignupGateModal from './components/SignupGateModal'
-import HomeNew from './components/HomeNew'
+import { HomeSimple } from './components/HomeSimple'
 import PrivacyPolicy from './screens/PrivacyPolicy'
 import TermsOfService from './screens/TermsOfService'
 import CookiesPolicy from './screens/CookiesPolicy'
@@ -118,7 +118,7 @@ const AppContent: React.FC = () => {
       
       <div>
         <Routes>
-          <Route path="/" element={<HomeNew />} />
+          <Route path="/" element={<HomeSimple />} />
           <Route path="/auth" element={<AuthScreen />} />
           <Route path="/profile" element={<ProfileScreen />} />
           <Route path="/dashboard/management/control" element={<AdminDashboardScreen />} />
