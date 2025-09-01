@@ -2513,6 +2513,39 @@ const HomeNew: React.FC = () => {
       if (kind === 'neotokyoglitch') {
         console.log('🚀 [NeoGlitch] Starting generation with Stability.ai (3-tier) + AIML fallback');
         
+        // Reserve credits before Neo Glitch generation
+        console.log('💰 [NeoGlitch] Reserving 2 credits before generation...');
+        const creditsResponse = await authenticatedFetch('/.netlify/functions/credits-reserve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'reserve',
+            credits_needed: 2, // Neo Glitch uses 2 credits
+            request_id: generateRunId()
+          })
+        });
+
+        if (!creditsResponse.ok) {
+          const errorData = await creditsResponse.json();
+          console.error('❌ [NeoGlitch] Credit reservation failed:', errorData);
+          
+          if (errorData.error === 'INSUFFICIENT_CREDITS') {
+            notifyError({ 
+              title: 'Not enough credits', 
+              message: `You need 2 credits. You have ${errorData.credits_available || 0}.` 
+            });
+          } else {
+            notifyError({ title: 'Failed', message: 'Try again' });
+          }
+          
+          endGeneration(genId);
+          setNavGenerating(false);
+          return;
+        }
+
+        const creditReservation = await creditsResponse.json();
+        console.log('✅ [NeoGlitch] Credits reserved:', creditReservation);
+        
         // Upload source image to Cloudinary
         const uploadResult = await uploadSourceToCloudinary({
           file: selectedFile || undefined,
@@ -2538,7 +2571,7 @@ const HomeNew: React.FC = () => {
             presetKey: generationMeta?.presetKey || 'base',
             sourceUrl,
             userId: authService.getCurrentUser()?.id || '',
-            runId: generateRunId() // Generate a unique run ID
+            runId: creditReservation.reservation_id || generateRunId() // Use reservation ID as runId
           })
         });
         
