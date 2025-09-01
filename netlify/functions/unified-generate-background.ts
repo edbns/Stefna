@@ -276,30 +276,30 @@ async function reserveCredits(userId: string, action: string, creditsNeeded: num
 async function finalizeCredits(userId: string, action: string, requestId: string, success: boolean): Promise<void> {
   try {
     console.log(`💰 [Background] Finalizing credits for ${action}, success: ${success}`);
-    
+
     if (success) {
       // Mark reservation as completed
       await q(`
-        UPDATE credits_ledger 
+        UPDATE credits_ledger
         SET status = 'completed', updated_at = NOW()
         WHERE user_id = $1 AND request_id = $2 AND status = 'reserved'
       `, [userId, requestId]);
     } else {
       // Refund credits on failure
       const reservation = await qOne(`
-        SELECT amount FROM credits_ledger 
+        SELECT amount FROM credits_ledger
         WHERE user_id = $1 AND request_id = $2 AND status = 'reserved'
       `, [userId, requestId]);
 
       if (reservation) {
         await q(`
-          UPDATE user_credits 
+          UPDATE user_credits
           SET credits = credits + $1, updated_at = NOW()
           WHERE user_id = $2
         `, [reservation.amount, userId]);
 
         await q(`
-          UPDATE credits_ledger 
+          UPDATE credits_ledger
           SET status = 'refunded', updated_at = NOW()
           WHERE user_id = $1 AND request_id = $2 AND status = 'reserved'
         `, [userId, requestId]);
@@ -309,6 +309,152 @@ async function finalizeCredits(userId: string, action: string, requestId: string
     console.log(`✅ [Background] Credits finalized successfully`);
   } catch (error) {
     console.error(`❌ [Background] Credit finalization failed:`, error);
+  }
+}
+
+// Save generation result to appropriate database table
+async function saveGenerationResult(request: UnifiedGenerationRequest, result: UnifiedGenerationResponse): Promise<void> {
+  try {
+    console.log(`💾 [Background] Saving generation result to database:`, {
+      mode: request.mode,
+      hasOutput: !!result.outputUrl,
+      runId: request.runId
+    });
+
+    const baseData = {
+      user_id: request.userId,
+      image_url: result.outputUrl,
+      source_url: request.sourceAssetId,
+      prompt: request.prompt,
+      preset: request.presetKey || 'default',
+      run_id: request.runId,
+      status: 'completed',
+      metadata: JSON.stringify(request.meta || {})
+    };
+
+    switch (request.mode) {
+      case 'neo_glitch':
+        await q(`
+          INSERT INTO neo_glitch_media (
+            user_id, image_url, source_url, prompt, preset, run_id, stability_job_id, status, metadata
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [
+          baseData.user_id,
+          baseData.image_url,
+          baseData.source_url,
+          baseData.prompt,
+          baseData.preset,
+          baseData.run_id,
+          request.runId, // Use runId as stability_job_id
+          baseData.status,
+          baseData.metadata
+        ]);
+        console.log(`✅ [Background] Saved neo_glitch result to database`);
+        break;
+
+      case 'presets':
+        await q(`
+          INSERT INTO presets_media (
+            user_id, image_url, source_url, prompt, preset, run_id, fal_job_id, status, preset_week, preset_rotation_index, metadata
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        `, [
+          baseData.user_id,
+          baseData.image_url,
+          baseData.source_url,
+          baseData.prompt,
+          baseData.preset,
+          baseData.run_id,
+          result.runId || request.runId, // fal_job_id
+          baseData.status,
+          1, // preset_week (default)
+          1, // preset_rotation_index (default)
+          baseData.metadata
+        ]);
+        console.log(`✅ [Background] Saved presets result to database`);
+        break;
+
+      case 'custom':
+        await q(`
+          INSERT INTO custom_prompt_media (
+            user_id, image_url, source_url, prompt, preset, run_id, fal_job_id, status, metadata
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [
+          baseData.user_id,
+          baseData.image_url,
+          baseData.source_url,
+          baseData.prompt,
+          'custom',
+          baseData.run_id,
+          result.runId || request.runId,
+          baseData.status,
+          baseData.metadata
+        ]);
+        console.log(`✅ [Background] Saved custom result to database`);
+        break;
+
+      case 'emotion_mask':
+        await q(`
+          INSERT INTO emotion_mask_media (
+            user_id, image_url, source_url, prompt, preset, run_id, fal_job_id, status, metadata
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [
+          baseData.user_id,
+          baseData.image_url,
+          baseData.source_url,
+          baseData.prompt,
+          request.emotionMaskPresetId || 'default',
+          baseData.run_id,
+          result.runId || request.runId,
+          baseData.status,
+          baseData.metadata
+        ]);
+        console.log(`✅ [Background] Saved emotion_mask result to database`);
+        break;
+
+      case 'ghibli_reaction':
+        await q(`
+          INSERT INTO ghibli_reaction_media (
+            user_id, image_url, source_url, prompt, preset, run_id, fal_job_id, status, metadata
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [
+          baseData.user_id,
+          baseData.image_url,
+          baseData.source_url,
+          baseData.prompt,
+          request.ghibliReactionPresetId || 'default',
+          baseData.run_id,
+          result.runId || request.runId,
+          baseData.status,
+          baseData.metadata
+        ]);
+        console.log(`✅ [Background] Saved ghibli_reaction result to database`);
+        break;
+
+      case 'story_time':
+        // Story time is more complex - it creates a story record and multiple photos
+        // For now, just save to video_jobs table
+        await q(`
+          INSERT INTO video_jobs (
+            user_id, type, status, input_data, output_data, progress
+          ) VALUES ($1, $2, $3, $4, $5, $6)
+        `, [
+          request.userId,
+          'story',
+          'completed',
+          JSON.stringify({ prompt: request.prompt, sourceAssetId: request.sourceAssetId }),
+          JSON.stringify({ videoUrl: result.outputUrl }),
+          100
+        ]);
+        console.log(`✅ [Background] Saved story_time result to database`);
+        break;
+
+      default:
+        console.warn(`⚠️ [Background] Unknown generation mode: ${request.mode}, skipping database save`);
+    }
+
+  } catch (error) {
+    console.error(`❌ [Background] Failed to save generation result to database:`, error);
+    // Don't throw here - generation was successful, just logging failed
   }
 }
 
@@ -554,9 +700,12 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
       result = await generateWithFal(request.mode, request);
     }
 
+    // Save result to database based on mode
+    await saveGenerationResult(request, result);
+
     // Finalize credits on success
     await finalizeCredits(request.userId, action, request.runId, true);
-    
+
     console.log(`✅ [Background] Generation completed successfully:`, {
       mode: request.mode,
       provider: result.provider,
