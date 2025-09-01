@@ -612,10 +612,27 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           };
         }
       } else {
+        // Convert Cloudinary signed URL to public URL for Fal.ai
+        let imageUrl = params.sourceAssetId;
+        if (imageUrl && imageUrl.includes('cloudinary.com')) {
+          // Remove signature parameters from Cloudinary URL to make it publicly accessible
+          try {
+            const url = new URL(imageUrl);
+            // Remove authentication parameters
+            url.searchParams.delete('signature');
+            url.searchParams.delete('api_key');
+            url.searchParams.delete('timestamp');
+            imageUrl = url.toString();
+            console.log('🔄 [Fal.ai] Converted signed URL to public URL for Fal.ai');
+          } catch (urlError) {
+            console.warn('⚠️ [Fal.ai] Failed to parse Cloudinary URL:', urlError);
+          }
+        }
+
         // Image generation with retry logic
         const input: any = {
-          image_url: params.sourceAssetId,
-          prompt: mode === 'ghibli_reaction' 
+          image_url: imageUrl,
+          prompt: mode === 'ghibli_reaction'
             ? `${params.prompt}, subtle ghibli-inspired lighting, soft dreamy atmosphere, gentle anime influence, preserve original composition`
             : params.prompt,
           image_strength: mode === 'ghibli_reaction' ? 0.35 : 0.7,
@@ -676,6 +693,45 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     runId: request.runId
   });
 
+  // Check if this runId is already being processed to prevent duplicates
+  try {
+    const existingGeneration = await qOne(`
+      SELECT status FROM ai_generations
+      WHERE id = $1 AND status IN ('processing', 'pending')
+    `, [request.runId]);
+
+    if (existingGeneration) {
+      console.warn(`⚠️ [Background] Generation ${request.runId} already in progress, skipping duplicate`);
+      return {
+        success: false,
+        status: 'failed',
+        error: 'Generation already in progress'
+      };
+    }
+
+    // Mark as processing to prevent duplicates
+    await q(`
+      INSERT INTO ai_generations (id, user_id, type, status, input_data, created_at)
+      VALUES ($1, $2, $3, 'processing', $4, NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        status = 'processing',
+        updated_at = NOW()
+    `, [
+      request.runId,
+      request.userId,
+      request.mode,
+      JSON.stringify({
+        prompt: request.prompt,
+        sourceAssetId: request.sourceAssetId,
+        mode: request.mode
+      })
+    ]);
+
+  } catch (dbError) {
+    console.warn(`⚠️ [Background] Could not check for duplicates:`, dbError);
+    // Continue with generation even if duplicate check fails
+  }
+
   // Reserve credits
   const actionMap: Record<GenerationMode, string> = {
     'presets': 'presets_generation',
@@ -700,8 +756,19 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
       result = await generateWithFal(request.mode, request);
     }
 
-    // Save result to database based on mode
+        // Save result to database based on mode
     await saveGenerationResult(request, result);
+
+    // Mark generation as completed
+    try {
+      await q(`
+        UPDATE ai_generations
+        SET status = 'completed', output_data = $1, completed_at = NOW()
+        WHERE id = $2
+      `, [JSON.stringify({ outputUrl: result.outputUrl, provider: result.provider }), request.runId]);
+    } catch (dbError) {
+      console.warn(`⚠️ [Background] Could not update generation status:`, dbError);
+    }
 
     // Finalize credits on success
     await finalizeCredits(request.userId, action, request.runId, true);
@@ -716,10 +783,21 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
 
   } catch (error) {
     console.error(`❌ [Background] Generation failed:`, error);
-    
+
+    // Mark generation as failed in database
+    try {
+      await q(`
+        UPDATE ai_generations
+        SET status = 'failed', error_message = $1, completed_at = NOW()
+        WHERE id = $2
+      `, [error instanceof Error ? error.message : 'Unknown error', request.runId]);
+    } catch (dbError) {
+      console.warn(`⚠️ [Background] Could not update generation status on failure:`, dbError);
+    }
+
     // Finalize credits on failure (refund)
     await finalizeCredits(request.userId, action, request.runId, false);
-    
+
     return {
       success: false,
       status: 'failed',
