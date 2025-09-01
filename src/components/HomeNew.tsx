@@ -15,6 +15,7 @@ import { useProfile } from '../contexts/ProfileContext'
 import { usePresetRunner } from '../hooks/usePresetRunner'
 import { IdentityPreservationService } from '../services/identityPreservationService'
 import SimpleGenerationService, { GenerationMode, SimpleGenerationRequest } from '../services/simpleGenerationService'
+import { prepareSourceAsset } from '../utils/prepareSourceAsset'
 import { useSelectedPreset } from '../stores/selectedPreset'
 import { HiddenUploader } from './HiddenUploader'
 
@@ -2427,22 +2428,29 @@ const HomeNew: React.FC = () => {
       const serviceMode = getServiceMode(kind);
       console.log(`🔄 [Unified] Mapped ${kind} → ${serviceMode}`);
       
+      // Ensure we pass a public https Cloudinary URL (not a blob: preview)
+      let sourceUrl = previewUrl || '';
+      if (sourceUrl.startsWith('blob:')) {
+        const prepared = await prepareSourceAsset(sourceUrl, { showPreviewImmediately: false });
+        sourceUrl = prepared.url;
+      }
+
       // Use the unified service
-          const simpleGenService = SimpleGenerationService.getInstance();
-          const result = await simpleGenService.generate({
+      const simpleGenService = SimpleGenerationService.getInstance();
+      const result = await simpleGenService.generate({
         mode: serviceMode,
-            prompt: effectivePrompt,
+        prompt: effectivePrompt,
         presetKey: generationMeta?.presetId || generationMeta?.presetKey,
-        sourceAssetId: previewUrl || '',
-            userId: authService.getCurrentUser()?.id || '',
+        sourceAssetId: sourceUrl,
+        userId: authService.getCurrentUser()?.id || '',
         runId: runId,
         emotionMaskPresetId: generationMeta?.emotionMaskPresetId,
         ghibliReactionPresetId: generationMeta?.ghibliReactionPresetId,
         neoGlitchPresetId: generationMeta?.neoTokyoGlitchPresetId,
         storyTimePresetId: generationMeta?.storyTimePresetId,
         additionalImages: generationMeta?.storyTimeImages,
-            meta: generationMeta
-          });
+        meta: generationMeta
+      });
           
       console.log('✅ [Unified] Service result:', result);
       
