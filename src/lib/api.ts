@@ -58,13 +58,4 @@ export async function saveMedia(params: {
   throw new Error('Direct media saving is deprecated - use dedicated generation functions');
 }
 
-export async function togglePublish(publicId: string, publish: boolean) {
-  const res = await fetch(`/.netlify/functions/togglePublish`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ publicId, publish }),
-  });
-  const body = await res.json();
-  if (!res.ok || !body.ok) throw new Error(body.error || 'togglePublish failed');
-  return true;
-}
+

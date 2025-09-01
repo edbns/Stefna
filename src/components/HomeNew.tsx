@@ -120,7 +120,7 @@ import userMediaService from '../services/userMediaService'
 
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
-import { saveMedia, togglePublish } from '../lib/api'
+import { saveMedia } from '../lib/api'
 import { Mode, MODE_LABELS } from '../config/modes'
 // Removed old preset services - using new professional presets system
 
