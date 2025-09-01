@@ -10,15 +10,30 @@
 // - Timeout protection
 
 import { Handler } from '@netlify/functions';
-import { fal } from '@fal-ai/client';
+// Switch from SDK to REST to avoid client-side quirks and to control retries
+import fetch, { Response } from 'node-fetch';
 import { q, qOne } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { withAuth } from './_withAuth';
 
-// Configure fal.ai client
-fal.config({
-  credentials: process.env.FAL_KEY
-});
+const FAL_BASE = 'https://fal.run';
+const FAL_KEY = process.env.FAL_KEY as string;
+async function falInvoke(model: string, input: any): Promise<any> {
+  const url = `${FAL_BASE}/${model}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Key ${FAL_KEY}`
+    },
+    body: JSON.stringify(input)
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Fal REST ${res.status}: ${text.substring(0, 200)}`);
+  }
+  return await res.json();
+}
 
 // Generation mode types
 type GenerationMode = 
@@ -565,29 +580,12 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
       
       if (mode === 'story_time') {
         // Video generation with retry logic
-        try {
-          result = await fal.subscribe(modelConfig.model, {
-            input: {
-              image_url: params.sourceAssetId,
-              prompt: params.prompt,
-              num_frames: 24,
-              fps: 8
-            },
-            logs: true
-          });
-        } catch (error) {
-          console.warn(`⚠️ [Background] ${modelConfig.name} video generation failed, retrying in 2s...`, error);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          result = await fal.subscribe(modelConfig.model, {
-            input: {
-              image_url: params.sourceAssetId,
-              prompt: params.prompt,
-              num_frames: 24,
-              fps: 8
-            },
-            logs: true
-          });
-        }
+        result = await falInvoke(modelConfig.model, {
+          image_url: params.sourceAssetId,
+          prompt: params.prompt,
+          num_frames: 24,
+          fps: 8
+        });
         
         const videoUrl = result?.data?.video?.url;
         if (videoUrl) {
@@ -628,12 +626,9 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           seed: Math.floor(Math.random() * 1000000)
         };
         
-        result = await fal.subscribe(modelConfig.model, {
-          input,
-          logs: true
-        });
+        result = await falInvoke(modelConfig.model, input);
         
-        const resultImageUrl = result?.data?.image?.url;
+        const resultImageUrl = result?.data?.image?.url || result?.image?.url || result?.image_url;
         if (resultImageUrl) {
           return {
             success: true,

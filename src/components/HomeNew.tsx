@@ -2110,8 +2110,8 @@ const HomeNew: React.FC = () => {
     const genId = startGeneration();
     setNavGenerating(true);
       
-      // Show "Add to queue" toast for all generation modes
-      notifyQueue({ title: 'Add to queue', message: 'We\'ll start processing shortly.' });
+      // Show single unified queue toast immediately
+      notifyQueue({ title: 'Added to queue', message: 'We will start processing it shortly' });
 
     // Get current profile settings from context (real-time state)
     // Note: profileData is already available from the top-level useProfile() hook
