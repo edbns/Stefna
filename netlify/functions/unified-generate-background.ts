@@ -131,11 +131,12 @@ async function makeStabilityRequest(tier: string, params: any, apiKey: string): 
   };
 
   const form = new FormData();
-  form.append("prompt", `${params.prompt}, neo tokyo glitch style, cyberpunk aesthetic`);
+  // Allow caller to provide full prompt and parameters per mode
+  form.append("prompt", params.prompt);
   form.append("init_image", params.sourceAssetId);
-  form.append("image_strength", "0.35");
-  form.append("steps", "30");
-  form.append("cfg_scale", "7.5");
+  form.append("image_strength", String(params.image_strength ?? 0.7));
+  form.append("steps", String(params.steps ?? 30));
+  form.append("cfg_scale", String(params.guidance_scale ?? 7.5));
   form.append("samples", "1");
 
   return fetch(MODEL_ENDPOINTS[tier as keyof typeof MODEL_ENDPOINTS], {
@@ -145,7 +146,8 @@ async function makeStabilityRequest(tier: string, params: any, apiKey: string): 
       'Accept': 'application/json',
     },
     body: form,
-    signal: AbortSignal.timeout(180000) // 3 minutes timeout
+    // Tight per-call timeout (30s)
+    signal: AbortSignal.timeout(30000)
   });
 }
 
@@ -516,20 +518,20 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
   }
 }
 
-// Stability.ai generation with 3-tier fallback
+// Stability.ai generation with Core-first fallback (Core → SD3 → Ultra)
 async function generateWithStability(params: any): Promise<UnifiedGenerationResponse> {
-  console.log(`🚀 [Background] Starting Stability.ai generation for Neo Tokyo Glitch`);
-  
+  console.log(`🚀 [Background] Starting Stability.ai generation`);
+
   const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
   
   // Try Stability.ai with 3-tier fallback: Ultra → Core → SD3
   if (STABILITY_API_KEY) {
-    const tiers = ["ultra", "core", "sd3"] as const;
+    const tiers = ["core", "sd3", "ultra"] as const;
     let lastError = null;
 
     for (const tier of tiers) {
       try {
-        console.log(`📤 [Background] Trying Stability.ai ${tier.toUpperCase()} for Neo Tokyo Glitch`);
+        console.log(`📤 [Background] Trying Stability.ai ${tier.toUpperCase()}`);
         
         // Special retry logic for ULTRA tier
         let response;
@@ -578,8 +580,8 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
           };
         }
         
-        console.warn(`⚠️ [Background] No valid image URL in Stability.ai ${tier} response:`, result);
-        throw new Error(`No result from Stability.ai ${tier} - missing image URL`);
+        console.warn(`⚠️ [Background] No valid image in Stability.ai ${tier} response:`, result);
+        throw new Error(`No result from Stability.ai ${tier} - missing image`);
         
       } catch (error) {
         lastError = error;
@@ -589,14 +591,13 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
     }
     
     // All Stability.ai tiers failed
-    console.warn(`⚠️ [Background] All Stability.ai tiers failed, falling back to Fal.ai:`, lastError);
+    console.warn(`⚠️ [Background] All Stability.ai tiers failed:`, lastError);
   } else {
-    console.warn(`⚠️ [Background] Stability.ai credentials not configured, using Fal.ai fallback`);
+    console.warn(`⚠️ [Background] Stability.ai credentials not configured`);
   }
   
-  // Fallback to Fal.ai for Neo Tokyo Glitch
-  console.log(`📤 [Background] Using Fal.ai fallback for Neo Tokyo Glitch`);
-  return await generateWithFal('neo_glitch', params);
+  // No Fal fallback when disabled
+  throw new Error('All Stability providers failed');
 }
 
 // Fal.ai generation with fallback system
@@ -812,11 +813,23 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
   try {
     let result: UnifiedGenerationResponse;
 
-    if (request.mode === 'neo_glitch') {
-      result = await generateWithStability(request);
-    } else {
-      result = await generateWithFal(request.mode, request);
+    // Disable Fal across modes; use Stability for all image modes
+    if (request.mode === 'story_time') {
+      throw new Error('Video generation temporarily disabled');
     }
+
+    // Build Stability params per mode
+    const stabilityParams = {
+      prompt: request.mode === 'ghibli_reaction'
+        ? `${request.prompt}, subtle ghibli-inspired lighting, soft dreamy atmosphere, gentle anime influence, preserve original composition`
+        : request.prompt,
+      sourceAssetId: request.sourceAssetId,
+      image_strength: request.mode === 'ghibli_reaction' ? 0.35 : 0.7,
+      guidance_scale: request.mode === 'ghibli_reaction' ? 6.0 : 7.5,
+      steps: 30
+    };
+
+    result = await generateWithStability(stabilityParams);
 
         // Save result to database based on mode
     await saveGenerationResult(request, result);
