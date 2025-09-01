@@ -13,15 +13,7 @@ import { Handler } from '@netlify/functions';
 import { fal } from '@fal-ai/client';
 import { q, qOne } from './_db';
 import { v4 as uuidv4 } from 'uuid';
-import { v2 as cloudinary } from 'cloudinary';
 import { withAuth } from './_withAuth';
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 // Configure fal.ai client
 fal.config({
@@ -145,15 +137,35 @@ async function makeStabilityRequest(tier: string, params: any, apiKey: string): 
   });
 }
 
-// Cloudinary upload helper
+// Cloudinary upload helper - using signed uploads
 async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
   try {
+    console.log('☁️ [Cloudinary] Starting signed upload for generated image');
+
+    // Get signed upload parameters
+    const signResponse = await fetch(`${process.env.URL}/.netlify/functions/cloudinary-sign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: 'stefna/generated' })
+    });
+
+    if (!signResponse.ok) {
+      const errorText = await signResponse.text();
+      throw new Error(`Cloudinary sign failed: ${signResponse.status} - ${errorText}`);
+    }
+
+    const signData = await signResponse.json();
+
+    // Prepare signed upload
     const imageBuffer = Buffer.from(base64Data, 'base64');
     const formData = new FormData();
     formData.append('file', new Blob([imageBuffer], { type: 'image/png' }), 'generated.png');
-    formData.append('upload_preset', 'ml_default');
-    
-    const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, {
+    formData.append('timestamp', signData.timestamp);
+    formData.append('signature', signData.signature);
+    formData.append('api_key', signData.apiKey);
+    formData.append('folder', 'stefna/generated');
+
+    const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${signData.cloudName}/image/upload`, {
       method: 'POST',
       body: formData
     });
@@ -164,9 +176,10 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
     }
 
     const uploadResult = await uploadResponse.json();
+    console.log('✅ [Cloudinary] Signed upload successful:', uploadResult.secure_url);
     return uploadResult.secure_url;
   } catch (error: any) {
-    console.error('❌ [Background] Cloudinary upload error:', error);
+    console.error('❌ [Background] Cloudinary signed upload error:', error);
     throw error;
   }
 }
