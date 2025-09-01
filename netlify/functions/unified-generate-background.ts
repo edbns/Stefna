@@ -59,46 +59,64 @@ interface UnifiedGenerationResponse {
   runId?: string;
 }
 
-// Get active models from database
-async function getActiveModels(mode: string): Promise<any[]> {
-  try {
-    const result = await q(`
-      SELECT model_id, model_name, priority, cost, description
-      FROM fal_models 
-      WHERE mode = $1 AND status = 'active'
-      ORDER BY priority ASC
-    `, [mode]);
-    
-    return (result as any).rows.map((row: any) => ({
-      model: row.model_id,
-      name: row.model_name,
-      priority: row.priority,
-      cost: row.cost,
-      description: row.description
-    }));
-  } catch (error) {
-    console.error(`❌ [Background] Failed to get active models for ${mode}:`, error);
-    
-    // Fallback to hardcoded models if database fails
-    const fallbackModels = {
-      photo: [
-        { model: 'fal-ai/hyper-sdxl/image-to-image', name: 'Hyper SDXL I2I', priority: 1, cost: 'medium', description: 'High-quality photo-realistic image-to-image' },
-        { model: 'fal-ai/pixart-alpha', name: 'PixArt Alpha', priority: 2, cost: 'medium', description: 'Reliable SDXL-style fallback' },
-        { model: 'fal-ai/realvis-xl-v3', name: 'RealVis XL V3', priority: 3, cost: 'high', description: 'Another good photoreal fallback' }
-      ],
-      ghibli: [
-        { model: 'fal-ai/hyper-sdxl/image-to-image', name: 'Hyper SDXL I2I', priority: 1, cost: 'medium', description: 'High-quality image-to-image with subtle Ghibli elements' },
-        { model: 'fal-ai/pixart-alpha', name: 'PixArt Alpha', priority: 2, cost: 'medium', description: 'Reliable SDXL-style with gentle Ghibli influence' },
-        { model: 'fal-ai/realvis-xl-v3', name: 'RealVis XL V3', priority: 3, cost: 'high', description: 'Photoreal with soft Ghibli aesthetic' }
-      ],
-      video: [
-        { model: 'fal-ai/fast-sdxl', name: 'Fast SDXL', priority: 1, cost: 'low', description: 'Fast video generation from images' }
-      ]
-    };
-    
-    return fallbackModels[mode as keyof typeof fallbackModels] || [];
+// Mode-specific FAL.ai model configurations
+const PHOTO_MODELS = [
+  {
+    model: 'fal-ai/hyper-sdxl/image-to-image',
+    name: 'Hyper SDXL I2I',
+    cost: 'medium',
+    priority: 1,
+    description: 'High-quality photo-realistic image-to-image'
+  },
+  {
+    model: 'fal-ai/pixart-alpha',
+    name: 'PixArt Alpha',
+    cost: 'medium',
+    priority: 2,
+    description: 'Reliable SDXL-style fallback'
+  },
+  {
+    model: 'fal-ai/realvis-xl-v3',
+    name: 'RealVis XL V3',
+    cost: 'high',
+    priority: 3,
+    description: 'Another good photoreal fallback'
   }
-}
+];
+
+const GHIBLI_MODELS = [
+  {
+    model: 'fal-ai/hyper-sdxl/image-to-image',
+    name: 'Hyper SDXL I2I',
+    cost: 'medium',
+    priority: 1,
+    description: 'High-quality image-to-image with subtle Ghibli elements'
+  },
+  {
+    model: 'fal-ai/pixart-alpha',
+    name: 'PixArt Alpha',
+    cost: 'medium',
+    priority: 2,
+    description: 'Reliable SDXL-style with gentle Ghibli influence'
+  },
+  {
+    model: 'fal-ai/realvis-xl-v3',
+    name: 'RealVis XL V3',
+    cost: 'high',
+    priority: 3,
+    description: 'Photoreal with soft Ghibli aesthetic'
+  }
+];
+
+const VIDEO_MODELS = [
+  {
+    model: 'fal-ai/fast-sdxl',
+    name: 'Fast SDXL',
+    cost: 'low',
+    priority: 1,
+    description: 'Fast video generation from images'
+  }
+];
 
 // Helper function for Stability.ai requests
 async function makeStabilityRequest(tier: string, params: any, apiKey: string): Promise<Response> {
@@ -334,14 +352,16 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
 async function generateWithFal(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
   console.log(`🚀 [Background] Starting Fal.ai generation for mode: ${mode}`);
   
-  // Get active models from database based on mode
+  // Select models based on mode
   let models;
-  if (mode === 'presets' || mode === 'custom_prompt' || mode === 'emotion_mask') {
-    models = await getActiveModels('photo');
+  if (mode === 'presets' || mode === 'custom' || mode === 'emotion_mask') {
+    models = PHOTO_MODELS;
   } else if (mode === 'ghibli_reaction') {
-    models = await getActiveModels('ghibli');
+    models = GHIBLI_MODELS;
   } else if (mode === 'story_time') {
-    models = await getActiveModels('video');
+    models = VIDEO_MODELS;
+  } else {
+    models = PHOTO_MODELS; // Default fallback
   }
 
   // Input validation for Fal.ai
