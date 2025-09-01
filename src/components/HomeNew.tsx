@@ -2431,7 +2431,8 @@ const HomeNew: React.FC = () => {
       // Ensure we pass a public https Cloudinary URL (not a blob: preview)
       let sourceUrl = previewUrl || '';
       if (sourceUrl.startsWith('blob:')) {
-        const prepared = await prepareSourceAsset(sourceUrl, { showPreviewImmediately: false });
+        // Avoid fetch(blob:) due to CSP; prefer the actual File when available
+        const prepared = await prepareSourceAsset(selectedFile || sourceUrl, { showPreviewImmediately: false });
         sourceUrl = prepared.url;
       }
 
