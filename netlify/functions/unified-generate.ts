@@ -316,27 +316,21 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
     try {
       console.log(`📤 [Unified] Trying Stability.ai for Neo Tokyo Glitch`);
       
-      const response = await fetch(`${STABILITY_API_URL}/v1/generation/stable-diffusion-xl/image-to-image`, {
+      // Use v2beta endpoint with FormData (like the original stability-generator.ts)
+      const form = new FormData();
+      form.append("prompt", `${params.prompt}, neo tokyo glitch style, cyberpunk aesthetic`);
+      form.append("init_image", params.sourceAssetId);
+      form.append("image_strength", "0.35");
+      form.append("steps", "30");
+      form.append("cfg_scale", "7.5");
+      form.append("samples", "1");
+
+      const response = await fetch("https://api.stability.ai/v2beta/stable-image/generate/ultra", {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${STABILITY_API_KEY}`,
-          'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          init_image: params.sourceAssetId,
-          text_prompts: [
-            {
-              text: `${params.prompt}, neo tokyo glitch style, cyberpunk aesthetic`,
-              weight: 1
-            }
-          ],
-          image_strength: 0.35,
-          steps: 30,
-          cfg_scale: 7.5,
-          samples: 1,
-          seed: Math.floor(Math.random() * 1000000)
-        }),
+        body: form,
         signal: AbortSignal.timeout(180000) // 3 minutes timeout
       });
       
@@ -346,11 +340,14 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
       }
       
       const result = await response.json();
-      const imageUrl = result.artifacts?.[0]?.base64;
+      const imageUrl = result.artifacts?.[0]?.url;
       
       if (imageUrl) {
-        // Convert base64 to Cloudinary URL
-        const cloudinaryUrl = await uploadBase64ToCloudinary(imageUrl);
+        // Download the image and upload to Cloudinary
+        const imageResponse = await fetch(imageUrl);
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const base64Data = Buffer.from(imageBuffer).toString('base64');
+        const cloudinaryUrl = await uploadBase64ToCloudinary(base64Data);
         
         return {
           success: true,
