@@ -34,6 +34,10 @@
 [functions."unified-generate-background"]
   timeout = 900
   memory = 1536
+
+[functions."fal-models-health-check"]
+  timeout = 300
+  memory = 512
   # Keep native / build-time-only deps out of the bundle:
   external_node_modules = [
     "@tensorflow/tfjs-node",
