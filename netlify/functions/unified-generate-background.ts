@@ -599,11 +599,11 @@ const handler: Handler = async (event, context) => {
       meta
     };
 
-    // Process generation with timeout protection (90 seconds)
+    // Process generation with timeout protection (12 minutes)
     const result = await Promise.race([
       processGeneration(generationRequest),
-      new Promise<UnifiedGenerationResponse>((_, reject) => 
-        setTimeout(() => reject(new Error('Generation timed out')), 90000) // 90 seconds
+      new Promise<UnifiedGenerationResponse>((_, reject) =>
+        setTimeout(() => reject(new Error('Generation timed out after 12 minutes')), 12 * 60 * 1000) // 12 minutes
       )
     ]);
 

@@ -2428,49 +2428,49 @@ const HomeNew: React.FC = () => {
       console.log(`🔄 [Unified] Mapped ${kind} → ${serviceMode}`);
       
       // Use the unified service
-      const simpleGenService = SimpleGenerationService.getInstance();
-      const result = await simpleGenService.generate({
+          const simpleGenService = SimpleGenerationService.getInstance();
+          const result = await simpleGenService.generate({
         mode: serviceMode,
-        prompt: effectivePrompt,
+            prompt: effectivePrompt,
         presetKey: generationMeta?.presetId || generationMeta?.presetKey,
         sourceAssetId: previewUrl || '',
-        userId: authService.getCurrentUser()?.id || '',
+            userId: authService.getCurrentUser()?.id || '',
         runId: runId,
         emotionMaskPresetId: generationMeta?.emotionMaskPresetId,
         ghibliReactionPresetId: generationMeta?.ghibliReactionPresetId,
         neoGlitchPresetId: generationMeta?.neoTokyoGlitchPresetId,
         storyTimePresetId: generationMeta?.storyTimePresetId,
         additionalImages: generationMeta?.storyTimeImages,
-        meta: generationMeta
-      });
-      
+            meta: generationMeta
+          });
+          
       console.log('✅ [Unified] Service result:', result);
       
       // Handle the unified response
       if (result.success && result.status === 'completed' && result.imageUrl) {
         console.log('🎉 [Unified] Generation completed successfully!');
-        
-        // Show unified toast with thumbnail
-        notifyReady({ 
-          title: 'Your media is ready', 
-          message: 'Tap to open',
-          thumbUrl: result.imageUrl,
-          onClickThumb: () => {
+            
+            // Show unified toast with thumbnail
+            notifyReady({ 
+              title: 'Your media is ready', 
+              message: 'Tap to open',
+              thumbUrl: result.imageUrl,
+              onClickThumb: () => {
             // Open the media viewer
-            setViewerMedia([{
-              id: 'generated-' + Date.now(),
-              userId: 'current-user',
-              type: 'photo',
-              url: result.imageUrl || '',
-              prompt: effectivePrompt,
-              aspectRatio: 1,
-              width: 1024,
-              height: 1024,
-              timestamp: new Date().toISOString(),
-              tokensUsed: 1,
-              likes: 0,
-              isPublic: true,
-              tags: [],
+                setViewerMedia([{
+                  id: 'generated-' + Date.now(),
+                  userId: 'current-user',
+                  type: 'photo',
+                  url: result.imageUrl || '',
+                  prompt: effectivePrompt,
+                  aspectRatio: 1,
+                  width: 1024,
+                  height: 1024,
+                  timestamp: new Date().toISOString(),
+                  tokensUsed: 1,
+                  likes: 0,
+                  isPublic: true,
+                    tags: [],
               metadata: { 
                 quality: 'high', 
                 generationTime: Date.now(), 
@@ -2478,46 +2478,46 @@ const HomeNew: React.FC = () => {
                 mode: kind,
                 ...generationMeta
               }
-            }]);
-            setViewerStartIndex(0);
-            setViewerOpen(true);
-          }
-        });
-        
+                  }]);
+                  setViewerStartIndex(0);
+                  setViewerOpen(true);
+                }
+              });
+              
         // End generation and refresh feed
-        endGeneration(genId);
-        setNavGenerating(false);
+              endGeneration(genId);
+              setNavGenerating(false);
         loadFeed();
-        
+              
         // Clear composer after delay
-        setTimeout(() => {
+              setTimeout(() => {
           handleClearComposerState();
         }, 3000);
-        
-        return;
+              
+              return;
       } else if (result.success && result.status === 'processing') {
         console.log('🔄 [Unified] Generation in progress, service handles polling');
-        
-        // Show processing toast
-        notifyQueue({ 
-          title: 'Add to queue', 
-          message: 'We\'ll start processing it shortly.'
-        });
-        
+              
+              // Show processing toast
+              notifyQueue({ 
+                title: 'Add to queue', 
+                message: 'We\'ll start processing it shortly.'
+              });
+              
         // Service handles polling - just return
-        return;
-      } else {
+              return;
+          } else {
         // Generation failed
         console.error('❌ [Unified] Generation failed:', result.error);
-        notifyError({ title: 'Failed', message: 'Try again' });
-        endGeneration(genId);
+              notifyError({ title: 'Failed', message: 'Try again' });
+            endGeneration(genId);
         setNavGenerating(false);
-        resetComposerState();
-        return;
-      }
+            resetComposerState();
+              return;
+            }
 
 
-      
+
     } catch (e) {
       console.error('dispatchGenerate error', e);
       

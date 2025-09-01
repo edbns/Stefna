@@ -44,8 +44,7 @@ src/
 netlify/functions/       # Backend serverless functions
 ├── _db.ts              # Database connection
 ├── _lib/               # Shared backend utilities
-├── fal-generate.ts     # FAL.ai generation
-├── neo-glitch-generate.ts  # Stability.ai generation
+├── unified-generate-background.ts  # All AI generation (Stability.ai + Fal.ai)
 ├── credits-reserve.ts  # Credit reservation
 └── ...                # Other API endpoints
 ```
