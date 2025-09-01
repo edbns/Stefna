@@ -112,7 +112,6 @@ const getPresetPrompt = (presetId: string, availablePresets: DatabasePreset[]): 
 }
 
 import FullScreenMediaViewer from './FullScreenMediaViewer'
-import ShareModal from './ShareModal'
 
 
 
@@ -557,8 +556,6 @@ const HomeNew: React.FC = () => {
   // Hooks moved up to avoid "used before declaration" errors
   
   // Share modal state
-  const [shareModalOpen, setShareModalOpen] = useState(false)
-  const [shareModalMedia, setShareModalMedia] = useState<UserMedia | null>(null)
   
   // Safe fallbacks for theme-related state variables
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
@@ -4027,8 +4024,6 @@ const HomeNew: React.FC = () => {
     }
     
     // Open social media share modal instead of feed sharing
-    setShareModalOpen(true)
-    setShareModalMedia(media)
   }
 
   const handleUnshare = async (media: UserMedia) => {
@@ -5248,13 +5243,6 @@ const HomeNew: React.FC = () => {
       )}
 
       {/* Share Modal */}
-      <ShareModal
-        isOpen={shareModalOpen}
-        onClose={() => setShareModalOpen(false)}
-        mediaUrl={shareModalMedia?.url}
-        caption={shareModalMedia?.prompt}
-        title="Share Your Creation"
-      />
 
 
 

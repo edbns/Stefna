@@ -1,5 +1,4 @@
 import React from 'react'
-import RemixIcon from './RemixIcon'
 import { MediaRecord } from '../lib/types'
 import { UserMedia } from '../services/userMediaService'
 
