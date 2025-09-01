@@ -3,8 +3,8 @@ import type { Asset } from './types';
 
 export async function fetchPublicFeed(limit = 50): Promise<Asset[]> {
   try {
-    // Use our new Netlify function for fetching the public feed
-    const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?limit=${limit}`, {
+    // Use the correct public feed function that respects privacy settings
+    const response = await authenticatedFetch(`/.netlify/functions/getPublicFeed?limit=${limit}`, {
       method: 'GET'
     });
 

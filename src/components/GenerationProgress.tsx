@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Sparkles, CheckCircle, AlertCircle, Download, Share2 } from 'lucide-react'
+import UserSettingsService from '../services/userSettingsService'
 // import { GenerationStatus, GenerationResult } from '../services/aiGenerationService'
 // RemixIcon import removed
 
@@ -32,26 +33,28 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
   const [shareToFeed, setShareToFeed] = useState(false) // Privacy-first default
   // allowRemix state removed
 
-  // Load user's saved settings on mount
+  // Load user's saved settings from database
   useEffect(() => {
     const loadUserSettings = async () => {
       try {
-        const savedProfile = localStorage.getItem('userProfile')
-        if (savedProfile) {
-                  const profile = JSON.parse(savedProfile)
-        setShareToFeed(!!profile.shareToFeed)
-          // allowRemix removed
-        }
+        const settingsService = UserSettingsService.getInstance();
+        const settings = await settingsService.loadSettings();
+        setShareToFeed(settings.share_to_feed);
       } catch (error) {
-        console.warn('Failed to load user settings:', error)
-        // Use defaults
-        setShareToFeed(true)  // Default to true if no preference set
-        // allowRemix removed
+        console.warn('Failed to load user settings:', error);
+        // Fallback to localStorage
+        const savedProfile = localStorage.getItem('userProfile');
+        if (savedProfile) {
+          const profile = JSON.parse(savedProfile);
+          setShareToFeed(!!profile.shareToFeed);
+        } else {
+          setShareToFeed(false); // Privacy-first default
+        }
       }
-    }
+    };
     
-    loadUserSettings()
-  }, [])
+    loadUserSettings();
+  }, []);
 
   useEffect(() => {
     if (status?.status === 'error') {
@@ -108,24 +111,10 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
                     const newValue = !shareToFeed
                     setShareToFeed(newValue)
                     
-                    // Persist to localStorage and database
+                    // Update settings using the service
                     try {
-                      const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
-                      const updatedProfile = { ...currentProfile, shareToFeed: newValue }
-                      localStorage.setItem('userProfile', JSON.stringify(updatedProfile))
-                      
-                      // Try to update in database if authenticated
-                      const token = localStorage.getItem('auth_token')
-                      if (token) {
-                        await fetch('/.netlify/functions/user-settings', {
-                          method: 'POST',
-                          headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                          },
-                          body: JSON.stringify({ share_to_feed: newValue })
-                        })
-                      }
+                      const settingsService = UserSettingsService.getInstance();
+                      await settingsService.updateSettings({ share_to_feed: newValue });
                     } catch (error) {
                       console.warn('Failed to persist share setting:', error)
                     }

@@ -1,0 +1,139 @@
+// User Settings Service
+// Manages user privacy and sharing preferences
+
+export interface UserSettings {
+  media_upload_agreed: boolean;
+  share_to_feed: boolean;
+}
+
+class UserSettingsService {
+  private static instance: UserSettingsService;
+  private settings: UserSettings | null = null;
+  private isLoading = false;
+
+  constructor() {}
+
+  static getInstance(): UserSettingsService {
+    if (!UserSettingsService.instance) {
+      UserSettingsService.instance = new UserSettingsService();
+    }
+    return UserSettingsService.instance;
+  }
+
+  // Load user settings from database
+  async loadSettings(): Promise<UserSettings> {
+    if (this.settings && !this.isLoading) {
+      return this.settings;
+    }
+
+    this.isLoading = true;
+    
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No auth token');
+      }
+
+      const response = await fetch('/.netlify/functions/user-settings', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load settings: ${response.status}`);
+      }
+
+      const result = await response.json();
+      this.settings = result.settings;
+      
+      // Also update localStorage for backward compatibility
+      const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      const updatedProfile = { 
+        ...currentProfile, 
+        shareToFeed: this.settings.share_to_feed 
+      };
+      localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+      
+      console.log('✅ [UserSettings] Loaded from database:', this.settings);
+      return this.settings;
+    } catch (error) {
+      console.error('❌ [UserSettings] Failed to load settings:', error);
+      
+      // Fallback to localStorage
+      const savedProfile = localStorage.getItem('userProfile');
+      if (savedProfile) {
+        const profile = JSON.parse(savedProfile);
+        this.settings = {
+          media_upload_agreed: profile.mediaUploadAgreed || false,
+          share_to_feed: profile.shareToFeed || false
+        };
+        return this.settings;
+      }
+      
+      // Default settings
+      this.settings = {
+        media_upload_agreed: false,
+        share_to_feed: false
+      };
+      return this.settings;
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  // Update user settings
+  async updateSettings(updates: Partial<UserSettings>): Promise<UserSettings> {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No auth token');
+      }
+
+      const response = await fetch('/.netlify/functions/user-settings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updates)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update settings: ${response.status}`);
+      }
+
+      const result = await response.json();
+      this.settings = result.settings;
+      
+      // Also update localStorage for backward compatibility
+      const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      const updatedProfile = { 
+        ...currentProfile, 
+        shareToFeed: this.settings.share_to_feed,
+        mediaUploadAgreed: this.settings.media_upload_agreed
+      };
+      localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+      
+      console.log('✅ [UserSettings] Updated settings:', this.settings);
+      return this.settings;
+    } catch (error) {
+      console.error('❌ [UserSettings] Failed to update settings:', error);
+      throw error;
+    }
+  }
+
+  // Get current settings (cached)
+  getSettings(): UserSettings | null {
+    return this.settings;
+  }
+
+  // Clear cache (force reload from database)
+  clearCache(): void {
+    this.settings = null;
+  }
+}
+
+export default UserSettingsService;
