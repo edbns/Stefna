@@ -59,7 +59,7 @@ interface UnifiedGenerationResponse {
   runId?: string;
 }
 
-// Mode-specific FAL.ai model configurations
+// Mode-specific FAL.ai model configurations (updated to active models)
 const PHOTO_MODELS = [
   {
     model: 'fal-ai/hyper-sdxl/image-to-image',
@@ -69,18 +69,18 @@ const PHOTO_MODELS = [
     description: 'High-quality photo-realistic image-to-image'
   },
   {
-    model: 'fal-ai/stable-diffusion-xl',
-    name: 'Stable Diffusion XL',
-    cost: 'high',
+    model: 'fal-ai/pixart-alpha',
+    name: 'PixArt Alpha',
+    cost: 'medium',
     priority: 2,
-    description: 'Premium photo-realistic generation'
+    description: 'Reliable SDXL-style fallback'
   },
   {
-    model: 'fal-ai/realistic-vision-v5',
-    name: 'Realistic Vision V5',
+    model: 'fal-ai/realvis-xl-v3',
+    name: 'RealVis XL V3',
     cost: 'high',
     priority: 3,
-    description: 'Ultra-realistic photo generation'
+    description: 'Another good photoreal fallback'
   }
 ];
 
@@ -352,6 +352,17 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
     models = VIDEO_MODELS;
   }
 
+  // Input validation for Fal.ai
+  if (!params.sourceAssetId || params.prompt.length < 10) {
+    throw new Error("Invalid input for Fal.ai generation: missing source image or prompt too short");
+  }
+  
+  // Validate image_strength for image-to-image models
+  const imageStrength = mode === 'ghibli_reaction' ? 0.35 : 0.7;
+  if (imageStrength <= 0 || imageStrength > 1) {
+    throw new Error("Invalid image_strength for Fal.ai image-to-image generation");
+  }
+
   let lastError: Error | null = null;
   
   for (const modelConfig of models) {
@@ -435,7 +446,13 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
       
     } catch (error) {
       lastError = error as Error;
-      console.warn(`⚠️ [Background] ${modelConfig.name} failed:`, error);
+      const errorObj = error as any;
+      console.warn(`⚠️ [Background] ${modelConfig.name} failed:`, {
+        model: modelConfig.model,
+        error: errorObj.message || 'Unknown error',
+        response: errorObj.response?.data || 'No response data',
+        status: errorObj.response?.status || 'No status'
+      });
       continue;
     }
   }
