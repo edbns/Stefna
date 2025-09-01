@@ -155,14 +155,27 @@ async function reserveCredits(userId: string, action: string, creditsNeeded: num
     `, [userId]);
 
     if (!userCredits) {
-      throw new Error('User credits not found');
+      // Initialize user credits if they don't exist
+      console.log('💰 [Unified] No credit balance found - initializing new user with starter credits...');
+      
+      const newUserCredits = await qOne(`
+        INSERT INTO user_credits (user_id, credits, balance, updated_at)
+        VALUES ($1, 30, 0, NOW())
+        RETURNING user_id, credits, balance
+      `, [userId]);
+      
+      if (!newUserCredits) {
+        throw new Error('Failed to initialize user credits');
+      }
+      
+      console.log(`✅ [Unified] Successfully initialized user with 30 starter credits`);
     }
 
-    const currentBalance = userCredits.balance || 0;
-    console.log(`💰 [Unified] Current balance: ${currentBalance}, needed: ${creditsNeeded}`);
+    const currentCredits = userCredits?.credits || 0;
+    console.log(`💰 [Unified] Current daily credits: ${currentCredits}, needed: ${creditsNeeded}`);
 
-    if (currentBalance < creditsNeeded) {
-      throw new Error(`Insufficient credits: ${currentBalance} available, ${creditsNeeded} needed`);
+    if (currentCredits < creditsNeeded) {
+      throw new Error(`Insufficient credits: ${currentCredits} available, ${creditsNeeded} needed`);
     }
 
     // Create credit reservation
@@ -171,10 +184,10 @@ async function reserveCredits(userId: string, action: string, creditsNeeded: num
       VALUES ($1, $2, $3, 'reserved', $4, NOW())
     `, [userId, action, creditsNeeded, requestId]);
 
-    // Update user balance
+    // Update user daily credits
     await q(`
       UPDATE user_credits 
-      SET balance = balance - $1, updated_at = NOW()
+      SET credits = credits - $1, updated_at = NOW()
       WHERE user_id = $2
     `, [creditsNeeded, userId]);
 
@@ -207,7 +220,7 @@ async function finalizeCredits(userId: string, action: string, requestId: string
       if (reservation) {
         await q(`
           UPDATE user_credits 
-          SET balance = balance + $1, updated_at = NOW()
+          SET credits = credits + $1, updated_at = NOW()
           WHERE user_id = $2
         `, [reservation.amount, userId]);
 
