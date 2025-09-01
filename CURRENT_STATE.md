@@ -21,10 +21,10 @@ Stefna is an AI-powered photo editing platform focused on transformative image g
 - **Platform**: Netlify Functions (Serverless)
 - **Database**: PostgreSQL (raw SQL queries, no ORM)
 - **Authentication**: JWT + OTP-based login
-- **AI Providers**:
-  - FAL.ai (primary for most generation modes)
-  - Stability.ai (for Neo Tokyo Glitch)
-  - Kling V1.6 (for Story Time video generation)
+- **AI Providers (current)**:
+  - Stability.ai (primary for all image modes; Core→SD3→Ultra; 30s timeout per call)
+  - FAL.ai (temporarily disabled; see “Provider Strategy Update” below)
+  - Story Time (video) temporarily disabled
 
 ## 📁 Project Structure
 
@@ -74,6 +74,45 @@ netlify/functions/       # Backend serverless functions
 - **Background Processing**: Prevents 504 Gateway Timeouts
 
 ### 4. UI Preservation
+### 5. Provider Strategy Update (Fal disabled; Stability-first)
+- All image modes now route to Stability.ai with a Core→SD3→Ultra fallback inside `netlify/functions/unified-generate-background.ts`.
+- Per-call timeout set to 30s to avoid long-running hangs and surprise costs.
+- FAL.ai is fully disabled to prevent double charges on failed/empty responses. The Fal code paths remain, but are not invoked.
+- Background function returns 202 immediately; frontend handles this by stopping spinners and auto-refreshing the feed.
+
+Key edits:
+- `netlify/functions/unified-generate-background.ts`
+  - Core changes:
+    - `makeStabilityRequest(...)`: accepts dynamic `prompt`, `image_strength`, `guidance_scale`, `steps`; uses `AbortSignal.timeout(30000)`.
+    - `generateWithStability(...)`: reordered tiers to Core→SD3→Ultra; no Fal fallback; throws if all tiers fail.
+    - `processGeneration(...)`: for all image modes, builds Stability params and calls `generateWithStability`; `story_time` throws “temporarily disabled”.
+  - Notes for future: Hyper SDXL steps validation and pre-checks remain in code for when Fal is re-enabled.
+- `src/services/simpleGenerationService.ts`
+  - Normalizes backend response: maps `status: 'done'`→`'completed'`, and `outputUrl`→`imageUrl`.
+- `src/components/HomeNew.tsx`
+  - Success detection accepts `'done'` or `'completed'` with `imageUrl|outputUrl`.
+  - On `processing` (202 accepted), immediately stop spinner, then auto-refresh feed after 7s.
+- `netlify/functions/user-settings.ts`
+  - Authorization header handling is tolerant to casing (`authorization`/`Authorization`).
+
+Cost/risk mitigations:
+- No cross-provider paid fallback in a single run; at most one paid provider call.
+- 30s per-call timeout prevents multi-minute hangs and charges.
+
+How to re-enable Fal later (explicit steps):
+1) In `processGeneration(...)`, reintroduce a conditional to call `generateWithFal(mode, request)` after `generateWithStability` fails, or make Fal primary if desired.
+2) Ensure Hyper SDXL uses valid steps (1, 2, or 4). The helper constants are already present:
+   - `HYPER_SDXL_ALLOWED_STEPS` and `isHyperSDXLModel(...)`.
+   - Only set `input.num_inference_steps` for Hyper SDXL, and pre-validate before calling.
+3) Keep strict empty-result checks (e.g., for PixArt) and bail out without saving or double-calling.
+4) Keep single-paid-attempt policy if cost control is required (do not chain Fal and Stability in the same run).
+
+Testing checklist after toggling providers:
+- Generate one image (any mode):
+  - Backend returns 202 or 200; DB row in the correct media table with `status = 'completed'`.
+  - Spinner stops; “Your media is ready” toast on direct 200; for 202, spinner stops immediately and feed refresh surfaces the media shortly.
+- Toggle “Share to Feed” in Profile: persists via `/.netlify/functions/user-settings` and remains enabled after refresh.
+- Credit ledger: one reservation per run, refund on failures, completion on success.
 - Kept `HomeNew.tsx` completely intact (all 5,266 lines)
 - All UI functionality preserved
 - Fixed missing social media icons in ProfileScreen
@@ -97,10 +136,9 @@ Credits are:
 DATABASE_URL=postgresql://...
 
 # AI Providers
-FAL_KEY=...
 STABILITY_API_KEY=...
-KLING_APP_ID=...
-KLING_API_KEY=...
+# FAL_KEY (currently unused while Fal is disabled)
+FAL_KEY=...
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME=...
