@@ -2509,7 +2509,10 @@ const HomeNew: React.FC = () => {
           } else {
         // Generation failed
         console.error('❌ [Unified] Generation failed:', result.error);
-              notifyError({ title: 'Failed', message: 'Try again' });
+              // Avoid showing failure toast if this was a background acceptance edge
+              if (!(result.error && result.error.includes('HTTP 202'))) {
+                notifyError({ title: 'Failed', message: 'Try again' });
+              }
             endGeneration(genId);
         setNavGenerating(false);
             resetComposerState();

@@ -67,13 +67,7 @@ const PHOTO_MODELS = [
     priority: 2,
     description: 'Reliable SDXL-style fallback'
   },
-  {
-    model: 'fal-ai/stable-diffusion-xl',
-    name: 'Stable Diffusion XL',
-    cost: 'high',
-    priority: 3,
-    description: 'Premium photo-realistic generation'
-  }
+  // Remove invalid model 'stable-diffusion-xl' to prevent 404
 ];
 
 const GHIBLI_MODELS = [
@@ -90,13 +84,6 @@ const GHIBLI_MODELS = [
     cost: 'medium',
     priority: 2,
     description: 'Reliable SDXL-style with gentle Ghibli influence'
-  },
-  {
-    model: 'fal-ai/stable-diffusion-xl',
-    name: 'Stable Diffusion XL',
-    cost: 'high',
-    priority: 3,
-    description: 'Premium anime-style generation'
   }
 ];
 
@@ -629,7 +616,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           }
         }
 
-        // Image generation with retry logic
+        // Image generation with single attempt (avoid extra charges on repeated failures)
         const input: any = {
           image_url: processedImageUrl,
           prompt: mode === 'ghibli_reaction'
@@ -637,23 +624,14 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
             : params.prompt,
           image_strength: mode === 'ghibli_reaction' ? 0.35 : 0.7,
           guidance_scale: mode === 'ghibli_reaction' ? 6.0 : 7.5, // Lower guidance for subtler Ghibli effect
-          num_inference_steps: 30,
+          num_inference_steps: 4,
           seed: Math.floor(Math.random() * 1000000)
         };
         
-        try {
-          result = await fal.subscribe(modelConfig.model, {
-            input,
-            logs: true
-          });
-        } catch (error) {
-          console.warn(`⚠️ [Background] ${modelConfig.name} failed, retrying in 2s...`, error);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          result = await fal.subscribe(modelConfig.model, {
-            input,
-            logs: true
-          });
-        }
+        result = await fal.subscribe(modelConfig.model, {
+          input,
+          logs: true
+        });
         
         const resultImageUrl = result?.data?.image?.url;
         if (resultImageUrl) {

@@ -82,6 +82,16 @@ class SimpleGenerationService {
         body: JSON.stringify(payload)
       });
 
+      // If this is a Netlify background function, it responds 202 with no body
+      if (response.status === 202) {
+        console.log('ℹ️ [SimpleGeneration] Background accepted (202)');
+        return {
+          success: true,
+          status: 'processing',
+          type: request.mode
+        };
+      }
+
       // Read response body once for both success and error cases
       let result;
       try {
