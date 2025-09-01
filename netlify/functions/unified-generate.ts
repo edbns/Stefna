@@ -144,25 +144,39 @@ const STABILITY_MODELS = [
   }
 ];
 
-// Centralized credit handling
+// Centralized credit handling - direct database operations
 async function reserveCredits(userId: string, action: string, creditsNeeded: number, requestId: string): Promise<boolean> {
   try {
     console.log(`💰 [Unified] Reserving ${creditsNeeded} credits for ${action}`);
     
-    const response = await fetch(`${process.env.URL}/.netlify/functions/credits-reserve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action,
-        credits_needed: creditsNeeded,
-        request_id: requestId
-      })
-    });
+    // Check user's current credit balance
+    const userCredits = await qOne(`
+      SELECT user_id, credits, balance FROM user_credits WHERE user_id = $1
+    `, [userId]);
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || `Credit reservation failed: ${response.status}`);
+    if (!userCredits) {
+      throw new Error('User credits not found');
     }
+
+    const currentBalance = userCredits.balance || 0;
+    console.log(`💰 [Unified] Current balance: ${currentBalance}, needed: ${creditsNeeded}`);
+
+    if (currentBalance < creditsNeeded) {
+      throw new Error(`Insufficient credits: ${currentBalance} available, ${creditsNeeded} needed`);
+    }
+
+    // Create credit reservation
+    await q(`
+      INSERT INTO credits_ledger (user_id, action, amount, status, request_id, created_at)
+      VALUES ($1, $2, $3, 'reserved', $4, NOW())
+    `, [userId, action, creditsNeeded, requestId]);
+
+    // Update user balance
+    await q(`
+      UPDATE user_credits 
+      SET balance = balance - $1, updated_at = NOW()
+      WHERE user_id = $2
+    `, [creditsNeeded, userId]);
 
     console.log(`✅ [Unified] Credits reserved successfully`);
     return true;
@@ -176,21 +190,36 @@ async function finalizeCredits(userId: string, action: string, requestId: string
   try {
     console.log(`💰 [Unified] Finalizing credits for ${action}, success: ${success}`);
     
-    const response = await fetch(`${process.env.URL}/.netlify/functions/credits-finalize`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action,
-        request_id: requestId,
-        success
-      })
-    });
-
-    if (!response.ok) {
-      console.warn(`⚠️ [Unified] Credit finalization failed: ${response.status}`);
+    if (success) {
+      // Mark reservation as completed
+      await q(`
+        UPDATE credits_ledger 
+        SET status = 'completed', updated_at = NOW()
+        WHERE user_id = $1 AND request_id = $2 AND status = 'reserved'
+      `, [userId, requestId]);
     } else {
-      console.log(`✅ [Unified] Credits finalized successfully`);
+      // Refund credits on failure
+      const reservation = await qOne(`
+        SELECT amount FROM credits_ledger 
+        WHERE user_id = $1 AND request_id = $2 AND status = 'reserved'
+      `, [userId, requestId]);
+
+      if (reservation) {
+        await q(`
+          UPDATE user_credits 
+          SET balance = balance + $1, updated_at = NOW()
+          WHERE user_id = $2
+        `, [reservation.amount, userId]);
+
+        await q(`
+          UPDATE credits_ledger 
+          SET status = 'refunded', updated_at = NOW()
+          WHERE user_id = $1 AND request_id = $2 AND status = 'reserved'
+        `, [userId, requestId]);
+      }
     }
+
+    console.log(`✅ [Unified] Credits finalized successfully`);
   } catch (error) {
     console.error(`❌ [Unified] Credit finalization failed:`, error);
   }
