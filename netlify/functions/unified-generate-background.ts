@@ -143,7 +143,13 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
     console.log('☁️ [Cloudinary] Starting signed upload for generated image');
 
     // Get signed upload parameters
-    const signResponse = await fetch(`${process.env.URL}/.netlify/functions/cloudinary-sign`, {
+    const signUrl = process.env.URL
+      ? `${process.env.URL}/.netlify/functions/cloudinary-sign`
+      : `https://${process.env.CONTEXT === 'production' ? '' : process.env.BRANCH + '--'}stefna.netlify.app/.netlify/functions/cloudinary-sign`;
+
+    console.log('🔐 [Cloudinary] Using sign URL:', signUrl);
+
+    const signResponse = await fetch(signUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder: 'stefna/generated' })
@@ -154,7 +160,18 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
       throw new Error(`Cloudinary sign failed: ${signResponse.status} - ${errorText}`);
     }
 
-    const signData = await signResponse.json();
+    let signData;
+    try {
+      signData = await signResponse.json();
+    } catch (parseError) {
+      console.error('❌ [Cloudinary] Failed to parse sign response:', parseError);
+      throw new Error('Invalid response from Cloudinary sign service');
+    }
+
+    if (!signData || !signData.cloudName || !signData.apiKey || !signData.signature) {
+      console.error('❌ [Cloudinary] Invalid sign data:', signData);
+      throw new Error('Missing required Cloudinary sign parameters');
+    }
 
     // Prepare signed upload
     const imageBuffer = Buffer.from(base64Data, 'base64');
@@ -172,10 +189,27 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
+      console.error('❌ [Cloudinary] Upload response not OK:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        errorText: errorText.substring(0, 200)
+      });
       throw new Error(`Cloudinary upload failed: ${uploadResponse.status} - ${errorText}`);
     }
 
-    const uploadResult = await uploadResponse.json();
+    let uploadResult;
+    try {
+      uploadResult = await uploadResponse.json();
+    } catch (parseError) {
+      console.error('❌ [Cloudinary] Failed to parse upload response:', parseError);
+      throw new Error('Invalid response from Cloudinary upload');
+    }
+
+    if (!uploadResult || !uploadResult.secure_url) {
+      console.error('❌ [Cloudinary] No secure_url in upload result:', uploadResult);
+      throw new Error('Cloudinary upload succeeded but no URL returned');
+    }
+
     console.log('✅ [Cloudinary] Signed upload successful:', uploadResult.secure_url);
     return uploadResult.secure_url;
   } catch (error: any) {
