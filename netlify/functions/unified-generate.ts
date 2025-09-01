@@ -122,8 +122,8 @@ const VIDEO_MODELS = [
   }
 ];
 
-// Replicate models for Neo Tokyo Glitch
-// Note: Using InstantID model for identity preservation
+// Stability.ai models for Neo Tokyo Glitch
+// Note: Uses Stability.ai as primary, Fal.ai as fallback
 
 // Centralized credit handling - direct database operations
 async function reserveCredits(userId: string, action: string, creditsNeeded: number, requestId: string): Promise<boolean> {
@@ -304,67 +304,78 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
   throw new Error(`All Fal.ai models failed. Last error: ${lastError?.message}`);
 }
 
-// Replicate generation for Neo Tokyo Glitch
-async function generateWithReplicate(params: any): Promise<UnifiedGenerationResponse> {
-  console.log(`🚀 [Unified] Starting Replicate generation for Neo Tokyo Glitch`);
+// Stability.ai generation for Neo Tokyo Glitch (with Fal.ai fallback)
+async function generateWithStability(params: any): Promise<UnifiedGenerationResponse> {
+  console.log(`🚀 [Unified] Starting Stability.ai generation for Neo Tokyo Glitch`);
   
-  const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
+  const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
+  const STABILITY_API_URL = process.env.STABILITY_API_URL;
   
-  if (!REPLICATE_API_TOKEN) {
-    throw new Error('Replicate API token not configured');
-  }
-  
-  try {
-    console.log(`📤 [Unified] Starting Replicate prediction for Neo Tokyo Glitch`);
-    
-    // Use InstantID for Neo Tokyo Glitch with identity preservation
-    const replicateModel = 'lucataco/instantid:55479162c8c97be0b4d5c0c8c0c0c0c0c0c0c0c0';
-    const modelInputs = {
-      input_image: params.sourceAssetId,
-      prompt: `${params.prompt}, neo tokyo glitch style, preserve facial identity, maintain original face structure`,
-      negative_prompt: "blurry, low quality, distorted face, multiple faces, deformed",
-      num_steps: 30,
-      guidance_scale: 7.5,
-      strength: 0.8
-    };
-
-    // Call Replicate API
-    const response = await fetch('https://api.replicate.com/v1/predictions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Token ${REPLICATE_API_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        version: replicateModel,
-        input: modelInputs
-      }),
-      signal: AbortSignal.timeout(180000) // 3 minutes timeout
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Replicate API error: ${errorData.error || response.statusText}`);
+  // Try Stability.ai first
+  if (STABILITY_API_KEY && STABILITY_API_URL) {
+    try {
+      console.log(`📤 [Unified] Trying Stability.ai for Neo Tokyo Glitch`);
+      
+      const response = await fetch(`${STABILITY_API_URL}/v1/generation/stable-diffusion-xl/image-to-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${STABILITY_API_KEY}`,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          init_image: params.sourceAssetId,
+          text_prompts: [
+            {
+              text: `${params.prompt}, neo tokyo glitch style, cyberpunk aesthetic`,
+              weight: 1
+            }
+          ],
+          image_strength: 0.35,
+          steps: 30,
+          cfg_scale: 7.5,
+          samples: 1,
+          seed: Math.floor(Math.random() * 1000000)
+        }),
+        signal: AbortSignal.timeout(180000) // 3 minutes timeout
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Stability.ai API failed: ${response.status} - ${errorText}`);
+      }
+      
+      const result = await response.json();
+      const imageUrl = result.artifacts?.[0]?.base64;
+      
+      if (imageUrl) {
+        // Convert base64 to Cloudinary URL
+        const cloudinaryUrl = await uploadBase64ToCloudinary(imageUrl);
+        
+        return {
+          success: true,
+          status: 'completed',
+          jobId: params.runId,
+          runId: params.runId,
+          imageUrl: cloudinaryUrl,
+          provider: 'stability',
+          stabilityJobId: `stability_${params.runId}`
+        };
+      }
+      
+      throw new Error(`No result from Stability.ai`);
+      
+    } catch (error) {
+      console.warn(`⚠️ [Unified] Stability.ai failed, falling back to Fal.ai:`, error);
+      // Fall back to Fal.ai
     }
-
-    const result = await response.json();
-    console.log('✅ [Unified] Replicate prediction started:', result);
-
-    // For Replicate, we need to poll for completion
-    // For now, return the prediction ID for status checking
-    return {
-      success: true,
-      status: 'processing',
-      jobId: result.id,
-      runId: params.runId,
-      provider: 'replicate',
-      stabilityJobId: result.id // Reuse field name for compatibility
-    };
-    
-  } catch (error) {
-    console.error('❌ [Unified] Replicate generation failed:', error);
-    throw error;
+  } else {
+    console.warn(`⚠️ [Unified] Stability.ai credentials not configured, using Fal.ai fallback`);
   }
+  
+  // Fallback to Fal.ai for Neo Tokyo Glitch
+  console.log(`📤 [Unified] Using Fal.ai fallback for Neo Tokyo Glitch`);
+  return await generateWithFal('neo_glitch', params);
 }
 
 // Cloudinary upload helper
@@ -421,7 +432,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     let result: UnifiedGenerationResponse;
 
     if (request.mode === 'neo_glitch') {
-      result = await generateWithReplicate(request);
+      result = await generateWithStability(request);
     } else {
       result = await generateWithFal(request.mode, request);
     }
