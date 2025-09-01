@@ -103,35 +103,16 @@ export const handler: Handler = async (event) => {
 
     console.log('📧 [OTP] Processing OTP request for:', email);
 
-    // Check if user exists, create if not
+    // Check if user exists - DO NOT CREATE USER HERE
     let userResult = await client.query(
       'SELECT id, email FROM users WHERE email = $1',
       [email.toLowerCase()]
     );
 
     if (userResult.rows.length === 0) {
-      console.log('👤 [OTP] User not found, creating new user:', email);
-
-      // Create new user (simplified structure after cleanup)
-      const userId = uuidv4();
-      await client.query(
-        'INSERT INTO users (id, email, name, created_at) VALUES ($1, $2, $3, NOW())',
-        [userId, email.toLowerCase(), email.split('@')[0]] // Use email prefix as name
-      );
-
-      // Create user credits (simplified structure after cleanup)
-      await client.query(
-        'INSERT INTO user_credits (user_id, balance, updated_at) VALUES ($1, $2, NOW())',
-        [userId, 30]
-      );
-
-      // Create user settings (simplified structure after cleanup)
-      await client.query(
-        'INSERT INTO user_settings (user_id, media_upload_agreed, share_to_feed, updated_at) VALUES ($1, $2, $3, NOW())',
-        [userId, false, true] // Default: no upload consent, share to feed
-      );
-
-      console.log('✅ [OTP] New user created:', userId);
+      console.log('👤 [OTP] New user - will be created during verification');
+      // DO NOT CREATE USER HERE! This prevents duplicate users.
+      // User creation happens ONLY in verify-otp.ts
     } else {
       console.log('✅ [OTP] Existing user found:', userResult.rows[0].id);
     }

@@ -24,7 +24,7 @@ export interface PresetGenerationResult {
   runId?: string;
   status: 'completed' | 'processing' | 'failed';
   imageUrl?: string;
-  aimlJobId?: string;
+  falJobId?: string;
   provider?: string;
   error?: string;
   presetInfo?: {
@@ -40,7 +40,7 @@ export interface PresetStatus {
   id: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   imageUrl?: string;
-  aimlJobId?: string;
+  falJobId?: string;
   createdAt: Date;
   preset: string;
   prompt: string;
@@ -190,7 +190,7 @@ class PresetsService {
           runId: aimlResult.runId,
           status: 'completed',
           imageUrl: aimlResult.imageUrl,
-          aimlJobId: aimlResult.aimlJobId,
+          falJobId: aimlResult.falJobId,
           provider: aimlResult.provider,
           presetInfo: aimlResult.presetInfo
         };
@@ -204,7 +204,7 @@ class PresetsService {
           jobId: aimlResult.jobId,
           runId: aimlResult.runId,
           status: 'processing',
-          aimlJobId: aimlResult.aimlJobId,
+          falJobId: aimlResult.falJobId,
           provider: aimlResult.provider
         };
       }
@@ -266,7 +266,7 @@ class PresetsService {
                 id: status.id,
                 status: 'completed',
                 imageUrl: status.imageUrl,
-                aimlJobId: status.aiml_job_id,
+                falJobId: status.fal_job_id,
                 createdAt: new Date(status.createdAt),
                 preset: status.preset,
                 prompt: status.prompt,

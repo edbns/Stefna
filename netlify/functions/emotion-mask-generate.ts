@@ -135,7 +135,7 @@ export const handler: Handler = async (event) => {
 
     try {
       const status = await qOne(`
-        SELECT id, status, image_url, created_at, preset, prompt, aiml_job_id
+        SELECT id, status, image_url, created_at, preset, prompt, fal_job_id
         FROM emotion_mask_media
         WHERE id = $1
       `, [jobId]);

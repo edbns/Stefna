@@ -18,7 +18,7 @@ export interface GenerationResult {
   status: 'completed' | 'processing' | 'failed';
   url?: string; // Alias for imageUrl to match component expectations
   imageUrl?: string;
-  aimlJobId?: string;
+  falJobId?: string;
   provider?: string;
   error?: string;
   prompt?: string;
@@ -129,7 +129,7 @@ class AIGenerationService {
       status: result.status,
       url: result.imageUrl,
       imageUrl: result.imageUrl,
-      aimlJobId: result.aimlJobId,
+      falJobId: result.falJobId,
       provider: result.provider,
       error: result.error
     };
@@ -162,7 +162,7 @@ class AIGenerationService {
       status: result.status,
       url: result.imageUrl,
       imageUrl: result.imageUrl,
-      aimlJobId: result.aimlJobId,
+      falJobId: result.falJobId,
       provider: result.provider,
       error: result.error
     };
@@ -195,7 +195,7 @@ class AIGenerationService {
       status: result.status,
       url: result.imageUrl,
       imageUrl: result.imageUrl,
-      aimlJobId: result.aimlJobId,
+      falJobId: result.falJobId,
       provider: result.provider,
       error: result.error
     };
@@ -228,7 +228,7 @@ class AIGenerationService {
       status: result.status,
       url: result.imageUrl,
       imageUrl: result.imageUrl,
-      aimlJobId: result.aimlJobId,
+      falJobId: result.falJobId,
       provider: result.provider,
       error: result.error
     };

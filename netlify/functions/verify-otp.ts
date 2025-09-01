@@ -177,10 +177,10 @@ export const handler: Handler = async (event) => {
         [userId]
       );
 
-      // Create user settings
+      // Create user settings with PRIVACY-FIRST defaults
       await client.query(
-        'INSERT INTO user_settings (user_id, share_to_feed, allow_remix) VALUES ($1, true, true)',
-        [userId]
+        'INSERT INTO user_settings (user_id, media_upload_agreed, share_to_feed, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW())',
+        [userId, false, false] // Privacy first: no upload consent, no public sharing by default
       );
 
       user = { id: userId, email: email.toLowerCase() };

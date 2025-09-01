@@ -250,7 +250,7 @@ async function attemptAIMLGeneration(
   return {
     status: 'completed',
     imageUrl: imageUrl,
-    aimlJobId: `${modelName.toLowerCase().replace(/\s+/g, '_')}_${runId}`,
+            falJobId: `${modelName.toLowerCase().replace(/\s+/g, '_')}_${runId}`,
     presetConfig,
     model: model,
     modelName: modelName
@@ -329,7 +329,7 @@ export const handler: Handler = async (event) => {
 
     try {
       const status = await qOne(`
-        SELECT id, status, image_url, created_at, preset, prompt, aiml_job_id, preset_week, preset_rotation_index
+        SELECT id, status, image_url, created_at, preset, prompt, fal_job_id, preset_week, preset_rotation_index
         FROM presets_media
         WHERE id = $1
       `, [jobId]);

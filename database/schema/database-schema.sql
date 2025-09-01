@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS custom_prompt_media (
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
     run_id TEXT, -- Nullable: populated when AI generation starts
-    aiml_job_id TEXT,
+    fal_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     status TEXT DEFAULT 'completed',
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS emotion_mask_media (
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
     run_id TEXT UNIQUE, -- Nullable: populated when AI generation starts
-    aiml_job_id TEXT,
+    fal_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     status TEXT DEFAULT 'completed',
@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS ghibli_reaction_media (
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
     run_id TEXT, -- Nullable: populated when AI generation starts
-    aiml_job_id TEXT,
+    fal_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     status TEXT DEFAULT 'completed',
@@ -182,7 +182,7 @@ CREATE TABLE IF NOT EXISTS presets_media (
     prompt TEXT NOT NULL,
     preset TEXT NOT NULL,
     run_id TEXT, -- Nullable: populated when AI generation starts
-    aiml_job_id TEXT,
+    fal_job_id TEXT,
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW(),
     status TEXT DEFAULT 'completed',
@@ -351,17 +351,17 @@ CREATE INDEX IF NOT EXISTS idx_credits_ledger_request_id ON credits_ledger(reque
 -- Media tables indexes
 CREATE INDEX IF NOT EXISTS idx_custom_prompt_media_status ON custom_prompt_media(status);
 CREATE INDEX IF NOT EXISTS idx_custom_prompt_media_user_id_created_at ON custom_prompt_media(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_custom_prompt_media_aiml_job_id ON custom_prompt_media(aiml_job_id);
+CREATE INDEX IF NOT EXISTS idx_custom_prompt_media_fal_job_id ON custom_prompt_media(fal_job_id);
 CREATE INDEX IF NOT EXISTS idx_custom_prompt_media_preset ON custom_prompt_media(preset);
 
 CREATE INDEX IF NOT EXISTS idx_emotion_mask_media_status ON emotion_mask_media(status);
 CREATE INDEX IF NOT EXISTS idx_emotion_mask_media_user_id_created_at ON emotion_mask_media(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_emotion_mask_media_aiml_job_id ON emotion_mask_media(aiml_job_id);
+CREATE INDEX IF NOT EXISTS idx_emotion_mask_media_fal_job_id ON emotion_mask_media(fal_job_id);
 CREATE INDEX IF NOT EXISTS idx_emotion_mask_media_preset ON emotion_mask_media(preset);
 
 CREATE INDEX IF NOT EXISTS idx_ghibli_reaction_media_status ON ghibli_reaction_media(status);
 CREATE INDEX IF NOT EXISTS idx_ghibli_reaction_media_user_id_created_at ON ghibli_reaction_media(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ghibli_reaction_media_aiml_job_id ON ghibli_reaction_media(aiml_job_id);
+CREATE INDEX IF NOT EXISTS idx_ghibli_reaction_media_fal_job_id ON ghibli_reaction_media(fal_job_id);
 CREATE INDEX IF NOT EXISTS idx_ghibli_reaction_media_preset ON ghibli_reaction_media(preset);
 
 CREATE INDEX IF NOT EXISTS idx_neo_glitch_media_stability_job_id ON neo_glitch_media(stability_job_id);
@@ -371,7 +371,7 @@ CREATE INDEX IF NOT EXISTS idx_neo_glitch_media_preset ON neo_glitch_media(prese
 
 CREATE INDEX IF NOT EXISTS idx_presets_media_status ON presets_media(status);
 CREATE INDEX IF NOT EXISTS idx_presets_media_user_id_created_at ON presets_media(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_presets_media_aiml_job_id ON presets_media(aiml_job_id);
+CREATE INDEX IF NOT EXISTS idx_presets_media_fal_job_id ON presets_media(fal_job_id);
 CREATE INDEX IF NOT EXISTS idx_presets_media_preset ON presets_media(preset);
 
 -- Story tables indexes
