@@ -2456,21 +2456,22 @@ const HomeNew: React.FC = () => {
       console.log('✅ [Unified] Service result:', result);
       
       // Handle the unified response
-      if (result.success && result.status === 'completed' && result.imageUrl) {
+      if (result.success && (result.status === 'completed' || (result as any).status === 'done') && (result.imageUrl || (result as any).outputUrl)) {
+        const finalImageUrl = result.imageUrl || (result as any).outputUrl || ''
         console.log('🎉 [Unified] Generation completed successfully!');
             
             // Show unified toast with thumbnail
             notifyReady({ 
               title: 'Your media is ready', 
               message: 'Tap to open',
-              thumbUrl: result.imageUrl,
+              thumbUrl: finalImageUrl,
               onClickThumb: () => {
             // Open the media viewer
                 setViewerMedia([{
                   id: 'generated-' + Date.now(),
                   userId: 'current-user',
                   type: 'photo',
-                  url: result.imageUrl || '',
+                  url: finalImageUrl,
                   prompt: effectivePrompt,
                   aspectRatio: 1,
                   width: 1024,
@@ -2512,7 +2513,7 @@ const HomeNew: React.FC = () => {
         // Generation failed
         console.error('❌ [Unified] Generation failed:', result.error);
               // Avoid showing failure toast if this was a background acceptance edge
-              if (!(result.error && result.error.includes('HTTP 202'))) {
+              if (!(result.error && (result.error.includes('HTTP 202') || result.error.includes('processing')))) {
                 notifyError({ title: 'Failed', message: 'Try again' });
               }
             endGeneration(genId);

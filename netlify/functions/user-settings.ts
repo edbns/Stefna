@@ -27,7 +27,9 @@ export const handler: Handler = async (event) => {
 
   try {
     if (event.httpMethod === 'GET') {
-      const { userId } = requireAuth(event.headers.authorization);
+      // Be tolerant to header casing differences
+      const authHeader = (event.headers.authorization || (event.headers as any)?.Authorization || (event.headers as any)['AUTHORIZATION']) as string | undefined;
+      const { userId } = requireAuth(authHeader);
       
       // Get user settings
       const settings = await q(`
@@ -48,7 +50,8 @@ export const handler: Handler = async (event) => {
     }
 
     if (event.httpMethod === 'POST' || event.httpMethod === 'PUT') {
-      const { userId } = requireAuth(event.headers.authorization);
+      const authHeader = (event.headers.authorization || (event.headers as any)?.Authorization || (event.headers as any)['AUTHORIZATION']) as string | undefined;
+      const { userId } = requireAuth(authHeader);
       const body = JSON.parse(event.body || '{}')
       
       // Get existing settings first to preserve values
