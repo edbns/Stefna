@@ -11,13 +11,22 @@
 
 import { Handler } from '@netlify/functions';
 // Switch from SDK to REST to avoid client-side quirks and to control retries
-import fetch, { Response } from 'node-fetch';
+// Use global fetch/Response/FormData available in Node 18+
 import { q, qOne } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { withAuth } from './_withAuth';
 
 const FAL_BASE = 'https://fal.run';
 const FAL_KEY = process.env.FAL_KEY as string;
+const HYPER_SDXL_ALLOWED_STEPS = new Set([1, 2, 4]);
+const isHyperSDXLModel = (model: string) => model === 'fal-ai/hyper-sdxl/image-to-image';
+
+const CORS_JSON_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Content-Type': 'application/json'
+} as const;
 async function falInvoke(model: string, input: any): Promise<any> {
   const url = `${FAL_BASE}/${model}`;
   const res = await fetch(url, {
@@ -50,8 +59,9 @@ interface UnifiedGenerationRequest {
   presetKey?: string;
   sourceAssetId?: string;
   userId: string;
-  runId?: string;
+  runId: string;
   emotionMaskPresetId?: string;
+  ghibliReactionPresetId?: string;
   storyTimePresetId?: string;
   additionalImages?: string[];
   meta?: any;
@@ -665,6 +675,15 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         }
 
         // Image generation with single attempt (avoid extra charges on repeated failures)
+        // Determine valid steps for model
+        const isHyper = isHyperSDXLModel(modelConfig.model);
+        const steps = isHyper ? 4 : undefined;
+
+        // Pre-validate steps for Hyper SDXL to avoid 422 charges
+        if (isHyper && (steps === undefined || !HYPER_SDXL_ALLOWED_STEPS.has(steps))) {
+          throw new Error('Invalid num_inference_steps for Hyper SDXL');
+        }
+
         const input: any = {
           image_url: processedImageUrl,
           prompt: mode === 'ghibli_reaction'
@@ -672,9 +691,11 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
             : params.prompt,
           image_strength: mode === 'ghibli_reaction' ? 0.35 : 0.7,
           guidance_scale: mode === 'ghibli_reaction' ? 6.0 : 7.5, // Lower guidance for subtler Ghibli effect
-          num_inference_steps: 8,
           seed: Math.floor(Math.random() * 1000000)
         };
+        if (steps !== undefined) {
+          input.num_inference_steps = steps;
+        }
         
         result = await falInvoke(modelConfig.model, input);
         
@@ -688,6 +709,11 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
             provider: 'fal',
             outputUrl: cloudinaryUrl
           };
+        }
+
+        // Explicit handling for PixArt empty results
+        if (modelConfig.model === 'fal-ai/pixart-alpha') {
+          console.warn('PixArt returned empty result, skipping charge');
         }
       }
       
@@ -832,11 +858,7 @@ const handler: Handler = async (event, context) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: { 
-        'Access-Control-Allow-Origin': '*', 
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-        'Access-Control-Allow-Methods': 'POST, OPTIONS' 
-      },
+      headers: CORS_JSON_HEADERS,
       body: ''
     };
   }
@@ -844,11 +866,7 @@ const handler: Handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: { 
-        'Access-Control-Allow-Origin': '*', 
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization', 
-        'Access-Control-Allow-Methods': 'POST, OPTIONS' 
-      },
+      headers: CORS_JSON_HEADERS,
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -862,10 +880,7 @@ const handler: Handler = async (event, context) => {
     if (!mode || !prompt || !sourceAssetId || !userId) {
       return {
         statusCode: 400,
-        headers: { 
-          'Access-Control-Allow-Origin': '*', 
-          'Content-Type': 'application/json' 
-        },
+        headers: CORS_JSON_HEADERS,
         body: JSON.stringify({ 
           success: false,
           status: 'failed',
@@ -901,10 +916,7 @@ const handler: Handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: { 
-        'Access-Control-Allow-Origin': '*', 
-        'Content-Type': 'application/json' 
-      },
+      headers: CORS_JSON_HEADERS,
       body: JSON.stringify(result)
     };
 
@@ -913,10 +925,7 @@ const handler: Handler = async (event, context) => {
     
     return {
       statusCode: 500,
-      headers: { 
-        'Access-Control-Allow-Origin': '*', 
-        'Content-Type': 'application/json' 
-      },
+      headers: CORS_JSON_HEADERS,
       body: JSON.stringify({
         success: false,
         status: error instanceof Error && error.message.includes('timeout') ? 'timeout' : 'failed',
