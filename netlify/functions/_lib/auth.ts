@@ -14,14 +14,14 @@ export function requireAuth(h?: string): AuthUser {
   } catch { const e:any=new Error("Invalid JWT"); e.statusCode=401; throw e; }
 }
 
-export async function requireUser(event: any): Promise<{ id: string; email: string | null; name: string | null; avatar_url: string | null }> {
+export async function requireUser(event: any): Promise<{ id: string; email: string | null; name: string | null; }> {
   try {
     const user = requireAuth(event.headers?.authorization || event.headers?.Authorization);
     return {
       id: user.userId,
       email: user.email || null,
       name: null,
-      avatar_url: null
+      
     };
   } catch (e: any) {
     e.status = 401;

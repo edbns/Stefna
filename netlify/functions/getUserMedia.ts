@@ -117,7 +117,7 @@ export const handler: Handler = async (event) => {
       presetKey: item.preset,
       status: 'ready',
       isPublic: false,
-      allowRemix: false,
+      
       createdAt: item.created_at,
       type: 'ghibli-reaction',
       metadata: {
@@ -139,7 +139,7 @@ export const handler: Handler = async (event) => {
       presetKey: item.preset,
       status: 'ready',
       isPublic: false,
-      allowRemix: false,
+      
       createdAt: item.created_at,
       type: 'emotion-mask',
       metadata: {
@@ -161,7 +161,7 @@ export const handler: Handler = async (event) => {
       presetKey: item.preset,
       status: 'ready',
       isPublic: false,
-      allowRemix: false,
+      
       createdAt: item.created_at,
       type: 'presets',
       metadata: {
@@ -183,7 +183,7 @@ export const handler: Handler = async (event) => {
       presetKey: item.preset,
       status: 'ready',
       isPublic: false,
-      allowRemix: false,
+      
       createdAt: item.created_at,
       type: 'custom-prompt',
       metadata: {
@@ -205,7 +205,7 @@ export const handler: Handler = async (event) => {
       presetKey: item.preset,
       status: 'ready',
       isPublic: false, // NeoGlitch media is always private by default
-      allowRemix: false, // NeoGlitch doesn't support remixing
+       // NeoGlitch doesn't support remixing
       createdAt: item.created_at,
       type: 'neo-glitch',
       // Include metadata for preset information

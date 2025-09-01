@@ -3,10 +3,10 @@ import { q, qOne, qCount } from './_db';
 import { requireAuth } from './_lib/auth';
 
 interface UpdateProfileRequest {
-  username?: string;
-  avatar_url?: string;
+  
+  
   share_to_feed?: boolean;
-  allow_remix?: boolean;
+  
   onboarding_completed?: boolean;
 }
 
@@ -107,7 +107,7 @@ export const handler: Handler = async (event, context) => {
         user: {
           id: uid,
           email,
-          username: body.username || `User ${uid}`
+          name: null
         }
       });
 

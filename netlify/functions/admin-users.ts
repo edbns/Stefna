@@ -33,7 +33,7 @@ export const handler: Handler = async (event) => {
 
     // Fetch all users with their settings and credits
     const users = await q(`
-      SELECT u.id, u.email, u.name, u.avatar_url, u.created_at, u.updated_at,
+      SELECT u.id, u.email, u.name, u.created_at, u.updated_at,
              us.share_to_feed, us.media_upload_agreed, uc.credits
       FROM users u
       LEFT JOIN user_settings us ON u.id = us.user_id
@@ -46,7 +46,7 @@ export const handler: Handler = async (event) => {
       id: user.id,
       email: user.email,
       name: user.name,
-      avatarUrl: user.avatar_url,
+      
       createdAt: user.created_at,
       updatedAt: user.updated_at,
       credits: user.credits || 0,
