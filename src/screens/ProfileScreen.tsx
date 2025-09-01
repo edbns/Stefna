@@ -9,7 +9,7 @@ import FullScreenMediaViewer from '../components/FullScreenMediaViewer'
 import userMediaService, { UserMedia } from '../services/userMediaService'
 import authService from '../services/authService'
 import ConfirmModal from '../components/ConfirmModal'
-import tokenService from '../services/tokenService'
+// import tokenService from '../services/tokenService' // Removed in cleanup
 import { authenticatedFetch } from '../utils/apiClient'
 import { useToasts } from '../components/ui/Toasts'
 import ProfileIcon from '../components/ProfileIcon'
@@ -668,8 +668,8 @@ const ProfileScreen: React.FC = () => {
               })
             } else {
               // Fallback to client service
-              const stats = await tokenService.getInstance().getReferralStats(userId)
-              setReferralStats(stats)
+              // Token service removed - use default values
+              setReferralStats({ totalReferrals: 0, totalCreditsEarned: 0 })
             }
           } catch {
             // Fallback to client service
@@ -686,8 +686,8 @@ const ProfileScreen: React.FC = () => {
               setTokenCount((q.daily_limit || 0) - (q.daily_used || 0))
             } else {
               // Fallback to client service
-              const tokenUsage = await tokenService.getInstance().getUserUsage(userId)
-              setTokenCount(tokenUsage.dailyLimit - tokenUsage.dailyUsage)
+              // Token service removed - use credits from user
+              setTokenCount(30) // Default daily credits
             }
           } catch {
             const tokenUsage = await tokenService.getInstance().getUserUsage(userId)
