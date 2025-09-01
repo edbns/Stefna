@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { VideoData } from '../services/videoService';
+
+// Define VideoData interface locally since videoService was removed
+interface VideoData {
+  id: string;
+  url: string;
+  prompt: string;
+  timestamp: string;
+}
 
 interface VideoContextType {
   selectedVideo: VideoData | null;

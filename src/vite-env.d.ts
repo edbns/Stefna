@@ -4,7 +4,7 @@
 /// <reference lib="webworker" />
 
 interface ImportMetaEnv {
-  readonly VITE_AIML_API_KEY: string
+  readonly VITE_FAL_KEY: string
   readonly VITE_RESEND_API_KEY: string
 }
 

@@ -1,20 +1,5 @@
 // utils/safeFetch.ts
 
-// Safe notifications fetch with graceful error handling
-export async function safeNotificationsFetch(limit: number = 10) {
-  try {
-    const response = await fetch(`/.netlify/functions/get-notifications?limit=${limit}`);
-    if (response.ok) {
-      return await response.json();
-    } else {
-      throw new Error(`notifications ${response.status}`);
-    }
-  } catch (err) {
-    console.warn('Notifications suppressed:', err instanceof Error ? err.message : 'Unknown error');
-    return null;
-  }
-}
-
 // Safe RUM collection that ignores ad-blocker noise - FIRE AND FORGET
 export function safeRum(payload: any) {
   try {

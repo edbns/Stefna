@@ -33,14 +33,14 @@ export interface SimpleGenerationResult {
   type: GenerationMode;
 }
 
-// Function mapping for each generation mode
+// All generation modes now use the unified endpoint
 const FUNCTION_ENDPOINTS: Record<GenerationMode, string> = {
-  'presets': '/.netlify/functions/presets-generate',
-  'custom-prompt': '/.netlify/functions/custom-prompt-generate',
-  'emotion-mask': '/.netlify/functions/emotion-mask-generate',
-  'ghibli-reaction': '/.netlify/functions/ghibli-reaction-generate',
-  'neo-glitch': '/.netlify/functions/neo-glitch-generate',
-  'story-time': '/.netlify/functions/story-time-generate'
+  'presets': '/.netlify/functions/unified-generate',
+  'custom-prompt': '/.netlify/functions/unified-generate',
+  'emotion-mask': '/.netlify/functions/unified-generate',
+  'ghibli-reaction': '/.netlify/functions/unified-generate',
+  'neo-glitch': '/.netlify/functions/unified-generate',
+  'story-time': '/.netlify/functions/unified-generate'
 };
 
 class SimpleGenerationService {
@@ -132,17 +132,29 @@ class SimpleGenerationService {
   }
 
   /**
-   * Build payload for different generation modes
+   * Build payload for unified generation endpoint
    */
   private buildPayload(request: SimpleGenerationRequest): any {
-    const basePayload = {
-      prompt: request.prompt,
-      sourceUrl: request.sourceAssetId, // Most functions expect sourceUrl
-      userId: request.userId,
-      runId: request.runId,
-      generationMeta: request.meta || {}
+    // Convert mode names to match unified function expectations
+    const modeMap: Record<GenerationMode, string> = {
+      'presets': 'presets',
+      'custom-prompt': 'custom',
+      'emotion-mask': 'emotion_mask',
+      'ghibli-reaction': 'ghibli_reaction',
+      'neo-glitch': 'neo_glitch',
+      'story-time': 'story_time'
     };
 
+    const basePayload = {
+      mode: modeMap[request.mode],
+      prompt: request.prompt,
+      sourceAssetId: request.sourceAssetId,
+      userId: request.userId,
+      runId: request.runId,
+      meta: request.meta || {}
+    };
+
+    // Add mode-specific parameters
     switch (request.mode) {
       case 'presets':
         return {
@@ -193,7 +205,17 @@ class SimpleGenerationService {
         throw new Error(`Unknown generation mode: ${mode}`);
       }
 
-      const response = await authenticatedFetch(`${endpoint}?jobId=${jobId}`, {
+      // Convert mode names to match unified function expectations
+      const modeMap: Record<GenerationMode, string> = {
+        'presets': 'presets',
+        'custom-prompt': 'custom',
+        'emotion-mask': 'emotion_mask',
+        'ghibli-reaction': 'ghibli_reaction',
+        'neo-glitch': 'neo_glitch',
+        'story-time': 'story_time'
+      };
+
+      const response = await authenticatedFetch(`${endpoint}?jobId=${jobId}&mode=${modeMap[mode]}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });

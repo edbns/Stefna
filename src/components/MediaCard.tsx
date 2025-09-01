@@ -9,7 +9,6 @@ interface MediaCardProps {
   gradient: string
   icon: React.ComponentType<{ size?: number; className?: string }>
   isLoggedIn: boolean
-  onRemix?: (id: string) => void
   onShowAuth: () => void
   onShowMedia?: (id: string, title: string) => void
   aspectRatio?: number
@@ -23,22 +22,11 @@ const MediaCard: React.FC<MediaCardProps> = ({
   gradient,
   icon: IconComponent,
   isLoggedIn,
-  onRemix,
   onShowAuth,
   onShowMedia,
   aspectRatio = 1,
   media
 }) => {
-  const handleRemix = () => {
-    if (!isLoggedIn) {
-      onShowAuth()
-      return
-    }
-    
-    if (onRemix) {
-      onRemix(id)
-    }
-  }
 
   // Determine aspect ratio class
   const getAspectClass = () => {
@@ -71,17 +59,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
       <div className="absolute inset-0 bg-black/20 transition-all duration-300">
         {/* Action Buttons - Bottom Right */}
         <div className="absolute bottom-3 right-3 flex items-center gap-2 opacity-100 transition-opacity duration-300">
-          {/* Remix Button */}
-          {onRemix && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleRemix() }}
-              className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/80 transition-all duration-300 hover:scale-105"
-              title="Remix this creation"
-              aria-label="Remix this media"
-            >
-              <RemixIcon size={16} className="text-white" />
-            </button>
-          )}
+          {/* Remix functionality removed - simpler system */}
         </div>
       </div>
     </div>

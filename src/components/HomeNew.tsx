@@ -2325,7 +2325,7 @@ const HomeNew: React.FC = () => {
         ipaBlocking: false, // Don't block, just warn
         presetKey // Store which preset to use
         };
-      console.log('🎭 NEO TOKYO GLITCH MODE: Using Stability.ai + AIML fallback:', neoTokyoGlitchPreset.label, 'Preset:', presetKey);
+              console.log('🎭 NEO TOKYO GLITCH MODE: Using Stability.ai + Fal.ai fallback:', neoTokyoGlitchPreset.label, 'Preset:', presetKey);
       
     } else if (kind === 'storytime') {
       // STORY TIME MODE: Use multiple images for video generation
@@ -3060,8 +3060,8 @@ const HomeNew: React.FC = () => {
     console.log('✨ Magic Wand enhancing prompt:', prompt)
     
     try {
-      // Call AIML API for prompt enhancement (free)
-      const enhancedPrompt = await enhancePromptWithAIML(prompt.trim())
+              // Call Fal.ai API for prompt enhancement (free)
+        const enhancedPrompt = await enhancePromptWithFAL(prompt.trim())
       
       if (enhancedPrompt) {
         setPrompt(enhancedPrompt)
@@ -3078,15 +3078,15 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  // AIML API prompt enhancement function
-  const enhancePromptWithAIML = async (originalPrompt: string): Promise<string> => {
+        // Fal.ai API prompt enhancement function
+      const enhancePromptWithFAL = async (originalPrompt: string): Promise<string> => {
     try {
       const token = authService.getToken()
       if (!token) {
         throw new Error('Authentication required')
       }
 
-      console.log('🚀 Calling AIML API for prompt enhancement...')
+              console.log('🚀 Calling Fal.ai API for prompt enhancement...')
       
       // 🎯 All generation now goes through GenerationPipeline - no direct aimlApi calls
       console.log('🆕 [New System] All generation goes through GenerationPipeline');
@@ -3097,7 +3097,7 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  // Local prompt enhancement fallback (when AIML is unavailable)
+          // Local prompt enhancement fallback (when Fal.ai is unavailable)
   const enhancePromptLocally = (originalPrompt: string): string => {
     console.log('🔄 Using local prompt enhancement fallback')
     

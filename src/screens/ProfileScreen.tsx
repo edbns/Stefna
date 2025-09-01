@@ -683,12 +683,12 @@ const ProfileScreen: React.FC = () => {
             } else {
               // Fallback to client service
               // Token service removed - use default values
-              setReferralStats({ totalReferrals: 0, totalCreditsEarned: 0 })
+              setReferralStats({ invites: 0, tokensEarned: 0, referralCode: '' })
             }
           } catch {
             // Fallback to client service
-            const stats = await tokenService.getInstance().getReferralStats(userId)
-            setReferralStats(stats)
+            // Token service removed - use default values
+            setReferralStats({ invites: 0, tokensEarned: 0, referralCode: '' })
           }
           
           // Load token count - simplified for new credits system
@@ -704,8 +704,8 @@ const ProfileScreen: React.FC = () => {
               setTokenCount(30) // Default daily credits
             }
           } catch {
-            const tokenUsage = await tokenService.getInstance().getUserUsage(userId)
-            setTokenCount(tokenUsage.dailyLimit - tokenUsage.dailyUsage)
+            // Token service removed - use default values
+            setTokenCount(30) // Default daily credits
           }
         } catch (error) {
           console.error('Failed to load referral stats or token count:', error)

@@ -57,17 +57,17 @@ class EnvironmentService {
 
   // Validation methods
   isConfigured(): boolean {
-    // Check if AIML API key is configured (standardized to single name)
-    const aimlApiKey = import.meta.env.VITE_AIML_API_KEY
+    // Check if Fal.ai API key is configured (standardized to single name)
+    const falApiKey = import.meta.env.VITE_FAL_KEY
     
-    if (!aimlApiKey) {
-      console.error('Missing AIML API key!')
-      console.error('Expected: VITE_AIML_API_KEY')
+    if (!falApiKey) {
+      console.error('Missing Fal.ai API key!')
+      console.error('Expected: VITE_FAL_KEY')
       console.error('Available VITE_ vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')).join(', '))
       return false
     }
     
-    console.log('✅ AIML API key found:', aimlApiKey ? 'Configured' : 'Missing')
+    console.log('✅ Fal.ai API key found:', falApiKey ? 'Configured' : 'Missing')
     
     // Note: Supabase configuration is no longer required since we use Neon backend
     // All database operations now go through our Netlify functions
@@ -88,7 +88,7 @@ class EnvironmentService {
     return {
       fullyConfigured: this.isConfigured(),
       neonConfigured: !!this.config.neonDatabaseUrl,
-      aimlConfigured: !!import.meta.env.VITE_AIML_API_KEY
+      falConfigured: !!import.meta.env.VITE_FAL_KEY
     }
   }
 }
