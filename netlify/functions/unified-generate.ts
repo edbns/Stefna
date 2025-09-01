@@ -432,7 +432,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
   };
 
   const action = actionMap[request.mode];
-  const creditsNeeded = request.mode === 'story_time' ? 2 : 1;
+  const creditsNeeded = 2; // All generations cost 2 credits
   
   await reserveCredits(request.userId, action, creditsNeeded, request.runId);
 
