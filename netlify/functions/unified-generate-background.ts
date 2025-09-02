@@ -20,6 +20,7 @@ const FAL_BASE = 'https://fal.run';
 const FAL_KEY = process.env.FAL_KEY as string;
 const HYPER_SDXL_ALLOWED_STEPS = new Set([1, 2, 4]);
 const isHyperSDXLModel = (model: string) => model === 'fal-ai/hyper-sdxl/image-to-image';
+const isFluxDevModel = (model: string) => model === 'fal-ai/flux/dev/image-to-image';
 
 const CORS_JSON_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -91,36 +92,35 @@ interface UnifiedGenerationResponse {
 // Mode-specific FAL.ai model configurations
 const PHOTO_MODELS = [
   {
-    model: 'fal-ai/hyper-sdxl/image-to-image',
-    name: 'Hyper SDXL I2I',
+    model: 'fal-ai/flux/dev/image-to-image',
+    name: 'Flux Dev I2I',
     cost: 'medium',
     priority: 1,
-    description: 'High-quality photo-realistic image-to-image'
+    description: 'High-quality Flux Dev image-to-image (much better than SDXL)'
   },
   {
     model: 'fal-ai/pixart-alpha',
     name: 'PixArt Alpha',
     cost: 'medium',
     priority: 2,
-    description: 'Reliable SDXL-style fallback'
-  },
-  // Remove invalid model 'stable-diffusion-xl' to prevent 404
+    description: 'Reliable fallback for edge cases'
+  }
 ];
 
 const GHIBLI_MODELS = [
   {
-    model: 'fal-ai/hyper-sdxl/image-to-image',
-    name: 'Hyper SDXL I2I',
+    model: 'fal-ai/flux/dev/image-to-image',
+    name: 'Flux Dev I2I',
     cost: 'medium',
     priority: 1,
-    description: 'High-quality image-to-image with subtle Ghibli elements'
+    description: 'High-quality Flux Dev with subtle Ghibli elements'
   },
   {
     model: 'fal-ai/pixart-alpha',
     name: 'PixArt Alpha',
     cost: 'medium',
     priority: 2,
-    description: 'Reliable SDXL-style with gentle Ghibli influence'
+    description: 'Reliable fallback with gentle Ghibli influence'
   }
 ];
 
@@ -906,7 +906,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Image generation with single attempt (avoid extra charges on repeated failures)
         // Determine valid steps for model
         const isHyper = isHyperSDXLModel(modelConfig.model);
-        const steps = isHyper ? 4 : undefined;
+        const isFlux = isFluxDevModel(modelConfig.model);
+        const steps = isHyper ? 4 : (isFlux ? 20 : undefined); // Flux Dev uses 20 steps, Hyper SDXL uses 4
 
         // Pre-validate steps for Hyper SDXL to avoid 422 charges
         if (isHyper && (steps === undefined || !HYPER_SDXL_ALLOWED_STEPS.has(steps))) {
@@ -922,8 +923,16 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           guidance_scale: mode === 'ghibli_reaction' ? 6.0 : 7.5, // Lower guidance for subtler Ghibli effect
           seed: Math.floor(Math.random() * 1000000)
         };
+        
+        // Add steps for models that need them
         if (steps !== undefined) {
           input.num_inference_steps = steps;
+        }
+        
+        // Flux Dev specific parameters
+        if (isFlux) {
+          input.sync_mode = true; // Enable sync mode for better results
+          input.image_strength = mode === 'ghibli_reaction' ? 0.4 : 0.5; // Slightly higher for Flux Dev
         }
         
         result = await falInvoke(modelConfig.model, input);
