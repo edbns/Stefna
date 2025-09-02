@@ -700,8 +700,51 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         
         result = await falInvoke(modelConfig.model, input);
         
-        const resultImageUrl = result?.data?.image?.url || result?.image?.url || result?.image_url;
+        // Log the full Fal.ai response structure for debugging
+        console.log(`📦 [Fal.ai] Response from ${modelConfig.name}:`, {
+          hasResult: !!result,
+          keys: result ? Object.keys(result) : [],
+          dataKeys: result?.data ? Object.keys(result.data) : [],
+          imageKeys: result?.image ? Object.keys(result.image) : [],
+          images: result?.images ? `Array of ${result.images.length}` : undefined,
+          // Log first 200 chars of response for debugging
+          preview: JSON.stringify(result).substring(0, 200)
+        });
+        
+        // Check multiple possible response formats from Fal.ai
+        let resultImageUrl = null;
+        
+        // Format 1: result.image (string URL)
+        if (typeof result?.image === 'string') {
+          resultImageUrl = result.image;
+        }
+        // Format 2: result.images array (take first)
+        else if (Array.isArray(result?.images) && result.images.length > 0) {
+          resultImageUrl = typeof result.images[0] === 'string' ? result.images[0] : result.images[0]?.url;
+        }
+        // Format 3: result.data.image.url
+        else if (result?.data?.image?.url) {
+          resultImageUrl = result.data.image.url;
+        }
+        // Format 4: result.image.url
+        else if (result?.image?.url) {
+          resultImageUrl = result.image.url;
+        }
+        // Format 5: result.image_url
+        else if (result?.image_url) {
+          resultImageUrl = result.image_url;
+        }
+        // Format 6: result.output (some models return this)
+        else if (result?.output) {
+          resultImageUrl = typeof result.output === 'string' ? result.output : result.output?.url;
+        }
+        // Format 7: Direct URL in result
+        else if (typeof result === 'string' && result.startsWith('http')) {
+          resultImageUrl = result;
+        }
+        
         if (resultImageUrl) {
+          console.log(`✅ [Fal.ai] Found image URL from ${modelConfig.name}: ${resultImageUrl.substring(0, 100)}...`);
           // Always upload to Cloudinary before saving/returning
           const cloudinaryUrl = await uploadUrlToCloudinary(resultImageUrl);
           return {
@@ -712,6 +755,9 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           };
         }
 
+        // Log what we got if no image was found
+        console.warn(`⚠️ [Fal.ai] No image URL found in response from ${modelConfig.name}. Full response:`, JSON.stringify(result).substring(0, 500));
+        
         // Explicit handling for PixArt empty results
         if (modelConfig.model === 'fal-ai/pixart-alpha') {
           console.warn('PixArt returned empty result, skipping charge');
