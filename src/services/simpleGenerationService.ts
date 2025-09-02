@@ -19,6 +19,10 @@ export interface SimpleGenerationRequest {
   storyTimePresetId?: string;
   additionalImages?: File[];
   meta?: any;
+  // IPA (Identity Preservation Analysis) parameters
+  ipaThreshold?: number;
+  ipaRetries?: number;
+  ipaBlocking?: boolean;
 }
 
 export interface SimpleGenerationResult {
@@ -218,7 +222,11 @@ class SimpleGenerationService {
       sourceAssetId: request.sourceAssetId,
       userId: request.userId,
       runId: request.runId,
-      meta: request.meta || {}
+      meta: request.meta || {},
+      // IPA parameters
+      ipaThreshold: request.ipaThreshold,
+      ipaRetries: request.ipaRetries,
+      ipaBlocking: request.ipaBlocking
     };
 
     // Add mode-specific parameters

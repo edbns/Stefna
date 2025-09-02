@@ -2462,7 +2462,11 @@ const HomeNew: React.FC = () => {
         neoGlitchPresetId: generationMeta?.neoTokyoGlitchPresetId,
         storyTimePresetId: generationMeta?.storyTimePresetId,
         additionalImages: generationMeta?.storyTimeImages,
-        meta: generationMeta
+        meta: generationMeta,
+        // IPA (Identity Preservation Analysis) parameters
+        ipaThreshold: generationMeta?.ipaThreshold || 0.65, // 65% similarity required
+        ipaRetries: generationMeta?.ipaRetries || 2, // 2 retry attempts
+        ipaBlocking: generationMeta?.ipaBlocking || true // Block if IPA fails
       });
           
       console.log('✅ [Unified] Service result:', result);
