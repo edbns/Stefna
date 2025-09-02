@@ -3,18 +3,22 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
   if (!presetKey) return 'Custom Prompt'
   
   // Neo Tokyo Glitch presets
-  if (type === 'neo-glitch' || presetKey.startsWith('neo_')) {
+  if (type === 'neo-glitch' || presetKey.startsWith('neo_') || presetKey.includes('neo')) {
     const neoPresets: Record<string, string> = {
       'visor': 'Visor',
       'base': 'Base',
       'tattoos': 'Tattoos', 
-      'scanlines': 'Scanlines'
+      'scanlines': 'Scanlines',
+      'neo_glitch_visor': 'Visor',
+      'neo_glitch_base': 'Base',
+      'neo_glitch_tattoos': 'Tattoos',
+      'neo_glitch_scanlines': 'Scanlines'
     }
     return neoPresets[presetKey] || 'Neo Tokyo'
   }
   
   // Ghibli Reaction presets
-  if (presetKey.startsWith('ghibli_')) {
+  if (presetKey.startsWith('ghibli_') || presetKey.includes('ghibli')) {
     const ghibliPresets: Record<string, string> = {
       'ghibli_tears': 'Tears',
       'ghibli_shock': 'Shock',
@@ -27,7 +31,7 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
   }
   
   // Emotion Mask presets
-  if (presetKey.startsWith('emotion_') || presetKey.includes('_')) {
+  if (presetKey.startsWith('emotion_') || presetKey.includes('emotion') || presetKey.includes('joy_') || presetKey.includes('strength_') || presetKey.includes('nostalgia_') || presetKey.includes('peace_')) {
     const emotionPresets: Record<string, string> = {
       'joy_sadness': 'Joy + Sadness',
       'strength_vulnerability': 'Strength + Vulnerability',
@@ -38,7 +42,11 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
       'emotion_happy': 'Happy',
       'emotion_surprised': 'Surprised',
       'emotion_love': 'Love',
-      'emotion_loneliness': 'Lonely'
+      'emotion_loneliness': 'Lonely',
+      'emotion_mask_joy_sadness': 'Joy + Sadness',
+      'emotion_mask_strength_vulnerability': 'Strength + Vulnerability',
+      'emotion_mask_nostalgia_distance': 'Nostalgia + Distance',
+      'emotion_mask_peace_fear': 'Peace + Fear'
     }
     return emotionPresets[presetKey] || 'Emotion'
   }

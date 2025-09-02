@@ -88,3 +88,19 @@ export function getPresetTypeForFilter(item: any): string {
   const mapping = mapPresetToDisplay(item)
   return mapping.type
 }
+
+/**
+ * Get display name for filter type
+ */
+export function getFilterDisplayName(filterType: string): string {
+  const filterDisplayNames: Record<string, string> = {
+    'neo-glitch': 'Neo Tokyo Glitch',
+    'ghibli-reaction': 'Ghibli Reaction',
+    'emotion-mask': 'Emotion Mask',
+    'presets': 'Presets',
+    'custom-prompt': 'Custom Prompt',
+    'story-time': 'Story Time'
+  }
+  
+  return filterDisplayNames[filterType] || filterType.charAt(0).toUpperCase() + filterType.slice(1)
+}

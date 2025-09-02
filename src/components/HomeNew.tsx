@@ -122,7 +122,7 @@ import userMediaService from '../services/userMediaService'
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
 import { saveMedia } from '../lib/api'
-import { getPresetTypeForFilter } from '../utils/presetMapping'
+import { getPresetTypeForFilter, getFilterDisplayName } from '../utils/presetMapping'
 import { Mode, MODE_LABELS } from '../config/modes'
 // Removed old preset services - using new professional presets system
 
@@ -3293,7 +3293,7 @@ const HomeNew: React.FC = () => {
       {/* Filter Banner - Center Top */}
       {activeFeedFilter && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-white/10 text-white text-sm px-4 py-2 rounded-full border border-white/20 backdrop-blur-sm">
-          Filtering by <span className="font-medium capitalize">{activeFeedFilter}</span> • 
+                      Filtering by <span className="font-medium capitalize">{getFilterDisplayName(activeFeedFilter)}</span> • 
           <button className="underline ml-1 hover:text-white/80 transition-colors" onClick={() => setActiveFeedFilter(null)}>
             clear
           </button>
@@ -3418,7 +3418,7 @@ const HomeNew: React.FC = () => {
                 <div className="fixed bottom-4 right-4 bg-black/80 text-white text-xs p-2 rounded backdrop-blur-sm z-50">
                   <div>📊 Feed: {feed.length}</div>
                   <div>🔍 Filtered: {filteredFeed.length}</div>
-                  <div>🎯 Active Filter: {activeFeedFilter || 'none'}</div>
+                  <div>🎯 Active Filter: {activeFeedFilter ? getFilterDisplayName(activeFeedFilter) : 'none'}</div>
                   <div>👁️ Intersecting: {isIntersecting ? 'Yes' : 'No'}</div>
                   <div>📡 Has More: {hasMoreFeed ? 'Yes' : 'No'}</div>
                   <div>⏳ Loading: {isLoadingMore ? 'Yes' : 'No'}</div>
