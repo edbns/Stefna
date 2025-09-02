@@ -64,12 +64,38 @@ export const handler: Handler = async (event) => {
     limit $1 offset $2
   `;
 
+  // Get total count for accurate pagination
+  const countSql = `
+    with allowed_users as (
+      select user_id from user_settings where share_to_feed = true
+    ),
+    feed as (
+      select 'neo_glitch'      as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'neo-glitch' as "mediaType", preset as "presetKey", prompt from neo_glitch_media      where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      union all
+      select 'presets'         as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'preset' as "mediaType", preset as "presetKey", prompt from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      union all
+      select 'emotion_mask'    as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'emotionmask' as "mediaType", preset as "presetKey", prompt from emotion_mask_media    where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      union all
+      select 'ghibli_reaction' as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'ghiblireact' as "mediaType", preset as "presetKey", prompt from ghibli_reaction_media where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      union all
+      select 'custom_prompt'   as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom' as "mediaType", preset as "presetKey", prompt from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+    )
+    select count(*) as total
+    from feed f
+    join allowed_users u on u.user_id = f.user_id
+  `;
+
   try {
     console.info('🔒 [getPublicFeed] Fetching feed with limit:', limit, 'offset:', offset);
     
     // First check if we have any users with share_to_feed enabled
     const allowedUsersCount = await q(`SELECT COUNT(*) as count FROM user_settings WHERE share_to_feed = true`);
     console.info('🔒 [getPublicFeed] Users with share_to_feed enabled:', allowedUsersCount[0]?.count || 0);
+    
+    // Get total count for accurate pagination
+    const totalCountResult = await q(countSql);
+    const totalCount = totalCountResult[0]?.total || 0;
+    console.info('🔒 [getPublicFeed] Total items available:', totalCount);
     
     const rows = await q(sql, [limit, offset]);
     console.info('🔒 [getPublicFeed] Feed items found:', rows.length);
@@ -99,6 +125,8 @@ export const handler: Handler = async (event) => {
         items: processedRows || [], 
         limit, 
         offset,
+        total: totalCount,
+        hasMore: offset + limit < totalCount,
         totalUsers: allowedUsersCount[0]?.count || 0,
         message: processedRows.length > 0 ? `Found ${processedRows.length} items` : 'No public items available yet'
       }),

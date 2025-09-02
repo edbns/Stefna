@@ -1729,9 +1729,9 @@ const HomeNew: React.FC = () => {
         console.log('📊 Raw feed data:', media)
         console.log('📊 Feed length:', media?.length || 0)
         
-        // Determine if there are more items based on whether we got the full pageSize
-        const hasMore = media && media.length === pageSize
-        console.log('📊 Has more:', hasMore)
+              // Determine if there are more items based on backend response
+      const hasMore = resp.hasMore !== false
+      console.log('📊 Has more:', hasMore)
         
         const mapped: UserMedia[] = (media || [])
           .map((item: any): UserMedia | null => {
