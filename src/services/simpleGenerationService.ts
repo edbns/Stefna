@@ -290,15 +290,37 @@ class SimpleGenerationService {
       
       // Look for media with matching runId or recent timestamp
       const recentMedia = result.items?.filter((item: any) => {
-        // Check if this media was created recently (within last 5 minutes)
+        // First try to match by runId if available
+        if (item.runId && item.runId === jobId) {
+          console.log(`🎯 [SimpleGeneration] Found media with matching runId:`, item.runId);
+          return true;
+        }
+        
+        // Fallback: Check if this media was created recently (within last 10 minutes)
         const createdAt = new Date(item.createdAt);
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-        return createdAt > fiveMinutesAgo;
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+        const isRecent = createdAt > tenMinutesAgo;
+        
+        if (isRecent) {
+          console.log(`⏰ [SimpleGeneration] Found recent media by timestamp:`, {
+            id: item.id,
+            createdAt: item.createdAt,
+            runId: item.runId
+          });
+        }
+        
+        return isRecent;
       });
 
       if (recentMedia && recentMedia.length > 0) {
         // Found recent media, assume generation completed
         const latestMedia = recentMedia[0];
+        console.log(`✅ [SimpleGeneration] Found recent media:`, {
+          id: latestMedia.id,
+          createdAt: latestMedia.createdAt,
+          finalUrl: latestMedia.finalUrl,
+          runId: jobId
+        });
         return {
           success: true,
           jobId: jobId,
@@ -313,6 +335,7 @@ class SimpleGenerationService {
       }
 
       // No recent media found, still processing
+      console.log(`⏳ [SimpleGeneration] No recent media found, still processing...`);
       return {
         success: true,
         jobId: jobId,
