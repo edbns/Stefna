@@ -127,8 +127,8 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
             </div>
           )}
           
-          {/* Preset Tag */}
-          {(current.metadata?.presetKey || current.presetKey) && (
+          {/* Preset Tag - Temporarily hidden */}
+          {/* {(current.metadata?.presetKey || current.presetKey) && (
             <PresetTag
               presetKey={current.metadata?.presetKey || current.presetKey}
               type={getPresetTypeForFilter(current)}
@@ -136,7 +136,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
               size="md"
               clickable={false}
             />
-          )}
+          )} */}
           
           {/* Date/Time */}
           <span className="text-white/80 text-sm bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">

@@ -83,15 +83,15 @@ export const handler: Handler = async (event) => {
     // Unified query with proper pagination
     const unifiedSql = `
       SELECT * FROM (
-        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'ghibli-reaction' as media_type FROM ghibli_reaction_media WHERE user_id = $1
+        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, width, height, 'ghibli-reaction' as media_type FROM ghibli_reaction_media WHERE user_id = $1
         UNION ALL
-        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'emotion-mask' as media_type FROM emotion_mask_media WHERE user_id = $1
+        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, width, height, 'emotion-mask' as media_type FROM emotion_mask_media WHERE user_id = $1
         UNION ALL
-        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'presets' as media_type FROM presets_media WHERE user_id = $1
+        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, width, height, 'presets' as media_type FROM presets_media WHERE user_id = $1
         UNION ALL
-        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'custom-prompt' as media_type FROM custom_prompt_media WHERE user_id = $1
+        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, width, height, 'custom-prompt' as media_type FROM custom_prompt_media WHERE user_id = $1
         UNION ALL
-        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'neo-glitch' as media_type FROM neo_glitch_media WHERE user_id = $1
+        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, width, height, 'neo-glitch' as media_type FROM neo_glitch_media WHERE user_id = $1
       ) as combined_media
       ORDER BY created_at DESC
       LIMIT $2 OFFSET $3
@@ -105,26 +105,36 @@ export const handler: Handler = async (event) => {
     });
 
     // Transform unified media items
-    const transformedItems = allMediaItems.map(item => ({
-      id: item.id,
-      userId: item.user_id,
-      finalUrl: item.image_url,
-      mediaType: 'image',
-      prompt: item.prompt,
-      presetKey: item.preset,
-      status: 'ready',
-      isPublic: false,
-      createdAt: item.created_at,
-      runId: item.run_id, // Add runId for polling detection
-      type: item.media_type,
-      metadata: {
+    const transformedItems = allMediaItems.map(item => {
+      // Calculate aspect ratio from width and height
+      const width = item.width || 1024; // Default width
+      const height = item.height || 1024; // Default height
+      const aspectRatio = width / height;
+      
+      return {
+        id: item.id,
+        userId: item.user_id,
+        finalUrl: item.image_url,
+        mediaType: 'image',
+        prompt: item.prompt,
         presetKey: item.preset,
-        presetType: item.media_type,
-        quality: 'high',
-        generationTime: 0,
-        modelVersion: '1.0'
-      }
-    }));
+        status: 'ready',
+        isPublic: false,
+        createdAt: item.created_at,
+        runId: item.run_id, // Add runId for polling detection
+        type: item.media_type,
+        width: width,
+        height: height,
+        aspectRatio: aspectRatio,
+        metadata: {
+          presetKey: item.preset,
+          presetType: item.media_type,
+          quality: 'high',
+          generationTime: 0,
+          modelVersion: '1.0'
+        }
+      };
+    });
 
     return json({
       success: true,
