@@ -43,8 +43,8 @@ export function optimizeCloudinaryUrl(
   const {
     width,
     height,
-    quality = 80,
-    format = 'auto',
+    quality = 75, // Reduced from 80 for better compression
+    format = 'auto', // Will choose WebP/AVIF automatically
     crop = 'limit',
     gravity = 'auto',
     dpr = 'auto',
@@ -76,11 +76,13 @@ export function optimizeCloudinaryUrl(
     if (blur) transformations.push(`e_blur:${blur}`)
     if (sharpen) transformations.push('e_sharpen')
 
-    // Auto-optimize for best performance
-    if (progressive !== false) { // Default to progressive unless explicitly disabled
+    // Performance optimizations
+    if (progressive !== false) {
       transformations.push('fl_progressive') // Progressive JPEG
     }
     transformations.push('fl_immutable_cache') // Better caching
+    transformations.push('fl_force_strip') // Remove metadata for smaller files
+    transformations.push('fl_attachment') // Prevent download prompts
 
     const transformationString = transformations.join(',')
     return `${baseUrl}/upload/${transformationString}/${imagePath}`
@@ -88,6 +90,20 @@ export function optimizeCloudinaryUrl(
     console.warn('Failed to optimize Cloudinary URL:', error)
     return url
   }
+}
+
+/**
+ * Ultra-aggressive optimization for feed images (maximum performance)
+ * Uses smallest possible sizes and highest compression
+ */
+export function optimizeFeedImage(url: string): string {
+  return optimizeCloudinaryUrl(url, {
+    width: 400, // Smaller size for feed
+    quality: 70, // Higher compression
+    format: 'auto', // WebP/AVIF
+    progressive: true,
+    crop: 'limit'
+  })
 }
 
 /**
@@ -106,14 +122,14 @@ export function generateResponsiveImageSet(
     }
   }
 
-  const baseOptions = { format: 'auto' as const, quality: 80, ...options }
+  const baseOptions = { format: 'auto' as const, quality: 75, ...options } // Reduced quality for better compression
 
-  // Generate different sizes for responsive loading
+  // Generate different sizes for responsive loading (optimized for performance)
   const sizes = [
-    { width: 400, descriptor: '400w' },
-    { width: 800, descriptor: '800w' },
-    { width: 1200, descriptor: '1200w' },
-    { width: 1600, descriptor: '1600w' }
+    { width: 300, descriptor: '300w' }, // Mobile
+    { width: 600, descriptor: '600w' }, // Tablet
+    { width: 900, descriptor: '900w' }, // Desktop
+    { width: 1200, descriptor: '1200w' } // Large screens
   ]
 
   const srcSet = sizes
@@ -122,15 +138,15 @@ export function generateResponsiveImageSet(
     )
     .join(', ')
 
-  // Default src (800px width)
-  const src = optimizeCloudinaryUrl(url, { ...baseOptions, width: 800 })
+  // Default src (600px width for better performance)
+  const src = optimizeCloudinaryUrl(url, { ...baseOptions, width: 600 })
 
-  // Low-quality placeholder (LQIP)
+  // Ultra-low-quality placeholder (LQIP) for faster loading
   const placeholder = optimizeCloudinaryUrl(url, {
     ...baseOptions,
-    width: 50,
-    quality: 10,
-    blur: 300
+    width: 30,
+    quality: 5,
+    blur: 500
   })
 
   // Responsive sizes attribute

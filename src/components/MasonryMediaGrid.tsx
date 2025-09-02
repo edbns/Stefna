@@ -1,5 +1,6 @@
 import React, { useRef, useMemo } from 'react'
 import { UserMedia } from '../services/userMediaService'
+import { optimizeFeedImage } from '../utils/cloudinaryOptimization'
 import PresetTag from './PresetTag'
 // RemixIcon removed - no more remix functionality
 import { MediaCard as SpinnerCard } from './ui/Toasts'
@@ -168,7 +169,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                     <SpinnerCard
                       kind={item.type === 'video' ? 'video' : 'image'}
                       status="processing"
-                      src={item.thumbnailUrl || item.url}
+                      src={optimizeFeedImage(item.thumbnailUrl || item.url)}
                       onClick={() => onMediaClick?.(item)}
                     />
                   ) : item.status === 'failed' ? (
@@ -177,7 +178,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         <video src={item.url} className="w-full h-auto object-cover opacity-50" muted />
                       ) : (
                                               <img 
-                        src={item.url} 
+                        src={optimizeFeedImage(item.url)} 
                         alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
                         className="w-full h-auto opacity-50 object-cover"
                       />
@@ -217,7 +218,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                       // Story Time processing - show progress with photo
                       <div className="relative">
                         <img
-                          src={item.url}
+                          src={optimizeFeedImage(item.url)}
                           alt="Story Time processing"
                           className="w-full h-auto object-cover opacity-75"
                         />
@@ -232,7 +233,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                       </div>
                   ) : (
                       <img
-                        src={item.url}
+                        src={optimizeFeedImage(item.url)}
                         alt=""
                         className="w-full h-auto object-cover"
                       />
