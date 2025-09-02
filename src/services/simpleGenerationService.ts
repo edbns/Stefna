@@ -269,7 +269,7 @@ class SimpleGenerationService {
     try {
       // For unified generation, we need to check getUserMedia to see if the generation completed
       // The unified function doesn't have a status endpoint, so we check user media instead
-      const response = await authenticatedFetch('/.netlify/functions/getUserMedia', {
+      const response = await authenticatedFetch('/.netlify/functions/getUserMedia?userId=current-user&limit=10', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -281,11 +281,11 @@ class SimpleGenerationService {
       const result = await response.json();
       
       // Look for media with matching runId or recent timestamp
-      const recentMedia = result.media?.filter((item: any) => {
-        // Check if this media was created recently (within last 10 minutes)
-        const createdAt = new Date(item.created_at);
-        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-        return createdAt > tenMinutesAgo;
+      const recentMedia = result.items?.filter((item: any) => {
+        // Check if this media was created recently (within last 5 minutes)
+        const createdAt = new Date(item.createdAt);
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        return createdAt > fiveMinutesAgo;
       });
 
       if (recentMedia && recentMedia.length > 0) {
