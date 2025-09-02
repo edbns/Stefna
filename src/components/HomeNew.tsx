@@ -1707,7 +1707,7 @@ const HomeNew: React.FC = () => {
       }
       
       console.log(`🔄 Loading public feed ${isInitial ? '(initial)' : '(more)'}...`)
-      const pageSize = 50 // Increased from 20 to 50 for better infinite scroll
+      const pageSize = 100 // Increased from 50 to 100 for better infinite scroll
       // 🚨 CRITICAL FIX: Calculate offset correctly for pagination
       // For initial load: offset = 0
       // For subsequent loads: offset = (current page + 1) * pageSize

@@ -48,7 +48,31 @@ const PresetTag: React.FC<PresetTagProps> = ({
   const getDisplayText = () => {
     if (item) {
       // Use the item for better mapping
-      return getPresetDisplayText(item, showPresetKey)
+      console.log('🔍 [PresetTag] Using item for mapping:', {
+        itemPresetKey: item.presetKey,
+        itemMetadataPresetKey: item.metadata?.presetKey,
+        itemType: item.type,
+        itemMetadataType: item.metadata?.presetType
+      });
+      
+      // Use metadata.presetKey if item.presetKey is undefined
+      const effectivePresetKey = item.presetKey || item.metadata?.presetKey;
+      const effectiveType = item.type || item.metadata?.presetType;
+      
+      const mapping = mapPresetToDisplay({ 
+        type: effectiveType, 
+        presetKey: effectivePresetKey 
+      });
+      
+      if (mapping.type === 'custom-prompt') {
+        return mapping.displayName;
+      }
+      
+      if (showPresetKey && mapping.cleanPresetKey) {
+        return `${mapping.displayName} - ${mapping.cleanPresetKey}`;
+      }
+      
+      return mapping.displayName;
     } else {
       // Fallback to old logic for backward compatibility
       const mapping = mapPresetToDisplay({ type, presetKey })

@@ -35,7 +35,7 @@ export const handler: Handler = async (event) => {
     };
   }
 
-  const limit = Math.max(1, Math.min(100, Number(event.queryStringParameters?.limit ?? 20)));
+  const limit = Math.max(1, Math.min(200, Number(event.queryStringParameters?.limit ?? 100))); // Increased from 20 to 100, max 200
   const offset = Math.max(0, Number(event.queryStringParameters?.offset ?? 0));
 
 
