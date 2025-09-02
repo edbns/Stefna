@@ -1689,6 +1689,10 @@ const HomeNew: React.FC = () => {
 
   // Load public feed on mount
   const loadFeed = async (isInitial = true) => {
+    // Add minimum loading time to ensure skeleton is visible
+    const startTime = Date.now()
+    const minLoadingTime = 800 // 800ms minimum loading time
+    
     try {
       if (isInitial) {
         setIsLoadingFeed(true)
@@ -1817,6 +1821,14 @@ const HomeNew: React.FC = () => {
         setHasMoreFeed(hasMore)
       } else {
         console.error('❌ Feed response not ok:', res.status, await res.text())
+      }
+      
+      // Ensure minimum loading time for skeleton visibility (initial load only)
+      if (isInitial) {
+        const elapsed = Date.now() - startTime
+        if (elapsed < minLoadingTime) {
+          await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsed))
+        }
       }
     } catch (e) {
       console.error('❌ Failed to load feed', e)
