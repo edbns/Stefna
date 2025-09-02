@@ -54,43 +54,8 @@ const ProfileScreen: React.FC = () => {
 
 
 
-  // Upload functionality
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [isComposerOpen, setIsComposerOpen] = useState(false)
-
   // Use profile context
   const { profileData, updateProfile, refreshProfile } = useProfile()
-  
-  // Upload handlers
-  const handleUploadClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    console.log('📁 File selected:', { name: file.name, size: file.size, type: file.type })
-
-    // Create preview URL for display only
-    const preview = URL.createObjectURL(file)
-    console.log('🖼️ Preview URL created:', preview)
-
-    // Store both: File for upload, preview URL for display
-    setSelectedFile(file)
-    setPreviewUrl(preview)
-    
-    // Navigate to home page with file data
-    navigate('/', { 
-      state: { 
-        selectedFile: file,
-        previewUrl: preview,
-        openComposer: true 
-      }
-    })
-  }
   
 
 
@@ -1346,32 +1311,6 @@ const ProfileScreen: React.FC = () => {
         {/* Fixed Navigation Bar - Top Right */}
         <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
           {/* Hidden File Input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,video/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-
-          {/* Upload Button */}
-          <button
-            onClick={handleUploadClick}
-            className="w-12 h-12 rounded-full border transition-all duration-300 flex items-center justify-center hover:scale-105 relative group bg-white/10 text-white border-white/20 hover:bg-white/20"
-            aria-label="Upload"
-            title="Upload"
-          >
-            <Plus size={24} className="transition-transform duration-200" />
-            
-            {/* Hover Tooltip */}
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-              Upload
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-black/80"></div>
-            </div>
-          </button>
-
-
-
           {/* Logout Button */}
           <div className="relative">
             <button
