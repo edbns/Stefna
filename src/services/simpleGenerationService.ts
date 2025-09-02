@@ -290,9 +290,26 @@ class SimpleGenerationService {
 
       const result = await response.json();
       
+      // Debug: Log the entire response to see what we're getting
+      console.log(`🔍 [SimpleGeneration] getUserMedia response:`, {
+        success: result.success,
+        itemsCount: result.items?.length,
+        firstItem: result.items?.[0],
+        allItems: result.items
+      });
+      
       // Look for media with matching runId or created after generation started
       const generationStartTime = this.getGenerationStartTime(jobId);
       const recentMedia = result.items?.filter((item: any) => {
+        // Debug: Log what we're looking for
+        console.log(`🔍 [SimpleGeneration] Checking item:`, {
+          itemRunId: item.runId,
+          jobId: jobId,
+          match: item.runId === jobId,
+          createdAt: item.createdAt,
+          generationStart: generationStartTime
+        });
+        
         // First try to match by exact runId
         if (item.runId && item.runId === jobId) {
           console.log(`🎯 [SimpleGeneration] Found media with exact runId match:`, item.runId);
