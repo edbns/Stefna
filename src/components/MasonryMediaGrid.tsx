@@ -82,9 +82,15 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
     
     // Simple distribution: put each item in the shortest column
     media.forEach((item) => {
+      // Calculate aspect ratio like ProfileScreen does
+      const aspectRatio = item.width && item.height ? item.width / Math.max(1, item.height) : (item.aspectRatio || 1)
+      
       // Find the shortest column
       const columnHeights = columnArrays.map(column => 
-        column.reduce((height, mediaItem) => height + (1 / (mediaItem.aspectRatio || 1)), 0)
+        column.reduce((height, mediaItem) => {
+          const itemAspectRatio = mediaItem.width && mediaItem.height ? mediaItem.width / Math.max(1, mediaItem.height) : (mediaItem.aspectRatio || 1)
+          return height + (1 / itemAspectRatio)
+        }, 0)
       )
       const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights))
       
@@ -141,7 +147,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                 {/* Media Container - Use proper aspect ratio */}
                 <div 
                   className="relative w-full overflow-hidden"
-                  style={{ aspectRatio: item.aspectRatio || 1 }}
+                  style={{ aspectRatio: item.width && item.height ? item.width / Math.max(1, item.height) : (item.aspectRatio || 1) }}
                 >
                   {/* Selection Checkbox */}
                   {isSelectionMode && onToggleSelection && (
@@ -187,7 +193,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                           className="w-full h-auto opacity-50 object-cover"
                           loading="lazy"
                           decoding="async"
-                          aspectRatio={item.aspectRatio}
+                          aspectRatio={item.width && item.height ? item.width / Math.max(1, item.height) : (item.aspectRatio || 1)}
                         />
                       )}
                       <div className="absolute inset-0 grid place-items-center">
@@ -230,7 +236,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                           className="w-full h-auto object-cover opacity-75"
                           loading="lazy"
                           decoding="async"
-                          aspectRatio={item.aspectRatio}
+                          aspectRatio={item.width && item.height ? item.width / Math.max(1, item.height) : (item.aspectRatio || 1)}
                         />
                         {/* Processing overlay */}
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -242,14 +248,14 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         </div>
                       </div>
                   ) : (
-                      <LQIPImage
-                        src={optimizeFeedImage(item.url)}
-                        alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
-                        className="w-full h-auto object-cover"
-                        loading="lazy"
-                        decoding="async"
-                        aspectRatio={item.aspectRatio}
-                      />
+                                              <LQIPImage
+                          src={optimizeFeedImage(item.url)} 
+                          alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
+                          className="w-full h-auto object-cover"
+                          loading="lazy"
+                          decoding="async"
+                          aspectRatio={item.width && item.height ? item.width / Math.max(1, item.height) : (item.aspectRatio || 1)}
+                        />
                   )}
 
 
