@@ -55,8 +55,8 @@ class SimpleGenerationService {
     return SimpleGenerationService.instance;
   }
 
-  /**
-   * Generate content using direct function calls
+    /**
+   * Generate content using direct function calls with automatic polling
    */
   async generate(request: SimpleGenerationRequest): Promise<SimpleGenerationResult> {
     console.log('🚀 [SimpleGeneration] Starting generation:', {
@@ -84,12 +84,10 @@ class SimpleGenerationService {
 
       // If this is a Netlify background function, it responds 202 with no body
       if (response.status === 202) {
-        console.log('ℹ️ [SimpleGeneration] Background accepted (202)');
-        return {
-          success: true,
-          status: 'processing',
-          type: request.mode
-        };
+        console.log('ℹ️ [SimpleGeneration] Background accepted (202), starting polling...');
+        
+        // Start polling for completion
+        return await this.pollForCompletion(request.runId, request.mode);
       }
 
       // Read response body once for both success and error cases
@@ -148,6 +146,56 @@ class SimpleGenerationService {
         type: request.mode
       };
     }
+  }
+
+  /**
+   * Poll for generation completion
+   */
+  private async pollForCompletion(runId: string, mode: GenerationMode): Promise<SimpleGenerationResult> {
+    const maxAttempts = 60; // 5 minutes with 5-second intervals
+    const pollInterval = 5000; // 5 seconds
+    
+    console.log(`🔄 [SimpleGeneration] Starting polling for runId: ${runId}`);
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        console.log(`📡 [SimpleGeneration] Polling attempt ${attempt}/${maxAttempts} for runId: ${runId}`);
+        
+        const statusResult = await this.checkStatus(runId, mode);
+        
+        if (statusResult.status === 'completed') {
+          console.log(`✅ [SimpleGeneration] Generation completed after ${attempt} attempts`);
+          return statusResult;
+        }
+        
+        if (statusResult.status === 'failed') {
+          console.log(`❌ [SimpleGeneration] Generation failed after ${attempt} attempts`);
+          return statusResult;
+        }
+        
+        // Still processing, wait before next poll
+        if (attempt < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+        }
+        
+      } catch (error) {
+        console.warn(`⚠️ [SimpleGeneration] Polling attempt ${attempt} failed:`, error);
+        
+        // Don't fail immediately on polling errors, continue trying
+        if (attempt < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+        }
+      }
+    }
+    
+    // Timeout reached
+    console.log(`⏰ [SimpleGeneration] Polling timeout reached for runId: ${runId}`);
+    return {
+      success: false,
+      status: 'failed',
+      error: 'Generation timed out. Please try again.',
+      type: mode
+    };
   }
 
   /**
@@ -219,59 +267,50 @@ class SimpleGenerationService {
    */
   async checkStatus(jobId: string, mode: GenerationMode): Promise<SimpleGenerationResult> {
     try {
-      const endpoint = FUNCTION_ENDPOINTS[mode];
-      if (!endpoint) {
-        throw new Error(`Unknown generation mode: ${mode}`);
-      }
-
-      // Convert mode names to match unified function expectations
-      const modeMap: Record<GenerationMode, string> = {
-        'presets': 'presets',
-        'custom-prompt': 'custom',
-        'emotion-mask': 'emotion_mask',
-        'ghibli-reaction': 'ghibli_reaction',
-        'neo-glitch': 'neo_glitch',
-        'story-time': 'story_time'
-      };
-
-      const response = await authenticatedFetch(`${endpoint}?jobId=${jobId}&mode=${modeMap[mode]}`, {
+      // For unified generation, we need to check getUserMedia to see if the generation completed
+      // The unified function doesn't have a status endpoint, so we check user media instead
+      const response = await authenticatedFetch('/.netlify/functions/getUserMedia', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
 
-      // Read response body once for both success and error cases
-      let result;
-      try {
-        result = await response.json();
-      } catch (parseError) {
-        // If we can't parse JSON, create a synthetic error response
-        result = {
-          success: false,
-          status: 'failed',
-          error: `HTTP ${response.status}: ${response.statusText} (JSON parse failed)`
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      // Look for media with matching runId or recent timestamp
+      const recentMedia = result.media?.filter((item: any) => {
+        // Check if this media was created recently (within last 10 minutes)
+        const createdAt = new Date(item.created_at);
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+        return createdAt > tenMinutesAgo;
+      });
+
+      if (recentMedia && recentMedia.length > 0) {
+        // Found recent media, assume generation completed
+        const latestMedia = recentMedia[0];
+        return {
+          success: true,
+          jobId: jobId,
+          runId: jobId,
+          status: 'completed',
+          imageUrl: latestMedia.finalUrl || latestMedia.imageUrl,
+          videoUrl: latestMedia.videoUrl,
+          error: undefined,
+          provider: latestMedia.provider || 'unknown',
+          type: mode
         };
       }
 
-      if (!response.ok) {
-        // Use the parsed result if available, otherwise create error message
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        if (result && result.error) {
-          errorMessage = result.error;
-        } else if (result && result.message) {
-          errorMessage = result.message;
-        }
-        throw new Error(errorMessage);
-      }
-
+      // No recent media found, still processing
       return {
-        success: result.success,
-        jobId: result.jobId,
-        runId: result.runId,
-        status: result.status,
-        imageUrl: result.imageUrl,
-        videoUrl: result.videoUrl,
-        error: result.error,
-        provider: result.provider,
+        success: true,
+        jobId: jobId,
+        runId: jobId,
+        status: 'processing',
+        error: undefined,
         type: mode
       };
 

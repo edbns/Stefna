@@ -86,7 +86,16 @@ export const handler: Handler = async (event) => {
       }
     } catch (e) {
       console.log('🔐 Body parsing error:', e);
-      // Ignore parsing errors, use empty object
+      // For local development, try to parse as raw string if JSON fails
+      try {
+        if (event.body && typeof event.body === 'string') {
+          body = JSON.parse(event.body);
+          console.log('🔐 Successfully parsed body as raw string:', body);
+        }
+      } catch (e2) {
+        console.log('🔐 Raw string parsing also failed:', e2);
+        // Ignore parsing errors, use empty object
+      }
     }
 
     const timestamp = Math.floor(Date.now() / 1000);
@@ -103,6 +112,12 @@ export const handler: Handler = async (event) => {
           params[key] = String(value);
         }
       });
+    }
+    
+    // Fallback: if no folder was parsed from body, use default
+    if (!params.folder) {
+      params.folder = 'stefna/sources';
+      console.log('🔐 Using default folder fallback: stefna/sources');
     }
     
     // Sort parameters alphabetically and build signature string

@@ -335,10 +335,31 @@ const HomeNew: React.FC = () => {
   const clearAllOptionsAfterGeneration = () => {
     console.log('🎭 Clearing all options after generation')
     
-    // Call the comprehensive composer clearing function
-    handleClearComposerState()
+    // Clear everything EXCEPT the file - keep it for continued preset usage
+    setPrompt('')
+    setSelectedPreset(null)
+    setSelectedEmotionMaskPreset(null)
+    setSelectedGhibliReactionPreset(null)
+    setSelectedNeoTokyoGlitchPreset(null)
+    setSelectedMode(null)
+    setIsGenerating(false)
+    setIsEnhancing(false)
     
-    console.log('🎭 All options cleared, composer state reset, HiddenUploader reset triggered')
+    // Clear composer state but keep the file
+    setComposerState(s => ({
+      ...s,
+      mode: 'custom',
+      selectedPresetId: null,
+      selectedEmotionMaskPresetId: null,
+      selectedGhibliReactionPresetId: null,
+      selectedNeoTokyoGlitchPresetId: null,
+      customPrompt: '',
+      status: 'idle',
+      error: null,
+      runOnOpen: false
+    }))
+    
+    console.log('🎭 Options cleared but file preserved for continued preset usage')
   }
 
   // Clear preset when user exits composer (immediate to avoid race)
@@ -1811,6 +1832,9 @@ const HomeNew: React.FC = () => {
   // Initialize authentication state on mount
   useEffect(() => {
     const checkAuth = async () => {
+      // Refresh auth state first to ensure it's up to date
+      authService.refreshAuthState()
+      
       const authState = authService.getAuthState()
       setIsAuthenticated(authState.isAuthenticated)
       console.log('🔐 Auth state initialized:', authState)
@@ -1856,6 +1880,16 @@ const HomeNew: React.FC = () => {
           // Tier promotions removed - simplified credit system
         } catch (error) {
           console.warn('⚠️ Failed to sync user data from database:', error)
+        }
+      } else {
+        // For non-authenticated users, check localStorage for upload agreement
+        const uploadAgreementAccepted = localStorage.getItem('uploadAgreementAccepted')
+        if (uploadAgreementAccepted === 'true') {
+          console.log('✅ Non-authenticated user has agreed to upload terms (localStorage)')
+          setUserHasAgreed(true)
+        } else {
+          console.log('❌ Non-authenticated user has not agreed to upload terms')
+          setUserHasAgreed(false)
         }
       }
     }
@@ -2356,7 +2390,7 @@ const HomeNew: React.FC = () => {
       return;
     }
 
-    if (!isAuthenticated) {
+    if (!authService.isAuthenticated()) {
       console.warn('User not authenticated; redirecting to auth.');
       navigate('/auth');
       endGeneration(genId);
@@ -2488,11 +2522,7 @@ const HomeNew: React.FC = () => {
         // DON'T stop spinners yet - keep them running until completion
         // The generation-complete or generation-success event will stop them
         
-        // Show processing notification
-        notifyQueue({ 
-          title: 'Processing', 
-          message: 'Your generation is being processed in the background' 
-        });
+        // Don't show additional processing notification - already showed "Added to queue"
         
         // Don't clear composer or stop spinners - wait for completion
         return;
@@ -2605,6 +2635,41 @@ const HomeNew: React.FC = () => {
 
 
 
+  // Centralized auth check function
+  const checkAuthAndRedirect = () => {
+    if (!authService.isAuthenticated()) {
+      console.log('❌ User not authenticated, redirecting to auth')
+      navigate('/auth')
+      return false
+    }
+    return true
+  }
+
+  // Debug function to clear auth state for testing
+  const clearAuthForTesting = () => {
+    console.log('🧹 Clearing auth state for testing...')
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user_data')
+    authService.clearAuthState()
+    console.log('✅ Auth state cleared')
+  }
+
+  // Expose debug function globally
+  useEffect(() => {
+    ;(window as any).clearAuthForTesting = clearAuthForTesting
+    ;(window as any).debugAuth = () => {
+      console.log('🔍 Auth Debug:', {
+        isAuthenticated: authService.isAuthenticated(),
+        hasToken: !!authService.getToken(),
+        authState: authService.getAuthState(),
+        localStorage: {
+          token: !!localStorage.getItem('auth_token'),
+          user: !!localStorage.getItem('user_data')
+        }
+      })
+    }
+  }, [])
+
   // Handle preset click - immediately generates with preset style (one-click)
   const handlePresetClick = async (presetName: string) => {
     console.log('🎨 Preset clicked:', presetName)
@@ -2631,8 +2696,26 @@ const HomeNew: React.FC = () => {
       return
     }
     
-    if (!isAuthenticated) {
+    // Check authentication directly from auth service
+    console.log('🔍 Pre-auth check debug:', {
+      authServiceIsAuthenticated: authService.isAuthenticated(),
+      hasToken: !!authService.getToken(),
+      localStorageToken: !!localStorage.getItem('auth_token'),
+      localStorageUser: !!localStorage.getItem('user_data'),
+      authState: authService.getAuthState(),
+      tokenPreview: authService.getToken() ? authService.getToken()?.substring(0, 20) + '...' : 'none'
+    })
+    
+    if (!authService.isAuthenticated()) {
       console.log('❌ User not authenticated, redirecting to auth')
+      console.log('🔍 Debug auth state:', { 
+        isAuthenticated, 
+        authServiceState: authService.getAuthState(),
+        hasToken: !!authService.getToken(),
+        authServiceIsAuthenticated: authService.isAuthenticated(),
+        localStorageToken: !!localStorage.getItem('auth_token'),
+        localStorageUser: !!localStorage.getItem('user_data')
+      })
       navigate('/auth')
       return
     }
@@ -3518,12 +3601,19 @@ const HomeNew: React.FC = () => {
 
                   {/* Presets dropdown button */}
                   <div className="relative" data-presets-dropdown>
-                    <button
-                                              onClick={() => {
-                          // Allow exploration - close all other dropdowns and toggle presets
-                          closeAllDropdowns()
-                          setPresetsOpen((v) => !v)
-                        }}
+                                        <button
+                      onClick={() => {
+                        // Check authentication first
+                        if (!checkAuthAndRedirect()) return
+                        
+                        console.log('🎯 Presets button clicked!')
+                        console.log('🔍 Current presetsOpen state:', presetsOpen)
+                        console.log('🔍 Available presets:', weeklyPresetNames)
+                        // Allow exploration - close all other dropdowns and toggle presets
+                        closeAllDropdowns()
+                        setPresetsOpen((v) => !v)
+                        console.log('🔄 Toggling presetsOpen to:', !presetsOpen)
+                      }}
                       className={`px-3 py-1.5 rounded-2xl text-xs transition-colors ${
                         isAuthenticated 
                           ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30' 
@@ -3560,6 +3650,8 @@ const HomeNew: React.FC = () => {
                             <button
                               key={name}
                               onClick={() => {
+                                console.log('🎯 Preset clicked:', name)
+                                console.log('🔍 About to call handlePresetClick with:', name)
                                 handlePresetClick(name)
                                 setPresetsOpen(false)
                               }}
@@ -3590,6 +3682,9 @@ const HomeNew: React.FC = () => {
                   <div className="relative" data-emotionmask-dropdown>
                     <button
                       onClick={async () => {
+                        // Check authentication first
+                        if (!checkAuthAndRedirect()) return
+                        
                         if (composerState.mode === 'emotionmask') {
                           // Already in Emotion Mask mode - toggle dropdown
                           closeAllDropdowns()
@@ -3657,6 +3752,9 @@ const HomeNew: React.FC = () => {
                   <div className="relative" data-ghiblireact-dropdown>
                     <button
                       onClick={async () => {
+                        // Check authentication first
+                        if (!checkAuthAndRedirect()) return
+                        
                         if (composerState.mode === 'ghiblireact') {
                           // Already in Ghibli Reaction mode - toggle dropdown
                           closeAllDropdowns()
@@ -3724,6 +3822,9 @@ const HomeNew: React.FC = () => {
                   <div className="relative" data-neotokyoglitch-dropdown>
                     <button
                       onClick={async () => {
+                        // Check authentication first
+                        if (!checkAuthAndRedirect()) return
+                        
                         if (composerState.mode === 'neotokyoglitch') {
                           // Already in Neo Tokyo Glitch mode - toggle dropdown
                           closeAllDropdowns()
@@ -3789,6 +3890,9 @@ const HomeNew: React.FC = () => {
                   <div className="relative" data-storytime-dropdown>
                     <button
                       onClick={async () => {
+                        // Check authentication first
+                        if (!checkAuthAndRedirect()) return
+                        
                         if (composerState.mode === 'storytime') {
                           // Already in Story Time mode - auto-generate if ready
                           if (selectedStoryTimePreset && canGenerateStory && isAuthenticated) {
@@ -3835,27 +3939,26 @@ const HomeNew: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      if (!isAuthenticated) {
-                        // Sign up required - no notification needed
-                        navigate('/auth')
-                        return
-                      }
+                      if (!checkAuthAndRedirect()) return
                       handleSaveDraft()
                     }}
-                    title={isAuthenticated ? 'Save to draft' : 'Sign up to save drafts'}
+                    title={authService.isAuthenticated() ? 'Save to draft' : 'Sign up to save drafts'}
                     className={(() => {
                       const baseClass = 'w-8 h-8 rounded-full flex items-center justify-center transition-colors';
                       const activeClass = 'bg-white/10 text-white hover:bg-white/15';
                       const disabledClass = 'bg-white/5 text-white/50 cursor-not-allowed';
-                      return `${baseClass} ${isAuthenticated ? activeClass : disabledClass}`;
+                      return `${baseClass} ${authService.isAuthenticated() ? activeClass : disabledClass}`;
                     })()}
                     aria-label="Save to draft"
-                    disabled={!isAuthenticated}
+                    disabled={!authService.isAuthenticated()}
                   >
                     <FileText size={14} />
                   </button>
                   <button 
                     onClick={async () => {
+                      // Check authentication first
+                      if (!checkAuthAndRedirect()) return
+                      
                       // Show immediate feedback that button was clicked
                       setNavGenerating(true)
                       
