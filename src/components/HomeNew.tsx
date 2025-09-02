@@ -1656,7 +1656,11 @@ const HomeNew: React.FC = () => {
         setIsIntersecting(entry.isIntersecting)
         
         if (entry.isIntersecting && hasMoreFeed && !isLoadingMore) {
-          console.log('👁️ [UnifiedScroll] Last item visible, triggering load')
+          console.log('👁️ [UnifiedScroll] Last item visible, triggering load', {
+            hasMoreFeed,
+            isLoadingMore,
+            feedLength: feed.length
+          })
           loadMoreFeed()
         }
       },
@@ -1702,7 +1706,7 @@ const HomeNew: React.FC = () => {
       }
       
       console.log(`🔄 Loading public feed ${isInitial ? '(initial)' : '(more)'}...`)
-      const pageSize = 20
+      const pageSize = 50 // Increased from 20 to 50 for better infinite scroll
       // 🚨 CRITICAL FIX: Calculate offset correctly for pagination
       // For initial load: offset = 0
       // For subsequent loads: offset = (current page + 1) * pageSize

@@ -358,21 +358,51 @@ class UserMediaService {
 
   // Delete media
   async deleteMedia(userId: string, mediaId: string): Promise<boolean> {
-    const userMedia = this.mediaStorage.get(userId) || []
-    const filteredMedia = userMedia.filter(m => m.id !== mediaId)
-    
-    if (filteredMedia.length !== userMedia.length) {
-      this.mediaStorage.set(userId, filteredMedia)
-      // Cleanup likes index for this media
-      if (this.likesIndex.has(mediaId)) {
-        this.likesIndex.delete(mediaId)
-        await this.saveLikesIndex()
+    try {
+      // First, try to delete from database via Netlify function
+      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
+      if (token) {
+        try {
+          const response = await fetch('/.netlify/functions/delete-media', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ mediaId, userId })
+          })
+
+          if (response.ok) {
+            const result = await response.json()
+            console.log('✅ [UserMediaService] Media deleted from database:', result)
+          } else {
+            console.warn('⚠️ [UserMediaService] Database delete failed:', response.status, response.statusText)
+          }
+        } catch (dbError) {
+          console.warn('⚠️ [UserMediaService] Database delete error:', dbError)
+        }
       }
-      await this.saveToStorage()
-      return true
+
+      // Then delete from local storage
+      const userMedia = this.mediaStorage.get(userId) || []
+      const filteredMedia = userMedia.filter(m => m.id !== mediaId)
+      
+      if (filteredMedia.length !== userMedia.length) {
+        this.mediaStorage.set(userId, filteredMedia)
+        // Cleanup likes index for this media
+        if (this.likesIndex.has(mediaId)) {
+          this.likesIndex.delete(mediaId)
+          await this.saveLikesIndex()
+        }
+        await this.saveToStorage()
+        return true
+      }
+      
+      return false
+    } catch (error) {
+      console.error('❌ [UserMediaService] Delete media failed:', error)
+      return false
     }
-    
-    return false
   }
 
   // Increment like count
