@@ -2262,7 +2262,7 @@ const HomeNew: React.FC = () => {
         cfg_scale: 7.0, // Balanced creativity vs adherence
         denoising_strength: adjustedStrength, // Match preset strength
         generation_type: "emotion_mask_strict_ipa", // Strict identity preservation
-        ipaThreshold: 0.7, // High similarity required
+        ipaThreshold: 0.75, // High similarity required for Neo Tokyo Glitch
         ipaRetries: 3, // Aggressive fallback
         ipaBlocking: true // Must pass to proceed
       };
@@ -2352,10 +2352,10 @@ const HomeNew: React.FC = () => {
           cfg_scale: 7.0, // Balanced creativity vs adherence
         denoising_strength: 0.5, // Match Stability.ai preset strength
           features: neoTokyoGlitchPreset.features,
-        generation_type: "neo_tokyo_relaxed_ipa", // Relaxed identity preservation
-        ipaThreshold: 0.4, // Low similarity allowed (creative freedom)
-        ipaRetries: 1, // Minimal fallback
-        ipaBlocking: false, // Don't block, just warn
+        generation_type: "neo_tokyo_strict_ipa", // Strict identity preservation
+        ipaThreshold: 0.75, // High similarity required for Neo Tokyo Glitch
+        ipaRetries: 3, // Aggressive fallback
+        ipaBlocking: true, // Must pass to proceed
         presetKey // Store which preset to use
         };
               console.log('🎭 NEO TOKYO GLITCH MODE: Using Stability.ai + Fal.ai fallback:', neoTokyoGlitchPreset.label, 'Preset:', presetKey);
@@ -2481,8 +2481,8 @@ const HomeNew: React.FC = () => {
         additionalImages: generationMeta?.storyTimeImages,
         meta: generationMeta,
         // IPA (Identity Preservation Analysis) parameters
-        ipaThreshold: generationMeta?.ipaThreshold || 0.65, // 65% similarity required
-        ipaRetries: generationMeta?.ipaRetries || 2, // 2 retry attempts
+        ipaThreshold: generationMeta?.ipaThreshold || 0.7, // 70% similarity required (increased from 65%)
+        ipaRetries: generationMeta?.ipaRetries || 3, // 3 retry attempts (increased from 2)
         ipaBlocking: generationMeta?.ipaBlocking || true // Block if IPA fails
       });
           
