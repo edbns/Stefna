@@ -153,27 +153,29 @@ class SimpleGenerationService {
   }
 
   /**
-   * Poll for generation completion
+   * Poll for generation completion with intelligent detection
    */
   private async pollForCompletion(runId: string, mode: GenerationMode): Promise<SimpleGenerationResult> {
-    const maxAttempts = 60; // 5 minutes with 5-second intervals
+    const maxAttempts = 72; // 6 minutes with 5-second intervals (increased for longer generations)
     const pollInterval = 5000; // 5 seconds
+    const startTime = Date.now()
     
-    console.log(`🔄 [SimpleGeneration] Starting polling for runId: ${runId}`);
+    console.log(`🔄 [SimpleGeneration] Starting intelligent polling for runId: ${runId}`);
     
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        console.log(`📡 [SimpleGeneration] Polling attempt ${attempt}/${maxAttempts} for runId: ${runId}`);
+        const elapsed = Date.now() - startTime
+        console.log(`📡 [SimpleGeneration] Polling attempt ${attempt}/${maxAttempts} (${Math.round(elapsed/1000)}s elapsed) for runId: ${runId}`);
         
         const statusResult = await this.checkStatus(runId, mode);
         
         if (statusResult.status === 'completed') {
-          console.log(`✅ [SimpleGeneration] Generation completed after ${attempt} attempts`);
+          console.log(`✅ [SimpleGeneration] Generation completed after ${attempt} attempts (${Math.round(elapsed/1000)}s total)`);
           return statusResult;
         }
         
         if (statusResult.status === 'failed') {
-          console.log(`❌ [SimpleGeneration] Generation failed after ${attempt} attempts`);
+          console.log(`❌ [SimpleGeneration] Generation failed after ${attempt} attempts (${Math.round(elapsed/1000)}s total)`);
           return statusResult;
         }
         
@@ -193,7 +195,8 @@ class SimpleGenerationService {
     }
     
     // Timeout reached
-    console.log(`⏰ [SimpleGeneration] Polling timeout reached for runId: ${runId}`);
+    const totalElapsed = Date.now() - startTime
+    console.log(`⏰ [SimpleGeneration] Polling timeout reached for runId: ${runId} after ${Math.round(totalElapsed/1000)}s`);
     return {
       success: false,
       status: 'failed',
@@ -271,13 +274,12 @@ class SimpleGenerationService {
   }
 
   /**
-   * Check generation status (for polling)
+   * Check generation status with improved completion detection
    */
   async checkStatus(jobId: string, mode: GenerationMode): Promise<SimpleGenerationResult> {
     try {
       // For unified generation, we need to check getUserMedia to see if the generation completed
-      // The unified function doesn't have a status endpoint, so we check user media instead
-      const response = await authenticatedFetch('/.netlify/functions/getUserMedia?userId=current-user&limit=10', {
+      const response = await authenticatedFetch('/.netlify/functions/getUserMedia?userId=current-user&limit=20', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -288,38 +290,40 @@ class SimpleGenerationService {
 
       const result = await response.json();
       
-      // Look for media with matching runId or recent timestamp
+      // Look for media with matching runId or created after generation started
+      const generationStartTime = this.getGenerationStartTime(jobId);
       const recentMedia = result.items?.filter((item: any) => {
-        // First try to match by runId if available
+        // First try to match by exact runId
         if (item.runId && item.runId === jobId) {
-          console.log(`🎯 [SimpleGeneration] Found media with matching runId:`, item.runId);
+          console.log(`🎯 [SimpleGeneration] Found media with exact runId match:`, item.runId);
           return true;
         }
         
-        // Fallback: Check if this media was created recently (within last 10 minutes)
+        // Fallback: Check if this media was created after generation started
         const createdAt = new Date(item.createdAt);
-        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-        const isRecent = createdAt > tenMinutesAgo;
+        const isAfterGenerationStart = createdAt > generationStartTime;
         
-        if (isRecent) {
-          console.log(`⏰ [SimpleGeneration] Found recent media by timestamp:`, {
+        if (isAfterGenerationStart) {
+          console.log(`⏰ [SimpleGeneration] Found media created after generation start:`, {
             id: item.id,
             createdAt: item.createdAt,
-            runId: item.runId
+            runId: item.runId,
+            generationStart: generationStartTime
           });
         }
         
-        return isRecent;
+        return isAfterGenerationStart;
       });
 
       if (recentMedia && recentMedia.length > 0) {
         // Found recent media, assume generation completed
         const latestMedia = recentMedia[0];
-        console.log(`✅ [SimpleGeneration] Found recent media:`, {
+        console.log(`✅ [SimpleGeneration] Generation completed! Found media:`, {
           id: latestMedia.id,
           createdAt: latestMedia.createdAt,
           finalUrl: latestMedia.finalUrl,
-          runId: jobId
+          runId: jobId,
+          mode: mode
         });
         return {
           success: true,
@@ -335,7 +339,7 @@ class SimpleGenerationService {
       }
 
       // No recent media found, still processing
-      console.log(`⏳ [SimpleGeneration] No recent media found, still processing...`);
+      console.log(`⏳ [SimpleGeneration] No completion detected, still processing... (runId: ${jobId})`);
       return {
         success: true,
         jobId: jobId,
@@ -355,6 +359,23 @@ class SimpleGenerationService {
         type: mode
       };
     }
+  }
+
+  /**
+   * Get generation start time for a given runId
+   */
+  private getGenerationStartTime(runId: string): Date {
+    // Extract timestamp from runId (assuming runId contains timestamp)
+    // If runId format is: timestamp_random, extract the timestamp part
+    const timestampPart = runId.split('_')[0];
+    const timestamp = parseInt(timestampPart, 10);
+    
+    if (!isNaN(timestamp)) {
+      return new Date(timestamp);
+    }
+    
+    // Fallback: use current time minus 15 minutes (generation should have started recently)
+    return new Date(Date.now() - 15 * 60 * 1000);
   }
 }
 
