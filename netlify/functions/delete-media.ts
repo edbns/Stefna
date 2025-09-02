@@ -53,12 +53,15 @@ export const handler: Handler = async (event) => {
 
     // Try Neo Glitch Media first (CUID format)
     try {
-      deletedMedia = await q(`
+      const result = await q(`
         DELETE FROM neo_glitch_media 
         WHERE id = $1 AND user_id = $2
         RETURNING id
       `, [mediaId, userId]);
-      deletedFromTable = 'neoGlitchMedia';
+      if (result && result.length > 0) {
+        deletedMedia = result;
+        deletedFromTable = 'neoGlitchMedia';
+      }
     } catch (error: any) {
       if (error.code !== 'P2025') { // Not "Record not found"
         console.log('⚠️ [delete-media] Neo Glitch delete failed:', error.message);
@@ -68,12 +71,15 @@ export const handler: Handler = async (event) => {
     // Try Custom Prompt Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await q(`
+        const result = await q(`
           DELETE FROM custom_prompt_media 
           WHERE id = $1 AND user_id = $2
           RETURNING id
         `, [mediaId, userId]);
-        deletedFromTable = 'customPromptMedia';
+        if (result && result.length > 0) {
+          deletedMedia = result;
+          deletedFromTable = 'customPromptMedia';
+        }
       } catch (error: any) {
         if (error.code !== 'P2025') {
           console.log('⚠️ [delete-media] Custom Prompt delete failed:', error.message);
@@ -84,12 +90,15 @@ export const handler: Handler = async (event) => {
     // Try Emotion Mask Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await q(`
+        const result = await q(`
           DELETE FROM emotion_mask_media 
           WHERE id = $1 AND user_id = $2
           RETURNING id
         `, [mediaId, userId]);
-        deletedFromTable = 'emotionMaskMedia';
+        if (result && result.length > 0) {
+          deletedMedia = result;
+          deletedFromTable = 'emotionMaskMedia';
+        }
       } catch (error: any) {
         if (error.code !== 'P2025') {
           console.log('⚠️ [delete-media] Emotion Mask delete failed:', error.message);
@@ -100,12 +109,15 @@ export const handler: Handler = async (event) => {
     // Try Ghibli Reaction Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await q(`
+        const result = await q(`
           DELETE FROM ghibli_reaction_media 
           WHERE id = $1 AND user_id = $2
           RETURNING id
         `, [mediaId, userId]);
-        deletedFromTable = 'ghibliReactionMedia';
+        if (result && result.length > 0) {
+          deletedMedia = result;
+          deletedFromTable = 'ghibliReactionMedia';
+        }
       } catch (error: any) {
         if (error.code !== 'P2025') {
           console.log('⚠️ [delete-media] Ghibli Reaction delete failed:', error.message);
@@ -116,12 +128,15 @@ export const handler: Handler = async (event) => {
     // Try Presets Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await q(`
+        const result = await q(`
           DELETE FROM presets_media 
           WHERE id = $1 AND user_id = $2
           RETURNING id
         `, [mediaId, userId]);
-        deletedFromTable = 'presetsMedia';
+        if (result && result.length > 0) {
+          deletedMedia = result;
+          deletedFromTable = 'presetsMedia';
+        }
       } catch (error: any) {
         if (error.code !== 'P2025') {
           console.log('⚠️ [delete-media] Presets delete failed:', error.message);
@@ -132,12 +147,15 @@ export const handler: Handler = async (event) => {
     // Try Story Media
     if (!deletedMedia) {
       try {
-        deletedMedia = await q(`
+        const result = await q(`
           DELETE FROM story 
           WHERE id = $1 AND user_id = $2
           RETURNING id
         `, [mediaId, userId]);
-        deletedFromTable = 'story';
+        if (result && result.length > 0) {
+          deletedMedia = result;
+          deletedFromTable = 'story';
+        }
       } catch (error: any) {
         if (error.code !== 'P2025') {
           console.log('⚠️ [delete-media] Story delete failed:', error.message);
