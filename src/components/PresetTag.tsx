@@ -51,12 +51,13 @@ const PresetTag: React.FC<PresetTagProps> = ({
       console.log('🔍 [PresetTag] Using item for mapping:', {
         itemPresetKey: item.presetKey,
         itemMetadataPresetKey: item.metadata?.presetKey,
+        itemPreset: item.preset,
         itemType: item.type,
         itemMetadataType: item.metadata?.presetType
       });
       
       // Use metadata.presetKey if item.presetKey is undefined
-      const effectivePresetKey = item.presetKey || item.metadata?.presetKey;
+      const effectivePresetKey = item.presetKey || item.metadata?.presetKey || item.preset;
       const effectiveType = item.type || item.metadata?.presetType;
       
       const mapping = mapPresetToDisplay({ 

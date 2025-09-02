@@ -16,7 +16,7 @@ export interface PresetMapping {
 export function mapPresetToDisplay(item: any): PresetMapping {
   // Handle both direct properties and metadata properties
   const type = item.type || item.metadata?.presetType || item.mediaType;
-  const presetKey = item.presetKey || item.metadata?.presetKey;
+  const presetKey = item.presetKey || item.metadata?.presetKey || item.preset;
   
   console.log('🔍 [PresetMapping] Input:', { 
     itemType: item.type, 
@@ -24,6 +24,7 @@ export function mapPresetToDisplay(item: any): PresetMapping {
     itemMediaType: item.mediaType,
     itemPresetKey: item.presetKey,
     itemMetadataPresetKey: item.metadata?.presetKey,
+    itemPreset: item.preset,
     resolvedType: type,
     resolvedPresetKey: presetKey
   });

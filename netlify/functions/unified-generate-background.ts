@@ -651,7 +651,12 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
   
   // Try Stability.ai with 3-tier fallback: Ultra → Core → 35
   if (STABILITY_API_KEY) {
-    const tiers = ["ultra", "core", "35"] as const; // Updated to use Ultra, Core, and 35
+    // For Neo Glitch, skip Core tier due to poor style fidelity
+    const isNeoGlitch = params.mode === 'neo_glitch';
+    const tiers = isNeoGlitch ? ["ultra", "35"] as const : ["ultra", "core", "35"] as const;
+    
+    console.log(`🎯 [Background] Using Stability tiers for ${params.mode}:`, tiers);
+    
     let lastError = null;
 
     for (const tier of tiers) {
