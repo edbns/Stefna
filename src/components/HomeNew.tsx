@@ -53,7 +53,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
     return (
       <MasonryMediaGrid
         media={feed}
-        columns={4}
+        columns={3}
         onMediaClick={handleMediaClick}
         // onRemix removed - no more remix functionality
         showActions={true}
@@ -66,7 +66,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
     console.error('🚨 MasonryMediaGrid failed, using fallback:', error)
     // Safe fallback - simple grid without fancy components
     return (
-      <div className="grid grid-cols-4 gap-1 pb-24 w-full">
+      <div className="grid grid-cols-3 gap-1 pb-24 w-full">
         {feed.slice(0, 16).map((item, index) => (
           <div 
             key={item.id} 
@@ -3396,7 +3396,7 @@ const HomeNew: React.FC = () => {
           {isLoadingFeed ? (
             <div className="w-full">
               {/* 🎨 Engaging skeleton loading inspired by Sora's aesthetic */}
-              <SkeletonGrid columns={4} rows={6} />
+              <SkeletonGrid columns={3} rows={6} />
             </div>
           ) : feed.length > 0 ? (
             <>

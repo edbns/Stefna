@@ -34,6 +34,7 @@ interface MasonryMediaGridProps {
 
 const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   media,
+  columns,
   onMediaClick,
   onDownload,
   onShare,
@@ -74,7 +75,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
     if (media.length === 0) return []
     
     // Use the columns prop or default to 3
-    const numColumns = 3
+    const numColumns = columns || 3
     const columnArrays: UserMedia[][] = Array.from({ length: numColumns }, () => [])
     
     // Simple distribution: put each item in the shortest column
@@ -90,7 +91,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
     })
     
     return columnArrays
-  }, [media])
+  }, [media, columns])
 
   const handleAction = (action: () => void, event: React.MouseEvent) => {
     event.stopPropagation()
