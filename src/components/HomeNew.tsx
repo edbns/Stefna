@@ -1368,6 +1368,9 @@ const HomeNew: React.FC = () => {
       const { record, resultUrl } = event.detail
       console.log('🎉 Generation completed, updating UI state:', record)
       
+      // Stop all spinners
+      setNavGenerating(false)
+      
       // Check if we have a valid record
       if (!record) {
         console.warn('⚠️ No record in generation-complete event, cannot update UI')
@@ -1447,6 +1450,12 @@ const HomeNew: React.FC = () => {
         thumbUrl: thumbUrl
       })
       
+      // Stop all spinners (we don't have genId in the event)
+      setNavGenerating(false)
+      
+      // Refresh feed to show new content
+      loadFeed()
+      
       // 🧹 Clear composer state for ALL generation types (new system only)
       console.log('🧹 Clearing composer state after generation success')
       handleClearComposerState()
@@ -1461,6 +1470,9 @@ const HomeNew: React.FC = () => {
         title: 'Failed', 
         message: message || 'Try again' 
       })
+      
+      // Stop all spinners
+      setNavGenerating(false)
       
       // 🧹 Clear composer state for ALL generation types (new system only)
       console.log('🧹 Clearing composer state after generation error')
@@ -2473,11 +2485,16 @@ const HomeNew: React.FC = () => {
               return;
       } else if (result.success && result.status === 'processing') {
         console.log('🔄 [Unified] Generation accepted (202) - running in background');
-        // Stop spinners immediately
-        endGeneration(genId);
-        setNavGenerating(false);
-        // Don't refresh immediately - wait for actual completion
-        // The generation-complete event will trigger the refresh when ready
+        // DON'T stop spinners yet - keep them running until completion
+        // The generation-complete or generation-success event will stop them
+        
+        // Show processing notification
+        notifyQueue({ 
+          title: 'Processing', 
+          message: 'Your generation is being processed in the background' 
+        });
+        
+        // Don't clear composer or stop spinners - wait for completion
         return;
           } else {
         // Generation failed
