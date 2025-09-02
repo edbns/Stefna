@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { UserMedia } from '../services/userMediaService'
 import PresetTag from './PresetTag'
+import { getPresetTypeForFilter } from '../utils/presetMapping'
 
 interface FullScreenMediaViewerProps {
   isOpen: boolean
@@ -54,36 +55,6 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
       })
     }
     return 'Unknown date'
-  }
-
-  // Get the preset type for the tag
-  const getPresetType = (media: UserMedia) => {
-    // Use metadata.presetType if available (from new dedicated tables)
-    if (media.metadata?.presetType) {
-      return media.metadata.presetType
-    }
-    
-    // Fallback logic for items that might not have the presetType field
-    if (media.presetKey) {
-      if (media.presetKey.includes('ghibli') || media.presetKey.includes('ghibli_reaction')) {
-        return 'ghibli-reaction'
-      }
-      if (media.presetKey.includes('emotion') || media.presetKey.includes('emotion_mask')) {
-        return 'emotion-mask'
-      }
-      if (media.presetKey.includes('neo') || media.presetKey.includes('neo_glitch')) {
-        return 'neo-glitch'
-      }
-      if (media.presetKey.includes('preset') || media.presetKey.includes('professional')) {
-        return 'presets'
-      }
-      if (media.presetKey === 'custom' || media.presetKey === 'custom_prompt') {
-        return 'custom-prompt'
-      }
-    }
-    
-    // Default fallback
-    return 'presets'
   }
 
   return (
@@ -149,7 +120,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
           {/* Debug Info - Remove after fixing */}
           {process.env.NODE_ENV === 'development' && (
             <div className="text-white/40 text-xs bg-black/50 px-2 py-1 rounded">
-              Debug: presetKey={current.presetKey}, metadata.presetKey={current.metadata?.presetKey}, type={getPresetType(current)}
+              Debug: presetKey={current.presetKey}, metadata.presetKey={current.metadata?.presetKey}, type={getPresetTypeForFilter(current)}
             </div>
           )}
           
@@ -157,7 +128,8 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
           {(current.metadata?.presetKey || current.presetKey) && (
             <PresetTag
               presetKey={current.metadata?.presetKey || current.presetKey}
-              type={getPresetType(current)}
+              type={getPresetTypeForFilter(current)}
+              item={current}
               size="md"
               clickable={false}
             />

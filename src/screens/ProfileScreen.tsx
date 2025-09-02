@@ -676,7 +676,7 @@ const ProfileScreen: React.FC = () => {
                 userId: item.userId,
                 type: item.mediaType === 'video' ? 'video' : 'photo',
                 url: toAbsoluteCloudinaryUrl(item.finalUrl) || item.finalUrl,
-                prompt: item.prompt || 'AI Generated Content',
+                prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
                 aspectRatio: 4/3, // Default aspect ratio
                 width: 800,
                 height: 600,
@@ -686,10 +686,14 @@ const ProfileScreen: React.FC = () => {
                 remixCount: 0, // Will be updated when we implement remix counts
                 isPublic: item.isPublic || false,
                 tags: [],
+                // Add preset information for proper display
+                presetKey: item.presetKey,
                 metadata: {
                   quality: 'high',
                   generationTime: 0,
-                  modelVersion: '1.0'
+                  modelVersion: '1.0',
+                  presetKey: item.presetKey,
+                  presetType: item.type || item.mediaType
                 }
               };
             });

@@ -1405,7 +1405,7 @@ const HomeNew: React.FC = () => {
         userId: record.owner_id || record.user_id || 'current-user',
         type: 'photo', // TODO: detect video vs image
         url: resultUrl || record.secure_url || record.url,
-        prompt: record.meta?.prompt || record.prompt || 'AI Generated Content',
+                        prompt: record.meta?.prompt || record.prompt || (record.presetKey ? `Generated with ${record.presetKey}` : 'AI Generated Content'),
         aspectRatio: 4/3,
         width: record.width || 800,
         height: record.height || 600,
@@ -1599,7 +1599,7 @@ const HomeNew: React.FC = () => {
                 type: item.mediaType === 'video' ? 'video' : 'photo',
                 url: mediaUrl,
                 thumbnailUrl: mediaUrl,
-                prompt: item.prompt || 'AI Generated Content',
+                prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
                 style: undefined,
                 aspectRatio: 4/3,
                 width: 800,
@@ -1781,7 +1781,7 @@ const HomeNew: React.FC = () => {
             type: item.mediaType === 'video' ? 'video' : 'photo',
             url: mediaUrl,
             thumbnailUrl: mediaUrl, // Use same URL for thumbnail
-            prompt: item.prompt || 'AI Generated Content', // Use actual prompt or fallback
+                            prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'), // Use actual prompt or fallback
             style: undefined,
             aspectRatio: 4/3, // Default aspect ratio
             width: 800, // Default width
