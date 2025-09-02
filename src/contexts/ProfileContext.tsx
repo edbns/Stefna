@@ -4,9 +4,9 @@ import { authenticatedFetch } from '../utils/apiClient'
 
 interface ProfileData {
   id?: string
-  name: string
-  username?: string
-  avatar: string | File | null
+  name?: string // Made optional - legacy field
+  username?: string // Made optional - legacy field
+  avatar?: string | File | null // Made optional - legacy field
   shareToFeed: boolean
   // allowRemix removed
   onboarding_completed?: boolean
@@ -88,10 +88,10 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
           }
           
           const profileData = {
-            id: userData.id,
-            name: userData.name || userData.username || '',
-            username: userData.username || '',
-            avatar: userData.avatar || userData.avatar_url || '',
+            id: userData.id || userData.user?.id,
+            name: '', // Removed legacy field
+            username: '', // Removed legacy field
+            avatar: '', // Removed legacy field
             shareToFeed: shareToFeed,
             // allowRemix removed
             onboarding_completed: userData.onboarding_completed || false,

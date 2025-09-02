@@ -127,25 +127,9 @@ const ProfileScreen: React.FC = () => {
     }
   }, [])
 
-  // Fallback to localStorage when profile loading fails
-  const fallbackToLocalStorage = () => {
-    const savedProfile = localStorage.getItem('userProfile')
-    if (savedProfile) {
-      try {
-        const parsedProfile = JSON.parse(savedProfile)
-        updateProfile(parsedProfile)
-        
-        // Sync preview photo with saved avatar
-        if (parsedProfile.avatar && typeof parsedProfile.avatar === 'string') {
-          setPreviewPhoto(parsedProfile.avatar)
-        }
-      } catch (error) {
-        console.error('Failed to load profile data from localStorage:', error)
-      }
-    }
-  };
 
-  // Load profile data from database and localStorage
+
+  // Load profile data from database
   const loadProfileFromDatabase = async () => {
     try {
       const token = authService.getToken()
@@ -164,30 +148,14 @@ const ProfileScreen: React.FC = () => {
         const result = await response.json()
         console.log('✅ Profile loaded from database:', result)
         
-        // Handle new response format: { ok: true, profile: {...} }
-        const userData = result.ok && result.profile ? result.profile : result;
-        
         // Store the real user ID from the database response
-        if (userData.id) {
-          setCurrentUserId(userData.id);
-          console.log('✅ Set current user ID from profile:', userData.id);
+        if (result.user?.id) {
+          setCurrentUserId(result.user.id);
+          console.log('✅ Set current user ID from profile:', result.user.id);
         }
         
-        const profileData = {
-          name: userData.name || userData.username || '',
-          bio: userData.bio || 'AI artist exploring the boundaries of creativity 🎨',
-          avatar: userData.avatar || userData.avatar_url || ''  // Support both field names
-        }
-        
-        updateProfile(profileData)
-        
-        // Sync preview photo with loaded avatar
-        if (userData.avatar) {
-          setPreviewPhoto(userData.avatar)
-        }
-        
-        // Also update localStorage for consistency and offline access
-        localStorage.setItem('userProfile', JSON.stringify(profileData))
+        // Don't update any profile data here - we only care about user ID
+        // ShareToFeed is loaded separately in the useEffect
       } else {
         console.warn('⚠️ Failed to load profile from database, falling back to JWT token parsing')
         
@@ -201,52 +169,17 @@ const ProfileScreen: React.FC = () => {
             if (ownerId) {
               console.log('✅ Extracted user ID from JWT token:', ownerId);
               setCurrentUserId(ownerId);
-              
-              // Create a minimal profile from JWT data
-              const fallbackProfile = {
-                name: payload.name || payload.username || `user-${ownerId.slice(-6)}`,
-                bio: 'AI artist exploring the boundaries of creativity 🎨',
-                avatar: payload.avatar_url || payload.picture || ''
-              };
-              
-              updateProfile(fallbackProfile);
-              localStorage.setItem('userProfile', JSON.stringify(fallbackProfile));
-              
-              console.log('✅ Created fallback profile from JWT:', fallbackProfile);
-            } else {
-              console.warn('⚠️ JWT token missing user ID, falling back to localStorage');
-              fallbackToLocalStorage();
             }
-          } else {
-            console.warn('⚠️ No JWT token, falling back to localStorage');
-            fallbackToLocalStorage();
           }
         } catch (jwtError) {
           console.error('❌ Failed to parse JWT token:', jwtError);
-          fallbackToLocalStorage();
         }
       }
     } catch (error) {
       console.error('❌ Failed to load profile from database:', error)
-      // Fallback to localStorage on error
-      const savedProfile = localStorage.getItem('userProfile')
-      if (savedProfile) {
-        try {
-          const parsedProfile = JSON.parse(savedProfile)
-          updateProfile(parsedProfile)
-          
-          // Sync preview photo with saved avatar
-          if (parsedProfile.avatar && typeof parsedProfile.avatar === 'string') {
-            setPreviewPhoto(parsedProfile.avatar)
-          }
-        } catch (parseError) {
-          console.error('Failed to load profile data from localStorage:', parseError)
-        }
-      }
     }
   }
 
-  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null)
   const [userMedia, setUserMedia] = useState<UserMedia[]>([])
   const [draftMedia, setDraftMedia] = useState<UserMedia[]>([])
   
@@ -294,23 +227,19 @@ const ProfileScreen: React.FC = () => {
           const r = await authenticatedFetch('/.netlify/functions/user-settings', { method: 'GET' })
           if (r.ok) {
             const s = await r.json()
-            updateProfile({ shareToFeed: !!s.shareToFeed })
+            console.log('📊 [ShareToFeed] Loaded from database:', s.settings?.share_to_feed);
+            // Only update shareToFeed, don't touch other profile fields
+            updateProfile({ shareToFeed: !!s.settings?.share_to_feed })
+          } else {
+            console.log('⚠️ [ShareToFeed] Failed to load settings, defaulting to false');
+            updateProfile({ shareToFeed: false })
           }
         } catch (e) {
-          // ignore, fallback to defaults/localStorage
+          console.error('❌ [ShareToFeed] Error loading settings:', e);
+          // Default to false for privacy
+          updateProfile({ shareToFeed: false })
         }
       })()
-    } else {
-      // Fallback to localStorage for non-authenticated users
-      const savedProfile = localStorage.getItem('userProfile')
-      if (savedProfile) {
-        try {
-          const parsedProfile = JSON.parse(savedProfile)
-          updateProfile(parsedProfile)
-        } catch (error) {
-          console.error('Failed to load profile data from localStorage:', error)
-        }
-      }
     }
   }, [isAuthenticated])
 
@@ -923,23 +852,12 @@ const ProfileScreen: React.FC = () => {
 
 
 
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setEditingProfileData(prev => ({ ...prev, avatar: file }))
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setPreviewPhoto(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
+
 
 
 
   const handleDeleteAccount = () => {
     // Clear all user data
-    localStorage.removeItem('userProfile')
     localStorage.removeItem('token_usage')
     localStorage.removeItem('token_generations')
     localStorage.removeItem('referral_codes')
@@ -952,7 +870,7 @@ const ProfileScreen: React.FC = () => {
     
     // Redirect to home page after deletion
     setTimeout(() => {
-    navigate('/')
+      navigate('/')
     }, 1000)
   }
 
@@ -1934,69 +1852,7 @@ const ProfileScreen: React.FC = () => {
         }}
       />
 
-      {showDeleteAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 
-          <div className="relative bg-[#222222] border border-white/20 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            {/* Close Button */}
-
-
-            {/* Photo Upload */}
-            <div className="mb-6">
-              <div className="flex items-center justify-center">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
-                    {previewPhoto ? (
-                      <img src={previewPhoto || undefined} alt="Profile preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <User size={32} className="text-white/40" />
-                    )}
-                  </div>
-                  <label className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full flex items-center justify-center cursor-pointer hover:bg-white/90 transition-colors">
-                    <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Sharing Preferences - Compact Row Layout */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between space-x-6">
-                <div className="flex items-center justify-between flex-1">
-                  <label className="text-sm font-medium text-white">Share to Feed</label>
-                  <button
-                    onClick={async () => {
-                      const newValue = !profileData.shareToFeed;
-                      console.log('🔄 [Share Toggle] Toggling to:', newValue);
-                      await updateUserSettings(newValue);
-                      updateProfile({ shareToFeed: newValue });
-                    }}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      profileData.shareToFeed ? 'bg-white' : 'bg-white/20'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${
-                        profileData.shareToFeed ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-
-          </div>
-        </div>
-      )}
 
       {/* Delete Account Modal */}
       {showDeleteAccountModal && (
