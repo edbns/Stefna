@@ -4,7 +4,7 @@
 // 🎯 FEATURES:
 // - Long-running generations (up to 15 minutes)
 // - Credit reservation and finalization
-// - 3-tier Stability.ai fallback (Ultra → Core → SD3)
+// - 3-tier Stability.ai fallback (Ultra → Core → 35)
 // - Fal.ai fallback for all modes
 // - Comprehensive error handling and logging
 // - Timeout protection
@@ -140,6 +140,7 @@ async function makeStabilityRequest(tier: string, params: any, apiKey: string): 
     ultra: "https://api.stability.ai/v2beta/stable-image/generate/ultra",
     core: "https://api.stability.ai/v2beta/stable-image/generate/core", 
     sd3: "https://api.stability.ai/v2beta/stable-image/generate/sd3",
+    "35": "https://api.stability.ai/v2beta/stable-image/generate/sd3-5", // SD3.5 model
   };
 
   const form = new FormData();
@@ -620,9 +621,9 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
 
   const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
   
-  // Try Stability.ai with 3-tier fallback: Ultra → Core → SD3
+  // Try Stability.ai with 3-tier fallback: Ultra → Core → 35
   if (STABILITY_API_KEY) {
-    const tiers = ["core", "sd3", "ultra"] as const;
+    const tiers = ["ultra", "core", "35"] as const; // Updated to use Ultra, Core, and 35
     let lastError = null;
 
     for (const tier of tiers) {
@@ -974,9 +975,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
   try {
     let result: UnifiedGenerationResponse;
 
-    // Fal.ai as primary provider, Stability.ai as fallback
-    console.log('🚀 [Background] Starting generation with Fal.ai as primary provider');
-    
+    // Provider selection based on mode
     // Build generation params per mode
     const generationParams = {
       prompt: request.mode === 'ghibli_reaction'
@@ -989,28 +988,55 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
       steps: 30
     };
 
-    try {
-      // Try Fal.ai first (primary provider for all modes)
-      console.log('🎨 [Background] Attempting generation with Fal.ai');
-      result = await generateWithFal(request.mode, generationParams);
-      console.log('✅ [Background] Fal.ai generation successful');
-    } catch (falError) {
-      console.warn('⚠️ [Background] Fal.ai failed, falling back to Stability.ai:', falError);
-      
-      // Fallback to Stability.ai (not available for video/story_time)
-      if (request.mode === 'story_time') {
-        console.error('❌ [Background] Story Time requires Fal.ai (video generation)');
-        throw new Error(`Video generation failed: ${falError}`);
-      }
+    if (request.mode === 'neo_glitch') {
+      // Neo Tokyo Glitch: Stability.ai as primary, Fal.ai as fallback
+      console.log('🚀 [Background] Starting generation with Stability.ai as primary provider for Neo Tokyo Glitch');
       
       try {
-        // Try Stability.ai as fallback for image modes
-        console.log('🎨 [Background] Attempting fallback with Stability.ai');
+        // Try Stability.ai first (primary for Neo Tokyo Glitch)
+        console.log('🎨 [Background] Attempting generation with Stability.ai');
         result = await generateWithStability(generationParams);
-        console.log('✅ [Background] Stability.ai fallback successful');
+        console.log('✅ [Background] Stability.ai generation successful');
       } catch (stabilityError) {
-        console.error('❌ [Background] Both Fal.ai and Stability.ai failed');
-        throw new Error(`All providers failed. Fal: ${falError}. Stability: ${stabilityError}`);
+        console.warn('⚠️ [Background] Stability.ai failed, falling back to Fal.ai:', stabilityError);
+        
+        try {
+          // Fallback to Fal.ai
+          console.log('🎨 [Background] Attempting fallback with Fal.ai');
+          result = await generateWithFal(request.mode, generationParams);
+          console.log('✅ [Background] Fal.ai fallback successful');
+        } catch (falError) {
+          console.error('❌ [Background] Both Stability.ai and Fal.ai failed');
+          throw new Error(`All providers failed. Stability: ${stabilityError}. Fal: ${falError}`);
+        }
+      }
+    } else {
+      // All other modes: Fal.ai as primary provider, Stability.ai as fallback
+      console.log('🚀 [Background] Starting generation with Fal.ai as primary provider');
+      
+      try {
+        // Try Fal.ai first (primary provider for all other modes)
+        console.log('🎨 [Background] Attempting generation with Fal.ai');
+        result = await generateWithFal(request.mode, generationParams);
+        console.log('✅ [Background] Fal.ai generation successful');
+      } catch (falError) {
+        console.warn('⚠️ [Background] Fal.ai failed, falling back to Stability.ai:', falError);
+        
+        // Fallback to Stability.ai (not available for video/story_time)
+        if (request.mode === 'story_time') {
+          console.error('❌ [Background] Story Time requires Fal.ai (video generation)');
+          throw new Error(`Video generation failed: ${falError}`);
+        }
+        
+        try {
+          // Try Stability.ai as fallback for image modes
+          console.log('🎨 [Background] Attempting fallback with Stability.ai');
+          result = await generateWithStability(generationParams);
+          console.log('✅ [Background] Stability.ai fallback successful');
+        } catch (stabilityError) {
+          console.error('❌ [Background] Both Fal.ai and Stability.ai failed');
+          throw new Error(`All providers failed. Fal: ${falError}. Stability: ${stabilityError}`);
+        }
       }
     }
 
