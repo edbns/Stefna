@@ -813,23 +813,53 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
   try {
     let result: UnifiedGenerationResponse;
 
-    // Disable Fal across modes; use Stability for all image modes
+    // Re-enable Fal.ai with proper fallback to Stability
+    // Per memory: Primary provider is Stability.ai, with fallback to Fal.ai
     if (request.mode === 'story_time') {
-      throw new Error('Video generation temporarily disabled');
+      // Video generation only supported by Fal.ai
+      console.log('🎬 [Background] Story Time mode - using Fal.ai for video generation');
+      result = await generateWithFal(request.mode, {
+        prompt: request.prompt,
+        sourceAssetId: request.sourceAssetId,
+        additionalImages: request.additionalImages
+      });
+    } else {
+      // For image generation modes: Try Stability first, fallback to Fal.ai
+      console.log('🎨 [Background] Image generation mode - trying Stability.ai first');
+      
+      // Build Stability params per mode
+      const stabilityParams = {
+        prompt: request.mode === 'ghibli_reaction'
+          ? `${request.prompt}, subtle ghibli-inspired lighting, soft dreamy atmosphere, gentle anime influence, preserve original composition`
+          : request.prompt,
+        sourceAssetId: request.sourceAssetId,
+        image_strength: request.mode === 'ghibli_reaction' ? 0.35 : 0.7,
+        guidance_scale: request.mode === 'ghibli_reaction' ? 6.0 : 7.5,
+        steps: 30
+      };
+
+      try {
+        // Try Stability.ai first (primary provider)
+        result = await generateWithStability(stabilityParams);
+        console.log('✅ [Background] Stability.ai generation successful');
+      } catch (stabilityError) {
+        console.warn('⚠️ [Background] Stability.ai failed, falling back to Fal.ai:', stabilityError);
+        
+        // Fallback to Fal.ai
+        try {
+          result = await generateWithFal(request.mode, {
+            prompt: stabilityParams.prompt,
+            sourceAssetId: request.sourceAssetId,
+            image_strength: stabilityParams.image_strength,
+            guidance_scale: stabilityParams.guidance_scale
+          });
+          console.log('✅ [Background] Fal.ai fallback successful');
+        } catch (falError) {
+          console.error('❌ [Background] Both Stability and Fal.ai failed');
+          throw new Error(`All providers failed. Stability: ${stabilityError}. Fal: ${falError}`);
+        }
+      }
     }
-
-    // Build Stability params per mode
-    const stabilityParams = {
-      prompt: request.mode === 'ghibli_reaction'
-        ? `${request.prompt}, subtle ghibli-inspired lighting, soft dreamy atmosphere, gentle anime influence, preserve original composition`
-        : request.prompt,
-      sourceAssetId: request.sourceAssetId,
-      image_strength: request.mode === 'ghibli_reaction' ? 0.35 : 0.7,
-      guidance_scale: request.mode === 'ghibli_reaction' ? 6.0 : 7.5,
-      steps: 30
-    };
-
-    result = await generateWithStability(stabilityParams);
 
         // Save result to database based on mode
     await saveGenerationResult(request, result);
