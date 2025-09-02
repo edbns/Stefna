@@ -60,55 +60,52 @@ export const handler: Handler = async (event) => {
       offset
     });
 
-    // Fetch user's media using raw SQL - from all new dedicated tables
-    const [ghibliReactionMedia, emotionMaskMedia, presetsMedia, customPromptMedia, neoGlitchMedia] = await Promise.all([
-      q(`
-        SELECT id, user_id, image_url, prompt, preset, created_at
-        FROM ghibli_reaction_media 
-        WHERE user_id = $1 
-        ORDER BY created_at DESC 
-        LIMIT $2 OFFSET $3
-      `, [userId, limit, offset]),
-      q(`
-        SELECT id, user_id, image_url, prompt, preset, created_at
-        FROM emotion_mask_media 
-        WHERE user_id = $1 
-        ORDER BY created_at DESC 
-        LIMIT $2 OFFSET $3
-      `, [userId, limit, offset]),
-      q(`
-        SELECT id, user_id, image_url, prompt, preset, created_at
-        FROM presets_media 
-        WHERE user_id = $1 
-        ORDER BY created_at DESC 
-        LIMIT $2 OFFSET $3
-      `, [userId, limit, offset]),
-      q(`
-        SELECT id, user_id, image_url, prompt, preset, created_at
-        FROM custom_prompt_media 
-        WHERE user_id = $1 
-        ORDER BY created_at DESC 
-        LIMIT $2 OFFSET $3
-      `, [userId, limit, offset]),
-      q(`
-        SELECT id, user_id, image_url, prompt, preset, created_at
-        FROM neo_glitch_media 
-        WHERE user_id = $1 
-        ORDER BY created_at DESC 
-        LIMIT $2 OFFSET $3
-      `, [userId, limit, offset])
-    ]);
+    // Get total count for accurate pagination
+    const countSql = `
+      SELECT COUNT(*) as total FROM (
+        SELECT id FROM ghibli_reaction_media WHERE user_id = $1
+        UNION ALL
+        SELECT id FROM emotion_mask_media WHERE user_id = $1
+        UNION ALL
+        SELECT id FROM presets_media WHERE user_id = $1
+        UNION ALL
+        SELECT id FROM custom_prompt_media WHERE user_id = $1
+        UNION ALL
+        SELECT id FROM neo_glitch_media WHERE user_id = $1
+      ) as combined_media
+    `;
+
+    // Get total count first
+    const totalCountResult = await q(countSql, [userId]);
+    const totalCount = totalCountResult[0]?.total || 0;
+    console.log('🔍 [getUserMedia] Total items available:', totalCount);
+
+    // Unified query with proper pagination
+    const unifiedSql = `
+      SELECT * FROM (
+        SELECT id, user_id, image_url, prompt, preset, created_at, 'ghibli-reaction' as media_type FROM ghibli_reaction_media WHERE user_id = $1
+        UNION ALL
+        SELECT id, user_id, image_url, prompt, preset, created_at, 'emotion-mask' as media_type FROM emotion_mask_media WHERE user_id = $1
+        UNION ALL
+        SELECT id, user_id, image_url, prompt, preset, created_at, 'presets' as media_type FROM presets_media WHERE user_id = $1
+        UNION ALL
+        SELECT id, user_id, image_url, prompt, preset, created_at, 'custom-prompt' as media_type FROM custom_prompt_media WHERE user_id = $1
+        UNION ALL
+        SELECT id, user_id, image_url, prompt, preset, created_at, 'neo-glitch' as media_type FROM neo_glitch_media WHERE user_id = $1
+      ) as combined_media
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const allMediaItems = await q(unifiedSql, [userId, limit, offset]);
 
     console.log('✅ [getUserMedia] Retrieved user media:', {
-      ghibliReaction: ghibliReactionMedia.length,
-      emotionMask: emotionMaskMedia.length,
-      presets: presetsMedia.length,
-      customPrompt: customPromptMedia.length,
-      neoGlitch: neoGlitchMedia.length
+      totalItems: allMediaItems.length,
+      totalAvailable: totalCount
     });
 
-    // Transform Ghibli Reaction media
-    const ghibliItems = ghibliReactionMedia.map(item => ({
+    // Transform unified media items
+    const transformedItems = allMediaItems.map(item => ({
       id: item.id,
       userId: item.user_id,
       finalUrl: item.image_url,
@@ -117,123 +114,22 @@ export const handler: Handler = async (event) => {
       presetKey: item.preset,
       status: 'ready',
       isPublic: false,
-      
       createdAt: item.created_at,
-      type: 'ghibli-reaction',
+      type: item.media_type,
       metadata: {
         presetKey: item.preset,
-        presetType: 'ghibli-reaction',
+        presetType: item.media_type,
         quality: 'high',
         generationTime: 0,
         modelVersion: '1.0'
       }
     }));
-
-    // Transform Emotion Mask media
-    const emotionMaskItems = emotionMaskMedia.map(item => ({
-      id: item.id,
-      userId: item.user_id,
-      finalUrl: item.image_url,
-      mediaType: 'image',
-      prompt: item.prompt,
-      presetKey: item.preset,
-      status: 'ready',
-      isPublic: false,
-      
-      createdAt: item.created_at,
-      type: 'emotion-mask',
-      metadata: {
-        presetKey: item.preset,
-        presetType: 'emotion-mask',
-        quality: 'high',
-        generationTime: 0,
-        modelVersion: '1.0'
-      }
-    }));
-
-    // Transform Presets media
-    const presetsItems = presetsMedia.map(item => ({
-      id: item.id,
-      userId: item.user_id,
-      finalUrl: item.image_url,
-      mediaType: 'image',
-      prompt: item.prompt,
-      presetKey: item.preset,
-      status: 'ready',
-      isPublic: false,
-      
-      createdAt: item.created_at,
-      type: 'presets',
-      metadata: {
-        presetKey: item.preset,
-        presetType: 'presets',
-        quality: 'high',
-        generationTime: 0,
-        modelVersion: '1.0'
-      }
-    }));
-
-    // Transform Custom Prompt media
-    const customPromptItems = customPromptMedia.map(item => ({
-      id: item.id,
-      userId: item.user_id,
-      finalUrl: item.image_url,
-      mediaType: 'image',
-      prompt: item.prompt,
-      presetKey: item.preset,
-      status: 'ready',
-      isPublic: false,
-      
-      createdAt: item.created_at,
-      type: 'custom-prompt',
-      metadata: {
-        presetKey: item.preset,
-        presetType: 'custom-prompt',
-        quality: 'high',
-        generationTime: 0,
-        modelVersion: '1.0'
-      }
-    }));
-
-    // Transform NeoGlitch media
-    const neoGlitchItems = neoGlitchMedia.map(item => ({
-      id: item.id,
-      userId: item.user_id,
-      finalUrl: item.image_url,
-      mediaType: 'image',
-      prompt: item.prompt,
-      presetKey: item.preset,
-      status: 'ready',
-      isPublic: false, // NeoGlitch media is always private by default
-       // NeoGlitch doesn't support remixing
-      createdAt: item.created_at,
-      type: 'neo-glitch',
-      // Include metadata for preset information
-      metadata: {
-        presetKey: item.preset,
-        presetType: 'neo-glitch',  // ✅ Neo Glitch specific type
-        quality: 'high',
-        generationTime: 0,
-        modelVersion: '1.0'
-      }
-    }));
-
-    // Combine and sort by creation date
-    const allMediaItems = [
-      ...ghibliItems, 
-      ...emotionMaskItems, 
-      ...presetsItems, 
-      ...customPromptItems, 
-      ...neoGlitchItems
-    ]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, limit);
 
     return json({
       success: true,
-      items: allMediaItems,
-      total: allMediaItems.length,
-      hasMore: allMediaItems.length === limit
+      items: transformedItems,
+      total: totalCount,
+      hasMore: offset + limit < totalCount
     });
 
   } catch (error: any) {
