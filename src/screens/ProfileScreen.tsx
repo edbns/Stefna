@@ -458,14 +458,10 @@ const ProfileScreen: React.FC = () => {
     try {
       // Delete all media items
       const deletePromises = userMedia.map(async (media) => {
-        const token = authService.getToken()
-        if (!token) throw new Error('Authentication required')
-        
-        const response = await fetch('/.netlify/functions/delete-media', {
+        const response = await authenticatedFetch('/.netlify/functions/delete-media', {
           method: 'DELETE',
           headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ 
             mediaId: media.id,
@@ -570,14 +566,10 @@ const ProfileScreen: React.FC = () => {
     try {
       // Delete each selected media item
       const deletePromises = Array.from(selectedMediaIds).map(async (mediaId) => {
-        const token = authService.getToken()
-        if (!token) throw new Error('Authentication required')
-        
-        const response = await fetch('/.netlify/functions/delete-media', {
+        const response = await authenticatedFetch('/.netlify/functions/delete-media', {
           method: 'DELETE',
           headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ 
             mediaId,

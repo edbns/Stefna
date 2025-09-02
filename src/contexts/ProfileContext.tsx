@@ -70,7 +70,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
           const userData = await response.json()
           console.log('✅ Loaded profile from database:', userData)
           
-          // Also load user settings to get the latest shareToFeed preference
+          // Load user settings to get the latest shareToFeed preference from database
           let shareToFeed = false // 🔒 PRIVACY FIRST: Default to private so users control their sharing
           try {
             const settingsResponse = await authenticatedFetch('/.netlify/functions/user-settings', {
@@ -80,11 +80,11 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
               const settings = await settingsResponse.json()
               console.log('🔍 [ProfileContext] Raw user settings response:', settings)
               shareToFeed = settings.settings?.share_to_feed ?? false
-              console.log('✅ Loaded user settings share_to_feed:', shareToFeed)
+              console.log('✅ Loaded user settings share_to_feed from database:', shareToFeed)
             }
           } catch (settingsError) {
-            console.warn('⚠️ Failed to load user settings, using profile data:', settingsError)
-            shareToFeed = userData.share_to_feed !== undefined ? userData.share_to_feed : false
+            console.warn('⚠️ Failed to load user settings from database:', settingsError)
+            shareToFeed = false // Always default to private if database fails
           }
           
           const profileData = {
@@ -100,8 +100,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
           
           setProfileData(profileData)
           
-          // Also update localStorage for consistency and offline access
-          localStorage.setItem('userProfile', JSON.stringify(profileData))
+          // No localStorage for settings - database is the single source of truth
           return
         } else {
           console.warn('⚠️ Database profile load failed:', response.status, response.statusText)
@@ -110,46 +109,28 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
         console.log('🔐 Skipping database profile load - no valid token or not authenticated')
       }
       
-      // Fallback to localStorage
-      const savedProfile = localStorage.getItem('userProfile')
-      if (savedProfile) {
-        const parsedProfile = JSON.parse(savedProfile)
-        setProfileData(prev => ({ ...prev, ...parsedProfile }))
-        console.log('✅ Loaded profile from localStorage:', parsedProfile)
-      }
+      // No localStorage fallback for settings - database only
+      console.log('⚠️ Not authenticated or no token - using default profile settings')
     } catch (error) {
       console.error('❌ Failed to load profile:', error)
       
-      // Fallback to localStorage on error
-      const savedProfile = localStorage.getItem('userProfile')
-      if (savedProfile) {
-        try {
-          const parsedProfile = JSON.parse(savedProfile)
-          setProfileData(prev => ({ ...prev, ...parsedProfile }))
-        } catch (parseError) {
-          console.error('Failed to parse localStorage profile:', parseError)
-        }
-      }
+      // No localStorage fallback - database is single source of truth
+      console.log('⚠️ Failed to load profile from database - using defaults')
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Update profile data and sync to localStorage
+  // Update profile data (database updates handled by ProfileScreen)
   const updateProfile = (updates: Partial<ProfileData>) => {
     setProfileData(prev => {
       const updated = { ...prev, ...updates }
       
-      // Sync to localStorage
-      localStorage.setItem('userProfile', JSON.stringify(updated))
-      
       console.log('🔄 Profile updated:', updates)
       
-      // If shareToFeed is being updated, ensure it's also saved to the database
+      // If shareToFeed is being updated, it should be persisted by ProfileScreen
       if (updates.shareToFeed !== undefined) {
-        console.log('💾 shareToFeed updated, ensuring database persistence...')
-        // Don't reload profile immediately to avoid race conditions
-        // The ProfileScreen will handle the database update via updateUserSettings
+        console.log('💾 shareToFeed updated - ProfileScreen should persist to database')
       }
       
       return updated
@@ -168,17 +149,8 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
       if (authService.isAuthenticated() && authService.getToken()) {
         loadProfile()
       } else {
-        // If not authenticated, just load from localStorage
-        const savedProfile = localStorage.getItem('userProfile')
-        if (savedProfile) {
-          try {
-            const parsedProfile = JSON.parse(savedProfile)
-            setProfileData(prev => ({ ...prev, ...parsedProfile }))
-            console.log('✅ Loaded profile from localStorage (not authenticated):', parsedProfile)
-          } catch (parseError) {
-            console.error('Failed to parse localStorage profile:', parseError)
-          }
-        }
+        // If not authenticated, use default profile settings
+        console.log('⚠️ Not authenticated - using default profile settings')
       }
     }
 
@@ -196,7 +168,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
       } else {
         // Reset to default when logged out
         setProfileData(defaultProfileData)
-        localStorage.removeItem('userProfile')
+        // No localStorage to clean - database is single source of truth
       }
     }
 

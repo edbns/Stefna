@@ -1437,9 +1437,15 @@ const HomeNew: React.FC = () => {
     }
 
     const handleGenerationSuccess = (event: CustomEvent) => {
-      const { message, mode } = event.detail
+      const { message, mode, thumbUrl } = event.detail
       console.log('✅ Generation success:', message, 'Mode:', mode)
-      // The toast is already handled by the generation pipeline
+      
+      // Show success toast with thumbnail if available
+      notifyReady({ 
+        title: 'Your media is ready', 
+        message: 'Tap to open',
+        thumbUrl: thumbUrl
+      })
       
       // 🧹 Clear composer state for ALL generation types (new system only)
       console.log('🧹 Clearing composer state after generation success')
@@ -1449,6 +1455,12 @@ const HomeNew: React.FC = () => {
     const handleGenerationError = (event: CustomEvent) => {
       const { message, mode } = event.detail
       console.log('❌ Generation error:', message, 'Mode:', mode)
+      
+      // Show error toast
+      notifyError({ 
+        title: 'Failed', 
+        message: message || 'Try again' 
+      })
       
       // 🧹 Clear composer state for ALL generation types (new system only)
       console.log('🧹 Clearing composer state after generation error')
@@ -1791,11 +1803,11 @@ const HomeNew: React.FC = () => {
       setIsAuthenticated(authState.isAuthenticated)
       console.log('🔐 Auth state initialized:', authState)
       
-      // If user is authenticated, sync their settings and profile from database
+      // If user is authenticated, sync their profile from database
       if (authState.isAuthenticated) {
         try {
-          await getUserProfileSettings()
-          console.log('✅ User settings synced from database')
+          // Profile context will handle loading settings from database
+          console.log('✅ Profile context will sync settings from database')
           
           // Only load user profile if we have a valid token
           const token = authService.getToken()
@@ -1933,51 +1945,8 @@ const HomeNew: React.FC = () => {
     }
   }, [])
 
-  // Get user profile settings for sharing
-  const getUserProfileSettings = async () => {
-    // Try to get from database first (for authenticated users)
-    if (isAuthenticated && authService.getToken()) {
-      try {
-        const response = await authenticatedFetch('/.netlify/functions/user-settings', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (response.ok) {
-          const settings = await response.json()
-          console.log('✅ Retrieved settings from database:', settings)
-          
-          // Also update localStorage for offline access
-          const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
-          const updatedProfile = { ...currentProfile, ...settings }
-          localStorage.setItem('userProfile', JSON.stringify(updatedProfile))
-          
-          return settings
-        }
-      } catch (error) {
-        console.warn('⚠️ Failed to get settings from database, falling back to localStorage:', error)
-      }
-    }
-
-    // Fallback to localStorage
-    try {
-      const savedProfile = localStorage.getItem('userProfile')
-      if (savedProfile) {
-        const profile = JSON.parse(savedProfile)
-        return {
-          shareToFeed: profile.shareToFeed ?? true,  // Default to true if no preference set
-          // allowRemix removed
-        }
-      }
-    } catch (error) {
-      console.error('Error reading user profile from localStorage:', error)
-    }
-    
-    // Default settings
-    return { shareToFeed: true } // allowRemix removed
-  }
+  // REMOVED: getUserProfileSettings - We use ProfileContext instead of localStorage
+  // Settings are now managed through ProfileContext which syncs with database
 
   const closeComposer = () => {
     setIsComposerOpen(false)
@@ -3131,56 +3100,7 @@ const HomeNew: React.FC = () => {
 
   // Tier promotions removed - simplified credit system
 
-  // Update user settings and persist to database
-  const updateUserSettings = async (newSettings: { shareToFeed?: boolean }) => { // allowRemix removed
-    if (!isAuthenticated || !authService.getToken()) {
-      console.warn('⚠️ Cannot update settings: user not authenticated')
-      return false
-    }
-
-    try {
-      // Get current settings
-      const currentSettings = await getUserProfileSettings()
-      const updatedSettings = { ...currentSettings, ...newSettings }
-
-      // Update in database
-      const response = await fetch('/.netlify/functions/user-settings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authService.getToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          media_upload_agreed: updatedSettings.mediaUploadAgreed ?? updatedSettings.media_upload_agreed ?? false,
-          share_to_feed: updatedSettings.shareToFeed ?? updatedSettings.share_to_feed ?? false
-        })
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        console.log('✅ Settings updated in database:', result)
-        
-        // Update localStorage
-        const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}')
-        const updatedProfile = { ...currentProfile, ...result }
-        localStorage.setItem('userProfile', JSON.stringify(updatedProfile))
-        
-        // Refresh feed to show/hide shared media based on new setting
-        if (newSettings.shareToFeed !== undefined) {
-          console.log('🔄 Refreshing feed after shareToFeed change:', newSettings.shareToFeed)
-          await loadFeed() // Refresh feed to reflect new visibility
-        }
-        
-        return true
-      } else {
-        console.error('❌ Failed to update settings in database:', response.status)
-        return false
-      }
-    } catch (error) {
-      console.error('❌ Error updating settings:', error)
-      return false
-    }
-  }
+  // REMOVED: updateUserSettings - Settings are managed through ProfileScreen and UserSettingsService
 
   // Clean up when composer closes
   useEffect(() => {
