@@ -2356,7 +2356,7 @@ const HomeNew: React.FC = () => {
         ipaThreshold: 0.75, // High similarity required for Neo Tokyo Glitch
         ipaRetries: 3, // Aggressive fallback
         ipaBlocking: true, // Must pass to proceed
-        presetKey // Store which preset to use
+        presetKey: neoTokyoGlitchPresetId // Store the full preset ID instead of short key
         };
               console.log('🎭 NEO TOKYO GLITCH MODE: Using Stability.ai + Fal.ai fallback:', neoTokyoGlitchPreset.label, 'Preset:', presetKey);
       

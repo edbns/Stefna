@@ -24,7 +24,15 @@ const PresetTag: React.FC<PresetTagProps> = ({
   item
 }) => {
   // Debug logging to see what data is being passed
-  console.log('🔍 [PresetTag] Rendering with:', { presetKey, type, showPresetKey, item });
+  console.log('🔍 [PresetTag] Rendering with:', { 
+    presetKey, 
+    type, 
+    showPresetKey, 
+    item,
+    itemPresetKey: item?.presetKey,
+    itemType: item?.type,
+    itemMetadata: item?.metadata
+  });
   
   // Size classes
   const sizeClasses = {

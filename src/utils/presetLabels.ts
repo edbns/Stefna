@@ -12,7 +12,11 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
       'neo_glitch_visor': 'Visor',
       'neo_glitch_base': 'Base',
       'neo_glitch_tattoos': 'Tattoos',
-      'neo_glitch_scanlines': 'Scanlines'
+      'neo_glitch_scanlines': 'Scanlines',
+      'neo_tokyo_visor': 'Visor',
+      'neo_tokyo_base': 'Base',
+      'neo_tokyo_tattoos': 'Tattoos',
+      'neo_tokyo_scanlines': 'Scanlines'
     }
     return neoPresets[presetKey] || 'Neo Tokyo'
   }
