@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react'
 import { UserMedia } from '../services/userMediaService'
 import { optimizeFeedImage } from '../utils/cloudinaryOptimization'
 import PresetTag from './PresetTag'
+import LQIPImage from './LQIPImage'
 // RemixIcon removed - no more remix functionality
 import { MediaCard as SpinnerCard } from './ui/Toasts'
 // LazyImage removed - using simple img tags for better performance
@@ -176,12 +177,15 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                     <div className="relative">
                       {item.type === 'video' ? (
                         <video src={item.url} className="w-full h-auto object-cover opacity-50" muted />
-                      ) : (
-                                              <img 
-                        src={optimizeFeedImage(item.url)} 
-                        alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
-                        className="w-full h-auto opacity-50 object-cover"
-                      />
+                                            ) : (
+                        <LQIPImage
+                          src={optimizeFeedImage(item.url)} 
+                          alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
+                          className="w-full h-auto opacity-50 object-cover"
+                          loading="lazy"
+                          decoding="async"
+                          aspectRatio={item.aspectRatio}
+                        />
                       )}
                       <div className="absolute inset-0 grid place-items-center">
                         <div className="px-3 py-1 rounded-full bg-red-600/80 text-white text-xs font-semibold">Failed</div>
@@ -217,10 +221,13 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   ) : (item.type as any) === 'story-time' && (item.status as any) === 'processing' ? (
                       // Story Time processing - show progress with photo
                       <div className="relative">
-                        <img
+                        <LQIPImage
                           src={optimizeFeedImage(item.url)}
                           alt="Story Time processing"
                           className="w-full h-auto object-cover opacity-75"
+                          loading="lazy"
+                          decoding="async"
+                          aspectRatio={item.aspectRatio}
                         />
                         {/* Processing overlay */}
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -232,10 +239,13 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         </div>
                       </div>
                   ) : (
-                      <img
+                      <LQIPImage
                         src={optimizeFeedImage(item.url)}
-                        alt=""
+                        alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
                         className="w-full h-auto object-cover"
+                        loading="lazy"
+                        decoding="async"
+                        aspectRatio={item.aspectRatio}
                       />
                   )}
 

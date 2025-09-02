@@ -7,6 +7,8 @@ import { authenticatedFetch, signedFetch } from '../utils/apiClient'
 import authService from '../services/authService'
 import MasonryMediaGrid from './MasonryMediaGrid'
 import SkeletonGrid from './SkeletonGrid'
+import LoadingSpinner from './LoadingSpinner'
+import LQIPImage from './LQIPImage'
 
 import type { UserMedia } from '../services/userMediaService'
 import { useToasts } from './ui/Toasts'
@@ -3449,10 +3451,7 @@ const HomeNew: React.FC = () => {
               {/* 🚀 Unified infinite scroll: Loading indicator */}
               {isLoadingMore && hasMoreFeed && (
                 <div className="flex justify-center py-8">
-                  <div className="flex items-center space-x-3 text-white/60">
-                    <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                    <span className="text-sm">Loading more...</span>
-                  </div>
+                  <LoadingSpinner size="md" text="Loading more..." />
                 </div>
               )}
               

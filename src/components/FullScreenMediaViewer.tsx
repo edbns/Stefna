@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { UserMedia } from '../services/userMediaService'
 import PresetTag from './PresetTag'
+import LQIPImage from './LQIPImage'
 import { getPresetTypeForFilter } from '../utils/presetMapping'
 
 interface FullScreenMediaViewerProps {
@@ -107,10 +108,12 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
               muted 
             />
           ) : (
-            <img 
+            <LQIPImage 
               src={current.url} 
               alt={current.prompt || 'AI Generated Image'} 
               className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" 
+              loading="eager"
+              decoding="async"
             />
           )}
         </div>

@@ -18,6 +18,8 @@ const ThreadsIcon = ({ size, className }: { size: number; className: string }) =
 )
 import MasonryMediaGrid from '../components/MasonryMediaGrid'
 import DraftMediaGrid from '../components/DraftMediaGrid'
+import LoadingSpinner from '../components/LoadingSpinner'
+import LQIPImage from '../components/LQIPImage'
 import { navigateToEditor } from '../utils/editorNavigation'
 import FullScreenMediaViewer from '../components/FullScreenMediaViewer'
 import userMediaService, { UserMedia } from '../services/userMediaService'
