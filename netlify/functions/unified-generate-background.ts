@@ -109,11 +109,11 @@ const PHOTO_MODELS = [
 
 const GHIBLI_MODELS = [
   {
-    model: 'fal-ai/flux/dev/image-to-image',
-    name: 'Flux Dev I2I',
+    model: 'fal-ai/fast-sdxl-img2img',
+    name: 'Fast SDXL I2I',
     cost: 'medium',
     priority: 1,
-    description: 'High-quality Flux Dev with subtle Ghibli elements'
+    description: 'Fast SDXL image-to-image with Ghibli realism'
   },
   {
     model: 'fal-ai/pixart-alpha',
@@ -922,12 +922,17 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         const input: any = {
           image_url: processedImageUrl,
           prompt: mode === 'ghibli_reaction'
-            ? `${params.prompt}, subtle ghibli-inspired lighting, soft dreamy atmosphere, gentle anime influence, preserve original composition`
+            ? `emotional human reaction in Studio Ghibli style, realistic facial structure, identity preserved, expressive eyes, blush, sparkles, cinematic light, dreamy tone`
             : params.prompt,
-          image_strength: mode === 'ghibli_reaction' ? 0.35 : 0.45, // Reduced for better quality preservation
-          guidance_scale: mode === 'ghibli_reaction' ? 6.0 : 7.5, // Lower guidance for subtler Ghibli effect
+          image_strength: mode === 'ghibli_reaction' ? 0.28 : 0.45, // Reduced for better quality preservation
+          guidance_scale: mode === 'ghibli_reaction' ? 7.0 : 7.5, // Lower guidance for subtler Ghibli effect
           seed: Math.floor(Math.random() * 1000000)
         };
+        
+        // Add negative prompt for Ghibli to prevent anime stylization
+        if (mode === 'ghibli_reaction') {
+          input.negative_prompt = 'anime, cartoon, drawing, unrealistic skin, illustration, 2d, lowres, distorted face, doll, plastic, overexaggerated features';
+        }
         
         // Add steps for models that need them
         if (steps !== undefined) {
@@ -1262,7 +1267,19 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
         console.log(`🔄 [Background] IPA retries exhausted, trying Replicate fallback for better identity preservation`);
         
         try {
-          const replicateResult = await generateWithReplicate(generationParams);
+          // For Ghibli Reaction, use specific Replicate model for better realism
+          let replicateParams = generationParams;
+          if (request.mode === 'ghibli_reaction') {
+            replicateParams = {
+              ...generationParams,
+              prompt: 'emotional human reaction in Studio Ghibli style, realistic facial structure, identity preserved, expressive eyes, blush, sparkles, cinematic light, dreamy tone',
+              strength: 0.25,
+              guidance_scale: 7.0
+            } as any; // Use any to allow additional properties
+            console.log(`🎯 [Background] Using Ghibli-specific Replicate parameters for better realism`);
+          }
+          
+          const replicateResult = await generateWithReplicate(replicateParams);
           
           if (replicateResult.success && replicateResult.outputUrl) {
             // Check IPA for Replicate result

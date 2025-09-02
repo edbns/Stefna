@@ -84,7 +84,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
     media.forEach((item) => {
       // Find the shortest column
       const columnHeights = columnArrays.map(column => 
-        column.reduce((height, mediaItem) => height + (1 / mediaItem.aspectRatio), 0)
+        column.reduce((height, mediaItem) => height + (1 / (mediaItem.aspectRatio || 1)), 0)
       )
       const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights))
       
@@ -138,8 +138,11 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   onClick={() => onMediaClick?.(item)}
                   ref={isLastItem ? onLastItemRef : undefined}
                 >
-                {/* Media Container - No fixed aspect ratio, let content determine height */}
-                <div className="relative w-full overflow-hidden">
+                {/* Media Container - Use proper aspect ratio */}
+                <div 
+                  className="relative w-full overflow-hidden"
+                  style={{ aspectRatio: item.aspectRatio || 1 }}
+                >
                   {/* Selection Checkbox */}
                   {isSelectionMode && onToggleSelection && (
                     <div className="absolute top-2 left-2 z-10">

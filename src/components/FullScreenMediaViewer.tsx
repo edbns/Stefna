@@ -111,7 +111,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
             <LQIPImage 
               src={current.url} 
               alt={current.prompt || 'AI Generated Image'} 
-              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" 
+              className="max-w-full max-h-full object-contain shadow-2xl" 
               loading="eager"
               decoding="async"
             />
