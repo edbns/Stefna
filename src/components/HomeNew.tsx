@@ -2487,15 +2487,32 @@ const HomeNew: React.FC = () => {
           } else {
         // Generation failed
         console.error('❌ [Unified] Generation failed:', result.error);
-              // Avoid showing failure toast if this was a background acceptance edge
-              if (!(result.error && (result.error.includes('HTTP 202') || result.error.includes('processing')))) {
-                notifyError({ title: 'Failed', message: 'Try again' });
-              }
+        
+        // Parse error message for user-friendly display
+        let errorMessage = 'Try again';
+        if (result.error) {
+          if (result.error.includes('Insufficient credits')) {
+            errorMessage = 'Not enough credits. Please wait for daily reset or upgrade your plan.';
+          } else if (result.error.includes('timeout')) {
+            errorMessage = 'Request timed out. Please try again.';
+          } else if (result.error.includes('HTTP 202') || result.error.includes('processing')) {
+            // Don't show toast for background processing
             endGeneration(genId);
-        setNavGenerating(false);
+            setNavGenerating(false);
             resetComposerState();
-              return;
-            }
+            return;
+          } else {
+            // Use the actual error message if it's meaningful
+            errorMessage = result.error;
+          }
+        }
+        
+        notifyError({ title: 'Failed', message: errorMessage });
+        endGeneration(genId);
+        setNavGenerating(false);
+        resetComposerState();
+        return;
+      }
 
 
 

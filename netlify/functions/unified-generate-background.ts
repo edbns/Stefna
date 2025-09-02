@@ -808,7 +808,25 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
   const action = actionMap[request.mode];
   const creditsNeeded = 2; // All generations cost 2 credits
   
-  await reserveCredits(request.userId, action, creditsNeeded, request.runId);
+  // Try to reserve credits - handle insufficient credits gracefully
+  try {
+    await reserveCredits(request.userId, action, creditsNeeded, request.runId);
+  } catch (creditError: any) {
+    console.error('❌ [Background] Credit reservation failed:', creditError);
+    
+    // Return a proper error response for insufficient credits
+    if (creditError.message && creditError.message.includes('Insufficient credits')) {
+      return {
+        success: false,
+        status: 'failed',
+        error: creditError.message,
+        errorType: 'INSUFFICIENT_CREDITS'
+      };
+    }
+    
+    // Re-throw other errors
+    throw creditError;
+  }
 
   try {
     let result: UnifiedGenerationResponse;
@@ -958,13 +976,31 @@ const handler: Handler = async (event, context) => {
   } catch (error) {
     console.error('💥 [Background] Handler error:', error);
     
+    // Determine appropriate status code based on error type
+    let statusCode = 500;
+    let errorMessage = 'Unknown error';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Set appropriate status codes for specific errors
+      if (error.message.includes('Insufficient credits')) {
+        statusCode = 402; // Payment Required - standard for insufficient credits
+      } else if (error.message.includes('timeout')) {
+        statusCode = 504; // Gateway Timeout
+      } else if (error.message.includes('Invalid') || error.message.includes('Missing')) {
+        statusCode = 400; // Bad Request
+      }
+    }
+    
     return {
-      statusCode: 500,
+      statusCode,
       headers: CORS_JSON_HEADERS,
       body: JSON.stringify({
         success: false,
         status: error instanceof Error && error.message.includes('timeout') ? 'timeout' : 'failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage,
+        errorType: errorMessage.includes('Insufficient credits') ? 'INSUFFICIENT_CREDITS' : undefined
       })
     };
   }
