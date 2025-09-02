@@ -131,6 +131,12 @@ class SimpleGenerationService {
         type: request.mode as GenerationMode
       } as SimpleGenerationResult;
 
+      // Ensure failed-but-with-output is not treated as timeout
+      if (normalized.status === 'failed' && normalized.imageUrl) {
+        normalized.status = 'completed'; // let polling exit
+        normalized.success = false;      // still mark as a failure (e.g. IPA fail)
+      }
+
       console.log('✅ [SimpleGeneration] Generation completed (normalized):', {
         success: normalized.success,
         status: normalized.status,
@@ -175,6 +181,17 @@ class SimpleGenerationService {
         }
         
         if (statusResult.status === 'failed') {
+          // If there's an image, treat as "soft fail" (IPA failure)
+          if (statusResult.imageUrl || statusResult.videoUrl) {
+            console.warn(`⚠️ [SimpleGeneration] Generation failed but has output. Returning as completed with warning.`);
+            return {
+              ...statusResult,
+              status: 'completed', // force status to completed
+              success: false,      // retain false for UI to show IPA warning
+            };
+          }
+
+          // No output at all — real failure
           console.log(`❌ [SimpleGeneration] Generation failed after ${attempt} attempts (${Math.round(elapsed/1000)}s total)`);
           return statusResult;
         }

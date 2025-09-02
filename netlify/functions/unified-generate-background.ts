@@ -134,6 +134,34 @@ const VIDEO_MODELS = [
   }
 ];
 
+// IPA-safe Replicate fallback models for identity preservation
+const REPLICATE_FALLBACK_MODELS = [
+  {
+    model: 'sg161222/realistic-vision-v5.1',
+    name: 'Realistic Vision v5.1',
+    priority: 1,
+    description: 'Primary IPA fallback - strong realism, retains facial structure',
+    strength: 0.3, // Low strength for identity preservation
+    guidance: 7.0
+  },
+  {
+    model: 'lykon/dreamshaper-8',
+    name: 'DreamShaper v8',
+    priority: 2,
+    description: 'Stylized fallback - balanced realism and style',
+    strength: 0.4, // Medium strength for balanced results
+    guidance: 7.5
+  },
+  {
+    model: 'lucataco/juggernaut-xl',
+    name: 'Juggernaut XL',
+    priority: 3,
+    description: 'SDXL backup - powerful detail and realism',
+    strength: 0.5, // Higher strength for detailed results
+    guidance: 8.0
+  }
+];
+
 // Helper function for Stability.ai requests
 async function makeStabilityRequest(tier: string, params: any, apiKey: string): Promise<Response> {
   const MODEL_ENDPOINTS = {
@@ -697,6 +725,108 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
   throw new Error('All Stability providers failed');
 }
 
+// Replicate generation with IPA-safe fallback models
+async function generateWithReplicate(params: any): Promise<UnifiedGenerationResponse> {
+  console.log('🔄 [Background] Starting Replicate fallback generation');
+  
+  const REPLICATE_API_KEY = process.env.REPLICATE_API_KEY;
+  if (!REPLICATE_API_KEY) {
+    console.warn('⚠️ [Background] Replicate API key not configured');
+    throw new Error('Replicate API key not configured');
+  }
+
+  let lastError: Error | null = null;
+  
+  for (const modelConfig of REPLICATE_FALLBACK_MODELS) {
+    try {
+      console.log(`📤 [Background] Trying Replicate ${modelConfig.name} (${modelConfig.model})`);
+      
+      // Prepare IPA-safe prompt
+      const ipaPrompt = `portrait photo of a ${params.prompt}, cinematic lighting, ultra realistic, sharp focus`;
+      const negativePrompt = 'cartoon, anime, exaggerated, distorted, low-res, mutated, doll, plastic, duplicate face';
+      
+      const replicateInput = {
+        input: {
+          image: params.sourceAssetId,
+          prompt: ipaPrompt,
+          negative_prompt: negativePrompt,
+          strength: modelConfig.strength,
+          guidance_scale: modelConfig.guidance,
+          num_inference_steps: 30,
+          seed: Math.floor(Math.random() * 1000000)
+        }
+      };
+
+      const response = await fetch(`https://api.replicate.com/v1/predictions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${REPLICATE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(replicateInput)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Replicate API error: ${response.status} - ${errorText}`);
+      }
+
+      const prediction = await response.json();
+      console.log(`🔄 [Background] Replicate prediction started: ${prediction.id}`);
+
+      // Poll for completion
+      let attempts = 0;
+      const maxAttempts = 60; // 5 minutes max
+      
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second intervals
+        
+        const statusResponse = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
+          headers: {
+            'Authorization': `Token ${REPLICATE_API_KEY}`
+          }
+        });
+
+        if (!statusResponse.ok) {
+          throw new Error(`Replicate status check failed: ${statusResponse.status}`);
+        }
+
+        const status = await statusResponse.json();
+        
+        if (status.status === 'succeeded') {
+          const imageUrl = status.output?.[0];
+          if (imageUrl) {
+            console.log(`✅ [Background] Replicate ${modelConfig.name} generation successful`);
+            // Upload to Cloudinary
+            const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);
+            return {
+              success: true,
+              status: 'done',
+              provider: 'replicate',
+              outputUrl: cloudinaryUrl
+            };
+          }
+        } else if (status.status === 'failed') {
+          throw new Error(`Replicate generation failed: ${status.error || 'Unknown error'}`);
+        }
+        
+        attempts++;
+      }
+      
+      throw new Error('Replicate generation timed out');
+      
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`⚠️ [Background] Replicate ${modelConfig.name} failed:`, error);
+      continue; // Try next model
+    }
+  }
+  
+  // All Replicate models failed
+  console.warn(`⚠️ [Background] All Replicate fallback models failed:`, lastError);
+  throw new Error(`All Replicate providers failed: ${lastError}`);
+}
+
 // Fal.ai generation with fallback system
 async function generateWithFal(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
   console.log(`🚀 [Background] Starting Fal.ai generation for mode: ${mode}`);
@@ -1110,6 +1240,42 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
           } catch (retryError) {
             console.error(`❌ [Background] IPA retry ${retryCount} failed:`, retryError);
           }
+        }
+      }
+
+      // If IPA retries are exhausted and we still don't have a passing result, try Replicate fallback
+      if (!ipaResults.passed && retryCount >= maxRetries && !request.ipaBlocking) {
+        console.log(`🔄 [Background] IPA retries exhausted, trying Replicate fallback for better identity preservation`);
+        
+        try {
+          const replicateResult = await generateWithReplicate(generationParams);
+          
+          if (replicateResult.success && replicateResult.outputUrl) {
+            // Check IPA for Replicate result
+            const replicateIpaCheck = await checkIdentityPreservation(
+              request.sourceAssetId,
+              replicateResult.outputUrl,
+              request.ipaThreshold
+            );
+
+            ipaResults = {
+              similarity: replicateIpaCheck.similarity,
+              passed: replicateIpaCheck.passed,
+              retryCount: retryCount + 1,
+              finalUrl: replicateResult.outputUrl
+            };
+
+            if (replicateIpaCheck.passed) {
+              console.log(`✅ [Background] Replicate fallback passed IPA check: ${(replicateIpaCheck.similarity * 100).toFixed(1)}%`);
+              result = replicateResult;
+            } else {
+              console.log(`⚠️ [Background] Replicate fallback failed IPA check: ${(replicateIpaCheck.similarity * 100).toFixed(1)}%`);
+              // Still use Replicate result as it's likely better than the original
+              result = replicateResult;
+            }
+          }
+        } catch (replicateError) {
+          console.warn(`⚠️ [Background] Replicate fallback failed:`, replicateError);
         }
       }
 

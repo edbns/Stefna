@@ -2538,6 +2538,56 @@ const HomeNew: React.FC = () => {
         }, 3000);
               
               return;
+      } else if (!result.success && result.status === 'completed' && (result.imageUrl || (result as any).outputUrl)) {
+        // IPA failure - image was generated but didn't pass identity check
+        const finalImageUrl = result.imageUrl || (result as any).outputUrl || ''
+        console.log('⚠️ [Unified] Generation completed but failed IPA check');
+            
+        // Show IPA warning toast with thumbnail
+        notifyReady({ 
+          title: 'Image generated', 
+          message: 'Didn\'t pass identity check - tap to view',
+          thumbUrl: finalImageUrl,
+          onClickThumb: () => {
+            // Open the media viewer
+            setViewerMedia([{
+              id: 'generated-' + Date.now(),
+              userId: 'current-user',
+              type: 'photo',
+              url: finalImageUrl,
+              prompt: effectivePrompt,
+              aspectRatio: 1,
+              width: 1024,
+              height: 1024,
+              timestamp: new Date().toISOString(),
+              tokensUsed: 1,
+              likes: 0,
+              isPublic: true,
+              tags: [],
+              metadata: { 
+                quality: 'high', 
+                generationTime: Date.now(), 
+                modelVersion: result.provider || 'unknown',
+                mode: kind,
+                ...generationMeta
+              }
+            }]);
+            setViewerStartIndex(0);
+            setViewerOpen(true);
+          }
+        });
+              
+        // End generation and refresh feed
+        endGeneration(genId);
+        setNavGenerating(false);
+        loadFeed();
+              
+        // Clear composer after delay
+        setTimeout(() => {
+          handleClearComposerState();
+        }, 3000);
+              
+        return;
       } else if (result.success && result.status === 'processing') {
         console.log('🔄 [Unified] Generation accepted (202) - running in background');
         // DON'T stop spinners yet - keep them running until completion
