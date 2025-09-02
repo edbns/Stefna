@@ -250,6 +250,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                           <PresetTag 
                             presetKey={item.metadata?.presetKey || item.presetKey} 
                             type={item.metadata?.presetType}
+                            item={item}
                             size="sm"
                             clickable={!!onPresetTagClick}
                             onClick={(e) => {

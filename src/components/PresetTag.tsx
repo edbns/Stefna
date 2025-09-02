@@ -1,4 +1,5 @@
 import React from 'react'
+import { mapPresetToDisplay, getPresetDisplayText } from '../utils/presetMapping'
 
 interface PresetTagProps {
   presetKey: string | null | undefined
@@ -8,6 +9,8 @@ interface PresetTagProps {
   onClick?: (event: React.MouseEvent) => void
   clickable?: boolean
   showPresetKey?: boolean
+  // Add item prop for better mapping
+  item?: any
 }
 
 const PresetTag: React.FC<PresetTagProps> = ({ 
@@ -17,10 +20,12 @@ const PresetTag: React.FC<PresetTagProps> = ({
   size = 'md',
   onClick,
   clickable = false,
-  showPresetKey = true
+  showPresetKey = true,
+  item
 }) => {
   // Debug logging to see what data is being passed
-  console.log('🔍 [PresetTag] Rendering with:', { presetKey, type, showPresetKey });
+  console.log('🔍 [PresetTag] Rendering with:', { presetKey, type, showPresetKey, item });
+  
   // Size classes
   const sizeClasses = {
     sm: 'px-2 py-1 text-xs',
@@ -31,59 +36,25 @@ const PresetTag: React.FC<PresetTagProps> = ({
   // Unified glossy black styling for all preset types
   const unifiedStyle = 'bg-glossy-black-800 text-glossy-white-50 border-glossy-black-600 hover:bg-glossy-black-700'
   
-  // Get the preset type label
-  const getPresetTypeLabel = () => {
-    switch (type) {
-      case 'neo-glitch':
-        return 'Neo Tokyo Glitch'
-      case 'ghibli-reaction':
-        return 'Ghibli Reaction'
-      case 'emotion-mask':
-        return 'Emotion Mask'
-      case 'presets':
-        return 'Presets'
-      case 'custom-prompt':
-        return 'Custom Prompt'
-      case 'story-time':
-        return 'Story Time'
-      default:
-        // Fallback to presetKey if type is not available
-        if (presetKey) {
-          if (presetKey.startsWith('ghibli_') || presetKey.includes('ghibli')) return 'Ghibli Reaction'
-          if (presetKey.startsWith('emotion_') || presetKey.includes('emotion') || presetKey.includes('joy_') || presetKey.includes('strength_') || presetKey.includes('nostalgia_') || presetKey.includes('peace_')) return 'Emotion Mask'
-          if (presetKey.startsWith('neo_') || presetKey.includes('neo') || presetKey.includes('glitch')) return 'Neo Tokyo Glitch'
-          if (presetKey === 'custom' || presetKey === 'custom_prompt') return 'Custom Prompt'
-          if (presetKey.startsWith('story_') || presetKey === 'auto' || presetKey === 'adventure' || presetKey === 'romance' || presetKey === 'mystery' || presetKey === 'comedy' || presetKey === 'fantasy' || presetKey === 'travel') return 'Story Time'
-          return 'Presets'
-        }
-        return 'AI Generated'
-    }
-  }
-
-  // Get the full display text (type + preset key if available)
+  // Use the new mapping utility
   const getDisplayText = () => {
-    const typeLabel = getPresetTypeLabel()
-    
-    // Don't show preset key for custom prompts
-    if (type === 'custom-prompt' || typeLabel === 'Custom Prompt') {
-      return typeLabel
-    }
-    
-    // Show preset key if available and showPresetKey is true
-    if (showPresetKey && presetKey && presetKey !== 'custom' && presetKey !== 'custom_prompt') {
-      // Clean up the preset key for display
-      const cleanKey = presetKey
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, l => l.toUpperCase())
-        .replace(/(ghibli|reaction|emotion|mask|neo|glitch|tokyo)/gi, '') // Remove redundant words
-        .trim()
+    if (item) {
+      // Use the item for better mapping
+      return getPresetDisplayText(item, showPresetKey)
+    } else {
+      // Fallback to old logic for backward compatibility
+      const mapping = mapPresetToDisplay({ type, presetKey })
       
-      if (cleanKey) {
-        return `${typeLabel} - ${cleanKey}`
+      if (mapping.type === 'custom-prompt') {
+        return mapping.displayName
       }
+      
+      if (showPresetKey && mapping.cleanPresetKey) {
+        return `${mapping.displayName} - ${mapping.cleanPresetKey}`
+      }
+      
+      return mapping.displayName
     }
-    
-    return typeLabel
   }
 
   return (
@@ -98,9 +69,8 @@ const PresetTag: React.FC<PresetTagProps> = ({
         ${clickable ? 'cursor-pointer' : ''}
         ${className}
       `}
-      title={`Generated with ${getPresetTypeLabel()}${presetKey && presetKey !== 'custom' && presetKey !== 'custom_prompt' ? ` - ${presetKey}` : ''}`}
+      title={`Generated with ${getDisplayText()}`}
       onClick={clickable ? (e) => onClick?.(e) : undefined}
-
     >
       {getDisplayText()}
     </div>
