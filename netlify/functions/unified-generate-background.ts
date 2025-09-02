@@ -134,7 +134,7 @@ async function makeStabilityRequest(tier: string, params: any, apiKey: string): 
   // Allow caller to provide full prompt and parameters per mode
   form.append("prompt", params.prompt);
   form.append("init_image", params.sourceAssetId);
-  form.append("image_strength", String(params.image_strength ?? 0.7));
+  form.append("image_strength", String(params.image_strength ?? 0.45)); // Reduced default for better quality
   form.append("steps", String(params.steps ?? 30));
   form.append("cfg_scale", String(params.guidance_scale ?? 7.5));
   form.append("samples", "1");
@@ -622,7 +622,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
   }
   
   // Validate image_strength for image-to-image models
-  const imageStrength = mode === 'ghibli_reaction' ? 0.35 : 0.7;
+  // Lower values preserve more of the original image
+  const imageStrength = mode === 'ghibli_reaction' ? 0.35 : 0.45; // Reduced from 0.7 to 0.45 for better quality
   if (imageStrength <= 0 || imageStrength > 1) {
     throw new Error("Invalid image_strength for Fal.ai image-to-image generation");
   }
@@ -690,7 +691,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           prompt: mode === 'ghibli_reaction'
             ? `${params.prompt}, subtle ghibli-inspired lighting, soft dreamy atmosphere, gentle anime influence, preserve original composition`
             : params.prompt,
-          image_strength: mode === 'ghibli_reaction' ? 0.35 : 0.7,
+          image_strength: mode === 'ghibli_reaction' ? 0.35 : 0.45, // Reduced for better quality preservation
           guidance_scale: mode === 'ghibli_reaction' ? 6.0 : 7.5, // Lower guidance for subtler Ghibli effect
           seed: Math.floor(Math.random() * 1000000)
         };
@@ -886,7 +887,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
         ? `${request.prompt}, subtle ghibli-inspired lighting, soft dreamy atmosphere, gentle anime influence, preserve original composition`
         : request.prompt,
       sourceAssetId: request.sourceAssetId,
-      image_strength: request.mode === 'ghibli_reaction' ? 0.35 : 0.7,
+      image_strength: request.mode === 'ghibli_reaction' ? 0.35 : 0.45, // Reduced for better quality
       guidance_scale: request.mode === 'ghibli_reaction' ? 6.0 : 7.5,
       additionalImages: request.additionalImages,
       steps: 30

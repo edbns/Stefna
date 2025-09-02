@@ -2314,11 +2314,8 @@ const HomeNew: React.FC = () => {
       generationMeta = {
         mode: 'storytime',
         storyTimeImages: storyImages,
-        storyTimePresetId: options?.storyTimePresetId,
-        generation_type: "story_time_moderate_ipa", // Moderate identity preservation for stories
-        ipaThreshold: 0.55, // Moderate similarity for storytelling
-        ipaRetries: 2, // Moderate fallback
-        ipaBlocking: true // Must pass to proceed
+        storyTimePresetId: options?.storyTimePresetId
+        // Identity preservation removed - not implemented in backend
       };
       console.log('📖 STORY TIME MODE: Using', storyImages.length, 'images for video generation');
       
@@ -2476,13 +2473,11 @@ const HomeNew: React.FC = () => {
               return;
       } else if (result.success && result.status === 'processing') {
         console.log('🔄 [Unified] Generation accepted (202) - running in background');
-        // Stop spinners immediately; we'll show media when feed refresh picks it up
+        // Stop spinners immediately
         endGeneration(genId);
         setNavGenerating(false);
-        // Gentle auto-refresh to surface the new media when it lands
-        setTimeout(() => {
-          try { loadFeed(); } catch {}
-        }, 7000);
+        // Don't refresh immediately - wait for actual completion
+        // The generation-complete event will trigger the refresh when ready
         return;
           } else {
         // Generation failed
