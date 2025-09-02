@@ -1,6 +1,8 @@
 // src/utils/presetMapping.ts
 // Utility for mapping database preset values to proper display names
 
+import { getPresetDisplayName, getPresetType } from './presetLabels'
+
 export interface PresetMapping {
   type: string
   presetKey: string
@@ -49,15 +51,8 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   
   const displayName = typeDisplayNames[mappedType] || 'AI Generated'
   
-  // Clean up the preset key for display
-  let cleanPresetKey = ''
-  if (presetKey && presetKey !== 'custom' && presetKey !== 'custom_prompt') {
-    cleanPresetKey = presetKey
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase())
-      .replace(/(ghibli|reaction|emotion|mask|neo|glitch|tokyo|preset|professional)/gi, '') // Remove redundant words
-      .trim()
-  }
+  // Use the existing presetLabels utility for clean preset key
+  const cleanPresetKey = getPresetDisplayName(presetKey, mappedType)
   
   return {
     type: mappedType,
@@ -79,7 +74,7 @@ export function getPresetDisplayText(item: any, showPresetKey: boolean = true): 
   }
   
   // Show preset key if available and showPresetKey is true
-  if (showPresetKey && mapping.cleanPresetKey) {
+  if (showPresetKey && mapping.cleanPresetKey && mapping.cleanPresetKey !== mapping.displayName) {
     return `${mapping.displayName} - ${mapping.cleanPresetKey}`
   }
   
