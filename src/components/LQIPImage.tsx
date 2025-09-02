@@ -112,6 +112,13 @@ const LQIPImage: React.FC<LQIPImageProps> = ({
         style={{
           filter: isLoaded ? 'blur(0)' : 'blur(20px)',
         }}
+        onLoad={() => {
+          setIsLoaded(true);
+          // Add loaded class for additional CSS effects
+          if (imgRef.current) {
+            imgRef.current.classList.add('loaded');
+          }
+        }}
       />
 
       {/* Loading indicator */}

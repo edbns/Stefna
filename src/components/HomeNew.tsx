@@ -3451,7 +3451,7 @@ const HomeNew: React.FC = () => {
               {/* 🚀 Unified infinite scroll: Loading indicator */}
               {isLoadingMore && hasMoreFeed && (
                 <div className="flex justify-center py-8">
-                  <LoadingSpinner size="md" text="Loading more..." />
+                  <LoadingSpinner size="md" text="Loading more masterpieces..." />
                 </div>
               )}
               

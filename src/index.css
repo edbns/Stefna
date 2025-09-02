@@ -98,6 +98,31 @@ body {
   background: transparent !important; /* Ensure complete transparency */
 }
 
+/* Image fade-in effects */
+.fade-in-image {
+  transition: opacity 0.3s ease-in-out, filter 0.3s ease-in-out, transform 0.3s ease-in-out;
+  opacity: 0;
+  filter: blur(20px);
+  transform: scale(1.05);
+}
+
+.fade-in-image.loaded {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+
+/* Smooth image loading transitions */
+.image-loading {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.image-loaded {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
+}
+
 /* Prevent feed jumping */
 .feed-stable {
   min-height: 100vh; padding-top: 64px; /* Account for fixed navbar height */

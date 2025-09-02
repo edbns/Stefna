@@ -137,27 +137,27 @@ const VIDEO_MODELS = [
 // IPA-safe Replicate fallback models for identity preservation
 const REPLICATE_FALLBACK_MODELS = [
   {
-    model: 'sg161222/realistic-vision-v5.1',
+    model: 'banian/realistic-vision-v51',
     name: 'Realistic Vision v5.1',
     priority: 1,
-    description: 'Primary IPA fallback - strong realism, retains facial structure',
-    strength: 0.3, // Low strength for identity preservation
+    description: 'Primary IPA fallback - high identity preservation, stylized outputs',
+    strength: 0.3,
     guidance: 7.0
   },
   {
-    model: 'lykon/dreamshaper-8',
-    name: 'DreamShaper v8',
+    model: 'lucataco/pixart-alpha',
+    name: 'PixArt Alpha',
     priority: 2,
-    description: 'Stylized fallback - balanced realism and style',
-    strength: 0.4, // Medium strength for balanced results
+    description: 'Powerful stylization + good identity (slightly exaggerates features)',
+    strength: 0.4,
     guidance: 7.5
   },
   {
-    model: 'lucataco/juggernaut-xl',
-    name: 'Juggernaut XL',
+    model: 'lucataco/sdxl-img2img',
+    name: 'SDXL Image-to-Image',
     priority: 3,
-    description: 'SDXL backup - powerful detail and realism',
-    strength: 0.5, // Higher strength for detailed results
+    description: 'High-res, consistent, follows prompts extremely well',
+    strength: 0.5,
     guidance: 8.0
   }
 ];
