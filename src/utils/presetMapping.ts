@@ -14,7 +14,19 @@ export interface PresetMapping {
  * Map database preset values to proper display names
  */
 export function mapPresetToDisplay(item: any): PresetMapping {
-  const { type, presetKey } = item
+  // Handle both direct properties and metadata properties
+  const type = item.type || item.metadata?.presetType || item.mediaType;
+  const presetKey = item.presetKey || item.metadata?.presetKey;
+  
+  console.log('🔍 [PresetMapping] Input:', { 
+    itemType: item.type, 
+    itemMetadataType: item.metadata?.presetType,
+    itemMediaType: item.mediaType,
+    itemPresetKey: item.presetKey,
+    itemMetadataPresetKey: item.metadata?.presetKey,
+    resolvedType: type,
+    resolvedPresetKey: presetKey
+  });
   
   // Map database types to display types
   const typeMapping: Record<string, string> = {

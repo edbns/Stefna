@@ -21,6 +21,16 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
     return neoPresets[presetKey] || 'Neo Tokyo'
   }
   
+  // Custom Prompt presets
+  if (type === 'custom-prompt' || presetKey.startsWith('user_') || presetKey.includes('custom')) {
+    const customPresets: Record<string, string> = {
+      'user_custom': 'Custom Prompt',
+      'custom': 'Custom Prompt',
+      'custom_prompt': 'Custom Prompt'
+    }
+    return customPresets[presetKey] || 'Custom Prompt'
+  }
+  
   // Ghibli Reaction presets
   if (presetKey.startsWith('ghibli_') || presetKey.includes('ghibli')) {
     const ghibliPresets: Record<string, string> = {
