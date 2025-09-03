@@ -1668,25 +1668,34 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     };
 
     if (request.mode === 'neo_glitch') {
-      // Neo Tokyo Glitch: Stability.ai as primary, Fal.ai as fallback
-      console.log('🚀 [Background] Starting generation with Stability.ai as primary provider for Neo Tokyo Glitch');
+      // Neo Tokyo Glitch: BFL API as primary, Stability.ai as fallback
+      console.log('🚀 [Background] Starting generation with BFL API as primary provider for Neo Tokyo Glitch');
       
       try {
-        // Try Stability.ai first (primary for Neo Tokyo Glitch)
-        console.log('🎨 [Background] Attempting generation with Stability.ai');
-        result = await generateWithStability(generationParams);
-        console.log('✅ [Background] Stability.ai generation successful');
-      } catch (stabilityError) {
-        console.warn('⚠️ [Background] Stability.ai failed, falling back to Replicate:', stabilityError);
+        // Try BFL API first for Neo Tokyo Glitch
+        console.log('🎨 [Background] Attempting generation with BFL API');
+        result = await generateWithBFL(request.mode, generationParams);
+        console.log('✅ [Background] BFL API generation successful');
+      } catch (bflError) {
+        console.warn('⚠️ [Background] BFL API failed, falling back to Stability.ai:', bflError);
         
         try {
-          // Fallback to Replicate (not Fal.ai for Neo Tokyo Glitch)
-          console.log('🎨 [Background] Attempting fallback with Replicate');
-          result = await generateWithReplicate(generationParams);
-          console.log('✅ [Background] Replicate fallback successful');
-        } catch (replicateError) {
-          console.error('❌ [Background] Both Stability.ai and Replicate failed');
-          throw new Error(`All providers failed. Stability: ${stabilityError}. Replicate: ${replicateError}`);
+          // Fallback to Stability.ai for Neo Tokyo Glitch
+          console.log('🎨 [Background] Attempting fallback with Stability.ai');
+          result = await generateWithStability(generationParams);
+          console.log('✅ [Background] Stability.ai fallback successful');
+        } catch (stabilityError) {
+          console.warn('⚠️ [Background] Stability.ai failed, trying Replicate:', stabilityError);
+          
+          try {
+            // Final fallback to Replicate
+            console.log('🎨 [Background] Attempting final fallback with Replicate');
+            result = await generateWithReplicate(generationParams);
+            console.log('✅ [Background] Replicate fallback successful');
+          } catch (replicateError) {
+            console.error('❌ [Background] All providers failed for Neo Tokyo Glitch');
+            throw new Error(`All providers failed. BFL: ${bflError}. Stability: ${stabilityError}. Replicate: ${replicateError}`);
+          }
         }
       }
     } else {
@@ -1695,7 +1704,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
       
       try {
         // Try BFL API first for supported modes
-        if (['presets', 'custom', 'emotion_mask', 'ghibli_reaction', 'neo_glitch'].includes(request.mode)) {
+        if (['presets', 'custom', 'emotion_mask', 'ghibli_reaction'].includes(request.mode)) {
           console.log('🎨 [Background] Attempting generation with BFL API');
           result = await generateWithBFL(request.mode, generationParams);
           console.log('✅ [Background] BFL API generation successful');
