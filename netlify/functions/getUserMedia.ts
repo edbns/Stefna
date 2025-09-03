@@ -83,15 +83,15 @@ export const handler: Handler = async (event) => {
     // Unified query with proper pagination
     const unifiedSql = `
       SELECT * FROM (
-        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'ghibli-reaction' as media_type FROM ghibli_reaction_media WHERE user_id = $1
+        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'ghibli_reaction' as media_type FROM ghibli_reaction_media WHERE user_id = $1
         UNION ALL
-        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'emotion-mask' as media_type FROM emotion_mask_media WHERE user_id = $1
+        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'emotion_mask' as media_type FROM emotion_mask_media WHERE user_id = $1
         UNION ALL
         SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'presets' as media_type FROM presets_media WHERE user_id = $1
         UNION ALL
-        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'custom-prompt' as media_type FROM custom_prompt_media WHERE user_id = $1
+        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'custom_prompt' as media_type FROM custom_prompt_media WHERE user_id = $1
         UNION ALL
-        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'neo-glitch' as media_type FROM neo_glitch_media WHERE user_id = $1
+        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, 'neo_glitch' as media_type FROM neo_glitch_media WHERE user_id = $1
       ) as combined_media
       ORDER BY created_at DESC
       LIMIT $2 OFFSET $3
