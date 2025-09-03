@@ -7,6 +7,7 @@ import LQIPImage from './LQIPImage'
 import { MediaCard as SpinnerCard } from './ui/Toasts'
 // LazyImage removed - using simple img tags for better performance
 // formatRemixCount removed - no more remix functionality
+import { getPresetTypeForFilter } from '../utils/presetMapping'
 
 interface MasonryMediaGridProps {
   media: UserMedia[]
@@ -276,13 +277,19 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             onClick={(e) => {
                               e.stopPropagation() // Prevent click from bubbling to media card
                               if (onPresetTagClick) {
-                                // Use the correct type for filtering
-                                const filterType = item.metadata?.presetType || item.type || 'presets'
+                                // Use the correct mapping utility for filtering
+                                const filterType = getPresetTypeForFilter(item)
                                 console.log('🔍 [MasonryMediaGrid] PresetTag clicked:', { 
                                   filterType, 
                                   itemType: item.type, 
-                                  metadataType: item.metadata?.presetType 
+                                  metadataType: item.metadata?.presetType,
+                                  presetKey: item.presetKey,
+                                  metadataPresetKey: item.metadata?.presetKey
                                 })
+                                
+                                // Scroll to top when filter is applied
+                                window.scrollTo({ top: 0, behavior: 'smooth' })
+                                
                                 onPresetTagClick(filterType)
                               }
                             }}
