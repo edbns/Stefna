@@ -92,50 +92,56 @@ interface UnifiedGenerationResponse {
 // Mode-specific FAL.ai model configurations
 const PHOTO_MODELS = [
   {
-    model: 'fal-ai/flux/dev/image-to-image',
-    name: 'Flux Dev I2I',
-    cost: 'medium',
+    model: 'fal-ai/flux-1/schnell/redux',
+    name: 'Flux 1 Schnell Redux',
+    cost: 'low',
     priority: 1,
-    description: 'High-quality Flux Dev image-to-image (much better than SDXL)'
+    description: 'Super cheap and fast generation'
   },
   {
-    model: 'banian/realistic-vision-v51',
-    name: 'Realistic Vision v5.1',
-    cost: 'medium',
+    model: 'fal-ai/flux/schnell/redux',
+    name: 'Flux Schnell Redux',
+    cost: 'low',
     priority: 2,
-    description: 'Reliable fallback with high identity preservation',
-    strength: 0.3,
-    guidance: 7.0
+    description: 'Fast stylized generation'
+  },
+  {
+    model: 'fal-ai/flux-pro/kontext/multi',
+    name: 'Flux Pro Kontext Multi',
+    cost: 'medium',
+    priority: 3,
+    description: 'Higher quality with multi-context'
   }
 ];
 
 const GHIBLI_MODELS = [
   {
-    model: 'banian/realistic-vision-v51',
-    name: 'Realistic Vision v5.1',
-    cost: 'medium',
+    model: 'fal-ai/flux-1/schnell/redux',
+    name: 'Flux 1 Schnell Redux',
+    cost: 'low',
     priority: 1,
-    description: 'Primary Ghibli fallback - high identity preservation, stylized outputs',
-    strength: 0.3,
-    guidance: 7.0
+    description: 'Super cheap and fast Ghibli-style generation'
   },
   {
-    model: 'lucataco/sdxl-img2img',
-    name: 'SDXL Image-to-Image',
-    cost: 'medium',
+    model: 'fal-ai/flux/schnell/redux',
+    name: 'Flux Schnell Redux',
+    cost: 'low',
     priority: 2,
-    description: 'High-res, consistent, follows prompts extremely well',
-    strength: 0.4,
-    guidance: 7.5
+    description: 'Fast stylized generation'
   },
   {
-    model: 'segmind/realvisxl-v3-img2img',
-    name: 'RealVisXL v3',
+    model: 'fal-ai/flux-pro/kontext/multi',
+    name: 'Flux Pro Kontext Multi',
     cost: 'medium',
     priority: 3,
-    description: 'Photorealistic with good identity preservation',
-    strength: 0.35,
-    guidance: 7.0
+    description: 'Higher quality with multi-context'
+  },
+  {
+    model: 'fal-ai/flux-pro/kontext',
+    name: 'Flux Pro Kontext',
+    cost: 'medium',
+    priority: 4,
+    description: 'High quality single-context'
   }
 ];
 
@@ -149,13 +155,13 @@ const VIDEO_MODELS = [
   }
 ];
 
-// IPA-safe Replicate fallback models for identity preservation
+// Ultimate Replicate fallback models (emergency only)
 const REPLICATE_FALLBACK_MODELS = [
   {
     model: 'banian/realistic-vision-v51',
     name: 'Realistic Vision v5.1',
     priority: 1,
-    description: 'Primary IPA fallback - high identity preservation, stylized outputs',
+    description: 'Emergency fallback - high identity preservation',
     strength: 0.3,
     guidance: 7.0
   },
@@ -163,7 +169,7 @@ const REPLICATE_FALLBACK_MODELS = [
     model: 'lucataco/sdxl-img2img',
     name: 'SDXL Image-to-Image',
     priority: 2,
-    description: 'High-res, consistent, follows prompts extremely well',
+    description: 'Emergency fallback - high-res, consistent',
     strength: 0.4,
     guidance: 7.5
   },
@@ -171,7 +177,7 @@ const REPLICATE_FALLBACK_MODELS = [
     model: 'segmind/realvisxl-v3-img2img',
     name: 'RealVisXL v3',
     priority: 3,
-    description: 'Photorealistic with good identity preservation',
+    description: 'Emergency fallback - photorealistic',
     strength: 0.35,
     guidance: 7.0
   }
@@ -882,8 +888,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
       console.log(`📤 [Background] Trying ${modelConfig.name} (${modelConfig.model})`);
       
       // Warn if using fallback models that might not be optimal for the mode
-      if (mode === 'ghibli_reaction' && modelConfig.model.includes('replicate')) {
-        console.log(`⚠️ [Background] Using Replicate fallback for Ghibli Reaction - may not match original style`);
+      if (modelConfig.model.includes('replicate')) {
+        console.log(`⚠️ [Background] Using Replicate fallback for ${mode} - may not match original style`);
       }
       
       let result;
