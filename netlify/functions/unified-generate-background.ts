@@ -29,6 +29,24 @@ const CORS_JSON_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Content-Type': 'application/json'
 } as const;
+
+// Helper function to convert image URL to base64
+async function urlToBase64(imageUrl: string): Promise<string> {
+  try {
+    console.log(`🔄 [BFL] Converting image URL to base64: ${imageUrl.substring(0, 50)}...`);
+    const res = await fetch(imageUrl);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch image: ${res.status} ${res.statusText}`);
+    }
+    const buffer = await res.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+    console.log(`✅ [BFL] Image converted to base64 (${base64.length} chars)`);
+    return base64;
+  } catch (error) {
+    console.error(`❌ [BFL] Failed to convert image to base64:`, error);
+    throw error;
+  }
+}
 // BFL API function for direct Flux access
 async function bflInvoke(endpoint: string, input: any): Promise<any> {
   const url = `https://api.bfl.ai/v1/${endpoint}`;
@@ -99,12 +117,11 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
         console.log("✅ [BFL Debug] Initial response:", {
           hasResult: !!result,
           resultKeys: Object.keys(result || {}),
-          hasId: !!result.id,
           hasPollingUrl: !!result.polling_url
         });
         
         // Check if this is a polling-based response
-        if (result.id && result.polling_url) {
+        if (result.polling_url) {
           console.log("🔄 [BFL Debug] Polling-based response detected, starting polling...");
           return await pollBFLResult(result.polling_url, headers);
         }
@@ -1197,10 +1214,17 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         bflInput.seed = Math.floor(Math.random() * 1000000);
       }
       
-      // For image-to-image generation, add the source image
+      // For image-to-image generation, add the source image as base64
       if (params.sourceAssetId) {
-        bflInput.image_prompt = params.sourceAssetId;
-        bflInput.image_prompt_strength = imageStrength;
+        try {
+          const base64Image = await urlToBase64(params.sourceAssetId);
+          bflInput.image_prompt = base64Image;
+          bflInput.image_prompt_strength = imageStrength;
+          console.log(`🖼️ [BFL API] Source image converted to base64 for ${modelConfig.endpoint}`);
+        } catch (error) {
+          console.error(`❌ [BFL API] Failed to convert source image to base64:`, error);
+          throw new Error(`Failed to prepare source image for BFL API: ${error}`);
+        }
       }
       
       console.log(`📤 [Background] BFL API request:`, {
