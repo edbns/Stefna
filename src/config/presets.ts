@@ -78,14 +78,21 @@ export const PRESETS: Record<PresetKey, PresetConfig> = (() => {
   return presets;
 })();
 
-// Helper to build your I2I payload (Flux I2I)
+// Helper to build your I2I payload (BFL Flux I2I)
 export function buildI2IPayload(preset: PresetConfig, image_url: string) {
   return {
-    model: 'fal-ai/ghiblify',
+    model: 'bfl/flux-pro-1.1',
     prompt: preset.prompt,
     image_url,
     strength: preset.strength,
-    num_inference_steps: 36, // Default steps for all presets
-    guidance_scale: 7.5,   // Default guidance for all presets
+    num_inference_steps: 30, // Optimized for BFL
+    guidance_scale: 8,   // Optimized for BFL
+    // BFL-specific parameters
+    raw: false,
+    prompt_upsampling: true,
+    safety_tolerance: 3,
+    output_format: 'jpeg',
+    image_prompt_strength: 0.45,
+    aspect_ratio: '4:5'
   };
 }

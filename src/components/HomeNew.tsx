@@ -2116,7 +2116,7 @@ const HomeNew: React.FC = () => {
     if (!ALLOWED_MODELS.includes(model)) {
       console.error("🚫 Invalid model:", model);
               notifyError({ title: 'Failed', message: 'Try again' });
-              return "fal-ai/ghiblify"; // Fallback to known working model
+              return "bfl/flux-pro-1.1"; // Fallback to BFL model
     }
     return model;
   };
@@ -2257,11 +2257,16 @@ const HomeNew: React.FC = () => {
         mode: 'emotionmask', 
         emotionMaskPresetId, 
         emotionMaskPresetLabel: emotionMaskPreset.label,
-        model: "fal-ai/ghiblify", // Use known working model
+        model: emotionMaskPreset.model, // Use preset model (BFL)
         strength: adjustedStrength, // Use preset strength
-        guidance_scale: 7.5, // Standard guidance for consistency
-        cfg_scale: 7.0, // Balanced creativity vs adherence
-        denoising_strength: adjustedStrength, // Match preset strength
+        guidance_scale: emotionMaskPreset.guidance_scale, // Use preset guidance
+        num_inference_steps: emotionMaskPreset.num_inference_steps, // Use preset steps
+        prompt_upsampling: emotionMaskPreset.prompt_upsampling, // Use preset upsampling
+        safety_tolerance: emotionMaskPreset.safety_tolerance, // Use preset safety
+        output_format: emotionMaskPreset.output_format, // Use preset format
+        raw: emotionMaskPreset.raw, // Use preset raw mode
+        image_prompt_strength: emotionMaskPreset.image_prompt_strength, // Use preset image strength
+        aspect_ratio: emotionMaskPreset.aspect_ratio, // Use preset aspect ratio
         generation_type: "emotion_mask_strict_ipa", // Strict identity preservation
         ipaThreshold: 0.75, // High similarity required for Neo Tokyo Glitch
         ipaRetries: 3, // Aggressive fallback
