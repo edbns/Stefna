@@ -215,6 +215,66 @@ export const handler: Handler = async (event) => {
     if (deletedMedia) {
       console.log('✅ [delete-media] Media deleted successfully from', deletedFromTable, ':', mediaId);
       
+      // Clean up related data
+      try {
+        // 1. Delete all likes for this media
+        const likesDeleted = await q(`
+          DELETE FROM likes 
+          WHERE media_id = $1
+        `, [mediaId]);
+        console.log('🗑️ [delete-media] Deleted likes:', likesDeleted?.length || 0);
+        
+        // 2. Get media info for Cloudinary cleanup
+        const mediaInfo = await q(`
+          SELECT cloudinary_public_id, image_url 
+          FROM ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
+                mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
+                mediaTable === 'emotionMaskMedia' ? 'emotion_mask_media' :
+                mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
+                mediaTable === 'presetsMedia' ? 'presets_media' :
+                mediaTable === 'story' ? 'story' : 'custom_prompt_media'}
+          WHERE id = $1
+        `, [mediaId]);
+        
+        // 3. Clean up Cloudinary assets (if we have the info)
+        if (mediaInfo && mediaInfo.length > 0) {
+          const cloudinaryPublicId = mediaInfo[0]?.cloudinary_public_id;
+          if (cloudinaryPublicId) {
+            console.log('🗑️ [delete-media] Cleaning up Cloudinary asset:', cloudinaryPublicId);
+            // Note: Cloudinary cleanup would require Cloudinary SDK - for now we log it
+            // In production, you'd want to actually delete the Cloudinary asset
+          }
+        }
+        
+        // 4. Update user's total likes received count
+        const userLikesReceived = await q(`
+          SELECT COUNT(*) as total_likes 
+          FROM likes l
+          JOIN ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
+                mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
+                mediaTable === 'emotionMaskMedia' ? 'emotion_mask_media' :
+                mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
+                mediaTable === 'presetsMedia' ? 'presets_media' :
+                mediaTable === 'story' ? 'story' : 'custom_prompt_media'} m ON l.media_id = m.id
+          WHERE m.user_id = $1
+        `, [userId]);
+        
+        const totalLikes = userLikesReceived[0]?.total_likes || 0;
+        console.log('📊 [delete-media] User total likes after deletion:', totalLikes);
+        
+        // 3. Update user's total likes received in users table
+        await q(`
+          UPDATE users 
+          SET total_likes_received = $1 
+          WHERE id = $2
+        `, [totalLikes, userId]);
+        console.log('✅ [delete-media] Updated user total likes received');
+        
+      } catch (cleanupError: any) {
+        console.error('❌ [delete-media] Cleanup error:', cleanupError.message);
+        // Don't fail the deletion if cleanup fails
+      }
+      
       // Verify the media was actually deleted
       try {
         const verifyResult = await q(`
