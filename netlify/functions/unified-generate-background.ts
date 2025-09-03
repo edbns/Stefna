@@ -1149,15 +1149,15 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
       // Prepare BFL API input based on model type
       let bflInput: any = {
         prompt: params.prompt,
-        prompt_upsampling: true,
-        safety_tolerance: 3,
-        output_format: "jpeg"
+        prompt_upsampling: params.prompt_upsampling ?? true,
+        safety_tolerance: params.safety_tolerance ?? 3,
+        output_format: params.output_format ?? "jpeg"
       };
       
-            // Add model-specific parameters
+      // Add model-specific parameters
       if (modelConfig.endpoint === 'flux-pro-1.1') {
         // Pro model uses width/height
-        const aspectRatio = getAspectRatioForMode(mode);
+        const aspectRatio = params.aspect_ratio || getAspectRatioForMode(mode);
         const dimensions = getDimensionsForAspectRatio(aspectRatio);
         bflInput.width = dimensions.width;
         bflInput.height = dimensions.height;
@@ -1168,19 +1168,19 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         
       } else if (modelConfig.endpoint === 'flux-pro-1.1-ultra') {
         // Ultra model uses aspect_ratio (not width/height)
-        const aspectRatio = getAspectRatioForMode(mode);
+        const aspectRatio = params.aspect_ratio || getAspectRatioForMode(mode);
         bflInput.aspect_ratio = aspectRatio;
         console.log(`📐 [BFL API] Ultra model - using aspect_ratio: ${aspectRatio}`);
         
         // Ultra models support raw mode for more natural look
-        bflInput.raw = false; // Set to true for more natural aesthetic
+        bflInput.raw = params.raw ?? false; // Use preset value or default to false
         
         // Add optional seed for consistency
         bflInput.seed = Math.floor(Math.random() * 1000000);
         
       } else if (modelConfig.endpoint === 'flux-pro-1.1-raw') {
         // Raw model uses width/height like Pro
-        const aspectRatio = getAspectRatioForMode(mode);
+        const aspectRatio = params.aspect_ratio || getAspectRatioForMode(mode);
         const dimensions = getDimensionsForAspectRatio(aspectRatio);
         bflInput.width = dimensions.width;
         bflInput.height = dimensions.height;
@@ -1195,8 +1195,8 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         try {
           const base64Image = await urlToBase64(params.sourceAssetId);
           bflInput.image_prompt = base64Image;
-          bflInput.image_prompt_strength = imageStrength;
-          console.log(`🖼️ [BFL API] Source image converted to base64 for ${modelConfig.endpoint}`);
+          bflInput.image_prompt_strength = params.image_prompt_strength ?? imageStrength;
+          console.log(`🖼️ [BFL API] Source image converted to base64 for ${modelConfig.endpoint}, strength: ${bflInput.image_prompt_strength}`);
         } catch (error) {
           console.error(`❌ [BFL API] Failed to convert source image to base64:`, error);
           throw new Error(`Failed to prepare source image for BFL API: ${error}`);

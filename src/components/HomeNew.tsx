@@ -2289,21 +2289,26 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = ghibliReactionPreset.prompt;
-              generationMeta = { 
-          mode: 'ghiblireact', 
-          ghibliReactionPresetId, 
-          ghibliReactionLabel: ghibliReactionPreset.label, 
-          model: "fal-ai/ghiblify", // Use known working model for Ghibli style
-          strength: ghibliReactionPreset.strength, // Use actual preset strength
-          guidance_scale: 7.5, // Standard guidance for consistency
-          cfg_scale: 7.0, // Balanced creativity vs adherence
-          denoising_strength: ghibliReactionPreset.strength, // Match preset strength
-          generation_type: "ghibli_reaction_moderate_ipa", // Moderate identity preservation
-          ipaThreshold: 0.6, // Medium similarity required
-          ipaRetries: 2, // Moderate fallback
-          ipaBlocking: true // Must pass to proceed
-        };
-              console.log('🎭 GHIBLI REACTION MODE: Using Ghibli reaction preset:', ghibliReactionPreset.label, effectivePrompt, 'Model: fal-ai/ghiblify');
+      generationMeta = { 
+        mode: 'ghiblireact', 
+        ghibliReactionPresetId, 
+        ghibliReactionLabel: ghibliReactionPreset.label, 
+        model: ghibliReactionPreset.model, // Use preset model (BFL)
+        strength: ghibliReactionPreset.strength, // Use preset strength
+        guidance_scale: ghibliReactionPreset.guidance_scale, // Use preset guidance
+        num_inference_steps: ghibliReactionPreset.num_inference_steps, // Use preset steps
+        prompt_upsampling: ghibliReactionPreset.prompt_upsampling, // Use preset upsampling
+        safety_tolerance: ghibliReactionPreset.safety_tolerance, // Use preset safety
+        output_format: ghibliReactionPreset.output_format, // Use preset format
+        raw: ghibliReactionPreset.raw, // Use preset raw mode
+        image_prompt_strength: ghibliReactionPreset.image_prompt_strength, // Use preset image strength
+        aspect_ratio: ghibliReactionPreset.aspect_ratio, // Use preset aspect ratio
+        generation_type: "ghibli_reaction_moderate_ipa", // Moderate identity preservation
+        ipaThreshold: 0.6, // Medium similarity required
+        ipaRetries: 2, // Moderate fallback
+        ipaBlocking: true // Must pass to proceed
+      };
+      console.log('🎭 GHIBLI REACTION MODE: Using BFL preset:', ghibliReactionPreset.label, 'Model:', ghibliReactionPreset.model);
       
     } else if (kind === 'neotokyoglitch') {
       // NEO TOKYO GLITCH MODE: Use Replicate integration for maximum glitch intensity
