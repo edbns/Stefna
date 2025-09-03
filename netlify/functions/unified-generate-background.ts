@@ -142,32 +142,25 @@ const GHIBLI_MODELS = [
 
 const VIDEO_MODELS = [
   {
-    model: 'fal-ai/kling-2-1-pro',
-    name: 'Kling 2.1 Pro',
-    cost: 'high',
-    priority: 1,
-    description: 'Best visual storytelling and special effects'
-  },
-  {
-    model: 'fal-ai/kling-2-1-standard',
-    name: 'Kling 2.1 Standard',
-    cost: 'medium',
-    priority: 2,
-    description: 'Fallback for faster / cheaper generation'
-  },
-  {
-    model: 'fal-ai/wan-2-1',
-    name: 'WAN 2.1',
+    model: 'fal-ai/fast-sdxl',
+    name: 'Fast SDXL',
     cost: 'low',
-    priority: 3,
-    description: 'Minimal motion, ultra cost-effective'
+    priority: 1,
+    description: 'Fast and reliable video generation'
   },
   {
-    model: 'fal-ai/pixverse-v4-5',
-    name: 'Pixverse v4.5',
+    model: 'fal-ai/fast-sdxl-img2img',
+    name: 'Fast SDXL Image-to-Image',
+    cost: 'low',
+    priority: 2,
+    description: 'Fast image-to-video generation'
+  },
+  {
+    model: 'fal-ai/flux/dev/image-to-image',
+    name: 'Flux Dev I2I',
     cost: 'medium',
-    priority: 4,
-    description: 'Artsy or stylized output'
+    priority: 3,
+    description: 'High quality image-to-video'
   }
 ];
 
@@ -933,22 +926,55 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
       
       if (mode === 'story_time') {
         // Video generation with retry logic
-        result = await falInvoke(modelConfig.model, {
+        const videoInput: any = {
           image_url: params.sourceAssetId,
           prompt: params.prompt,
           num_frames: 24,
           fps: 8
-        });
+        };
         
-        const videoUrl = result?.data?.video?.url;
+        // Add width and height to preserve original aspect ratio for video
+        if (params.sourceWidth && params.sourceHeight) {
+          videoInput.width = params.sourceWidth;
+          videoInput.height = params.sourceHeight;
+          console.log(`📐 [Fal.ai] Preserving original aspect ratio for video: ${params.sourceWidth}x${params.sourceHeight}`);
+        }
+        
+        result = await falInvoke(modelConfig.model, videoInput);
+        
+        // Check multiple possible video response formats
+        let videoUrl = null;
+        
+        // Format 1: result.data.video.url
+        if (result?.data?.video?.url) {
+          videoUrl = result.data.video.url;
+        }
+        // Format 2: result.video.url
+        else if (result?.video?.url) {
+          videoUrl = result.video.url;
+        }
+        // Format 3: result.output (some models return this)
+        else if (result?.output) {
+          videoUrl = typeof result.output === 'string' ? result.output : result.output?.url;
+        }
+        // Format 4: Direct URL in result
+        else if (typeof result === 'string' && result.startsWith('http')) {
+          videoUrl = result;
+        }
+        
         if (videoUrl) {
+          console.log(`✅ [Fal.ai] Found video URL from ${modelConfig.name}: ${videoUrl.substring(0, 100)}...`);
+          // Always upload to Cloudinary before saving/returning
+          const cloudinaryUrl = await uploadUrlToCloudinary(videoUrl);
           return {
             success: true,
             status: 'done',
             provider: 'fal',
-            outputUrl: videoUrl
+            outputUrl: cloudinaryUrl
           };
         }
+        
+        console.warn(`⚠️ [Fal.ai] No video URL found in response from ${modelConfig.name}`);
       } else {
         // Convert Cloudinary signed URL to public URL for Fal.ai
         let processedImageUrl = params.sourceAssetId;
@@ -1124,24 +1150,41 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
       'custom': 'custom_prompt_media',
       'emotion_mask': 'emotion_mask_media',
       'ghibli_reaction': 'ghibli_reaction_media',
-      'story_time': 'video_jobs'
+      'story_time': 'story' // Use story table instead of video_jobs
     };
 
     const tableName = tablesToCheck[request.mode as keyof typeof tablesToCheck];
     if (tableName) {
-      const existing = await qOne(`
-        SELECT id FROM ${tableName} WHERE run_id = $1
-      `, [request.runId]);
+      // For story_time, check by id instead of run_id since story table doesn't have run_id
+      if (request.mode === 'story_time') {
+        const existing = await qOne(`
+          SELECT id FROM ${tableName} WHERE id = $1
+        `, [request.runId]);
+        
+        if (existing) {
+          console.warn(`⚠️ [Background] Story generation ${request.runId} already exists in database, skipping duplicate`);
+          await finalizeCredits(request.userId, request.mode + '_generation', request.runId, false);
+          return {
+            success: false,
+            status: 'failed',
+            error: 'Generation already completed'
+          };
+        }
+      } else {
+        // For other modes, check by run_id
+        const existing = await qOne(`
+          SELECT id FROM ${tableName} WHERE run_id = $1
+        `, [request.runId]);
 
-      if (existing) {
-        console.warn(`⚠️ [Background] Generation ${request.runId} already exists in database, skipping duplicate`);
-        // Refund credits for duplicate attempt
-        await finalizeCredits(request.userId, request.mode + '_generation', request.runId, false);
-        return {
-          success: false,
-          status: 'failed',
-          error: 'Generation already completed'
-        };
+        if (existing) {
+          console.warn(`⚠️ [Background] Generation ${request.runId} already exists in database, skipping duplicate`);
+          await finalizeCredits(request.userId, request.mode + '_generation', request.runId, false);
+          return {
+            success: false,
+            status: 'failed',
+            error: 'Generation already completed'
+          };
+        }
       }
     }
 
