@@ -33,13 +33,6 @@ const CORS_JSON_HEADERS = {
 async function bflInvoke(endpoint: string, input: any): Promise<any> {
   const url = `https://api.bfl.ai/v1/${endpoint}`;
   
-  // Debug logging for authentication
-  console.log("📤 [BFL Debug] API Key check:", {
-    hasKey: !!BFL_API_KEY,
-    keyLength: BFL_API_KEY?.length || 0,
-    keyPrefix: BFL_API_KEY?.substring(0, 4) + '...' || 'none'
-  });
-  
   console.log("📤 [BFL Debug] Request details:", {
     url,
     endpoint,
@@ -47,56 +40,14 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
     inputKeys: Object.keys(input || {})
   });
   
-  // Try different authentication formats
-  const authHeaders = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${BFL_API_KEY}`
-  };
-  
-  // Alternative: try without "Bearer" prefix
-  const altAuthHeaders = {
-    'Content-Type': 'application/json',
-    'Authorization': BFL_API_KEY
-  };
-  
-  console.log("🔑 [BFL Debug] Trying auth format 1:", {
-    Authorization: `Bearer ${BFL_API_KEY?.substring(0, 8)}...`
-  });
-  
-  let res = await fetch(url, {
+  const res = await fetch(url, {
     method: 'POST',
-    headers: authHeaders,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${BFL_API_KEY}`
+    },
     body: JSON.stringify(input)
   });
-  
-  // If first attempt fails, try without "Bearer" prefix
-  if (!res.ok && res.status === 403) {
-    console.log("🔑 [BFL Debug] Auth format 1 failed, trying format 2:", {
-      Authorization: `${BFL_API_KEY?.substring(0, 8)}...`
-    });
-    
-    res = await fetch(url, {
-      method: 'POST',
-      headers: altAuthHeaders,
-      body: JSON.stringify(input)
-    });
-  }
-  
-  // If second attempt fails, try with "Key" prefix (like Fal.ai)
-  if (!res.ok && res.status === 403) {
-    console.log("🔑 [BFL Debug] Auth format 2 failed, trying format 3:", {
-      Authorization: `Key ${BFL_API_KEY?.substring(0, 8)}...`
-    });
-    
-    res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Key ${BFL_API_KEY}`
-      },
-      body: JSON.stringify(input)
-    });
-  }
   
   console.log("📥 [BFL Debug] Response:", {
     status: res.status,
@@ -1046,14 +997,6 @@ async function generateWithReplicate(params: any): Promise<UnifiedGenerationResp
 // BFL API generation with fallback to Fal.ai
 async function generateWithBFL(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
   console.log(`🚀 [Background] Starting BFL API generation for mode: ${mode}`);
-  
-  // Check if BFL API key is available
-  if (!BFL_API_KEY) {
-    console.error('❌ [BFL] BFL_API_KEY environment variable is not set');
-    throw new Error('BFL API key not configured - falling back to Fal.ai');
-  }
-  
-  console.log(`🔑 [BFL] API Key status: ${BFL_API_KEY ? 'Present' : 'Missing'} (length: ${BFL_API_KEY?.length || 0})`);
   
   // Select models based on mode
   let models;
