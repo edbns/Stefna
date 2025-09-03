@@ -462,9 +462,9 @@ const HomeNew: React.FC = () => {
 
   // Debug preset changes
   useEffect(() => {
-    console.log('🔍 selectedPreset changed to:', selectedPreset)
+    // console.log('🔍 selectedPreset changed to:', selectedPreset) // REMOVED - excessive debug logging
     if (selectedPreset) {
-      console.log('🎨 Preset details:', getPresetById(selectedPreset as string, availablePresets))
+      // console.log('🎨 Preset details:', getPresetById(selectedPreset as string, availablePresets)) // REMOVED - excessive debug logging
       // Update the ref for compatibility
       selectedPresetRef.current = selectedPreset as string | null
     } else {
@@ -1753,18 +1753,18 @@ const HomeNew: React.FC = () => {
             // Check for finalUrl (main media assets) or imageUrl (Neo Tokyo Glitch)
             if (item.finalUrl && item.finalUrl.startsWith('http')) {
               mediaUrl = item.finalUrl;
-              console.log(`🔗 URL mapping for item ${item.id}:`, {
-                provider: provider,
-                url: item.finalUrl,
-                source: 'finalUrl'
-              });
+              // console.log(`🔗 URL mapping for item ${item.id}:`, { // REMOVED - excessive debug logging
+              //   provider: provider,
+              //   url: item.finalUrl,
+              //   source: 'finalUrl'
+              // });
             } else if (item.imageUrl && item.imageUrl.startsWith('http')) {
               mediaUrl = item.imageUrl;
-              console.log(`🔗 URL mapping for item ${item.id}:`, {
-                provider: provider,
-                url: item.imageUrl,
-                source: 'imageUrl'
-              });
+              // console.log(`🔗 URL mapping for item ${item.id}:`, { // REMOVED - excessive debug logging
+              //   provider: provider,
+              //   url: item.imageUrl,
+              //   source: 'imageUrl'
+              // });
             } else {
               // Skip items without valid URLs - the backend should provide them
               console.warn(`⚠️ Skipping item ${item.id}: no valid URL from backend`, {
@@ -1818,10 +1818,10 @@ const HomeNew: React.FC = () => {
 
         
         if (isInitial) {
-          console.log('🎯 Setting initial feed with items:', mapped.length, 'first item ID:', mapped[0]?.id)
+          // console.log('🎯 Setting initial feed with items:', mapped.length, 'first item ID:', mapped[0]?.id) // REMOVED - excessive debug logging
           setFeed(mapped)
         } else {
-          console.log('🎯 Adding more items to feed:', mapped.length)
+          // console.log('🎯 Adding more items to feed:', mapped.length) // REMOVED - excessive debug logging
           setFeed(prev => [...prev, ...mapped])
         }
         
