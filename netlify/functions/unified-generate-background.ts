@@ -1049,13 +1049,6 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           input.num_inference_steps = steps;
         }
         
-        // Flux Pro Depth Finetuned specific parameters (primary for Ghibli/Emotion)
-        if (modelConfig.model === 'fal-ai/flux-pro/v1/depth-finetuned') {
-          input.image_strength = (mode === 'ghibli_reaction' || mode === 'emotion_mask') ? 0.05 : 0.08; // Very low strength for subtle changes
-          input.guidance_scale = 6.5; // Lower guidance for more realistic results
-          console.log(`🎯 [Fal.ai] Using Flux Pro Depth Finetuned with strength ${input.image_strength}, guidance ${input.guidance_scale}`);
-        }
-        
         // Flux Dev specific parameters
         if (isFlux) {
           input.sync_mode = true; // Enable sync mode for better results
