@@ -567,7 +567,6 @@ const HomeNew: React.FC = () => {
   const [feed, setFeed] = useState<UserMedia[]>([])
   const [isLoadingFeed, setIsLoadingFeed] = useState(true)
   const [hasMoreFeed, setHasMoreFeed] = useState(true)
-  const [feedPage, setFeedPage] = useState(0)
   
 
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -1640,120 +1639,22 @@ const HomeNew: React.FC = () => {
   }, [])
 
   // 🚀 UNIFIED INFINITE SCROLL: Single loading system for consistent behavior
-  const [isIntersecting, setIsIntersecting] = useState(false)
   const [lastItemRef, setLastItemRef] = useState<HTMLDivElement | null>(null)
   
-  // Unified loading: Use the same system for both initial and scroll loading
-  const loadMoreFeed = async () => {
-    if (!hasMoreFeed || isLoadingMore) return
-    
-    try {
-      setIsLoadingMore(true)
-      console.log('🚀 [UnifiedScroll] Loading more items...')
-      
-      // Use same batch size as initial load for consistency
-      const batchSize = 20
-      const offset = feed.length
-      
-      console.log('🔍 [UnifiedScroll] Loading batch:', {
-        batchSize,
-        currentFeedLength: feed.length,
-        offset,
-        expectedRange: `${offset}-${offset + batchSize - 1}`
-      })
-      
-      const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${batchSize}&offset=${offset}`)
-      
-      if (res.ok) {
-        const resp = await res.json()
-        
-        if (resp.success && resp.items?.length > 0) {
-          const newItems = resp.items
-            .map((item: any): UserMedia | null => {
-              // Same mapping logic as loadFeed for consistency
-              let mediaUrl: string;
-              let provider = item.provider || 'unknown';
-              
-              if (item.finalUrl && item.finalUrl.startsWith('http')) {
-                mediaUrl = item.finalUrl;
-              } else if (item.imageUrl && item.imageUrl.startsWith('http')) {
-                mediaUrl = item.imageUrl;
-              } else {
-                return null;
-              }
-              
-              return {
-                id: item.id,
-                userId: item.userId || '',
-                userAvatar: item.user?.avatar || undefined,
-                userTier: item.user?.tier || undefined,
-                type: item.mediaType === 'video' ? 'video' : 'photo',
-                url: mediaUrl,
-                thumbnailUrl: mediaUrl,
-                prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
-                style: undefined,
-                aspectRatio: 4/3,
-                width: 800,
-                height: 600,
-                timestamp: item.createdAt,
-                originalMediaId: item.sourceAssetId || undefined,
-                tokensUsed: item.mediaType === 'video' ? 5 : 2,
-                likes: 0,
-                isPublic: true,
-                tags: [],
-                metadata: { 
-                  quality: 'high', 
-                  generationTime: 0, 
-                  modelVersion: '1.0',
-                  presetKey: item.presetKey,
-                  presetType: item.type,
-                  // Story Time video metadata
-                  videoResults: item.metadata?.videoResults,
-                  totalVideos: item.metadata?.totalVideos,
-                  successfulVideos: item.metadata?.successfulVideos
-                },
-                cloudinaryPublicId: item.cloudinaryPublicId,
-                mediaType: item.mediaType,
-              }
-            })
-            .filter((item: UserMedia | null): item is UserMedia => item !== null)
-          
-          console.log('✅ [UnifiedScroll] New items loaded:', newItems.length)
-          
-          // Add directly to main feed (no buffer needed)
-          setFeed(prev => [...prev, ...newItems])
-          
-          // Update hasMore flag
-          setHasMoreFeed(resp.hasMore !== false)
-          
-          console.log('🔄 [UnifiedScroll] Items added to main feed, total:', feed.length + newItems.length)
-        } else {
-          setHasMoreFeed(false)
-        }
-      }
-    } catch (error) {
-      console.error('❌ [UnifiedScroll] Loading failed:', error)
-    } finally {
-      setIsLoadingMore(false)
-    }
-  }
-
-  // Intersection Observer for unified infinite scroll
+  // Intersection observer for infinite scroll
   useEffect(() => {
     if (!lastItemRef) return
     
     const observer = new IntersectionObserver(
       (entries) => {
-        const [entry] = entries
-        setIsIntersecting(entry.isIntersecting)
-        
+        const entry = entries[0]
         if (entry.isIntersecting && hasMoreFeed && !isLoadingMore) {
           console.log('👁️ [UnifiedScroll] Last item visible, triggering load', {
             hasMoreFeed,
             isLoadingMore,
             feedLength: feed.length
           })
-          loadMoreFeed()
+          loadFeed(false) // Load more items using the main loadFeed function
         }
       },
       {
@@ -1769,20 +1670,6 @@ const HomeNew: React.FC = () => {
     }
   }, [lastItemRef, hasMoreFeed, isLoadingMore])
 
-    // Legacy scroll handler as fallback (can be removed once intersection observer is proven)
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 500) {
-        if (hasMoreFeed && !isLoadingMore) {
-          loadMoreFeed()
-        }
-      }
-    }
-    
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [hasMoreFeed, isLoadingMore])
-
   // Load public feed on mount
   const loadFeed = async (isInitial = true) => {
     // Add minimum loading time to ensure skeleton is visible
@@ -1792,25 +1679,21 @@ const HomeNew: React.FC = () => {
     try {
       if (isInitial) {
         setIsLoadingFeed(true)
-        setFeedPage(0)
       } else {
         setIsLoadingMore(true)
       }
       
       console.log(`🔄 Loading public feed ${isInitial ? '(initial)' : '(more)'}...`)
       const pageSize = 50 // Smaller batches for smooth infinite scroll
-      // 🚨 CRITICAL FIX: Calculate offset correctly for pagination
-      // For initial load: offset = 0
-      // For subsequent loads: offset = (current page + 1) * pageSize
-      const offset = isInitial ? 0 : (feedPage + 1) * pageSize
+      // Calculate offset based on current feed length for infinite scroll
+      const offset = isInitial ? 0 : feed.length
       
-      console.log('🔍 [Pagination Debug]', {
-        isInitial,
-        feedPage,
-        pageSize,
-        calculatedOffset: offset,
-        expectedItems: `${offset}-${offset + pageSize - 1}`
-      })
+              console.log('🔍 [Pagination Debug]', {
+          isInitial,
+          pageSize,
+          calculatedOffset: offset,
+          expectedItems: `${offset}-${offset + pageSize - 1}`
+        })
       
       const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${pageSize}&offset=${offset}`)
       console.log('📡 Feed response status:', res.status)
@@ -1913,7 +1796,6 @@ const HomeNew: React.FC = () => {
         } else {
           console.log('🎯 Adding more items to feed:', mapped.length)
           setFeed(prev => [...prev, ...mapped])
-          setFeedPage(prev => prev + 1)
         }
         
         setHasMoreFeed(hasMore)
@@ -3589,10 +3471,9 @@ const HomeNew: React.FC = () => {
               {import.meta.env.DEV && (
                 <div className="fixed bottom-4 right-4 bg-black/80 text-white text-xs p-2 rounded backdrop-blur-sm z-50">
                   <div>📊 Feed: {feed.length}</div>
-                  <div>🔍 Filtered: {filteredFeed.length}</div>
-                  <div>🎯 Active Filter: {activeFeedFilter ? getFilterDisplayName(activeFeedFilter) : 'none'}</div>
-                  <div>👁️ Intersecting: {isIntersecting ? 'Yes' : 'No'}</div>
-                  <div>📡 Has More: {hasMoreFeed ? 'Yes' : 'No'}</div>
+                                      <div>🔍 Filtered: {filteredFeed.length}</div>
+                    <div>🎯 Active Filter: {activeFeedFilter ? getFilterDisplayName(activeFeedFilter) : 'none'}</div>
+                    <div>📡 Has More: {hasMoreFeed ? 'Yes' : 'No'}</div>
                   <div>⏳ Loading: {isLoadingMore ? 'Yes' : 'No'}</div>
                 </div>
               )}
