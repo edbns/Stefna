@@ -2348,23 +2348,28 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = neoTokyoGlitchPreset.prompt;
-              generationMeta = { 
-          mode: 'neotokyoglitch', 
-          neoTokyoGlitchPresetId, 
-          neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
-        model: "stability-ai/stable-diffusion-img2img", // Use Stability.ai for Neo Tokyo Glitch
-        strength: 0.5, // Stability.ai preset strength
-        guidance_scale: 6, // Stability.ai preset guidance
-          cfg_scale: 7.0, // Balanced creativity vs adherence
-        denoising_strength: 0.5, // Match Stability.ai preset strength
-          features: neoTokyoGlitchPreset.features,
+      generationMeta = { 
+        mode: 'neotokyoglitch', 
+        neoTokyoGlitchPresetId, 
+        neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
+        model: neoTokyoGlitchPreset.model, // Use preset model (BFL for tattoos)
+        strength: neoTokyoGlitchPreset.strength, // Use preset strength
+        guidance_scale: neoTokyoGlitchPreset.guidance_scale, // Use preset guidance
+        num_inference_steps: neoTokyoGlitchPreset.num_inference_steps, // Use preset steps
+        prompt_upsampling: neoTokyoGlitchPreset.prompt_upsampling, // Use preset upsampling
+        safety_tolerance: neoTokyoGlitchPreset.safety_tolerance, // Use preset safety
+        output_format: neoTokyoGlitchPreset.output_format, // Use preset format
+        raw: neoTokyoGlitchPreset.raw, // Use preset raw mode
+        image_prompt_strength: neoTokyoGlitchPreset.image_prompt_strength, // Use preset image strength
+        aspect_ratio: neoTokyoGlitchPreset.aspect_ratio, // Use preset aspect ratio
+        features: neoTokyoGlitchPreset.features,
         generation_type: "neo_tokyo_strict_ipa", // Strict identity preservation
         ipaThreshold: 0.75, // High similarity required for Neo Tokyo Glitch
         ipaRetries: 3, // Aggressive fallback
         ipaBlocking: true, // Must pass to proceed
         presetKey: neoTokyoGlitchPresetId // Store the full preset ID instead of short key
-        };
-              console.log('🎭 NEO TOKYO GLITCH MODE: Using Stability.ai + Fal.ai fallback:', neoTokyoGlitchPreset.label, 'Preset:', presetKey);
+      };
+      console.log('🎭 NEO TOKYO GLITCH MODE: Using preset parameters:', neoTokyoGlitchPreset.label, 'Model:', neoTokyoGlitchPreset.model);
       
     } else if (kind === 'storytime') {
       // STORY TIME MODE: Use multiple images for video generation

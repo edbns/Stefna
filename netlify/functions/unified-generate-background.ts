@@ -1125,6 +1125,8 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
     models = BFL_EMOTION_MODELS;
   } else if (mode === 'ghibli_reaction') {
     models = BFL_GHIBLI_MODELS;
+  } else if (mode === 'neo_glitch') {
+    models = BFL_GHIBLI_MODELS; // Use Ultra for Neo Tokyo Glitch too
   } else {
     throw new Error(`BFL API not supported for mode: ${mode}`);
   }
@@ -1135,7 +1137,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
   }
   
   // Validate image_strength for image-to-image models
-  const imageStrength = mode === 'ghibli_reaction' ? 0.55 : 0.45;
+  const imageStrength = mode === 'ghibli_reaction' ? 0.55 : mode === 'neo_glitch' ? 0.35 : 0.45;
   if (imageStrength <= 0 || imageStrength > 1) {
     throw new Error("Invalid image_strength for BFL API image-to-image generation");
   }
@@ -1693,7 +1695,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
       
       try {
         // Try BFL API first for supported modes
-        if (['presets', 'custom', 'emotion_mask', 'ghibli_reaction'].includes(request.mode)) {
+        if (['presets', 'custom', 'emotion_mask', 'ghibli_reaction', 'neo_glitch'].includes(request.mode)) {
           console.log('🎨 [Background] Attempting generation with BFL API');
           result = await generateWithBFL(request.mode, generationParams);
           console.log('✅ [Background] BFL API generation successful');

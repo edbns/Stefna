@@ -13,6 +13,13 @@ export type NeoTokyoGlitchPreset = {
   features?: string[]
   guidance_scale?: number
   num_inference_steps?: number
+  // BFL-specific parameters
+  prompt_upsampling?: boolean
+  safety_tolerance?: number
+  output_format?: string
+  raw?: boolean
+  image_prompt_strength?: number
+  aspect_ratio?: string
 }
 
 export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
@@ -51,18 +58,24 @@ nudity, dull colors, flat lighting, weak glitch effects, minimal transformation`
   {
     id: 'neo_tokyo_tattoos',
     label: 'Tech Tattoos',
-    prompt: `Cyberpunk portrait with glowing cyber tattoos. Face retains core features with glitch distortion and color shifts. Add glowing cyan and magenta cyber tattoos over face and neck as holographic circuits. Tattoos are layered, not replacing the face. Add glitch overlays, datamosh effects, and neon lighting. Background: chaotic digital Tokyo, broken signage, animated overlays. Colors: glowing pink, blue, cyan neon over dark backdrop.`,
-    negative_prompt: `small tattoos, faint markings, weak glow, blurry face, merged features, 
-nudity, boring style, unflattering, bad anatomy, pose change`,
-    strength: 0.48,
-    model: 'stability-ai/stable-diffusion-img2img',
+    prompt: `Transform the human face into a cyberpunk glitch aesthetic with vivid neon tattoos and holographic overlays. Retain the subject's facial features, gender, and ethnicity. Apply stylized glowing tattoos on the cheeks, jawline, or neck. Add glitch patterns, chromatic distortion, and soft RGB splits. Use cinematic backlighting with a futuristic, dreamlike tone. The skin should retain texture, but colors can be surreal. Preserve facial integrity — no face swap or anime overlay.`,
+    negative_prompt: `cartoon, anime, 2D, blurry, face merge, distorted anatomy, extra limbs, broken skin texture, glowing eyes, full character replacement, plastic look, mask overlay, 3D render, low quality, harsh shadows`,
+    strength: 0.35,
+    model: 'bfl/flux-pro-1.1-ultra',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
-    features: ['tech_tattoos_dominant', 'identity_softened', 'stylized_cyberpunk', 'high_fashion_sci_fi'],
-    guidance_scale: 8.5,
-    num_inference_steps: 40
+    features: ['glitch', 'tattoos', 'neon', 'face_preservation', 'cyberpunk'],
+    guidance_scale: 9,
+    num_inference_steps: 28,
+    // BFL-specific parameters
+    raw: true,
+    prompt_upsampling: true,
+    safety_tolerance: 3,
+    output_format: 'jpeg',
+    image_prompt_strength: 0.35,
+    aspect_ratio: '3:4'
   },
   {
     id: 'neo_tokyo_scanlines',
