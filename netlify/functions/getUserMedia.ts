@@ -60,6 +60,14 @@ export const handler: Handler = async (event) => {
       offset
     });
 
+    // Debug: Check if user exists
+    const userExists = await q(`SELECT id FROM users WHERE id = $1`, [userId]);
+    console.log('🔍 [getUserMedia] User exists:', !!userExists[0]);
+
+    // Debug: Check neo_glitch_media specifically
+    const neoGlitchCount = await q(`SELECT COUNT(*) as count FROM neo_glitch_media WHERE user_id = $1`, [userId]);
+    console.log('🔍 [getUserMedia] Neo glitch items for user:', neoGlitchCount[0]?.count || 0);
+
     // Get total count for accurate pagination
     const countSql = `
       SELECT COUNT(*) as total FROM (

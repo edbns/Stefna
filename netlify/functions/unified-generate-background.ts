@@ -544,7 +544,10 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
     console.log(`💾 [Background] Saving generation result to database:`, {
       mode: request.mode,
       hasOutput: !!result.outputUrl,
-      runId: request.runId
+      runId: request.runId,
+      userId: request.userId,
+      sourceAssetId: request.sourceAssetId,
+      outputUrl: result.outputUrl
     });
 
     const baseData = {
@@ -579,6 +582,10 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
           baseData.metadata
         ]);
         console.log(`✅ [Background] Saved neo_glitch result to database`);
+        
+        // Debug: Verify what was actually saved
+        const savedRow = await q(`SELECT * FROM neo_glitch_media WHERE run_id = $1`, [request.runId]);
+        console.log(`🧪 [Background] Saved neo_glitch row:`, savedRow[0]);
         break;
 
       case 'presets':
