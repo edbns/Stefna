@@ -97,8 +97,8 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
       {/* Centered Media Display */}
       <div className="h-full w-full flex flex-col items-center justify-center p-8">
-        {/* Media Container - Made smaller */}
-        <div className="flex-1 flex items-center justify-center max-w-4xl max-h-[70vh]">
+        {/* Media Container - Full screen display */}
+        <div className="flex-1 flex items-center justify-center max-w-full max-h-full">
           {current.type === 'video' ? (
             <video 
               src={current.url} 

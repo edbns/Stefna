@@ -41,8 +41,8 @@ const PresetTag: React.FC<PresetTagProps> = ({
     lg: 'px-4 py-2 text-base'
   }
   
-  // Unified glossy black styling for all preset types
-  const unifiedStyle = 'bg-glossy-black-800 text-glossy-white-50 border-glossy-black-600 hover:bg-glossy-black-700'
+  // Simple black styling that works
+  const unifiedStyle = 'bg-black/80 text-white border-white/20 hover:bg-black/90'
   
   // Use the new mapping utility
   const getDisplayText = () => {

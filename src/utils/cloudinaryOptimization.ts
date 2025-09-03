@@ -93,13 +93,13 @@ export function optimizeCloudinaryUrl(
 }
 
 /**
- * Ultra-aggressive optimization for feed images (maximum performance)
- * Uses smallest possible sizes and highest compression
+ * HD quality optimization for feed images (high quality for photo editing app)
+ * Uses larger sizes and higher quality for professional appearance
  */
 export function optimizeFeedImage(url: string): string {
   return optimizeCloudinaryUrl(url, {
-    width: 400, // Smaller size for feed
-    quality: 70, // Higher compression
+    width: 800, // Larger size for HD quality
+    quality: 90, // Higher quality for photo editing app
     format: 'auto', // WebP/AVIF
     progressive: true,
     crop: 'limit'
