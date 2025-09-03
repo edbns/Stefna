@@ -30,6 +30,42 @@ const CORS_JSON_HEADERS = {
   'Content-Type': 'application/json'
 } as const;
 
+// Aspect ratio utilities
+function getAspectRatioForMode(mode: string): string {
+  switch (mode) {
+    case 'ghibli_reaction':
+    case 'emotion_mask':
+    case 'custom':
+    case 'presets':
+      return '4:5'; // Instagram/Facebook/X-friendly portrait
+
+    case 'neo_glitch':
+      return '16:9'; // Cinematic wide (Stability.ai)
+
+    case 'story_time':
+      return '9:16'; // Vertical for TikTok/Reels (Kling video)
+
+    default:
+      return '1:1'; // Safe fallback
+  }
+}
+
+function getDimensionsForAspectRatio(aspectRatio: string): { width: number, height: number } {
+  switch (aspectRatio) {
+    case '4:5':
+      return { width: 1024, height: 1280 };
+    case '3:4':
+      return { width: 960, height: 1280 };
+    case '16:9':
+      return { width: 1280, height: 720 };
+    case '9:16':
+      return { width: 720, height: 1280 };
+    case '1:1':
+    default:
+      return { width: 1024, height: 1024 };
+  }
+}
+
 // Helper function to convert image URL to base64
 async function urlToBase64(imageUrl: string): Promise<string> {
   try {
@@ -1165,32 +1201,22 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
             // Add model-specific parameters
       if (modelConfig.endpoint === 'flux-pro-1.1') {
         // Pro model uses width/height
-        if (params.sourceWidth && params.sourceHeight) {
-          bflInput.width = params.sourceWidth;
-          bflInput.height = params.sourceHeight;
-          console.log(`📐 [BFL API] Pro model - preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
-        } else {
-          // Default to 1024x1024 if no dimensions provided
-          bflInput.width = 1024;
-          bflInput.height = 1024;
-          console.log(`📐 [BFL API] Pro model - using default size: 1024x1024`);
-        }
+        const aspectRatio = getAspectRatioForMode(mode);
+        const dimensions = getDimensionsForAspectRatio(aspectRatio);
+        bflInput.width = dimensions.width;
+        bflInput.height = dimensions.height;
+        console.log(`📐 [BFL API] Pro model - using ${aspectRatio} aspect ratio: ${dimensions.width}x${dimensions.height}`);
         
         // Add optional seed for consistency
         bflInput.seed = Math.floor(Math.random() * 1000000);
         
       } else if (modelConfig.endpoint === 'flux-pro-1.1-ultra') {
         // Ultra model uses width/height (same as Pro)
-        if (params.sourceWidth && params.sourceHeight) {
-          bflInput.width = params.sourceWidth;
-          bflInput.height = params.sourceHeight;
-          console.log(`📐 [BFL API] Ultra model - preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
-        } else {
-          // Default to 1024x1024 if no dimensions provided
-          bflInput.width = 1024;
-          bflInput.height = 1024;
-          console.log(`📐 [BFL API] Ultra model - using default size: 1024x1024`);
-        }
+        const aspectRatio = getAspectRatioForMode(mode);
+        const dimensions = getDimensionsForAspectRatio(aspectRatio);
+        bflInput.width = dimensions.width;
+        bflInput.height = dimensions.height;
+        console.log(`📐 [BFL API] Ultra model - using ${aspectRatio} aspect ratio: ${dimensions.width}x${dimensions.height}`);
         
         // Ultra models support raw mode for more natural look
         bflInput.raw = false; // Set to true for more natural aesthetic
@@ -1200,15 +1226,11 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         
       } else if (modelConfig.endpoint === 'flux-pro-1.1-raw') {
         // Raw model uses width/height like Pro
-        if (params.sourceWidth && params.sourceHeight) {
-          bflInput.width = params.sourceWidth;
-          bflInput.height = params.sourceHeight;
-          console.log(`📐 [BFL API] Raw model - preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
-        } else {
-          bflInput.width = 1024;
-          bflInput.height = 1024;
-          console.log(`📐 [BFL API] Raw model - using default size: 1024x1024`);
-        }
+        const aspectRatio = getAspectRatioForMode(mode);
+        const dimensions = getDimensionsForAspectRatio(aspectRatio);
+        bflInput.width = dimensions.width;
+        bflInput.height = dimensions.height;
+        console.log(`📐 [BFL API] Raw model - using ${aspectRatio} aspect ratio: ${dimensions.width}x${dimensions.height}`);
         
         // Add optional seed for consistency
         bflInput.seed = Math.floor(Math.random() * 1000000);
