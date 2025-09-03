@@ -39,7 +39,13 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
       'ghibli_sparkle': 'Sparkle',
       'ghibli_blush': 'Blush',
       'ghibli_dreamy': 'Dreamy',
-      'ghibli_magical': 'Magical'
+      'ghibli_magical': 'Magical',
+      'tears': 'Tears',
+      'shock': 'Shock',
+      'sparkle': 'Sparkle',
+      'blush': 'Blush',
+      'dreamy': 'Dreamy',
+      'magical': 'Magical'
     }
     return ghibliPresets[presetKey] || 'Ghibli'
   }

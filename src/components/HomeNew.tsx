@@ -1872,11 +1872,11 @@ const HomeNew: React.FC = () => {
             type: item.mediaType === 'video' ? 'video' : 'photo',
             url: mediaUrl,
             thumbnailUrl: mediaUrl, // Use same URL for thumbnail
-                            prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'), // Use actual prompt or fallback
+            prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'), // Use actual prompt or fallback
             style: undefined,
-            aspectRatio: 4/3, // Default aspect ratio
-            width: 800, // Default width
-            height: 600, // Default height
+            aspectRatio: undefined, // Remove hardcoded default
+            width: undefined, // Remove hardcoded default
+            height: undefined, // Remove hardcoded default
             timestamp: item.created_at, // Backend sends created_at (snake_case)
             originalMediaId: item.source_url || undefined, // Backend sends source_url
             likes_count: item.likes_count || 0, // Add likes count from backend

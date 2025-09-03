@@ -16,9 +16,9 @@ export interface UserMedia {
   prompt: string
   style?: string
   presetKey?: string // For PresetTag display
-  aspectRatio: number // width/height ratio
-  width: number
-  height: number
+  aspectRatio?: number // width/height ratio - make optional
+  width?: number // make optional
+  height?: number // make optional
   timestamp: string
   originalMediaId?: string // For remixes, reference to original (parentId)
   tokensUsed: number
@@ -455,7 +455,7 @@ class UserMediaService {
       columnArrays[shortestColumnIndex].push(item)
       
       // Update column height (aspect ratio affects height)
-      columnHeights[shortestColumnIndex] += 1 / item.aspectRatio
+              columnHeights[shortestColumnIndex] += 1 / (item.aspectRatio || 1)
     })
     
     return columnArrays

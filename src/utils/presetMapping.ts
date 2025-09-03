@@ -36,7 +36,8 @@ export function mapPresetToDisplay(item: any): PresetMapping {
     'emotion_mask': 'emotion-mask',
     'presets': 'presets',
     'custom_prompt': 'custom-prompt',
-    'story_time': 'story-time'
+    'story_time': 'story-time',
+    'story': 'story-time'
   }
   
   // Map mediaType to type if type is not available
