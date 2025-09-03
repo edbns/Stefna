@@ -347,51 +347,63 @@ class SimpleGenerationService {
           prompt: item.prompt?.slice(0, 50)
         });
         
-        // First try to match by exact runId
+        // PRIMARY: Try to match by exact runId (most reliable)
         if (item.runId && item.runId === jobId) {
           console.log(`🎯 [SimpleGeneration] Found media with exact runId match:`, item.runId);
           return true;
         }
         
-        // Fallback: Check if this media was created after generation started
+        // SECONDARY: Check if this media was created after generation started AND has matching prompt
         const createdAt = new Date(item.createdAt);
         const isAfterGenerationStart = createdAt > generationStartTime;
         
         if (isAfterGenerationStart) {
-          console.log(`⏰ [SimpleGeneration] Found media created after generation start:`, {
-            id: item.id,
-            createdAt: item.createdAt,
-            runId: item.runId,
-            generationStart: generationStartTime
-          });
+          // Only consider it a match if the prompt also matches
+          const promptMatch = item.prompt && this.lastGenerationRequest?.prompt && 
+                             item.prompt.includes(this.lastGenerationRequest.prompt.slice(0, 30));
+          
+          if (promptMatch) {
+            console.log(`⏰ [SimpleGeneration] Found media created after generation start with prompt match:`, {
+              id: item.id,
+              createdAt: item.createdAt,
+              runId: item.runId,
+              generationStart: generationStartTime,
+              prompt: item.prompt?.slice(0, 50)
+            });
+            return true;
+          } else {
+            console.log(`⚠️ [SimpleGeneration] Found media created after generation start but prompt doesn't match:`, {
+              id: item.id,
+              createdAt: item.createdAt,
+              runId: item.runId,
+              generationStart: generationStartTime,
+              prompt: item.prompt?.slice(0, 50),
+              requestPrompt: this.lastGenerationRequest?.prompt?.slice(0, 50)
+            });
+          }
         }
         
-        // Additional fallback: Check if prompt matches (for cases where runId is missing)
-        const promptMatch = item.prompt && this.lastGenerationRequest?.prompt && 
-                           item.prompt.includes(this.lastGenerationRequest.prompt.slice(0, 30));
+        // TERTIARY: Check if media was created within last 2 minutes AND has matching prompt (for edge cases)
+        const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+        const isVeryRecent = createdAt > twoMinutesAgo;
         
-        if (promptMatch) {
-          console.log(`📝 [SimpleGeneration] Found media with prompt match:`, {
-            id: item.id,
-            prompt: item.prompt?.slice(0, 50),
-            requestPrompt: this.lastGenerationRequest?.prompt?.slice(0, 50)
-          });
+        if (isVeryRecent) {
+          const promptMatch = item.prompt && this.lastGenerationRequest?.prompt && 
+                             item.prompt.includes(this.lastGenerationRequest.prompt.slice(0, 30));
+          
+          if (promptMatch) {
+            console.log(`🕐 [SimpleGeneration] Found very recent media with prompt match:`, {
+              id: item.id,
+              createdAt: item.createdAt,
+              runId: item.runId,
+              twoMinutesAgo: twoMinutesAgo,
+              prompt: item.prompt?.slice(0, 50)
+            });
+            return true;
+          }
         }
         
-        // Additional fallback: Check if media was created within last 5 minutes (for any recent generation)
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-        const isRecent = createdAt > fiveMinutesAgo;
-        
-        if (isRecent && !isAfterGenerationStart && !promptMatch) {
-          console.log(`🕐 [SimpleGeneration] Found recent media (within 5 minutes):`, {
-            id: item.id,
-            createdAt: item.createdAt,
-            runId: item.runId,
-            fiveMinutesAgo: fiveMinutesAgo
-          });
-        }
-        
-        return isAfterGenerationStart || promptMatch || isRecent;
+        return false; // Only return true for exact matches or strong matches
       });
 
       if (recentMedia && recentMedia.length > 0) {
