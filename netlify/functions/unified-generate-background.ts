@@ -1180,16 +1180,16 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
         result = await generateWithStability(generationParams);
         console.log('✅ [Background] Stability.ai generation successful');
       } catch (stabilityError) {
-        console.warn('⚠️ [Background] Stability.ai failed, falling back to Fal.ai:', stabilityError);
+        console.warn('⚠️ [Background] Stability.ai failed, falling back to Replicate:', stabilityError);
         
         try {
-          // Fallback to Fal.ai
-          console.log('🎨 [Background] Attempting fallback with Fal.ai');
-          result = await generateWithFal(request.mode, generationParams);
-          console.log('✅ [Background] Fal.ai fallback successful');
-        } catch (falError) {
-          console.error('❌ [Background] Both Stability.ai and Fal.ai failed');
-          throw new Error(`All providers failed. Stability: ${stabilityError}. Fal: ${falError}`);
+          // Fallback to Replicate (not Fal.ai for Neo Tokyo Glitch)
+          console.log('🎨 [Background] Attempting fallback with Replicate');
+          result = await generateWithReplicate(generationParams);
+          console.log('✅ [Background] Replicate fallback successful');
+        } catch (replicateError) {
+          console.error('❌ [Background] Both Stability.ai and Replicate failed');
+          throw new Error(`All providers failed. Stability: ${stabilityError}. Replicate: ${replicateError}`);
         }
       }
     } else {
