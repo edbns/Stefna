@@ -187,7 +187,7 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
                 <p className="text-white/60 text-sm mb-4">This may take a few moments...</p>
                 
                 {/* Progress Bar */}
-                <div className="w-full bg-white/10 rounded-full h-3 mb-4">
+                <div className="w-full bg-gray-800 rounded-full h-3 mb-4">
                   <div 
                     className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-300"
                     style={{ width: `${status.progress}%` }}

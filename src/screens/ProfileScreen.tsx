@@ -1424,7 +1424,7 @@ const ProfileScreen: React.FC = () => {
               return !isLoading && userMedia.length === 0
             })() ? (
               <div className="flex flex-col items-center justify-center h-full">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
                   <Image size={48} className="text-white/40" />
                 </div>
                 <p className="text-white/60 text-lg text-center">No media yet</p>
@@ -1494,7 +1494,7 @@ const ProfileScreen: React.FC = () => {
               return !isLoading && draftMedia.length === 0
             })() ? (
               <div className="flex flex-col items-center justify-center h-full">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
                   <FileText size={48} className="text-white/40" />
                 </div>
                 <p className="text-white/60 text-lg text-center">No drafts yet</p>

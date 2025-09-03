@@ -113,7 +113,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   if (media.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                        <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white/40">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
             <circle cx="8.5" cy="8.5" r="1.5"/>

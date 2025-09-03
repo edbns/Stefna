@@ -39,7 +39,7 @@ const DraftMediaGrid: React.FC<DraftMediaGridProps> = ({
   if (media.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                        <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
           <Pencil size={48} className="text-white/40" />
         </div>
         <p className="text-white/60 text-lg text-center">No drafts found</p>

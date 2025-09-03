@@ -214,7 +214,7 @@ export function MediaCard({
   label?: string;
 }) {
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-2xl border bg-neutral-100 dark:bg-neutral-900">
+          <div className="relative aspect-video w-full overflow-hidden rounded-2xl border bg-gray-800">
       {src ? (
         <img src={src} alt={label || "media"} className="h-full w-full object-cover" />
       ) : (
