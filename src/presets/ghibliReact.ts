@@ -19,9 +19,9 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_tears',
     label: 'Tears',
-    prompt: `Transform the human face into a Studio Ghibli-style emotional reaction while preserving realistic skin, hair, and facial structure. Add glistening anime-inspired tears under the eyes. Eyes should appear larger and wetter, with soft sparkles and emotional intensity. Preserve skin tone, gender, and facial integrity. Lighting should be soft and warm, like sunset glow. Keep hairstyle and identity intact.`,
-    negative_prompt: `anime face replacement, distorted features, overexaggerated proportions, fake texture, plastic skin, full anime rendering, gender swap, photorealism, 3D look, harsh shadows`,
-    strength: 0.35,
+    prompt: `Transform the human face into a realistic Studio Ghibli-style reaction with a focus on emotion, not full anime. Add glistening tears under the eyes and emotional intensity. Exaggerate the expression only — widened eyes, trembling lips, slight blush. Keep the facial structure, ethnicity, skin, and identity fully intact. Do not add cartoon outlines. Keep lighting soft and dreamy, like a frame from a Ghibli film.`,
+    negative_prompt: `cartoon, anime outline, 2D face, unrealistic face, manga, lineart, flat colors, full anime rendering, face replacement, distorted features, overexaggerated proportions, fake texture, plastic skin, gender swap, photorealism, 3D look, harsh shadows`,
+    strength: 0.55,
     model: 'fal-ai/ghiblify', // Updated to use fal.ai
     mode: 'i2i',
     input: 'image',
@@ -34,9 +34,9 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_shock',
     label: 'Shock',
-    prompt: `Transform the human face into a shocked Studio Ghibli-style reaction while preserving identity and facial realism. Exaggerate expression with widened anime-style eyes and slightly parted lips. Add subtle sparkles, blush, or trembling mouth expression. Retain hair, skin texture, gender, and core facial structure. Background and lighting should feel soft and dreamy, like a still from a Ghibli film.`,
-    negative_prompt: `cartoon face, huge bug eyes, distorted anatomy, face merged or replaced, fake skin, photorealism, bland expression, anime mask overlay`,
-    strength: 0.35,
+    prompt: `Transform the human face into a realistic Studio Ghibli-style reaction with a focus on emotion, not full anime. Exaggerate the expression only — widened eyes, slightly parted lips, subtle sparkles, or trembling mouth expression. Keep the facial structure, ethnicity, skin, and identity fully intact. Do not add cartoon outlines. Keep lighting soft and dreamy, like a frame from a Ghibli film.`,
+    negative_prompt: `cartoon, anime outline, 2D face, unrealistic face, manga, lineart, flat colors, huge bug eyes, distorted anatomy, face merged or replaced, fake skin, photorealism, bland expression, anime mask overlay`,
+    strength: 0.55,
     model: 'fal-ai/ghiblify', // Updated to use fal.ai
     mode: 'i2i',
     input: 'image',
@@ -49,9 +49,9 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: `Transform the human face into a dreamy Ghibli-style expression with sparkles and soft blush. Retain the subject's identity, facial proportions, and realism. Enhance the eyes with light shimmer and gentle expression. Add whimsical sparkle particles around the cheeks and subtle pink blush. Skin, hair, and gender should stay accurate to the source. Use golden hour or pastel lighting for warmth and nostalgia.`,
-    negative_prompt: `overdone sparkle, anime face swap, distorted head, full cartoon rendering, hard shadows, gender change, poor skin texture`,
-    strength: 0.35,
+    prompt: `Transform the human face into a realistic Studio Ghibli-style reaction with a focus on emotion, not full anime. Add dreamy sparkles and soft blush around the cheeks. Exaggerate the expression only — enhanced eyes with light shimmer, gentle expression. Keep the facial structure, ethnicity, skin, and identity fully intact. Do not add cartoon outlines. Keep lighting soft and dreamy, like a frame from a Ghibli film.`,
+    negative_prompt: `cartoon, anime outline, 2D face, unrealistic face, manga, lineart, flat colors, overdone sparkle, anime face swap, distorted head, full cartoon rendering, hard shadows, gender change, poor skin texture`,
+    strength: 0.55,
     model: 'fal-ai/ghiblify', // Updated to use fal.ai
     mode: 'i2i',
     input: 'image',

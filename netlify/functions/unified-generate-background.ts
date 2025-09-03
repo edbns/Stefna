@@ -1179,7 +1179,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
   }
   
   // Validate image_strength for image-to-image models
-  const imageStrength = mode === 'ghibli_reaction' ? 0.35 : 0.45;
+  const imageStrength = mode === 'ghibli_reaction' ? 0.55 : 0.45;
   if (imageStrength <= 0 || imageStrength > 1) {
     throw new Error("Invalid image_strength for BFL API image-to-image generation");
   }
