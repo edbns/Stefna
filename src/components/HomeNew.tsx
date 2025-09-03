@@ -14,12 +14,12 @@ import type { UserMedia } from '../services/userMediaService'
 import { useToasts } from './ui/Toasts'
 import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
-import { usePresetRunner } from '../hooks/usePresetRunner'
+// import { usePresetRunner } from '../hooks/usePresetRunner' // REMOVED - using database-driven presets now
 import { IdentityPreservationService } from '../services/identityPreservationService'
 import { toggleLike, getUserLikes, mapMediaTypeForAPI } from '../services/likesService'
 import SimpleGenerationService, { GenerationMode, SimpleGenerationRequest } from '../services/simpleGenerationService'
 import { prepareSourceAsset } from '../utils/prepareSourceAsset'
-import { useSelectedPreset } from '../stores/selectedPreset'
+// import { useSelectedPreset } from '../stores/selectedPreset' // REMOVED - using database-driven presets now
 import { HiddenUploader } from './HiddenUploader'
 
 import { uploadSourceToCloudinary } from '../services/uploadSource'
@@ -215,12 +215,12 @@ const HomeNew: React.FC = () => {
 
   
   // New preset runner system - MUST be declared before use
-  const presetRunner = usePresetRunner()
-  const { selectedPreset: stickySelectedPreset, setSelectedPreset: setStickySelectedPreset, ensureDefault } = useSelectedPreset()
+  // const presetRunner = usePresetRunner() // REMOVED - using database-driven presets now
+  // const { selectedPreset: stickySelectedPreset, setSelectedPreset: setStickySelectedPreset, ensureDefault } = useSelectedPreset() // REMOVED - using database-driven presets now
   
   // Selected preset using sticky store instead of local state
-  const selectedPreset = stickySelectedPreset
-  const setSelectedPreset = setStickySelectedPreset
+  // const selectedPreset = stickySelectedPreset // REMOVED - using database-driven presets now
+  // const setSelectedPreset = setStickySelectedPreset // REMOVED - using database-driven presets now
 
   // Stable ref for selectedPreset to prevent re-render issues during generation
   const selectedPresetRef = useRef<string | null>(null)

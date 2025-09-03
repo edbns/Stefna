@@ -1,7 +1,7 @@
 // src/lib/upload.ts
 import { uploadToCloudinary } from './cloudinaryUpload';
 import { useIntentQueue } from '../state/intentQueue';
-import { kickRunIfReady } from '../runner/kick';
+// import { kickRunIfReady } from '../runner/kick'; // REMOVED - using database-driven presets now
 import authService from '../services/authService';
 
 export async function handleUploadSelectedFile(file: File): Promise<string> {
@@ -24,9 +24,9 @@ export async function handleUploadSelectedFile(file: File): Promise<string> {
     setSourceUrl(secureUrl);
     
     // Kick on next microtask so state is settled (prevents race conditions)
-    queueMicrotask(() => { 
-      void kickRunIfReady(); 
-    });
+    // queueMicrotask(() => { 
+    //   void kickRunIfReady(); // REMOVED - using database-driven presets now
+    // });
     
     return secureUrl;
   } catch (error) {

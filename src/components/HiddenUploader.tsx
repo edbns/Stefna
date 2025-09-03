@@ -39,8 +39,8 @@ export function HiddenUploader() {
       setSourceUrl(secureUrl);
       
       // Import and kick the queue
-      const { kickRunIfReady } = await import('../runner/kick');
-      await kickRunIfReady();
+      // const { kickRunIfReady } = await import('../runner/kick'); // REMOVED - using database-driven presets now
+      // await kickRunIfReady(); // REMOVED - using database-driven presets now
       
     } catch (error) {
       console.error('Upload failed:', error);

@@ -7,6 +7,7 @@
 3. **Ghibli Reaction Enhancement**: Added two new presets (Sadness, Love) and refined existing prompts for BFL Ultra
 4. **Daily Credit Reset System**: Implemented automated daily credit reset using Netlify scheduled functions
 5. **Error Handling Improvements**: Fixed multiple frontend/backend synchronization issues
+6. **Complete Preset System Cleanup**: Removed unused hardcoded preset files and migrated to database-driven system
 
 **⚠️ IMPORTANT NOTE**: Neo Tokyo Glitch was temporarily moved to BFL but has been reverted back to Stability.ai due to aspect ratio issues and insufficient "crazy" effects compared to Stability.ai. Only Ghibli Reaction, Emotion Mask, Presets, and Custom Prompt modes use BFL.
 
@@ -411,11 +412,27 @@ const ASPECT_RATIOS = {
 4. **User Experience**: Track generation completion times
 5. **Neo Tokyo Style Comparison**: Compare BFL vs Stability.ai results for cyberpunk aesthetics
 
-### **Reverted Changes**
-1. **Neo Tokyo Glitch**: Reverted from BFL back to Stability.ai due to:
-   - Aspect ratio issues (not achieving desired 3:4 ratio)
-   - Insufficient "crazy" effects compared to Stability.ai
-   - User preference for Stability.ai's more dramatic cyberpunk style
+### **7. Complete Preset System Cleanup**
+**Problem**: Multiple conflicting preset systems (hardcoded vs database-driven)
+**Solution**: Removed unused files and migrated to unified generation
+```typescript
+// REMOVED: Hardcoded preset files
+- src/config/professional-presets.ts (15 static presets)
+- src/config/presets.ts (helper functions)
+- src/stores/presetsStore.ts (Zustand store)
+- src/utils/presets/validate.ts (validation)
+- src/components/PresetButton.tsx (UI component)
+- src/hooks/usePresetRunner.ts (runner hook)
+- src/runner/kick.ts (kick runner)
+
+// KEPT: Database-driven system
++ src/services/presetsService.ts (database presets)
++ netlify/functions/get-presets.ts (preset API)
++ netlify/functions/unified-generate-background.ts (BFL generation)
++ database/presets_config table (25 rotating presets)
+```
+
+**⚠️ NOTE**: The real preset system uses 25 database presets that rotate 5 per week. The hardcoded system was unused legacy code.
 
 ---
 

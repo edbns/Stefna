@@ -80,8 +80,8 @@ export async function ensureSourceThenRun(intent: Intent): Promise<void> {
 
   console.info('🎯 Source available, running immediately');
   // Import dynamically to avoid circular dependency
-  const { kickRunIfReady } = await import('../runner/kick');
-  await kickRunIfReady();
+  // const { kickRunIfReady } = await import('../runner/kick'); // REMOVED - using database-driven presets now
+  // await kickRunIfReady(); // REMOVED - using database-driven presets now
 }
 
 /** Bridge to open the hidden uploader */
