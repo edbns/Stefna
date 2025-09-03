@@ -87,23 +87,10 @@ async function urlToBase64(imageUrl: string): Promise<string> {
 async function bflInvoke(endpoint: string, input: any): Promise<any> {
   const url = `https://api.bfl.ai/v1/${endpoint}`;
   
-  console.log("📤 [BFL Debug] Request details:", {
-    url,
-    endpoint,
-    hasInput: !!input,
-    inputKeys: Object.keys(input || {})
-  });
-  
   // Clean input - remove null/undefined values
   const cleanInput = Object.fromEntries(
     Object.entries(input).filter(([k, v]) => v != null && v !== undefined)
   );
-  
-  console.log("🧹 [BFL Debug] Cleaned input:", {
-    originalKeys: Object.keys(input || {}),
-    cleanedKeys: Object.keys(cleanInput),
-    hasNullValues: Object.values(input || {}).some(v => v === null || v === undefined)
-  });
   
   // Try different header formats
   const headerFormats = [
@@ -133,8 +120,6 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
     const headers = headerFormats[i];
     const formatName = i === 0 ? 'x-key' : i === 1 ? 'x-api-key' : 'Bearer';
     
-    console.log(`🔑 [BFL Debug] Trying format ${i + 1}: ${formatName}`);
-    
     try {
       const res = await fetch(url, {
         method: 'POST',
@@ -142,23 +127,11 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
         body: JSON.stringify(cleanInput)
       });
       
-      console.log(`📥 [BFL Debug] Format ${i + 1} response:`, {
-        status: res.status,
-        statusText: res.statusText,
-        ok: res.ok
-      });
-      
       if (res.ok) {
         const result = await res.json();
-        console.log("✅ [BFL Debug] Initial response:", {
-          hasResult: !!result,
-          resultKeys: Object.keys(result || {}),
-          hasPollingUrl: !!result.polling_url
-        });
         
         // Check if this is a polling-based response
         if (result.polling_url) {
-          console.log("🔄 [BFL Debug] Polling-based response detected, starting polling...");
           return await pollBFLResult(result.polling_url, headers);
         }
         
@@ -166,7 +139,6 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
         return result;
       } else {
         const text = await res.text();
-        console.error(`❌ [BFL Debug] Format ${i + 1} failed:`, text);
         lastError = new Error(`BFL API ${res.status}: ${text.substring(0, 200)}`);
         
         // If it's not a 403, stop trying other formats
@@ -175,7 +147,6 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
         }
       }
     } catch (error) {
-      console.error(`❌ [BFL Debug] Format ${i + 1} error:`, error);
       lastError = error instanceof Error ? error : new Error(String(error));
     }
   }
@@ -193,8 +164,6 @@ async function pollBFLResult(pollingUrl: string, headers: Record<string, string>
     attempts++;
     
     try {
-      console.log(`🔄 [BFL Debug] Polling attempt ${attempts}/${maxAttempts}`);
-      
       const res = await fetch(pollingUrl, {
         method: 'GET',
         headers: {
@@ -208,14 +177,8 @@ async function pollBFLResult(pollingUrl: string, headers: Record<string, string>
       }
       
       const result = await res.json();
-      console.log(`📊 [BFL Debug] Polling response:`, {
-        status: result.status,
-        hasResult: !!result.result,
-        hasSample: !!result.result?.sample
-      });
       
       if (result.status === 'Ready') {
-        console.log("✅ [BFL Debug] Polling completed successfully");
         return result;
       } else if (result.status === 'Error' || result.status === 'Failed') {
         throw new Error(`BFL generation failed: ${JSON.stringify(result)}`);
@@ -225,7 +188,6 @@ async function pollBFLResult(pollingUrl: string, headers: Record<string, string>
       await new Promise(resolve => setTimeout(resolve, 500));
       
     } catch (error) {
-      console.error(`❌ [BFL Debug] Polling error on attempt ${attempts}:`, error);
       throw error;
     }
   }
