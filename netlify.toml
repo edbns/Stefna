@@ -50,6 +50,16 @@
   timeout = 26   # Netlify max for normal functions
   memory = 1024
 
+# Scheduled function for daily credit reset
+[functions."reset-daily-credits"]
+  timeout = 30
+  memory = 1024
+
+# Scheduled function configuration
+[[functions.scheduled]]
+  function = "reset-daily-credits"
+  schedule = "0 0 * * *"  # Daily at midnight UTC (cron format)
+
 # Function dependencies are handled by top-level package.json
 
 # Cache optimization
