@@ -300,24 +300,30 @@ class SimpleGenerationService {
   }
 
   /**
-   * Check generation status with improved completion detection
+   * Check generation status using exact runId matching
    */
-  async checkStatus(jobId: string, mode: GenerationMode): Promise<SimpleGenerationResult> {
+  async checkStatus(runId: string, mode: GenerationMode): Promise<SimpleGenerationResult> {
     try {
-      // Get the actual user ID from auth service
-      const authState = authService.getAuthState()
-      const userId = authState.user?.id
+      console.log(`🔍 [SimpleGeneration] Checking status for runId: ${runId}`);
       
-      if (!userId) {
-        console.error('❌ [SimpleGeneration] No user ID available for polling')
-        throw new Error('User not authenticated')
-      }
-      
-      // For unified generation, we need to check getUserMedia to see if the generation completed
-      const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=50`, {
+      // Use the new getMediaByRunId endpoint for exact matching
+      const response = await authenticatedFetch(`/.netlify/functions/getMediaByRunId?runId=${runId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
+
+      if (response.status === 404) {
+        // Media not found yet, still processing
+        console.log(`⏳ [SimpleGeneration] Media not found yet, still processing... (runId: ${runId})`);
+        return {
+          success: true,
+          jobId: runId,
+          runId: runId,
+          status: 'processing',
+          error: undefined,
+          type: mode
+        };
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -325,118 +331,33 @@ class SimpleGenerationService {
 
       const result = await response.json();
       
-      // Debug: Log the entire response to see what we're getting
-      console.log(`🔍 [SimpleGeneration] getUserMedia response:`, {
-        success: result.success,
-        itemsCount: result.items?.length,
-        firstItem: result.items?.[0],
-        allItems: result.items
-      });
-      
-      // Look for media with matching runId or created after generation started
-      const generationStartTime = this.getGenerationStartTime(jobId);
-      const recentMedia = result.items?.filter((item: any) => {
-        // Debug: Log what we're looking for
-        console.log(`🔍 [SimpleGeneration] Checking item:`, {
-          itemId: item.id,
-          itemRunId: item.runId,
-          jobId: jobId,
-          exactMatch: item.runId === jobId,
-          createdAt: item.createdAt,
-          generationStart: generationStartTime,
-          prompt: item.prompt?.slice(0, 50)
-        });
-        
-        // PRIMARY: Try to match by exact runId (most reliable)
-        if (item.runId && item.runId === jobId) {
-          console.log(`🎯 [SimpleGeneration] Found media with exact runId match:`, item.runId);
-          return true;
-        }
-        
-        // SECONDARY: Check if this media was created after generation started AND has matching prompt
-        const createdAt = new Date(item.createdAt);
-        const isAfterGenerationStart = createdAt > generationStartTime;
-        
-        if (isAfterGenerationStart) {
-          // Only consider it a match if the prompt also matches
-          const promptMatch = item.prompt && this.lastGenerationRequest?.prompt && 
-                             item.prompt.includes(this.lastGenerationRequest.prompt.slice(0, 30));
-          
-          if (promptMatch) {
-            console.log(`⏰ [SimpleGeneration] Found media created after generation start with prompt match:`, {
-              id: item.id,
-              createdAt: item.createdAt,
-              runId: item.runId,
-              generationStart: generationStartTime,
-              prompt: item.prompt?.slice(0, 50)
-            });
-            return true;
-          } else {
-            console.log(`⚠️ [SimpleGeneration] Found media created after generation start but prompt doesn't match:`, {
-              id: item.id,
-              createdAt: item.createdAt,
-              runId: item.runId,
-              generationStart: generationStartTime,
-              prompt: item.prompt?.slice(0, 50),
-              requestPrompt: this.lastGenerationRequest?.prompt?.slice(0, 50)
-            });
-          }
-        }
-        
-        // TERTIARY: Check if media was created within last 2 minutes AND has matching prompt (for edge cases)
-        const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
-        const isVeryRecent = createdAt > twoMinutesAgo;
-        
-        if (isVeryRecent) {
-          const promptMatch = item.prompt && this.lastGenerationRequest?.prompt && 
-                             item.prompt.includes(this.lastGenerationRequest.prompt.slice(0, 30));
-          
-          if (promptMatch) {
-            console.log(`🕐 [SimpleGeneration] Found very recent media with prompt match:`, {
-              id: item.id,
-              createdAt: item.createdAt,
-              runId: item.runId,
-              twoMinutesAgo: twoMinutesAgo,
-              prompt: item.prompt?.slice(0, 50)
-            });
-            return true;
-          }
-        }
-        
-        return false; // Only return true for exact matches or strong matches
-      });
-
-      if (recentMedia && recentMedia.length > 0) {
-        // Found recent media, assume generation completed
-        const latestMedia = recentMedia[0];
+      if (result.success && result.media) {
         console.log(`✅ [SimpleGeneration] Generation completed! Found media:`, {
-          id: latestMedia.id,
-          createdAt: latestMedia.createdAt,
-          finalUrl: latestMedia.finalUrl,
-          runId: jobId,
-          mode: mode
+          id: result.media.id,
+          runId: result.media.runId,
+          type: result.media.type,
+          url: result.media.url
         });
+        
         return {
           success: true,
-          jobId: jobId,
-          runId: jobId,
+          jobId: runId,
+          runId: runId,
           status: 'completed',
-          imageUrl: latestMedia.finalUrl || latestMedia.imageUrl,
-          videoUrl: latestMedia.videoUrl,
+          imageUrl: result.media.type === 'video' ? undefined : result.media.url,
+          videoUrl: result.media.type === 'video' ? result.media.url : undefined,
           error: undefined,
-          provider: latestMedia.provider || 'unknown',
+          provider: result.media.metadata?.provider || 'unknown',
           type: mode
         };
       }
 
-      // No recent media found, still processing
-      console.log(`⏳ [SimpleGeneration] No completion detected, still processing... (runId: ${jobId})`);
+      // Unexpected response format
+      console.warn(`⚠️ [SimpleGeneration] Unexpected response format:`, result);
       return {
-        success: true,
-        jobId: jobId,
-        runId: jobId,
-        status: 'processing',
-        error: undefined,
+        success: false,
+        status: 'failed',
+        error: 'Unexpected response format from server',
         type: mode
       };
 
@@ -452,22 +373,6 @@ class SimpleGenerationService {
     }
   }
 
-  /**
-   * Get generation start time for a given runId
-   */
-  private getGenerationStartTime(runId: string): Date {
-    // Extract timestamp from runId (assuming runId contains timestamp)
-    // If runId format is: timestamp_random, extract the timestamp part
-    const timestampPart = runId.split('_')[0];
-    const timestamp = parseInt(timestampPart, 10);
-    
-    if (!isNaN(timestamp)) {
-      return new Date(timestamp);
-    }
-    
-    // Fallback: use current time minus 15 minutes (generation should have started recently)
-    return new Date(Date.now() - 15 * 60 * 1000);
-  }
 }
 
 export default SimpleGenerationService;
