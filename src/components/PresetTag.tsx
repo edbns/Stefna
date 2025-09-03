@@ -110,6 +110,18 @@ const PresetTag: React.FC<PresetTagProps> = ({
       'emotion_mask_disgust': 'Disgust',
       'emotion_mask_trust': 'Trust',
       'emotion_mask_anticipation': 'Anticipation',
+      'emotion_mask_strength_vuln': 'Strength & Vulnerability',
+      'nostalgia': 'Nostalgia',
+      'distance': 'Distance',
+      'joy': 'Joy',
+      'sadness': 'Sadness',
+      'anger': 'Anger',
+      'fear': 'Fear',
+      'surprise': 'Surprise',
+      'disgust': 'Disgust',
+      'trust': 'Trust',
+      'anticipation': 'Anticipation',
+      'strength_vuln': 'Strength & Vulnerability',
       
       // Presets
       'flux_dev': 'Flux Dev',
@@ -118,11 +130,23 @@ const PresetTag: React.FC<PresetTagProps> = ({
       'flux_creative': 'Flux Creative',
       'flux_artistic': 'Flux Artistic',
       'flux_photorealistic': 'Flux Photorealistic',
+      'tropical_boost': 'Tropical Boost',
+      'vintage_fade': 'Vintage Fade',
+      'cinematic_grade': 'Cinematic Grade',
+      'monochrome_mood': 'Monochrome Mood',
+      'warm_sunset': 'Warm Sunset',
+      'cool_blue': 'Cool Blue',
+      'dramatic_contrast': 'Dramatic Contrast',
+      'soft_pastel': 'Soft Pastel',
+      'bold_vibrant': 'Bold Vibrant',
+      'muted_elegant': 'Muted Elegant',
       
-      // Additional mappings for common variations
-      'default': 'Default',
-      'custom': 'Custom',
-      'auto': 'Auto'
+      // Custom Prompt
+      'custom': 'Custom Prompt',
+      
+      // Story Time
+      'story_time': 'Story Time',
+      'story': 'Story Time'
     }
     
     // If we have a preset key, use it
@@ -130,8 +154,12 @@ const PresetTag: React.FC<PresetTagProps> = ({
       return presetNames[actualPresetKey]
     }
     
-    // If we have a type, use it
+    // If we have a type, use it with smart defaults
     if (actualType && typeNames[actualType]) {
+      // For default preset keys, show the type name instead
+      if (actualPresetKey === 'default') {
+        return typeNames[actualType]
+      }
       return typeNames[actualType]
     }
     
