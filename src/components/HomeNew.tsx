@@ -1798,7 +1798,7 @@ const HomeNew: React.FC = () => {
       }
       
       console.log(`🔄 Loading public feed ${isInitial ? '(initial)' : '(more)'}...`)
-      const pageSize = 100 // Increased from 50 to 100 for better infinite scroll
+      const pageSize = 200 // Increased to 200 to ensure we get all items in one load
       // 🚨 CRITICAL FIX: Calculate offset correctly for pagination
       // For initial load: offset = 0
       // For subsequent loads: offset = (current page + 1) * pageSize
@@ -1829,9 +1829,10 @@ const HomeNew: React.FC = () => {
         console.log('📊 Raw feed data:', media)
         console.log('📊 Feed length:', media?.length || 0)
         
-              // Determine if there are more items based on backend response
-      const hasMore = resp.hasMore !== false
-      console.log('📊 Has more:', hasMore)
+        // Determine if there are more items based on backend response
+        // If we got fewer items than requested, or backend says no more, then we're done
+        const hasMore = resp.hasMore !== false && media.length >= pageSize
+        console.log('📊 Has more:', hasMore, 'Items received:', media.length, 'Page size:', pageSize)
         
         const mapped: UserMedia[] = (media || [])
           .map((item: any): UserMedia | null => {
