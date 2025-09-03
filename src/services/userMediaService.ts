@@ -7,7 +7,7 @@ export interface UserMedia {
   userAvatar?: string
   userUsername?: string // New: display name from profiles table
   userTier?: string
-  type: 'photo' | 'video'
+  type: 'photo' | 'video' | string // Extended to include database table types
   url: string
   finalUrl?: string // For feed compatibility
   thumbnailUrl?: string
@@ -15,6 +15,7 @@ export interface UserMedia {
   status?: 'processing' | 'ready' | 'failed'
   prompt: string
   style?: string
+  presetKey?: string // For PresetTag display
   aspectRatio: number // width/height ratio
   width: number
   height: number
@@ -22,6 +23,7 @@ export interface UserMedia {
   originalMediaId?: string // For remixes, reference to original (parentId)
   tokensUsed: number
   likes: number
+  likes_count?: number // For feed display
   // remixCount removed
   isPublic: boolean
   // allowRemix removed

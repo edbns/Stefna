@@ -32,6 +32,9 @@ interface MasonryMediaGridProps {
   deletingMediaIds?: Set<string>
   // Filter functionality
   onPresetTagClick?: (presetType: string) => void
+  // Likes functionality
+  onToggleLike?: (media: UserMedia) => void
+  userLikes?: Record<string, boolean>
 }
 
 const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
@@ -56,7 +59,10 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   // Loading states for actions
   deletingMediaIds = new Set(),
   // Filter functionality
-  onPresetTagClick
+  onPresetTagClick,
+  // Likes functionality
+  onToggleLike,
+  userLikes = {}
 }) => {
   const gridRef = useRef<HTMLDivElement>(null)
   
@@ -265,44 +271,24 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                     return (
                       <>
 
-                                                {/* Preset Tag - Temporarily hidden */}
-                        {/* <div className="absolute bottom-2 left-2">
+                        {/* Preset Tag */}
+                        <div className="absolute bottom-2 left-2">
                           <PresetTag 
                             presetKey={item.metadata?.presetKey || item.presetKey} 
-                            type={item.metadata?.presetType}
+                            type={item.type}
                             item={item}
                             size="sm"
                             clickable={!!onPresetTagClick}
+                            showPresetKey={true}
                             onClick={(e) => {
                               e.stopPropagation() // Prevent click from bubbling to media card
                               if (onPresetTagClick) {
-                                // Use the metadata.presetType field from new dedicated tables
-                                let presetType = item.metadata?.presetType;
-                                
-                                // Fallback logic for items that might not have the presetType field
-                                if (!presetType) {
-                                  if (item.presetKey?.includes('ghibli') || item.presetKey?.includes('ghibli_reaction')) {
-                                    presetType = 'ghibli-reaction';
-                                  } else if (item.presetKey?.includes('emotion') || item.presetKey?.includes('emotion_mask')) {
-                                    presetType = 'emotion-mask';
-                                  } else if (item.presetKey?.includes('neo') || item.presetKey?.includes('neo_glitch')) {
-                                    presetType = 'neo-glitch';
-                                  } else if (item.presetKey?.includes('preset') || item.presetKey?.includes('professional')) {
-                                    presetType = 'presets';
-                                  } else if (item.presetKey?.includes('custom') || item.prompt) {
-                                    presetType = 'custom-prompt';
-                                  } else if (item.presetKey?.includes('story') || item.presetKey === 'auto' || item.presetKey === 'adventure' || item.presetKey === 'romance' || item.presetKey === 'mystery' || item.presetKey === 'comedy' || item.presetKey === 'fantasy' || item.presetKey === 'travel') {
-                                    presetType = 'story-time';
-                                  } else {
-                                    presetType = 'presets'; // Default fallback
-                                  }
-                                }
-                                
-                                onPresetTagClick(presetType)
+                                // Use the type from the item directly
+                                onPresetTagClick(item.type)
                               }
                             }}
                           />
-                        </div> */}
+                        </div>
 
                         {/* Actions - Bottom */}
                         {showActions && (
@@ -314,7 +300,37 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
 
 
 
-                            {/* Additional actions (share, download, delete) - Top Right */}
+                            {/* Like Button - Bottom Right */}
+                        <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isLoggedIn) {
+                                onShowAuth?.();
+                                return;
+                              }
+                              onToggleLike?.(item);
+                            }}
+                            className={`flex items-center gap-1 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-all duration-200 ${
+                              userLikes[`${(item.metadata?.presetType || item.type || 'presets').replace(/-/g, '_')}:${item.id}`] ? 'text-red-500' : ''
+                            }`}
+                            title={userLikes[`${(item.metadata?.presetType || item.type || 'presets').replace(/-/g, '_')}:${item.id}`] ? 'Unlike' : 'Like'}
+                          >
+                            <svg 
+                              width="14" 
+                              height="14" 
+                              viewBox="0 0 24 24" 
+                              fill={userLikes[`${(item.metadata?.presetType || item.type || 'presets').replace(/-/g, '_')}:${item.id}`] ? 'currentColor' : 'none'} 
+                              stroke="currentColor" 
+                              strokeWidth="2"
+                            >
+                              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            <span className="text-xs font-medium">{item.likes_count || 0}</span>
+                          </button>
+                        </div>
+
+                        {/* Additional actions (share, download, delete) - Top Right */}
                             {(onShare || onDownload || onDelete) && (
                               <div className="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 {onShare && (

@@ -48,10 +48,13 @@ export const handler: Handler = async (event) => {
 
     // Fetch user profile with media assets
     try {
-      // Get user info, credits, and media assets
-      const [userCredits, userMedia, userNeoGlitch] = await Promise.all([
+      // Get user info, credits, likes, and media assets
+      const [userCredits, userLikes, userMedia, userNeoGlitch] = await Promise.all([
         qOne(`
           SELECT credits, balance FROM user_credits WHERE user_id = $1
+        `, [userId]),
+        qOne(`
+          SELECT total_likes_received FROM users WHERE id = $1
         `, [userId]),
         // Get media from all dedicated tables
         Promise.all([
@@ -83,7 +86,11 @@ export const handler: Handler = async (event) => {
 
       return json({
         ok: true,
-        user: { id: userId, email },
+        user: { 
+          id: userId, 
+          email,
+          totalLikesReceived: userLikes?.total_likes_received || 0
+        },
         daily_cap: dailyCap,
         credits: { 
           balance,

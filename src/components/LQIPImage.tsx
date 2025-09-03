@@ -70,11 +70,11 @@ const LQIPImage: React.FC<LQIPImageProps> = ({
   if (hasError) {
     return (
       <div 
-        className={`bg-gray-200 flex items-center justify-center ${className}`}
+        className={`bg-gray-800 flex items-center justify-center ${className}`}
         style={aspectRatio ? { aspectRatio } : undefined}
         onClick={onClick}
       >
-        <div className="text-gray-500 text-sm">Failed to load</div>
+        <div className="text-gray-400 text-sm">Failed to load</div>
       </div>
     )
   }
@@ -85,16 +85,21 @@ const LQIPImage: React.FC<LQIPImageProps> = ({
       style={aspectRatio ? { aspectRatio } : undefined}
       onClick={onClick}
     >
-      {/* LQIP Placeholder */}
+      {/* Dark grey placeholder while loading */}
       {!isLoaded && (
-        <img
-          src={lqipSrc}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover filter blur-lg scale-110"
-          onLoad={handleLQIPLoad}
-          loading="eager"
-          decoding="async"
-        />
+        <div className="absolute inset-0 w-full h-full bg-gray-800">
+          {/* LQIP Placeholder - hidden until loaded to avoid flash */}
+          <img
+            src={lqipSrc}
+            alt=""
+            className={`absolute inset-0 w-full h-full object-cover filter blur-lg scale-110 transition-opacity duration-200 ${
+              isLQIPLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            onLoad={handleLQIPLoad}
+            loading="eager"
+            decoding="async"
+          />
+        </div>
       )}
 
       {/* Main Image */}
@@ -121,12 +126,7 @@ const LQIPImage: React.FC<LQIPImageProps> = ({
         }}
       />
 
-      {/* Loading indicator */}
-      {!isLoaded && isLQIPLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-          <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-        </div>
-      )}
+      {/* Removed loading spinner - the LQIP is enough visual feedback */}
     </div>
   )
 }

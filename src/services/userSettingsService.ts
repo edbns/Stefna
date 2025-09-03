@@ -46,35 +46,19 @@ class UserSettingsService {
         : { media_upload_agreed: false, share_to_feed: false };
       this.settings = newSettings;
       
-      // Also update localStorage for backward compatibility
-      const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-      const updatedProfile = { 
-        ...currentProfile, 
-        shareToFeed: newSettings.share_to_feed 
-      };
-      localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
-      
+      // No localStorage - database is single source of truth
       console.log('✅ [UserSettings] Loaded from database:', newSettings);
       return newSettings;
     } catch (error) {
       console.error('❌ [UserSettings] Failed to load settings:', error);
       
-      // Fallback to localStorage
-      const savedProfile = localStorage.getItem('userProfile');
-      if (savedProfile) {
-        const profile = JSON.parse(savedProfile);
-        this.settings = {
-          media_upload_agreed: profile.mediaUploadAgreed || false,
-          share_to_feed: profile.shareToFeed || false
-        };
-        return this.settings;
-      }
-      
-      // Default settings
+      // No localStorage fallback - database only
+      // Default settings if database fails
       this.settings = {
         media_upload_agreed: false,
         share_to_feed: false
       };
+      console.warn('⚠️ [UserSettings] Using default settings (database unavailable)');
       return this.settings;
     } finally {
       this.isLoading = false;
@@ -101,16 +85,8 @@ class UserSettingsService {
         : { media_upload_agreed: false, share_to_feed: false };
       this.settings = newSettings;
       
-      // Also update localStorage for backward compatibility
-      const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-      const updatedProfile = { 
-        ...currentProfile, 
-        shareToFeed: newSettings.share_to_feed,
-        mediaUploadAgreed: newSettings.media_upload_agreed
-      };
-      localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
-      
-      console.log('✅ [UserSettings] Updated settings:', newSettings);
+      // No localStorage - database is single source of truth
+      console.log('✅ [UserSettings] Updated settings in database:', newSettings);
       return newSettings;
     } catch (error) {
       console.error('❌ [UserSettings] Failed to update settings:', error);

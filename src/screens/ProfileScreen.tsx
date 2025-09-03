@@ -1578,7 +1578,7 @@ const ProfileScreen: React.FC = () => {
                     </form>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
                       <div className="bg-white/5 rounded-lg p-4 text-center">
                         <div className="text-2xl font-bold text-white">{referralStats.invites}</div>
                         <div className="text-white/60 text-sm">Friends Invited</div>
@@ -1586,6 +1586,10 @@ const ProfileScreen: React.FC = () => {
                       <div className="bg-white/5 rounded-lg p-4 text-center">
                         <div className="text-2xl font-bold text-white">{referralStats.tokensEarned}</div>
                         <div className="text-white/60 text-sm">Credits Earned</div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-white">{profileData.totalLikesReceived || 0}</div>
+                        <div className="text-white/60 text-sm">Total Likes</div>
                       </div>
                     </div>
                   </div>

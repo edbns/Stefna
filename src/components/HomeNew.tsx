@@ -16,6 +16,7 @@ import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
 import { usePresetRunner } from '../hooks/usePresetRunner'
 import { IdentityPreservationService } from '../services/identityPreservationService'
+import { toggleLike, getUserLikes, mapMediaTypeForAPI } from '../services/likesService'
 import SimpleGenerationService, { GenerationMode, SimpleGenerationRequest } from '../services/simpleGenerationService'
 import { prepareSourceAsset } from '../utils/prepareSourceAsset'
 import { useSelectedPreset } from '../stores/selectedPreset'
@@ -42,6 +43,10 @@ interface SafeMasonryGridProps {
   // handleRemix removed - no more remix functionality
   onLastItemRef?: (ref: HTMLDivElement | null) => void
   onPresetTagClick?: (presetType: string) => void
+  onToggleLike?: (media: UserMedia) => void
+  userLikes?: Record<string, boolean>
+  isLoggedIn?: boolean
+  onShowAuth?: () => void
 }
 
 const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
@@ -49,7 +54,11 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   handleMediaClick,
   onLastItemRef,
   // handleRemix removed
-  onPresetTagClick
+  onPresetTagClick,
+  onToggleLike,
+  userLikes = {},
+  isLoggedIn = false,
+  onShowAuth
 }) => {
   try {
     return (
@@ -62,6 +71,10 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         className="pb-24 w-full"
         onLastItemRef={onLastItemRef}
         onPresetTagClick={onPresetTagClick}
+        onToggleLike={onToggleLike}
+        userLikes={userLikes}
+        isLoggedIn={isLoggedIn}
+        onShowAuth={onShowAuth}
       />
     )
   } catch (error) {
@@ -222,6 +235,10 @@ const HomeNew: React.FC = () => {
   const [showUploadAgreement, setShowUploadAgreement] = useState(false)
   const [userHasAgreed, setUserHasAgreed] = useState<boolean | null>(null) // null = loading, true/false = loaded
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  
+  // Likes state
+  const [userLikes, setUserLikes] = useState<Record<string, boolean>>({})
+  const [likesLoading, setLikesLoading] = useState(false)
   
   // Composer clearing function - defined early to avoid reference errors
   
@@ -558,6 +575,78 @@ const HomeNew: React.FC = () => {
   const [creatorFilter, setCreatorFilter] = useState<string | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
+  
+  // Load user likes
+  const loadUserLikes = async () => {
+    if (!authService.isAuthenticated()) return
+    
+    try {
+      setLikesLoading(true)
+      const response = await getUserLikes()
+      setUserLikes(response.likes || {})
+    } catch (error) {
+      console.error('Failed to load user likes:', error)
+    } finally {
+      setLikesLoading(false)
+    }
+  }
+  
+  // Handle toggle like
+  const handleToggleLike = async (media: UserMedia) => {
+    if (!authService.isAuthenticated()) {
+      navigate('/auth')
+      return
+    }
+    
+    try {
+      // Map the type for likes key - use the database type from feed
+      const dbType = (media.metadata?.presetType || media.type || 'presets').replace(/-/g, '_')
+      const likeKey = `${dbType}:${media.id}`
+      const wasLiked = userLikes[likeKey]
+      
+      setUserLikes(prev => ({
+        ...prev,
+        [likeKey]: !wasLiked
+      }))
+      
+      // Update the feed item's like count optimistically
+      setFeed(prev => prev.map(item => 
+        item.id === media.id 
+          ? { ...item, likes_count: (item.likes_count || 0) + (wasLiked ? -1 : 1) }
+          : item
+      ))
+      
+      // Map the type to the API format
+      const apiMediaType = mapMediaTypeForAPI(dbType)
+      
+      // Make API call
+      const response = await toggleLike(media.id, apiMediaType)
+      
+      // Update with server response
+      if (response.success) {
+        setFeed(prev => prev.map(item => 
+          item.id === media.id 
+            ? { ...item, likes_count: response.likesCount }
+            : item
+        ))
+      } else {
+        // Revert on error
+        setUserLikes(prev => ({
+          ...prev,
+          [likeKey]: wasLiked
+        }))
+        setFeed(prev => prev.map(item => 
+          item.id === media.id 
+            ? { ...item, likes_count: (item.likes_count || 0) + (wasLiked ? 1 : -1) }
+            : item
+        ))
+        notifyError({ message: 'Failed to update like' })
+      }
+    } catch (error) {
+      console.error('Failed to toggle like:', error)
+      notifyError({ message: 'Failed to update like' })
+    }
+  }
 
 
   
@@ -1790,6 +1879,7 @@ const HomeNew: React.FC = () => {
             height: 600, // Default height
             timestamp: item.created_at, // Backend sends created_at (snake_case)
             originalMediaId: item.source_url || undefined, // Backend sends source_url
+            likes_count: item.likes_count || 0, // Add likes count from backend
             tokensUsed: item.mediaType === 'video' ? 5 : 2,
             likes: 0, // Not exposed in public feed
             isPublic: true,
@@ -1955,6 +2045,11 @@ const HomeNew: React.FC = () => {
 
   useEffect(() => {
     loadFeed()
+    
+    // Load user likes if authenticated
+    if (authService.isAuthenticated()) {
+      loadUserLikes()
+    }
     
     // Listen for feed refresh events
     const handleRefreshFeed = () => {
@@ -3446,6 +3541,10 @@ const HomeNew: React.FC = () => {
                 onLastItemRef={setLastItemRef}
                 // handleRemix removed
                 onPresetTagClick={(presetType) => setActiveFeedFilter(presetType)}
+                onToggleLike={handleToggleLike}
+                userLikes={userLikes}
+                isLoggedIn={isAuthenticated}
+                onShowAuth={() => navigate('/auth')}
               />
               
               {/* 🚀 Unified infinite scroll: Loading indicator */}
