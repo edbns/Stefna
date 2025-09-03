@@ -574,7 +574,7 @@ const HomeNew: React.FC = () => {
   const [creatorFilter, setCreatorFilter] = useState<string | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
-  
+
   // Load user likes
   const loadUserLikes = async () => {
     if (!authService.isAuthenticated()) return
@@ -1709,12 +1709,12 @@ const HomeNew: React.FC = () => {
       // Calculate offset based on current feed length for infinite scroll
       const offset = isInitial ? 0 : feed.length
       
-              console.log('🔍 [Pagination Debug]', {
-          isInitial,
-          pageSize,
-          calculatedOffset: offset,
-          expectedItems: `${offset}-${offset + pageSize - 1}`
-        })
+      console.log('🔍 [Pagination Debug]', {
+        isInitial,
+        pageSize,
+        calculatedOffset: offset,
+        expectedItems: `${offset}-${offset + pageSize - 1}`
+      })
       
       const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${pageSize}&offset=${offset}`)
       console.log('📡 Feed response status:', res.status)
@@ -1733,9 +1733,9 @@ const HomeNew: React.FC = () => {
         console.log('📊 Raw feed data:', media)
         console.log('📊 Feed length:', media?.length || 0)
         
-        // Determine if there are more items based on backend response
+              // Determine if there are more items based on backend response
         // True infinite scroll: only stop when backend explicitly says no more items
-        const hasMore = resp.hasMore !== false
+      const hasMore = resp.hasMore !== false
         console.log('📊 Has more:', hasMore, 'Items received:', media.length, 'Page size:', pageSize)
         
         const mapped: UserMedia[] = (media || [])
@@ -1777,7 +1777,7 @@ const HomeNew: React.FC = () => {
             type: item.mediaType === 'video' ? 'video' : 'photo',
             url: mediaUrl,
             thumbnailUrl: mediaUrl, // Use same URL for thumbnail
-            prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'), // Use actual prompt or fallback
+                            prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'), // Use actual prompt or fallback
             style: undefined,
             aspectRatio: undefined, // Remove hardcoded default
             width: undefined, // Remove hardcoded default
@@ -3492,9 +3492,9 @@ const HomeNew: React.FC = () => {
               {import.meta.env.DEV && (
                 <div className="fixed bottom-4 right-4 bg-black/80 text-white text-xs p-2 rounded backdrop-blur-sm z-50">
                   <div>📊 Feed: {feed.length}</div>
-                                      <div>🔍 Filtered: {filteredFeed.length}</div>
-                    <div>🎯 Active Filter: {activeFeedFilter ? getFilterDisplayName(activeFeedFilter) : 'none'}</div>
-                    <div>📡 Has More: {hasMoreFeed ? 'Yes' : 'No'}</div>
+                  <div>🔍 Filtered: {filteredFeed.length}</div>
+                  <div>🎯 Active Filter: {activeFeedFilter ? getFilterDisplayName(activeFeedFilter) : 'none'}</div>
+                  <div>📡 Has More: {hasMoreFeed ? 'Yes' : 'No'}</div>
                   <div>⏳ Loading: {isLoadingMore ? 'Yes' : 'No'}</div>
                 </div>
               )}

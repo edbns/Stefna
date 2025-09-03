@@ -18,6 +18,7 @@ import { withAuth } from './_withAuth';
 
 const FAL_BASE = 'https://fal.run';
 const FAL_KEY = process.env.FAL_KEY as string;
+const BFL_API_KEY = process.env.BFL_API_KEY as string;
 const HYPER_SDXL_ALLOWED_STEPS = new Set([1, 2, 4]);
 const isHyperSDXLModel = (model: string) => model === 'fal-ai/hyper-sdxl/image-to-image';
 const isFluxDevModel = (model: string) => model === 'fal-ai/flux/dev/image-to-image';
@@ -28,6 +29,24 @@ const CORS_JSON_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Content-Type': 'application/json'
 } as const;
+// BFL API function for direct Flux access
+async function bflInvoke(endpoint: string, input: any): Promise<any> {
+  const url = `https://api.bfl.ai/v1/${endpoint}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${BFL_API_KEY}`
+    },
+    body: JSON.stringify(input)
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`BFL API ${res.status}: ${text.substring(0, 200)}`);
+  }
+  return await res.json();
+}
+
 async function falInvoke(model: string, input: any): Promise<any> {
   const url = `${FAL_BASE}/${model}`;
   const res = await fetch(url, {
@@ -92,7 +111,45 @@ interface UnifiedGenerationResponse {
   metadata?: any; // Added for story_time metadata
 }
 
-// Mode-specific FAL.ai model configurations
+// Mode-specific BFL API model configurations (primary)
+const BFL_PHOTO_MODELS = [
+  {
+    endpoint: 'flux-1.1-pro',
+    name: 'BFL Flux 1.1 Pro',
+    cost: 'low',
+    priority: 1,
+    description: 'Primary - direct BFL API for presets and custom prompts'
+  }
+];
+
+const BFL_EMOTION_MODELS = [
+  {
+    endpoint: 'flux-1.1-pro-raw',
+    name: 'BFL Flux 1.1 Pro Raw',
+    cost: 'low',
+    priority: 1,
+    description: 'Primary - direct BFL API for emotion mask'
+  }
+];
+
+const BFL_GHIBLI_MODELS = [
+  {
+    endpoint: 'flux-1.1-pro-ultra-finetuned',
+    name: 'BFL Flux 1.1 Pro Ultra Finetuned',
+    cost: 'medium',
+    priority: 1,
+    description: 'Primary - direct BFL API for Ghibli reaction'
+  },
+  {
+    endpoint: 'flux-1.1-pro-ultra',
+    name: 'BFL Flux 1.1 Pro Ultra',
+    cost: 'medium',
+    priority: 2,
+    description: 'Fallback - direct BFL API for Ghibli reaction'
+  }
+];
+
+// Mode-specific FAL.ai model configurations (fallback)
 const PHOTO_MODELS = [
   {
     model: 'fal-ai/flux/schnell/redux',
@@ -914,6 +971,92 @@ async function generateWithReplicate(params: any): Promise<UnifiedGenerationResp
   throw new Error(`All Replicate providers failed: ${lastError}`);
 }
 
+// BFL API generation with fallback to Fal.ai
+async function generateWithBFL(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
+  console.log(`🚀 [Background] Starting BFL API generation for mode: ${mode}`);
+  
+  // Select models based on mode
+  let models;
+  if (mode === 'presets' || mode === 'custom') {
+    models = BFL_PHOTO_MODELS;
+  } else if (mode === 'emotion_mask') {
+    models = BFL_EMOTION_MODELS;
+  } else if (mode === 'ghibli_reaction') {
+    models = BFL_GHIBLI_MODELS;
+  } else {
+    throw new Error(`BFL API not supported for mode: ${mode}`);
+  }
+
+  // Input validation for BFL API
+  if (!params.sourceAssetId || params.prompt.length < 10) {
+    throw new Error("Invalid input for BFL API generation: missing source image or prompt too short");
+  }
+  
+  // Validate image_strength for image-to-image models
+  const imageStrength = mode === 'ghibli_reaction' ? 0.35 : 0.45;
+  if (imageStrength <= 0 || imageStrength > 1) {
+    throw new Error("Invalid image_strength for BFL API image-to-image generation");
+  }
+
+  let lastError: Error | null = null;
+  
+  for (const modelConfig of models) {
+    try {
+      console.log(`📤 [Background] Trying ${modelConfig.name} (${modelConfig.endpoint})`);
+      
+      // Prepare BFL API input
+      const bflInput: any = {
+        prompt: params.prompt,
+        image_url: params.sourceAssetId,
+        image_strength: imageStrength,
+        guidance_scale: 7.5
+      };
+      
+      // Add width and height to preserve original aspect ratio
+      if (params.sourceWidth && params.sourceHeight) {
+        bflInput.width = params.sourceWidth;
+        bflInput.height = params.sourceHeight;
+        console.log(`📐 [BFL API] Preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
+      }
+      
+      console.log(`📤 [Background] BFL API request:`, {
+        endpoint: modelConfig.endpoint,
+        prompt: params.prompt.substring(0, 50) + '...',
+        image_strength: imageStrength,
+        width: params.sourceWidth,
+        height: params.sourceHeight
+      });
+      
+      const result = await bflInvoke(modelConfig.endpoint, bflInput);
+      
+      if (result.images && result.images.length > 0) {
+        const imageUrl = result.images[0].url;
+        console.log(`✅ [Background] BFL API ${modelConfig.name} generation successful`);
+        
+        // Upload to Cloudinary
+        const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);
+        return {
+          success: true,
+          status: 'done',
+          provider: 'bfl',
+          outputUrl: cloudinaryUrl
+        };
+      } else {
+        throw new Error('BFL API returned no images');
+      }
+      
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`⚠️ [Background] BFL API ${modelConfig.name} failed:`, error);
+      continue; // Try next model
+    }
+  }
+  
+  // All BFL models failed, fallback to Fal.ai
+  console.warn(`⚠️ [Background] All BFL API models failed, falling back to Fal.ai:`, lastError);
+  return await generateWithFal(mode, params);
+}
+
 // Fal.ai generation with fallback system
 async function generateWithFal(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
   console.log(`🚀 [Background] Starting Fal.ai generation for mode: ${mode}`);
@@ -1344,31 +1487,47 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
         }
       }
     } else {
-      // All other modes: Fal.ai as primary provider, Stability.ai as fallback
-      console.log('🚀 [Background] Starting generation with Fal.ai as primary provider');
+      // All other modes: BFL API as primary provider, Fal.ai as fallback
+      console.log('🚀 [Background] Starting generation with BFL API as primary provider');
       
       try {
-        // Try Fal.ai first (primary provider for all other modes)
-        console.log('🎨 [Background] Attempting generation with Fal.ai');
-        result = await generateWithFal(request.mode, generationParams);
-        console.log('✅ [Background] Fal.ai generation successful');
-      } catch (falError) {
-        console.warn('⚠️ [Background] Fal.ai failed, falling back to Replicate:', falError);
+        // Try BFL API first for supported modes
+        if (['presets', 'custom', 'emotion_mask', 'ghibli_reaction'].includes(request.mode)) {
+          console.log('🎨 [Background] Attempting generation with BFL API');
+          result = await generateWithBFL(request.mode, generationParams);
+          console.log('✅ [Background] BFL API generation successful');
+        } else {
+          // For unsupported modes (story_time), use Fal.ai directly
+          console.log('🎨 [Background] Attempting generation with Fal.ai (unsupported by BFL)');
+          result = await generateWithFal(request.mode, generationParams);
+          console.log('✅ [Background] Fal.ai generation successful');
+        }
+      } catch (primaryError) {
+        console.warn('⚠️ [Background] Primary provider failed, falling back to Fal.ai:', primaryError);
         
-        // Fallback to Replicate (not Stability.ai for other modes)
+        // Fallback to Fal.ai for all modes
         if (request.mode === 'story_time') {
           console.error('❌ [Background] Story Time requires Fal.ai (video generation)');
-          throw new Error(`Video generation failed: ${falError}`);
+          throw new Error(`Video generation failed: ${primaryError}`);
         }
         
         try {
-          // Try Replicate as fallback for image modes
-          console.log('🎨 [Background] Attempting fallback with Replicate');
-          result = await generateWithReplicate(generationParams);
-          console.log('✅ [Background] Replicate fallback successful');
-        } catch (replicateError) {
-          console.error('❌ [Background] Both Fal.ai and Replicate failed');
-          throw new Error(`All providers failed. Fal: ${falError}. Replicate: ${replicateError}`);
+          // Try Fal.ai as fallback
+          console.log('🎨 [Background] Attempting fallback with Fal.ai');
+          result = await generateWithFal(request.mode, generationParams);
+          console.log('✅ [Background] Fal.ai fallback successful');
+        } catch (falError) {
+          console.warn('⚠️ [Background] Fal.ai fallback failed, trying Replicate:', falError);
+          
+          try {
+            // Try Replicate as final fallback for image modes
+            console.log('🎨 [Background] Attempting final fallback with Replicate');
+            result = await generateWithReplicate(generationParams);
+            console.log('✅ [Background] Replicate fallback successful');
+          } catch (replicateError) {
+            console.error('❌ [Background] All providers failed');
+            throw new Error(`All providers failed. Primary: ${primaryError}. Fal: ${falError}. Replicate: ${replicateError}`);
+          }
         }
       }
     }
@@ -1415,6 +1574,8 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
             // Try generation again
             if (currentResult.provider === 'stability') {
               currentResult = await generateWithStability(retryParams);
+            } else if (currentResult.provider === 'bfl') {
+              currentResult = await generateWithBFL(request.mode, retryParams);
             } else {
               currentResult = await generateWithFal(request.mode, retryParams);
             }
