@@ -55,8 +55,8 @@
   timeout = 30
   memory = 1024
 
-# Scheduled function configuration
-[[functions.scheduled]]
+# Scheduled function configuration - using Netlify's scheduled functions
+[[scheduled]]
   function = "reset-daily-credits"
   schedule = "0 0 * * *"  # Daily at midnight UTC (cron format)
 
