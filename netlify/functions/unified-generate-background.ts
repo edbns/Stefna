@@ -94,15 +94,15 @@ interface UnifiedGenerationResponse {
 // Mode-specific FAL.ai model configurations
 const PHOTO_MODELS = [
   {
-    model: 'fal-ai/flux-1/schnell/redux',
-    name: 'Flux 1 Schnell Redux',
+    model: 'fal-ai/flux/schnell/redux',
+    name: 'Flux Schnell Redux',
     cost: 'low',
     priority: 1,
     description: 'Super cheap and fast generation - safe for presets and custom prompts'
   },
   {
-    model: 'fal-ai/flux/schnell/redux',
-    name: 'Flux Schnell Redux',
+    model: 'fal-ai/flux-1/schnell/redux',
+    name: 'Flux 1 Schnell Redux',
     cost: 'low',
     priority: 2,
     description: 'Fast stylized generation'
@@ -118,25 +118,25 @@ const PHOTO_MODELS = [
 
 const GHIBLI_MODELS = [
   {
+    model: 'fal-ai/flux/schnell/redux',
+    name: 'Flux Schnell Redux',
+    cost: 'low',
+    priority: 1,
+    description: 'Primary - cheap and fast generation'
+  },
+  {
     model: 'fal-ai/flux-pro/v1/depth-finetuned',
     name: 'Flux Pro Depth Finetuned',
     cost: 'medium',
-    priority: 1,
-    description: 'Primary - closest to old AIML Flux Dev I2I, depth-aware, retains lighting and realism'
+    priority: 2,
+    description: 'Secondary - closest to old AIML Flux Dev I2I, depth-aware, retains lighting and realism'
   },
   {
     model: 'fal-ai/flux-pro/kontext',
     name: 'Flux Pro Kontext',
     cost: 'medium',
-    priority: 2,
-    description: 'Secondary - great lighting control but more stylized'
-  },
-  {
-    model: 'fal-ai/flux-1/schnell/redux',
-    name: 'Flux 1 Schnell Redux',
-    cost: 'low',
     priority: 3,
-    description: 'Fallback - cheap and fast but kills skin texture'
+    description: 'Fallback - great lighting control but more stylized'
   }
 ];
 
