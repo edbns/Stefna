@@ -2667,7 +2667,7 @@ const HomeNew: React.FC = () => {
       
       // Map technical errors to user-friendly messages
       if (e instanceof Error) {
-        if (e.message.includes('Insufficient credits') || e.message.includes('credits but only have')) {
+        if (e.message.includes('INSUFFICIENT_CREDITS') || e.message.includes('Insufficient credits') || e.message.includes('credits but only have')) {
           errorMessage = 'Not enough credits. Please wait for daily reset or upgrade your plan.';
         } else if (e.message.includes('timeout') || e.message.includes('ERR_TIMED_OUT')) {
           errorMessage = 'Request timed out. Please try again with a smaller image or different prompt.';

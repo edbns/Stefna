@@ -122,6 +122,12 @@ class SimpleGenerationService {
         } else if (result && result.message) {
           errorMessage = result.message;
         }
+        
+        // Special handling for insufficient credits
+        if (result && result.errorType === 'INSUFFICIENT_CREDITS') {
+          throw new Error('INSUFFICIENT_CREDITS');
+        }
+        
         throw new Error(errorMessage);
       }
 
