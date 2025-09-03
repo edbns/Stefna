@@ -54,6 +54,52 @@ export const handler: Handler = async (event) => {
       // Delete story photos (cascade delete should handle this, but let's be explicit)
       await q(`DELETE FROM story_photo WHERE story_id IN (SELECT id FROM story WHERE user_id = $1)`, [userId])
 
+      // Delete likes given by the user
+      await q(`DELETE FROM likes WHERE user_id = $1`, [userId])
+
+      // Update total_likes_received for users who received likes from this user
+      await q(`
+        UPDATE users 
+        SET total_likes_received = total_likes_received - (
+          SELECT COUNT(*) 
+          FROM likes 
+          WHERE user_id = $1 AND media_id IN (
+            SELECT id FROM neo_glitch_media WHERE user_id = users.id
+            UNION ALL
+            SELECT id FROM ghibli_reaction_media WHERE user_id = users.id
+            UNION ALL
+            SELECT id FROM emotion_mask_media WHERE user_id = users.id
+            UNION ALL
+            SELECT id FROM presets_media WHERE user_id = users.id
+            UNION ALL
+            SELECT id FROM custom_prompt_media WHERE user_id = users.id
+            UNION ALL
+            SELECT id FROM story WHERE user_id = users.id
+          )
+        )
+        WHERE id IN (
+          SELECT DISTINCT user_id 
+          FROM (
+            SELECT user_id FROM neo_glitch_media
+            UNION ALL
+            SELECT user_id FROM ghibli_reaction_media
+            UNION ALL
+            SELECT user_id FROM emotion_mask_media
+            UNION ALL
+            SELECT user_id FROM presets_media
+            UNION ALL
+            SELECT user_id FROM custom_prompt_media
+            UNION ALL
+            SELECT user_id FROM story
+          ) media_users
+          WHERE user_id IN (
+            SELECT DISTINCT target_user_id 
+            FROM likes 
+            WHERE user_id = $1
+          )
+        )
+      `, [userId])
+
       // Delete user settings
       await q(`DELETE FROM user_settings WHERE user_id = $1`, [userId])
 
