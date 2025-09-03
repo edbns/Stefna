@@ -98,7 +98,7 @@ const PHOTO_MODELS = [
     name: 'Flux 1 Schnell Redux',
     cost: 'low',
     priority: 1,
-    description: 'Super cheap and fast generation'
+    description: 'Super cheap and fast generation - safe for presets and custom prompts'
   },
   {
     model: 'fal-ai/flux/schnell/redux',
@@ -118,32 +118,25 @@ const PHOTO_MODELS = [
 
 const GHIBLI_MODELS = [
   {
-    model: 'fal-ai/flux-1/schnell/redux',
-    name: 'Flux 1 Schnell Redux',
-    cost: 'low',
-    priority: 1,
-    description: 'Super cheap and fast Ghibli-style generation'
-  },
-  {
-    model: 'fal-ai/flux/schnell/redux',
-    name: 'Flux Schnell Redux',
-    cost: 'low',
-    priority: 2,
-    description: 'Fast stylized generation'
-  },
-  {
-    model: 'fal-ai/flux-pro/kontext/multi',
-    name: 'Flux Pro Kontext Multi',
+    model: 'fal-ai/flux-pro/v1/depth-finetuned',
+    name: 'Flux Pro Depth Finetuned',
     cost: 'medium',
-    priority: 3,
-    description: 'Higher quality with multi-context'
+    priority: 1,
+    description: 'Primary - closest to old AIML Flux Dev I2I, depth-aware, retains lighting and realism'
   },
   {
     model: 'fal-ai/flux-pro/kontext',
     name: 'Flux Pro Kontext',
     cost: 'medium',
-    priority: 4,
-    description: 'High quality single-context'
+    priority: 2,
+    description: 'Secondary - great lighting control but more stylized'
+  },
+  {
+    model: 'fal-ai/flux-1/schnell/redux',
+    name: 'Flux 1 Schnell Redux',
+    cost: 'low',
+    priority: 3,
+    description: 'Fallback - cheap and fast but kills skin texture'
   }
 ];
 
@@ -903,10 +896,10 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
   
   // Select models based on mode
   let models;
-  if (mode === 'presets' || mode === 'custom' || mode === 'emotion_mask') {
+  if (mode === 'presets' || mode === 'custom') {
     models = PHOTO_MODELS;
-  } else if (mode === 'ghibli_reaction') {
-    models = GHIBLI_MODELS;
+  } else if (mode === 'ghibli_reaction' || mode === 'emotion_mask') {
+    models = GHIBLI_MODELS; // Use high-quality models for both Ghibli and Emotion Mask
   } else if (mode === 'story_time') {
     models = VIDEO_MODELS;
   } else {
@@ -991,11 +984,11 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
 
         const input: any = {
           image_url: processedImageUrl,
-          prompt: mode === 'ghibli_reaction'
-            ? `emotional human reaction in Studio Ghibli style, realistic facial structure, identity preserved, expressive eyes, blush, sparkles, cinematic light, dreamy tone`
+          prompt: (mode === 'ghibli_reaction' || mode === 'emotion_mask')
+            ? `A raw emotional portrait of the same person, with slightly widened eyes and parted lips, subtle tear buildup, keeping full photo realism and lighting. No stylization. Same lighting, same skin tone, same texture. Background soft blur.`
             : params.prompt,
-          image_strength: mode === 'ghibli_reaction' ? 0.28 : 0.45, // Reduced for better quality preservation
-          guidance_scale: mode === 'ghibli_reaction' ? 7.0 : 7.5, // Lower guidance for subtler Ghibli effect
+          image_strength: (mode === 'ghibli_reaction' || mode === 'emotion_mask') ? 0.28 : 0.45, // Reduced for better quality preservation
+          guidance_scale: (mode === 'ghibli_reaction' || mode === 'emotion_mask') ? 7.0 : 7.5, // Lower guidance for subtler effect
           seed: Math.floor(Math.random() * 1000000)
         };
         
@@ -1006,14 +999,21 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           console.log(`📐 [Fal.ai] Preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
         }
         
-        // Add negative prompt for Ghibli to prevent anime stylization
-        if (mode === 'ghibli_reaction') {
+        // Add negative prompt for Ghibli/Emotion to prevent anime stylization
+        if (mode === 'ghibli_reaction' || mode === 'emotion_mask') {
           input.negative_prompt = 'anime, cartoon, drawing, unrealistic skin, illustration, 2d, lowres, distorted face, doll, plastic, overexaggerated features';
         }
         
         // Add steps for models that need them
         if (steps !== undefined) {
           input.num_inference_steps = steps;
+        }
+        
+        // Flux Pro Depth Finetuned specific parameters (primary for Ghibli/Emotion)
+        if (modelConfig.model === 'fal-ai/flux-pro/v1/depth-finetuned') {
+          input.image_strength = (mode === 'ghibli_reaction' || mode === 'emotion_mask') ? 0.05 : 0.08; // Very low strength for subtle changes
+          input.guidance_scale = 6.5; // Lower guidance for more realistic results
+          console.log(`🎯 [Fal.ai] Using Flux Pro Depth Finetuned with strength ${input.image_strength}, guidance ${input.guidance_scale}`);
         }
         
         // Flux Dev specific parameters
