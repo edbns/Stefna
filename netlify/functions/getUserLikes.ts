@@ -1,6 +1,7 @@
-import { Handler } from '@netlify/functions';
-import { q } from '../utils/db';
-import { getUser } from '../utils/auth';
+import type { Handler } from '@netlify/functions';
+import { q } from './_db';
+import { requireAuth } from './_auth';
+import { json } from './_lib/http';
 
 export const handler: Handler = async (event) => {
   // Only accept GET requests
@@ -25,62 +26,35 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      },
-      body: ''
+      }
     };
   }
 
   try {
     // Authenticate user
-    const user = await getUser(event);
-    if (!user) {
-      return {
-        statusCode: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: 'Unauthorized' })
-      };
-    }
+    const { userId } = requireAuth(event.headers?.authorization || event.headers?.Authorization || '');
 
     // Get all likes by this user
     const userLikes = await q(
       'SELECT media_id, media_type FROM likes WHERE user_id = $1',
-      [user.id]
+      [userId]
     );
 
     // Format likes into a map for easy lookup
     const likesMap: Record<string, boolean> = {};
-    userLikes.forEach(like => {
+    userLikes.forEach((like: any) => {
       likesMap[`${like.media_type}:${like.media_id}`] = true;
     });
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      },
-      body: JSON.stringify({ 
-        likes: likesMap,
-        count: userLikes.length
-      })
-    };
+    return json({ 
+      likes: likesMap,
+      count: userLikes.length
+    });
   } catch (error: any) {
     console.error('💥 [getUserLikes] Error:', error?.message || error);
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({ 
-        error: 'Failed to get user likes',
-        details: error?.message 
-      })
-    };
+    return json({ 
+      error: 'Failed to get user likes',
+      details: error?.message 
+    }, { status: 500 });
   }
 };

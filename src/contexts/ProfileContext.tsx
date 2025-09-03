@@ -11,6 +11,7 @@ interface ProfileData {
   // allowRemix removed
   onboarding_completed?: boolean
   createdAt?: string
+  totalLikesReceived?: number
 }
 
 interface ProfileContextType {

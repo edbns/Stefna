@@ -53,9 +53,6 @@ export interface UserMedia {
   // Additional fields for new feed structure
   cloudinaryPublicId?: string
   mediaType?: 'image' | 'video'
-  // Direct preset fields for feed compatibility
-  presetKey?: string
-  presetType?: string
 }
 
 export interface UserMediaStats {

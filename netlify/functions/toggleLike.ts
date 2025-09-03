@@ -1,6 +1,7 @@
-import { Handler } from '@netlify/functions';
-import { q } from '../utils/db';
-import { getUser } from '../utils/auth';
+import type { Handler } from '@netlify/functions';
+import { q } from './_db';
+import { requireAuth } from './_auth';
+import { json } from './_lib/http';
 
 interface ToggleLikeRequest {
   mediaId: string;
@@ -30,50 +31,26 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      },
-      body: ''
+      }
     };
   }
 
   try {
     // Authenticate user
-    const user = await getUser(event);
-    if (!user) {
-      return {
-        statusCode: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: 'Unauthorized' })
-      };
-    }
+    const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
+    const { userId } = requireAuth(authHeader);
 
     // Parse request body
     const { mediaId, mediaType } = JSON.parse(event.body || '{}') as ToggleLikeRequest;
 
     if (!mediaId || !mediaType) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: 'Missing required fields' })
-      };
+      return json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Validate media type
     const validMediaTypes = ['custom_prompt', 'emotion_mask', 'ghibli_reaction', 'neo_glitch', 'presets', 'story'];
     if (!validMediaTypes.includes(mediaType)) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: 'Invalid media type' })
-      };
+      return json({ error: 'Invalid media type' }, { status: 400 });
     }
 
     // Check if the media exists
@@ -81,20 +58,13 @@ export const handler: Handler = async (event) => {
     const mediaCheck = await q(`SELECT id, user_id FROM ${mediaTable} WHERE id = $1`, [mediaId]);
     
     if (mediaCheck.length === 0) {
-      return {
-        statusCode: 404,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: 'Media not found' })
-      };
+      return json({ error: 'Media not found' }, { status: 404 });
     }
 
     // Check if user already liked this media
     const existingLike = await q(
       'SELECT id FROM likes WHERE user_id = $1 AND media_id = $2 AND media_type = $3',
-      [user.id, mediaId, mediaType]
+      [userId, mediaId, mediaType]
     );
 
     let liked = false;
@@ -104,14 +74,14 @@ export const handler: Handler = async (event) => {
       // Unlike - remove the like
       await q(
         'DELETE FROM likes WHERE user_id = $1 AND media_id = $2 AND media_type = $3',
-        [user.id, mediaId, mediaType]
+        [userId, mediaId, mediaType]
       );
       liked = false;
     } else {
       // Like - add the like
       await q(
         'INSERT INTO likes (user_id, media_id, media_type) VALUES ($1, $2, $3)',
-        [user.id, mediaId, mediaType]
+        [userId, mediaId, mediaType]
       );
       liked = true;
     }
@@ -123,34 +93,18 @@ export const handler: Handler = async (event) => {
     );
     likesCount = countResult[0]?.likes_count || 0;
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      },
-      body: JSON.stringify({ 
-        success: true,
-        liked,
-        likesCount,
-        mediaId,
-        mediaType
-      })
-    };
+    return json({ 
+      success: true,
+      liked,
+      likesCount,
+      mediaId,
+      mediaType
+    });
   } catch (error: any) {
     console.error('💥 [toggleLike] Error:', error?.message || error);
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({ 
-        error: 'Failed to toggle like',
-        details: error?.message 
-      })
-    };
+    return json({ 
+      error: 'Failed to toggle like',
+      details: error?.message 
+    }, { status: 500 });
   }
 };
