@@ -89,6 +89,7 @@ interface UnifiedGenerationResponse {
     retryCount?: number;
     finalUrl?: string;
   };
+  metadata?: any; // Added for story_time metadata
 }
 
 // Mode-specific FAL.ai model configurations
@@ -575,7 +576,8 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
       status: 'completed',
       metadata: JSON.stringify({
         ...(request.meta || {}),
-        ...(result.ipaResults ? { ipaResults: result.ipaResults } : {})
+        ...(result.ipaResults ? { ipaResults: result.ipaResults } : {}),
+        ...(result.metadata || {}) // Add metadata to baseData
       })
     };
 
@@ -692,8 +694,8 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
           request.userId,
           'story',
           'completed',
-          JSON.stringify({ prompt: request.prompt, sourceAssetId: request.sourceAssetId }),
-          JSON.stringify({ videoUrl: result.outputUrl }),
+          JSON.stringify({ prompt: request.prompt, sourceAssetId: request.sourceAssetId, additionalImages: request.additionalImages }),
+          JSON.stringify({ videoUrl: result.outputUrl, metadata: result.metadata }),
           100
         ]);
         console.log(`✅ [Background] Saved story_time result to database`);
@@ -955,8 +957,34 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
       
       if (mode === 'story_time') {
         // Video generation with retry logic
+        console.log(`🎬 [Story Time] Processing ${params.additionalImages?.length || 0} additional images`);
+        
+        // For Story Time, we need to process multiple images
+        // The first image is in sourceAssetId, additional images are in additionalImages
+        const allImages = [params.sourceAssetId, ...(params.additionalImages || [])].filter(Boolean);
+        
+        console.log(`🎬 [Story Time] Total images to process: ${allImages.length}`);
+        
+        if (allImages.length < 2) {
+          throw new Error("Story Time requires at least 2 images to create a video");
+        }
+        
+        // Upload all images to Cloudinary first to get public URLs
+        const uploadedImageUrls = [];
+        for (let i = 0; i < allImages.length; i++) {
+          const imageUrl = allImages[i];
+          console.log(`📤 [Story Time] Uploading image ${i + 1}/${allImages.length}: ${imageUrl.substring(0, 50)}...`);
+          
+          // Upload to Cloudinary to get a public URL
+          const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);
+          uploadedImageUrls.push(cloudinaryUrl);
+          console.log(`✅ [Story Time] Image ${i + 1} uploaded: ${cloudinaryUrl}`);
+        }
+        
+        // For now, use the first image as the base for video generation
+        // In the future, we could implement multi-image video generation
         const videoInput: any = {
-          image_url: params.sourceAssetId,
+          image_url: uploadedImageUrls[0], // Use first image as base
           prompt: params.prompt,
           num_frames: 24,
           fps: 8
@@ -968,6 +996,15 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           videoInput.height = params.sourceHeight;
           console.log(`📐 [Fal.ai] Preserving original aspect ratio for video: ${params.sourceWidth}x${params.sourceHeight}`);
         }
+        
+        // Add metadata about all images for future reference
+        videoInput.metadata = {
+          totalImages: allImages.length,
+          imageUrls: uploadedImageUrls,
+          storyTimePresetId: params.storyTimePresetId
+        };
+        
+        console.log(`🎬 [Story Time] Generating video with ${allImages.length} images, using first as base`);
         
         result = await falInvoke(modelConfig.model, videoInput);
         
@@ -999,7 +1036,12 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
             success: true,
             status: 'done',
             provider: 'fal',
-            outputUrl: cloudinaryUrl
+            outputUrl: cloudinaryUrl,
+            metadata: {
+              totalImages: allImages.length,
+              imageUrls: uploadedImageUrls,
+              storyTimePresetId: params.storyTimePresetId
+            }
           };
         }
         
