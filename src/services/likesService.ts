@@ -15,7 +15,7 @@ interface UserLikesResponse {
 
 export async function toggleLike(
   mediaId: string, 
-  mediaType: 'custom_prompt' | 'emotion_mask' | 'ghibli_reaction' | 'neo_glitch' | 'presets'
+  mediaType: 'custom_prompt' | 'emotion_mask' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story'
 ): Promise<ToggleLikeResponse> {
   try {
     const response = await authenticatedFetch('/.netlify/functions/toggleLike', {
@@ -59,19 +59,22 @@ export async function getUserLikes(): Promise<UserLikesResponse> {
 }
 
 // Helper to map database media type to API media type
-export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'emotion_mask' | 'ghibli_reaction' | 'neo_glitch' | 'presets' {
-  const typeMapping: Record<string, 'custom_prompt' | 'emotion_mask' | 'ghibli_reaction' | 'neo_glitch' | 'presets'> = {
+export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'emotion_mask' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' {
+  const typeMapping: Record<string, 'custom_prompt' | 'emotion_mask' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story'> = {
     'custom_prompt': 'custom_prompt',
     'emotion_mask': 'emotion_mask',
     'ghibli_reaction': 'ghibli_reaction',
     'neo_glitch': 'neo_glitch',
     'presets': 'presets',
+    'story': 'story',
+    'story_time': 'story',
     // Also handle variations that might come from the feed
     'custom': 'custom_prompt',
     'emotionmask': 'emotion_mask',
     'ghiblireact': 'ghibli_reaction',
     'neo-glitch': 'neo_glitch',
-    'preset': 'presets'
+    'preset': 'presets',
+    'storytime': 'story'
   };
   
   return typeMapping[dbType] || 'presets';

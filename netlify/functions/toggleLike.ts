@@ -4,7 +4,7 @@ import { getUser } from '../utils/auth';
 
 interface ToggleLikeRequest {
   mediaId: string;
-  mediaType: 'custom_prompt' | 'emotion_mask' | 'ghibli_reaction' | 'neo_glitch' | 'presets';
+  mediaType: 'custom_prompt' | 'emotion_mask' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story';
 }
 
 export const handler: Handler = async (event) => {
@@ -64,7 +64,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Validate media type
-    const validMediaTypes = ['custom_prompt', 'emotion_mask', 'ghibli_reaction', 'neo_glitch', 'presets'];
+    const validMediaTypes = ['custom_prompt', 'emotion_mask', 'ghibli_reaction', 'neo_glitch', 'presets', 'story'];
     if (!validMediaTypes.includes(mediaType)) {
       return {
         statusCode: 400,
@@ -77,7 +77,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Check if the media exists
-    const mediaTable = `${mediaType}_media`;
+    const mediaTable = mediaType === 'story' ? 'story' : `${mediaType}_media`;
     const mediaCheck = await q(`SELECT id, user_id FROM ${mediaTable} WHERE id = $1`, [mediaId]);
     
     if (mediaCheck.length === 0) {
