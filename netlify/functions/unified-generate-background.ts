@@ -747,8 +747,15 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
     console.warn(`⚠️ [Background] Stability.ai credentials not configured`);
   }
   
-  // No Fal fallback when disabled
-  throw new Error('All Stability providers failed');
+  // For Neo Tokyo Glitch, fall back to Replicate (not Fal.ai)
+  if (params.mode === 'neo_glitch') {
+    console.log('🔄 [Background] Stability.ai failed for Neo Tokyo Glitch, falling back to Replicate');
+    return await generateWithReplicate(params);
+  }
+  
+  // For other modes, continue to Fal.ai
+  console.log('🔄 [Background] Stability.ai failed, falling back to Fal.ai');
+  return await generateWithFal(params.mode, params);
 }
 
 // Replicate generation with IPA-safe fallback models
