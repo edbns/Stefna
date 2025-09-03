@@ -222,6 +222,12 @@ const HomeNew: React.FC = () => {
   // const selectedPreset = stickySelectedPreset // REMOVED - using database-driven presets now
   // const setSelectedPreset = setStickySelectedPreset // REMOVED - using database-driven presets now
 
+  // Simple reference to composer state for backward compatibility
+  const selectedPreset = composerState.selectedPresetId
+  const setSelectedPreset = (presetId: string | null) => {
+    setComposerState(s => ({ ...s, selectedPresetId: presetId }))
+  }
+
   // Stable ref for selectedPreset to prevent re-render issues during generation
   const selectedPresetRef = useRef<string | null>(null)
   const genIdRef = useRef<string>('') // tracks current generation job id
@@ -244,8 +250,8 @@ const HomeNew: React.FC = () => {
   
   
   useEffect(() => { 
-    selectedPresetRef.current = selectedPreset as string | null
-  }, [selectedPreset])
+    selectedPresetRef.current = composerState.selectedPresetId
+  }, [composerState.selectedPresetId])
   
   // Generation lifecycle functions
   function startGeneration() {
@@ -266,13 +272,13 @@ const HomeNew: React.FC = () => {
   
   // Preset clearing functions updated for sticky presets
   function requestClearPreset(reason: string) {
-    console.log(`🔒 Keeping sticky preset (${reason}):`, selectedPreset)
+    console.log(`🔒 Keeping sticky preset (${reason}):`, composerState.selectedPresetId)
     // No longer clearing presets - they stay sticky for better UX
   }
 
   // Keep preset after successful generation (sticky behavior)
   const clearPresetAfterGeneration = () => {
-    console.log('🔒 Keeping sticky preset after generation:', selectedPreset)
+    console.log('🔒 Keeping sticky preset after generation:', composerState.selectedPresetId)
     // No longer clearing presets - they stay sticky for better UX
   }
 
@@ -292,7 +298,7 @@ const HomeNew: React.FC = () => {
     setSelectedFile(null)
     setPreviewUrl(null)
     setPrompt('')
-    setSelectedPreset(null)
+    // setSelectedPreset(null) // REMOVED - using composerState.selectedPresetId now
     setSelectedEmotionMaskPreset(null)
     setSelectedGhibliReactionPreset(null)
     setSelectedNeoTokyoGlitchPreset(null)
@@ -357,7 +363,7 @@ const HomeNew: React.FC = () => {
     
     // Clear everything EXCEPT the file - keep it for continued preset usage
     setPrompt('')
-    setSelectedPreset(null)
+    // setSelectedPreset(null) // REMOVED - using composerState.selectedPresetId now
     setSelectedEmotionMaskPreset(null)
     setSelectedGhibliReactionPreset(null)
     setSelectedNeoTokyoGlitchPreset(null)
@@ -431,9 +437,9 @@ const HomeNew: React.FC = () => {
   useEffect(() => {
     if (availablePresets.length > 0) {
       const activePresetKeys = availablePresets.map(p => p.key)
-      ensureDefault(activePresetKeys as any)
+      // ensureDefault(activePresetKeys as any) // REMOVED - using database-driven presets now
     }
-  }, [availablePresets, ensureDefault])
+  }, [availablePresets])
 
   // Close all dropdowns when clicking outside
   useEffect(() => {
