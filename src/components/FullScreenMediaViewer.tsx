@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { UserMedia } from '../services/userMediaService'
 import PresetTag from './PresetTag'
-import LQIPImage from './LQIPImage'
 import { getPresetTypeForFilter } from '../utils/presetMapping'
 
 interface FullScreenMediaViewerProps {
@@ -97,8 +96,8 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
       {/* Centered Media Display */}
       <div className="h-full w-full flex flex-col items-center justify-center p-8">
-        {/* Media Container - Full screen display */}
-        <div className="flex-1 flex items-center justify-center max-w-full max-h-full">
+        {/* Media Container - Proper aspect ratio display */}
+        <div className="flex-1 flex items-center justify-center w-full h-full p-4">
           {current.type === 'video' ? (
             <video 
               src={current.url} 
@@ -108,12 +107,16 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
               muted 
             />
           ) : (
-            <LQIPImage 
+            <img 
               src={current.url} 
               alt={current.prompt || 'AI Generated Image'} 
-              className="max-w-full max-h-full object-contain shadow-2xl" 
-              loading="eager"
-              decoding="async"
+              className="max-w-full max-h-full object-contain" 
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '100%',
+                width: 'auto',
+                height: 'auto'
+              }}
             />
           )}
         </div>
