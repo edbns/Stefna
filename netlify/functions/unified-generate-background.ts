@@ -53,23 +53,23 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
   
   // Try different header formats
   const headerFormats = [
-    // Format 1: x-api-key (most likely)
+    // Format 1: x-key (from BFL documentation)
+    {
+      'Content-Type': 'application/json',
+      'accept': 'application/json',
+      'x-key': BFL_API_KEY
+    } as Record<string, string>,
+    // Format 2: x-api-key (common alternative)
     {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'x-api-key': BFL_API_KEY
     } as Record<string, string>,
-    // Format 2: Authorization: Bearer (standard)
+    // Format 3: Authorization: Bearer (standard)
     {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'Authorization': `Bearer ${BFL_API_KEY}`
-    } as Record<string, string>,
-    // Format 3: Authorization: bfl- (custom prefix)
-    {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `bfl-${BFL_API_KEY}`
     } as Record<string, string>
   ];
   
@@ -77,7 +77,7 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
   
   for (let i = 0; i < headerFormats.length; i++) {
     const headers = headerFormats[i];
-    const formatName = i === 0 ? 'x-api-key' : i === 1 ? 'Bearer' : 'bfl-';
+    const formatName = i === 0 ? 'x-key' : i === 1 ? 'x-api-key' : 'Bearer';
     
     console.log(`🔑 [BFL Debug] Trying format ${i + 1}: ${formatName}`);
     
