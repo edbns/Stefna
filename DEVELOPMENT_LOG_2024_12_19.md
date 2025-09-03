@@ -8,7 +8,7 @@
 4. **Daily Credit Reset System**: Implemented automated daily credit reset using Netlify scheduled functions
 5. **Error Handling Improvements**: Fixed multiple frontend/backend synchronization issues
 
-**⚠️ IMPORTANT NOTE**: Only the "Tech Tattoos" preset was moved to BFL Flux Ultra for Neo Tokyo Glitch. Other Neo Tokyo presets (Base, Glitch Visor, Scanline FX) remain on Stability.ai for testing and evaluation purposes.
+**⚠️ IMPORTANT NOTE**: Neo Tokyo Glitch was temporarily moved to BFL but has been reverted back to Stability.ai due to aspect ratio issues and insufficient "crazy" effects compared to Stability.ai. Only Ghibli Reaction, Emotion Mask, Presets, and Custom Prompt modes use BFL.
 
 ---
 
@@ -95,24 +95,18 @@ interface BFLParams {
 
 ### **Neo Tokyo Glitch Presets**
 ```typescript
-// Updated neo_tokyo_tattoos for BFL Ultra
+// All presets reverted back to Stability.ai
 {
-  model: 'bfl/flux-pro-1.1-ultra',
-  strength: 0.35,
-  guidance_scale: 9,
-  num_inference_steps: 28,
-  prompt_upsampling: true,
-  safety_tolerance: 3,
-  output_format: 'jpeg',
-  raw: true,
-  image_prompt_strength: 0.35,
-  aspect_ratio: '3:4' // Portrait for face-focused tattoos
+  model: 'stability-ai/stable-diffusion-img2img',
+  strength: 0.45,
+  guidance_scale: 7.5,
+  num_inference_steps: 40
 }
 
-// Other Neo Tokyo presets remain on Stability.ai:
-// - neo_tokyo_base: stability-ai/stable-diffusion-img2img
-// - neo_tokyo_visor: stability-ai/stable-diffusion-img2img  
-// - neo_tokyo_scanlines: stability-ai/stable-diffusion-img2img
+// Note: Neo Tokyo Glitch was temporarily moved to BFL but reverted due to:
+// - Aspect ratio issues (not achieving desired 3:4 ratio)
+// - Insufficient "crazy" effects compared to Stability.ai
+// - User preference for Stability.ai's more dramatic cyberpunk style
 ```
 
 ---
@@ -182,19 +176,19 @@ if (result.errorType === 'INSUFFICIENT_CREDITS') {
   schedule = "0 0 * * *"  # Daily at midnight UTC
 ```
 
-### **6. Neo Tokyo Glitch Still Using Stability.ai**
-**Problem**: Hardcoded provider selection bypassing BFL
-**Solution**: Updated routing logic
+### **6. Neo Tokyo Glitch Reverted to Stability.ai**
+**Problem**: BFL results not as "crazy" as Stability.ai, aspect ratio issues
+**Solution**: Reverted all Neo Tokyo presets back to Stability.ai
 ```typescript
 if (request.mode === 'neo_glitch') {
-  // ✅ Now prioritizes BFL for neo_tokyo_tattoos preset
-  result = await generateWithBFL(request.mode, generationParams);
+  // ✅ Now uses Stability.ai as primary (reverted from BFL)
+  result = await generateWithStability(generationParams);
 } else {
   // Other modes...
 }
 ```
 
-**⚠️ NOTE**: Only the "Tech Tattoos" preset uses BFL. Other Neo Tokyo presets (Base, Visor, Scanlines) still use Stability.ai for testing purposes.
+**⚠️ NOTE**: Neo Tokyo Glitch was temporarily moved to BFL but reverted due to user feedback about insufficient dramatic effects and aspect ratio issues.
 
 ---
 
@@ -353,8 +347,7 @@ const ASPECT_RATIOS = {
 
 ### **BFL Integration Testing**
 - [ ] Ghibli Reaction generates with BFL Ultra
-- [ ] Neo Tokyo Tattoos generates with BFL Ultra
-- [ ] Neo Tokyo Base/Visor/Scanlines still use Stability.ai
+- [ ] Neo Tokyo Glitch generates with Stability.ai (reverted from BFL)
 - [ ] Emotion Mask generates with BFL Pro Raw
 - [ ] Presets generate with BFL Pro
 - [ ] Custom Prompt generates with BFL Pro
@@ -371,8 +364,7 @@ const ASPECT_RATIOS = {
 
 ### **Preset System Testing**
 - [ ] All Ghibli presets work (including new Sadness/Love)
-- [ ] Neo Tokyo Tattoos preset works with BFL
-- [ ] Neo Tokyo Base/Visor/Scanlines still work with Stability.ai
+- [ ] Neo Tokyo Glitch presets work with Stability.ai (reverted from BFL)
 - [ ] Preset parameters are correctly passed to backend
 - [ ] Preset selection UI updates correctly
 
@@ -386,14 +378,14 @@ const ASPECT_RATIOS = {
 - **Speed**: Similar generation times
 - **Reliability**: Better uptime and error handling
 
-**⚠️ NOTE**: Only Neo Tokyo "Tech Tattoos" was moved to BFL. Other Neo Tokyo presets remain on Stability.ai for testing.
+**⚠️ NOTE**: Neo Tokyo Glitch was temporarily moved to BFL but reverted back to Stability.ai due to aspect ratio issues and insufficient dramatic effects.
 
 ### **Breaking Changes**
-- Neo Tokyo Glitch now uses BFL Ultra instead of Stability.ai
+- Neo Tokyo Glitch reverted back to Stability.ai (was temporarily on BFL)
 - All presets now include BFL-specific parameters
 - Daily credit reset is now automated (was manual before)
 
-**⚠️ CLARIFICATION**: Only the "Tech Tattoos" preset was moved to BFL. Other Neo Tokyo presets remain on Stability.ai for evaluation.
+**⚠️ CLARIFICATION**: Neo Tokyo Glitch was temporarily moved to BFL but reverted due to aspect ratio issues and insufficient dramatic effects compared to Stability.ai.
 
 ### **Backward Compatibility**
 - All existing media remains accessible
@@ -418,6 +410,12 @@ const ASPECT_RATIOS = {
 3. **Credit System**: Monitor daily reset effectiveness
 4. **User Experience**: Track generation completion times
 5. **Neo Tokyo Style Comparison**: Compare BFL vs Stability.ai results for cyberpunk aesthetics
+
+### **Reverted Changes**
+1. **Neo Tokyo Glitch**: Reverted from BFL back to Stability.ai due to:
+   - Aspect ratio issues (not achieving desired 3:4 ratio)
+   - Insufficient "crazy" effects compared to Stability.ai
+   - User preference for Stability.ai's more dramatic cyberpunk style
 
 ---
 

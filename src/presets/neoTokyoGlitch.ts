@@ -60,22 +60,15 @@ nudity, dull colors, flat lighting, weak glitch effects, minimal transformation`
     label: 'Tech Tattoos',
     prompt: `Transform the human face into a cyberpunk glitch aesthetic with vivid neon tattoos and holographic overlays. Retain the subject's facial features, gender, and ethnicity. Apply stylized glowing tattoos on the cheeks, jawline, or neck. Add glitch patterns, chromatic distortion, and soft RGB splits. Use cinematic backlighting with a futuristic, dreamlike tone. The skin should retain texture, but colors can be surreal. Preserve facial integrity — no face swap or anime overlay.`,
     negative_prompt: `cartoon, anime, 2D, blurry, face merge, distorted anatomy, extra limbs, broken skin texture, glowing eyes, full character replacement, plastic look, mask overlay, 3D render, low quality, harsh shadows`,
-    strength: 0.35,
-    model: 'bfl/flux-pro-1.1-ultra',
+    strength: 0.45,
+    model: 'stability-ai/stable-diffusion-img2img',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'neo_tokyo_glitch',
     features: ['glitch', 'tattoos', 'neon', 'face_preservation', 'cyberpunk'],
-    guidance_scale: 9,
-    num_inference_steps: 28,
-    // BFL-specific parameters
-    raw: true,
-    prompt_upsampling: true,
-    safety_tolerance: 3,
-    output_format: 'jpeg',
-    image_prompt_strength: 0.35,
-    aspect_ratio: '3:4'
+    guidance_scale: 7.5,
+    num_inference_steps: 40
   },
   {
     id: 'neo_tokyo_scanlines',
