@@ -47,6 +47,43 @@ export const handler: Handler = async (event) => {
 
     console.log('🗑️ [delete-media] Deleting media:', { mediaId, userId });
 
+    // First, verify the media exists and belongs to the user
+    let mediaExists = false;
+    let mediaTable = '';
+    
+    // Check all tables to see where the media exists
+    const tables = [
+      { name: 'neo_glitch_media', display: 'neoGlitchMedia' },
+      { name: 'custom_prompt_media', display: 'customPromptMedia' },
+      { name: 'emotion_mask_media', display: 'emotionMaskMedia' },
+      { name: 'ghibli_reaction_media', display: 'ghibliReactionMedia' },
+      { name: 'presets_media', display: 'presetsMedia' },
+      { name: 'story', display: 'story' }
+    ];
+    
+    for (const table of tables) {
+      try {
+        const checkResult = await q(`
+          SELECT id FROM ${table.name} 
+          WHERE id = $1 AND user_id = $2
+        `, [mediaId, userId]);
+        
+        if (checkResult && checkResult.length > 0) {
+          mediaExists = true;
+          mediaTable = table.display;
+          console.log('🔍 [delete-media] Found media in table:', table.display);
+          break;
+        }
+      } catch (error: any) {
+        console.error('❌ [delete-media] Check failed for table:', table.name, error.message);
+      }
+    }
+    
+    if (!mediaExists) {
+      console.log('❌ [delete-media] Media not found in any table or access denied:', mediaId);
+      return json({ error: 'Media not found or access denied' }, { status: 404 });
+    }
+
     // Try to delete from all media tables
     let deletedMedia = null;
     let deletedFromTable = '';
@@ -58,14 +95,18 @@ export const handler: Handler = async (event) => {
         WHERE id = $1 AND user_id = $2
         RETURNING id
       `, [mediaId, userId]);
+      console.log('🔍 [delete-media] Neo Glitch result:', { result, length: result?.length });
       if (result && result.length > 0) {
         deletedMedia = result;
         deletedFromTable = 'neoGlitchMedia';
       }
     } catch (error: any) {
-      if (error.code !== 'P2025') { // Not "Record not found"
-        console.log('⚠️ [delete-media] Neo Glitch delete failed:', error.message);
-      }
+      console.error('❌ [delete-media] Neo Glitch delete error:', { 
+        error: error.message, 
+        code: error.code, 
+        detail: error.detail,
+        constraint: error.constraint 
+      });
     }
 
     // Try Custom Prompt Media
@@ -76,14 +117,18 @@ export const handler: Handler = async (event) => {
           WHERE id = $1 AND user_id = $2
           RETURNING id
         `, [mediaId, userId]);
+        console.log('🔍 [delete-media] Custom Prompt result:', { result, length: result?.length });
         if (result && result.length > 0) {
           deletedMedia = result;
           deletedFromTable = 'customPromptMedia';
         }
       } catch (error: any) {
-        if (error.code !== 'P2025') {
-          console.log('⚠️ [delete-media] Custom Prompt delete failed:', error.message);
-        }
+        console.error('❌ [delete-media] Custom Prompt delete error:', { 
+          error: error.message, 
+          code: error.code, 
+          detail: error.detail,
+          constraint: error.constraint 
+        });
       }
     }
 
@@ -95,14 +140,18 @@ export const handler: Handler = async (event) => {
           WHERE id = $1 AND user_id = $2
           RETURNING id
         `, [mediaId, userId]);
+        console.log('🔍 [delete-media] Emotion Mask result:', { result, length: result?.length });
         if (result && result.length > 0) {
           deletedMedia = result;
           deletedFromTable = 'emotionMaskMedia';
         }
       } catch (error: any) {
-        if (error.code !== 'P2025') {
-          console.log('⚠️ [delete-media] Emotion Mask delete failed:', error.message);
-        }
+        console.error('❌ [delete-media] Emotion Mask delete error:', { 
+          error: error.message, 
+          code: error.code, 
+          detail: error.detail,
+          constraint: error.constraint 
+        });
       }
     }
 
@@ -165,6 +214,29 @@ export const handler: Handler = async (event) => {
 
     if (deletedMedia) {
       console.log('✅ [delete-media] Media deleted successfully from', deletedFromTable, ':', mediaId);
+      
+      // Verify the media was actually deleted
+      try {
+        const verifyResult = await q(`
+          SELECT id FROM ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
+                          mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
+                          mediaTable === 'emotionMaskMedia' ? 'emotion_mask_media' :
+                          mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
+                          mediaTable === 'presetsMedia' ? 'presets_media' :
+                          mediaTable === 'story' ? 'story' : 'custom_prompt_media'}
+          WHERE id = $1
+        `, [mediaId]);
+        
+        if (verifyResult && verifyResult.length > 0) {
+          console.error('❌ [delete-media] Media still exists after deletion!', mediaId);
+          return json({ error: 'Media deletion failed - media still exists' }, { status: 500 });
+        } else {
+          console.log('✅ [delete-media] Deletion verified - media no longer exists');
+        }
+      } catch (verifyError: any) {
+        console.error('❌ [delete-media] Verification failed:', verifyError.message);
+      }
+      
       return json({
         success: true,
         message: 'Media deleted successfully',

@@ -504,6 +504,13 @@ const ProfileScreen: React.FC = () => {
       setSelectedMediaIds(new Set())
       setIsSelectionMode(false)
       
+      // Background refresh to ensure database sync and user privacy
+      setTimeout(() => {
+        loadUserMedia().catch(error => {
+          console.warn('Background refresh failed:', error)
+        })
+      }, 1000)
+      
     } catch (error) {
       console.error('❌ Bulk delete error:', error)
       addNotification('Delete Failed', error instanceof Error ? error.message : 'Network or server error', 'error')
@@ -1767,6 +1774,13 @@ const ProfileScreen: React.FC = () => {
                     console.warn('⚠️ Local storage delete failed:', localError)
                   }
                 }
+                
+                // Background refresh to ensure database sync and user privacy
+                setTimeout(() => {
+                  loadUserMedia().catch(error => {
+                    console.warn('Background refresh failed:', error)
+                  })
+                }, 1000)
                 
                 console.log('✅ Local state updated, media removed from UI')
                 
