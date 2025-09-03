@@ -1858,7 +1858,17 @@ const HomeNew: React.FC = () => {
       setIsAuthenticated(authState.isAuthenticated)
       console.log('🔐 Auth state initialized:', authState)
       
-      // If user is authenticated, sync their profile from database
+      // First, check localStorage immediately (fast) for all users
+      const uploadAgreementAccepted = localStorage.getItem('uploadAgreementAccepted')
+      if (uploadAgreementAccepted === 'true') {
+        console.log('✅ User has agreed to upload terms (localStorage)')
+        setUserHasAgreed(true)
+      } else {
+        console.log('❌ User has not agreed to upload terms (localStorage)')
+        setUserHasAgreed(false)
+      }
+      
+      // If user is authenticated, sync their profile from database (async, non-blocking)
       if (authState.isAuthenticated) {
         try {
           // Profile context will handle loading settings from database
@@ -1870,7 +1880,7 @@ const HomeNew: React.FC = () => {
             await loadUserProfileFromDatabase()
             console.log('✅ User profile synced from database')
             
-            // Load user agreement status
+            // Load user agreement status from database (async, non-blocking)
             try {
               const response = await authenticatedFetch('/.netlify/functions/user-settings', {
                 method: 'GET'
@@ -1886,11 +1896,11 @@ const HomeNew: React.FC = () => {
                 console.log('✅ User agreement status loaded from database:', hasAgreed)
               } else {
                 console.error('❌ [User Settings] Failed to load:', response.status, response.statusText)
-                setUserHasAgreed(false)
+                // Keep localStorage value if database fails
               }
             } catch (error) {
               console.error('Failed to load user agreement status:', error)
-              setUserHasAgreed(false)
+              // Keep localStorage value if database fails
             }
           } else {
             console.warn('⚠️ Skipping profile load: no valid token')
@@ -1899,16 +1909,6 @@ const HomeNew: React.FC = () => {
           // Tier promotions removed - simplified credit system
         } catch (error) {
           console.warn('⚠️ Failed to sync user data from database:', error)
-        }
-      } else {
-        // For non-authenticated users, check localStorage for upload agreement
-        const uploadAgreementAccepted = localStorage.getItem('uploadAgreementAccepted')
-        if (uploadAgreementAccepted === 'true') {
-          console.log('✅ Non-authenticated user has agreed to upload terms (localStorage)')
-          setUserHasAgreed(true)
-        } else {
-          console.log('❌ Non-authenticated user has not agreed to upload terms')
-          setUserHasAgreed(false)
         }
       }
     }
