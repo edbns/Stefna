@@ -49,6 +49,7 @@ const FUNCTION_ENDPOINTS: Record<GenerationMode, string> = {
 
 class SimpleGenerationService {
   private static instance: SimpleGenerationService;
+  private lastGenerationRequest?: SimpleGenerationRequest;
 
   private constructor() {}
 
@@ -68,6 +69,9 @@ class SimpleGenerationService {
       runId: request.runId,
       hasSource: !!request.sourceAssetId
     });
+
+    // Store the request for polling fallback
+    this.lastGenerationRequest = request;
 
     try {
       const endpoint = FUNCTION_ENDPOINTS[request.mode];
@@ -296,7 +300,7 @@ class SimpleGenerationService {
   async checkStatus(jobId: string, mode: GenerationMode): Promise<SimpleGenerationResult> {
     try {
       // For unified generation, we need to check getUserMedia to see if the generation completed
-      const response = await authenticatedFetch('/.netlify/functions/getUserMedia?userId=current-user&limit=20', {
+      const response = await authenticatedFetch('/.netlify/functions/getUserMedia?userId=current-user&limit=50', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -320,11 +324,13 @@ class SimpleGenerationService {
       const recentMedia = result.items?.filter((item: any) => {
         // Debug: Log what we're looking for
         console.log(`🔍 [SimpleGeneration] Checking item:`, {
+          itemId: item.id,
           itemRunId: item.runId,
           jobId: jobId,
-          match: item.runId === jobId,
+          exactMatch: item.runId === jobId,
           createdAt: item.createdAt,
-          generationStart: generationStartTime
+          generationStart: generationStartTime,
+          prompt: item.prompt?.slice(0, 50)
         });
         
         // First try to match by exact runId
@@ -346,7 +352,19 @@ class SimpleGenerationService {
           });
         }
         
-        return isAfterGenerationStart;
+        // Additional fallback: Check if prompt matches (for cases where runId is missing)
+        const promptMatch = item.prompt && this.lastGenerationRequest?.prompt && 
+                           item.prompt.includes(this.lastGenerationRequest.prompt.slice(0, 30));
+        
+        if (promptMatch) {
+          console.log(`📝 [SimpleGeneration] Found media with prompt match:`, {
+            id: item.id,
+            prompt: item.prompt?.slice(0, 50),
+            requestPrompt: this.lastGenerationRequest?.prompt?.slice(0, 50)
+          });
+        }
+        
+        return isAfterGenerationStart || promptMatch;
       });
 
       if (recentMedia && recentMedia.length > 0) {
