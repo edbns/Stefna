@@ -96,10 +96,20 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
       
       if (res.ok) {
         const result = await res.json();
-        console.log("✅ [BFL Debug] Success with format:", formatName, {
+        console.log("✅ [BFL Debug] Initial response:", {
           hasResult: !!result,
-          resultKeys: Object.keys(result || {})
+          resultKeys: Object.keys(result || {}),
+          hasId: !!result.id,
+          hasPollingUrl: !!result.polling_url
         });
+        
+        // Check if this is a polling-based response
+        if (result.id && result.polling_url) {
+          console.log("🔄 [BFL Debug] Polling-based response detected, starting polling...");
+          return await pollBFLResult(result.polling_url, headers);
+        }
+        
+        // Direct response (like images array)
         return result;
       } else {
         const text = await res.text();
@@ -119,6 +129,55 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
   
   // All formats failed
   throw lastError || new Error('All BFL API authentication formats failed');
+}
+
+// Poll BFL API for result
+async function pollBFLResult(pollingUrl: string, headers: Record<string, string>): Promise<any> {
+  const maxAttempts = 60; // 30 seconds max (500ms intervals)
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
+    attempts++;
+    
+    try {
+      console.log(`🔄 [BFL Debug] Polling attempt ${attempts}/${maxAttempts}`);
+      
+      const res = await fetch(pollingUrl, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          ...headers
+        }
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Polling failed: ${res.status} ${res.statusText}`);
+      }
+      
+      const result = await res.json();
+      console.log(`📊 [BFL Debug] Polling response:`, {
+        status: result.status,
+        hasResult: !!result.result,
+        hasSample: !!result.result?.sample
+      });
+      
+      if (result.status === 'Ready') {
+        console.log("✅ [BFL Debug] Polling completed successfully");
+        return result;
+      } else if (result.status === 'Error' || result.status === 'Failed') {
+        throw new Error(`BFL generation failed: ${JSON.stringify(result)}`);
+      }
+      
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+    } catch (error) {
+      console.error(`❌ [BFL Debug] Polling error on attempt ${attempts}:`, error);
+      throw error;
+    }
+  }
+  
+  throw new Error('BFL polling timed out after 30 seconds');
 }
 
 async function falInvoke(model: string, input: any): Promise<any> {
@@ -1104,18 +1163,16 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         bflInput.seed = Math.floor(Math.random() * 1000000);
         
       } else if (modelConfig.endpoint === 'flux-pro-1.1-ultra') {
-        // Ultra model uses aspect_ratio instead of width/height
+        // Ultra model uses width/height (same as Pro)
         if (params.sourceWidth && params.sourceHeight) {
-          // Calculate aspect ratio from dimensions
-          const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
-          const divisor = gcd(params.sourceWidth, params.sourceHeight);
-          const ratioW = params.sourceWidth / divisor;
-          const ratioH = params.sourceHeight / divisor;
-          bflInput.aspect_ratio = `${ratioW}:${ratioH}`;
-          console.log(`📐 [BFL API] Ultra model - calculated aspect ratio: ${ratioW}:${ratioH} from ${params.sourceWidth}x${params.sourceHeight}`);
+          bflInput.width = params.sourceWidth;
+          bflInput.height = params.sourceHeight;
+          console.log(`📐 [BFL API] Ultra model - preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
         } else {
-          bflInput.aspect_ratio = "1:1";
-          console.log(`📐 [BFL API] Ultra model - using default aspect ratio: 1:1`);
+          // Default to 1024x1024 if no dimensions provided
+          bflInput.width = 1024;
+          bflInput.height = 1024;
+          console.log(`📐 [BFL API] Ultra model - using default size: 1024x1024`);
         }
         
         // Ultra models support raw mode for more natural look
@@ -1156,21 +1213,29 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
       
       const result = await bflInvoke(modelConfig.endpoint, bflInput);
       
-      if (result.images && result.images.length > 0) {
-        const imageUrl = result.images[0].url;
-        console.log(`✅ [Background] BFL API ${modelConfig.name} generation successful`);
-        
-        // Upload to Cloudinary
-        const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);
-        return {
-          success: true,
-          status: 'done',
-          provider: 'bfl',
-          outputUrl: cloudinaryUrl
-        };
+      // Handle both polling-based and direct responses
+      let imageUrl: string;
+      
+      if (result.result && result.result.sample) {
+        // Polling-based response (Ultra model)
+        imageUrl = result.result.sample;
+        console.log(`✅ [Background] BFL API ${modelConfig.name} polling completed successfully`);
+      } else if (result.images && result.images.length > 0) {
+        // Direct response (Pro/Raw models)
+        imageUrl = result.images[0].url;
+        console.log(`✅ [Background] BFL API ${modelConfig.name} direct response successful`);
       } else {
-        throw new Error('BFL API returned no images');
+        throw new Error('BFL API returned no valid image data');
       }
+      
+      // Upload to Cloudinary
+      const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);
+      return {
+        success: true,
+        status: 'done',
+        provider: 'bfl',
+        outputUrl: cloudinaryUrl
+      };
       
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
