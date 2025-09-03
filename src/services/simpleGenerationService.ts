@@ -2,7 +2,8 @@
 // Simplified Generation Service - Direct calls to Netlify functions
 // Removes the complex pipeline layers for cleaner architecture
 
-import { authenticatedFetch } from '../utils/apiClient';
+import { authenticatedFetch } from '../utils/apiClient'
+import authService from './authService';
 
 export type GenerationMode = 'presets' | 'custom-prompt' | 'emotion-mask' | 'ghibli-reaction' | 'neo-glitch' | 'story-time';
 
@@ -303,8 +304,17 @@ class SimpleGenerationService {
    */
   async checkStatus(jobId: string, mode: GenerationMode): Promise<SimpleGenerationResult> {
     try {
+      // Get the actual user ID from auth service
+      const authState = authService.getAuthState()
+      const userId = authState.user?.id
+      
+      if (!userId) {
+        console.error('❌ [SimpleGeneration] No user ID available for polling')
+        throw new Error('User not authenticated')
+      }
+      
       // For unified generation, we need to check getUserMedia to see if the generation completed
-      const response = await authenticatedFetch('/.netlify/functions/getUserMedia?userId=current-user&limit=50', {
+      const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=50`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
