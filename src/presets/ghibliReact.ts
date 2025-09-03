@@ -8,6 +8,8 @@ const EMOTION_INSERTS = {
   tears: `Add delicate tears and a trembling expression.`,
   shock: `Widen the eyes and part the lips slightly to show surprise.`,
   sparkle: `Add gentle sparkles, shimmer in the eyes, and soft blush.`,
+  sadness: `Add melancholic emotion with glossy eyes and distant gaze.`,
+  love: `Add warm affection with soft smile and romantic sparkle.`,
 };
 
 export type GhibliReactionPreset = {
@@ -95,6 +97,48 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     image_prompt_strength: 0.35,
     aspect_ratio: '3:4',
     features: ['ghibli_style', 'emotional_reaction', 'sparkles', 'soft_lighting', 'identity_preserved']
+  },
+  {
+    id: 'ghibli_sadness',
+    label: 'Sadness',
+    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.sadness} Transform the human face into a realistic Studio Ghibli-style expression of gentle sadness. Emphasize melancholic emotion through glossy, teary eyes, a distant gaze, and softened facial features. Slight tear trails may appear but no crying mouth. Preserve full identity, ethnicity, skin, and structure. Lighting should be dim, cinematic, and pastel-toned like a Ghibli evening scene.`,
+    negative_prompt: `cartoon, anime outline, 2D face, exaggerated crying, manga, flat colors, face replacement, photorealism, distorted features, gender change, stylized tears, harsh light, flat expression`,
+    strength: 0.35,
+    model: 'bfl/flux-pro-1.1-ultra',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'ghibli_reaction',
+    guidance_scale: 8,
+    num_inference_steps: 28,
+    prompt_upsampling: true,
+    safety_tolerance: 3,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.35,
+    aspect_ratio: '3:4',
+    features: ['ghibli_style', 'emotional_reaction', 'sadness', 'soft_lighting', 'identity_preserved']
+  },
+  {
+    id: 'ghibli_love',
+    label: 'Love',
+    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.love} Transform the human face into a realistic Studio Ghibli-style expression of warm affection. Emphasize a soft smile, romantic eye sparkle, gentle blush, and glowing pastel lighting. Create a dreamy, cozy atmosphere with soft bokeh in the background. Maintain identity, skin tone, ethnicity, and facial structure fully intact.`,
+    negative_prompt: `cartoon, anime outline, 2D face, manga, exaggerated hearts, stylized lipstick, face distortion, gender change, heavy makeup, artificial light, harsh shadows`,
+    strength: 0.35,
+    model: 'bfl/flux-pro-1.1-ultra',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'ghibli_reaction',
+    guidance_scale: 8,
+    num_inference_steps: 28,
+    prompt_upsampling: true,
+    safety_tolerance: 3,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.35,
+    aspect_ratio: '3:4',
+    features: ['ghibli_style', 'emotional_reaction', 'love', 'bokeh_glow', 'soft_lighting', 'identity_preserved']
   }
 ];
 
