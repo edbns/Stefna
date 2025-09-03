@@ -105,7 +105,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
       {/* Centered Media Display */}
       <div className="h-full w-full flex flex-col items-center justify-center p-8">
         {/* Media Container - Smaller display with proper aspect ratio */}
-        <div className="flex-1 flex items-center justify-center w-full h-full p-8">
+        <div className="flex-1 flex items-center justify-center w-full h-full p-8 pb-4">
           {current.type === 'video' ? (
             <video 
               src={current.url} 
@@ -130,7 +130,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
         </div>
 
         {/* Info Display - Directly under the image: Date/Time + Like Button */}
-        <div className="mt-4 flex items-center justify-center space-x-4">
+        <div className="mt-2 flex items-center justify-center space-x-4">
           {/* Date/Time */}
           <span className="text-white text-sm bg-black/70 px-4 py-2 rounded-full backdrop-blur-sm font-medium">
             {getCreationDate(current)}
