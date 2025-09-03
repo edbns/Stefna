@@ -1,5 +1,5 @@
 import type { Handler } from "@netlify/functions";
-import { q } from './_db';
+import { q, qOne } from './_db';
 import { json } from './_lib/http';
 import { requireAuth } from './_lib/auth';
 
@@ -33,13 +33,21 @@ export const handler: Handler = async (event) => {
     
     const body = event.body ? JSON.parse(event.body) : {};
     const targetUserId = body.userId; // Optional: reset specific user
-    const credits = body.credits || 30; // Default to 30 credits
+    const credits = body.credits || null; // Use null to get from config
     
     console.log('🔄 [Manual Reset] Manual credit reset requested:', { 
       adminUserId: userId, 
       targetUserId, 
       credits 
     });
+    
+    // Get the daily cap from app_config if credits not specified
+    let resetCredits = credits;
+    if (resetCredits === null) {
+      const dailyCapResult = await qOne(`SELECT value FROM app_config WHERE key = 'daily_cap'`);
+      resetCredits = parseInt(dailyCapResult?.value || '30');
+      console.log(`📊 [Manual Reset] Using daily cap from config: ${resetCredits} credits`);
+    }
     
     let result;
     
@@ -49,29 +57,31 @@ export const handler: Handler = async (event) => {
         UPDATE user_credits 
         SET credits = $1, updated_at = NOW()
         WHERE user_id = $2
-      `, [credits, targetUserId]);
+        RETURNING user_id, credits
+      `, [resetCredits, targetUserId]);
       
-      console.log(`✅ [Manual Reset] Reset user ${targetUserId} to ${credits} credits`);
+      console.log(`✅ [Manual Reset] Reset user ${targetUserId} to ${resetCredits} credits`);
     } else {
       // Reset all users
       result = await q(`
         UPDATE user_credits 
         SET credits = $1, updated_at = NOW()
         WHERE user_id IS NOT NULL
-      `, [credits]);
+        RETURNING user_id, credits
+      `, [resetCredits]);
       
-      console.log(`✅ [Manual Reset] Reset ${result.rowCount} users to ${credits} credits`);
+      console.log(`✅ [Manual Reset] Reset ${result.length} users to ${resetCredits} credits`);
     }
     
     return json({
       ok: true,
       message: targetUserId 
-        ? `Successfully reset user ${targetUserId} to ${credits} credits`
-        : `Successfully reset ${result.rowCount} users to ${credits} credits`,
+        ? `Successfully reset user ${targetUserId} to ${resetCredits} credits`
+        : `Successfully reset ${result.length} users to ${resetCredits} credits`,
       timestamp: new Date().toISOString(),
-      resetCount: result.rowCount,
+      resetCount: result.length,
       targetUserId,
-      credits
+      credits: resetCredits
     });
 
   } catch (error) {

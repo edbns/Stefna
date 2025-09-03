@@ -29,20 +29,28 @@ export const handler: Handler = async (event) => {
   try {
     console.log('🔄 [Daily Reset] Starting daily credit reset...');
     
-    // Reset all user credits to 30 daily credits
+    // Get the daily cap from app_config
+    const dailyCapResult = await qOne(`SELECT value FROM app_config WHERE key = 'daily_cap'`);
+    const dailyCap = parseInt(dailyCapResult?.value || '30');
+    
+    console.log(`📊 [Daily Reset] Using daily cap: ${dailyCap} credits`);
+    
+    // Reset all user credits to the configured daily cap
     const result = await q(`
       UPDATE user_credits 
-      SET credits = 30, updated_at = NOW()
+      SET credits = $1, updated_at = NOW()
       WHERE user_id IS NOT NULL
-    `);
+      RETURNING user_id, credits
+    `, [dailyCap]);
     
-    console.log(`✅ [Daily Reset] Reset ${result.rowCount} user credits to 30 daily credits`);
+    console.log(`✅ [Daily Reset] Reset ${result.length} user credits to ${dailyCap} daily credits`);
     
     return json({
       ok: true,
-      message: `Successfully reset ${result.rowCount} user credits to 30 daily credits`,
+      message: `Successfully reset ${result.length} user credits to ${dailyCap} daily credits`,
       timestamp: new Date().toISOString(),
-      resetCount: result.rowCount
+      resetCount: result.length,
+      dailyCap: dailyCap
     });
 
   } catch (error) {
