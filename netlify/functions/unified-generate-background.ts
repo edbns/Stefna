@@ -1004,27 +1004,80 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
     try {
       console.log(`📤 [Background] Trying ${modelConfig.name} (${modelConfig.endpoint})`);
       
-      // Prepare BFL API input
-      const bflInput: any = {
+      // Prepare BFL API input based on model type
+      let bflInput: any = {
         prompt: params.prompt,
-        image_url: params.sourceAssetId,
-        image_strength: imageStrength,
-        guidance_scale: 7.5
+        prompt_upsampling: true,
+        safety_tolerance: 3,
+        output_format: "jpeg"
       };
       
-      // Add width and height to preserve original aspect ratio
-      if (params.sourceWidth && params.sourceHeight) {
-        bflInput.width = params.sourceWidth;
-        bflInput.height = params.sourceHeight;
-        console.log(`📐 [BFL API] Preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
+      // Add model-specific parameters
+      if (modelConfig.endpoint === 'flux-1.1-pro') {
+        // Pro model uses width/height
+        if (params.sourceWidth && params.sourceHeight) {
+          bflInput.width = params.sourceWidth;
+          bflInput.height = params.sourceHeight;
+          console.log(`📐 [BFL API] Pro model - preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
+        } else {
+          // Default to 1024x1024 if no dimensions provided
+          bflInput.width = 1024;
+          bflInput.height = 1024;
+          console.log(`📐 [BFL API] Pro model - using default size: 1024x1024`);
+        }
+        
+        // Add optional seed for consistency
+        bflInput.seed = Math.floor(Math.random() * 1000000);
+        
+      } else if (modelConfig.endpoint === 'flux-1.1-pro-ultra' || modelConfig.endpoint === 'flux-1.1-pro-ultra-finetuned') {
+        // Ultra models use aspect_ratio instead of width/height
+        if (params.sourceWidth && params.sourceHeight) {
+                   // Calculate aspect ratio from dimensions
+         const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
+          const divisor = gcd(params.sourceWidth, params.sourceHeight);
+          const ratioW = params.sourceWidth / divisor;
+          const ratioH = params.sourceHeight / divisor;
+          bflInput.aspect_ratio = `${ratioW}:${ratioH}`;
+          console.log(`📐 [BFL API] Ultra model - calculated aspect ratio: ${ratioW}:${ratioH} from ${params.sourceWidth}x${params.sourceHeight}`);
+        } else {
+          bflInput.aspect_ratio = "1:1";
+          console.log(`📐 [BFL API] Ultra model - using default aspect ratio: 1:1`);
+        }
+        
+        // Ultra models support raw mode for more natural look
+        bflInput.raw = false; // Set to true for more natural aesthetic
+        
+        // Add optional seed for consistency
+        bflInput.seed = Math.floor(Math.random() * 1000000);
+        
+      } else if (modelConfig.endpoint === 'flux-1.1-pro-raw') {
+        // Raw model uses width/height like Pro
+        if (params.sourceWidth && params.sourceHeight) {
+          bflInput.width = params.sourceWidth;
+          bflInput.height = params.sourceHeight;
+          console.log(`📐 [BFL API] Raw model - preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
+        } else {
+          bflInput.width = 1024;
+          bflInput.height = 1024;
+          console.log(`📐 [BFL API] Raw model - using default size: 1024x1024`);
+        }
+        
+        // Add optional seed for consistency
+        bflInput.seed = Math.floor(Math.random() * 1000000);
+      }
+      
+      // For image-to-image generation, add the source image
+      if (params.sourceAssetId) {
+        bflInput.image_prompt = params.sourceAssetId;
+        bflInput.image_prompt_strength = imageStrength;
       }
       
       console.log(`📤 [Background] BFL API request:`, {
         endpoint: modelConfig.endpoint,
         prompt: params.prompt.substring(0, 50) + '...',
-        image_strength: imageStrength,
-        width: params.sourceWidth,
-        height: params.sourceHeight
+        image_prompt_strength: imageStrength,
+        ...(bflInput.width && bflInput.height ? { width: bflInput.width, height: bflInput.height } : {}),
+        ...(bflInput.aspect_ratio ? { aspect_ratio: bflInput.aspect_ratio } : {})
       });
       
       const result = await bflInvoke(modelConfig.endpoint, bflInput);
