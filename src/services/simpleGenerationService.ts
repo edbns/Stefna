@@ -300,30 +300,106 @@ class SimpleGenerationService {
   }
 
   /**
-   * Check generation status using exact runId matching
+   * Check generation status using exact runId matching with fallback
    */
   async checkStatus(runId: string, mode: GenerationMode): Promise<SimpleGenerationResult> {
     try {
       console.log(`🔍 [SimpleGeneration] Checking status for runId: ${runId}`);
       
-      // Use the new getMediaByRunId endpoint for exact matching
-      const response = await authenticatedFetch(`/.netlify/functions/getMediaByRunId?runId=${runId}`, {
+      // Try the new getMediaByRunId endpoint first
+      try {
+        const response = await authenticatedFetch(`/.netlify/functions/getMediaByRunId?runId=${runId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.status === 404) {
+          // Media not found yet, still processing
+          console.log(`⏳ [SimpleGeneration] Media not found yet, still processing... (runId: ${runId})`);
+          return {
+            success: true,
+            jobId: runId,
+            runId: runId,
+            status: 'processing',
+            error: undefined,
+            type: mode
+          };
+        }
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.success && result.media) {
+          console.log(`✅ [SimpleGeneration] Generation completed! Found media:`, {
+            id: result.media.id,
+            runId: result.media.runId,
+            type: result.media.type,
+            url: result.media.url
+          });
+          
+          return {
+            success: true,
+            jobId: runId,
+            runId: runId,
+            status: 'completed',
+            imageUrl: result.media.type === 'video' ? undefined : result.media.url,
+            videoUrl: result.media.type === 'video' ? result.media.url : undefined,
+            error: undefined,
+            provider: result.media.metadata?.provider || 'unknown',
+            type: mode
+          };
+        }
+
+        // Unexpected response format
+        console.warn(`⚠️ [SimpleGeneration] Unexpected response format:`, result);
+        return {
+          success: false,
+          status: 'failed',
+          error: 'Unexpected response format from server',
+          type: mode
+        };
+
+      } catch (endpointError) {
+        console.warn(`⚠️ [SimpleGeneration] getMediaByRunId endpoint failed, falling back to getUserMedia:`, endpointError);
+        
+        // Fallback to the old getUserMedia method
+        return await this.checkStatusFallback(runId, mode);
+      }
+
+    } catch (error) {
+      console.error('❌ [SimpleGeneration] Status check failed:', error);
+
+      return {
+        success: false,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        type: mode
+      };
+    }
+  }
+
+  /**
+   * Fallback status check using getUserMedia (old method)
+   */
+  private async checkStatusFallback(runId: string, mode: GenerationMode): Promise<SimpleGenerationResult> {
+    try {
+      // Get the actual user ID from auth service
+      const authState = authService.getAuthState()
+      const userId = authState.user?.id
+      
+      if (!userId) {
+        console.error('❌ [SimpleGeneration] No user ID available for polling')
+        throw new Error('User not authenticated')
+      }
+      
+      // Use getUserMedia as fallback
+      const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=50`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
-
-      if (response.status === 404) {
-        // Media not found yet, still processing
-        console.log(`⏳ [SimpleGeneration] Media not found yet, still processing... (runId: ${runId})`);
-        return {
-          success: true,
-          jobId: runId,
-          runId: runId,
-          status: 'processing',
-          error: undefined,
-          type: mode
-        };
-      }
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -331,12 +407,14 @@ class SimpleGenerationService {
 
       const result = await response.json();
       
-      if (result.success && result.media) {
-        console.log(`✅ [SimpleGeneration] Generation completed! Found media:`, {
-          id: result.media.id,
-          runId: result.media.runId,
-          type: result.media.type,
-          url: result.media.url
+      // Look for media with exact runId match
+      const matchingMedia = result.items?.find((item: any) => item.runId === runId);
+
+      if (matchingMedia) {
+        console.log(`✅ [SimpleGeneration] Found media with exact runId match (fallback):`, {
+          id: matchingMedia.id,
+          runId: matchingMedia.runId,
+          url: matchingMedia.finalUrl || matchingMedia.imageUrl
         });
         
         return {
@@ -344,25 +422,27 @@ class SimpleGenerationService {
           jobId: runId,
           runId: runId,
           status: 'completed',
-          imageUrl: result.media.type === 'video' ? undefined : result.media.url,
-          videoUrl: result.media.type === 'video' ? result.media.url : undefined,
+          imageUrl: matchingMedia.finalUrl || matchingMedia.imageUrl,
+          videoUrl: matchingMedia.videoUrl,
           error: undefined,
-          provider: result.media.metadata?.provider || 'unknown',
+          provider: matchingMedia.provider || 'unknown',
           type: mode
         };
       }
 
-      // Unexpected response format
-      console.warn(`⚠️ [SimpleGeneration] Unexpected response format:`, result);
+      // No matching media found, still processing
+      console.log(`⏳ [SimpleGeneration] No matching media found, still processing... (runId: ${runId})`);
       return {
-        success: false,
-        status: 'failed',
-        error: 'Unexpected response format from server',
+        success: true,
+        jobId: runId,
+        runId: runId,
+        status: 'processing',
+        error: undefined,
         type: mode
       };
 
     } catch (error) {
-      console.error('❌ [SimpleGeneration] Status check failed:', error);
+      console.error('❌ [SimpleGeneration] Fallback status check failed:', error);
 
       return {
         success: false,
