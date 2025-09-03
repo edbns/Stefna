@@ -280,20 +280,14 @@ const BFL_EMOTION_MODELS = [
   }
 ];
 
+// STRICT: Ghibli reactions should ONLY use flux-pro-1.1-ultra
 const BFL_GHIBLI_MODELS = [
   {
     endpoint: 'flux-pro-1.1-ultra',
     name: 'BFL Flux Pro 1.1 Ultra',
     cost: 'medium',
     priority: 1,
-    description: 'Primary - direct BFL API for Ghibli reaction'
-  },
-  {
-    endpoint: 'flux-pro-1.1',
-    name: 'BFL Flux Pro 1.1',
-    cost: 'low',
-    priority: 2,
-    description: 'Fallback - direct BFL API for Ghibli reaction'
+    description: 'STRICT: Only endpoint for Ghibli reaction - no fallbacks'
   }
 ];
 
@@ -1173,12 +1167,10 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         bflInput.seed = Math.floor(Math.random() * 1000000);
         
       } else if (modelConfig.endpoint === 'flux-pro-1.1-ultra') {
-        // Ultra model uses width/height (same as Pro)
+        // Ultra model uses aspect_ratio (not width/height)
         const aspectRatio = getAspectRatioForMode(mode);
-        const dimensions = getDimensionsForAspectRatio(aspectRatio);
-        bflInput.width = dimensions.width;
-        bflInput.height = dimensions.height;
-        console.log(`📐 [BFL API] Ultra model - using ${aspectRatio} aspect ratio: ${dimensions.width}x${dimensions.height}`);
+        bflInput.aspect_ratio = aspectRatio;
+        console.log(`📐 [BFL API] Ultra model - using aspect_ratio: ${aspectRatio}`);
         
         // Ultra models support raw mode for more natural look
         bflInput.raw = false; // Set to true for more natural aesthetic
@@ -1209,6 +1201,15 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
           console.error(`❌ [BFL API] Failed to convert source image to base64:`, error);
           throw new Error(`Failed to prepare source image for BFL API: ${error}`);
         }
+      }
+      
+      // STRICT ENDPOINT VALIDATION FOR GHIBLI REACTIONS
+      if (mode === 'ghibli_reaction') {
+        if (modelConfig.endpoint !== 'flux-pro-1.1-ultra') {
+          console.error(`🚨 [BFL STRICT] Ghibli reaction attempted to use wrong endpoint: ${modelConfig.endpoint}`);
+          throw new Error(`Ghibli reactions must use flux-pro-1.1-ultra, not ${modelConfig.endpoint}`);
+        }
+        console.log(`✅ [BFL STRICT] Ghibli reaction using correct endpoint: ${modelConfig.endpoint}`);
       }
       
       console.log(`📤 [Background] BFL API request:`, {
