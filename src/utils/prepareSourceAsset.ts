@@ -226,7 +226,12 @@ export async function prepareSourceAsset(
       }
 
       const resource_type = json.resource_type;
-      const result = { url: json.secure_url as string, resource_type };
+      const result = { 
+        url: json.secure_url as string, 
+        resource_type,
+        width: json.width as number,
+        height: json.height as number
+      };
       
       // Cache the successful upload
       await sessionCache.cacheFileUpload(file, result);
@@ -276,7 +281,12 @@ export async function prepareSourceAsset(
     }
 
     const resource_type = json.resource_type;
-    const result = { url: json.secure_url as string, resource_type };
+    const result = { 
+      url: json.secure_url as string, 
+      resource_type,
+      width: json.width as number,
+      height: json.height as number
+    };
     
     // Cache the successful upload
     await sessionCache.cacheFileUpload(file, result);

@@ -89,7 +89,12 @@ export async function uploadSourceToCloudinary(src: Source) {
           if (fallbackRes.ok) {
             const fallbackJson = await fallbackRes.json();
             console.log('✅ [Upload] Dev fallback successful');
-            return { secureUrl: fallbackJson.secure_url as string, publicId: fallbackJson.public_id as string };
+            return { 
+              secureUrl: fallbackJson.secure_url as string, 
+              publicId: fallbackJson.public_id as string,
+              width: fallbackJson.width as number,
+              height: fallbackJson.height as number
+            };
           } else {
             throw new Error(`Dev fallback failed: ${fallbackRes.status} ${fallbackRes.statusText}`);
           }
@@ -105,7 +110,12 @@ export async function uploadSourceToCloudinary(src: Source) {
         dimensions: json.width && json.height ? `${json.width}x${json.height}` : 'unknown'
       });
       
-      return { secureUrl: json.secure_url as string, publicId: json.public_id as string }
+      return { 
+        secureUrl: json.secure_url as string, 
+        publicId: json.public_id as string,
+        width: json.width as number,
+        height: json.height as number
+      }
       
     } catch (error: any) {
       lastError = error;

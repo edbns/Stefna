@@ -59,6 +59,8 @@ interface UnifiedGenerationRequest {
   prompt: string;
   presetKey?: string;
   sourceAssetId?: string;
+  sourceWidth?: number;
+  sourceHeight?: number;
   userId: string;
   runId: string;
   emotionMaskPresetId?: string;
@@ -221,6 +223,13 @@ async function makeStabilityRequest(tier: string, params: any, apiKey: string): 
   form.append("steps", String(params.steps ?? 30));
   form.append("cfg_scale", String(params.guidance_scale ?? 7.5));
   form.append("samples", "1");
+  
+  // Add width and height to preserve original aspect ratio
+  if (params.sourceWidth && params.sourceHeight) {
+    form.append("width", String(params.sourceWidth));
+    form.append("height", String(params.sourceHeight));
+    console.log(`📐 [Stability.ai] Preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
+  }
 
   return fetch(MODEL_ENDPOINTS[tier as keyof typeof MODEL_ENDPOINTS], {
     method: 'POST',
@@ -799,7 +808,7 @@ async function generateWithReplicate(params: any): Promise<UnifiedGenerationResp
       const ipaPrompt = `portrait photo of a ${params.prompt}, cinematic lighting, ultra realistic, sharp focus`;
       const negativePrompt = 'cartoon, anime, exaggerated, distorted, low-res, mutated, doll, plastic, duplicate face';
       
-      const replicateInput = {
+      const replicateInput: any = {
         input: {
           image: params.sourceAssetId,
           prompt: ipaPrompt,
@@ -810,6 +819,13 @@ async function generateWithReplicate(params: any): Promise<UnifiedGenerationResp
           seed: Math.floor(Math.random() * 1000000)
         }
       };
+      
+      // Add width and height to preserve original aspect ratio
+      if (params.sourceWidth && params.sourceHeight) {
+        replicateInput.input.width = params.sourceWidth;
+        replicateInput.input.height = params.sourceHeight;
+        console.log(`📐 [Replicate] Preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
+      }
 
       const response = await fetch(`https://api.replicate.com/v1/predictions`, {
         method: 'POST',
@@ -982,6 +998,13 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           guidance_scale: mode === 'ghibli_reaction' ? 7.0 : 7.5, // Lower guidance for subtler Ghibli effect
           seed: Math.floor(Math.random() * 1000000)
         };
+        
+        // Add width and height to preserve original aspect ratio
+        if (params.sourceWidth && params.sourceHeight) {
+          input.width = params.sourceWidth;
+          input.height = params.sourceHeight;
+          console.log(`📐 [Fal.ai] Preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
+        }
         
         // Add negative prompt for Ghibli to prevent anime stylization
         if (mode === 'ghibli_reaction') {

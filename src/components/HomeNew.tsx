@@ -2556,10 +2556,31 @@ const HomeNew: React.FC = () => {
       
       // Ensure we pass a public https Cloudinary URL (not a blob: preview)
       let sourceUrl = previewUrl || '';
+      let sourceWidth: number | undefined;
+      let sourceHeight: number | undefined;
+      
       if (sourceUrl.startsWith('blob:')) {
         // Avoid fetch(blob:) due to CSP; prefer the actual File when available
         const prepared = await prepareSourceAsset(selectedFile || sourceUrl, { showPreviewImmediately: false });
         sourceUrl = prepared.url;
+        sourceWidth = prepared.width;
+        sourceHeight = prepared.height;
+      } else if (sourceUrl.includes('cloudinary.com') && !sourceWidth && !sourceHeight) {
+        // For existing Cloudinary URLs, try to extract dimensions from URL or get from API
+        try {
+          // Try to extract dimensions from URL first (some Cloudinary URLs include dimensions)
+          const urlMatch = sourceUrl.match(/w_(\d+),h_(\d+)/);
+          if (urlMatch) {
+            sourceWidth = parseInt(urlMatch[1]);
+            sourceHeight = parseInt(urlMatch[2]);
+            console.log(`📐 [HomeNew] Extracted dimensions from URL: ${sourceWidth}x${sourceHeight}`);
+          } else {
+            // If no dimensions in URL, we'll let the AI APIs use their defaults
+            console.log(`📐 [HomeNew] No dimensions found in URL, using AI defaults`);
+          }
+        } catch (error) {
+          console.warn(`⚠️ [HomeNew] Failed to extract dimensions from URL:`, error);
+        }
       }
 
       // Use the unified service
@@ -2569,6 +2590,8 @@ const HomeNew: React.FC = () => {
         prompt: effectivePrompt,
         presetKey: generationMeta?.presetId || generationMeta?.presetKey,
         sourceAssetId: sourceUrl,
+        sourceWidth: sourceWidth,
+        sourceHeight: sourceHeight,
         userId: authService.getCurrentUser()?.id || '',
         runId: runId,
         emotionMaskPresetId: generationMeta?.emotionMaskPresetId,

@@ -11,6 +11,8 @@ export interface SimpleGenerationRequest {
   prompt: string;
   presetKey?: string;
   sourceAssetId: string;
+  sourceWidth?: number;
+  sourceHeight?: number;
   userId: string;
   runId: string;
   emotionMaskPresetId?: string;
@@ -244,6 +246,8 @@ class SimpleGenerationService {
       mode: modeMap[request.mode],
       prompt: request.prompt,
       sourceAssetId: request.sourceAssetId,
+      sourceWidth: request.sourceWidth,
+      sourceHeight: request.sourceHeight,
       userId: request.userId,
       runId: request.runId,
       meta: request.meta || {},
