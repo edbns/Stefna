@@ -96,12 +96,12 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
       {/* Centered Media Display */}
       <div className="h-full w-full flex flex-col items-center justify-center p-8">
-        {/* Media Container - Proper aspect ratio display */}
-        <div className="flex-1 flex items-center justify-center w-full h-full p-4">
+        {/* Media Container - Smaller display with proper aspect ratio */}
+        <div className="flex-1 flex items-center justify-center w-full h-full p-8">
           {current.type === 'video' ? (
             <video 
               src={current.url} 
-              className="max-w-full max-h-full object-contain" 
+              className="max-w-[80%] max-h-[80%] object-contain" 
               controls 
               autoPlay 
               muted 
@@ -110,10 +110,10 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
             <img 
               src={current.url} 
               alt={current.prompt || 'AI Generated Image'} 
-              className="max-w-full max-h-full object-contain" 
+              className="max-w-[80%] max-h-[80%] object-contain" 
               style={{ 
-                maxWidth: '100%', 
-                maxHeight: '100%',
+                maxWidth: '80%', 
+                maxHeight: '80%',
                 width: 'auto',
                 height: 'auto'
               }}

@@ -34,13 +34,21 @@ const PresetTag: React.FC<PresetTagProps> = ({
   // Simple mapping function
   const getDisplayText = () => {
     // Get the actual data from the item
-    const actualType = item?.type || type
-    const actualPresetKey = item?.presetKey || presetKey
+    const actualType = item?.metadata?.presetType || item?.type || type
+    const actualPresetKey = item?.metadata?.presetKey || item?.presetKey || presetKey
     
-    console.log('🔍 [PresetTag] Data:', { actualType, actualPresetKey, item })
+    console.log('🔍 [PresetTag] Data:', { 
+      actualType, 
+      actualPresetKey, 
+      itemType: item?.type,
+      itemMetadataType: item?.metadata?.presetType,
+      itemPresetKey: item?.presetKey,
+      itemMetadataPresetKey: item?.metadata?.presetKey
+    })
     
     // If we have no data, don't show anything
     if (!actualType && !actualPresetKey) {
+      console.log('❌ [PresetTag] No data available, not rendering')
       return null
     }
     
@@ -59,7 +67,12 @@ const PresetTag: React.FC<PresetTagProps> = ({
       'emotionmask': 'Emotion Mask',
       'preset': 'Presets',
       'custom': 'Custom Prompt',
-      'storytime': 'Story Time'
+      'storytime': 'Story Time',
+      // Additional mappings
+      'ghibli-reaction': 'Ghibli Reaction',
+      'emotion-mask': 'Emotion Mask',
+      'custom-prompt': 'Custom Prompt',
+      'story-time': 'Story Time'
     }
     
     // Map preset keys to display names
@@ -104,7 +117,12 @@ const PresetTag: React.FC<PresetTagProps> = ({
       'flux_realism': 'Flux Realism',
       'flux_creative': 'Flux Creative',
       'flux_artistic': 'Flux Artistic',
-      'flux_photorealistic': 'Flux Photorealistic'
+      'flux_photorealistic': 'Flux Photorealistic',
+      
+      // Additional mappings for common variations
+      'default': 'Default',
+      'custom': 'Custom',
+      'auto': 'Auto'
     }
     
     // If we have a preset key, use it

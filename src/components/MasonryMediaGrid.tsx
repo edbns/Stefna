@@ -268,7 +268,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         <div className="absolute bottom-2 left-2">
                           <PresetTag 
                             presetKey={item.metadata?.presetKey || item.presetKey} 
-                            type={item.type}
+                            type={item.metadata?.presetType || item.type}
                             item={item}
                             size="sm"
                             clickable={!!onPresetTagClick}
@@ -276,8 +276,14 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             onClick={(e) => {
                               e.stopPropagation() // Prevent click from bubbling to media card
                               if (onPresetTagClick) {
-                                // Use the type from the item directly
-                                onPresetTagClick(item.type)
+                                // Use the correct type for filtering
+                                const filterType = item.metadata?.presetType || item.type || 'presets'
+                                console.log('🔍 [MasonryMediaGrid] PresetTag clicked:', { 
+                                  filterType, 
+                                  itemType: item.type, 
+                                  metadataType: item.metadata?.presetType 
+                                })
+                                onPresetTagClick(filterType)
                               }
                             }}
                           />
