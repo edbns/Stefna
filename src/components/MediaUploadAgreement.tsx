@@ -71,23 +71,17 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
       // Save user agreement preference to database
       console.log('💾 [Media Upload Agreement] Saving agreement to database...');
       
-      // Generate a session ID for anonymous users
-      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
       const response = await fetch('/.netlify/functions/upload-agreement', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          sessionId
-        })
+        body: JSON.stringify({})
       });
 
       if (response.ok) {
-        // Store the agreement in localStorage for this session
-        localStorage.setItem('uploadAgreementAccepted', 'true');
-        localStorage.setItem('uploadAgreementSessionId', sessionId);
+        // Agreement saved to database successfully
+        console.log('✅ Agreement saved to database')
         
         // Notify parent component that agreement was accepted
         if (onAgreementAccepted) {

@@ -1,8 +1,9 @@
 import type { Handler } from "@netlify/functions";
 import { q } from './_db';
 import { json } from './_lib/http';
+import { withAuth } from './_withAuth';
 
-export const handler: Handler = async (event) => {
+export const handler: Handler = withAuth(async (event, user) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -20,23 +21,24 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const body = JSON.parse(event.body || '{}');
-    const { sessionId } = body;
+    console.log('📝 [Upload Agreement] Recording agreement for user:', user.id);
 
-    if (!sessionId) {
-      return json({ error: 'Session ID required' }, { status: 400 });
-    }
-
-    console.log('📝 [Upload Agreement] Recording agreement for session:', sessionId);
-
-    // Store the agreement in a temporary table or use a different approach
-    // For now, we'll just return success since the frontend will handle the state
-    // In a real implementation, you might want to store this in a temporary table
+    // Update user's media_upload_agreed setting in database
+    await q(`
+      INSERT INTO user_settings (user_id, media_upload_agreed, share_to_feed, created_at, updated_at)
+      VALUES ($1, true, false, NOW(), NOW())
+      ON CONFLICT (user_id) 
+      DO UPDATE SET 
+        media_upload_agreed = true,
+        updated_at = NOW()
+    `, [user.id]);
+    
+    console.log('✅ [Upload Agreement] Agreement saved to database for user:', user.id);
     
     return json({ 
       success: true, 
       message: 'Upload agreement recorded',
-      sessionId 
+      userId: user.id
     });
 
   } catch (error) {
@@ -46,4 +48,4 @@ export const handler: Handler = async (event) => {
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
-};
+});

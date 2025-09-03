@@ -1858,17 +1858,7 @@ const HomeNew: React.FC = () => {
       setIsAuthenticated(authState.isAuthenticated)
       console.log('🔐 Auth state initialized:', authState)
       
-      // First, check localStorage immediately (fast) for all users
-      const uploadAgreementAccepted = localStorage.getItem('uploadAgreementAccepted')
-      if (uploadAgreementAccepted === 'true') {
-        console.log('✅ User has agreed to upload terms (localStorage)')
-        setUserHasAgreed(true)
-      } else {
-        console.log('❌ User has not agreed to upload terms (localStorage)')
-        setUserHasAgreed(false)
-      }
-      
-      // If user is authenticated, sync their profile from database (async, non-blocking)
+      // Load user agreement status from database (for all users)
       if (authState.isAuthenticated) {
         try {
           // Profile context will handle loading settings from database
@@ -1880,7 +1870,7 @@ const HomeNew: React.FC = () => {
             await loadUserProfileFromDatabase()
             console.log('✅ User profile synced from database')
             
-            // Load user agreement status from database (async, non-blocking)
+            // Load user agreement status from database
             try {
               const response = await authenticatedFetch('/.netlify/functions/user-settings', {
                 method: 'GET'
@@ -1896,20 +1886,26 @@ const HomeNew: React.FC = () => {
                 console.log('✅ User agreement status loaded from database:', hasAgreed)
               } else {
                 console.error('❌ [User Settings] Failed to load:', response.status, response.statusText)
-                // Keep localStorage value if database fails
+                setUserHasAgreed(false)
               }
             } catch (error) {
               console.error('Failed to load user agreement status:', error)
-              // Keep localStorage value if database fails
+              setUserHasAgreed(false)
             }
           } else {
             console.warn('⚠️ Skipping profile load: no valid token')
+            setUserHasAgreed(false)
           }
           
           // Tier promotions removed - simplified credit system
         } catch (error) {
           console.warn('⚠️ Failed to sync user data from database:', error)
+          setUserHasAgreed(false)
         }
+      } else {
+        // For non-authenticated users, default to false (must agree)
+        console.log('❌ Non-authenticated user must agree to upload terms')
+        setUserHasAgreed(false)
       }
     }
     
