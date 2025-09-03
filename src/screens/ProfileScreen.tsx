@@ -1413,7 +1413,7 @@ const ProfileScreen: React.FC = () => {
 
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6 animate-pulse">
                   <Image size={48} className="text-white/40" />
                 </div>
                 <p className="text-white/60 text-lg text-center">Loading your media...</p>
@@ -1484,7 +1484,7 @@ const ProfileScreen: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-6 pt-24">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6 animate-pulse">
                   <FileText size={48} className="text-white/40" />
                 </div>
                 <p className="text-white/60 text-lg text-center">Loading your drafts...</p>

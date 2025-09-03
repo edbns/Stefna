@@ -146,9 +146,9 @@ const LazyImage = ({
           <motion.div
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gray-100 flex items-center justify-center"
+            className="absolute inset-0 bg-gray-800 flex items-center justify-center"
           >
-            <div className="flex items-center space-x-2 text-gray-500">
+            <div className="flex items-center space-x-2 text-gray-400">
               <Loader2 size={20} className="animate-spin" />
               <span className="text-sm">Loading...</span>
             </div>
@@ -160,9 +160,9 @@ const LazyImage = ({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-0 bg-gray-100 flex items-center justify-center"
+            className="absolute inset-0 bg-gray-800 flex items-center justify-center"
           >
-            <div className="flex flex-col items-center space-y-2 text-gray-500">
+            <div className="flex flex-col items-center space-y-2 text-gray-400">
               <ImageIcon size={24} />
               <span className="text-sm">Failed to load</span>
             </div>

@@ -179,7 +179,7 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
           {/* Processing State */}
           {status.status === 'processing' && (
             <div className="space-y-6">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                              <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto animate-pulse">
                 <Sparkles size={32} className="text-white" />
               </div>
               <div>

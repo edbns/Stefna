@@ -109,7 +109,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
 
   if (error) {
     return (
-      <div className={`${className} bg-gray-200 flex items-center justify-center`} style={style}>
+      <div className={`${className} bg-gray-800 flex items-center justify-center`} style={style}>
         <div className="text-center text-gray-500">
           <div className="text-sm">⚠️ Failed to load</div>
           <div className="text-xs">{error}</div>
@@ -132,7 +132,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
       {getStageIndicator()}
       
       {isLoading && (
-        <div className="absolute inset-0 bg-gray-100 animate-pulse flex items-center justify-center">
+        <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center">
           <div className="text-xs text-gray-500">
             Loading... {currentStage}
           </div>

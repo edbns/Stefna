@@ -85,7 +85,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         {feed.slice(0, 16).map((item, index) => (
           <div 
             key={item.id} 
-            className="aspect-square bg-gray-200 rounded overflow-hidden"
+                            className="aspect-square bg-gray-800 rounded overflow-hidden"
             ref={index === feed.length - 1 ? onLastItemRef : undefined}
           >
             <img 
