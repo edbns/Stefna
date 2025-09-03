@@ -129,8 +129,8 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
           )}
         </div>
 
-        {/* Info Display - Under the image: Date/Time + Like Button */}
-        <div className="mt-6 mb-8 flex items-center justify-center space-x-4">
+        {/* Info Display - Directly under the image: Date/Time + Like Button */}
+        <div className="mt-4 flex items-center justify-center space-x-4">
           {/* Date/Time */}
           <span className="text-white text-sm bg-black/70 px-4 py-2 rounded-full backdrop-blur-sm font-medium">
             {getCreationDate(current)}
