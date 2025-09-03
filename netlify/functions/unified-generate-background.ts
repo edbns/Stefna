@@ -47,14 +47,56 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
     inputKeys: Object.keys(input || {})
   });
   
-  const res = await fetch(url, {
+  // Try different authentication formats
+  const authHeaders = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${BFL_API_KEY}`
+  };
+  
+  // Alternative: try without "Bearer" prefix
+  const altAuthHeaders = {
+    'Content-Type': 'application/json',
+    'Authorization': BFL_API_KEY
+  };
+  
+  console.log("🔑 [BFL Debug] Trying auth format 1:", {
+    Authorization: `Bearer ${BFL_API_KEY?.substring(0, 8)}...`
+  });
+  
+  let res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${BFL_API_KEY}`
-    },
+    headers: authHeaders,
     body: JSON.stringify(input)
   });
+  
+  // If first attempt fails, try without "Bearer" prefix
+  if (!res.ok && res.status === 403) {
+    console.log("🔑 [BFL Debug] Auth format 1 failed, trying format 2:", {
+      Authorization: `${BFL_API_KEY?.substring(0, 8)}...`
+    });
+    
+    res = await fetch(url, {
+      method: 'POST',
+      headers: altAuthHeaders,
+      body: JSON.stringify(input)
+    });
+  }
+  
+  // If second attempt fails, try with "Key" prefix (like Fal.ai)
+  if (!res.ok && res.status === 403) {
+    console.log("🔑 [BFL Debug] Auth format 2 failed, trying format 3:", {
+      Authorization: `Key ${BFL_API_KEY?.substring(0, 8)}...`
+    });
+    
+    res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Key ${BFL_API_KEY}`
+      },
+      body: JSON.stringify(input)
+    });
+  }
   
   console.log("📥 [BFL Debug] Response:", {
     status: res.status,
