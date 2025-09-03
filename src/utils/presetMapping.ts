@@ -99,8 +99,39 @@ export function getPresetDisplayText(item: any, showPresetKey: boolean = true): 
  * Get preset type for filtering
  */
 export function getPresetTypeForFilter(item: any): string {
-  const mapping = mapPresetToDisplay(item)
-  return mapping.type
+  // Debug logging to see what data we're working with
+  console.log('🔍 [getPresetTypeForFilter] Input item:', {
+    itemType: item.type,
+    itemMetadataType: item.metadata?.presetType,
+    itemMediaType: item.mediaType,
+    itemPresetKey: item.presetKey,
+    itemMetadataPresetKey: item.metadata?.presetKey,
+    itemPreset: item.preset
+  })
+  
+  // For feed items, the preset type is in item.metadata.presetType
+  // This comes from the backend where item.type contains the actual preset type
+  const presetType = item.metadata?.presetType || item.type || item.mediaType || 'presets'
+  
+  // Map the preset type to the filter format
+  const typeMapping: Record<string, string> = {
+    'neo_glitch': 'neo-glitch',
+    'ghibli_reaction': 'ghibli-reaction', 
+    'emotion_mask': 'emotion-mask',
+    'presets': 'presets',
+    'custom_prompt': 'custom-prompt',
+    'story_time': 'story-time',
+    'story': 'story-time'
+  }
+  
+  const mappedType = typeMapping[presetType] || presetType
+  
+  console.log('🔍 [getPresetTypeForFilter] Result:', {
+    inputPresetType: presetType,
+    mappedType: mappedType
+  })
+  
+  return mappedType
 }
 
 /**
