@@ -118,11 +118,11 @@ const PHOTO_MODELS = [
 
 const GHIBLI_MODELS = [
   {
-    model: 'fal-ai/flux-pro/v1/depth-finetuned',
-    name: 'Flux Pro Depth Finetuned',
-    cost: 'medium',
+    model: 'fal-ai/flux/schnell/redux',
+    name: 'Flux Schnell Redux',
+    cost: 'low',
     priority: 1,
-    description: 'Primary - closest to old AIML Flux Dev I2I, depth-aware, retains lighting and realism'
+    description: 'Primary - cheap and fast generation'
   },
   {
     model: 'fal-ai/flux-pro/kontext',
@@ -132,8 +132,8 @@ const GHIBLI_MODELS = [
     description: 'Secondary - great lighting control but more stylized'
   },
   {
-    model: 'fal-ai/flux/schnell/redux',
-    name: 'Flux Schnell Redux',
+    model: 'fal-ai/flux-1/schnell/redux',
+    name: 'Flux 1 Schnell Redux',
     cost: 'low',
     priority: 3,
     description: 'Fallback - cheap and fast generation'
