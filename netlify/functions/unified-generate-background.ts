@@ -99,28 +99,43 @@ const PHOTO_MODELS = [
     description: 'High-quality Flux Dev image-to-image (much better than SDXL)'
   },
   {
-    model: 'fal-ai/pixart-alpha',
-    name: 'PixArt Alpha',
+    model: 'banian/realistic-vision-v51',
+    name: 'Realistic Vision v5.1',
     cost: 'medium',
     priority: 2,
-    description: 'Reliable fallback for edge cases'
+    description: 'Reliable fallback with high identity preservation',
+    strength: 0.3,
+    guidance: 7.0
   }
 ];
 
 const GHIBLI_MODELS = [
   {
-    model: 'fal-ai/fast-sdxl-img2img',
-    name: 'Fast SDXL I2I',
+    model: 'banian/realistic-vision-v51',
+    name: 'Realistic Vision v5.1',
     cost: 'medium',
     priority: 1,
-    description: 'Fast SDXL image-to-image with Ghibli realism'
+    description: 'Primary Ghibli fallback - high identity preservation, stylized outputs',
+    strength: 0.3,
+    guidance: 7.0
   },
   {
-    model: 'fal-ai/pixart-alpha',
-    name: 'PixArt Alpha',
+    model: 'lucataco/sdxl-img2img',
+    name: 'SDXL Image-to-Image',
     cost: 'medium',
     priority: 2,
-    description: 'Reliable fallback with gentle Ghibli influence'
+    description: 'High-res, consistent, follows prompts extremely well',
+    strength: 0.4,
+    guidance: 7.5
+  },
+  {
+    model: 'segmind/realvisxl-v3-img2img',
+    name: 'RealVisXL v3',
+    cost: 'medium',
+    priority: 3,
+    description: 'Photorealistic with good identity preservation',
+    strength: 0.35,
+    guidance: 7.0
   }
 ];
 
@@ -145,20 +160,20 @@ const REPLICATE_FALLBACK_MODELS = [
     guidance: 7.0
   },
   {
-    model: 'lucataco/pixart-alpha',
-    name: 'PixArt Alpha',
+    model: 'lucataco/sdxl-img2img',
+    name: 'SDXL Image-to-Image',
     priority: 2,
-    description: 'Powerful stylization + good identity (slightly exaggerates features)',
+    description: 'High-res, consistent, follows prompts extremely well',
     strength: 0.4,
     guidance: 7.5
   },
   {
-    model: 'lucataco/sdxl-img2img',
-    name: 'SDXL Image-to-Image',
+    model: 'segmind/realvisxl-v3-img2img',
+    name: 'RealVisXL v3',
     priority: 3,
-    description: 'High-res, consistent, follows prompts extremely well',
-    strength: 0.5,
-    guidance: 8.0
+    description: 'Photorealistic with good identity preservation',
+    strength: 0.35,
+    guidance: 7.0
   }
 ];
 
@@ -865,6 +880,11 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
   for (const modelConfig of models) {
     try {
       console.log(`📤 [Background] Trying ${modelConfig.name} (${modelConfig.model})`);
+      
+      // Warn if using fallback models that might not be optimal for the mode
+      if (mode === 'ghibli_reaction' && modelConfig.model.includes('replicate')) {
+        console.log(`⚠️ [Background] Using Replicate fallback for Ghibli Reaction - may not match original style`);
+      }
       
       let result;
       
