@@ -40,34 +40,85 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
     inputKeys: Object.keys(input || {})
   });
   
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
+  // Clean input - remove null/undefined values
+  const cleanInput = Object.fromEntries(
+    Object.entries(input).filter(([k, v]) => v != null && v !== undefined)
+  );
+  
+  console.log("🧹 [BFL Debug] Cleaned input:", {
+    originalKeys: Object.keys(input || {}),
+    cleanedKeys: Object.keys(cleanInput),
+    hasNullValues: Object.values(input || {}).some(v => v === null || v === undefined)
+  });
+  
+  // Try different header formats
+  const headerFormats = [
+    // Format 1: x-api-key (most likely)
+    {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'x-api-key': BFL_API_KEY
+    } as Record<string, string>,
+    // Format 2: Authorization: Bearer (standard)
+    {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
       'Authorization': `Bearer ${BFL_API_KEY}`
-    },
-    body: JSON.stringify(input)
-  });
+    } as Record<string, string>,
+    // Format 3: Authorization: bfl- (custom prefix)
+    {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `bfl-${BFL_API_KEY}`
+    } as Record<string, string>
+  ];
   
-  console.log("📥 [BFL Debug] Response:", {
-    status: res.status,
-    statusText: res.statusText,
-    ok: res.ok
-  });
+  let lastError: Error | null = null;
   
-  if (!res.ok) {
-    const text = await res.text();
-    console.error("❌ [BFL Debug] Error response:", text);
-    throw new Error(`BFL API ${res.status}: ${text.substring(0, 200)}`);
+  for (let i = 0; i < headerFormats.length; i++) {
+    const headers = headerFormats[i];
+    const formatName = i === 0 ? 'x-api-key' : i === 1 ? 'Bearer' : 'bfl-';
+    
+    console.log(`🔑 [BFL Debug] Trying format ${i + 1}: ${formatName}`);
+    
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(cleanInput)
+      });
+      
+      console.log(`📥 [BFL Debug] Format ${i + 1} response:`, {
+        status: res.status,
+        statusText: res.statusText,
+        ok: res.ok
+      });
+      
+      if (res.ok) {
+        const result = await res.json();
+        console.log("✅ [BFL Debug] Success with format:", formatName, {
+          hasResult: !!result,
+          resultKeys: Object.keys(result || {})
+        });
+        return result;
+      } else {
+        const text = await res.text();
+        console.error(`❌ [BFL Debug] Format ${i + 1} failed:`, text);
+        lastError = new Error(`BFL API ${res.status}: ${text.substring(0, 200)}`);
+        
+        // If it's not a 403, stop trying other formats
+        if (res.status !== 403) {
+          break;
+        }
+      }
+    } catch (error) {
+      console.error(`❌ [BFL Debug] Format ${i + 1} error:`, error);
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
   }
   
-  const result = await res.json();
-  console.log("✅ [BFL Debug] Success response:", {
-    hasResult: !!result,
-    resultKeys: Object.keys(result || {})
-  });
-  
-  return result;
+  // All formats failed
+  throw lastError || new Error('All BFL API authentication formats failed');
 }
 
 async function falInvoke(model: string, input: any): Promise<any> {
