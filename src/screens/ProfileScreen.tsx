@@ -1126,9 +1126,7 @@ const ProfileScreen: React.FC = () => {
     { id: 'all-media', label: 'All Media', icon: Image },
     // Remixes tab removed - no more remix functionality
     { id: 'draft', label: 'Drafts', icon: FileText },
-    { id: 'account', label: 'Account', icon: Settings },
-    { id: 'divider_danger', type: 'divider', label: ' ' },
-    { id: 'delete-account', label: 'Delete Account', icon: X, danger: true }
+    { id: 'account', label: 'Account', icon: Settings }
   ]
 
   // Persist user settings helper
@@ -1230,23 +1228,6 @@ const ProfileScreen: React.FC = () => {
                   />
                 </button>
               </div>
-                )
-              }
-              
-              // Handle delete account
-              if (item.id === 'delete-account') {
-                return (
-                  <div key={item.id}>
-                    <button
-                      onClick={handleDeleteAccount}
-                      className="w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-3 text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                    >
-                      <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
-                        <X size={16} className="text-current" />
-                      </div>
-                      <span className="text-xs font-medium">{item.label}</span>
-                    </button>
-                  </div>
                 )
               }
               
