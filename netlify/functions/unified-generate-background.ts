@@ -1202,22 +1202,22 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
         result = await generateWithFal(request.mode, generationParams);
         console.log('✅ [Background] Fal.ai generation successful');
       } catch (falError) {
-        console.warn('⚠️ [Background] Fal.ai failed, falling back to Stability.ai:', falError);
+        console.warn('⚠️ [Background] Fal.ai failed, falling back to Replicate:', falError);
         
-        // Fallback to Stability.ai (not available for video/story_time)
+        // Fallback to Replicate (not Stability.ai for other modes)
         if (request.mode === 'story_time') {
           console.error('❌ [Background] Story Time requires Fal.ai (video generation)');
           throw new Error(`Video generation failed: ${falError}`);
         }
         
         try {
-          // Try Stability.ai as fallback for image modes
-          console.log('🎨 [Background] Attempting fallback with Stability.ai');
-          result = await generateWithStability(generationParams);
-          console.log('✅ [Background] Stability.ai fallback successful');
-        } catch (stabilityError) {
-          console.error('❌ [Background] Both Fal.ai and Stability.ai failed');
-          throw new Error(`All providers failed. Fal: ${falError}. Stability: ${stabilityError}`);
+          // Try Replicate as fallback for image modes
+          console.log('🎨 [Background] Attempting fallback with Replicate');
+          result = await generateWithReplicate(generationParams);
+          console.log('✅ [Background] Replicate fallback successful');
+        } catch (replicateError) {
+          console.error('❌ [Background] Both Fal.ai and Replicate failed');
+          throw new Error(`All providers failed. Fal: ${falError}. Replicate: ${replicateError}`);
         }
       }
     }
