@@ -322,6 +322,18 @@ async function uploadUrlToCloudinary(imageUrl: string): Promise<string> {
   // If already Cloudinary, return as-is
   if (imageUrl.includes('res.cloudinary.com')) return imageUrl;
 
+  // Determine resource type based on URL extension
+  const getResourceType = (url: string): string => {
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov') || lowerUrl.endsWith('.avi')) {
+      return 'video';
+    }
+    return 'image';
+  };
+
+  const resourceType = getResourceType(imageUrl);
+  console.log(`☁️ [Cloudinary] Detected resource type: ${resourceType} for URL: ${imageUrl}`);
+
   const signUrl = process.env.URL
     ? `${process.env.URL}/.netlify/functions/cloudinary-sign`
     : `https://${process.env.CONTEXT === 'production' ? '' : process.env.BRANCH + '--'}stefna.netlify.app/.netlify/functions/cloudinary-sign`;
@@ -340,26 +352,29 @@ async function uploadUrlToCloudinary(imageUrl: string): Promise<string> {
   const remoteRes = await fetch(imageUrl);
   if (!remoteRes.ok) {
     const t = await remoteRes.text();
-    throw new Error(`Failed to fetch remote image: ${remoteRes.status} - ${t.substring(0,200)}`);
+    throw new Error(`Failed to fetch remote ${resourceType}: ${remoteRes.status} - ${t.substring(0,200)}`);
   }
   const blob = await remoteRes.blob();
   const formData = new FormData();
-  formData.append('file', blob, 'generated.png');
+  formData.append('file', blob, resourceType === 'video' ? 'generated.mp4' : 'generated.png');
   formData.append('timestamp', signData.timestamp);
   formData.append('signature', signData.signature);
   formData.append('api_key', signData.apiKey);
   formData.append('folder', 'stefna/generated');
+  formData.append('resource_type', resourceType);
 
-  const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${signData.cloudName}/auto/upload`, {
+  const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${signData.cloudName}/${resourceType}/upload`, {
     method: 'POST',
     body: formData
   });
   if (!uploadResponse.ok) {
     const errorText = await uploadResponse.text();
-    throw new Error(`Cloudinary upload failed: ${uploadResponse.status} - ${errorText.substring(0,200)}`);
+    throw new Error(`Cloudinary ${resourceType} upload failed: ${uploadResponse.status} - ${errorText.substring(0,200)}`);
   }
   const uploadResult = await uploadResponse.json();
-  if (!uploadResult.secure_url) throw new Error('Cloudinary upload returned no secure_url');
+  if (!uploadResult.secure_url) throw new Error(`Cloudinary ${resourceType} upload returned no secure_url`);
+  
+  console.log(`✅ [Cloudinary] ${resourceType} upload successful:`, uploadResult.secure_url);
   return uploadResult.secure_url;
 }
 
