@@ -130,9 +130,9 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
         </div>
 
         {/* Info Display - Under the image: Date/Time + Like Button */}
-        <div className="mt-4 flex items-center justify-center space-x-4">
+        <div className="mt-6 mb-8 flex items-center justify-center space-x-4">
           {/* Date/Time */}
-          <span className="text-white/80 text-sm bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
+          <span className="text-white text-sm bg-black/70 px-4 py-2 rounded-full backdrop-blur-sm font-medium">
             {getCreationDate(current)}
           </span>
           
@@ -146,7 +146,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
               }
               onToggleLike?.(current);
             }}
-            className={`flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-all duration-200 ${
+            className={`flex items-center gap-2 px-4 py-2 bg-black/70 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-all duration-200 ${
               userLikes[`${(current.metadata?.presetType || current.type || 'presets').replace(/-/g, '_')}:${current.id}`] ? 'text-red-500' : ''
             }`}
             title={userLikes[`${(current.metadata?.presetType || current.type || 'presets').replace(/-/g, '_')}:${current.id}`] ? 'Unlike' : 'Like'}
@@ -164,13 +164,6 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
             <span className="text-sm font-medium">{current.likes_count || 0}</span>
           </button>
         </div>
-
-        {/* Image Counter - Bottom Center */}
-        {media.length > 1 && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/60 text-sm bg-black/30 px-3 py-1 rounded-full backdrop-blur-sm">
-            {currentIndex + 1} of {media.length}
-          </div>
-        )}
       </div>
     </div>
   )
