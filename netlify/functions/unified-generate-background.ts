@@ -32,6 +32,21 @@ const CORS_JSON_HEADERS = {
 // BFL API function for direct Flux access
 async function bflInvoke(endpoint: string, input: any): Promise<any> {
   const url = `https://api.bfl.ai/v1/${endpoint}`;
+  
+  // Debug logging for authentication
+  console.log("📤 [BFL Debug] API Key check:", {
+    hasKey: !!BFL_API_KEY,
+    keyLength: BFL_API_KEY?.length || 0,
+    keyPrefix: BFL_API_KEY?.substring(0, 4) + '...' || 'none'
+  });
+  
+  console.log("📤 [BFL Debug] Request details:", {
+    url,
+    endpoint,
+    hasInput: !!input,
+    inputKeys: Object.keys(input || {})
+  });
+  
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -40,11 +55,26 @@ async function bflInvoke(endpoint: string, input: any): Promise<any> {
     },
     body: JSON.stringify(input)
   });
+  
+  console.log("📥 [BFL Debug] Response:", {
+    status: res.status,
+    statusText: res.statusText,
+    ok: res.ok
+  });
+  
   if (!res.ok) {
     const text = await res.text();
+    console.error("❌ [BFL Debug] Error response:", text);
     throw new Error(`BFL API ${res.status}: ${text.substring(0, 200)}`);
   }
-  return await res.json();
+  
+  const result = await res.json();
+  console.log("✅ [BFL Debug] Success response:", {
+    hasResult: !!result,
+    resultKeys: Object.keys(result || {})
+  });
+  
+  return result;
 }
 
 async function falInvoke(model: string, input: any): Promise<any> {
@@ -974,6 +1004,14 @@ async function generateWithReplicate(params: any): Promise<UnifiedGenerationResp
 // BFL API generation with fallback to Fal.ai
 async function generateWithBFL(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
   console.log(`🚀 [Background] Starting BFL API generation for mode: ${mode}`);
+  
+  // Check if BFL API key is available
+  if (!BFL_API_KEY) {
+    console.error('❌ [BFL] BFL_API_KEY environment variable is not set');
+    throw new Error('BFL API key not configured - falling back to Fal.ai');
+  }
+  
+  console.log(`🔑 [BFL] API Key status: ${BFL_API_KEY ? 'Present' : 'Missing'} (length: ${BFL_API_KEY?.length || 0})`);
   
   // Select models based on mode
   let models;
