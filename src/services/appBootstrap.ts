@@ -1,5 +1,5 @@
 // Application Bootstrap - Initialize all systems with hardening
-import { presetsStore } from '../stores/presetsStore'
+// import { presetsStore } from '../stores/presetsStore' // REMOVED - using database-driven presets now
 // import { validateMappings } from '../utils/validateMappings' // REMOVED - complex drama file
 // Navigation cleanup removed - was just a placeholder
 // import { setupMemoryLeakPrevention } from '../utils/guardRails' // REMOVED - complex drama file
@@ -28,9 +28,9 @@ async function performBootstrap(): Promise<void> {
     // Navigation cleanup was just a placeholder - removed
     // setupMemoryLeakPrevention() // REMOVED - complex drama validation
     
-    // 2. Load presets
-    bootLogger.info('Loading presets...')
-    await presetsStore.getState().load()
+    // 2. Load presets (now handled by database-driven system)
+    bootLogger.info('Presets loaded from database automatically...')
+    // await presetsStore.getState().load() // REMOVED - using database-driven presets now
     
     // 3. Validate all mappings after presets are loaded
     bootLogger.info('Validating mappings...')

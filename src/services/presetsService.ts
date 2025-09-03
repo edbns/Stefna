@@ -141,90 +141,91 @@ class PresetsService {
   }
 
   /**
- * Start a Professional Preset generation using Fal.ai API
- * Creates record in presets_media and starts Fal.ai generation
+ * Start a Professional Preset generation using unified generation system
+ * Creates record in presets_media and starts BFL generation
  */
   async startGeneration(request: PresetGenerationRequest): Promise<PresetGenerationResult> {
     try {
-      console.log('🎭 [Presets] Starting generation with Fal.ai API:', {
+      console.log('🎭 [Presets] Starting generation with unified generation system:', {
         presetKey: request.presetKey,
         runId: request.runId,
         hasSource: !!request.sourceAssetId
       });
 
-      // Start Fal.ai generation directly
-      const falRes = await authenticatedFetch('/.netlify/functions/presets-generate', {
+      // Use unified generation system instead of separate presets-generate
+      const unifiedRes = await authenticatedFetch('/.netlify/functions/unified-generate-background', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          mode: 'presets',
           prompt: request.prompt,
           presetKey: request.presetKey,
-          sourceUrl: request.sourceAssetId, // Use sourceUrl for clarity
+          sourceAssetId: request.sourceAssetId,
           userId: request.userId,
           runId: request.runId,
-          generationMeta: request.meta || {}
+          meta: request.meta || {}
         })
       });
 
-      if (!falRes.ok) {
-        const error = await falRes.json().catch(() => ({}));
-        throw new Error(error.error || `Failed to start Fal.ai generation: ${falRes.status}`);
+      if (!unifiedRes.ok) {
+        const error = await unifiedRes.json().catch(() => ({}));
+        throw new Error(error.error || `Failed to start unified generation: ${unifiedRes.status}`);
       }
 
-      const falResult = await falRes.json();
-      console.log('🚀 [Presets] Fal.ai generation response:', {
-        status: falResult.status,
-        provider: falResult.provider,
-        jobId: falResult.jobId,
-        imageUrl: falResult.imageUrl,
-        presetInfo: falResult.presetInfo,
-        fullResponse: falResult
+      const unifiedResult = await unifiedRes.json();
+      console.log('🚀 [Presets] Unified generation response:', {
+        status: unifiedResult.status,
+        provider: unifiedResult.provider,
+        jobId: unifiedResult.jobId,
+        imageUrl: unifiedResult.imageUrl,
+        presetInfo: unifiedResult.presetInfo,
+        fullResponse: unifiedResult
       });
 
       // Handle immediate completion from backend
-      if (falResult.status === 'completed' && falResult.imageUrl) {
+      if (unifiedResult.status === 'completed' && unifiedResult.imageUrl) {
         console.log('🎉 [Presets] Generation completed immediately!');
         return {
           success: true,
-          jobId: falResult.jobId,
-          runId: falResult.runId,
+          jobId: unifiedResult.jobId,
+          runId: unifiedResult.runId,
           status: 'completed',
-          imageUrl: falResult.imageUrl,
-          falJobId: falResult.falJobId,
-          provider: falResult.provider,
-          presetInfo: falResult.presetInfo
+          imageUrl: unifiedResult.imageUrl,
+          falJobId: unifiedResult.falJobId,
+          provider: unifiedResult.provider,
+          presetInfo: unifiedResult.presetInfo
         };
       }
 
       // Handle processing status
-      if (falResult.status === 'processing' || falResult.status === 'pending') {
+      if (unifiedResult.status === 'processing' || unifiedResult.status === 'pending') {
         console.log('🔄 [Presets] Generation in progress, will need polling');
         return {
           success: true,
-          jobId: falResult.jobId,
-          runId: falResult.runId,
+          jobId: unifiedResult.jobId,
+          runId: unifiedResult.runId,
           status: 'processing',
-          falJobId: falResult.falJobId,
-          provider: falResult.provider
+          falJobId: unifiedResult.falJobId,
+          provider: unifiedResult.provider
         };
       }
 
       // Handle failed status
-      if (falResult.status === 'failed') {
-        console.error('❌ [Presets] Generation failed:', falResult);
+      if (unifiedResult.status === 'failed') {
+        console.error('❌ [Presets] Generation failed:', unifiedResult);
         return {
           success: false,
           status: 'failed',
-          error: falResult.error || 'Generation failed'
+          error: unifiedResult.error || 'Generation failed'
         };
       }
 
       // Unexpected response
-      console.warn('⚠️ [Presets] Unexpected response status:', falResult.status);
+      console.warn('⚠️ [Presets] Unexpected response status:', unifiedResult.status);
       return {
         success: false,
         status: 'failed',
-        error: `Unexpected status: ${falResult.status}`
+        error: `Unexpected status: ${unifiedResult.status}`
       };
 
     } catch (error) {
@@ -239,20 +240,20 @@ class PresetsService {
 
   /**
    * Poll for generation completion
-   * Since Fal.ai returns immediately, this is mainly for status verification
+   * Since unified generation returns immediately, this is mainly for status verification
    */
   async pollForCompletion(jobId: string, maxAttempts: number = 10): Promise<PresetStatus> {
     try {
       console.log('🔍 [Presets] Polling for completion:', jobId);
       
-      // For Professional Presets, Fal.ai usually returns immediately
+      // For Professional Presets, unified generation usually returns immediately
       // This polling is mainly for status verification
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         console.log(`🔍 [Presets] Poll attempt ${attempt}/${maxAttempts}`);
         
         try {
-          // Check status by querying the database directly via a status endpoint
-          const statusRes = await authenticatedFetch(`/.netlify/functions/presets-generate?jobId=${jobId}`, {
+          // Check status by querying the database directly via getMediaByRunId
+          const statusRes = await authenticatedFetch(`/.netlify/functions/getMediaByRunId?runId=${jobId}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
           });

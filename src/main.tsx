@@ -2,8 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
-import { validateAllSync, validateAll, validateUIConfigurationWhenReady } from './utils/presets/validate'
-import { presetsStore } from './stores/presetsStore'
+// import { validateAllSync, validateAll, validateUIConfigurationWhenReady } from './utils/presets/validate' // REMOVED - using database-driven presets now
+// import { presetsStore } from './stores/presetsStore' // REMOVED - using database-driven presets now
 
 // 🔍 IMMEDIATE DEBUG: Verify bundle execution
 window.addEventListener('error', e => console.error('[window.onerror]', e.error || e.message));
@@ -23,9 +23,9 @@ console.log('🔍 Environment:', {
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals'
 
 // Safety check: ensure presetsStore is properly imported
-if (!presetsStore) {
-  console.error('❌ presetsStore import failed');
-}
+// if (!presetsStore) { // REMOVED - using database-driven presets now
+//   console.error('❌ presetsStore import failed');
+// }
 
 // Extend Window interface for development helpers
 declare global {
@@ -35,34 +35,34 @@ declare global {
 }
 
 // Load presets store first, then validate
-setTimeout(async () => {
-  try {
-    // Ensure store is initialized before accessing
-    if (presetsStore && typeof presetsStore.getState === 'function') {
-      await presetsStore.getState().load();
-      // Now validate UI configuration when presets are ready
-      validateUIConfigurationWhenReady();
-    } else {
-      console.warn('⚠️ presetsStore not ready yet, retrying...');
-      // Retry after a short delay
-      setTimeout(() => {
-        if (presetsStore && typeof presetsStore.getState === 'function') {
-          presetsStore.getState().load().then(() => {
-            validateUIConfigurationWhenReady();
-          }).catch(console.error);
-        }
-      }, 100);
-    }
-  } catch (error) {
-    console.error('❌ Failed to initialize presets store:', error);
-  }
-}, 0);
+// setTimeout(async () => { // REMOVED - using database-driven presets now
+//   try {
+//     // Ensure store is initialized before accessing
+//     if (presetsStore && typeof presetsStore.getState === 'function') {
+//       await presetsStore.getState().load();
+//       // Now validate UI configuration when presets are ready
+//       validateUIConfigurationWhenReady();
+//     } else {
+//       console.warn('⚠️ presetsStore not ready yet, retrying...');
+//       // Retry after a short delay
+//       setTimeout(() => {
+//         if (presetsStore && typeof presetsStore.getState === 'function') {
+//           presetsStore.getState().load().then(() => {
+//             validateUIConfigurationWhenReady();
+//           }).catch(console.error);
+//         }
+//       }, 100);
+//     }
+//   } catch (error) {
+//     console.error('❌ Failed to initialize presets store:', error);
+//   }
+// }, 0);
 
 // Validate preset system on startup (sync for immediate feedback)
-validateAllSync()
+// validateAllSync() // REMOVED - using database-driven presets now
 
 // Async validation for story themes
-validateAll().catch(console.error)
+// validateAll().catch(console.error) // REMOVED - using database-driven presets now
 
 // Development mode - all old test functions removed
 if (import.meta.env.DEV) {
