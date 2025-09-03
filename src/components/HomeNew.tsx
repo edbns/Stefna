@@ -615,6 +615,13 @@ const HomeNew: React.FC = () => {
           : item
       ))
       
+      // Also update viewer media if it's open
+      setViewerMedia(prev => prev.map(item => 
+        item.id === media.id 
+          ? { ...item, likes_count: (item.likes_count || 0) + (wasLiked ? -1 : 1) }
+          : item
+      ))
+      
       // Map the type to the API format
       const apiMediaType = mapMediaTypeForAPI(dbType)
       
@@ -628,6 +635,13 @@ const HomeNew: React.FC = () => {
             ? { ...item, likes_count: response.likesCount }
             : item
         ))
+        
+        // Also update viewer media with server response
+        setViewerMedia(prev => prev.map(item => 
+          item.id === media.id 
+            ? { ...item, likes_count: response.likesCount }
+            : item
+        ))
       } else {
         // Revert on error
         setUserLikes(prev => ({
@@ -635,6 +649,13 @@ const HomeNew: React.FC = () => {
           [likeKey]: wasLiked
         }))
         setFeed(prev => prev.map(item => 
+          item.id === media.id 
+            ? { ...item, likes_count: (item.likes_count || 0) + (wasLiked ? 1 : -1) }
+            : item
+        ))
+        
+        // Also revert viewer media on error
+        setViewerMedia(prev => prev.map(item => 
           item.id === media.id 
             ? { ...item, likes_count: (item.likes_count || 0) + (wasLiked ? 1 : -1) }
             : item
