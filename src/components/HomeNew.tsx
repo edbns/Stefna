@@ -3608,9 +3608,11 @@ const HomeNew: React.FC = () => {
         media={viewerMedia}
         startIndex={viewerStartIndex}
         onClose={() => setViewerOpen(false)}
-
-        // onRemix removed - no more remix functionality
         onShowAuth={() => navigate('/auth')}
+        // Likes functionality
+        onToggleLike={handleToggleLike}
+        userLikes={userLikes}
+        isLoggedIn={isAuthenticated}
       />
 
                 {/* Bottom-centered composer */}

@@ -1684,8 +1684,6 @@ const ProfileScreen: React.FC = () => {
           media={viewerMedia}
           startIndex={viewerStartIndex}
           onClose={() => setViewerOpen(false)}
-
-
           onShowAuth={() => navigate('/auth')}
         />
       </div>

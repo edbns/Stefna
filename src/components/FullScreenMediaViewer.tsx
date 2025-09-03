@@ -10,6 +10,10 @@ interface FullScreenMediaViewerProps {
   startIndex?: number
   onClose: () => void
   onShowAuth?: () => void
+  // Likes functionality
+  onToggleLike?: (media: UserMedia) => void
+  userLikes?: Record<string, boolean>
+  isLoggedIn?: boolean
 }
 
 const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
@@ -17,7 +21,11 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
   media,
   startIndex = 0,
   onClose,
-  onShowAuth
+  onShowAuth,
+  // Likes functionality
+  onToggleLike,
+  userLikes = {},
+  isLoggedIn = true
 }) => {
   const [currentIndex, setCurrentIndex] = useState(startIndex)
   const current = useMemo(() => media[currentIndex], [media, currentIndex])
@@ -121,30 +129,40 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
           )}
         </div>
 
-        {/* Info Display - Same row: Preset Tag + Date/Time */}
-        <div className="mt-6 flex items-center justify-center space-x-4">
-          {/* Debug Info - Remove after fixing */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="text-white/40 text-xs bg-black/50 px-2 py-1 rounded">
-              Debug: presetKey={current.presetKey}, metadata.presetKey={current.metadata?.presetKey}, type={getPresetTypeForFilter(current)}
-            </div>
-          )}
-          
-          {/* Preset Tag - Temporarily hidden */}
-          {/* {(current.metadata?.presetKey || current.presetKey) && (
-            <PresetTag
-              presetKey={current.metadata?.presetKey || current.presetKey}
-              type={getPresetTypeForFilter(current)}
-              item={current}
-              size="md"
-              clickable={false}
-            />
-          )} */}
-          
+        {/* Info Display - Under the image: Date/Time + Like Button */}
+        <div className="mt-4 flex items-center justify-center space-x-4">
           {/* Date/Time */}
           <span className="text-white/80 text-sm bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
             {getCreationDate(current)}
           </span>
+          
+          {/* Like Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isLoggedIn) {
+                onShowAuth?.();
+                return;
+              }
+              onToggleLike?.(current);
+            }}
+            className={`flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-all duration-200 ${
+              userLikes[`${(current.metadata?.presetType || current.type || 'presets').replace(/-/g, '_')}:${current.id}`] ? 'text-red-500' : ''
+            }`}
+            title={userLikes[`${(current.metadata?.presetType || current.type || 'presets').replace(/-/g, '_')}:${current.id}`] ? 'Unlike' : 'Like'}
+          >
+            <svg 
+              width="16" 
+              height="16" 
+              viewBox="0 0 24 24" 
+              fill={userLikes[`${(current.metadata?.presetType || current.type || 'presets').replace(/-/g, '_')}:${current.id}`] ? 'currentColor' : 'none'} 
+              stroke="currentColor" 
+              strokeWidth="2"
+            >
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span className="text-sm font-medium">{current.likes_count || 0}</span>
+          </button>
         </div>
 
         {/* Image Counter - Bottom Center */}
