@@ -142,25 +142,32 @@ const GHIBLI_MODELS = [
 
 const VIDEO_MODELS = [
   {
-    model: 'fal-ai/fast-sdxl',
-    name: 'Fast SDXL',
-    cost: 'low',
+    model: 'fal-ai/kling-video/v2.1/pro/image-to-video',
+    name: 'Kling Video v2.1 Pro',
+    cost: 'high',
     priority: 1,
-    description: 'Fast and reliable video generation'
+    description: 'Best visual storytelling and special effects'
   },
   {
-    model: 'fal-ai/fast-sdxl-img2img',
-    name: 'Fast SDXL Image-to-Image',
-    cost: 'low',
-    priority: 2,
-    description: 'Fast image-to-video generation'
-  },
-  {
-    model: 'fal-ai/flux/dev/image-to-image',
-    name: 'Flux Dev I2I',
+    model: 'fal-ai/kling-video/v2.1/standard/image-to-video',
+    name: 'Kling Video v2.1 Standard',
     cost: 'medium',
+    priority: 2,
+    description: 'Fallback for faster / cheaper generation'
+  },
+  {
+    model: 'fal-ai/wan-pro/image-to-video',
+    name: 'WAN Pro Image-to-Video',
+    cost: 'low',
     priority: 3,
-    description: 'High quality image-to-video'
+    description: 'Minimal motion, ultra cost-effective'
+  },
+  {
+    model: 'fal-ai/pixverse/v4.5/transition',
+    name: 'Pixverse v4.5 Transition',
+    cost: 'medium',
+    priority: 4,
+    description: 'Artsy or stylized output'
   }
 ];
 
