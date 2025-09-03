@@ -114,8 +114,8 @@ interface UnifiedGenerationResponse {
 // Mode-specific BFL API model configurations (primary)
 const BFL_PHOTO_MODELS = [
   {
-    endpoint: 'flux-1.1-pro',
-    name: 'BFL Flux 1.1 Pro',
+    endpoint: 'flux-pro-1.1',
+    name: 'BFL Flux Pro 1.1',
     cost: 'low',
     priority: 1,
     description: 'Primary - direct BFL API for presets and custom prompts'
@@ -124,8 +124,8 @@ const BFL_PHOTO_MODELS = [
 
 const BFL_EMOTION_MODELS = [
   {
-    endpoint: 'flux-1.1-pro-raw',
-    name: 'BFL Flux 1.1 Pro Raw',
+    endpoint: 'flux-pro-1.1-raw',
+    name: 'BFL Flux Pro 1.1 Raw',
     cost: 'low',
     priority: 1,
     description: 'Primary - direct BFL API for emotion mask'
@@ -134,16 +134,16 @@ const BFL_EMOTION_MODELS = [
 
 const BFL_GHIBLI_MODELS = [
   {
-    endpoint: 'flux-1.1-pro-ultra-finetuned',
-    name: 'BFL Flux 1.1 Pro Ultra Finetuned',
+    endpoint: 'flux-pro-1.1-ultra',
+    name: 'BFL Flux Pro 1.1 Ultra',
     cost: 'medium',
     priority: 1,
     description: 'Primary - direct BFL API for Ghibli reaction'
   },
   {
-    endpoint: 'flux-1.1-pro-ultra',
-    name: 'BFL Flux 1.1 Pro Ultra',
-    cost: 'medium',
+    endpoint: 'flux-pro-1.1',
+    name: 'BFL Flux Pro 1.1',
+    cost: 'low',
     priority: 2,
     description: 'Fallback - direct BFL API for Ghibli reaction'
   }
@@ -1012,8 +1012,8 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         output_format: "jpeg"
       };
       
-      // Add model-specific parameters
-      if (modelConfig.endpoint === 'flux-1.1-pro') {
+            // Add model-specific parameters
+      if (modelConfig.endpoint === 'flux-pro-1.1') {
         // Pro model uses width/height
         if (params.sourceWidth && params.sourceHeight) {
           bflInput.width = params.sourceWidth;
@@ -1029,11 +1029,11 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         // Add optional seed for consistency
         bflInput.seed = Math.floor(Math.random() * 1000000);
         
-      } else if (modelConfig.endpoint === 'flux-1.1-pro-ultra' || modelConfig.endpoint === 'flux-1.1-pro-ultra-finetuned') {
-        // Ultra models use aspect_ratio instead of width/height
+      } else if (modelConfig.endpoint === 'flux-pro-1.1-ultra') {
+        // Ultra model uses aspect_ratio instead of width/height
         if (params.sourceWidth && params.sourceHeight) {
-                   // Calculate aspect ratio from dimensions
-         const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
+          // Calculate aspect ratio from dimensions
+          const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
           const divisor = gcd(params.sourceWidth, params.sourceHeight);
           const ratioW = params.sourceWidth / divisor;
           const ratioH = params.sourceHeight / divisor;
@@ -1050,7 +1050,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         // Add optional seed for consistency
         bflInput.seed = Math.floor(Math.random() * 1000000);
         
-      } else if (modelConfig.endpoint === 'flux-1.1-pro-raw') {
+      } else if (modelConfig.endpoint === 'flux-pro-1.1-raw') {
         // Raw model uses width/height like Pro
         if (params.sourceWidth && params.sourceHeight) {
           bflInput.width = params.sourceWidth;
