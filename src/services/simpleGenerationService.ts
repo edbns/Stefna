@@ -364,7 +364,20 @@ class SimpleGenerationService {
           });
         }
         
-        return isAfterGenerationStart || promptMatch;
+        // Additional fallback: Check if media was created within last 5 minutes (for any recent generation)
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const isRecent = createdAt > fiveMinutesAgo;
+        
+        if (isRecent && !isAfterGenerationStart && !promptMatch) {
+          console.log(`🕐 [SimpleGeneration] Found recent media (within 5 minutes):`, {
+            id: item.id,
+            createdAt: item.createdAt,
+            runId: item.runId,
+            fiveMinutesAgo: fiveMinutesAgo
+          });
+        }
+        
+        return isAfterGenerationStart || promptMatch || isRecent;
       });
 
       if (recentMedia && recentMedia.length > 0) {

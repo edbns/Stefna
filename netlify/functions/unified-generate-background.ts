@@ -1384,7 +1384,7 @@ const handler: Handler = async (event, context) => {
   try {
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { mode, prompt, sourceAssetId, userId, presetKey, emotionMaskPresetId, storyTimePresetId, additionalImages, meta, ipaThreshold, ipaRetries, ipaBlocking } = body;
+    const { mode, prompt, sourceAssetId, userId, presetKey, emotionMaskPresetId, storyTimePresetId, additionalImages, meta, ipaThreshold, ipaRetries, ipaBlocking, runId: frontendRunId } = body;
 
     // Validate required fields
     if (!mode || !prompt || !sourceAssetId || !userId) {
@@ -1399,8 +1399,9 @@ const handler: Handler = async (event, context) => {
       };
     }
 
-    // Generate unique run ID
-    const runId = uuidv4();
+    // Use frontend runId if provided, otherwise generate new one
+    const runId = frontendRunId || uuidv4();
+    console.log('🔗 [Background] Using runId:', { frontendRunId, generatedRunId: runId, isFrontend: !!frontendRunId });
 
     // Create generation request
     const generationRequest: UnifiedGenerationRequest = {
