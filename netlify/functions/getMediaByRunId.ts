@@ -62,15 +62,15 @@ export const handler: Handler = async (event, context) => {
        ORDER BY created_at DESC 
        LIMIT 1`,
       
-      // Emotion mask media
-      `SELECT 'emotion_mask' as type, id, user_id, image_url, prompt, emotion_mask_preset_id, run_id, created_at, status, metadata, likes_count 
+      // Emotion mask media - use preset column instead of emotion_mask_preset_id
+      `SELECT 'emotion_mask' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, likes_count 
        FROM emotion_mask_media 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
        LIMIT 1`,
       
-      // Ghibli reaction media
-      `SELECT 'ghibli_reaction' as type, id, user_id, image_url, prompt, ghibli_reaction_preset_id, run_id, created_at, status, metadata, likes_count 
+      // Ghibli reaction media - use preset column instead of ghibli_reaction_preset_id
+      `SELECT 'ghibli_reaction' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, likes_count 
        FROM ghibli_reaction_media 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
@@ -83,8 +83,8 @@ export const handler: Handler = async (event, context) => {
        ORDER BY created_at DESC 
        LIMIT 1`,
       
-      // Story media
-      `SELECT 'story' as type, id, user_id, video_url as image_url, prompt, story_time_preset_id, run_id, created_at, status, metadata, likes_count 
+      // Story media - use image_url instead of video_url
+      `SELECT 'story' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, likes_count 
        FROM story 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
