@@ -78,7 +78,7 @@ export function enhancePromptForSpecificity(
   enhancedPrompt += ' high quality, detailed, precise anatomy, accurate features';
 
   // Enhanced negative prompt for better specificity
-  negativePrompt += 'blurry, low quality, distorted anatomy, multiple subjects, deformed, extra limbs, bad anatomy, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, ugly, disgusting, blurry, amputation';
+  negativePrompt += 'cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face';
 
   return {
     enhancedPrompt: enhancedPrompt.trim(),
