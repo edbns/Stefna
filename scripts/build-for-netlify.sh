@@ -8,9 +8,9 @@ echo "🔧 [Netlify Build] Starting build process..."
 # Prisma completely removed - no need to clean
 echo "🗄️ [Netlify Build] Prisma completely removed - using raw SQL with pg"
 
-# Fresh install to ensure clean state
+# Fresh install to ensure clean state (including dev dependencies for esbuild)
 echo "📦 [Netlify Build] Fresh install..."
-npm ci
+npm ci --include=dev
 
 # Prisma completely removed - using raw SQL with pg
 echo "🗄️ [Netlify Build] Prisma completely removed - using raw SQL with pg"
