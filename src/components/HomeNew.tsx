@@ -31,6 +31,7 @@ import { GhibliReactionPicker } from './GhibliReactionPicker'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
 import { MediaUploadAgreement } from './MediaUploadAgreement'
 import { paramsForI2ISharp } from '../services/infer-params'
+import MagicWandService from '../services/magicWandService'
 
 
 // Identity-safe generation fallback system (integrated with IPA)
@@ -3245,65 +3246,38 @@ const HomeNew: React.FC = () => {
     if (!prompt.trim() || isEnhancing) return
     
     setIsEnhancing(true)
-    console.log('✨ Magic Wand enhancing prompt:', prompt)
+    console.log('🔮 Magic Wand enhancing prompt:', prompt)
     
     try {
-              // Call Fal.ai API for prompt enhancement (free)
-        const enhancedPrompt = await enhancePromptWithFAL(prompt.trim())
+      // Call OpenAI API for prompt enhancement
+      const result = await MagicWandService.enhancePrompt(prompt.trim())
       
-      if (enhancedPrompt) {
-        setPrompt(enhancedPrompt)
-        console.log('✨ Prompt enhanced successfully:', enhancedPrompt)
-        // Show success feedback - with safety check
-                // Prompt enhanced silently - no toast notification
+      if (result.success && result.enhancedPrompt) {
+        setPrompt(result.enhancedPrompt)
+        console.log('🔮 Prompt enhanced successfully:', result.enhancedPrompt)
+        
+        // Show success toast
+        notifyReady({ 
+          title: 'Prompt Enhanced', 
+          message: 'Your prompt has been enhanced with AI magic! ✨' 
+        })
+      } else {
+        console.error('❌ Magic Wand returned no enhancement')
+        notifyError({ 
+          title: 'Enhancement Failed', 
+          message: 'Could not enhance your prompt. Try being more specific.' 
+        })
       }
     } catch (error) {
       console.error('❌ Magic Wand enhancement failed:', error)
-      // Show error feedback but keep original prompt - with safety check
-              console.error('❌ Enhancement failed: Could not enhance prompt, keeping original')
+      notifyError({ 
+        title: 'Enhancement Failed', 
+        message: 'Could not enhance your prompt. Try again later.' 
+      })
     } finally {
       setIsEnhancing(false)
     }
   }
-
-        // Fal.ai API prompt enhancement function
-      const enhancePromptWithFAL = async (originalPrompt: string): Promise<string> => {
-    try {
-      const token = authService.getToken()
-      if (!token) {
-        throw new Error('Authentication required')
-      }
-
-              console.log('🚀 Calling Fal.ai API for prompt enhancement...')
-      
-      // 🎯 All generation now goes through GenerationPipeline - no direct aimlApi calls
-      console.log('🆕 [New System] All generation goes through GenerationPipeline');
-      return enhancePromptLocally(originalPrompt);
-    } catch (error) {
-      console.error('❌ Prompt enhancement failed, using local fallback:', error);
-      return enhancePromptLocally(originalPrompt);
-    }
-  }
-
-          // Local prompt enhancement fallback (when Fal.ai is unavailable)
-  const enhancePromptLocally = (originalPrompt: string): string => {
-    console.log('🔄 Using local prompt enhancement fallback')
-    
-    // Simple enhancement templates for common cases
-    const enhancements = [
-      ', professional photography style, high quality, sharp details, 8K resolution',
-      ', cinematic lighting, dramatic shadows, professional composition, studio quality',
-      ', artistic style, creative interpretation, enhanced colors, premium quality',
-      ', professional editing, enhanced contrast, vibrant colors, high resolution',
-      ', studio lighting, professional photography, enhanced details, premium finish'
-    ]
-    
-    // Pick a random enhancement and add it
-    const randomEnhancement = enhancements[Math.floor(Math.random() * enhancements.length)]
-    return originalPrompt + randomEnhancement
-  }
-
-
 
   // Tier promotions removed - simplified credit system
 
