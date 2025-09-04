@@ -3864,47 +3864,32 @@ const HomeNew: React.FC = () => {
 
               
 
-              {/* Prompt Input - ALWAYS VISIBLE for all modes */}
-              <div className="mb-2">
-                <div className="relative">
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => {
-                      console.log('🎯 Prompt input changed:', e.target.value);
-                      setPrompt(e.target.value);
-                    }}
-                    placeholder={(() => {
-                      switch (composerState.mode) {
-                        case 'edit': 
-                          return "Describe your edit (e.g., 'make the man drive the car down the coastline')"
-                        case 'custom': 
-                          return "Describe your vision... (click ✨ to enhance your prompt)"
-                        case 'storytime': 
-                          return "Describe your story..."
-                        default: 
-                          return "Custom prompt (optional) - will be combined with selected preset"
-                      }
-                    })()}
-                    className="w-full px-3 py-2 pr-10 bg-white/10 backdrop-blur-md text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200 h-20 text-sm rounded-xl"
-                    disabled={false}
-                    data-testid="custom-prompt-input"
-                  />
-                  {/* Custom Mode Button - show when user types in prompt (but not in edit mode) */}
-                  {prompt.trim() && composerState.mode !== 'custom' && composerState.mode !== 'edit' && (
-                    <button
-                      onClick={() => {
-                        setComposerState(s => ({ ...s, mode: 'custom' }))
-                        setSelectedMode('presets') // Set selectedMode to match the new system
+              {/* Prompt Input - ONLY VISIBLE for manual modes (Custom, Edit) */}
+              {(['custom', 'edit'].includes(composerState.mode)) && (
+                <div className="mb-2">
+                  <div className="relative">
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => {
+                        console.log('🎯 Prompt input changed:', e.target.value);
+                        setPrompt(e.target.value);
                       }}
-                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors"
-                      title="Switch to custom mode"
-                    >
-                      <span className="text-sm">🎨</span>
-                    </button>
-                  )}
-                  
-                  {/* Magic Wand Enhancement Button - show for custom and edit modes */}
-                  {(composerState.mode === 'custom' || composerState.mode === 'edit') && (
+                      placeholder={(() => {
+                        switch (composerState.mode) {
+                          case 'edit': 
+                            return "Describe your edit (e.g., 'make the man drive the car down the coastline')"
+                          case 'custom': 
+                            return "Describe your vision... (click ✨ to enhance your prompt)"
+                          default: 
+                            return "Custom prompt (optional) - will be combined with selected preset"
+                        }
+                      })()}
+                      className="w-full px-3 py-2 pr-10 bg-white/10 backdrop-blur-md text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200 h-20 text-sm rounded-xl"
+                      disabled={false}
+                      data-testid="custom-prompt-input"
+                    />
+                    
+                    {/* Magic Wand Enhancement Button - show for custom and edit modes */}
                     <button
                       onClick={handleMagicWandEnhance}
                       disabled={isGenerating || !prompt.trim()}
@@ -3917,12 +3902,12 @@ const HomeNew: React.FC = () => {
                         <span className="text-lg">✨</span>
                       )}
                     </button>
-                  )}
-                  <div className="absolute bottom-2 right-2 text-white/30 text-xs">
-                    {prompt.length}/500
+                    <div className="absolute bottom-2 right-2 text-white/30 text-xs">
+                      {prompt.length}/500
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Single row with all controls */}
               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -4280,6 +4265,34 @@ const HomeNew: React.FC = () => {
 
                   </div>
 
+                  {/* Custom Prompt button - NEW DEDICATED MODE */}
+                  <div className="relative" data-custom-dropdown>
+                    <button
+                      onClick={async () => {
+                        // Check authentication first
+                        if (!checkAuthAndRedirect()) return
+                        
+                        if (composerState.mode === 'custom') {
+                          // Already in Custom mode - do nothing
+                          closeAllDropdowns()
+                        } else {
+                          // Switch to Custom Prompt mode
+                          closeAllDropdowns()
+                          setComposerState(s => ({ ...s, mode: 'custom' }))
+                          setSelectedMode('presets') // Set selectedMode to match the new system
+                        }
+                      }}
+                      className={
+                        composerState.mode === 'custom'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                      }
+                      title={isAuthenticated ? 'Switch to Custom Prompt mode' : 'Explore Custom Prompt mode'}
+                    >
+                      Custom
+                    </button>
+                  </div>
+
                   {/* Edit My Photo™ button - NEW EDIT MODE */}
                   <div className="relative" data-edit-dropdown>
                     <button
@@ -4309,210 +4322,128 @@ const HomeNew: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right: Action buttons - Save to draft and Generate */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!checkAuthAndRedirect()) return
-                      handleSaveDraft()
-                    }}
-                    title={authService.isAuthenticated() ? 'Save to draft' : 'Sign up to save drafts'}
-                    className={(() => {
-                      const baseClass = 'w-8 h-8 rounded-full flex items-center justify-center transition-colors';
-                      const activeClass = 'bg-white/10 text-white hover:bg-white/15';
-                      const disabledClass = 'bg-white/5 text-white/50 cursor-not-allowed';
-                      return `${baseClass} ${authService.isAuthenticated() ? activeClass : disabledClass}`;
-                    })()}
-                    aria-label="Save to draft"
-                    disabled={!authService.isAuthenticated()}
-                  >
-                    <FileText size={14} />
-                  </button>
-                  <button 
-                    onClick={async () => {
-                      // Check authentication first
-                      if (!checkAuthAndRedirect()) return
-                      
-                      // Show immediate feedback that button was clicked
-                      setNavGenerating(true)
-                      
-                      // Close composer immediately
-                      window.dispatchEvent(new CustomEvent('close-composer'));
-                      
-                      // MODE-AWARE GENERATION - NO MORE CROSS-CONTAMINATION
-                      if (composerState.mode === 'preset') {
-                        // Preset mode - use preset generation
-                        console.log('🎯 Preset mode - calling generatePreset')
-                        await generatePreset()
-                      } else if (composerState.mode === 'custom') {
-                        // Custom mode - use custom generation
-                        console.log('🎨 Custom mode - calling generateCustom')
-                        await generateCustom()
-                                             
-                      } else if (composerState.mode === 'emotionmask') {
-                        // Emotion Mask mode - use Emotion Mask generation
-                        console.log('🎭 Emotion Mask mode - calling generateEmotionMask')
-                        await generateEmotionMask()
-                      } else if (composerState.mode === 'ghiblireact') {
-                        // Ghibli Reaction mode - use dispatchGenerate directly
-                        console.log('🎭 Ghibli Reaction mode - calling dispatchGenerate')
-                        await dispatchGenerate('ghiblireact', {
-                          ghibliReactionPresetId: selectedGhibliReactionPreset || undefined
-                        })
-                      } else if (composerState.mode === 'neotokyoglitch') {
-                        // Neo Tokyo Glitch mode - use dispatchGenerate directly
-                        console.log('🎭 Neo Tokyo Glitch mode - calling dispatchGenerate')
-                        await dispatchGenerate('neotokyoglitch', {
-                          neoTokyoGlitchPresetId: selectedNeoTokyoGlitchPreset || undefined
-                        })
-                      } else if (composerState.mode === 'storytime') {
-                        // Story Time mode - use dispatchGenerate with all images
-                        console.log('📖 Story Time mode - calling dispatchGenerate')
-                        console.log('📖 Story Time debug:', {
-                          canGenerateStory,
-                          selectedFile: !!selectedFile,
-                          additionalStoryImages: additionalStoryImages.filter(Boolean).length,
-                          totalImages: (selectedFile ? 1 : 0) + additionalStoryImages.filter(Boolean).length
-                        })
-                        if (canGenerateStory) {
-                          console.log('📖 Story Time: Starting generation with images:', [
-                            selectedFile?.name,
-                            ...additionalStoryImages.filter(Boolean).map(f => f.name)
-                          ])
-                          
-                          // Convert File objects to Data URLs for Story Time
-                          const convertFileToDataUrl = (file: File): Promise<string> => {
-                            return new Promise((resolve, reject) => {
-                              const reader = new FileReader();
-                              reader.onload = () => resolve(reader.result as string);
-                              reader.onerror = reject;
-                              reader.readAsDataURL(file);
-                            });
-                          };
+                {/* Right: Action buttons - Save to draft and Generate (only for manual modes) */}
+                {(['custom', 'edit'].includes(composerState.mode)) && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!checkAuthAndRedirect()) return
+                        handleSaveDraft()
+                      }}
+                      title={authService.isAuthenticated() ? 'Save to draft' : 'Sign up to save drafts'}
+                      className={(() => {
+                        const baseClass = 'w-8 h-8 rounded-full flex items-center justify-center transition-colors';
+                        const activeClass = 'bg-white/10 text-white hover:bg-white/15';
+                        const disabledClass = 'bg-white/5 text-white/50 cursor-not-allowed';
+                        return `${baseClass} ${authService.isAuthenticated() ? activeClass : disabledClass}`;
+                      })()}
+                      aria-label="Save to draft"
+                      disabled={!authService.isAuthenticated()}
+                    >
+                      <FileText size={14} />
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        // Check authentication first
+                        if (!checkAuthAndRedirect()) return
+                        
+                        // Show immediate feedback that button was clicked
+                        setNavGenerating(true)
+                        
+                        // Close composer immediately
+                        window.dispatchEvent(new CustomEvent('close-composer'));
+                        
+                        try {
+                          // Handle different generation modes
+                          if (composerState.mode === 'custom') {
+                            // Custom mode - use dispatchGenerate directly
+                            console.log('🎭 Custom mode - calling dispatchGenerate')
+                            await dispatchGenerate('custom', {
+                              customPrompt: prompt
+                            })
+                          } else if (composerState.mode === 'edit') {
+                            // Edit My Photo mode - use dispatchGenerate with all images
+                            console.log('✏️ Edit My Photo mode - calling dispatchGenerate')
+                            console.log('✏️ Edit My Photo debug:', {
+                              canGenerateEdit,
+                              selectedFile: !!selectedFile,
+                              additionalEditImages: additionalEditImages.filter(Boolean).length,
+                              totalImages: (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
+                            })
+                            if (canGenerateEdit) {
+                              console.log('✏️ Edit My Photo: Starting generation with images:', [
+                                selectedFile?.name,
+                                ...additionalEditImages.filter(Boolean).map(f => f.name)
+                              ])
+                              
+                              // Convert File objects to Data URLs for Edit Mode
+                              const convertFileToDataUrl = (file: File): Promise<string> => {
+                                return new Promise((resolve, reject) => {
+                                  const reader = new FileReader();
+                                  reader.onload = () => resolve(reader.result as string);
+                                  reader.onerror = reject;
+                                  reader.readAsDataURL(file);
+                                });
+                              };
 
-                          // Convert all Story Time images to Data URLs
-                          const storyImageUrls = await Promise.all([
-                            convertFileToDataUrl(selectedFile!),
-                            ...additionalStoryImages.filter(Boolean).map(convertFileToDataUrl)
-                          ]);
+                              // Convert all Edit Mode images to Data URLs
+                              const editImageUrls = await Promise.all([
+                                convertFileToDataUrl(selectedFile!),
+                                ...additionalEditImages.filter(Boolean).map(convertFileToDataUrl)
+                              ]);
 
-                          await dispatchGenerate('storytime', {
-                            storyTimeImages: storyImageUrls,
-                            storyTimePresetId: selectedStoryTimePreset || undefined
-                          })
-                        } else {
-                          console.error('📖 Story Time: Cannot generate - insufficient images')
+                              await dispatchGenerate('edit', {
+                                editImages: editImageUrls,
+                                editPrompt: prompt
+                              })
+                            } else {
+                              console.error('✏️ Edit My Photo: Cannot generate - insufficient images')
+                            }
+                          }
+                        } catch (error) {
+                          console.error('❌ Generation failed:', error)
+                        } finally {
+                          setNavGenerating(false)
                         }
-                      } else if (composerState.mode === 'edit') {
-                        // Edit My Photo mode - use dispatchGenerate with all images
-                        console.log('✏️ Edit My Photo mode - calling dispatchGenerate')
-                        console.log('✏️ Edit My Photo debug:', {
-                          canGenerateEdit,
-                          selectedFile: !!selectedFile,
-                          additionalEditImages: additionalEditImages.filter(Boolean).length,
-                          totalImages: (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
-                        })
-                        if (canGenerateEdit) {
-                          console.log('✏️ Edit My Photo: Starting generation with images:', [
-                            selectedFile?.name,
-                            ...additionalEditImages.filter(Boolean).map(f => f.name)
-                          ])
-                          
-                          // Convert File objects to Data URLs for Edit Mode
-                          const convertFileToDataUrl = (file: File): Promise<string> => {
-                            return new Promise((resolve, reject) => {
-                              const reader = new FileReader();
-                              reader.onload = () => resolve(reader.result as string);
-                              reader.onerror = reject;
-                              reader.readAsDataURL(file);
-                            });
-                          };
-
-                          // Convert all Edit Mode images to Data URLs
-                          const editImageUrls = await Promise.all([
-                            convertFileToDataUrl(selectedFile!),
-                            ...additionalEditImages.filter(Boolean).map(convertFileToDataUrl)
-                          ]);
-
-                          await dispatchGenerate('edit', {
-                            editImages: editImageUrls,
-                            editPrompt: prompt
-                          })
-                        } else {
-                          console.error('✏️ Edit My Photo: Cannot generate - insufficient images')
-                        }
-                        } else {
-                        // Fallback - determine mode and generate
-                        if (selectedPreset) {
-                        // Run preset generation
-                          await dispatchGenerate('preset', {
-                          presetId: selectedPreset as string,
-                          presetData: getPresetById(selectedPreset as string, availablePresets)
-                        })
-                          // Clear composer after successful generation
-                          setTimeout(() => {
-                            clearAllOptionsAfterGeneration()
-                          }, 500)
-                      } else {
-                        // Run custom generation
-                          await dispatchGenerate('custom', {
-                          customPrompt: prompt
-                        })
-                          // Clear composer after successful generation
-                          setTimeout(() => {
-                            clearAllOptionsAfterGeneration()
-                          }, 500)
-                        }
+                      }} 
+                      disabled={
+                        (composerState.mode === 'edit' && !canGenerateEdit) ||
+                        (composerState.mode === 'custom' && !prompt.trim()) ||
+                        navGenerating
+                      } 
+                      className={
+                        ((composerState.mode === 'edit' && !canGenerateEdit) ||
+                         (composerState.mode === 'custom' && !prompt.trim()) ||
+                         navGenerating)
+                          ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
+                          : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
                       }
-                    }} 
-                    disabled={
-                      (composerState.mode === 'storytime' && !canGenerateStory) ||
-                      (composerState.mode === 'edit' && !canGenerateEdit) ||
-                      (composerState.mode !== 'storytime' && composerState.mode !== 'edit' && !selectedFile) ||
-                      (composerState.mode === 'preset' && !prompt.trim() && !selectedPreset) ||
-                      navGenerating
-                    } 
-                    className={
-                      ((composerState.mode === 'storytime' && !canGenerateStory) ||
-                       (composerState.mode === 'edit' && !canGenerateEdit) ||
-                       (composerState.mode !== 'storytime' && composerState.mode !== 'edit' && !selectedFile) ||
-                       (composerState.mode === 'preset' && !prompt.trim() && !selectedPreset) ||
-                       navGenerating)
-                        ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
-                        : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
-                    }
-                    aria-label="Generate"
-                    title={(() => {
-                      if (!isAuthenticated) return 'Sign up to generate AI content';
-                      if (composerState.mode === 'storytime') {
-                        if (!canGenerateStory) {
-                          const totalImages = (selectedFile ? 1 : 0) + additionalStoryImages.filter(Boolean).length;
-                          return `Add ${3 - totalImages} more photos (minimum 3 total needed)`;
+                      aria-label="Generate"
+                      title={(() => {
+                        if (!isAuthenticated) return 'Sign up to generate AI content';
+                        if (composerState.mode === 'edit') {
+                          if (!canGenerateEdit) {
+                            const totalImages = (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length;
+                            return `Add ${2 - totalImages} more photos (minimum 2 total needed)`;
+                          }
+                          return `Generate edited photo with ${totalEditImages} photos`;
                         }
-                        return `Generate animated story with ${totalStoryImages} photos`;
-                      }
-                      if (composerState.mode === 'edit') {
-                        if (!canGenerateEdit) {
-                          const totalImages = (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length;
-                          return `Add ${2 - totalImages} more photos (minimum 2 total needed)`;
+                        if (composerState.mode === 'custom') {
+                          if (!prompt.trim()) return 'Enter a prompt first';
+                          return 'Generate custom AI content';
                         }
-                        return `Generate edited photo with ${totalEditImages} photos`;
-                      }
-                      if (!previewUrl) return 'Upload media first';
-
-                      if (mode === 'presets' && !prompt.trim() && !selectedPreset) return 'Enter a prompt or select a preset first';
-                      if (selectedPreset) return `Generate with ${getPresetLabel(selectedPreset as string, availablePresets)} preset`;
-                      return 'Generate AI content';
-                    })()}
-                  >
-                    {navGenerating ? (
-                      <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                    ) : (
-                      <ArrowUp size={16} />
-                    )}
-                  </button>
-                </div>
+                        return 'Generate AI content';
+                      })()}
+                    >
+                      {navGenerating ? (
+                        <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                      ) : (
+                        <ArrowUp size={16} />
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             
