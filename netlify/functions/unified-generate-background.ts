@@ -1272,8 +1272,8 @@ async function generateWithReplicate(params: any): Promise<UnifiedGenerationResp
 async function generateWithNanoBanana(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
   console.log(`🎭 [Background] Starting nano-banana generation for ${mode}`);
   
-  const FAL_API_KEY = process.env.FAL_API_KEY;
-  if (!FAL_API_KEY) {
+  const FAL_KEY = process.env.FAL_KEY as string;
+  if (!FAL_KEY) {
     throw new Error('Fal.ai API key not configured');
   }
 
