@@ -1156,11 +1156,11 @@ const ProfileScreen: React.FC = () => {
   return (
     <div className="min-h-screen bg-glossy-black-950 flex">
       {/* Sidebar - 20% */}
-              <div className="w-[20%] bg-black p-4 pt-20 relative sticky top-0 h-screen overflow-y-auto flex flex-col">
+      <div className="w-[20%] bg-black p-4 pt-20 sticky top-0 h-screen overflow-y-auto flex flex-col">
         {/* Back Arrow - Top Left */}
         <button 
           onClick={() => navigate('/')}
-          className="absolute top-4 left-4 text-white/60 hover:text-white transition-colors duration-300"
+          className="absolute top-4 left-4 text-white/60 hover:text-white transition-colors duration-300 z-10"
           title="Go back"
         >
           <ArrowLeft size={20} />
@@ -1356,7 +1356,7 @@ const ProfileScreen: React.FC = () => {
       </div>
 
       {/* Main Area - 80% */}
-      <div className="w-[80%] bg-black h-screen overflow-y-auto flex flex-col relative">
+      <div className="w-[80%] bg-black h-screen overflow-y-auto flex flex-col">
         {/* Profile Controls - Top Right */}
         {/* Fixed Navigation Bar - Top Right */}
         <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
