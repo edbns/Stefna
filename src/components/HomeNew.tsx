@@ -1671,10 +1671,24 @@ const HomeNew: React.FC = () => {
     const preview = URL.createObjectURL(file)
     console.log('🖼️ Preview URL created:', preview)
 
-    // Store both: File for upload, preview URL for display
-    setSelectedFile(file)                    // File used for upload
-    setPreviewUrl(preview)                   // blob: used only for <img> preview
-    storeSelectedFile(file)                  // Store globally for blob: fallback
+    // Set state based on current mode
+    if (composerState.mode === 'storytime') {
+      setStorySelectedFile(file)
+      setStoryPreviewUrl(preview)
+      console.log('✅ Story file state updated')
+    } else if (composerState.mode === 'edit') {
+      setEditSelectedFile(file)
+      setEditPreviewUrl(preview)
+      console.log('✅ Edit file state updated')
+    } else {
+      // Default mode - use original state
+      setSelectedFile(file)
+      setPreviewUrl(preview)
+      console.log('✅ Default file state updated')
+    }
+    
+    // Store globally for blob: fallback
+    storeSelectedFile(file)
     
     // Update composer state
     setComposerState(s => ({
