@@ -1334,6 +1334,30 @@ const HomeNew: React.FC = () => {
     const mainInputRef = useRef<HTMLInputElement>(null)
     const additionalInputRefs = Array.from({ length: 4 }, () => useRef<HTMLInputElement>(null))
 
+    // Use useMemo to prevent URL recreation on every render
+    const mainImageUrl = useMemo(() => {
+      return selectedFile ? URL.createObjectURL(selectedFile) : null
+    }, [selectedFile])
+
+    // Memoize additional image URLs to prevent glitching
+    const additionalImageUrls = useMemo(() => {
+      return additionalImages.map(file => file ? URL.createObjectURL(file) : null)
+    }, [additionalImages])
+
+    // Cleanup URLs on unmount
+    useEffect(() => {
+      return () => {
+        if (mainImageUrl) {
+          URL.revokeObjectURL(mainImageUrl)
+        }
+        additionalImageUrls.forEach(url => {
+          if (url) {
+            URL.revokeObjectURL(url)
+          }
+        })
+      }
+    }, [mainImageUrl, additionalImageUrls])
+
     const handleBulkUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || [])
       files.forEach((file, index) => {
@@ -1387,7 +1411,7 @@ const HomeNew: React.FC = () => {
               {selectedFile ? (
                 <div className="relative group">
                   <img
-                    src={URL.createObjectURL(selectedFile)}
+                    src={mainImageUrl || ''}
                     alt="Main edit photo"
                     className="w-28 h-28 object-cover rounded-lg border-2 border-white/30"
                   />
@@ -1416,7 +1440,7 @@ const HomeNew: React.FC = () => {
                 {additionalImages[i] ? (
                   <div className="relative group">
                     <img
-                      src={URL.createObjectURL(additionalImages[i])}
+                      src={additionalImageUrls[i] || ''}
                       alt={`Edit photo ${i + 2}`}
                       className="w-24 h-24 object-cover rounded-lg border-2 border-white/30"
                     />
@@ -4433,6 +4457,79 @@ const HomeNew: React.FC = () => {
                         }
                         return 'Generate AI content';
                       })()}
+                      onClick={async () => {
+                        // Debug logging
+                        console.log('🔍 Generate button clicked:', {
+                          mode: composerState.mode,
+                          prompt: prompt,
+                          promptLength: prompt.length,
+                          promptTrimmed: prompt.trim(),
+                          isAuthenticated,
+                          navGenerating
+                        });
+                        
+                        // Check authentication first
+                        if (!checkAuthAndRedirect()) return
+                        
+                        // Show immediate feedback that button was clicked
+                        setNavGenerating(true)
+                        
+                        // Close composer immediately
+                        window.dispatchEvent(new CustomEvent('close-composer'));
+                        
+                        try {
+                          // Handle different generation modes
+                          if (composerState.mode === 'custom') {
+                            // Custom mode - use dispatchGenerate directly
+                            console.log('🎭 Custom mode - calling dispatchGenerate')
+                            await dispatchGenerate('custom', {
+                              customPrompt: prompt
+                            })
+                          } else if (composerState.mode === 'edit') {
+                            // Edit My Photo mode - use dispatchGenerate with all images
+                            console.log('✏️ Edit My Photo mode - calling dispatchGenerate')
+                            console.log('✏️ Edit My Photo debug:', {
+                              canGenerateEdit,
+                              selectedFile: !!selectedFile,
+                              additionalEditImages: additionalEditImages.filter(Boolean).length,
+                              totalImages: (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
+                            })
+                            if (canGenerateEdit) {
+                              console.log('✏️ Edit My Photo: Starting generation with images:', [
+                                selectedFile?.name,
+                                ...additionalEditImages.filter(Boolean).map(f => f.name)
+                              ])
+                              
+                              // Convert File objects to Data URLs for Edit Mode
+                              const convertFileToDataUrl = (file: File): Promise<string> => {
+                                return new Promise((resolve, reject) => {
+                                  const reader = new FileReader();
+                                  reader.onload = () => resolve(reader.result as string);
+                                  reader.onerror = reject;
+                                  reader.readAsDataURL(file);
+                                });
+                              };
+
+                              // Convert all Edit Mode images to Data URLs
+                              const editImageUrls = await Promise.all([
+                                convertFileToDataUrl(selectedFile!),
+                                ...additionalEditImages.filter(Boolean).map(convertFileToDataUrl)
+                              ]);
+
+                              await dispatchGenerate('edit', {
+                                editImages: editImageUrls,
+                                editPrompt: prompt
+                              })
+                            } else {
+                              console.error('✏️ Edit My Photo: Cannot generate - insufficient images')
+                            }
+                          }
+                        } catch (error) {
+                          console.error('❌ Generation failed:', error)
+                        } finally {
+                          setNavGenerating(false)
+                        }
+                      }}
                     >
                       {navGenerating ? (
                         <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
@@ -4443,7 +4540,6 @@ const HomeNew: React.FC = () => {
                   )}
                 </div>
               </div>
-            </div>
             
             {/* Clean disclaimer row under composer */}
             <div className="mt-3 text-center">
