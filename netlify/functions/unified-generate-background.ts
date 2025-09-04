@@ -1410,10 +1410,15 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           const imageUrl = allImages[i];
           console.log(`📤 [Story Time] Uploading image ${i + 1}/${allImages.length}: ${typeof imageUrl === 'string' ? imageUrl.substring(0, 50) : 'File object'}...`);
           
-          // Upload to Cloudinary to get a public URL
-          const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);
-          uploadedImageUrls.push(cloudinaryUrl);
-          console.log(`✅ [Story Time] Image ${i + 1} uploaded: ${cloudinaryUrl}`);
+          try {
+            // Upload to Cloudinary to get a public URL
+            const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);
+            uploadedImageUrls.push(cloudinaryUrl);
+            console.log(`✅ [Story Time] Image ${i + 1} uploaded: ${cloudinaryUrl}`);
+          } catch (uploadError) {
+            console.error(`❌ [Story Time] Failed to upload image ${i + 1}:`, uploadError);
+            throw new Error(`Failed to upload image ${i + 1} to Cloudinary: ${uploadError}`);
+          }
         }
         
         // For now, use the first image as the base for video generation
@@ -1441,7 +1446,12 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         
         console.log(`🎬 [Story Time] Generating video with ${allImages.length} images, using first as base`);
         
-        result = await falInvoke(modelConfig.model, videoInput);
+        try {
+          result = await falInvoke(modelConfig.model, videoInput);
+        } catch (falError) {
+          console.error(`❌ [Story Time] Fal.ai generation failed:`, falError);
+          throw new Error(`Fal.ai video generation failed: ${falError}`);
+        }
         
         // Check multiple possible video response formats
         let videoUrl = null;
@@ -1466,18 +1476,23 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         if (videoUrl) {
           console.log(`✅ [Fal.ai] Found video URL from ${modelConfig.name}: ${videoUrl.substring(0, 100)}...`);
           // Always upload to Cloudinary before saving/returning
-          const cloudinaryUrl = await uploadUrlToCloudinary(videoUrl);
-          return {
-            success: true,
-            status: 'done',
-            provider: 'fal',
-            outputUrl: cloudinaryUrl,
-            metadata: {
-              totalImages: allImages.length,
-              imageUrls: uploadedImageUrls,
-              storyTimePresetId: params.storyTimePresetId
-            }
-          };
+          try {
+            const cloudinaryUrl = await uploadUrlToCloudinary(videoUrl);
+            return {
+              success: true,
+              status: 'done',
+              provider: 'fal',
+              outputUrl: cloudinaryUrl,
+              metadata: {
+                totalImages: allImages.length,
+                imageUrls: uploadedImageUrls,
+                storyTimePresetId: params.storyTimePresetId
+              }
+            };
+          } catch (finalUploadError) {
+            console.error(`❌ [Story Time] Failed to upload final video to Cloudinary:`, finalUploadError);
+            throw new Error(`Failed to upload final video to Cloudinary: ${finalUploadError}`);
+          }
         }
         
         console.warn(`⚠️ [Fal.ai] No video URL found in response from ${modelConfig.name}`);
