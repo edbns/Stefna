@@ -99,7 +99,7 @@ export const handler: Handler = async (event) => {
         UNION ALL
         SELECT id, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'custom_prompt' as media_type FROM custom_prompt_media WHERE user_id = $1
         UNION ALL
-        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'neo_glitch' as media_type FROM neo_glitch_media WHERE user_id = $1
+        SELECT id, user_id, image_url, prompt, preset, created_at, run_id, stability_job_id as fal_job_id, 'neo_glitch' as media_type FROM neo_glitch_media WHERE user_id = $1
       ) as combined_media
       ORDER BY created_at DESC
       LIMIT $2 OFFSET $3
@@ -126,6 +126,7 @@ export const handler: Handler = async (event) => {
         createdAt: item.created_at,
         runId: item.run_id, // Add runId for polling detection
         falJobId: item.fal_job_id, // Add falJobId for Fal.ai generations
+        stabilityJobId: item.fal_job_id, // For neo_glitch, fal_job_id is actually stability_job_id
         type: item.media_type,
         // Let frontend calculate aspect ratio - default to 1:1 for square images
         aspectRatio: 1,
