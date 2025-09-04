@@ -1882,17 +1882,18 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     runId: request.runId
   });
 
-  // Enhanced duplicate prevention - check multiple sources
-  try {
-    // Check if this runId already exists in any media table (indicating duplicate)
-    const tablesToCheck = {
-      'neo_glitch': 'neo_glitch_media',
-      'presets': 'presets_media',
-      'custom': 'custom_prompt_media',
-      'emotion_mask': 'emotion_mask_media',
-      'ghibli_reaction': 'ghibli_reaction_media',
-      'story_time': 'story' // Use story table instead of video_jobs
-    };
+      // Enhanced duplicate prevention - check multiple sources
+    try {
+      // Check if this runId already exists in any media table (indicating duplicate)
+      const tablesToCheck = {
+        'neo_glitch': 'neo_glitch_media',
+        'presets': 'presets_media',
+        'custom': 'custom_prompt_media',
+        'emotion_mask': 'emotion_mask_media',
+        'ghibli_reaction': 'ghibli_reaction_media',
+        'story_time': 'story', // Use story table instead of video_jobs
+        'edit': 'edit_media'
+      };
 
     const tableName = tablesToCheck[request.mode as keyof typeof tablesToCheck];
     if (tableName) {
@@ -2274,7 +2275,7 @@ export const handler: Handler = async (event, context) => {
   try {
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { mode, prompt, sourceAssetId, userId, presetKey, emotionMaskPresetId, storyTimePresetId, additionalImages, meta, ipaThreshold, ipaRetries, ipaBlocking, runId: frontendRunId } = body;
+    const { mode, prompt, sourceAssetId, userId, presetKey, emotionMaskPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, runId: frontendRunId } = body;
 
     console.log('🚀 [Background] Received request:', {
       mode,
@@ -2282,20 +2283,50 @@ export const handler: Handler = async (event, context) => {
       sourceAssetId: sourceAssetId ? 'present' : 'missing',
       userId,
       additionalImages: additionalImages?.length || 0,
+      editImages: editImages?.length || 0,
       storyTimePresetId
     });
 
     // Validate required fields
-    if (!mode || !prompt || !sourceAssetId || !userId) {
+    if (!mode || !userId) {
       return {
         statusCode: 400,
         headers: CORS_JSON_HEADERS,
         body: JSON.stringify({ 
           success: false,
           status: 'failed',
-          error: 'Missing required fields: mode, prompt, sourceAssetId, userId' 
+          error: 'Missing required fields: mode, userId' 
         })
       };
+    }
+
+    // Mode-specific validation
+    if (mode === 'edit') {
+      // Edit mode requires sourceAssetId and editPrompt
+      if (!sourceAssetId || !editPrompt) {
+        return {
+          statusCode: 400,
+          headers: CORS_JSON_HEADERS,
+          body: JSON.stringify({ 
+            success: false,
+            status: 'failed',
+            error: 'Edit mode requires sourceAssetId and editPrompt' 
+          })
+        };
+      }
+    } else {
+      // Other modes require prompt and sourceAssetId
+      if (!prompt || !sourceAssetId) {
+        return {
+          statusCode: 400,
+          headers: CORS_JSON_HEADERS,
+          body: JSON.stringify({ 
+            success: false,
+            status: 'failed',
+            error: 'Missing required fields: prompt, sourceAssetId' 
+          })
+        };
+      }
     }
 
     // Use frontend runId if provided, otherwise generate new one
@@ -2313,6 +2344,8 @@ export const handler: Handler = async (event, context) => {
       emotionMaskPresetId,
       storyTimePresetId,
       additionalImages,
+      editImages,
+      editPrompt,
       meta,
       // IPA parameters
       ipaThreshold,
