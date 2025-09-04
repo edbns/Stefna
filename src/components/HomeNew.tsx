@@ -1029,104 +1029,7 @@ const HomeNew: React.FC = () => {
     }
   }, [composerState.mode, storyCardStyles])
 
-  // Story Image Card Component
-  // Story Time Composer Component
-  const StoryTimeComposer = ({
-    selectedFile,
-    additionalImages,
-    onFileUpload,
-    onAdditionalUpload,
-    onAdditionalRemove,
-    onFileRemove
-  }: {
-    selectedFile: File | null
-    additionalImages: File[]
-    onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
-    onAdditionalUpload: (file: File, slotIndex: number) => void
-    onAdditionalRemove: (slotIndex: number) => void
-    onFileRemove: () => void
-  }) => {
-    const bulkInputRef = useRef<HTMLInputElement>(null)
-    const mainInputRef = useRef<HTMLInputElement>(null)
-    const additionalInputRefs = Array.from({ length: 4 }, () => useRef<HTMLInputElement>(null))
-
-    // Simple URL creation without useMemo to prevent glitching
-    const mainImageUrl = selectedFile ? URL.createObjectURL(selectedFile) : null
-
-    // Simple additional image URLs without useMemo
-    const additionalImageUrls = additionalImages.map(file => file ? URL.createObjectURL(file) : null)
-
-    // Cleanup URLs on unmount
-    useEffect(() => {
-      return () => {
-        if (mainImageUrl) {
-          URL.revokeObjectURL(mainImageUrl)
-        }
-        additionalImageUrls.forEach(url => {
-          if (url) {
-            URL.revokeObjectURL(url)
-          }
-        })
-      }
-    }, [mainImageUrl, additionalImageUrls])
-
-    const handleBulkUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(event.target.files || [])
-      files.forEach((file, index) => {
-        if (!selectedFile && index === 0) {
-          // First file goes to main slot
-          const fakeEvent = {
-            target: { files: [file] }
-          } as unknown as React.ChangeEvent<HTMLInputElement>
-          onFileUpload(fakeEvent)
-        } else {
-          // Subsequent files go to additional slots
-          const slotIndex = selectedFile ? index - 1 : index
-          if (slotIndex < 4) { // Max 4 additional images
-            onAdditionalUpload(file, slotIndex)
-          }
-        }
-      })
-    }
-
-    const handleAdditionalUpload = (event: React.ChangeEvent<HTMLInputElement>, slotIndex: number) => {
-      const file = event.target.files?.[0]
-      if (file) {
-        onAdditionalUpload(file, slotIndex)
-      }
-    }
-
-    const totalImages = (selectedFile ? 1 : 0) + additionalImages.filter(Boolean).length
-    const hasMinimumImages = totalImages >= 3
-
-    return (
-      <div className="story-time-composer">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <p className="text-white/90 text-lg">
-            Add multiple photos to create an animated story
-          </p>
-          <p className="text-white/60 text-sm mt-2">
-            Minimum 3 photos total (1 main + 2 additional)
-          </p>
-          <p className={`text-sm mt-1 ${hasMinimumImages ? 'text-green-400' : 'text-yellow-400'}`}>
-            {totalImages} / 3 photos ready
-          </p>
-        </div>
-
-
-
-        {/* Photos Layout - Main and Additional in Same Row */}
-        <div className="mb-6">
-
-          <div className="flex justify-center items-start gap-4 flex-wrap">
-            {/* Main Photo */}
-            <div className="flex flex-col items-center">
-              <span className="text-white/80 text-sm mb-2">Main</span>
-              {selectedFile ? (
-                <div className="relative group">
-                  <img
-                    src={mainImageUrl || ''}
+// ... existing code ...
                     alt="Main story photo"
                     className="w-28 h-28 object-cover rounded-lg border-2 border-white/30"
                   />
@@ -3656,59 +3559,77 @@ const HomeNew: React.FC = () => {
           <div className="absolute inset-0 flex items-center justify-center pb-48">
             <div className="relative w-full max-w-2xl px-6">
               <div ref={containerRef} className="w-full flex items-center justify-center">
-                {/* Story Time Mode - Special UI */}
-                {composerState.mode === 'storytime' ? (
-                  <StoryTimeComposer
-                    selectedFile={selectedFile}
-                    additionalImages={additionalStoryImages}
-                    onFileUpload={handleStoryFileChange}
-                    onAdditionalUpload={handleAdditionalStoryImageUpload}
-                    onAdditionalRemove={handleAdditionalStoryImageRemove}
-                    onFileRemove={() => {
-                      setSelectedFile(null)
-                      setPreviewUrl(null)
-                    }}
-                  />
-                ) : (
-                  /* Regular modes - show normal image/video preview (including Edit mode) */
-                  <>
-                    {previewUrl ? (
-                      isVideoPreview ? (
-                        <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
-                      ) : (
-                    <img 
-                      ref={(el) => (mediaRef.current = el as HTMLImageElement)} 
-                      src={previewUrl || ''} 
-                      alt="Preview" 
-                      className="max-w-full max-h-[60vh] object-contain" 
-                      referrerPolicy="no-referrer"
-                      onLoad={(e) => {
-                        console.log('🖼️ Image loaded successfully:', previewUrl)
-                        measure()
-                      }}
-                      onError={(e) => {
-                        console.error('❌ Image failed to load:', previewUrl, e)
-                        console.error('❌ Error details:', {
-                          url: previewUrl,
-                          error: e,
-                          target: e.target,
-                          currentTarget: e.currentTarget
-                        })
-                      }}
-                    />
-                      )
+                {/* All modes - show normal image/video preview (including Story mode) */}
+                <>
+                  {previewUrl ? (
+                    isVideoPreview ? (
+                      <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
                     ) : (
-                      /* No file selected - show upload prompt */
-                      <div className="text-center">
-                        <div className="w-24 h-24 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center border-2 border-dashed border-white/30">
-                          <Plus size={32} className="text-white/60" />
-                        </div>
-                        <p className="text-white/80 text-lg mb-2">Upload an image to get started</p>
-                        <p className="text-white/60 text-sm">Drag & drop or click to browse</p>
+                      <div className="relative">
+                        <img 
+                          ref={(el) => (mediaRef.current = el as HTMLImageElement)} 
+                          src={previewUrl || ''} 
+                          alt="Preview" 
+                          className="max-w-full max-h-[60vh] object-contain" 
+                          referrerPolicy="no-referrer"
+                          onLoad={(e) => {
+                            console.log('🖼️ Image loaded successfully:', previewUrl)
+                            measure()
+                          }}
+                          onError={(e) => {
+                            console.error('❌ Image failed to load:', previewUrl, e)
+                            console.error('❌ Error details:', {
+                              url: previewUrl,
+                              error: e,
+                              target: e.target,
+                              currentTarget: e.currentTarget
+                            })
+                          }}
+                        />
+                        
+                        {/* Story mode additional images upload button */}
+                        {composerState.mode === 'storytime' && (
+                          <div className="absolute top-4 right-4">
+                            <button
+                                                             onClick={() => {
+                                 const input = document.createElement('input')
+                                 input.type = 'file'
+                                 input.accept = 'image/*'
+                                 input.multiple = true
+                                 input.onchange = (e) => {
+                                   const target = e.target as HTMLInputElement
+                                   const files = Array.from(target.files || [])
+                                   files.forEach((file, index) => {
+                                     if (index < 4) { // Max 4 additional images
+                                       handleAdditionalStoryImageUpload(file, index)
+                                     }
+                                   })
+                                 }
+                                 input.click()
+                               }}
+                              className="w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center transition-colors border border-white/30"
+                              title="Add more images (MAX 4)"
+                            >
+                              <Plus size={20} />
+                            </button>
+                            <div className="text-center mt-2">
+                              <span className="text-white/60 text-xs">MAX 4 images</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </>
-                )}
+                    )
+                  ) : (
+                    /* No file selected - show upload prompt */
+                    <div className="text-center">
+                      <div className="w-24 h-24 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center border-2 border-dashed border-white/30">
+                        <Plus size={32} className="text-white/60" />
+                      </div>
+                      <p className="text-white/80 text-lg mb-2">Upload an image to get started</p>
+                      <p className="text-white/60 text-sm">Drag & drop or click to browse</p>
+                    </div>
+                  )}
+                </>
                 
 
               </div>
