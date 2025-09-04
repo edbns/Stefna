@@ -1168,6 +1168,12 @@ const HomeNew: React.FC = () => {
         <div className="mb-6">
           <div className="text-center mb-4">
             <span className="text-white/90 font-medium">Choose Story Style</span>
+            {selectedStoryTimePreset && !canGenerateStory && (
+              <p className="text-yellow-400 text-sm mt-1">
+                Style selected: {selectedStoryTimePreset.charAt(0).toUpperCase() + selectedStoryTimePreset.slice(1)} 
+                (add {3 - totalImages} more photos to generate)
+              </p>
+            )}
           </div>
 
 
@@ -1230,18 +1236,19 @@ const HomeNew: React.FC = () => {
                     navigate('/auth')
                   }
                 }}
-                                    disabled={!canGenerateStory}
-                                    className={(() => {
-                                      const baseClass = 'px-4 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap';
-                                      const activeClass = 'bg-white/90 backdrop-blur-md text-black';
-                                      const inactiveClass = canGenerateStory
-                                        ? 'text-white hover:text-white hover:bg-white/20'
-                                        : 'text-white/50 cursor-not-allowed';
-                                      return `${baseClass} ${selectedStoryTimePreset === preset.id ? activeClass : inactiveClass}`;
-                                    })()}
-                                  >
-                                    {preset.label}
-                                  </button>
+                disabled={false} // Always allow preset selection for better UX
+                className={(() => {
+                  const baseClass = 'px-4 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap';
+                  const activeClass = 'bg-white/90 backdrop-blur-md text-black';
+                  const inactiveClass = 'text-white hover:text-white hover:bg-white/20';
+                  return `${baseClass} ${selectedStoryTimePreset === preset.id ? activeClass : inactiveClass}`;
+                })()}
+              >
+                {preset.label}
+                {!canGenerateStory && selectedStoryTimePreset === preset.id && (
+                  <span className="ml-1 text-xs text-yellow-400">(need 3+ photos)</span>
+                )}
+              </button>
                                 ))}
                               </div>
                             </div>
