@@ -1715,9 +1715,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
 
         const input: any = {
           image_url: processedImageUrl,
-          prompt: (mode === 'ghibli_reaction' || mode === 'emotion_mask')
-            ? `A raw emotional portrait of the same person, with slightly widened eyes and parted lips, subtle tear buildup, keeping full photo realism and lighting. No stylization. Same lighting, same skin tone, same texture. Background soft blur.`
-            : params.prompt,
+          prompt: params.prompt, // Use the preset prompt from frontend
           image_strength: (mode === 'ghibli_reaction' || mode === 'emotion_mask') ? 0.28 : 0.45, // Reduced for better quality preservation
           guidance_scale: (mode === 'ghibli_reaction' || mode === 'emotion_mask') ? 7.0 : 7.5, // Lower guidance for subtler effect
           seed: Math.floor(Math.random() * 1000000)
