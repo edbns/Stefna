@@ -714,11 +714,11 @@ const HomeNew: React.FC = () => {
   const [additionalStoryImages, setAdditionalStoryImages] = useState<File[]>([])
   const [additionalEditImages, setAdditionalEditImages] = useState<File[]>([])
 
-  // Separate state for each mode to prevent conflicts
-  const [storySelectedFile, setStorySelectedFile] = useState<File | null>(null)
-  const [storyPreviewUrl, setStoryPreviewUrl] = useState<string | null>(null)
-  const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null)
-  const [editPreviewUrl, setEditPreviewUrl] = useState<string | null>(null)
+  // Revert to shared state for simplicity - separate UI components instead
+  // const [storySelectedFile, setStorySelectedFile] = useState<File | null>(null)
+  // const [storyPreviewUrl, setStoryPreviewUrl] = useState<string | null>(null)
+  // const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null)
+  // const [editPreviewUrl, setEditPreviewUrl] = useState<string | null>(null)
 
   // Fetch available presets from database on mount
   useEffect(() => {
@@ -869,8 +869,8 @@ const HomeNew: React.FC = () => {
   }
 
   // Check if we can generate story (minimum 3 images total: 1 main + 2 additional)
-  const canGenerateStory = storySelectedFile && additionalStoryImages.filter(Boolean).length >= 2
-  const totalStoryImages = (storySelectedFile ? 1 : 0) + additionalStoryImages.filter(Boolean).length
+  const canGenerateStory = selectedFile && additionalStoryImages.filter(Boolean).length >= 2
+  const totalStoryImages = (selectedFile ? 1 : 0) + additionalStoryImages.filter(Boolean).length
 
   // Edit Mode additional image handling
   const handleAdditionalEditImageUpload = async (file: File, slotIndex: number) => {
@@ -898,8 +898,8 @@ const HomeNew: React.FC = () => {
   }
 
   // Check if we can generate edit (minimum 1 main image + prompt)
-  const canGenerateEdit = editSelectedFile && prompt.trim().length > 0
-  const totalEditImages = (editSelectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
+  const canGenerateEdit = selectedFile && prompt.trim().length > 0
+  const totalEditImages = (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
 
   // Story Time stacked cards styles
   const storyCardStyles = `
@@ -1266,7 +1266,7 @@ const HomeNew: React.FC = () => {
 
                       // Convert all Story Time images to Data URLs
                       const storyImageUrls = await Promise.all([
-                        convertFileToDataUrl(storySelectedFile!),
+                        convertFileToDataUrl(selectedFile!),
                         ...additionalStoryImages.filter(Boolean).map(convertFileToDataUrl)
                       ]);
 
@@ -1663,24 +1663,10 @@ const HomeNew: React.FC = () => {
     const preview = URL.createObjectURL(file)
     console.log('🖼️ Preview URL created:', preview)
 
-    // Set state based on current mode
-    if (composerState.mode === 'storytime') {
-      setStorySelectedFile(file)
-      setStoryPreviewUrl(preview)
-      console.log('✅ Story file state updated')
-    } else if (composerState.mode === 'edit') {
-      setEditSelectedFile(file)
-      setEditPreviewUrl(preview)
-      console.log('✅ Edit file state updated')
-    } else {
-      // Default mode - use original state
-      setSelectedFile(file)
-      setPreviewUrl(preview)
-      console.log('✅ Default file state updated')
-    }
-    
-    // Store globally for blob: fallback
-    storeSelectedFile(file)
+    // Store both: File for upload, preview URL for display
+    setSelectedFile(file)                    // File used for upload
+    setPreviewUrl(preview)                   // blob: used only for <img> preview
+    storeSelectedFile(file)                  // Store globally for blob: fallback
     
     // Update composer state
     setComposerState(s => ({
@@ -1720,8 +1706,8 @@ const HomeNew: React.FC = () => {
     
     if (userHasAgreed) {
       const preview = URL.createObjectURL(file)
-      setStorySelectedFile(file)
-      setStoryPreviewUrl(preview)
+      setSelectedFile(file)
+      setPreviewUrl(preview)
       console.log('✅ Story file state updated')
     } else {
       setPendingFile(file)
@@ -1744,8 +1730,8 @@ const HomeNew: React.FC = () => {
     
     if (userHasAgreed) {
       const preview = URL.createObjectURL(file)
-      setEditSelectedFile(file)
-      setEditPreviewUrl(preview)
+      setSelectedFile(file)
+      setPreviewUrl(preview)
       console.log('✅ Edit file state updated')
     } else {
       setPendingFile(file)
@@ -3910,26 +3896,26 @@ const HomeNew: React.FC = () => {
                 {/* Story Time Mode - Special UI */}
                 {composerState.mode === 'storytime' ? (
                   <StoryTimeComposer
-                    selectedFile={storySelectedFile}
+                    selectedFile={selectedFile}
                     additionalImages={additionalStoryImages}
                     onFileUpload={handleStoryFileChange}
                     onAdditionalUpload={handleAdditionalStoryImageUpload}
                     onAdditionalRemove={handleAdditionalStoryImageRemove}
                     onFileRemove={() => {
-                      setStorySelectedFile(null)
-                      setStoryPreviewUrl(null)
+                      setSelectedFile(null)
+                      setPreviewUrl(null)
                     }}
                   />
                 ) : composerState.mode === 'edit' ? (
                   <EditComposer
-                    selectedFile={editSelectedFile}
+                    selectedFile={selectedFile}
                     additionalImages={additionalEditImages}
                     onFileUpload={handleEditFileChange}
                     onAdditionalUpload={handleAdditionalEditImageUpload}
                     onAdditionalRemove={handleAdditionalEditImageRemove}
                     onFileRemove={() => {
-                      setEditSelectedFile(null)
-                      setEditPreviewUrl(null)
+                      setSelectedFile(null)
+                      setPreviewUrl(null)
                     }}
                   />
                 ) : (
@@ -4494,13 +4480,13 @@ const HomeNew: React.FC = () => {
                             console.log('✏️ Edit My Photo mode - calling dispatchGenerate')
                             console.log('✏️ Edit My Photo debug:', {
                               canGenerateEdit,
-                              selectedFile: !!editSelectedFile,
+                              selectedFile: !!selectedFile,
                               additionalEditImages: additionalEditImages.filter(Boolean).length,
-                              totalImages: (editSelectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
+                              totalImages: (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
                             })
                             if (canGenerateEdit) {
                               console.log('✏️ Edit My Photo: Starting generation with images:', [
-                                editSelectedFile?.name,
+                                selectedFile?.name,
                                 ...additionalEditImages.filter(Boolean).map(f => f.name)
                               ])
                               
@@ -4516,7 +4502,7 @@ const HomeNew: React.FC = () => {
 
                               // Convert all Edit Mode images to Data URLs
                               const editImageUrls = await Promise.all([
-                                convertFileToDataUrl(editSelectedFile!),
+                                convertFileToDataUrl(selectedFile!),
                                 ...additionalEditImages.filter(Boolean).map(convertFileToDataUrl)
                               ]);
 
