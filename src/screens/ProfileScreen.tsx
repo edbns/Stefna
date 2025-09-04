@@ -1118,6 +1118,7 @@ const ProfileScreen: React.FC = () => {
   const sidebarItems = [
     { id: 'tokens', label: 'Tokens', icon: Coins },
     { id: 'invite-friends', label: 'Invite Friends', icon: Users },
+    { id: 'total-likes', label: 'Total Likes', icon: Heart },
     
     { id: 'divider_prefs', type: 'divider', label: ' ' },
     { id: 'pref_share', label: 'Share to Feed', type: 'toggle', setting: 'autoShareToFeed' },
@@ -1194,6 +1195,18 @@ const ProfileScreen: React.FC = () => {
               </div>
               <span className="text-xs font-medium text-white">{tokenCount}</span>
             </div>
+                )
+              }
+
+              if (item.id === 'total-likes') {
+                return (
+                  <div key={item.id} className="flex items-center justify-between py-1.5 px-3">
+                    <div className="flex items-center space-x-2">
+                      <Heart size={16} className="text-white/60" />
+                      <span className="text-xs font-medium text-white/60">{item.label}</span>
+                    </div>
+                    <span className="text-xs font-medium text-white">{profileData.totalLikesReceived || 0}</span>
+                  </div>
                 )
               }
 
