@@ -891,8 +891,8 @@ const HomeNew: React.FC = () => {
     })
   }
 
-  // Check if we can generate edit (minimum 2 images total: 1 main + 1 additional)
-  const canGenerateEdit = selectedFile && additionalEditImages.filter(Boolean).length >= 1
+  // Check if we can generate edit (minimum 1 main image + prompt)
+  const canGenerateEdit = selectedFile && prompt.trim().length > 0
   const totalEditImages = (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
 
   // Story Time stacked cards styles
@@ -4002,6 +4002,12 @@ const HomeNew: React.FC = () => {
                         console.log('🎯 Presets button clicked!')
                         console.log('🔍 Current presetsOpen state:', presetsOpen)
                         console.log('🔍 Available presets:', weeklyPresetNames)
+                        
+                        // Close Custom/Edit modes when presets is clicked
+                        if (composerState.mode === 'custom' || composerState.mode === 'edit') {
+                          setComposerState(s => ({ ...s, mode: null }))
+                        }
+                        
                         // Toggle presets dropdown
                         setPresetsOpen((v) => !v)
                         console.log('🔄 Toggling presetsOpen to:', !presetsOpen)
@@ -4419,7 +4425,7 @@ const HomeNew: React.FC = () => {
                                 editPrompt: prompt
                               })
                             } else {
-                              console.error('✏️ Edit My Photo: Cannot generate - insufficient images')
+                              console.error('✏️ Edit My Photo: Cannot generate - missing main image or prompt')
                             }
                           }
                         } catch (error) {
@@ -4440,81 +4446,8 @@ const HomeNew: React.FC = () => {
                           ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
                           : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
                       }
-                      aria-label="Generate"
+                                            aria-label="Generate"
                       title="Generate AI content"
-                      onClick={async () => {
-                        // Debug logging
-                        console.log('🔍 Generate button clicked:', {
-                          mode: composerState.mode,
-                          prompt: prompt,
-                          promptLength: prompt.length,
-                          promptTrimmed: prompt.trim(),
-                          isAuthenticated,
-                          navGenerating
-                        });
-                        
-                        // Check authentication first
-                        if (!checkAuthAndRedirect()) return
-                        
-                        // Show immediate feedback that button was clicked
-                        setNavGenerating(true)
-                        
-                        // Close composer immediately
-                        window.dispatchEvent(new CustomEvent('close-composer'));
-                        
-                        try {
-                          // Handle different generation modes
-                          if (composerState.mode === 'custom') {
-                            // Custom mode - use dispatchGenerate directly
-                            console.log('🎭 Custom mode - calling dispatchGenerate')
-                            await dispatchGenerate('custom', {
-                              customPrompt: prompt
-                            })
-                          } else if (composerState.mode === 'edit') {
-                            // Edit My Photo mode - use dispatchGenerate with all images
-                            console.log('✏️ Edit My Photo mode - calling dispatchGenerate')
-                            console.log('✏️ Edit My Photo debug:', {
-                              canGenerateEdit,
-                              selectedFile: !!selectedFile,
-                              additionalEditImages: additionalEditImages.filter(Boolean).length,
-                              totalImages: (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
-                            })
-                            if (canGenerateEdit) {
-                              console.log('✏️ Edit My Photo: Starting generation with images:', [
-                                selectedFile?.name,
-                                ...additionalEditImages.filter(Boolean).map(f => f.name)
-                              ])
-                              
-                              // Convert File objects to Data URLs for Edit Mode
-                              const convertFileToDataUrl = (file: File): Promise<string> => {
-                                return new Promise((resolve, reject) => {
-                                  const reader = new FileReader();
-                                  reader.onload = () => resolve(reader.result as string);
-                                  reader.onerror = reject;
-                                  reader.readAsDataURL(file);
-                                });
-                              };
-
-                              // Convert all Edit Mode images to Data URLs
-                              const editImageUrls = await Promise.all([
-                                convertFileToDataUrl(selectedFile!),
-                                ...additionalEditImages.filter(Boolean).map(convertFileToDataUrl)
-                              ]);
-
-                              await dispatchGenerate('edit', {
-                                editImages: editImageUrls,
-                                editPrompt: prompt
-                              })
-                            } else {
-                              console.error('✏️ Edit My Photo: Cannot generate - insufficient images')
-                            }
-                          }
-                        } catch (error) {
-                          console.error('❌ Generation failed:', error)
-                        } finally {
-                          setNavGenerating(false)
-                        }
-                      }}
                     >
                       {navGenerating ? (
                         <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
