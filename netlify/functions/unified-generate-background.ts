@@ -15,7 +15,7 @@ import { Handler } from '@netlify/functions';
 import { q, qOne } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { withAuth } from './_withAuth';
-import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyStabilityUltraEnhancements } from '../../src/utils/promptEnhancement';
+import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyAdvancedPromptEnhancements } from '../../src/utils/promptEnhancement';
 
 const FAL_BASE = 'https://fal.run';
 const FAL_KEY = process.env.FAL_KEY as string;
@@ -1316,7 +1316,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
       };
 
       // 🎯 ENHANCED PROMPT ENGINEERING FOR GENDER, ANIMALS, AND GROUPS
-      // Apply Stability Ultra specific enhancements for better specificity
+      // Apply advanced prompt enhancements for better specificity
       const originalPrompt = params.prompt;
       const detectedGender = detectGenderFromPrompt(originalPrompt);
       const detectedAnimals = detectAnimalsFromPrompt(originalPrompt);
@@ -1339,8 +1339,8 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         context: mode
       });
 
-      // Apply Stability Ultra specific enhancements
-      const ultraEnhancedPrompt = applyStabilityUltraEnhancements(enhancedPrompt);
+      // Apply advanced prompt enhancements
+      const ultraEnhancedPrompt = applyAdvancedPromptEnhancements(enhancedPrompt);
       
       // Update the prompt with enhanced version
       bflInput.prompt = ultraEnhancedPrompt;
@@ -1353,10 +1353,10 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         bflInput.negative_prompt = `${bflInput.negative_prompt}, ${negativePrompt}`;
       }
 
-      console.log(`✨ [Enhanced Prompt] Original: "${originalPrompt}"`);
-      console.log(`✨ [Enhanced Prompt] Enhanced: "${ultraEnhancedPrompt}"`);
+      console.log(`✨ [BFL Prompt Enhancement] Original: "${originalPrompt}"`);
+      console.log(`✨ [BFL Prompt Enhancement] Enhanced: "${ultraEnhancedPrompt}"`);
       if (negativePrompt) {
-        console.log(`✨ [Enhanced Prompt] Negative: "${negativePrompt}"`);
+        console.log(`✨ [BFL Prompt Enhancement] Negative: "${negativePrompt}"`);
       }
       
       // Add model-specific parameters
@@ -1676,8 +1676,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           context: 'edit'
         });
 
-        // Apply Stability Ultra specific enhancements
-        const ultraEnhancedPrompt = applyStabilityUltraEnhancements(enhancedPrompt);
+        // Apply advanced prompt enhancements
+        const ultraEnhancedPrompt = applyAdvancedPromptEnhancements(enhancedPrompt);
         
         // Update the prompt with enhanced version
         editInput.prompt = ultraEnhancedPrompt;
@@ -1818,7 +1818,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           });
 
           // Apply Stability Ultra specific enhancements
-          const ultraEnhancedPrompt = applyStabilityUltraEnhancements(enhancedPrompt);
+          const ultraEnhancedPrompt = applyAdvancedPromptEnhancements(enhancedPrompt);
           
           // Update the prompt with enhanced version
           input.prompt = ultraEnhancedPrompt;

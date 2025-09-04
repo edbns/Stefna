@@ -156,12 +156,12 @@ export function detectGroupsFromPrompt(prompt: string): string[] {
 }
 
 /**
- * Applies Stability Ultra specific prompt enhancements
+ * Applies advanced prompt enhancements for better AI model understanding
  */
-export function applyStabilityUltraEnhancements(prompt: string): string {
+export function applyAdvancedPromptEnhancements(prompt: string): string {
   // Don't modify prompts that already have weights to avoid double-weighting
   if (prompt.includes('(') && prompt.includes(')')) {
-    console.log('⚠️ [Stability Ultra] Skipping enhancement - prompt already has weights');
+    console.log('⚠️ [Prompt Enhancement] Skipping enhancement - prompt already has weights');
     return prompt;
   }
   
