@@ -673,20 +673,10 @@ const AdminDashboardScreen: React.FC = () => {
         <meta name="description" content="Admin dashboard - private access only" />
       </Helmet>
       
-      {/* Minimal Header */}
-      <div className="absolute top-4 right-4 z-10">
-        <button
-          onClick={() => navigate('/')}
-          className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
-        >
-          Exit Admin
-        </button>
-      </div>
-
-      <div className="flex">
+            <div className="flex">
         {/* Sidebar */}
-        <div className="w-64 bg-black border-r border-white/10 min-h-screen p-4">
-          <div className="space-y-2">
+        <div className="w-64 bg-black border-r border-white/10 min-h-screen p-4 flex flex-col">
+          <div className="flex-1 space-y-2">
             <button
               onClick={() => setActiveTab('users')}
               className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
@@ -769,6 +759,17 @@ const AdminDashboardScreen: React.FC = () => {
             >
               <UserCheck size={20} />
               <span>Referral System</span>
+            </button>
+          </div>
+          
+          {/* Exit Button at Bottom */}
+          <div className="mt-auto pt-4 border-t border-white/10">
+            <button
+              onClick={() => navigate('/')}
+              className="w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors text-white/80 hover:text-white hover:bg-white/10"
+            >
+              <LogOut size={20} />
+              <span>Exit Admin</span>
             </button>
           </div>
         </div>

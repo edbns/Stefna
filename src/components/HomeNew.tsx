@@ -4139,8 +4139,8 @@ const HomeNew: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Story Time™ button - SINGLE BUTTON with dropdown */}
-                  <div className="relative" data-storytime-dropdown>
+                  {/* Story Time™ button - HIDDEN FOR NOW */}
+                  {/* <div className="relative" data-storytime-dropdown>
                     <button
                       onClick={async () => {
                         // Check authentication first
@@ -4200,7 +4200,7 @@ const HomeNew: React.FC = () => {
                     </button>
                     
 
-                  </div>
+                  </div> */}
 
                 </div>
 
