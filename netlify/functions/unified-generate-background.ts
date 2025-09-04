@@ -1268,7 +1268,60 @@ async function generateWithReplicate(params: any): Promise<UnifiedGenerationResp
   throw new Error(`All Replicate providers failed: ${lastError}`);
 }
 
-// BFL API generation with comprehensive fallback strategy
+// Nano-banana generation for Ghibli reaction
+async function generateWithNanoBanana(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
+  console.log(`🎭 [Background] Starting nano-banana generation for ${mode}`);
+  
+  const FAL_API_KEY = process.env.FAL_API_KEY;
+  if (!FAL_API_KEY) {
+    throw new Error('Fal.ai API key not configured');
+  }
+
+  // Convert source image to base64 for nano-banana
+  console.log(`🔄 [Background] Converting image URL to base64: ${params.sourceAssetId}`);
+  const imageBase64 = await urlToBase64(params.sourceAssetId);
+  console.log(`✅ [Background] Image converted to base64 (${imageBase64.length} chars)`);
+
+  // Prepare nano-banana input
+  const nanoBananaInput = {
+    image: imageBase64,
+    prompt: params.prompt,
+    negative_prompt: params.negative_prompt || 'cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face',
+    strength: 0.55, // Moderate strength for Ghibli style transfer
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    seed: Math.floor(Math.random() * 1000000)
+  };
+
+  console.log(`📤 [Background] nano-banana request:`, {
+    prompt: nanoBananaInput.prompt.substring(0, 100) + '...',
+    strength: nanoBananaInput.strength,
+    guidance_scale: nanoBananaInput.guidance_scale,
+    num_inference_steps: nanoBananaInput.num_inference_steps
+  });
+
+  try {
+    const response = await falInvoke('fal-ai/nano-banana', nanoBananaInput);
+    
+    if (response && response.image) {
+      // Upload the generated image to Cloudinary
+      const cloudinaryUrl = await uploadUrlToCloudinary(response.image);
+      
+      console.log(`✅ [Background] nano-banana generation successful`);
+      return {
+        success: true,
+        status: 'done',
+        provider: 'nano-banana',
+        outputUrl: cloudinaryUrl
+      };
+    } else {
+      throw new Error('No image in nano-banana response');
+    }
+  } catch (error) {
+    console.error(`❌ [Background] nano-banana generation failed:`, error);
+    throw error;
+  }
+}
 async function generateWithBFL(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
   console.log(`🚀 [Background] Starting BFL API generation for mode: ${mode}`);
   
@@ -1281,8 +1334,18 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
     // Emotion: Ultra → Pro → Standard → Fal.ai
     models = BFL_EMOTION_MODELS;
   } else if (mode === 'ghibli_reaction') {
-    // Ghibli: Ultra → Pro → Standard → Fal.ai
-    models = BFL_GHIBLI_MODELS;
+    // Ghibli: Try nano-banana first, then BFL fallbacks
+    console.log('🎭 [Background] Ghibli reaction mode - trying nano-banana first');
+    try {
+      // Try nano-banana for Ghibli reaction
+      const nanoBananaResult = await generateWithNanoBanana(mode, params);
+      console.log('✅ [Background] Ghibli reaction successful with nano-banana');
+      return nanoBananaResult;
+    } catch (error) {
+      console.warn('⚠️ [Background] nano-banana failed for Ghibli reaction, falling back to BFL:', error);
+      // Fall back to BFL models
+      models = BFL_GHIBLI_MODELS;
+    }
   } else if (mode === 'neo_glitch') {
     // Neo Glitch: Ultra → Pro → Standard → Fal.ai
     models = BFL_GHIBLI_MODELS;
