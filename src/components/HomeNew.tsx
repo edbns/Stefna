@@ -134,6 +134,7 @@ import FullScreenMediaViewer from './FullScreenMediaViewer'
 
 
 import userMediaService from '../services/userMediaService'
+import draftService from '../services/draftService'
 
 import { cloudinaryUrlFromEnv } from '../utils/cloudinaryUtils'
 import { createAsset } from '../lib/api'
@@ -1154,11 +1155,11 @@ const HomeNew: React.FC = () => {
                 <span className="text-white/80 text-sm mb-2">{i + 2}</span>
                 {additionalImages[i] ? (
                   <div className="relative group">
-                                      <img
+                    <img
                     src={additionalImageUrls[i] || ''}
-                    alt={`Story photo ${i + 2}`}
-                    className="w-24 h-24 object-cover rounded-lg border-2 border-white/30"
-                  />
+                      alt={`Story photo ${i + 2}`}
+                      className="w-24 h-24 object-cover rounded-lg border-2 border-white/30"
+                    />
                     <button
                       onClick={() => onAdditionalRemove(i)}
                       className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
@@ -3295,10 +3296,10 @@ const HomeNew: React.FC = () => {
     setCurrentVideoJob(null)
   }
 
-  // Save current composer state as a draft (local only)
+  // Save current composer state as a draft
   const handleSaveDraft = async () => {
     if (!previewUrl || !prompt.trim()) {
-               console.error('❌ Something went wrong: Upload media and enter a prompt first')
+      console.error('❌ Something went wrong: Upload media and enter a prompt first')
       return
     }
     
@@ -3310,47 +3311,42 @@ const HomeNew: React.FC = () => {
         return
       }
       
-      const userId = user.id
-      const key = `user_drafts_${userId}`
-      const existing = JSON.parse(localStorage.getItem(key) || '[]')
-      
-      const draft = {
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-        userId,
-        type: isVideoPreview ? 'video' as const : 'photo' as const,
-        url: previewUrl,
+      // Save draft to database
+      const draftData = {
+        media_url: previewUrl,
         prompt: prompt.trim(),
-        aspectRatio: 4/3,
+        media_type: isVideoPreview ? 'video' as const : 'photo' as const,
+        aspect_ratio: 4/3,
         width: 800,
         height: 600,
-        timestamp: new Date().toISOString(),
-        tokensUsed: 0,
-        likes: 0,
-        isPublic: false,
-        tags: [],
-        metadata: { quality: 'high' as const, generationTime: 0, modelVersion: 'draft' }
+        metadata: { 
+          quality: 'high' as const, 
+          generationTime: 0, 
+          modelVersion: 'draft',
+          mode: composerState.mode || 'custom'
+        }
       }
       
-      // Save draft to localStorage
-      const updatedDrafts = [draft, ...existing].slice(0, 200) // Keep max 200 drafts
-      localStorage.setItem(key, JSON.stringify(updatedDrafts))
-      
-      // Also save to userMediaService for consistency
-      try {
-        await userMediaService.saveMedia(draft)
-      } catch (error) {
-        console.warn('Failed to save draft to userMediaService:', error)
-      }
+      const savedDraft = await draftService.saveDraft(draftData)
       
       // Show success notification
-              console.log('✅ Draft saved successfully')
+      console.log('✅ Draft saved successfully:', savedDraft)
+      
+      // Show toast notification
+      notifyReady({ 
+        title: 'Draft Saved', 
+        message: 'Your draft has been saved successfully!' 
+      })
       
       // Dispatch event to notify ProfileScreen to refresh drafts
       window.dispatchEvent(new Event('userMediaUpdated'))
       
     } catch (error) {
       console.error('Failed to save draft:', error)
-              console.error('❌ Something went wrong: Could not save draft')
+      notifyError({ 
+        title: 'Save Failed', 
+        message: 'Could not save draft. Please try again.' 
+      })
     }
   }
 
@@ -3657,32 +3653,32 @@ const HomeNew: React.FC = () => {
             <div className="relative w-full max-w-2xl px-6">
               <div ref={containerRef} className="w-full flex items-center justify-center">
                 {/* All modes - show normal image/video preview (including Story mode) */}
-                <>
-                  {previewUrl ? (
-                    isVideoPreview ? (
-                      <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
-                    ) : (
+                  <>
+                    {previewUrl ? (
+                      isVideoPreview ? (
+                        <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
+                      ) : (
                       <div className="relative">
-                        <img 
-                          ref={(el) => (mediaRef.current = el as HTMLImageElement)} 
-                          src={previewUrl || ''} 
-                          alt="Preview" 
-                          className="max-w-full max-h-[60vh] object-contain" 
-                          referrerPolicy="no-referrer"
-                          onLoad={(e) => {
-                            console.log('🖼️ Image loaded successfully:', previewUrl)
-                            measure()
-                          }}
-                          onError={(e) => {
-                            console.error('❌ Image failed to load:', previewUrl, e)
-                            console.error('❌ Error details:', {
-                              url: previewUrl,
-                              error: e,
-                              target: e.target,
-                              currentTarget: e.currentTarget
-                            })
-                          }}
-                        />
+                    <img 
+                      ref={(el) => (mediaRef.current = el as HTMLImageElement)} 
+                      src={previewUrl || ''} 
+                      alt="Preview" 
+                      className="max-w-full max-h-[60vh] object-contain" 
+                      referrerPolicy="no-referrer"
+                      onLoad={(e) => {
+                        console.log('🖼️ Image loaded successfully:', previewUrl)
+                        measure()
+                      }}
+                      onError={(e) => {
+                        console.error('❌ Image failed to load:', previewUrl, e)
+                        console.error('❌ Error details:', {
+                          url: previewUrl,
+                          error: e,
+                          target: e.target,
+                          currentTarget: e.currentTarget
+                        })
+                      }}
+                    />
                         
                         {/* Story mode additional images upload button */}
                         {composerState.mode === 'storytime' && (
@@ -3715,18 +3711,18 @@ const HomeNew: React.FC = () => {
                           </div>
                         )}
                       </div>
-                    )
-                  ) : (
-                    /* No file selected - show upload prompt */
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center border-2 border-dashed border-white/30">
-                        <Plus size={32} className="text-white/60" />
+                      )
+                    ) : (
+                      /* No file selected - show upload prompt */
+                      <div className="text-center">
+                        <div className="w-24 h-24 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center border-2 border-dashed border-white/30">
+                          <Plus size={32} className="text-white/60" />
+                        </div>
+                        <p className="text-white/80 text-lg mb-2">Upload an image to get started</p>
+                        <p className="text-white/60 text-sm">Drag & drop or click to browse</p>
                       </div>
-                      <p className="text-white/80 text-lg mb-2">Upload an image to get started</p>
-                      <p className="text-white/60 text-sm">Drag & drop or click to browse</p>
-                    </div>
-                  )}
-                </>
+                    )}
+                  </>
                 
 
               </div>
@@ -4241,9 +4237,9 @@ const HomeNew: React.FC = () => {
                           if (composerState.mode === 'custom') {
                             // Custom mode - use dispatchGenerate directly
                             console.log('🎭 Custom mode - calling dispatchGenerate')
-                            await dispatchGenerate('custom', {
-                              customPrompt: prompt
-                            })
+                          await dispatchGenerate('custom', {
+                          customPrompt: prompt
+                        })
                           } else if (composerState.mode === 'edit') {
                             // Edit mode - use dispatchGenerate like Custom mode
                             console.log('✏️ Edit mode - calling dispatchGenerate')
