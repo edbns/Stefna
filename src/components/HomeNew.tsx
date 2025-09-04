@@ -3586,27 +3586,17 @@ const HomeNew: React.FC = () => {
       {/* Hidden file uploader for intent-based uploads */}
       <HiddenUploader />
 
-      {/* Floating Logo - Top Left */}
-      <div className="fixed top-6 left-6 z-50 flex items-center">
+      {/* Floating Controls - Top Right */}
+      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
+        
+        {/* Logo - Left side of nav bar */}
         <img 
           src="/logo.png" 
           alt="Stefna Logo" 
-          className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform duration-200" 
+          className="w-12 h-12 object-contain cursor-pointer hover:scale-110 transition-transform duration-200" 
         />
-      </div>
-      
-      {/* Filter Banner - Center Top */}
-      {activeFeedFilter && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-white/10 text-white text-sm px-4 py-2 rounded-full border border-white/20 backdrop-blur-sm">
-                      Filtering by <span className="font-medium capitalize">{getFilterDisplayName(activeFeedFilter)}</span> • 
-          <button className="underline ml-1 hover:text-white/80 transition-colors" onClick={() => setActiveFeedFilter(null)}>
-            clear
-          </button>
-        </div>
-      )}
-
-      {/* Floating Controls - Top Right */}
-      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
+        
+        {/* Upload Button */}
         
         
         {/* Upload Button */}
