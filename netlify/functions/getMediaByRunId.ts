@@ -83,11 +83,12 @@ export const handler: Handler = async (event, context) => {
        ORDER BY created_at DESC 
        LIMIT 1`,
       
-      // Story media - use image_url instead of video_url
-      `SELECT 'story' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, likes_count 
-       FROM story 
-       WHERE run_id = $1 
-       ORDER BY created_at DESC 
+      // Story media - use story_photo table for video_url, search by id since story table doesn't have run_id
+      `SELECT 'story' as type, s.id, s.user_id, sp.video_url as image_url, s.title as prompt, s.preset, s.id as run_id, s.created_at, s.status, s.metadata, 0 as likes_count 
+       FROM story s
+       LEFT JOIN story_photo sp ON s.id = sp.story_id
+       WHERE s.id = $1 
+       ORDER BY s.created_at DESC 
        LIMIT 1`
     ];
 
