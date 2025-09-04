@@ -1,4 +1,24 @@
 // src/presets/emotionmask.ts
+
+/*
+
+🎭 Emotion Mask Mirror Structure (Creative Blueprint)
+
+This preset system is based on emotional dualities:
+Each preset reflects a tension between two emotions for cinematic subtlety.
+
+| Theme ID                  | Primary Emotion | Counter Emotion | Visual Intent                  |
+|---------------------------|------------------|------------------|---------------------------------|
+| nostalgia_distance        | Nostalgia         | Distance          | Soft memory lens                |
+| joy_sadness               | Joy               | Sadness           | Smile-through-tears             |
+| strength_vuln             | Strength          | Vulnerability     | Stoic but soft                  |
+| peace_fear                | Peace             | Fear              | Calm over chaos                 |
+| confidence_loneliness     | Confidence        | Loneliness        | Bold but alone                  |
+
+Each preset uses a unique prompt/negative_prompt pairing and soft i2i strength to preserve identity while subtly shifting emotional tone.
+
+*/
+
 export type EmotionMaskPreset = {
   id: string
   label: string
@@ -23,6 +43,7 @@ export type EmotionMaskPreset = {
 }
 
 export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
+  // 🎭 Theme: Nostalgia + Distance → Soft memory lens
   {
     id: 'emotion_mask_nostalgia_distance',
     label: 'Nostalgia + Distance',
@@ -45,6 +66,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     image_prompt_strength: 0.35,
     aspect_ratio: '4:5'
   },
+  // 🎭 Theme: Joy + Sadness → Smile-through-tears
   {
     id: 'emotion_mask_joy_sadness',
     label: 'Joy + Sadness',
@@ -67,6 +89,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     image_prompt_strength: 0.35,
     aspect_ratio: '4:5'
   },
+  // 🎭 Theme: Confidence + Loneliness → Bold but alone
   {
     id: 'emotion_mask_conf_loneliness',
     label: 'Confidence + Loneliness',
@@ -89,6 +112,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     image_prompt_strength: 0.35,
     aspect_ratio: '4:5'
   },
+  // 🎭 Theme: Peace + Fear → Calm over chaos
   {
     id: 'emotion_mask_peace_fear',
     label: 'Peace + Fear',
@@ -111,6 +135,7 @@ export const EMOTION_MASK_PRESETS: EmotionMaskPreset[] = [
     image_prompt_strength: 0.35,
     aspect_ratio: '4:5'
   },
+  // 🎭 Theme: Strength + Vulnerability → Stoic but soft
   {
     id: 'emotion_mask_strength_vuln',
     label: 'Strength + Vulnerability',
