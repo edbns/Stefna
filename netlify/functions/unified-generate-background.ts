@@ -1917,7 +1917,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
 }
 
 // Main handler
-const handler: Handler = async (event, context) => {
+export const handler: Handler = async (event, context) => {
   console.log(`🚀 [Background] Starting unified generation background function`);
 
   // Handle CORS preflight
@@ -2032,5 +2032,3 @@ const handler: Handler = async (event, context) => {
     };
   }
 };
-
-export { handler };

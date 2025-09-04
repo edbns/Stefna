@@ -12,7 +12,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
 };
 
-const handler: Handler = async (event, context) => {
+export const handler: Handler = async (event, context) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -181,5 +181,3 @@ const handler: Handler = async (event, context) => {
     await pool.end();
   }
 };
-
-export { handler };
