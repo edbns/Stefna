@@ -428,7 +428,8 @@ class SimpleGenerationService {
         return (
           item.runId === runId || 
           item.run_id === runId || 
-          item.stability_job_id === runId
+          item.stability_job_id === runId ||
+          item.falJobId === runId
         );
       });
 
