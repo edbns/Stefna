@@ -1602,10 +1602,10 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           // Always upload to Cloudinary before saving/returning
           try {
             const cloudinaryUrl = await uploadUrlToCloudinary(videoUrl);
-            return {
-              success: true,
-              status: 'done',
-              provider: 'fal',
+          return {
+            success: true,
+            status: 'done',
+            provider: 'fal',
               outputUrl: cloudinaryUrl,
               metadata: {
                 totalImages: allImages.length,
@@ -1782,7 +1782,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           guidance_scale: (mode === 'ghibli_reaction' || mode === 'emotion_mask') ? 7.0 : 7.5, // Lower guidance for subtler effect
           seed: Math.floor(Math.random() * 1000000)
         };
-
+        
         // 🎯 ENHANCED PROMPT ENGINEERING FOR FAL.AI
         // Apply enhanced prompt engineering for Fal.ai models
         if (!(mode === 'ghibli_reaction' || mode === 'emotion_mask')) {
@@ -1944,18 +1944,18 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     runId: request.runId
   });
 
-      // Enhanced duplicate prevention - check multiple sources
-    try {
-      // Check if this runId already exists in any media table (indicating duplicate)
-      const tablesToCheck = {
-        'neo_glitch': 'neo_glitch_media',
-        'presets': 'presets_media',
-        'custom': 'custom_prompt_media',
-        'emotion_mask': 'emotion_mask_media',
-        'ghibli_reaction': 'ghibli_reaction_media',
+  // Enhanced duplicate prevention - check multiple sources
+  try {
+    // Check if this runId already exists in any media table (indicating duplicate)
+    const tablesToCheck = {
+      'neo_glitch': 'neo_glitch_media',
+      'presets': 'presets_media',
+      'custom': 'custom_prompt_media',
+      'emotion_mask': 'emotion_mask_media',
+      'ghibli_reaction': 'ghibli_reaction_media',
         'story_time': 'story', // Use story table instead of video_jobs
         'edit': 'edit_media'
-      };
+    };
 
     const tableName = tablesToCheck[request.mode as keyof typeof tablesToCheck];
     if (tableName) {
@@ -2098,9 +2098,9 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
           // Edit My Photo mode: Fal.ai nano-banana/edit → BFL fallbacks
           console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit');
           try {
-            result = await generateWithFal(request.mode, generationParams);
+        result = await generateWithFal(request.mode, generationParams);
             console.log('✅ [Background] Fal.ai edit generation successful');
-          } catch (falError) {
+      } catch (falError) {
             console.warn('⚠️ [Background] Fal.ai edit failed, trying BFL fallbacks:', falError);
             // Try BFL fallbacks for edit mode
             result = await generateWithBFL('edit', generationParams);

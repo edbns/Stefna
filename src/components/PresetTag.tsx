@@ -61,6 +61,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
       'custom_prompt': 'Custom Prompt',
       'story_time': 'Story Time',
       'story': 'Story Time',
+      'edit': 'Studio',
       // Media type mappings
       'neo-glitch': 'Neo Tokyo Glitch',
       'ghiblireact': 'Ghibli Reaction',

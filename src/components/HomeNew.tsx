@@ -3753,7 +3753,7 @@ const HomeNew: React.FC = () => {
                       placeholder={(() => {
                         switch (composerState.mode) {
                           case 'edit': 
-                            return "Describe your edit (e.g., 'make the man drive the car down the coastline')"
+                            return "Describe your studio edit (e.g., 'make the man drive the car down the coastline')"
                           case 'custom': 
                             return "Describe your vision... (click ✨ to enhance your prompt)"
                           default: 
@@ -3770,7 +3770,7 @@ const HomeNew: React.FC = () => {
                       onClick={handleMagicWandEnhance}
                       disabled={isGenerating || !prompt.trim()}
                       className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
-                      title={composerState.mode === 'edit' ? "Enhance edit prompt with AI (free)" : "Enhance prompt with AI (free)"}
+                      title={composerState.mode === 'edit' ? "Enhance studio prompt with AI (free)" : "Enhance prompt with AI (free)"}
                     >
                       {isEnhancing ? (
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -3841,9 +3841,9 @@ const HomeNew: React.FC = () => {
                           ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                           : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
                       }
-                      title={isAuthenticated ? 'Switch to Edit mode' : 'Explore Edit mode'}
+                      title={isAuthenticated ? 'Switch to Studio mode' : 'Explore Studio mode'}
                     >
-                      Edit
+                      Studio
                     </button>
                   </div>
 
