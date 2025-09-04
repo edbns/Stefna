@@ -47,17 +47,17 @@ export const handler: Handler = async (event) => {
       select user_id from user_settings where share_to_feed = true
     ),
     feed as (
-      select 'neo_glitch'      as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'neo_glitch' as "mediaType", preset as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from neo_glitch_media      where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'neo_glitch'      as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'neo_glitch' as "mediaType", preset as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from neo_glitch_media      where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'presets'         as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'presets' as "mediaType", preset as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'presets'         as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'presets' as "mediaType", preset as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'emotion_mask'    as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'emotion_mask' as "mediaType", preset as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from emotion_mask_media    where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'emotion_mask'    as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'emotion_mask' as "mediaType", preset as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from emotion_mask_media    where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'ghibli_reaction' as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'ghibli_reaction' as "mediaType", preset as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from ghibli_reaction_media where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'ghibli_reaction' as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'ghibli_reaction' as "mediaType", preset as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from ghibli_reaction_media where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'custom_prompt'   as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom_prompt' as "mediaType", preset as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'custom_prompt'   as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom_prompt' as "mediaType", preset as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'edit'            as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, null as preset, status, created_at, 'edit' as "mediaType", null as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from edit_media            where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'edit'            as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, null as preset, status, created_at, 'edit' as "mediaType", null as "presetKey", prompt, COALESCE(likes_count, 0) as likes_count from edit_media            where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
     )
     select f.*
     from feed f
@@ -72,17 +72,17 @@ export const handler: Handler = async (event) => {
       select user_id from user_settings where share_to_feed = true
     ),
     feed as (
-      select 'neo_glitch'      as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'neo_glitch' as "mediaType", preset as "presetKey", prompt from neo_glitch_media      where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'neo_glitch'      as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'neo_glitch' as "mediaType", preset as "presetKey", prompt from neo_glitch_media      where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'presets'         as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'presets' as "mediaType", preset as "presetKey", prompt from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'presets'         as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'presets' as "mediaType", preset as "presetKey", prompt from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'emotion_mask'    as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'emotion_mask' as "mediaType", preset as "presetKey", prompt from emotion_mask_media    where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'emotion_mask'    as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'emotion_mask' as "mediaType", preset as "presetKey", prompt from emotion_mask_media    where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'ghibli_reaction' as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'ghibli_reaction' as "mediaType", preset as "presetKey", prompt from ghibli_reaction_media where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'ghibli_reaction' as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'ghibli_reaction' as "mediaType", preset as "presetKey", prompt from ghibli_reaction_media where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'custom_prompt'   as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom_prompt' as "mediaType", preset as "presetKey", prompt from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'custom_prompt'   as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom_prompt' as "mediaType", preset as "presetKey", prompt from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'edit'            as type, id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, null as preset, status, created_at, 'edit' as "mediaType", null as "presetKey", prompt from edit_media            where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'edit'            as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, null as preset, status, created_at, 'edit' as "mediaType", null as "presetKey", prompt from edit_media            where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
     )
     select count(*) as total
     from feed f
