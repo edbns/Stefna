@@ -371,12 +371,6 @@ class SimpleGenerationService {
       } catch (endpointError) {
         console.warn(`⚠️ [SimpleGeneration] getMediaByRunId endpoint failed, falling back to getUserMedia:`, endpointError);
         
-        // If it's a 502 error, this indicates a server issue, not just missing media
-        if (endpointError instanceof Error && endpointError.message.includes('502')) {
-          console.error('❌ [SimpleGeneration] Server error (502) from getMediaByRunId, treating as failure');
-          throw new Error(`Server error: ${endpointError.message}`);
-        }
-        
         // Fallback to the old getUserMedia method
         return await this.checkStatusFallback(runId, mode);
       }
@@ -420,7 +414,11 @@ class SimpleGenerationService {
       const result = await response.json();
       
       // Look for media with exact runId match
-      const matchingMedia = result.items?.find((item: any) => item.runId === runId);
+      const matchingMedia = result.items?.find((item: any) => 
+        item.runId === runId || 
+        item.run_id === runId || 
+        item.stability_job_id === runId
+      );
 
       if (matchingMedia) {
         console.log(`✅ [SimpleGeneration] Found media with exact runId match (fallback):`, {
@@ -434,8 +432,8 @@ class SimpleGenerationService {
           jobId: runId,
           runId: runId,
           status: 'completed',
-          imageUrl: matchingMedia.finalUrl || matchingMedia.imageUrl,
-          videoUrl: matchingMedia.videoUrl,
+          imageUrl: matchingMedia.finalUrl || matchingMedia.imageUrl || matchingMedia.image_url,
+          videoUrl: matchingMedia.videoUrl || matchingMedia.video_url,
           error: undefined,
           provider: matchingMedia.provider || 'unknown',
           type: mode

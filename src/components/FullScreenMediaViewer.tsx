@@ -111,7 +111,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
             {current.type === 'video' ? (
               <video 
                 src={current.url} 
-                className="max-w-[90%] max-h-[90%] object-contain" 
+                className="max-w-[85vw] max-h-[85vh] object-contain" 
                 controls 
                 autoPlay 
                 muted 
@@ -120,10 +120,10 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
               <img 
                 src={current.url} 
                 alt={current.prompt || 'AI Generated Image'} 
-                className="max-w-[90%] max-h-[90%] object-contain" 
+                className="max-w-[85vw] max-h-[85vh] object-contain" 
                 style={{ 
-                  maxWidth: '90%', 
-                  maxHeight: '90%',
+                  maxWidth: '85vw', 
+                  maxHeight: '85vh',
                   width: 'auto',
                   height: 'auto'
                 }}
