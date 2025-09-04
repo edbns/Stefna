@@ -1309,14 +1309,31 @@ async function generateWithNanoBanana(mode: GenerationMode, params: any): Promis
       hasImage: !!response?.image,
       hasImages: !!response?.images,
       imageLength: response?.image?.length || 0,
+      imagesLength: response?.images?.length || 0,
+      firstImageType: response?.images?.[0] ? typeof response.images[0] : 'undefined',
+      firstImageKeys: response?.images?.[0] ? Object.keys(response.images[0]) : [],
       fullResponse: response
     });
     
     if (response && (response.image || response.images)) {
       // Handle both single image and array of images
-      const imageUrl = response.image || (response.images && response.images[0]);
+      let imageUrl;
       
-      if (imageUrl) {
+      if (response.image) {
+        imageUrl = response.image;
+      } else if (response.images && response.images.length > 0) {
+        const firstImage = response.images[0];
+        
+        // Handle different image object formats
+        if (typeof firstImage === 'string') {
+          imageUrl = firstImage;
+        } else if (firstImage && typeof firstImage === 'object') {
+          // Try common image object properties
+          imageUrl = firstImage.url || firstImage.image || firstImage.src || firstImage.data;
+        }
+      }
+      
+      if (imageUrl && typeof imageUrl === 'string') {
         // Upload the generated image to Cloudinary
         const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);
         
@@ -1327,6 +1344,9 @@ async function generateWithNanoBanana(mode: GenerationMode, params: any): Promis
           provider: 'nano-banana',
           outputUrl: cloudinaryUrl
         };
+      } else {
+        console.error(`❌ [Background] Invalid image URL from nano-banana:`, imageUrl);
+        throw new Error('Invalid image URL format from nano-banana');
       }
     }
     
