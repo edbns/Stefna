@@ -15,9 +15,9 @@ const SkeletonGrid: React.FC<SkeletonGridProps> = ({
   const generateSkeletonItems = () => {
     const items = []
     for (let i = 0; i < rows; i++) {
-      // Random heights to simulate different aspect ratios (like real media)
+      // More consistent heights to prevent layout shifts
       const heights = [
-        'h-48', 'h-56', 'h-64', 'h-52', 'h-60', 'h-44', 'h-68', 'h-50'
+        'h-48', 'h-56', 'h-52', 'h-60', 'h-44', 'h-64'
       ]
       const randomHeight = heights[Math.floor(Math.random() * heights.length)]
       items.push(randomHeight)
@@ -36,7 +36,8 @@ const SkeletonGrid: React.FC<SkeletonGridProps> = ({
             {skeletonItems.map((height, itemIndex) => (
               <div 
                 key={`${columnIndex}-${itemIndex}`} 
-                className={`${height} bg-gray-800 animate-pulse relative overflow-hidden rounded-sm`}
+                className={`${height} bg-gray-800 animate-pulse relative overflow-hidden rounded-sm w-full`}
+                style={{ minHeight: '192px', maxHeight: '256px' }}
               >
                 {/* Subtle gradient overlay to make it look more realistic */}
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 opacity-50"></div>
