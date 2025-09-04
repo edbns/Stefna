@@ -712,7 +712,7 @@ const HomeNew: React.FC = () => {
   const [selectedStoryTimePreset, setSelectedStoryTimePreset] = useState<string | null>(null)
 
   const [additionalStoryImages, setAdditionalStoryImages] = useState<File[]>([])
-  const [additionalEditImages, setAdditionalEditImages] = useState<File[]>([])
+// ... existing code ...
 
   // Revert to shared state for simplicity - separate UI components instead
   // const [storySelectedFile, setStorySelectedFile] = useState<File | null>(null)
@@ -873,33 +873,7 @@ const HomeNew: React.FC = () => {
   const totalStoryImages = (selectedFile ? 1 : 0) + additionalStoryImages.filter(Boolean).length
 
   // Edit Mode additional image handling
-  const handleAdditionalEditImageUpload = async (file: File, slotIndex: number) => {
-    console.log('📸 [Edit Mode] Adding additional image to slot:', slotIndex + 2)
-    
-    // Create preview URL for display
-    const preview = URL.createObjectURL(file)
-    
-    // Add to additional images array
-    setAdditionalEditImages(prev => {
-      const newImages = [...prev]
-      newImages[slotIndex] = file
-      return newImages
-    })
-  }
-
-  const handleAdditionalEditImageRemove = (slotIndex: number) => {
-    console.log('🗑️ [Edit Mode] Removing image from slot:', slotIndex + 2)
-    
-    setAdditionalEditImages(prev => {
-      const newImages = [...prev]
-      delete newImages[slotIndex]
-      return newImages.filter(Boolean) as File[]
-    })
-  }
-
-  // Check if we can generate edit (minimum 1 main image + prompt)
-  const canGenerateEdit = selectedFile && prompt.trim().length > 0
-  const totalEditImages = (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
+// ... existing code ...
 
   // Story Time stacked cards styles
   const storyCardStyles = `
@@ -1340,194 +1314,79 @@ const HomeNew: React.FC = () => {
     )
   }
 
-  // Edit My Photo Composer Component
+  // Edit My Photo Composer Component - SIMPLIFIED to work like Custom Prompt
   const EditComposer = ({
     selectedFile,
-    additionalImages,
     onFileUpload,
-    onAdditionalUpload,
-    onAdditionalRemove,
     onFileRemove
   }: {
     selectedFile: File | null
-    additionalImages: File[]
     onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
-    onAdditionalUpload: (file: File, slotIndex: number) => void
-    onAdditionalRemove: (slotIndex: number) => void
     onFileRemove: () => void
   }) => {
-    const bulkInputRef = useRef<HTMLInputElement>(null)
-    const mainInputRef = useRef<HTMLInputElement>(null)
-    const additionalInputRefs = Array.from({ length: 4 }, () => useRef<HTMLInputElement>(null))
+    const inputRef = useRef<HTMLInputElement>(null)
 
     // Simple URL creation without useMemo to prevent glitching
-    const mainImageUrl = selectedFile ? URL.createObjectURL(selectedFile) : null
+    const imageUrl = selectedFile ? URL.createObjectURL(selectedFile) : null
 
-    // Simple additional image URLs without useMemo
-    const additionalImageUrls = additionalImages.map(file => file ? URL.createObjectURL(file) : null)
-
-    // Cleanup URLs on unmount
+    // Cleanup URL on unmount
     useEffect(() => {
       return () => {
-        if (mainImageUrl) {
-          URL.revokeObjectURL(mainImageUrl)
+        if (imageUrl) {
+          URL.revokeObjectURL(imageUrl)
         }
-        additionalImageUrls.forEach(url => {
-          if (url) {
-            URL.revokeObjectURL(url)
-          }
-        })
       }
-    }, [mainImageUrl, additionalImageUrls])
-
-    const handleBulkUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(event.target.files || [])
-      files.forEach((file, index) => {
-        if (!selectedFile && index === 0) {
-          // First file goes to main slot
-          const fakeEvent = {
-            target: { files: [file] }
-          } as unknown as React.ChangeEvent<HTMLInputElement>
-          onFileUpload(fakeEvent)
-        } else {
-          // Subsequent files go to additional slots
-          const slotIndex = selectedFile ? index - 1 : index
-          if (slotIndex < 4) { // Max 4 additional images
-            onAdditionalUpload(file, slotIndex)
-          }
-        }
-      })
-    }
-
-    const handleAdditionalUpload = (event: React.ChangeEvent<HTMLInputElement>, slotIndex: number) => {
-      const file = event.target.files?.[0]
-      if (file) {
-        onAdditionalUpload(file, slotIndex)
-      }
-    }
-
-    const totalImages = (selectedFile ? 1 : 0) + additionalImages.filter(Boolean).length
-    const hasMinimumImages = totalImages >= 2
+    }, [imageUrl])
 
     return (
       <div className="edit-composer">
         {/* Header */}
         <div className="text-center mb-6">
           <p className="text-white/90 text-lg">
-            Upload photos and describe your edit
+            Upload a photo to edit
           </p>
           <p className="text-white/60 text-sm mt-2">
-            Combine multiple photos into new scenes
-          </p>
-          <p className={`text-sm mt-1 ${hasMinimumImages ? 'text-green-400' : 'text-yellow-400'}`}>
-            {totalImages} / 2 photos ready
+            Describe how you want to edit your photo
           </p>
         </div>
 
-        {/* Photos Layout - Main and Additional in Same Row */}
+        {/* Single Photo Upload */}
         <div className="mb-6">
-          <div className="flex justify-center items-start gap-4 flex-wrap">
-            {/* Main Photo */}
-            <div className="flex flex-col items-center">
-              <span className="text-white/80 text-sm mb-2">Main Subject</span>
-              {selectedFile ? (
-                <div className="relative group">
-                  <img
-                    src={mainImageUrl || ''}
-                    alt="Main edit photo"
-                    className="w-28 h-28 object-cover rounded-lg border-2 border-white/30"
-                  />
-                  <button
-                    onClick={onFileRemove}
-                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    ×
-                  </button>
-                </div>
-              ) : (
+          <div className="flex justify-center">
+            {selectedFile ? (
+              <div className="relative group">
+                <img
+                  src={imageUrl || ''}
+                  alt="Photo to edit"
+                  className="w-32 h-32 object-cover rounded-lg border-2 border-white/30"
+                />
                 <button
-                  onClick={() => mainInputRef.current?.click()}
-                  className="w-28 h-28 border-2 border-dashed border-white/50 rounded-lg flex flex-col items-center justify-center text-white/60 hover:border-white/80 hover:text-white/80 transition-colors"
+                  onClick={onFileRemove}
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <Plus size={20} className="mb-1" />
-                  <span className="text-xs">Add</span>
+                  ×
                 </button>
-              )}
-            </div>
-
-            {/* Additional Photos */}
-            {Array.from({ length: 4 }, (_, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <span className="text-white/80 text-sm mb-2">{i + 2}</span>
-                {additionalImages[i] ? (
-                  <div className="relative group">
-                    <img
-                      src={additionalImageUrls[i] || ''}
-                      alt={`Edit photo ${i + 2}`}
-                      className="w-24 h-24 object-cover rounded-lg border-2 border-white/30"
-                    />
-                    <button
-                      onClick={() => onAdditionalRemove(i)}
-                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => additionalInputRefs[i].current?.click()}
-                    className="w-24 h-24 border-2 border-dashed border-white/30 rounded-lg flex flex-col items-center justify-center text-white/50 hover:border-white/60 hover:text-white/70 transition-colors"
-                  >
-                    <Plus size={16} className="mb-1" />
-                    <span className="text-xs">Add</span>
-                  </button>
-                )}
               </div>
-            ))}
+            ) : (
+              <button
+                onClick={() => inputRef.current?.click()}
+                className="w-32 h-32 border-2 border-dashed border-white/50 rounded-lg flex flex-col items-center justify-center text-white/60 hover:border-white/80 hover:text-white/80 transition-colors"
+              >
+                <Plus size={24} className="mb-2" />
+                <span className="text-sm">Add Photo</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Bulk Upload Button */}
-        <div className="text-center mb-8">
-          <button
-            onClick={() => bulkInputRef.current?.click()}
-            className="inline-flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-full transition-colors border border-white/30 hover:border-white/50"
-          >
-            <Plus size={20} className="mr-2" />
-            Add Multiple Photos
-          </button>
-          <p className="text-white/60 text-sm mt-2">
-            Select multiple photos at once for faster setup
-          </p>
-                            </div>
-
-        {/* Hidden file inputs */}
+        {/* Hidden file input */}
         <input
-          ref={bulkInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleBulkUpload}
-          className="hidden"
-        />
-        <input
-          ref={mainInputRef}
+          ref={inputRef}
           type="file"
           accept="image/*"
           onChange={onFileUpload}
           className="hidden"
         />
-        {/* Individual additional photo inputs */}
-        {additionalInputRefs.map((ref, index) => (
-          <input
-            key={index}
-            ref={ref}
-            type="file"
-            accept="image/*"
-            onChange={(event) => handleAdditionalUpload(event, index)}
-            className="hidden"
-          />
-        ))}
       </div>
     )
   }
@@ -2735,16 +2594,17 @@ const HomeNew: React.FC = () => {
       console.log('📖 STORY TIME MODE: Using', storyImages.length, 'images for video generation');
       
     } else if (kind === 'edit') {
-      // EDIT MODE: Use main image + prompt for photo editing
-      const editImages = options?.editImages || [];
-      
-      effectivePrompt = options?.editPrompt || prompt || 'Edit this photo';
-      generationMeta = {
-        mode: 'edit',
-        editImages: editImages,
-        editPrompt: effectivePrompt
+      // EDIT MODE: Use user's typed prompt for photo editing (like Custom mode)
+      effectivePrompt = options?.editPrompt || prompt?.trim() || 'Edit this photo';
+      generationMeta = { 
+        mode: 'edit', 
+        source: 'user_prompt',
+        generation_type: "edit_balanced_ipa", // Balanced identity preservation for editing
+        ipaThreshold: 0.65, // Balanced similarity required
+        ipaRetries: 2, // Moderate fallback
+        ipaBlocking: true // Must pass to proceed
       };
-      console.log('✏️ EDIT MODE: Using main image +', editImages.length, 'additional images for photo editing');
+      console.log('✏️ EDIT MODE: Using user prompt for photo editing:', effectivePrompt);
       
     } else {
       console.error('❌ Unknown generation kind:', kind);
@@ -3909,10 +3769,7 @@ const HomeNew: React.FC = () => {
                 ) : composerState.mode === 'edit' ? (
                   <EditComposer
                     selectedFile={selectedFile}
-                    additionalImages={additionalEditImages}
                     onFileUpload={handleEditFileChange}
-                    onAdditionalUpload={handleAdditionalEditImageUpload}
-                    onAdditionalRemove={handleAdditionalEditImageRemove}
                     onFileRemove={() => {
                       setSelectedFile(null)
                       setPreviewUrl(null)
@@ -4476,43 +4333,11 @@ const HomeNew: React.FC = () => {
                               customPrompt: prompt
                             })
                           } else if (composerState.mode === 'edit') {
-                            // Edit My Photo mode - use dispatchGenerate with all images
-                            console.log('✏️ Edit My Photo mode - calling dispatchGenerate')
-                            console.log('✏️ Edit My Photo debug:', {
-                              canGenerateEdit,
-                              selectedFile: !!selectedFile,
-                              additionalEditImages: additionalEditImages.filter(Boolean).length,
-                              totalImages: (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
+                            // Edit mode - use dispatchGenerate like Custom mode
+                            console.log('✏️ Edit mode - calling dispatchGenerate')
+                            await dispatchGenerate('edit', {
+                              editPrompt: prompt
                             })
-                            if (canGenerateEdit) {
-                              console.log('✏️ Edit My Photo: Starting generation with images:', [
-                                selectedFile?.name,
-                                ...additionalEditImages.filter(Boolean).map(f => f.name)
-                              ])
-                              
-                              // Convert File objects to Data URLs for Edit Mode
-                              const convertFileToDataUrl = (file: File): Promise<string> => {
-                                return new Promise((resolve, reject) => {
-                                  const reader = new FileReader();
-                                  reader.onload = () => resolve(reader.result as string);
-                                  reader.onerror = reject;
-                                  reader.readAsDataURL(file);
-                                });
-                              };
-
-                              // Convert all Edit Mode images to Data URLs
-                              const editImageUrls = await Promise.all([
-                                convertFileToDataUrl(selectedFile!),
-                                ...additionalEditImages.filter(Boolean).map(convertFileToDataUrl)
-                              ]);
-
-                              await dispatchGenerate('edit', {
-                                editImages: editImageUrls,
-                                editPrompt: prompt
-                              })
-                        } else {
-                              console.error('✏️ Edit My Photo: Cannot generate - missing main image or prompt')
-                            }
                           }
                         } catch (error) {
                           console.error('❌ Generation failed:', error)
@@ -4521,12 +4346,12 @@ const HomeNew: React.FC = () => {
                       }
                     }} 
                     disabled={
-                        (composerState.mode === 'edit' && !canGenerateEdit) ||
+                        (composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
                         (composerState.mode === 'custom' && !prompt.trim()) ||
                       navGenerating
                     } 
                     className={
-                        ((composerState.mode === 'edit' && !canGenerateEdit) ||
+                        ((composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
                          (composerState.mode === 'custom' && !prompt.trim()) ||
                        navGenerating)
                         ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'

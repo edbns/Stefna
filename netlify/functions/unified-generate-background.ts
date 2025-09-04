@@ -1621,35 +1621,26 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         
         console.warn(`⚠️ [Fal.ai] No video URL found in response from ${modelConfig.name}`);
       } else if (mode === 'edit') {
-        // Edit My Photo mode with nano-banana/edit
-        console.log(`✏️ [Edit Mode] Processing ${params.editImages?.length || 0} additional images`);
+        // Edit My Photo mode with nano-banana/edit - SIMPLIFIED for single image
+        console.log(`✏️ [Edit Mode] Processing single image for photo editing`);
         
-        // For Edit Mode, we need to process multiple images
-        const allImages = [params.sourceAssetId, ...(params.editImages || [])].filter(Boolean);
+        // For Edit Mode, we only need the main image (like Custom mode)
+        const mainImage = params.sourceAssetId;
         
-        console.log(`✏️ [Edit Mode] Total images to process: ${allImages.length}`);
-        
-        if (allImages.length < 2) {
-          throw new Error("Edit Mode requires at least 2 images to create an edit");
+        if (!mainImage) {
+          throw new Error("Edit Mode requires a source image");
         }
         
-        // Upload all images to Cloudinary first to get public URLs
-        const uploadedImageUrls = [];
-        for (let i = 0; i < allImages.length; i++) {
-          const imageUrl = allImages[i];
-          console.log(`📤 [Edit Mode] Uploading image ${i + 1}/${allImages.length}: ${typeof imageUrl === 'string' ? imageUrl.substring(0, 50) : 'File object'}...`);
-          
-          // Upload to Cloudinary to get a public URL
-          const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);
-          uploadedImageUrls.push(cloudinaryUrl);
-          console.log(`✅ [Edit Mode] Image ${i + 1} uploaded: ${cloudinaryUrl}`);
-        }
+        console.log(`✏️ [Edit Mode] Processing main image: ${typeof mainImage === 'string' ? mainImage.substring(0, 50) : 'File object'}...`);
         
-        // Use nano-banana/edit with multiple images
+        // Upload main image to Cloudinary to get public URL
+        const uploadedImageUrl = await uploadUrlToCloudinary(mainImage);
+        console.log(`✅ [Edit Mode] Main image uploaded: ${uploadedImageUrl}`);
+        
+        // Use nano-banana/edit with single image
         const editInput: any = {
-          image_url: uploadedImageUrls[0], // Use first image as base
-          prompt: params.editPrompt || params.prompt,
-          additional_images: uploadedImageUrls.slice(1) // Additional images for composition
+          image_url: uploadedImageUrl, // Use main image as base
+          prompt: params.editPrompt || params.prompt
         };
 
         // 🎯 ENHANCED PROMPT ENGINEERING FOR EDIT MODE
@@ -1700,7 +1691,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           console.log(`📐 [Fal.ai] Preserving original aspect ratio for edit: ${params.sourceWidth}x${params.sourceHeight}`);
         }
         
-        console.log(`✏️ [Edit Mode] Generating edit with ${allImages.length} images`);
+        console.log(`✏️ [Edit Mode] Generating edit with single image`);
         
         result = await falInvoke(modelConfig.model, editInput);
         
@@ -1746,7 +1737,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           runId: params.runId,
           metadata: {
             model: modelConfig.model,
-            totalImages: allImages.length,
+            totalImages: 1,
             originalImageUrl: resultImageUrl,
             editPrompt: params.editPrompt
           }
