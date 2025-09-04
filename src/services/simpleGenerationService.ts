@@ -130,6 +130,12 @@ class SimpleGenerationService {
           throw new Error('INSUFFICIENT_CREDITS');
         }
         
+        // Also check for insufficient credits in error message
+        if (result && result.error && result.error.includes('Insufficient credits')) {
+          console.log('🚨 [SimpleGeneration] Detected insufficient credits in error message, throwing error');
+          throw new Error('INSUFFICIENT_CREDITS');
+        }
+        
         console.log('🚨 [SimpleGeneration] Throwing error:', errorMessage);
         throw new Error(errorMessage);
       }

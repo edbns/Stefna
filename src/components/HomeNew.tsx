@@ -2796,6 +2796,9 @@ const HomeNew: React.FC = () => {
       // Map technical errors to user-friendly messages
       if (e instanceof Error) {
         console.log('🚨 Error message:', e.message);
+        console.log('🚨 Error type:', e.constructor.name);
+        console.log('🚨 Full error:', e);
+        
         if (e.message.includes('INSUFFICIENT_CREDITS') || e.message.includes('Insufficient credits') || e.message.includes('credits but only have')) {
           errorMessage = 'Not enough credits. Please wait for daily reset or upgrade your plan.';
           console.log('🚨 Setting insufficient credits message');
