@@ -106,15 +106,8 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
       <div className="h-full w-full flex items-center justify-center p-4">
         {/* Media Container - Bigger display with overlay elements */}
         <div className="relative flex items-center justify-center w-full h-full">
-          {/* Date/Time - Top Center */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
-            <span className="text-white text-sm bg-black/70 px-4 py-2 rounded-full backdrop-blur-sm font-medium">
-              {getCreationDate(current)}
-            </span>
-          </div>
-
           {/* Media */}
-          <div className="flex items-center justify-center w-full h-full">
+          <div className="relative flex items-center justify-center w-full h-full">
             {current.type === 'video' ? (
               <video 
                 src={current.url} 
@@ -136,46 +129,53 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
                 }}
               />
             )}
-          </div>
 
-          {/* Tag - Bottom Left */}
-          <div className="absolute bottom-4 left-4 z-30">
-            <PresetTag 
-              item={current} 
-              presetKey={current.metadata?.presetKey || current.presetKey}
-              onClick={() => {}} 
-              className="bg-black/70 backdrop-blur-sm"
-            />
-          </div>
+            {/* Date/Time - Top Center (inside media frame) */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30">
+              <span className="text-white text-sm bg-black/70 px-3 py-1 rounded-full backdrop-blur-sm font-medium">
+                {getCreationDate(current)}
+              </span>
+            </div>
 
-          {/* Like Button - Bottom Right */}
-          <div className="absolute bottom-4 right-4 z-30">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!isLoggedIn) {
-                  onShowAuth?.();
-                  return;
-                }
-                onToggleLike?.(current);
-              }}
-              className={`flex items-center gap-2 px-4 py-2 bg-black/70 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-all duration-200 ${
-                userLikes[`${(current.metadata?.presetType || current.type || 'presets').replace(/-/g, '_')}:${current.id}`] ? 'text-red-500' : ''
-              }`}
-              title={userLikes[`${(current.metadata?.presetType || current.type || 'presets').replace(/-/g, '_')}:${current.id}`] ? 'Unlike' : 'Like'}
-            >
-              <svg 
-                width="16" 
-                height="16" 
-                viewBox="0 0 24 24" 
-                fill={userLikes[`${(current.metadata?.presetType || current.type || 'presets').replace(/-/g, '_')}:${current.id}`] ? 'currentColor' : 'none'} 
-                stroke="currentColor" 
-                strokeWidth="2"
+            {/* Tag - Bottom Left (inside media frame) */}
+            <div className="absolute bottom-2 left-2 z-30">
+              <PresetTag 
+                item={current} 
+                presetKey={current.metadata?.presetKey || current.presetKey}
+                onClick={() => {}} 
+                className="bg-black/70 backdrop-blur-sm"
+              />
+            </div>
+
+            {/* Like Button - Bottom Right (inside media frame) */}
+            <div className="absolute bottom-2 right-2 z-30">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isLoggedIn) {
+                    onShowAuth?.();
+                    return;
+                  }
+                  onToggleLike?.(current);
+                }}
+                className={`flex items-center gap-2 px-3 py-1 bg-black/70 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-all duration-200 ${
+                  userLikes[`${(current.metadata?.presetType || current.type || 'presets').replace(/-/g, '_')}:${current.id}`] ? 'text-red-500' : ''
+                }`}
+                title={userLikes[`${(current.metadata?.presetType || current.type || 'presets').replace(/-/g, '_')}:${current.id}`] ? 'Unlike' : 'Like'}
               >
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-              <span className="text-sm font-medium">{current.likes_count || 0}</span>
-            </button>
+                <svg 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill={userLikes[`${(current.metadata?.presetType || current.type || 'presets').replace(/-/g, '_')}:${current.id}`] ? 'currentColor' : 'none'} 
+                  stroke="currentColor" 
+                  strokeWidth="2"
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                <span className="text-sm font-medium">{current.likes_count || 0}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
