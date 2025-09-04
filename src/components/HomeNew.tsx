@@ -198,7 +198,7 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: 'custom' as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime', // remix mode removed
+    mode: 'custom' as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit', // remix mode removed
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
@@ -712,6 +712,7 @@ const HomeNew: React.FC = () => {
   const [selectedStoryTimePreset, setSelectedStoryTimePreset] = useState<string | null>(null)
 
   const [additionalStoryImages, setAdditionalStoryImages] = useState<File[]>([])
+  const [additionalEditImages, setAdditionalEditImages] = useState<File[]>([])
 
   // Fetch available presets from database on mount
   useEffect(() => {
@@ -864,6 +865,35 @@ const HomeNew: React.FC = () => {
   // Check if we can generate story (minimum 3 images total: 1 main + 2 additional)
   const canGenerateStory = selectedFile && additionalStoryImages.filter(Boolean).length >= 2
   const totalStoryImages = (selectedFile ? 1 : 0) + additionalStoryImages.filter(Boolean).length
+
+  // Edit Mode additional image handling
+  const handleAdditionalEditImageUpload = async (file: File, slotIndex: number) => {
+    console.log('📸 [Edit Mode] Adding additional image to slot:', slotIndex + 2)
+    
+    // Create preview URL for display
+    const preview = URL.createObjectURL(file)
+    
+    // Add to additional images array
+    setAdditionalEditImages(prev => {
+      const newImages = [...prev]
+      newImages[slotIndex] = file
+      return newImages
+    })
+  }
+
+  const handleAdditionalEditImageRemove = (slotIndex: number) => {
+    console.log('🗑️ [Edit Mode] Removing image from slot:', slotIndex + 2)
+    
+    setAdditionalEditImages(prev => {
+      const newImages = [...prev]
+      delete newImages[slotIndex]
+      return newImages.filter(Boolean) as File[]
+    })
+  }
+
+  // Check if we can generate edit (minimum 2 images total: 1 main + 1 additional)
+  const canGenerateEdit = selectedFile && additionalEditImages.filter(Boolean).length >= 1
+  const totalEditImages = (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
 
   // Story Time stacked cards styles
   const storyCardStyles = `
@@ -1252,6 +1282,178 @@ const HomeNew: React.FC = () => {
                                 ))}
                               </div>
                             </div>
+
+        {/* Hidden file inputs */}
+        <input
+          ref={bulkInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleBulkUpload}
+          className="hidden"
+        />
+        <input
+          ref={mainInputRef}
+          type="file"
+          accept="image/*"
+          onChange={onFileUpload}
+          className="hidden"
+        />
+        {/* Individual additional photo inputs */}
+        {additionalInputRefs.map((ref, index) => (
+          <input
+            key={index}
+            ref={ref}
+            type="file"
+            accept="image/*"
+            onChange={(event) => handleAdditionalUpload(event, index)}
+            className="hidden"
+          />
+        ))}
+      </div>
+    )
+  }
+
+  // Edit My Photo Composer Component
+  const EditComposer = ({
+    selectedFile,
+    additionalImages,
+    onFileUpload,
+    onAdditionalUpload,
+    onAdditionalRemove,
+    onFileRemove
+  }: {
+    selectedFile: File | null
+    additionalImages: File[]
+    onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
+    onAdditionalUpload: (file: File, slotIndex: number) => void
+    onAdditionalRemove: (slotIndex: number) => void
+    onFileRemove: () => void
+  }) => {
+    const bulkInputRef = useRef<HTMLInputElement>(null)
+    const mainInputRef = useRef<HTMLInputElement>(null)
+    const additionalInputRefs = Array.from({ length: 4 }, () => useRef<HTMLInputElement>(null))
+
+    const handleBulkUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(event.target.files || [])
+      files.forEach((file, index) => {
+        if (!selectedFile && index === 0) {
+          // First file goes to main slot
+          const fakeEvent = {
+            target: { files: [file] }
+          } as unknown as React.ChangeEvent<HTMLInputElement>
+          onFileUpload(fakeEvent)
+        } else {
+          // Subsequent files go to additional slots
+          const slotIndex = selectedFile ? index - 1 : index
+          if (slotIndex < 4) { // Max 4 additional images
+            onAdditionalUpload(file, slotIndex)
+          }
+        }
+      })
+    }
+
+    const handleAdditionalUpload = (event: React.ChangeEvent<HTMLInputElement>, slotIndex: number) => {
+      const file = event.target.files?.[0]
+      if (file) {
+        onAdditionalUpload(file, slotIndex)
+      }
+    }
+
+    const totalImages = (selectedFile ? 1 : 0) + additionalImages.filter(Boolean).length
+    const hasMinimumImages = totalImages >= 2
+
+    return (
+      <div className="edit-composer">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <p className="text-white/90 text-lg">
+            Upload photos and describe your edit
+          </p>
+          <p className="text-white/60 text-sm mt-2">
+            Combine multiple photos into new scenes
+          </p>
+          <p className={`text-sm mt-1 ${hasMinimumImages ? 'text-green-400' : 'text-yellow-400'}`}>
+            {totalImages} / 2 photos ready
+          </p>
+        </div>
+
+        {/* Photos Layout - Main and Additional in Same Row */}
+        <div className="mb-6">
+          <div className="flex justify-center items-start gap-4 flex-wrap">
+            {/* Main Photo */}
+            <div className="flex flex-col items-center">
+              <span className="text-white/80 text-sm mb-2">Main Subject</span>
+              {selectedFile ? (
+                <div className="relative group">
+                  <img
+                    src={URL.createObjectURL(selectedFile)}
+                    alt="Main edit photo"
+                    className="w-28 h-28 object-cover rounded-lg border-2 border-white/30"
+                  />
+                  <button
+                    onClick={onFileRemove}
+                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => mainInputRef.current?.click()}
+                  className="w-28 h-28 border-2 border-dashed border-white/50 rounded-lg flex flex-col items-center justify-center text-white/60 hover:border-white/80 hover:text-white/80 transition-colors"
+                >
+                  <Plus size={20} className="mb-1" />
+                  <span className="text-xs">Add</span>
+                </button>
+              )}
+            </div>
+
+            {/* Additional Photos */}
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <span className="text-white/80 text-sm mb-2">{i + 2}</span>
+                {additionalImages[i] ? (
+                  <div className="relative group">
+                    <img
+                      src={URL.createObjectURL(additionalImages[i])}
+                      alt={`Edit photo ${i + 2}`}
+                      className="w-24 h-24 object-cover rounded-lg border-2 border-white/30"
+                    />
+                    <button
+                      onClick={() => onAdditionalRemove(i)}
+                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => additionalInputRefs[i].current?.click()}
+                    className="w-24 h-24 border-2 border-dashed border-white/30 rounded-lg flex flex-col items-center justify-center text-white/50 hover:border-white/60 hover:text-white/70 transition-colors"
+                  >
+                    <Plus size={16} className="mb-1" />
+                    <span className="text-xs">Add</span>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bulk Upload Button */}
+        <div className="text-center mb-8">
+          <button
+            onClick={() => bulkInputRef.current?.click()}
+            className="inline-flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-full transition-colors border border-white/30 hover:border-white/50"
+          >
+            <Plus size={20} className="mr-2" />
+            Add Multiple Photos
+          </button>
+          <p className="text-white/60 text-sm mt-2">
+            Select multiple photos at once for faster setup
+          </p>
+        </div>
 
         {/* Hidden file inputs */}
         <input
@@ -2104,7 +2306,7 @@ const HomeNew: React.FC = () => {
 
   // NEW CLEAN GENERATION DISPATCHER - NO MORE MIXED LOGIC
   async function dispatchGenerate(
-    kind: 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime', // remix removed
+    kind: 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit', // remix removed
     options?: {
       presetId?: string;
       presetData?: any;
@@ -2115,6 +2317,8 @@ const HomeNew: React.FC = () => {
       customPrompt?: string;
       storyTimeImages?: string[];
       storyTimePresetId?: string;
+      editImages?: string[];
+      editPrompt?: string;
       // sourceUrl and originalPrompt removed - no more remix functionality
     }
   ) {
@@ -2131,7 +2335,7 @@ const HomeNew: React.FC = () => {
     console.info('▶ NEW dispatchGenerate', { kind, options, runId });
     
     // 🛡️ Runtime Guard (For Safety) - Prevent unknown modes from crashing the app
-    if (!['preset', 'custom', 'emotionmask', 'ghiblireact', 'neotokyoglitch', 'storytime'].includes(kind)) {
+    if (!['preset', 'custom', 'emotionmask', 'ghiblireact', 'neotokyoglitch', 'storytime', 'edit'].includes(kind)) {
       console.warn("[dispatchGenerate] Unknown mode: ", kind);
               notifyError({ title: 'Failed', message: 'Try again' });
       return;
@@ -2504,6 +2708,7 @@ const HomeNew: React.FC = () => {
           case 'ghiblireact': return 'ghibli-reaction';
           case 'neotokyoglitch': return 'neo-glitch';
           case 'storytime': return 'story-time';
+          case 'edit': return 'edit-photo';
           default: return 'presets';
         }
       };
@@ -3594,6 +3799,18 @@ const HomeNew: React.FC = () => {
                       setPreviewUrl(null)
                     }}
                   />
+                ) : composerState.mode === 'edit' ? (
+                  <EditComposer
+                    selectedFile={selectedFile}
+                    additionalImages={additionalEditImages}
+                    onFileUpload={handleFileChange}
+                    onAdditionalUpload={handleAdditionalEditImageUpload}
+                    onAdditionalRemove={handleAdditionalEditImageRemove}
+                    onFileRemove={() => {
+                      setSelectedFile(null)
+                      setPreviewUrl(null)
+                    }}
+                  />
                 ) : (
                   /* Regular modes - show normal image/video preview */
                   <>
@@ -4054,6 +4271,34 @@ const HomeNew: React.FC = () => {
                     
 
                   </div>
+
+                  {/* Edit My Photo™ button - NEW EDIT MODE */}
+                  <div className="relative" data-edit-dropdown>
+                    <button
+                      onClick={async () => {
+                        // Check authentication first
+                        if (!checkAuthAndRedirect()) return
+                        
+                        if (composerState.mode === 'edit') {
+                          // Already in Edit mode - do nothing for now
+                          closeAllDropdowns()
+                        } else {
+                          // Switch to Edit My Photo mode
+                          closeAllDropdowns()
+                          setComposerState(s => ({ ...s, mode: 'edit' }))
+                          setSelectedMode('presets') // Set selectedMode to match the new system
+                        }
+                      }}
+                      className={
+                        composerState.mode === 'edit'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                      }
+                      title={isAuthenticated ? 'Switch to Edit My Photo mode' : 'Explore Edit My Photo mode'}
+                    >
+                      Edit My Photo
+                    </button>
+                  </div>
                 </div>
 
                 {/* Right: Action buttons - Save to draft and Generate */}
@@ -4151,6 +4396,44 @@ const HomeNew: React.FC = () => {
                         } else {
                           console.error('📖 Story Time: Cannot generate - insufficient images')
                         }
+                      } else if (composerState.mode === 'edit') {
+                        // Edit My Photo mode - use dispatchGenerate with all images
+                        console.log('✏️ Edit My Photo mode - calling dispatchGenerate')
+                        console.log('✏️ Edit My Photo debug:', {
+                          canGenerateEdit,
+                          selectedFile: !!selectedFile,
+                          additionalEditImages: additionalEditImages.filter(Boolean).length,
+                          totalImages: (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length
+                        })
+                        if (canGenerateEdit) {
+                          console.log('✏️ Edit My Photo: Starting generation with images:', [
+                            selectedFile?.name,
+                            ...additionalEditImages.filter(Boolean).map(f => f.name)
+                          ])
+                          
+                          // Convert File objects to Data URLs for Edit Mode
+                          const convertFileToDataUrl = (file: File): Promise<string> => {
+                            return new Promise((resolve, reject) => {
+                              const reader = new FileReader();
+                              reader.onload = () => resolve(reader.result as string);
+                              reader.onerror = reject;
+                              reader.readAsDataURL(file);
+                            });
+                          };
+
+                          // Convert all Edit Mode images to Data URLs
+                          const editImageUrls = await Promise.all([
+                            convertFileToDataUrl(selectedFile!),
+                            ...additionalEditImages.filter(Boolean).map(convertFileToDataUrl)
+                          ]);
+
+                          await dispatchGenerate('edit', {
+                            editImages: editImageUrls,
+                            editPrompt: prompt
+                          })
+                        } else {
+                          console.error('✏️ Edit My Photo: Cannot generate - insufficient images')
+                        }
                         } else {
                         // Fallback - determine mode and generate
                         if (selectedPreset) {
@@ -4177,13 +4460,15 @@ const HomeNew: React.FC = () => {
                     }} 
                     disabled={
                       (composerState.mode === 'storytime' && !canGenerateStory) ||
-                      (composerState.mode !== 'storytime' && !selectedFile) ||
+                      (composerState.mode === 'edit' && !canGenerateEdit) ||
+                      (composerState.mode !== 'storytime' && composerState.mode !== 'edit' && !selectedFile) ||
                       (composerState.mode === 'preset' && !prompt.trim() && !selectedPreset) ||
                       navGenerating
                     } 
                     className={
                       ((composerState.mode === 'storytime' && !canGenerateStory) ||
-                       (composerState.mode !== 'storytime' && !selectedFile) ||
+                       (composerState.mode === 'edit' && !canGenerateEdit) ||
+                       (composerState.mode !== 'storytime' && composerState.mode !== 'edit' && !selectedFile) ||
                        (composerState.mode === 'preset' && !prompt.trim() && !selectedPreset) ||
                        navGenerating)
                         ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
@@ -4198,6 +4483,13 @@ const HomeNew: React.FC = () => {
                           return `Add ${3 - totalImages} more photos (minimum 3 total needed)`;
                         }
                         return `Generate animated story with ${totalStoryImages} photos`;
+                      }
+                      if (composerState.mode === 'edit') {
+                        if (!canGenerateEdit) {
+                          const totalImages = (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length;
+                          return `Add ${2 - totalImages} more photos (minimum 2 total needed)`;
+                        }
+                        return `Generate edited photo with ${totalEditImages} photos`;
                       }
                       if (!previewUrl) return 'Upload media first';
 

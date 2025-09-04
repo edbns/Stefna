@@ -89,6 +89,13 @@ export const handler: Handler = async (event, context) => {
        LEFT JOIN story_photo sp ON s.id = sp.story_id
        WHERE s.id = $1 
        ORDER BY s.created_at DESC 
+       LIMIT 1`,
+      
+      // Edit media
+      `SELECT 'edit' as type, id, user_id, image_url, prompt, 'edit' as preset, run_id, created_at, status, metadata, 0 as likes_count 
+       FROM edit_media 
+       WHERE run_id = $1 
+       ORDER BY created_at DESC 
        LIMIT 1`
     ];
 

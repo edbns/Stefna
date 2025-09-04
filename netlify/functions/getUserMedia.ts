@@ -80,6 +80,8 @@ export const handler: Handler = async (event) => {
         SELECT id FROM custom_prompt_media WHERE user_id = $1
         UNION ALL
         SELECT id FROM neo_glitch_media WHERE user_id = $1
+        UNION ALL
+        SELECT id FROM edit_media WHERE user_id = $1
       ) as combined_media
     `;
 
@@ -100,6 +102,8 @@ export const handler: Handler = async (event) => {
         SELECT id, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'custom_prompt' as media_type FROM custom_prompt_media WHERE user_id = $1
         UNION ALL
         SELECT id, user_id, image_url, prompt, preset, created_at, run_id, stability_job_id as fal_job_id, 'neo_glitch' as media_type FROM neo_glitch_media WHERE user_id = $1
+        UNION ALL
+        SELECT id, user_id, image_url, prompt, 'edit' as preset, created_at, run_id, fal_job_id, 'edit' as media_type FROM edit_media WHERE user_id = $1
       ) as combined_media
       ORDER BY created_at DESC
       LIMIT $2 OFFSET $3

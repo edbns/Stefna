@@ -219,7 +219,8 @@ type GenerationMode =
   | 'emotion_mask' 
   | 'ghibli_reaction' 
   | 'story_time' 
-  | 'neo_glitch';
+  | 'neo_glitch'
+  | 'edit';
 
 interface UnifiedGenerationRequest {
   mode: GenerationMode;
@@ -234,6 +235,8 @@ interface UnifiedGenerationRequest {
   ghibliReactionPresetId?: string;
   storyTimePresetId?: string;
   additionalImages?: string[];
+  editImages?: string[];
+  editPrompt?: string;
   meta?: any;
   // IPA (Identity Preservation) parameters
   ipaThreshold?: number;
@@ -368,6 +371,17 @@ const VIDEO_MODELS = [
     cost: 'medium',
     priority: 4,
     description: 'Artsy or stylized output'
+  }
+];
+
+// Edit My Photo models using nano-banana/edit
+const EDIT_MODELS = [
+  {
+    model: 'fal-ai/nano-banana/edit',
+    name: 'Nano Banana Edit',
+    cost: 'medium',
+    priority: 1,
+    description: 'Photoshop-like photo editing with multi-photo support'
   }
 ];
 
@@ -900,6 +914,26 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
         console.log(`✅ [Background] Saved story_time result to database`);
         break;
 
+      case 'edit':
+        // Edit My Photo mode - save to edit_media table
+        await q(`
+          INSERT INTO edit_media (
+            user_id, image_url, source_url, prompt, run_id, fal_job_id, status, metadata, additional_images
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [
+          baseData.user_id,
+          baseData.image_url,
+          baseData.source_url,
+          request.editPrompt || baseData.prompt,
+          baseData.run_id,
+          result.runId || request.runId,
+          baseData.status,
+          baseData.metadata,
+          JSON.stringify(request.editImages || [])
+        ]);
+        console.log(`✅ [Background] Saved edit result to database`);
+        break;
+
       default:
         console.warn(`⚠️ [Background] Unknown generation mode: ${request.mode}, skipping database save`);
     }
@@ -1280,6 +1314,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
     models = GHIBLI_MODELS; // Use high-quality models for both Ghibli and Emotion Mask
   } else if (mode === 'story_time') {
     models = VIDEO_MODELS;
+  } else if (mode === 'edit') {
+    models = EDIT_MODELS; // Use nano-banana/edit for photo editing
   } else {
     models = PHOTO_MODELS; // Default fallback
   }
@@ -1400,6 +1436,96 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         }
         
         console.warn(`⚠️ [Fal.ai] No video URL found in response from ${modelConfig.name}`);
+      } else if (mode === 'edit') {
+        // Edit My Photo mode with nano-banana/edit
+        console.log(`✏️ [Edit Mode] Processing ${params.editImages?.length || 0} additional images`);
+        
+        // For Edit Mode, we need to process multiple images
+        const allImages = [params.sourceAssetId, ...(params.editImages || [])].filter(Boolean);
+        
+        console.log(`✏️ [Edit Mode] Total images to process: ${allImages.length}`);
+        
+        if (allImages.length < 2) {
+          throw new Error("Edit Mode requires at least 2 images to create an edit");
+        }
+        
+        // Upload all images to Cloudinary first to get public URLs
+        const uploadedImageUrls = [];
+        for (let i = 0; i < allImages.length; i++) {
+          const imageUrl = allImages[i];
+          console.log(`📤 [Edit Mode] Uploading image ${i + 1}/${allImages.length}: ${typeof imageUrl === 'string' ? imageUrl.substring(0, 50) : 'File object'}...`);
+          
+          // Upload to Cloudinary to get a public URL
+          const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);
+          uploadedImageUrls.push(cloudinaryUrl);
+          console.log(`✅ [Edit Mode] Image ${i + 1} uploaded: ${cloudinaryUrl}`);
+        }
+        
+        // Use nano-banana/edit with multiple images
+        const editInput: any = {
+          image_url: uploadedImageUrls[0], // Use first image as base
+          prompt: params.editPrompt || params.prompt,
+          additional_images: uploadedImageUrls.slice(1) // Additional images for composition
+        };
+        
+        // Add width and height to preserve original aspect ratio
+        if (params.sourceWidth && params.sourceHeight) {
+          editInput.width = params.sourceWidth;
+          editInput.height = params.sourceHeight;
+          console.log(`📐 [Fal.ai] Preserving original aspect ratio for edit: ${params.sourceWidth}x${params.sourceHeight}`);
+        }
+        
+        console.log(`✏️ [Edit Mode] Generating edit with ${allImages.length} images`);
+        
+        result = await falInvoke(modelConfig.model, editInput);
+        
+        // Check multiple possible image response formats
+        let resultImageUrl = null;
+        
+        // Format 1: result.image (string URL)
+        if (typeof result?.image === 'string') {
+          resultImageUrl = result.image;
+        }
+        // Format 2: result.images array (take first)
+        else if (Array.isArray(result?.images) && result.images.length > 0) {
+          resultImageUrl = typeof result.images[0] === 'string' ? result.images[0] : result.images[0]?.url;
+        }
+        // Format 3: result.data.image.url
+        else if (result?.data?.image?.url) {
+          resultImageUrl = result.data.image.url;
+        }
+        // Format 4: result.image.url
+        else if (result?.image?.url) {
+          resultImageUrl = result.image.url;
+        }
+        // Format 5: result.image_url
+        else if (result?.image_url) {
+          resultImageUrl = result.image_url;
+        }
+        
+        if (!resultImageUrl) {
+          throw new Error(`Edit generation failed: No image URL found in response from ${modelConfig.name}`);
+        }
+        
+        console.log(`✅ [Edit Mode] Edit generated successfully: ${resultImageUrl}`);
+        
+        // Download and upload to Cloudinary for permanent hosting
+        const cloudinaryUrl = await uploadUrlToCloudinary(resultImageUrl);
+        console.log(`✅ [Edit Mode] Edit uploaded to Cloudinary: ${cloudinaryUrl}`);
+        
+        return {
+          success: true,
+          status: 'done',
+          provider: 'fal',
+          outputUrl: cloudinaryUrl,
+          runId: params.runId,
+          metadata: {
+            model: modelConfig.model,
+            totalImages: allImages.length,
+            originalImageUrl: resultImageUrl,
+            editPrompt: params.editPrompt
+          }
+        };
       } else {
         // Convert Cloudinary signed URL to public URL for Fal.ai
         let processedImageUrl = params.sourceAssetId;
@@ -1633,7 +1759,8 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     'emotion_mask': 'emotion_mask_generation',
     'ghibli_reaction': 'ghibli_reaction_generation',
     'story_time': 'story_time_generate',
-    'neo_glitch': 'neo_glitch_generation'
+    'neo_glitch': 'neo_glitch_generation',
+    'edit': 'edit_photo_generation'
   };
 
   const action = actionMap[request.mode];
@@ -1707,6 +1834,11 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
           console.log('🎨 [Background] Attempting generation with BFL API');
           result = await generateWithBFL(request.mode, generationParams);
           console.log('✅ [Background] BFL API generation successful');
+        } else if (request.mode === 'edit') {
+          // Edit My Photo mode: Use Fal.ai nano-banana/edit
+          console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit');
+          result = await generateWithFal(request.mode, generationParams);
+          console.log('✅ [Background] Fal.ai edit generation successful');
         } else {
           // For unsupported modes (story_time), use Fal.ai directly
           console.log('🎨 [Background] Attempting generation with Fal.ai (unsupported by BFL)');

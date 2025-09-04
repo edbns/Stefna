@@ -5,7 +5,7 @@
 import { authenticatedFetch } from '../utils/apiClient'
 import authService from './authService';
 
-export type GenerationMode = 'presets' | 'custom-prompt' | 'emotion-mask' | 'ghibli-reaction' | 'neo-glitch' | 'story-time';
+export type GenerationMode = 'presets' | 'custom-prompt' | 'emotion-mask' | 'ghibli-reaction' | 'neo-glitch' | 'story-time' | 'edit-photo';
 
 export interface SimpleGenerationRequest {
   mode: GenerationMode;
@@ -47,7 +47,8 @@ const FUNCTION_ENDPOINTS: Record<GenerationMode, string> = {
   'emotion-mask': '/.netlify/functions/unified-generate-background',
   'ghibli-reaction': '/.netlify/functions/unified-generate-background',
   'neo-glitch': '/.netlify/functions/unified-generate-background',
-  'story-time': '/.netlify/functions/unified-generate-background'
+  'story-time': '/.netlify/functions/unified-generate-background',
+  'edit-photo': '/.netlify/functions/unified-generate-background'
 };
 
 class SimpleGenerationService {
@@ -246,7 +247,8 @@ class SimpleGenerationService {
       'emotion-mask': 'emotion_mask',
       'ghibli-reaction': 'ghibli_reaction',
       'neo-glitch': 'neo_glitch',
-      'story-time': 'story_time'
+      'story-time': 'story_time',
+      'edit-photo': 'edit'
     };
 
     const basePayload = {
@@ -298,6 +300,13 @@ class SimpleGenerationService {
           ...basePayload,
           storyTimePresetId: request.storyTimePresetId,
           additionalImages: request.additionalImages
+        };
+
+      case 'edit-photo':
+        return {
+          ...basePayload,
+          editImages: request.additionalImages,
+          editPrompt: request.prompt
         };
 
       default:
