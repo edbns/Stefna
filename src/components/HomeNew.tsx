@@ -1070,6 +1070,30 @@ const HomeNew: React.FC = () => {
     const mainInputRef = useRef<HTMLInputElement>(null)
     const additionalInputRefs = Array.from({ length: 4 }, () => useRef<HTMLInputElement>(null))
 
+    // Use useMemo to prevent URL recreation on every render
+    const mainImageUrl = useMemo(() => {
+      return selectedFile ? URL.createObjectURL(selectedFile) : null
+    }, [selectedFile?.name]) // Use file name as stable dependency
+
+    // Memoize additional image URLs to prevent glitching
+    const additionalImageUrls = useMemo(() => {
+      return additionalImages.map(file => file ? URL.createObjectURL(file) : null)
+    }, [additionalImages.map(f => f?.name).join(',')]) // Use file names as stable dependency
+
+    // Cleanup URLs on unmount
+    useEffect(() => {
+      return () => {
+        if (mainImageUrl) {
+          URL.revokeObjectURL(mainImageUrl)
+        }
+        additionalImageUrls.forEach(url => {
+          if (url) {
+            URL.revokeObjectURL(url)
+          }
+        })
+      }
+    }, [mainImageUrl, additionalImageUrls])
+
     const handleBulkUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || [])
       files.forEach((file, index) => {
@@ -1126,7 +1150,7 @@ const HomeNew: React.FC = () => {
               {selectedFile ? (
                 <div className="relative group">
                   <img
-                    src={URL.createObjectURL(selectedFile)}
+                    src={mainImageUrl || ''}
                     alt="Main story photo"
                     className="w-28 h-28 object-cover rounded-lg border-2 border-white/30"
                   />
@@ -1154,11 +1178,11 @@ const HomeNew: React.FC = () => {
                 <span className="text-white/80 text-sm mb-2">{i + 2}</span>
                 {additionalImages[i] ? (
                   <div className="relative group">
-                    <img
-                      src={URL.createObjectURL(additionalImages[i])}
-                      alt={`Story photo ${i + 2}`}
-                      className="w-24 h-24 object-cover rounded-lg border-2 border-white/30"
-                    />
+                                      <img
+                    src={additionalImageUrls[i] || ''}
+                    alt={`Story photo ${i + 2}`}
+                    className="w-24 h-24 object-cover rounded-lg border-2 border-white/30"
+                  />
                     <button
                       onClick={() => onAdditionalRemove(i)}
                       className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1267,18 +1291,18 @@ const HomeNew: React.FC = () => {
                   }
                 }}
                 disabled={false} // Always allow preset selection for better UX
-                className={(() => {
-                  const baseClass = 'px-4 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap';
-                  const activeClass = 'bg-white/90 backdrop-blur-md text-black';
+                                    className={(() => {
+                                      const baseClass = 'px-4 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap';
+                                      const activeClass = 'bg-white/90 backdrop-blur-md text-black';
                   const inactiveClass = 'text-white hover:text-white hover:bg-white/20';
-                  return `${baseClass} ${selectedStoryTimePreset === preset.id ? activeClass : inactiveClass}`;
-                })()}
-              >
-                {preset.label}
+                                      return `${baseClass} ${selectedStoryTimePreset === preset.id ? activeClass : inactiveClass}`;
+                                    })()}
+                                  >
+                                    {preset.label}
                 {!canGenerateStory && selectedStoryTimePreset === preset.id && (
                   <span className="ml-1 text-xs text-yellow-400">(need 3+ photos)</span>
                 )}
-              </button>
+                                  </button>
                                 ))}
                               </div>
                             </div>
@@ -1477,7 +1501,7 @@ const HomeNew: React.FC = () => {
           <p className="text-white/60 text-sm mt-2">
             Select multiple photos at once for faster setup
           </p>
-        </div>
+                            </div>
 
         {/* Hidden file inputs */}
         <input
@@ -2164,7 +2188,7 @@ const HomeNew: React.FC = () => {
       } else {
         // For non-authenticated users, default to false (must agree)
         console.log('❌ Non-authenticated user must agree to upload terms')
-        setUserHasAgreed(false)
+          setUserHasAgreed(false)
       }
     }
     
@@ -2557,10 +2581,10 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = ghibliReactionPreset.prompt;
-      generationMeta = { 
-        mode: 'ghiblireact', 
-        ghibliReactionPresetId, 
-        ghibliReactionLabel: ghibliReactionPreset.label, 
+              generationMeta = { 
+          mode: 'ghiblireact', 
+          ghibliReactionPresetId, 
+          ghibliReactionLabel: ghibliReactionPreset.label, 
         model: ghibliReactionPreset.model, // Use preset model (BFL)
         strength: ghibliReactionPreset.strength, // Use preset strength
         guidance_scale: ghibliReactionPreset.guidance_scale, // Use preset guidance
@@ -2571,11 +2595,11 @@ const HomeNew: React.FC = () => {
         raw: ghibliReactionPreset.raw, // Use preset raw mode
         image_prompt_strength: ghibliReactionPreset.image_prompt_strength, // Use preset image strength
         aspect_ratio: ghibliReactionPreset.aspect_ratio, // Use preset aspect ratio
-        generation_type: "ghibli_reaction_moderate_ipa", // Moderate identity preservation
-        ipaThreshold: 0.6, // Medium similarity required
-        ipaRetries: 2, // Moderate fallback
-        ipaBlocking: true // Must pass to proceed
-      };
+          generation_type: "ghibli_reaction_moderate_ipa", // Moderate identity preservation
+          ipaThreshold: 0.6, // Medium similarity required
+          ipaRetries: 2, // Moderate fallback
+          ipaBlocking: true // Must pass to proceed
+        };
       console.log('🎭 GHIBLI REACTION MODE: Using BFL preset:', ghibliReactionPreset.label, 'Model:', ghibliReactionPreset.model);
       
     } else if (kind === 'neotokyoglitch') {
@@ -2616,10 +2640,10 @@ const HomeNew: React.FC = () => {
       }
       
       effectivePrompt = neoTokyoGlitchPreset.prompt;
-      generationMeta = { 
-        mode: 'neotokyoglitch', 
-        neoTokyoGlitchPresetId, 
-        neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
+              generationMeta = { 
+          mode: 'neotokyoglitch', 
+          neoTokyoGlitchPresetId, 
+          neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
         model: neoTokyoGlitchPreset.model, // Use preset model (BFL for tattoos)
         strength: neoTokyoGlitchPreset.strength, // Use preset strength
         guidance_scale: neoTokyoGlitchPreset.guidance_scale, // Use preset guidance
@@ -2630,13 +2654,13 @@ const HomeNew: React.FC = () => {
         raw: neoTokyoGlitchPreset.raw, // Use preset raw mode
         image_prompt_strength: neoTokyoGlitchPreset.image_prompt_strength, // Use preset image strength
         aspect_ratio: neoTokyoGlitchPreset.aspect_ratio, // Use preset aspect ratio
-        features: neoTokyoGlitchPreset.features,
+          features: neoTokyoGlitchPreset.features,
         generation_type: "neo_tokyo_strict_ipa", // Strict identity preservation
         ipaThreshold: 0.75, // High similarity required for Neo Tokyo Glitch
         ipaRetries: 3, // Aggressive fallback
         ipaBlocking: true, // Must pass to proceed
         presetKey: neoTokyoGlitchPresetId // Store the full preset ID instead of short key
-      };
+        };
       console.log('🎭 NEO TOKYO GLITCH MODE: Using preset parameters:', neoTokyoGlitchPreset.label, 'Model:', neoTokyoGlitchPreset.model);
       
     } else if (kind === 'storytime') {
@@ -3899,14 +3923,14 @@ const HomeNew: React.FC = () => {
 
               {/* Prompt Input - ONLY VISIBLE for manual modes (Custom, Edit) */}
               {(['custom', 'edit'].includes(composerState.mode || '')) && (
-                <div className="mb-2">
-                  <div className="relative">
-                    <textarea
-                      value={prompt}
-                      onChange={(e) => {
-                        console.log('🎯 Prompt input changed:', e.target.value);
-                        setPrompt(e.target.value);
-                      }}
+              <div className="mb-2">
+                <div className="relative">
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => {
+                      console.log('🎯 Prompt input changed:', e.target.value);
+                      setPrompt(e.target.value);
+                    }}
                       placeholder={(() => {
                         switch (composerState.mode) {
                           case 'edit': 
@@ -3917,10 +3941,10 @@ const HomeNew: React.FC = () => {
                             return "Custom prompt (optional) - will be combined with selected preset"
                         }
                       })()}
-                      className="w-full px-3 py-2 pr-10 bg-white/10 backdrop-blur-md text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200 h-20 text-sm rounded-xl"
-                      disabled={false}
-                      data-testid="custom-prompt-input"
-                    />
+                    className="w-full px-3 py-2 pr-10 bg-white/10 backdrop-blur-md text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200 h-20 text-sm rounded-xl"
+                    disabled={false}
+                    data-testid="custom-prompt-input"
+                  />
                     
                     {/* Magic Wand Enhancement Button - show for custom and edit modes */}
                     <button
@@ -3935,11 +3959,11 @@ const HomeNew: React.FC = () => {
                         <span className="text-lg">✨</span>
                       )}
                     </button>
-                    <div className="absolute bottom-2 right-2 text-white/30 text-xs">
-                      {prompt.length}/500
-                    </div>
+                  <div className="absolute bottom-2 right-2 text-white/30 text-xs">
+                    {prompt.length}/500
                   </div>
                 </div>
+              </div>
               )}
 
               {/* Single row with all controls */}
@@ -4382,17 +4406,17 @@ const HomeNew: React.FC = () => {
                     <FileText size={14} />
                   </button>
                   {(['custom', 'edit'].includes(composerState.mode || '')) && (
-                    <button 
-                      onClick={async () => {
-                        // Check authentication first
-                        if (!checkAuthAndRedirect()) return
-                        
-                        // Show immediate feedback that button was clicked
-                        setNavGenerating(true)
-                        
-                        // Close composer immediately
-                        window.dispatchEvent(new CustomEvent('close-composer'));
-                        
+                  <button 
+                    onClick={async () => {
+                      // Check authentication first
+                      if (!checkAuthAndRedirect()) return
+                      
+                      // Show immediate feedback that button was clicked
+                      setNavGenerating(true)
+                      
+                      // Close composer immediately
+                      window.dispatchEvent(new CustomEvent('close-composer'));
+                      
                         try {
                           // Handle different generation modes
                           if (composerState.mode === 'custom') {
@@ -4436,7 +4460,7 @@ const HomeNew: React.FC = () => {
                                 editImages: editImageUrls,
                                 editPrompt: prompt
                               })
-                            } else {
+                        } else {
                               console.error('✏️ Edit My Photo: Cannot generate - missing main image or prompt')
                             }
                           }
@@ -4444,29 +4468,29 @@ const HomeNew: React.FC = () => {
                           console.error('❌ Generation failed:', error)
                         } finally {
                           setNavGenerating(false)
-                        }
-                      }} 
-                      disabled={
+                      }
+                    }} 
+                    disabled={
                         (composerState.mode === 'edit' && !canGenerateEdit) ||
                         (composerState.mode === 'custom' && !prompt.trim()) ||
-                        navGenerating
-                      } 
-                      className={
+                      navGenerating
+                    } 
+                    className={
                         ((composerState.mode === 'edit' && !canGenerateEdit) ||
                          (composerState.mode === 'custom' && !prompt.trim()) ||
-                         navGenerating)
-                          ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
-                          : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
-                      }
-                                            aria-label="Generate"
+                       navGenerating)
+                        ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
+                        : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
+                    }
+                    aria-label="Generate"
                       title="Generate AI content"
-                    >
-                      {navGenerating ? (
-                        <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                      ) : (
-                        <ArrowUp size={16} />
-                      )}
-                    </button>
+                  >
+                    {navGenerating ? (
+                      <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                    ) : (
+                      <ArrowUp size={16} />
+                    )}
+                  </button>
                   )}
                 </div>
               </div>
@@ -4474,7 +4498,7 @@ const HomeNew: React.FC = () => {
             
             {/* Clean disclaimer row under composer */}
             <div className="mt-3 text-center">
-              <p className="text-xs text-white">
+                              <p className="text-xs text-white">
                 <span className="font-bold">Disclaimer:</span> It's AI. It's smart, but not perfect. expect some fun, wild, and maybe a few "what were they thinking?" moments.
               </p>
             </div>
