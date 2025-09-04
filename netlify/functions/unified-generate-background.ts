@@ -1303,20 +1303,34 @@ async function generateWithNanoBanana(mode: GenerationMode, params: any): Promis
   try {
     const response = await falInvoke('fal-ai/nano-banana', nanoBananaInput);
     
-    if (response && response.image) {
-      // Upload the generated image to Cloudinary
-      const cloudinaryUrl = await uploadUrlToCloudinary(response.image);
+    console.log(`🔍 [Background] nano-banana response:`, {
+      hasResponse: !!response,
+      responseKeys: response ? Object.keys(response) : [],
+      hasImage: !!response?.image,
+      hasImages: !!response?.images,
+      imageLength: response?.image?.length || 0,
+      fullResponse: response
+    });
+    
+    if (response && (response.image || response.images)) {
+      // Handle both single image and array of images
+      const imageUrl = response.image || (response.images && response.images[0]);
       
-      console.log(`✅ [Background] nano-banana generation successful`);
-      return {
-        success: true,
-        status: 'done',
-        provider: 'nano-banana',
-        outputUrl: cloudinaryUrl
-      };
-    } else {
-      throw new Error('No image in nano-banana response');
+      if (imageUrl) {
+        // Upload the generated image to Cloudinary
+        const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);
+        
+        console.log(`✅ [Background] nano-banana generation successful`);
+        return {
+          success: true,
+          status: 'done',
+          provider: 'nano-banana',
+          outputUrl: cloudinaryUrl
+        };
+      }
     }
+    
+    throw new Error('No valid image in nano-banana response');
   } catch (error) {
     console.error(`❌ [Background] nano-banana generation failed:`, error);
     throw error;
