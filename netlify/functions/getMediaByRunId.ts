@@ -146,7 +146,9 @@ export const handler: Handler = async (event, context) => {
       timestamp: foundMedia.created_at,
       status: foundMedia.status,
       likes_count: foundMedia.likes_count || 0,
-      metadata: foundMedia.metadata ? JSON.parse(foundMedia.metadata) : {},
+      metadata: foundMedia.metadata ? 
+        (typeof foundMedia.metadata === 'string' ? JSON.parse(foundMedia.metadata) : foundMedia.metadata) 
+        : {},
       aspectRatio: 1, // Default aspect ratio
       width: 1024, // Default dimensions
       height: 1024,
