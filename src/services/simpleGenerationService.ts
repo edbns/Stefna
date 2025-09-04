@@ -413,12 +413,24 @@ class SimpleGenerationService {
 
       const result = await response.json();
       
-      // Look for media with exact runId match
-      const matchingMedia = result.items?.find((item: any) => 
-        item.runId === runId || 
-        item.run_id === runId || 
-        item.stability_job_id === runId
-      );
+      // Look for media with exact runId match - check all possible field names
+      const matchingMedia = result.items?.find((item: any) => {
+        // Log the item for debugging
+        console.log(`🔍 [SimpleGeneration] Checking item:`, {
+          id: item.id,
+          runId: item.runId,
+          run_id: item.run_id,
+          stability_job_id: item.stability_job_id,
+          type: item.type,
+          mediaType: item.mediaType
+        });
+        
+        return (
+          item.runId === runId || 
+          item.run_id === runId || 
+          item.stability_job_id === runId
+        );
+      });
 
       if (matchingMedia) {
         console.log(`✅ [SimpleGeneration] Found media with exact runId match (fallback):`, {
