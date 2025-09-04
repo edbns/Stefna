@@ -1314,82 +1314,7 @@ const HomeNew: React.FC = () => {
     )
   }
 
-  // Edit My Photo Composer Component - SIMPLIFIED to work like Custom Prompt
-  const EditComposer = ({
-    selectedFile,
-    onFileUpload,
-    onFileRemove
-  }: {
-    selectedFile: File | null
-    onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
-    onFileRemove: () => void
-  }) => {
-    const inputRef = useRef<HTMLInputElement>(null)
-
-    // Simple URL creation without useMemo to prevent glitching
-    const imageUrl = selectedFile ? URL.createObjectURL(selectedFile) : null
-
-    // Cleanup URL on unmount
-    useEffect(() => {
-      return () => {
-        if (imageUrl) {
-          URL.revokeObjectURL(imageUrl)
-        }
-      }
-    }, [imageUrl])
-
-    return (
-      <div className="edit-composer">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <p className="text-white/90 text-lg">
-            Upload a photo to edit
-          </p>
-          <p className="text-white/60 text-sm mt-2">
-            Describe how you want to edit your photo
-          </p>
-        </div>
-
-        {/* Single Photo Upload */}
-        <div className="mb-6">
-          <div className="flex justify-center">
-            {selectedFile ? (
-              <div className="relative group">
-                <img
-                  src={imageUrl || ''}
-                  alt="Photo to edit"
-                  className="w-32 h-32 object-cover rounded-lg border-2 border-white/30"
-                />
-                <button
-                  onClick={onFileRemove}
-                  className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  ×
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => inputRef.current?.click()}
-                className="w-32 h-32 border-2 border-dashed border-white/50 rounded-lg flex flex-col items-center justify-center text-white/60 hover:border-white/80 hover:text-white/80 transition-colors"
-              >
-                <Plus size={24} className="mb-2" />
-                <span className="text-sm">Add Photo</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Hidden file input */}
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          onChange={onFileUpload}
-          className="hidden"
-        />
-      </div>
-    )
-  }
+// ... existing code ...
 
   const StoryImageCard = ({ 
     index, 
@@ -1574,29 +1499,7 @@ const HomeNew: React.FC = () => {
     }
   }
 
-  const handleEditFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('📂 handleEditFileChange triggered')
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    console.log('📁 Edit file selected:', { name: file.name, size: file.size, type: file.type })
-    
-    if (userHasAgreed === null) {
-      setPendingFile(file)
-      setShowUploadAgreement(true)
-      return
-    }
-    
-    if (userHasAgreed) {
-      const preview = URL.createObjectURL(file)
-      setSelectedFile(file)
-      setPreviewUrl(preview)
-      console.log('✅ Edit file state updated')
-    } else {
-      setPendingFile(file)
-      setShowUploadAgreement(true)
-    }
-  }
+// ... existing code ...
 
   const handleUploadAgreementAccept = async () => {
     const file = pendingFile
@@ -3766,17 +3669,8 @@ const HomeNew: React.FC = () => {
                       setPreviewUrl(null)
                     }}
                   />
-                ) : composerState.mode === 'edit' ? (
-                  <EditComposer
-                    selectedFile={selectedFile}
-                    onFileUpload={handleEditFileChange}
-                    onFileRemove={() => {
-                      setSelectedFile(null)
-                      setPreviewUrl(null)
-                    }}
-                  />
                 ) : (
-                  /* Regular modes - show normal image/video preview */
+                  /* Regular modes - show normal image/video preview (including Edit mode) */
                   <>
                     {previewUrl ? (
                       isVideoPreview ? (
