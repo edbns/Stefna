@@ -1970,19 +1970,24 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
           console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit');
           result = await generateWithFal(request.mode, generationParams);
           console.log('✅ [Background] Fal.ai edit generation successful');
+        } else if (request.mode === 'story_time') {
+          // Story Time mode: Use Fal.ai directly (video generation)
+          console.log('🎨 [Background] Attempting generation with Fal.ai for Story Time');
+          result = await generateWithFal(request.mode, generationParams);
+          console.log('✅ [Background] Fal.ai Story Time generation successful');
         } else {
-          // For unsupported modes (story_time), use Fal.ai directly
+          // For other unsupported modes, use Fal.ai directly
           console.log('🎨 [Background] Attempting generation with Fal.ai (unsupported by BFL)');
-        result = await generateWithFal(request.mode, generationParams);
-        console.log('✅ [Background] Fal.ai generation successful');
+          result = await generateWithFal(request.mode, generationParams);
+          console.log('✅ [Background] Fal.ai generation successful');
         }
       } catch (primaryError) {
         console.warn('⚠️ [Background] Primary provider failed, falling back to Fal.ai:', primaryError);
         
-        // Fallback to Fal.ai for all modes
+        // Fallback to Fal.ai for all modes except Story Time (which already uses Fal.ai)
         if (request.mode === 'story_time') {
-          console.error('❌ [Background] Story Time requires Fal.ai (video generation)');
-          throw new Error(`Video generation failed: ${primaryError}`);
+          console.error('❌ [Background] Story Time generation failed - no fallback available');
+          throw new Error(`Story Time generation failed: ${primaryError}`);
         }
         
         try {
