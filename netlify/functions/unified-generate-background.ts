@@ -1639,7 +1639,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         
         // Use nano-banana/edit with single image
         const editInput: any = {
-          image_url: uploadedImageUrl, // Use main image as base
+          image_urls: [uploadedImageUrl], // Use main image as base (array format)
           prompt: params.editPrompt || params.prompt
         };
 
