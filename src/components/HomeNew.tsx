@@ -198,7 +198,7 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: 'preset' as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit', // remix mode removed
+    mode: null as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit' | null, // remix mode removed
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
@@ -3865,7 +3865,7 @@ const HomeNew: React.FC = () => {
               
 
               {/* Prompt Input - ONLY VISIBLE for manual modes (Custom, Edit) */}
-              {(['custom', 'edit'].includes(composerState.mode)) && (
+              {(['custom', 'edit'].includes(composerState.mode || '')) && (
                 <div className="mb-2">
                   <div className="relative">
                     <textarea
@@ -4324,7 +4324,7 @@ const HomeNew: React.FC = () => {
                 </div>
 
                 {/* Right: Action buttons - Save to draft and Generate (only for manual modes) */}
-                {(['custom', 'edit'].includes(composerState.mode)) && (
+                {(['custom', 'edit'].includes(composerState.mode || '')) && (
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
