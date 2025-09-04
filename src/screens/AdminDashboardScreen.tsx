@@ -17,6 +17,7 @@ import {
   Minus
 } from 'lucide-react'
 import { authenticatedFetch } from '../utils/apiClient'
+import { Helmet } from 'react-helmet'
 
 interface User {
   id: string
@@ -665,40 +666,32 @@ const AdminDashboardScreen: React.FC = () => {
   // Main admin dashboard
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <div className="bg-white/5 border-b border-white/20 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Shield size={32} className="text-red-500" />
-            <div>
-              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-              <p className="text-white/60">Full system control and management</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <span className="text-white/40 text-sm">
-              Admin Mode Active
-            </span>
-            <button
-              onClick={() => navigate('/')}
-              className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
-            >
-              Exit Admin
-            </button>
-          </div>
-        </div>
+      <Helmet>
+        <title>Admin Dashboard - Stefna</title>
+        <meta name="robots" content="noindex, nofollow" />
+        <meta name="googlebot" content="noindex, nofollow" />
+        <meta name="description" content="Admin dashboard - private access only" />
+      </Helmet>
+      
+      {/* Minimal Header */}
+      <div className="absolute top-4 right-4 z-10">
+        <button
+          onClick={() => navigate('/')}
+          className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+        >
+          Exit Admin
+        </button>
       </div>
 
       <div className="flex">
         {/* Sidebar */}
-        <div className="w-64 bg-white/5 border-r border-white/20 min-h-screen p-4">
+        <div className="w-64 bg-black border-r border-white/10 min-h-screen p-4">
           <div className="space-y-2">
             <button
               onClick={() => setActiveTab('users')}
               className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
                 activeTab === 'users' 
-                  ? 'bg-red-500 text-white' 
+                  ? 'bg-white text-black' 
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -710,7 +703,7 @@ const AdminDashboardScreen: React.FC = () => {
               onClick={() => setActiveTab('media')}
               className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
                 activeTab === 'media' 
-                  ? 'bg-red-500 text-white' 
+                  ? 'bg-white text-black' 
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -718,59 +711,59 @@ const AdminDashboardScreen: React.FC = () => {
               <span>Media Browser</span>
             </button>
             
-                              <button
-                    onClick={() => setActiveTab('credits')}
-                    className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
-                      activeTab === 'credits' 
-                        ? 'bg-red-500 text-white' 
-                        : 'text-white/80 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <Coins size={20} />
-                    <span>Credit System</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => setActiveTab('presets')}
-                    className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
-                      activeTab === 'presets' 
-                        ? 'bg-red-500 text-white' 
-                        : 'text-white/80 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <Settings size={20} />
-                    <span>Preset Manager</span>
-                  </button>
+            <button
+              onClick={() => setActiveTab('credits')}
+              className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+                activeTab === 'credits' 
+                  ? 'bg-white text-black' 
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Coins size={20} />
+              <span>Credit System</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('presets')}
+              className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+                activeTab === 'presets' 
+                  ? 'bg-white text-black' 
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Settings size={20} />
+              <span>Preset Manager</span>
+            </button>
             
             <button
               onClick={() => setActiveTab('config')}
               className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
                 activeTab === 'config' 
-                  ? 'bg-red-500 text-white' 
+                  ? 'bg-white text-black' 
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
               <Settings size={20} />
-              <span>Config & Tokens</span>
+              <span>System Config</span>
             </button>
             
             <button
               onClick={() => setActiveTab('logs')}
               className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
                 activeTab === 'logs' 
-                  ? 'bg-red-500 text-white' 
+                  ? 'bg-white text-black' 
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
               <Activity size={20} />
-              <span>Logs & Debug</span>
+              <span>Logs & Analytics</span>
             </button>
             
             <button
               onClick={() => setActiveTab('referrals')}
               className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
                 activeTab === 'referrals' 
-                  ? 'bg-red-500 text-white' 
+                  ? 'bg-white text-black' 
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -785,23 +778,23 @@ const AdminDashboardScreen: React.FC = () => {
           <div className="space-y-6">
             {/* Stats Overview */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+              <div className="bg-white/5 rounded-xl p-4">
                 <div className="text-2xl font-bold text-white">{stats.totalUsers}</div>
                 <div className="text-xs text-white/60">Total Users</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+              <div className="bg-white/5 rounded-xl p-4">
                 <div className="text-2xl font-bold text-white">{stats.activeUsers}</div>
                 <div className="text-xs text-white/60">Active Users</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+              <div className="bg-white/5 rounded-xl p-4">
                 <div className="text-2xl font-bold text-white">{stats.bannedUsers}</div>
                 <div className="text-xs text-white/60">Banned Users</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+              <div className="bg-white/5 rounded-xl p-4">
                 <div className="text-2xl font-bold text-white">{stats.totalMedia}</div>
                 <div className="text-xs text-white/60">Total Media</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+              <div className="bg-white/5 rounded-xl p-4">
                 <div className="text-2xl font-bold text-white">{stats.totalCredits}</div>
                 <div className="text-xs text-white/60">Total Credits</div>
               </div>
@@ -827,7 +820,7 @@ const AdminDashboardScreen: React.FC = () => {
                 </div>
 
                 {/* Users Table */}
-                <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                <div className="bg-white/5 rounded-xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-white/10">
@@ -863,13 +856,13 @@ const AdminDashboardScreen: React.FC = () => {
                                 <div className="flex space-x-1">
                                   <button
                                     onClick={() => handleAdjustCredits(user.id, 1)}
-                                    className="w-6 h-6 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30 flex items-center justify-center"
+                                    className="w-6 h-6 bg-white/10 text-white rounded hover:bg-white/20 flex items-center justify-center"
                                   >
                                     <Plus size={14} />
                                   </button>
                                   <button
                                     onClick={() => handleAdjustCredits(user.id, -1)}
-                                    className="w-6 h-6 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 flex items-center justify-center"
+                                    className="w-6 h-6 bg-white/10 text-white rounded hover:bg-white/20 flex items-center justify-center"
                                   >
                                     <Minus size={14} />
                                   </button>
@@ -879,18 +872,18 @@ const AdminDashboardScreen: React.FC = () => {
                             <td className="px-4 py-3">
                               <div className="flex items-center space-x-2">
                                 {user.isBanned ? (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white/10 text-white">
                                     <UserX size={12} className="mr-1" />
                                     Banned
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white/10 text-white">
                                     <UserCheck size={12} className="mr-1" />
                                     Active
                                   </span>
                                 )}
                                 {user.shareToFeed && (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white/10 text-white">
                                     Public
                                   </span>
                                 )}
@@ -905,15 +898,15 @@ const AdminDashboardScreen: React.FC = () => {
                                   onClick={() => handleBanUser(user.id, !user.isBanned)}
                                   className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                                     user.isBanned
-                                      ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                                      : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                                      ? 'bg-white/10 text-white hover:bg-white/20'
+                                      : 'bg-white/10 text-white hover:bg-white/20'
                                   }`}
                                 >
                                   {user.isBanned ? 'Unban' : 'Ban'}
                                 </button>
                                 <button
                                   onClick={() => handleDeleteUser(user.id)}
-                                  className="px-3 py-1 rounded text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                                  className="px-3 py-1 rounded text-xs font-medium bg-white/10 text-white hover:bg-white/20"
                                 >
                                   <Trash2 size={12} />
                                 </button>
