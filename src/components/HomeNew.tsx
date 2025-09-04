@@ -1185,9 +1185,27 @@ const HomeNew: React.FC = () => {
                     console.log('🎬 Auto-generating Story Time with preset:', preset.id)
 
                     try {
+                      // Convert File objects to Data URLs for Story Time
+                      const convertFileToDataUrl = (file: File): Promise<string> => {
+                        return new Promise((resolve, reject) => {
+                          const reader = new FileReader();
+                          reader.onload = () => resolve(reader.result as string);
+                          reader.onerror = reject;
+                          reader.readAsDataURL(file);
+                        });
+                      };
+
+                      // Convert all Story Time images to Data URLs
+                      const storyImageUrls = await Promise.all([
+                        convertFileToDataUrl(selectedFile!),
+                        ...additionalStoryImages.filter(Boolean).map(convertFileToDataUrl)
+                      ]);
+
+                      console.log('📖 STORY TIME MODE: Using', storyImageUrls.length, 'images for video generation');
+
                       // Use the unified dispatchGenerate system like other modes
                       await dispatchGenerate('storytime', {
-                        storyTimeImages: [selectedFile!, ...additionalStoryImages.filter(Boolean)],
+                        storyTimeImages: storyImageUrls, // Now contains URLs instead of File objects
                         storyTimePresetId: preset.id
                       })
                     } catch (error) {
@@ -2081,7 +2099,7 @@ const HomeNew: React.FC = () => {
       ghibliReactionPresetId?: string;
       neoTokyoGlitchPresetId?: string;
       customPrompt?: string;
-      storyTimeImages?: File[];
+      storyTimeImages?: string[];
       storyTimePresetId?: string;
       // sourceUrl and originalPrompt removed - no more remix functionality
     }
@@ -2392,18 +2410,8 @@ const HomeNew: React.FC = () => {
         return;
       }
 
-      // Convert File objects to URLs for backend processing
-      const storyImageUrls = await Promise.all(
-        storyImages.map(async (file: File) => {
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              resolve(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-          });
-        })
-      );
+      // Story Time images are already URLs, no conversion needed
+      const storyImageUrls = storyImages as string[];
 
       effectivePrompt = 'Create an animated story from these photos'; // Default prompt for story time
       generationMeta = {
@@ -3982,8 +3990,24 @@ const HomeNew: React.FC = () => {
                           if (selectedStoryTimePreset && canGenerateStory && isAuthenticated) {
                             console.log('🎬 Auto-generating Story Time from button click')
                             try {
+                              // Convert File objects to Data URLs for Story Time
+                              const convertFileToDataUrl = (file: File): Promise<string> => {
+                                return new Promise((resolve, reject) => {
+                                  const reader = new FileReader();
+                                  reader.onload = () => resolve(reader.result as string);
+                                  reader.onerror = reject;
+                                  reader.readAsDataURL(file);
+                                });
+                              };
+
+                              // Convert all Story Time images to Data URLs
+                              const storyImageUrls = await Promise.all([
+                                convertFileToDataUrl(selectedFile!),
+                                ...additionalStoryImages.filter(Boolean).map(convertFileToDataUrl)
+                              ]);
+
                               await dispatchGenerate('storytime', {
-                                storyTimeImages: [selectedFile!, ...additionalStoryImages.filter(Boolean)],
+                                storyTimeImages: storyImageUrls,
                                 storyTimePresetId: selectedStoryTimePreset
                               })
                             } catch (error) {
@@ -4089,8 +4113,25 @@ const HomeNew: React.FC = () => {
                             selectedFile?.name,
                             ...additionalStoryImages.filter(Boolean).map(f => f.name)
                           ])
+                          
+                          // Convert File objects to Data URLs for Story Time
+                          const convertFileToDataUrl = (file: File): Promise<string> => {
+                            return new Promise((resolve, reject) => {
+                              const reader = new FileReader();
+                              reader.onload = () => resolve(reader.result as string);
+                              reader.onerror = reject;
+                              reader.readAsDataURL(file);
+                            });
+                          };
+
+                          // Convert all Story Time images to Data URLs
+                          const storyImageUrls = await Promise.all([
+                            convertFileToDataUrl(selectedFile!),
+                            ...additionalStoryImages.filter(Boolean).map(convertFileToDataUrl)
+                          ]);
+
                           await dispatchGenerate('storytime', {
-                            storyTimeImages: [selectedFile!, ...additionalStoryImages.filter(Boolean)],
+                            storyTimeImages: storyImageUrls,
                             storyTimePresetId: selectedStoryTimePreset || undefined
                           })
                         } else {
