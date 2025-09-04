@@ -537,6 +537,59 @@ async function uploadUrlToCloudinary(imageUrl: string): Promise<string> {
   // If already Cloudinary, return as-is
   if (imageUrl.includes('res.cloudinary.com')) return imageUrl;
 
+  // Handle Data URLs (base64 encoded images)
+  if (imageUrl.startsWith('data:')) {
+    console.log(`☁️ [Cloudinary] Processing Data URL (base64 image)`);
+    
+    // Extract the base64 data from the Data URL
+    const base64Data = imageUrl.split(',')[1];
+    if (!base64Data) {
+      throw new Error('Invalid Data URL format');
+    }
+    
+    // Convert base64 to buffer
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    // Get Cloudinary sign data
+    const signUrl = process.env.URL
+      ? `${process.env.URL}/.netlify/functions/cloudinary-sign`
+      : `https://${process.env.CONTEXT === 'production' ? '' : process.env.BRANCH + '--'}stefna.netlify.app/.netlify/functions/cloudinary-sign`;
+
+    const signResponse = await fetch(signUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: 'stefna/generated' })
+    });
+    if (!signResponse.ok) {
+      const errorText = await signResponse.text();
+      throw new Error(`Cloudinary sign failed: ${signResponse.status} - ${errorText}`);
+    }
+    const signData = await signResponse.json();
+
+    // Create form data for upload
+    const formData = new FormData();
+    formData.append('file', new Blob([buffer], { type: 'image/png' }), 'generated.png');
+    formData.append('timestamp', signData.timestamp);
+    formData.append('signature', signData.signature);
+    formData.append('api_key', signData.apiKey);
+    formData.append('folder', 'stefna/generated');
+    formData.append('resource_type', 'image');
+
+    const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${signData.cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      throw new Error(`Cloudinary image upload failed: ${uploadResponse.status} - ${errorText.substring(0,200)}`);
+    }
+    const uploadResult = await uploadResponse.json();
+    if (!uploadResult.secure_url) throw new Error(`Cloudinary image upload returned no secure_url`);
+    
+    console.log(`✅ [Cloudinary] Data URL upload successful:`, uploadResult.secure_url);
+    return uploadResult.secure_url;
+  }
+
   // Determine resource type based on URL extension
   const getResourceType = (url: string): string => {
     const lowerUrl = url.toLowerCase();

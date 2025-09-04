@@ -1673,7 +1673,6 @@ const HomeNew: React.FC = () => {
     // Update composer state
     setComposerState(s => ({
       ...s,
-      mode: null,
       file,
       sourceUrl: preview,
       status: 'idle',
