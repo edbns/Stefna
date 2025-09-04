@@ -1177,6 +1177,11 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         // Ultra models support raw mode for more natural look
         bflInput.raw = params.raw ?? false; // Use preset value or default to false
         
+        // Add additional Ultra model parameters
+        bflInput.prompt_upsampling = params.prompt_upsampling ?? true; // Enhance prompt for better results
+        bflInput.safety_tolerance = params.safety_tolerance ?? 3; // Content moderation level (0-6)
+        bflInput.output_format = params.output_format ?? 'jpeg'; // Output format
+        
         // Add optional seed for consistency
         bflInput.seed = Math.floor(Math.random() * 1000000);
         
@@ -1219,7 +1224,10 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         prompt: params.prompt.substring(0, 50) + '...',
         image_prompt_strength: imageStrength,
         ...(bflInput.width && bflInput.height ? { width: bflInput.width, height: bflInput.height } : {}),
-        ...(bflInput.aspect_ratio ? { aspect_ratio: bflInput.aspect_ratio } : {})
+        ...(bflInput.aspect_ratio ? { aspect_ratio: bflInput.aspect_ratio } : {}),
+        ...(bflInput.raw !== undefined ? { raw: bflInput.raw } : {}),
+        ...(bflInput.prompt_upsampling !== undefined ? { prompt_upsampling: bflInput.prompt_upsampling } : {}),
+        ...(bflInput.safety_tolerance !== undefined ? { safety_tolerance: bflInput.safety_tolerance } : {})
       });
       
       const result = await bflInvoke(modelConfig.endpoint, bflInput);
