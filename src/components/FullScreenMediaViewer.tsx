@@ -106,8 +106,8 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
       <div className="h-full w-full flex items-center justify-center p-4">
         {/* Media Container - Bigger display with overlay elements */}
         <div className="relative flex items-center justify-center w-full h-full">
-          {/* Media */}
-          <div className="relative flex items-center justify-center w-full h-full">
+          {/* Media with overlay elements positioned relative to the media itself */}
+          <div className="relative">
             {current.type === 'video' ? (
               <video 
                 src={current.url} 

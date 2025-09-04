@@ -1327,7 +1327,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         const uploadedImageUrls = [];
         for (let i = 0; i < allImages.length; i++) {
           const imageUrl = allImages[i];
-          console.log(`📤 [Story Time] Uploading image ${i + 1}/${allImages.length}: ${imageUrl.substring(0, 50)}...`);
+          console.log(`📤 [Story Time] Uploading image ${i + 1}/${allImages.length}: ${typeof imageUrl === 'string' ? imageUrl.substring(0, 50) : 'File object'}...`);
           
           // Upload to Cloudinary to get a public URL
           const cloudinaryUrl = await uploadUrlToCloudinary(imageUrl);

@@ -2392,10 +2392,23 @@ const HomeNew: React.FC = () => {
         return;
       }
 
+      // Convert File objects to URLs for backend processing
+      const storyImageUrls = await Promise.all(
+        storyImages.map(async (file: File) => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              resolve(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+          });
+        })
+      );
+
       effectivePrompt = 'Create an animated story from these photos'; // Default prompt for story time
       generationMeta = {
         mode: 'storytime',
-        storyTimeImages: storyImages,
+        storyTimeImages: storyImageUrls, // Now contains URLs instead of File objects
         storyTimePresetId: options?.storyTimePresetId
         // Identity preservation removed - not implemented in backend
       };
