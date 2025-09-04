@@ -3857,8 +3857,8 @@ const HomeNew: React.FC = () => {
             </div>
           </div>
 
-                      {/* Bottom composer bar - compact, horizontally 70% */}
-            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[70%] min-w-[500px] max-w-[800px]">
+                      {/* Bottom composer bar - compact, horizontally 80% */}
+            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[80%] min-w-[600px] max-w-[1000px]">
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl px-4 py-3 transition-all duration-300 shadow-2xl shadow-black/20">
               
 
@@ -3873,16 +3873,24 @@ const HomeNew: React.FC = () => {
                       console.log('🎯 Prompt input changed:', e.target.value);
                       setPrompt(e.target.value);
                     }}
-                    placeholder={composerState.mode === 'custom' 
-                      ? "Describe your vision... (click ✨ to enhance your prompt)"
-                      : "Custom prompt (optional) - will be combined with selected preset"
-                    }
+                    placeholder={(() => {
+                      switch (composerState.mode) {
+                        case 'edit': 
+                          return "Describe your edit (e.g., 'make the man drive the car down the coastline')"
+                        case 'custom': 
+                          return "Describe your vision... (click ✨ to enhance your prompt)"
+                        case 'storytime': 
+                          return "Describe your story..."
+                        default: 
+                          return "Custom prompt (optional) - will be combined with selected preset"
+                      }
+                    })()}
                     className="w-full px-3 py-2 pr-10 bg-white/10 backdrop-blur-md text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200 h-20 text-sm rounded-xl"
                     disabled={false}
                     data-testid="custom-prompt-input"
                   />
-                  {/* Custom Mode Button - show when user types in prompt */}
-                  {prompt.trim() && composerState.mode !== 'custom' && (
+                  {/* Custom Mode Button - show when user types in prompt (but not in edit mode) */}
+                  {prompt.trim() && composerState.mode !== 'custom' && composerState.mode !== 'edit' && (
                     <button
                       onClick={() => {
                         setComposerState(s => ({ ...s, mode: 'custom' }))
@@ -3895,13 +3903,13 @@ const HomeNew: React.FC = () => {
                     </button>
                   )}
                   
-                  {/* Magic Wand Enhancement Button - only show for custom mode */}
-                  {composerState.mode === 'custom' && (
+                  {/* Magic Wand Enhancement Button - show for custom and edit modes */}
+                  {(composerState.mode === 'custom' || composerState.mode === 'edit') && (
                     <button
                       onClick={handleMagicWandEnhance}
                       disabled={isGenerating || !prompt.trim()}
                       className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
-                      title="Enhance prompt with AI (free)"
+                      title={composerState.mode === 'edit' ? "Enhance edit prompt with AI (free)" : "Enhance prompt with AI (free)"}
                     >
                       {isEnhancing ? (
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

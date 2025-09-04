@@ -1716,18 +1716,18 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
         }
       } else {
         // For other modes, check by run_id
-        const existing = await qOne(`
-          SELECT id FROM ${tableName} WHERE run_id = $1
-        `, [request.runId]);
+      const existing = await qOne(`
+        SELECT id FROM ${tableName} WHERE run_id = $1
+      `, [request.runId]);
 
-        if (existing) {
-          console.warn(`⚠️ [Background] Generation ${request.runId} already exists in database, skipping duplicate`);
-          await finalizeCredits(request.userId, request.mode + '_generation', request.runId, false);
-          return {
-            success: false,
-            status: 'failed',
-            error: 'Generation already completed'
-          };
+      if (existing) {
+        console.warn(`⚠️ [Background] Generation ${request.runId} already exists in database, skipping duplicate`);
+        await finalizeCredits(request.userId, request.mode + '_generation', request.runId, false);
+        return {
+          success: false,
+          status: 'failed',
+          error: 'Generation already completed'
+        };
         }
       }
     }
@@ -1842,8 +1842,8 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
         } else {
           // For unsupported modes (story_time), use Fal.ai directly
           console.log('🎨 [Background] Attempting generation with Fal.ai (unsupported by BFL)');
-          result = await generateWithFal(request.mode, generationParams);
-          console.log('✅ [Background] Fal.ai generation successful');
+        result = await generateWithFal(request.mode, generationParams);
+        console.log('✅ [Background] Fal.ai generation successful');
         }
       } catch (primaryError) {
         console.warn('⚠️ [Background] Primary provider failed, falling back to Fal.ai:', primaryError);

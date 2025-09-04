@@ -20,6 +20,14 @@ STYLE GUIDELINES:
 - For emotional requests: Focus on facial micro-expressions, eyes, and subtle mood
 - For style requests: Emphasize lighting, color grading, and photographic technique
 - For mood requests: Describe the emotional atmosphere and visual tone
+- For edit requests: Focus on realistic composition, natural integration, and scene building
+
+EDIT MODE GUIDELINES:
+- When enhancing edit prompts, focus on realistic scene composition
+- Emphasize natural integration of multiple elements
+- Include spatial relationships and perspective
+- Maintain realistic lighting and shadows
+- Focus on practical, achievable edits
 
 Respond with ONLY the enhanced prompt, no explanations or additional text.`;
 
