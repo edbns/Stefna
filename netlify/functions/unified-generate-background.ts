@@ -2670,6 +2670,7 @@ export const handler: Handler = async (event, context) => {
     // Determine appropriate status code based on error type
     let statusCode = 500;
     let errorMessage = 'Unknown error';
+    let errorType = undefined;
     
     if (error instanceof Error) {
       errorMessage = error.message;
@@ -2677,6 +2678,7 @@ export const handler: Handler = async (event, context) => {
       // Set appropriate status codes for specific errors
       if (error.message.includes('Insufficient credits')) {
         statusCode = 402; // Payment Required - standard for insufficient credits
+        errorType = 'INSUFFICIENT_CREDITS';
       } else if (error.message.includes('timeout')) {
         statusCode = 504; // Gateway Timeout
       } else if (error.message.includes('Invalid') || error.message.includes('Missing')) {
@@ -2691,7 +2693,7 @@ export const handler: Handler = async (event, context) => {
         success: false,
         status: error instanceof Error && error.message.includes('timeout') ? 'timeout' : 'failed',
         error: errorMessage,
-        errorType: errorMessage.includes('Insufficient credits') ? 'INSUFFICIENT_CREDITS' : undefined
+        errorType: errorType
       })
     };
   }
