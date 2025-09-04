@@ -11,30 +11,37 @@ const SkeletonGrid: React.FC<SkeletonGridProps> = ({
   rows = 6, 
   className = '' 
 }) => {
-  const totalItems = columns * rows
-
-  // Map columns to Tailwind classes
-  const getGridColsClass = (cols: number) => {
-    switch (cols) {
-      case 1: return 'grid-cols-1'
-      case 2: return 'grid-cols-2'
-      case 3: return 'grid-cols-3'
-      case 4: return 'grid-cols-4'
-      case 5: return 'grid-cols-5'
-      case 6: return 'grid-cols-6'
-      default: return 'grid-cols-3'
+  // Generate variable heights to simulate real media cards
+  const generateSkeletonItems = () => {
+    const items = []
+    for (let i = 0; i < rows; i++) {
+      // Random heights to simulate different aspect ratios (like real media)
+      const heights = [
+        'h-48', 'h-56', 'h-64', 'h-52', 'h-60', 'h-44', 'h-68', 'h-50'
+      ]
+      const randomHeight = heights[Math.floor(Math.random() * heights.length)]
+      items.push(randomHeight)
     }
+    return items
   }
+
+  const skeletonItems = generateSkeletonItems()
 
   return (
     <div className={`w-full ${className}`}>
-      <div className={`grid ${getGridColsClass(columns)} gap-1 w-full`}>
-        {[...Array(totalItems)].map((_, index) => (
-          <div 
-            key={index} 
-            className="aspect-square bg-gray-800 animate-pulse relative overflow-hidden"
-          >
-            {/* Simple dark grey skeleton */}
+      {/* Use same masonry structure as MasonryMediaGrid */}
+      <div className="flex gap-1 w-full" style={{ maxWidth: '100%' }}>
+        {[...Array(columns)].map((_, columnIndex) => (
+          <div key={columnIndex} className="flex-1 flex flex-col gap-1 min-w-0">
+            {skeletonItems.map((height, itemIndex) => (
+              <div 
+                key={`${columnIndex}-${itemIndex}`} 
+                className={`${height} bg-gray-800 animate-pulse relative overflow-hidden rounded-sm`}
+              >
+                {/* Subtle gradient overlay to make it look more realistic */}
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 opacity-50"></div>
+              </div>
+            ))}
           </div>
         ))}
       </div>
