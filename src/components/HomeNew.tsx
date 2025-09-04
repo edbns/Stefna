@@ -310,7 +310,7 @@ const HomeNew: React.FC = () => {
     
     // Clear composer state completely
     setComposerState({
-      mode: 'custom',
+      mode: null,
       file: null,
       sourceUrl: null,
       selectedPresetId: null,
@@ -375,7 +375,7 @@ const HomeNew: React.FC = () => {
     // Clear composer state but keep the file
     setComposerState(s => ({
       ...s,
-      mode: 'custom',
+      mode: null,
       selectedPresetId: null,
       selectedEmotionMaskPresetId: null,
       selectedGhibliReactionPresetId: null,
@@ -418,7 +418,7 @@ const HomeNew: React.FC = () => {
       // Update composer state
       setComposerState(s => ({
         ...s,
-        mode: 'custom',
+        mode: null,
         file: location.state.selectedFile,
         sourceUrl: location.state.previewUrl,
         status: 'idle',
@@ -1625,7 +1625,7 @@ const HomeNew: React.FC = () => {
     // Update composer state
     setComposerState(s => ({
       ...s,
-      mode: 'custom',
+      mode: null,
       file,
       sourceUrl: preview,
       status: 'idle',
@@ -3910,7 +3910,7 @@ const HomeNew: React.FC = () => {
               )}
 
               {/* Single row with all controls */}
-              <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center justify-between gap-2 flex-wrap bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/20">
                 {/* Left: Variations toggle + Presets + MoodMorph */}
                 <div className="flex items-center gap-2">
                   {/* Variations selector removed - single generation only */}
@@ -3986,11 +3986,11 @@ const HomeNew: React.FC = () => {
                         setPresetsOpen((v) => !v)
                         console.log('🔄 Toggling presetsOpen to:', !presetsOpen)
                       }}
-                      className={`px-3 py-1.5 rounded-2xl text-xs transition-colors ${
-                        isAuthenticated 
-                          ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30' 
-                          : 'bg-white/10 backdrop-blur-md text-white hover:bg-white/20'
-                      }`}
+                      className={
+                        selectedPreset
+                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                      }
                       data-nav-button
                       data-nav-type="presets"
                       title={isAuthenticated ? 'Choose AI style presets' : 'Explore AI style presets'}
@@ -4323,27 +4323,27 @@ const HomeNew: React.FC = () => {
 
                 </div>
 
-                {/* Right: Action buttons - Save to draft and Generate (only for manual modes) */}
-                {(['custom', 'edit'].includes(composerState.mode || '')) && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!checkAuthAndRedirect()) return
-                        handleSaveDraft()
-                      }}
-                      title={authService.isAuthenticated() ? 'Save to draft' : 'Sign up to save drafts'}
-                      className={(() => {
-                        const baseClass = 'w-8 h-8 rounded-full flex items-center justify-center transition-colors';
-                        const activeClass = 'bg-white/10 text-white hover:bg-white/15';
-                        const disabledClass = 'bg-white/5 text-white/50 cursor-not-allowed';
-                        return `${baseClass} ${authService.isAuthenticated() ? activeClass : disabledClass}`;
-                      })()}
-                      aria-label="Save to draft"
-                      disabled={!authService.isAuthenticated()}
-                    >
-                      <FileText size={14} />
-                    </button>
+                {/* Right: Action buttons - Save to draft (always visible) and Generate (only for manual modes) */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!checkAuthAndRedirect()) return
+                      handleSaveDraft()
+                    }}
+                    title={authService.isAuthenticated() ? 'Save to draft' : 'Sign up to save drafts'}
+                    className={(() => {
+                      const baseClass = 'w-8 h-8 rounded-full flex items-center justify-center transition-colors';
+                      const activeClass = 'bg-white/10 text-white hover:bg-white/15';
+                      const disabledClass = 'bg-white/5 text-white/50 cursor-not-allowed';
+                      return `${baseClass} ${authService.isAuthenticated() ? activeClass : disabledClass}`;
+                    })()}
+                    aria-label="Save to draft"
+                    disabled={!authService.isAuthenticated()}
+                  >
+                    <FileText size={14} />
+                  </button>
+                  {(['custom', 'edit'].includes(composerState.mode || '')) && (
                     <button 
                       onClick={async () => {
                         // Check authentication first
@@ -4443,8 +4443,8 @@ const HomeNew: React.FC = () => {
                         <ArrowUp size={16} />
                       )}
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
             
