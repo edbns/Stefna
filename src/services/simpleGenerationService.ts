@@ -371,6 +371,12 @@ class SimpleGenerationService {
       } catch (endpointError) {
         console.warn(`⚠️ [SimpleGeneration] getMediaByRunId endpoint failed, falling back to getUserMedia:`, endpointError);
         
+        // If it's a 502 error, this indicates a server issue, not just missing media
+        if (endpointError instanceof Error && endpointError.message.includes('502')) {
+          console.error('❌ [SimpleGeneration] Server error (502) from getMediaByRunId, treating as failure');
+          throw new Error(`Server error: ${endpointError.message}`);
+        }
+        
         // Fallback to the old getUserMedia method
         return await this.checkStatusFallback(runId, mode);
       }

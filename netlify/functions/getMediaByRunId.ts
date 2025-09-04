@@ -108,8 +108,16 @@ export const handler: Handler = async (event, context) => {
           break;
         }
       } catch (error) {
-        console.warn(`⚠️ [getMediaByRunId] Error querying ${query.split(' ')[1]} table:`, error);
-        // Continue to next table
+        const tableName = query.split(' ')[1];
+        console.warn(`⚠️ [getMediaByRunId] Error querying ${tableName} table:`, error);
+        
+        // If it's a connection error, throw it to stop processing
+        if (error instanceof Error && (error.message.includes('connection') || error.message.includes('timeout'))) {
+          console.error(`❌ [getMediaByRunId] Database connection error for ${tableName}:`, error);
+          throw error;
+        }
+        
+        // Continue to next table for other errors
       }
     }
 
@@ -177,7 +185,5 @@ export const handler: Handler = async (event, context) => {
         details: error instanceof Error ? error.message : 'Unknown error'
       })
     };
-  } finally {
-    await pool.end();
   }
 };
