@@ -53,6 +53,9 @@ const ProfileScreen: React.FC = () => {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
 
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
+  const [showChangeEmailModal, setShowChangeEmailModal] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [isChangingEmail, setIsChangingEmail] = useState(false)
 
 
 
@@ -69,7 +72,39 @@ const ProfileScreen: React.FC = () => {
     }
   }, [navigate])
 
-  // Handle invite modal opening from ProfileTokenDisplay
+  // Handle email change
+  const handleChangeEmail = async () => {
+    if (!newEmail.trim()) {
+      notifyError({ title: 'Error', message: 'Please enter a new email address' })
+      return
+    }
+
+    setIsChangingEmail(true)
+    try {
+      const response = await authenticatedFetch('/.netlify/functions/change-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newEmail: newEmail.trim() })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        notifyReady({ title: 'Success', message: 'Email updated successfully!' })
+        setShowChangeEmailModal(false)
+        setNewEmail('')
+        // Refresh profile data to get updated email
+        refreshProfile()
+      } else {
+        const error = await response.json()
+        notifyError({ title: 'Error', message: error.error || 'Failed to update email' })
+      }
+    } catch (error) {
+      console.error('Email change error:', error)
+      notifyError({ title: 'Error', message: 'Failed to update email. Please try again.' })
+    } finally {
+      setIsChangingEmail(false)
+    }
+  }
   useEffect(() => {
     const handleOpenInviteModal = () => {
   
@@ -1704,8 +1739,8 @@ const ProfileScreen: React.FC = () => {
                         />
                         <button 
                           onClick={() => {
-                            // Redirect to auth page for email change
-                            navigate('/auth')
+                            setShowChangeEmailModal(true)
+                            setNewEmail('')
                           }}
                           className="bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 transition-colors whitespace-nowrap"
                         >
@@ -1748,6 +1783,71 @@ const ProfileScreen: React.FC = () => {
           onShowAuth={() => navigate('/auth')}
         />
       </div>
+
+      {/* Email Change Modal */}
+      {showChangeEmailModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+            onClick={() => {
+              setShowChangeEmailModal(false)
+              setNewEmail('')
+            }}
+          />
+          <div className="relative bg-[#111111] rounded-2xl p-6 w-full max-w-md mx-4 border border-white/20">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-white text-lg font-semibold">Change Email Address</h3>
+              <button
+                onClick={() => {
+                  setShowChangeEmailModal(false)
+                  setNewEmail('')
+                }}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <p className="text-white/80 text-sm">
+                Enter your new email address below. You'll need to verify this email address.
+              </p>
+              
+              <div>
+                <label className="block text-white/80 text-sm font-medium mb-2">New Email Address</label>
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="Enter new email address"
+                  className="w-full bg-[#2a2a2a] border border-[#444444] rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
+                  disabled={isChangingEmail}
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowChangeEmailModal(false)
+                    setNewEmail('')
+                  }}
+                  disabled={isChangingEmail}
+                  className="px-4 py-2 text-white rounded-lg transition-colors bg-white/10 hover:bg-white/20 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleChangeEmail}
+                  disabled={isChangingEmail || !newEmail.trim()}
+                  className="px-4 py-2 text-white rounded-lg transition-colors bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isChangingEmail ? "Updating..." : "Update Email"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
