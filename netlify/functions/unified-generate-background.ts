@@ -271,6 +271,20 @@ const BFL_PHOTO_MODELS = [
     cost: 'low',
     priority: 1,
     description: 'Primary - direct BFL API for presets and custom prompts'
+  },
+  {
+    endpoint: 'flux-pro-1.1-ultra',
+    name: 'BFL Flux Pro 1.1 Ultra',
+    cost: 'medium',
+    priority: 2,
+    description: 'Fallback - higher quality for presets and custom prompts'
+  },
+  {
+    endpoint: 'flux-pro-1.1-pro',
+    name: 'BFL Flux Pro 1.1 Pro',
+    cost: 'medium',
+    priority: 3,
+    description: 'Fallback - high quality alternative'
   }
 ];
 
@@ -281,6 +295,20 @@ const BFL_EMOTION_MODELS = [
     cost: 'medium',
     priority: 1,
     description: 'Primary - direct BFL API for emotion mask'
+  },
+  {
+    endpoint: 'flux-pro-1.1-pro',
+    name: 'BFL Flux Pro 1.1 Pro',
+    cost: 'medium',
+    priority: 2,
+    description: 'Fallback - high quality alternative for emotion mask'
+  },
+  {
+    endpoint: 'flux-pro-1.1',
+    name: 'BFL Flux Pro 1.1',
+    cost: 'low',
+    priority: 3,
+    description: 'Fallback - standard quality for emotion mask'
   }
 ];
 
@@ -292,6 +320,45 @@ const BFL_GHIBLI_MODELS = [
     cost: 'medium',
     priority: 1,
     description: 'STRICT: Only endpoint for Ghibli reaction - no fallbacks'
+  },
+  {
+    endpoint: 'flux-pro-1.1-pro',
+    name: 'BFL Flux Pro 1.1 Pro',
+    cost: 'medium',
+    priority: 2,
+    description: 'Fallback - high quality alternative for Ghibli reactions'
+  },
+  {
+    endpoint: 'flux-pro-1.1',
+    name: 'BFL Flux Pro 1.1',
+    cost: 'low',
+    priority: 3,
+    description: 'Fallback - standard quality for Ghibli reactions'
+  }
+];
+
+// BFL models for Edit mode fallbacks (if nano-banana fails)
+const BFL_EDIT_FALLBACK_MODELS = [
+  {
+    endpoint: 'flux-pro-1.1-ultra',
+    name: 'BFL Flux Pro 1.1 Ultra',
+    cost: 'medium',
+    priority: 1,
+    description: 'Fallback - highest quality for edit mode'
+  },
+  {
+    endpoint: 'flux-pro-1.1-pro',
+    name: 'BFL Flux Pro 1.1 Pro',
+    cost: 'medium',
+    priority: 2,
+    description: 'Fallback - high quality alternative for edit mode'
+  },
+  {
+    endpoint: 'flux-pro-1.1',
+    name: 'BFL Flux Pro 1.1',
+    cost: 'low',
+    priority: 3,
+    description: 'Fallback - standard quality for edit mode'
   }
 ];
 
@@ -1201,20 +1268,24 @@ async function generateWithReplicate(params: any): Promise<UnifiedGenerationResp
   throw new Error(`All Replicate providers failed: ${lastError}`);
 }
 
-// BFL API generation with fallback to Fal.ai
+// BFL API generation with comprehensive fallback strategy
 async function generateWithBFL(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
   console.log(`🚀 [Background] Starting BFL API generation for mode: ${mode}`);
   
-  // Select models based on mode
+  // Select models based on mode with comprehensive fallbacks
   let models;
   if (mode === 'presets' || mode === 'custom') {
+    // Presets/Custom: Standard → Ultra → Pro → Fal.ai
     models = BFL_PHOTO_MODELS;
   } else if (mode === 'emotion_mask') {
+    // Emotion: Ultra → Pro → Standard → Fal.ai
     models = BFL_EMOTION_MODELS;
   } else if (mode === 'ghibli_reaction') {
+    // Ghibli: Ultra → Pro → Standard → Fal.ai
     models = BFL_GHIBLI_MODELS;
   } else if (mode === 'neo_glitch') {
-    models = BFL_GHIBLI_MODELS; // Use Ultra for Neo Tokyo Glitch too
+    // Neo Glitch: Ultra → Pro → Standard → Fal.ai
+    models = BFL_GHIBLI_MODELS;
   } else {
     throw new Error(`BFL API not supported for mode: ${mode}`);
   }
@@ -2023,22 +2094,29 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
         }
       }
     } else {
-      // All other modes: BFL API as primary provider, Fal.ai as fallback
-      console.log('🚀 [Background] Starting generation with BFL API as primary provider');
+      // All other modes: Comprehensive BFL fallback strategy
+      console.log('🚀 [Background] Starting generation with comprehensive BFL fallback strategy');
       
       try {
-        // Try BFL API first for supported modes
+        // Try BFL API first for supported modes with comprehensive fallbacks
         if (['presets', 'custom', 'emotion_mask', 'ghibli_reaction'].includes(request.mode)) {
-          console.log('🎨 [Background] Attempting generation with BFL API');
+          console.log('🎨 [Background] Attempting generation with BFL API (Standard → Ultra → Pro → Fal.ai)');
           result = await generateWithBFL(request.mode, generationParams);
           console.log('✅ [Background] BFL API generation successful');
         } else if (request.mode === 'edit') {
-          // Edit My Photo mode: Use Fal.ai nano-banana/edit
+          // Edit My Photo mode: Fal.ai nano-banana/edit → BFL fallbacks
           console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit');
-          result = await generateWithFal(request.mode, generationParams);
-          console.log('✅ [Background] Fal.ai edit generation successful');
+          try {
+            result = await generateWithFal(request.mode, generationParams);
+            console.log('✅ [Background] Fal.ai edit generation successful');
+          } catch (falError) {
+            console.warn('⚠️ [Background] Fal.ai edit failed, trying BFL fallbacks:', falError);
+            // Try BFL fallbacks for edit mode
+            result = await generateWithBFL('edit', generationParams);
+            console.log('✅ [Background] BFL edit fallback successful');
+          }
         } else if (request.mode === 'story_time') {
-          // Story Time mode: Use Fal.ai directly (video generation)
+          // Story Time mode: Fal.ai only (video generation)
           console.log('🎨 [Background] Attempting generation with Fal.ai for Story Time');
           result = await generateWithFal(request.mode, generationParams);
           console.log('✅ [Background] Fal.ai Story Time generation successful');
