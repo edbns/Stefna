@@ -13,17 +13,13 @@ IMPORTANT RULES:
 5. Include lighting, mood, and technical details
 6. Keep prompts under 200 words
 7. Make them specific and actionable for AI generation
+8. NEVER copy or repeat examples - create unique, personalized prompts
 
 STYLE GUIDELINES:
 - For anime/ghibli requests: Soft, dreamy lighting, pastel tones, gentle expressions
 - For emotional requests: Focus on facial micro-expressions, eyes, and subtle mood
 - For style requests: Emphasize lighting, color grading, and photographic technique
 - For mood requests: Describe the emotional atmosphere and visual tone
-
-EXAMPLE TRANSFORMATIONS:
-"ghibli style" → "Portrait in Studio Ghibli style, soft pastel lighting, dreamy atmosphere, gentle facial features, warm skin tones, natural expression, cinematic depth of field, artistic color grading"
-"sad eyes" → "Close-up portrait with emotional sadness in the eyes, soft natural lighting, subtle tearful expression, gentle shadows, melancholic mood, realistic skin texture, intimate framing"
-"cyberpunk" → "Neon-lit portrait in futuristic urban setting, dramatic lighting with blue and pink highlights, sharp contrast, cinematic shadows, modern aesthetic, high-tech atmosphere"
 
 Respond with ONLY the enhanced prompt, no explanations or additional text.`;
 
