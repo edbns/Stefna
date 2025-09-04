@@ -272,9 +272,9 @@ const BFL_PHOTO_MODELS = [
 
 const BFL_EMOTION_MODELS = [
   {
-    endpoint: 'flux-pro-1.1-raw',
-    name: 'BFL Flux Pro 1.1 Raw',
-    cost: 'low',
+    endpoint: 'flux-pro-1.1-ultra',
+    name: 'BFL Flux Pro 1.1 Ultra',
+    cost: 'medium',
     priority: 1,
     description: 'Primary - direct BFL API for emotion mask'
   }
