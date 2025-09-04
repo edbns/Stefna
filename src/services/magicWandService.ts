@@ -31,7 +31,8 @@ export class MagicWandService {
       });
 
       if (!response.ok) {
-        throw new Error(`Magic Wand failed: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Magic Wand failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();

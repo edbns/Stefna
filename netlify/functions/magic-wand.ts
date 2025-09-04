@@ -1,6 +1,5 @@
 import { Handler } from '@netlify/functions';
 import { json } from './_lib/http';
-import { withAuth } from './_withAuth';
 
 // OpenAI configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -116,7 +115,7 @@ async function callOpenAI(messages: any[], model: string = 'gpt-3.5-turbo') {
   return data.choices[0].message.content.trim();
 }
 
-export const handler: Handler = withAuth(async (event, user) => {
+export const handler: Handler = async (event) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -196,4 +195,4 @@ export const handler: Handler = withAuth(async (event, user) => {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, 500);
   }
-});
+};
