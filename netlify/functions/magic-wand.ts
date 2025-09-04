@@ -79,36 +79,65 @@ function needsEnhancement(prompt: string): boolean {
   return hasVagueTerms || descriptiveWords.length < 2;
 }
 
-// OpenAI API call function
+// OpenAI API call function with fallback
 async function callOpenAI(messages: any[], model: string = 'gpt-3.5-turbo') {
   if (!OPENAI_API_KEY) {
     throw new Error('OpenAI API key not configured');
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: 0.7,
-      max_tokens: 200,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0,
-    }),
-  });
+  // Try primary model first, fallback to GPT-4o if needed
+  const modelsToTry = model === 'gpt-3.5-turbo' 
+    ? ['gpt-3.5-turbo', 'gpt-4o-mini', 'gpt-4o'] 
+    : [model];
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} ${error}`);
+  let lastError: Error | null = null;
+
+  for (const currentModel of modelsToTry) {
+    try {
+      console.log(`🔮 [Magic Wand] Trying model: ${currentModel}`);
+      
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: currentModel,
+          messages,
+          temperature: 0.7,
+          max_tokens: 200,
+          top_p: 1,
+          frequency_penalty: 0,
+          presence_penalty: 0,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`OpenAI API error: ${response.status} ${error}`);
+      }
+
+      const data = await response.json();
+      console.log(`🔮 [Magic Wand] Success with model: ${currentModel}`);
+      return data.choices[0].message.content.trim();
+      
+    } catch (error) {
+      console.warn(`🔮 [Magic Wand] Failed with model ${currentModel}:`, error);
+      lastError = error as Error;
+      
+      // If this was the last model to try, throw the error
+      if (currentModel === modelsToTry[modelsToTry.length - 1]) {
+        throw lastError;
+      }
+      
+      // Otherwise, continue to next model
+      continue;
+    }
   }
 
-  const data = await response.json();
-  return data.choices[0].message.content.trim();
+  // This should never be reached, but just in case
+  throw lastError || new Error('All models failed');
 }
 
 export const handler: Handler = async (event) => {
