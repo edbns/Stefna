@@ -562,6 +562,50 @@ const AdminDashboardScreen: React.FC = () => {
     }
   }
 
+  // Credit System Helper Functions
+  const getUsersWithCreditsRange = (min: number, max: number) => {
+    return users.filter(user => user.credits >= min && user.credits <= max).length
+  }
+
+  const handleBulkCreditAdjustment = async () => {
+    const adjustment = prompt('Enter credit adjustment amount (positive to add, negative to subtract):')
+    if (!adjustment || isNaN(Number(adjustment))) {
+      alert('Please enter a valid number')
+      return
+    }
+
+    const amount = Number(adjustment)
+    const usersWithLowCredits = users.filter(user => user.credits <= 5)
+    
+    if (!confirm(`This will adjust credits by ${amount} for ${usersWithLowCredits.length} users with ≤5 credits. Continue?`)) {
+      return
+    }
+
+    try {
+      let successCount = 0
+      for (const user of usersWithLowCredits) {
+        const response = await authenticatedFetch('/.netlify/functions/admin-adjust-credits', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Secret': adminSecret
+          },
+          body: JSON.stringify({ userId: user.id, adjustment: amount })
+        })
+        
+        if (response.ok) {
+          successCount++
+        }
+      }
+
+      alert(`Successfully adjusted credits for ${successCount} users!`)
+      loadAdminData() // Reload data
+    } catch (error) {
+      console.error('Failed to bulk adjust credits:', error)
+      alert('Error during bulk credit adjustment')
+    }
+  }
+
   const filteredUsers = users.filter(user => 
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1596,8 +1640,159 @@ const AdminDashboardScreen: React.FC = () => {
                       </div>
                     )}
 
+                    {/* Credit System Tab */}
+                    {activeTab === 'credits' && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-white">Credit System Management</h3>
+                          <div className="flex items-center space-x-3">
+                            <button
+                              onClick={handleResetDailyCredits}
+                              className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors"
+                            >
+                              Reset Daily Credits
+                            </button>
+                            <button
+                              onClick={handleBulkCreditAdjustment}
+                              className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors"
+                            >
+                              Bulk Adjust Credits
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Credit Statistics */}
+                        {systemConfig && (
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                              <div className="text-2xl font-bold text-white">{systemConfig.creditStats?.total_credits_in_system || 0}</div>
+                              <div className="text-xs text-white/60">Total Credits in System</div>
+                            </div>
+                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                              <div className="text-2xl font-bold text-white">{systemConfig.creditStats?.users_with_credits || 0}</div>
+                              <div className="text-xs text-white/60">Users with Credits</div>
+                            </div>
+                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                              <div className="text-2xl font-bold text-white">{systemConfig.creditStats?.users_without_credits || 0}</div>
+                              <div className="text-xs text-white/60">Users without Credits</div>
+                            </div>
+                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                              <div className="text-2xl font-bold text-white">{Math.round(systemConfig.creditStats?.avg_credits_per_user || 0)}</div>
+                              <div className="text-xs text-white/60">Avg Credits per User</div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Credit Distribution Chart */}
+                        <div className="bg-white/5 rounded-xl border border-white/10 p-6">
+                          <h4 className="text-lg font-semibold text-white mb-4">Credit Distribution</h4>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-white">0 Credits</span>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-32 bg-white/10 rounded-full h-2">
+                                  <div 
+                                    className="bg-red-500 h-2 rounded-full" 
+                                    style={{ width: `${(systemConfig?.creditStats?.users_without_credits / stats.totalUsers) * 100 || 0}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm text-white/60">{systemConfig?.creditStats?.users_without_credits || 0} users</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-white">1-10 Credits</span>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-32 bg-white/10 rounded-full h-2">
+                                  <div 
+                                    className="bg-yellow-500 h-2 rounded-full" 
+                                    style={{ width: `${(getUsersWithCreditsRange(1, 10) / stats.totalUsers) * 100 || 0}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm text-white/60">{getUsersWithCreditsRange(1, 10)} users</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-white">11-50 Credits</span>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-32 bg-white/10 rounded-full h-2">
+                                  <div 
+                                    className="bg-blue-500 h-2 rounded-full" 
+                                    style={{ width: `${(getUsersWithCreditsRange(11, 50) / stats.totalUsers) * 100 || 0}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm text-white/60">{getUsersWithCreditsRange(11, 50)} users</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-white">50+ Credits</span>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-32 bg-white/10 rounded-full h-2">
+                                  <div 
+                                    className="bg-green-500 h-2 rounded-full" 
+                                    style={{ width: `${(getUsersWithCreditsRange(51, 999) / stats.totalUsers) * 100 || 0}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm text-white/60">{getUsersWithCreditsRange(51, 999)} users</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Users with Low Credits */}
+                        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                          <div className="p-4 border-b border-white/10">
+                            <h4 className="text-lg font-semibold text-white">Users with Low Credits (≤5)</h4>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead className="bg-white/10">
+                                <tr>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">User</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Credits</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Last Login</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/10">
+                                {users.filter(user => user.credits <= 5).slice(0, 10).map((user) => (
+                                  <tr key={user.id} className="hover:bg-white/5">
+                                    <td className="px-4 py-3">
+                                      <div className="text-sm text-white">{user.email}</div>
+                                      {user.name && <div className="text-xs text-white/60">{user.name}</div>}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <div className="text-sm text-white">{user.credits}</div>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-white/60">
+                                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center space-x-2">
+                                        <button
+                                          onClick={() => handleAdjustCredits(user.id, 5)}
+                                          className="px-3 py-1 rounded text-xs font-medium bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                                        >
+                                          +5 Credits
+                                        </button>
+                                        <button
+                                          onClick={() => handleAdjustCredits(user.id, 10)}
+                                          className="px-3 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                                        >
+                                          +10 Credits
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Other tabs will be implemented next */}
-                    {activeTab !== 'users' && activeTab !== 'presets' && activeTab !== 'media' && activeTab !== 'config' && activeTab !== 'logs' && activeTab !== 'referrals' && (
+                    {activeTab !== 'users' && activeTab !== 'presets' && activeTab !== 'media' && activeTab !== 'config' && activeTab !== 'logs' && activeTab !== 'referrals' && activeTab !== 'credits' && (
                       <div className="text-center py-12">
                         <div className="text-white/40 text-lg">Coming Soon...</div>
                         <div className="text-white/20 text-sm mt-2">This section is under development</div>
