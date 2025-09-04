@@ -92,13 +92,14 @@ export function enhancePromptForSpecificity(
 export function detectGenderFromPrompt(prompt: string): 'male' | 'female' | 'non-binary' | 'unknown' {
   const lowerPrompt = prompt.toLowerCase();
   
-  const maleKeywords = ['man', 'male', 'guy', 'gentleman', 'boy', 'he', 'his', 'him'];
-  const femaleKeywords = ['woman', 'female', 'lady', 'girl', 'she', 'her', 'hers'];
-  const nonBinaryKeywords = ['person', 'individual', 'non-binary', 'androgynous', 'they', 'them', 'their'];
+  // Use word boundaries to avoid false positives (e.g., "human" containing "man")
+  const maleKeywords = ['\\bman\\b', '\\bmale\\b', '\\bguy\\b', '\\bgentleman\\b', '\\bboy\\b', '\\bhe\\b', '\\bhis\\b', '\\bhim\\b'];
+  const femaleKeywords = ['\\bwoman\\b', '\\bfemale\\b', '\\blady\\b', '\\bgirl\\b', '\\bshe\\b', '\\bher\\b', '\\bhers\\b'];
+  const nonBinaryKeywords = ['\\bperson\\b', '\\bindividual\\b', '\\bnon-binary\\b', '\\bandrogynous\\b', '\\bthey\\b', '\\bthem\\b', '\\btheir\\b'];
   
-  const maleCount = maleKeywords.filter(keyword => lowerPrompt.includes(keyword)).length;
-  const femaleCount = femaleKeywords.filter(keyword => lowerPrompt.includes(keyword)).length;
-  const nonBinaryCount = nonBinaryKeywords.filter(keyword => lowerPrompt.includes(keyword)).length;
+  const maleCount = maleKeywords.filter(keyword => new RegExp(keyword).test(lowerPrompt)).length;
+  const femaleCount = femaleKeywords.filter(keyword => new RegExp(keyword).test(lowerPrompt)).length;
+  const nonBinaryCount = nonBinaryKeywords.filter(keyword => new RegExp(keyword).test(lowerPrompt)).length;
   
   if (maleCount > femaleCount && maleCount > nonBinaryCount) return 'male';
   if (femaleCount > maleCount && femaleCount > nonBinaryCount) return 'female';
@@ -113,14 +114,14 @@ export function detectGenderFromPrompt(prompt: string): 'male' | 'female' | 'non
 export function detectAnimalsFromPrompt(prompt: string): string[] {
   const lowerPrompt = prompt.toLowerCase();
   const animalKeywords = [
-    'dog', 'cat', 'horse', 'bird', 'fish', 'rabbit', 'hamster', 'guinea pig',
-    'ferret', 'snake', 'lizard', 'turtle', 'frog', 'toad', 'spider', 'insect',
-    'cow', 'pig', 'sheep', 'goat', 'chicken', 'duck', 'goose', 'turkey',
-    'elephant', 'lion', 'tiger', 'bear', 'wolf', 'fox', 'deer', 'moose',
-    'penguin', 'dolphin', 'whale', 'shark', 'octopus', 'squid', 'crab', 'lobster'
+    '\\bdog\\b', '\\bcat\\b', '\\bhorse\\b', '\\bbird\\b', '\\bfish\\b', '\\brabbit\\b', '\\bhamster\\b', '\\bguinea pig\\b',
+    '\\bferret\\b', '\\bsnake\\b', '\\blizard\\b', '\\bturtle\\b', '\\bfrog\\b', '\\btoad\\b', '\\bspider\\b', '\\binsect\\b',
+    '\\bcow\\b', '\\bpig\\b', '\\bsheep\\b', '\\bgoat\\b', '\\bchicken\\b', '\\bduck\\b', '\\bgoose\\b', '\\bturkey\\b',
+    '\\belephant\\b', '\\blion\\b', '\\btiger\\b', '\\bbear\\b', '\\bwolf\\b', '\\bfox\\b', '\\bdeer\\b', '\\bmoose\\b',
+    '\\bpenguin\\b', '\\bdolphin\\b', '\\bwhale\\b', '\\bshark\\b', '\\boctopus\\b', '\\bsquid\\b', '\\bcrab\\b', '\\blobster\\b'
   ];
   
-  return animalKeywords.filter(animal => lowerPrompt.includes(animal));
+  return animalKeywords.filter(animal => new RegExp(animal).test(lowerPrompt));
 }
 
 /**
@@ -129,12 +130,12 @@ export function detectAnimalsFromPrompt(prompt: string): string[] {
 export function detectGroupsFromPrompt(prompt: string): string[] {
   const lowerPrompt = prompt.toLowerCase();
   const groupKeywords = [
-    'family', 'couple', 'friends', 'team', 'group', 'crowd', 'audience',
-    'class', 'students', 'workers', 'employees', 'colleagues', 'band',
-    'orchestra', 'choir', 'dance troupe', 'sports team', 'crew', 'staff'
+    '\\bfamily\\b', '\\bcouple\\b', '\\bfriends\\b', '\\bteam\\b', '\\bgroup\\b', '\\bcrowd\\b', '\\baudience\\b',
+    '\\bclass\\b', '\\bstudents\\b', '\\bworkers\\b', '\\bemployees\\b', '\\bcolleagues\\b', '\\bband\\b',
+    '\\borchestra\\b', '\\bchoir\\b', '\\bdance troupe\\b', '\\bsports team\\b', '\\bcrew\\b', '\\bstaff\\b'
   ];
   
-  return groupKeywords.filter(group => lowerPrompt.includes(group));
+  return groupKeywords.filter(group => new RegExp(group).test(lowerPrompt));
 }
 
 /**
