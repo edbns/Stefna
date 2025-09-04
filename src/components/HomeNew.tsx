@@ -198,7 +198,7 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: 'custom' as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit', // remix mode removed
+    mode: 'preset' as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit', // remix mode removed
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
@@ -3915,6 +3915,62 @@ const HomeNew: React.FC = () => {
                 <div className="flex items-center gap-2">
                   {/* Variations selector removed - single generation only */}
 
+                  {/* Custom Prompt button - NEW DEDICATED MODE */}
+                  <div className="relative" data-custom-dropdown>
+                    <button
+                      onClick={async () => {
+                        // Check authentication first
+                        if (!checkAuthAndRedirect()) return
+                        
+                        if (composerState.mode === 'custom') {
+                          // Already in Custom mode - do nothing
+                          closeAllDropdowns()
+                        } else {
+                          // Switch to Custom Prompt mode
+                          closeAllDropdowns()
+                          setComposerState(s => ({ ...s, mode: 'custom' }))
+                          setSelectedMode('presets') // Set selectedMode to match the new system
+                        }
+                      }}
+                      className={
+                        composerState.mode === 'custom'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                      }
+                      title={isAuthenticated ? 'Switch to Custom Prompt mode' : 'Explore Custom Prompt mode'}
+                    >
+                      Custom
+                    </button>
+                  </div>
+
+                  {/* Edit My Photo™ button - NEW EDIT MODE */}
+                  <div className="relative" data-edit-dropdown>
+                    <button
+                      onClick={async () => {
+                        // Check authentication first
+                        if (!checkAuthAndRedirect()) return
+                        
+                        if (composerState.mode === 'edit') {
+                          // Already in Edit mode - do nothing for now
+                          closeAllDropdowns()
+                        } else {
+                          // Switch to Edit My Photo mode
+                          closeAllDropdowns()
+                          setComposerState(s => ({ ...s, mode: 'edit' }))
+                          setSelectedMode('presets') // Set selectedMode to match the new system
+                        }
+                      }}
+                      className={
+                        composerState.mode === 'edit'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                      }
+                      title={isAuthenticated ? 'Switch to Edit mode' : 'Explore Edit mode'}
+                    >
+                      Edit
+                    </button>
+                  </div>
+
                   {/* Presets dropdown button */}
                   <div className="relative" data-presets-dropdown>
                                         <button
@@ -4265,61 +4321,6 @@ const HomeNew: React.FC = () => {
 
                   </div>
 
-                  {/* Custom Prompt button - NEW DEDICATED MODE */}
-                  <div className="relative" data-custom-dropdown>
-                    <button
-                      onClick={async () => {
-                        // Check authentication first
-                        if (!checkAuthAndRedirect()) return
-                        
-                        if (composerState.mode === 'custom') {
-                          // Already in Custom mode - do nothing
-                          closeAllDropdowns()
-                        } else {
-                          // Switch to Custom Prompt mode
-                          closeAllDropdowns()
-                          setComposerState(s => ({ ...s, mode: 'custom' }))
-                          setSelectedMode('presets') // Set selectedMode to match the new system
-                        }
-                      }}
-                      className={
-                        composerState.mode === 'custom'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
-                      }
-                      title={isAuthenticated ? 'Switch to Custom Prompt mode' : 'Explore Custom Prompt mode'}
-                    >
-                      Custom
-                    </button>
-                  </div>
-
-                  {/* Edit My Photo™ button - NEW EDIT MODE */}
-                  <div className="relative" data-edit-dropdown>
-                    <button
-                      onClick={async () => {
-                        // Check authentication first
-                        if (!checkAuthAndRedirect()) return
-                        
-                        if (composerState.mode === 'edit') {
-                          // Already in Edit mode - do nothing for now
-                          closeAllDropdowns()
-                        } else {
-                          // Switch to Edit My Photo mode
-                          closeAllDropdowns()
-                          setComposerState(s => ({ ...s, mode: 'edit' }))
-                          setSelectedMode('presets') // Set selectedMode to match the new system
-                        }
-                      }}
-                      className={
-                        composerState.mode === 'edit'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
-                      }
-                      title={isAuthenticated ? 'Switch to Edit My Photo mode' : 'Explore Edit My Photo mode'}
-                    >
-                      Edit My Photo
-                    </button>
-                  </div>
                 </div>
 
                 {/* Right: Action buttons - Save to draft and Generate (only for manual modes) */}
