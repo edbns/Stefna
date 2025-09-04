@@ -861,8 +861,9 @@ const HomeNew: React.FC = () => {
     })
   }
 
-  // Check if we can generate story (minimum 3 images total)
+  // Check if we can generate story (minimum 3 images total: 1 main + 2 additional)
   const canGenerateStory = selectedFile && additionalStoryImages.filter(Boolean).length >= 2
+  const totalStoryImages = (selectedFile ? 1 : 0) + additionalStoryImages.filter(Boolean).length
 
   // Story Time stacked cards styles
   const storyCardStyles = `
@@ -1075,6 +1076,12 @@ const HomeNew: React.FC = () => {
           <p className="text-white/90 text-lg">
             Add multiple photos to create an animated story
           </p>
+          <p className="text-white/60 text-sm mt-2">
+            Minimum 3 photos total (1 main + 2 additional)
+          </p>
+          <p className={`text-sm mt-1 ${hasMinimumImages ? 'text-green-400' : 'text-yellow-400'}`}>
+            {totalImages} / 3 photos ready
+          </p>
         </div>
 
 
@@ -1216,7 +1223,7 @@ const HomeNew: React.FC = () => {
                     console.log('⚠️ Need more images for Story Time generation')
                     notifyError({
                       title: 'Need more photos',
-                      message: 'Add at least 3 photos for Story Time'
+                      message: `Add at least 3 photos total (${totalStoryImages}/3)`
                     })
                   } else if (!isAuthenticated) {
                     console.log('🔐 Authentication required for Story Time')
@@ -4181,9 +4188,9 @@ const HomeNew: React.FC = () => {
                       if (composerState.mode === 'storytime') {
                         if (!canGenerateStory) {
                           const totalImages = (selectedFile ? 1 : 0) + additionalStoryImages.filter(Boolean).length;
-                          return `Add ${3 - totalImages} more photos (minimum 3 needed)`;
+                          return `Add ${3 - totalImages} more photos (minimum 3 total needed)`;
                         }
-                        return `Generate animated story with ${additionalStoryImages.filter(Boolean).length + 1} photos`;
+                        return `Generate animated story with ${totalStoryImages} photos`;
                       }
                       if (!previewUrl) return 'Upload media first';
 
