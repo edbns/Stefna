@@ -4002,8 +4002,7 @@ const HomeNew: React.FC = () => {
                         console.log('🎯 Presets button clicked!')
                         console.log('🔍 Current presetsOpen state:', presetsOpen)
                         console.log('🔍 Available presets:', weeklyPresetNames)
-                        // Allow exploration - close all other dropdowns and toggle presets
-                        closeAllDropdowns()
+                        // Toggle presets dropdown
                         setPresetsOpen((v) => !v)
                         console.log('🔄 Toggling presetsOpen to:', !presetsOpen)
                       }}
