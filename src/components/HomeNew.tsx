@@ -4442,21 +4442,7 @@ const HomeNew: React.FC = () => {
                           : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
                       }
                       aria-label="Generate"
-                      title={(() => {
-                        if (!isAuthenticated) return 'Sign up to generate AI content';
-                        if (composerState.mode === 'edit') {
-                          if (!canGenerateEdit) {
-                            const totalImages = (selectedFile ? 1 : 0) + additionalEditImages.filter(Boolean).length;
-                            return `Add ${2 - totalImages} more photos (minimum 2 total needed)`;
-                          }
-                          return `Generate edited photo with ${totalEditImages} photos`;
-                        }
-                        if (composerState.mode === 'custom') {
-                          if (!prompt.trim()) return 'Enter a prompt first';
-                          return 'Generate custom AI content';
-                        }
-                        return 'Generate AI content';
-                      })()}
+                      title="Generate AI content"
                       onClick={async () => {
                         // Debug logging
                         console.log('🔍 Generate button clicked:', {
@@ -4540,10 +4526,11 @@ const HomeNew: React.FC = () => {
                   )}
                 </div>
               </div>
+            </div>
             
             {/* Clean disclaimer row under composer */}
             <div className="mt-3 text-center">
-                              <p className="text-xs text-white">
+              <p className="text-xs text-white">
                 <span className="font-bold">Disclaimer:</span> It's AI. It's smart, but not perfect. expect some fun, wild, and maybe a few "what were they thinking?" moments.
               </p>
             </div>
@@ -4552,8 +4539,6 @@ const HomeNew: React.FC = () => {
       )}
 
       {/* Share Modal */}
-
-
 
       {/* Video Job Status Display removed in favor of unified toasts */}
 
