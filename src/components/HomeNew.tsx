@@ -3026,7 +3026,7 @@ const HomeNew: React.FC = () => {
 
 
     } catch (e) {
-      console.error('dispatchGenerate error', e);
+      console.error('🚨 dispatchGenerate error caught:', e);
       
       // 🛡️ RUN ID PROTECTION: Only handle errors for current run
       if (currentRunId !== runId) {
@@ -3039,8 +3039,10 @@ const HomeNew: React.FC = () => {
       
       // Map technical errors to user-friendly messages
       if (e instanceof Error) {
+        console.log('🚨 Error message:', e.message);
         if (e.message.includes('INSUFFICIENT_CREDITS') || e.message.includes('Insufficient credits') || e.message.includes('credits but only have')) {
           errorMessage = 'Not enough credits. Please wait for daily reset or upgrade your plan.';
+          console.log('🚨 Setting insufficient credits message');
         } else if (e.message.includes('timeout') || e.message.includes('ERR_TIMED_OUT')) {
           errorMessage = 'Request timed out. Please try again with a smaller image or different prompt.';
         } else {
@@ -3048,9 +3050,11 @@ const HomeNew: React.FC = () => {
         }
       }
       
+      console.log('🚨 Showing error notification:', errorMessage);
       // Show error notification
       notifyError({ title: 'Failed', message: errorMessage });
       
+      console.log('🚨 Stopping generation and clearing state');
       // Clear generation state on error
       endGeneration(genId);
       setNavGenerating(false);
