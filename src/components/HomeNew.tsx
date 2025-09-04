@@ -1076,15 +1076,11 @@ const HomeNew: React.FC = () => {
     const mainInputRef = useRef<HTMLInputElement>(null)
     const additionalInputRefs = Array.from({ length: 4 }, () => useRef<HTMLInputElement>(null))
 
-    // Use useMemo to prevent URL recreation on every render
-    const mainImageUrl = useMemo(() => {
-      return selectedFile ? URL.createObjectURL(selectedFile) : null
-    }, [selectedFile?.name]) // Use file name as stable dependency
+    // Simple URL creation without useMemo to prevent glitching
+    const mainImageUrl = selectedFile ? URL.createObjectURL(selectedFile) : null
 
-    // Memoize additional image URLs to prevent glitching
-    const additionalImageUrls = useMemo(() => {
-      return additionalImages.map(file => file ? URL.createObjectURL(file) : null)
-    }, [additionalImages.map(f => f?.name).join(',')]) // Use file names as stable dependency
+    // Simple additional image URLs without useMemo
+    const additionalImageUrls = additionalImages.map(file => file ? URL.createObjectURL(file) : null)
 
     // Cleanup URLs on unmount
     useEffect(() => {
@@ -1364,15 +1360,11 @@ const HomeNew: React.FC = () => {
     const mainInputRef = useRef<HTMLInputElement>(null)
     const additionalInputRefs = Array.from({ length: 4 }, () => useRef<HTMLInputElement>(null))
 
-    // Use useMemo to prevent URL recreation on every render
-    const mainImageUrl = useMemo(() => {
-      return selectedFile ? URL.createObjectURL(selectedFile) : null
-    }, [selectedFile?.name]) // Use file name as stable dependency
+    // Simple URL creation without useMemo to prevent glitching
+    const mainImageUrl = selectedFile ? URL.createObjectURL(selectedFile) : null
 
-    // Memoize additional image URLs to prevent glitching
-    const additionalImageUrls = useMemo(() => {
-      return additionalImages.map(file => file ? URL.createObjectURL(file) : null)
-    }, [additionalImages.map(f => f?.name).join(',')]) // Use file names as stable dependency
+    // Simple additional image URLs without useMemo
+    const additionalImageUrls = additionalImages.map(file => file ? URL.createObjectURL(file) : null)
 
     // Cleanup URLs on unmount
     useEffect(() => {
