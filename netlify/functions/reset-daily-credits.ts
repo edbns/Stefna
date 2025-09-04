@@ -1,5 +1,5 @@
 import type { Handler } from "@netlify/functions";
-import { q } from './_db';
+import { q, qOne } from './_db';
 import { json } from './_lib/http';
 
 // ============================================================================
