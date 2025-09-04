@@ -2333,6 +2333,234 @@ export const handler: Handler = async (event, context) => {
     const runId = frontendRunId || uuidv4();
     console.log('🔗 [Background] Using runId:', { frontendRunId, generatedRunId: runId, isFrontend: !!frontendRunId });
 
+    // Safe handler for edit-photo mode
+    if (mode === 'edit-photo') {
+      try {
+        console.log('[EditPhoto] Handling edit-photo mode');
+
+        // Validate required fields for edit-photo
+        if (!sourceAssetId) {
+          return {
+            statusCode: 400,
+            headers: CORS_JSON_HEADERS,
+            body: JSON.stringify({
+              success: false,
+              status: 'failed',
+              error: 'Missing sourceAssetId for edit-photo mode',
+            }),
+          };
+        }
+
+        if (!editPrompt) {
+          return {
+            statusCode: 400,
+            headers: CORS_JSON_HEADERS,
+            body: JSON.stringify({
+              success: false,
+              status: 'failed',
+              error: 'Missing editPrompt for edit-photo mode',
+            }),
+          };
+        }
+
+        console.log('[EditPhoto] Valid parameters received, proceeding with generation');
+
+        // Create generation request for edit-photo
+        const editGenerationRequest: UnifiedGenerationRequest = {
+          mode: 'edit', // Map edit-photo to edit mode internally
+          prompt: editPrompt,
+          sourceAssetId,
+          userId,
+          runId,
+          editImages,
+          editPrompt,
+          meta,
+          ipaThreshold,
+          ipaRetries,
+          ipaBlocking
+        };
+
+        // Process generation with timeout protection (10 minutes)
+        const result = await Promise.race([
+          processGeneration(editGenerationRequest),
+          new Promise<UnifiedGenerationResponse>((_, reject) =>
+            setTimeout(() => reject(new Error('Edit generation timed out after 10 minutes')), 10 * 60 * 1000)
+          )
+        ]);
+
+        return {
+          statusCode: 200,
+          headers: CORS_JSON_HEADERS,
+          body: JSON.stringify(result)
+        };
+
+      } catch (err: any) {
+        console.error('[EditPhoto ERROR]', err);
+        return {
+          statusCode: 500,
+          headers: CORS_JSON_HEADERS,
+          body: JSON.stringify({
+            success: false,
+            status: 'failed',
+            error: 'Edit-photo failed internally',
+            details: err?.message || 'Unknown error',
+          }),
+        };
+      }
+    }
+
+    // Safe handler for story_time mode
+    if (mode === 'story_time') {
+      try {
+        console.log('[StoryTime] Handling story_time mode');
+
+        // Validate required fields for story_time
+        if (!sourceAssetId) {
+          return {
+            statusCode: 400,
+            headers: CORS_JSON_HEADERS,
+            body: JSON.stringify({
+              success: false,
+              status: 'failed',
+              error: 'Missing sourceAssetId for story_time mode',
+            }),
+          };
+        }
+
+        if (!prompt) {
+          return {
+            statusCode: 400,
+            headers: CORS_JSON_HEADERS,
+            body: JSON.stringify({
+              success: false,
+              status: 'failed',
+              error: 'Missing prompt for story_time mode',
+            }),
+          };
+        }
+
+        console.log('[StoryTime] Valid parameters received, proceeding with generation');
+
+        // Create generation request for story_time
+        const storyGenerationRequest: UnifiedGenerationRequest = {
+          mode: 'story_time',
+          prompt,
+          sourceAssetId,
+          userId,
+          runId,
+          additionalImages,
+          storyTimePresetId,
+          meta,
+          ipaThreshold,
+          ipaRetries,
+          ipaBlocking
+        };
+
+        // Process generation with timeout protection (10 minutes)
+        const result = await Promise.race([
+          processGeneration(storyGenerationRequest),
+          new Promise<UnifiedGenerationResponse>((_, reject) =>
+            setTimeout(() => reject(new Error('Story generation timed out after 10 minutes')), 10 * 60 * 1000)
+          )
+        ]);
+
+        return {
+          statusCode: 200,
+          headers: CORS_JSON_HEADERS,
+          body: JSON.stringify(result)
+        };
+
+      } catch (err: any) {
+        console.error('[StoryTime ERROR]', err);
+        return {
+          statusCode: 500,
+          headers: CORS_JSON_HEADERS,
+          body: JSON.stringify({
+            success: false,
+            status: 'failed',
+            error: 'Story_time failed internally',
+            details: err?.message || 'Unknown error',
+          }),
+        };
+      }
+    }
+
+    // Safe handler for edit-photo mode
+    if (mode === 'edit-photo') {
+      try {
+        console.log('[EditPhoto] Handling edit-photo mode');
+
+        // Validate required fields for edit-photo
+        if (!sourceAssetId) {
+          return {
+            statusCode: 400,
+            headers: CORS_JSON_HEADERS,
+            body: JSON.stringify({
+              success: false,
+              status: 'failed',
+              error: 'Missing sourceAssetId for edit-photo mode',
+            }),
+          };
+        }
+
+        if (!editPrompt) {
+          return {
+            statusCode: 400,
+            headers: CORS_JSON_HEADERS,
+            body: JSON.stringify({
+              success: false,
+              status: 'failed',
+              error: 'Missing editPrompt for edit-photo mode',
+            }),
+          };
+        }
+
+        console.log('[EditPhoto] Valid parameters received, proceeding with generation');
+
+        // Create generation request for edit-photo
+        const editGenerationRequest: UnifiedGenerationRequest = {
+          mode: 'edit', // Map edit-photo to edit mode internally
+          prompt: editPrompt,
+          sourceAssetId,
+          userId,
+          runId,
+          editImages,
+          editPrompt,
+          meta,
+          ipaThreshold,
+          ipaRetries,
+          ipaBlocking
+        };
+
+        // Process generation with timeout protection (10 minutes)
+        const result = await Promise.race([
+          processGeneration(editGenerationRequest),
+          new Promise<UnifiedGenerationResponse>((_, reject) =>
+            setTimeout(() => reject(new Error('Edit generation timed out after 10 minutes')), 10 * 60 * 1000)
+          )
+        ]);
+
+        return {
+          statusCode: 200,
+          headers: CORS_JSON_HEADERS,
+          body: JSON.stringify(result)
+        };
+
+      } catch (err: any) {
+        console.error('[EditPhoto ERROR]', err);
+        return {
+          statusCode: 500,
+          headers: CORS_JSON_HEADERS,
+          body: JSON.stringify({
+            success: false,
+            status: 'failed',
+            error: 'Edit-photo failed internally',
+            details: err?.message || 'Unknown error',
+          }),
+        };
+      }
+    }
+
     // Create generation request
     const generationRequest: UnifiedGenerationRequest = {
       mode,
