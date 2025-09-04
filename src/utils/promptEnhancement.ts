@@ -30,6 +30,14 @@ export function enhancePromptForSpecificity(
     context = 'portrait'
   } = options;
 
+  console.log('🔍 [Prompt Enhancement] Starting enhancement:', {
+    originalPrompt: originalPrompt.substring(0, 100) + '...',
+    originalGender,
+    originalAnimals,
+    originalGroups,
+    context
+  });
+
   let enhancedPrompt = originalPrompt;
   let negativePrompt = '';
 
@@ -45,11 +53,20 @@ export function enhancePromptForSpecificity(
     const terms = genderSpecificTerms[originalGender] || genderSpecificTerms.unknown;
     const genderTerm = terms[0]; // Use primary term
 
-    // Add gender-specific weight to the prompt
-    enhancedPrompt += ` (${genderTerm}:1.2)`;
+    // Only add gender terms if we're not dealing with animals
+    // Check if the prompt contains animal keywords
+    const animalKeywords = ['dog', 'cat', 'horse', 'bird', 'fish', 'rabbit', 'hamster', 'cow', 'pig', 'sheep', 'goat', 'chicken', 'duck', 'elephant', 'lion', 'tiger', 'bear', 'wolf', 'fox', 'deer', 'penguin', 'dolphin', 'whale', 'shark'];
+    const hasAnimals = animalKeywords.some(animal => originalPrompt.toLowerCase().includes(animal));
     
-    // Add to negative prompt to prevent gender changes
-    negativePrompt += 'gender change, gender swap, opposite gender, ';
+    if (!hasAnimals) {
+      // Add gender-specific weight to the prompt
+      enhancedPrompt += ` (${genderTerm}:1.2)`;
+      
+      // Add to negative prompt to prevent gender changes
+      negativePrompt += 'gender change, gender swap, opposite gender, ';
+    } else {
+      console.log('⚠️ [Prompt Enhancement] Skipping gender terms for animal photo');
+    }
   }
 
   // Animal-specific enhancements
@@ -142,19 +159,28 @@ export function detectGroupsFromPrompt(prompt: string): string[] {
  * Applies Stability Ultra specific prompt enhancements
  */
 export function applyStabilityUltraEnhancements(prompt: string): string {
-  // Add Stability Ultra specific terms for better understanding
+  // Don't modify prompts that already have weights to avoid double-weighting
+  if (prompt.includes('(') && prompt.includes(')')) {
+    console.log('⚠️ [Stability Ultra] Skipping enhancement - prompt already has weights');
+    return prompt;
+  }
+  
   let enhanced = prompt;
   
   // Add weight to important terms using (term:weight) syntax
+  // Only add weights if the term doesn't already have a weight
   const importantTerms = ['portrait', 'face', 'person', 'subject', 'photo', 'image'];
   importantTerms.forEach(term => {
-    if (enhanced.toLowerCase().includes(term)) {
-      enhanced = enhanced.replace(new RegExp(`\\b${term}\\b`, 'gi'), `(${term}:1.1)`);
+    const regex = new RegExp(`\\b${term}\\b`, 'gi');
+    if (enhanced.toLowerCase().includes(term) && !enhanced.includes(`(${term}:`)) {
+      enhanced = enhanced.replace(regex, `(${term}:1.1)`);
     }
   });
   
-  // Add quality indicators
-  enhanced += ' high quality, detailed, professional photography, sharp focus';
+  // Add quality indicators (only if not already present)
+  if (!enhanced.includes('high quality')) {
+    enhanced += ' high quality, detailed, professional photography, sharp focus';
+  }
   
   return enhanced;
 }
