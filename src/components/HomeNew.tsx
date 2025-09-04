@@ -1337,12 +1337,12 @@ const HomeNew: React.FC = () => {
     // Use useMemo to prevent URL recreation on every render
     const mainImageUrl = useMemo(() => {
       return selectedFile ? URL.createObjectURL(selectedFile) : null
-    }, [selectedFile])
+    }, [selectedFile?.name]) // Use file name as stable dependency
 
     // Memoize additional image URLs to prevent glitching
     const additionalImageUrls = useMemo(() => {
       return additionalImages.map(file => file ? URL.createObjectURL(file) : null)
-    }, [additionalImages])
+    }, [additionalImages.map(f => f?.name).join(',')]) // Use file names as stable dependency
 
     // Cleanup URLs on unmount
     useEffect(() => {
@@ -2663,6 +2663,18 @@ const HomeNew: React.FC = () => {
         // Identity preservation removed - not implemented in backend
       };
       console.log('📖 STORY TIME MODE: Using', storyImages.length, 'images for video generation');
+      
+    } else if (kind === 'edit') {
+      // EDIT MODE: Use main image + prompt for photo editing
+      const editImages = options?.editImages || [];
+      
+      effectivePrompt = options?.editPrompt || prompt || 'Edit this photo';
+      generationMeta = {
+        mode: 'edit',
+        editImages: editImages,
+        editPrompt: effectivePrompt
+      };
+      console.log('✏️ EDIT MODE: Using main image +', editImages.length, 'additional images for photo editing');
       
     } else {
       console.error('❌ Unknown generation kind:', kind);
