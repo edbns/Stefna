@@ -15,6 +15,7 @@ import { Handler } from '@netlify/functions';
 import { q, qOne } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { withAuth } from './_withAuth';
+import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyStabilityUltraEnhancements } from '../../src/utils/promptEnhancement';
 
 const FAL_BASE = 'https://fal.run';
 const FAL_KEY = process.env.FAL_KEY as string;
@@ -1189,6 +1190,50 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         safety_tolerance: params.safety_tolerance ?? 3,
         output_format: params.output_format ?? "jpeg"
       };
+
+      // 🎯 ENHANCED PROMPT ENGINEERING FOR GENDER, ANIMALS, AND GROUPS
+      // Apply Stability Ultra specific enhancements for better specificity
+      const originalPrompt = params.prompt;
+      const detectedGender = detectGenderFromPrompt(originalPrompt);
+      const detectedAnimals = detectAnimalsFromPrompt(originalPrompt);
+      const detectedGroups = detectGroupsFromPrompt(originalPrompt);
+      
+      console.log(`🔍 [Enhanced Prompt] Detected:`, {
+        gender: detectedGender,
+        animals: detectedAnimals,
+        groups: detectedGroups
+      });
+
+      // Apply enhanced prompt engineering
+      const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(originalPrompt, {
+        preserveGender: true,
+        preserveAnimals: true,
+        preserveGroups: true,
+        originalGender: detectedGender,
+        originalAnimals: detectedAnimals,
+        originalGroups: detectedGroups,
+        context: mode
+      });
+
+      // Apply Stability Ultra specific enhancements
+      const ultraEnhancedPrompt = applyStabilityUltraEnhancements(enhancedPrompt);
+      
+      // Update the prompt with enhanced version
+      bflInput.prompt = ultraEnhancedPrompt;
+      
+      // Add enhanced negative prompt if not already present
+      if (negativePrompt && !bflInput.negative_prompt) {
+        bflInput.negative_prompt = negativePrompt;
+      } else if (negativePrompt && bflInput.negative_prompt) {
+        // Combine with existing negative prompt
+        bflInput.negative_prompt = `${bflInput.negative_prompt}, ${negativePrompt}`;
+      }
+
+      console.log(`✨ [Enhanced Prompt] Original: "${originalPrompt}"`);
+      console.log(`✨ [Enhanced Prompt] Enhanced: "${ultraEnhancedPrompt}"`);
+      if (negativePrompt) {
+        console.log(`✨ [Enhanced Prompt] Negative: "${negativePrompt}"`);
+      }
       
       // Add model-specific parameters
       if (modelConfig.endpoint === 'flux-pro-1.1') {
@@ -1467,6 +1512,47 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           prompt: params.editPrompt || params.prompt,
           additional_images: uploadedImageUrls.slice(1) // Additional images for composition
         };
+
+        // 🎯 ENHANCED PROMPT ENGINEERING FOR EDIT MODE
+        // Apply enhanced prompt engineering for Edit mode
+        const originalEditPrompt = params.editPrompt || params.prompt;
+        const detectedGender = detectGenderFromPrompt(originalEditPrompt);
+        const detectedAnimals = detectAnimalsFromPrompt(originalEditPrompt);
+        const detectedGroups = detectGroupsFromPrompt(originalEditPrompt);
+        
+        console.log(`🔍 [Edit Mode Enhanced Prompt] Detected:`, {
+          gender: detectedGender,
+          animals: detectedAnimals,
+          groups: detectedGroups
+        });
+
+        // Apply enhanced prompt engineering for Edit mode
+        const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(originalEditPrompt, {
+          preserveGender: true,
+          preserveAnimals: true,
+          preserveGroups: true,
+          originalGender: detectedGender,
+          originalAnimals: detectedAnimals,
+          originalGroups: detectedGroups,
+          context: 'edit'
+        });
+
+        // Apply Stability Ultra specific enhancements
+        const ultraEnhancedPrompt = applyStabilityUltraEnhancements(enhancedPrompt);
+        
+        // Update the prompt with enhanced version
+        editInput.prompt = ultraEnhancedPrompt;
+        
+        // Add enhanced negative prompt
+        if (negativePrompt) {
+          editInput.negative_prompt = negativePrompt;
+        }
+
+        console.log(`✨ [Edit Mode Enhanced Prompt] Original: "${originalEditPrompt}"`);
+        console.log(`✨ [Edit Mode Enhanced Prompt] Enhanced: "${ultraEnhancedPrompt}"`);
+        if (negativePrompt) {
+          console.log(`✨ [Edit Mode Enhanced Prompt] Negative: "${negativePrompt}"`);
+        }
         
         // Add width and height to preserve original aspect ratio
         if (params.sourceWidth && params.sourceHeight) {
@@ -1568,6 +1654,51 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           guidance_scale: (mode === 'ghibli_reaction' || mode === 'emotion_mask') ? 7.0 : 7.5, // Lower guidance for subtler effect
           seed: Math.floor(Math.random() * 1000000)
         };
+
+        // 🎯 ENHANCED PROMPT ENGINEERING FOR FAL.AI
+        // Apply enhanced prompt engineering for Fal.ai models
+        if (!(mode === 'ghibli_reaction' || mode === 'emotion_mask')) {
+          const originalPrompt = params.prompt;
+          const detectedGender = detectGenderFromPrompt(originalPrompt);
+          const detectedAnimals = detectAnimalsFromPrompt(originalPrompt);
+          const detectedGroups = detectGroupsFromPrompt(originalPrompt);
+          
+          console.log(`🔍 [Fal.ai Enhanced Prompt] Detected:`, {
+            gender: detectedGender,
+            animals: detectedAnimals,
+            groups: detectedGroups
+          });
+
+          // Apply enhanced prompt engineering for Fal.ai
+          const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(originalPrompt, {
+            preserveGender: true,
+            preserveAnimals: true,
+            preserveGroups: true,
+            originalGender: detectedGender,
+            originalAnimals: detectedAnimals,
+            originalGroups: detectedGroups,
+            context: mode
+          });
+
+          // Apply Stability Ultra specific enhancements
+          const ultraEnhancedPrompt = applyStabilityUltraEnhancements(enhancedPrompt);
+          
+          // Update the prompt with enhanced version
+          input.prompt = ultraEnhancedPrompt;
+          
+          // Add enhanced negative prompt
+          if (negativePrompt) {
+            input.negative_prompt = input.negative_prompt 
+              ? `${input.negative_prompt}, ${negativePrompt}`
+              : negativePrompt;
+          }
+
+          console.log(`✨ [Fal.ai Enhanced Prompt] Original: "${originalPrompt}"`);
+          console.log(`✨ [Fal.ai Enhanced Prompt] Enhanced: "${ultraEnhancedPrompt}"`);
+          if (negativePrompt) {
+            console.log(`✨ [Fal.ai Enhanced Prompt] Negative: "${negativePrompt}"`);
+          }
+        }
         
         // Add width and height to preserve original aspect ratio
         if (params.sourceWidth && params.sourceHeight) {
