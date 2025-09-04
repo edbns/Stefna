@@ -1942,6 +1942,15 @@ const handler: Handler = async (event, context) => {
     const body = JSON.parse(event.body || '{}');
     const { mode, prompt, sourceAssetId, userId, presetKey, emotionMaskPresetId, storyTimePresetId, additionalImages, meta, ipaThreshold, ipaRetries, ipaBlocking, runId: frontendRunId } = body;
 
+    console.log('🚀 [Background] Received request:', {
+      mode,
+      prompt: prompt?.substring(0, 50),
+      sourceAssetId: sourceAssetId ? 'present' : 'missing',
+      userId,
+      additionalImages: additionalImages?.length || 0,
+      storyTimePresetId
+    });
+
     // Validate required fields
     if (!mode || !prompt || !sourceAssetId || !userId) {
       return {

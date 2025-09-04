@@ -4065,11 +4065,23 @@ const HomeNew: React.FC = () => {
                       } else if (composerState.mode === 'storytime') {
                         // Story Time mode - use dispatchGenerate with all images
                         console.log('📖 Story Time mode - calling dispatchGenerate')
+                        console.log('📖 Story Time debug:', {
+                          canGenerateStory,
+                          selectedFile: !!selectedFile,
+                          additionalStoryImages: additionalStoryImages.filter(Boolean).length,
+                          totalImages: (selectedFile ? 1 : 0) + additionalStoryImages.filter(Boolean).length
+                        })
                         if (canGenerateStory) {
+                          console.log('📖 Story Time: Starting generation with images:', [
+                            selectedFile?.name,
+                            ...additionalStoryImages.filter(Boolean).map(f => f.name)
+                          ])
                           await dispatchGenerate('storytime', {
                             storyTimeImages: [selectedFile!, ...additionalStoryImages.filter(Boolean)],
                             storyTimePresetId: selectedStoryTimePreset || undefined
                           })
+                        } else {
+                          console.error('📖 Story Time: Cannot generate - insufficient images')
                         }
                         } else {
                         // Fallback - determine mode and generate
