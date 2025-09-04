@@ -1,11 +1,11 @@
 -- Create edit_media table for Edit My Photo mode
 CREATE TABLE IF NOT EXISTS edit_media (
   id SERIAL PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   image_url TEXT NOT NULL,
   source_url TEXT,
   prompt TEXT NOT NULL,
-  run_id UUID NOT NULL UNIQUE,
+  run_id TEXT NOT NULL UNIQUE,
   fal_job_id TEXT,
   status TEXT DEFAULT 'completed',
   metadata JSONB,
