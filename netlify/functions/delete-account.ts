@@ -155,6 +155,30 @@ export const handler: Handler = async (event) => {
 
       console.log(`✅ [Account Deletion] User ${userId} (${userEmail}) and all associated data deleted successfully`);
 
+      // Send account deleted confirmation email
+      try {
+        await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/sendEmail`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: userEmail,
+            subject: 'Your Stefna Account Has Been Deleted',
+            text: `Hello,
+
+This is to confirm that your Stefna account has been permanently deleted.
+
+If this was a mistake, we're here to help — but your data has been fully removed for your privacy.
+
+Thank you for being part of Stefna.`,
+            type: 'account_deleted'
+          })
+        });
+        console.log(`📧 Account deleted confirmation email sent to: ${userEmail}`);
+      } catch (emailError) {
+        console.warn('⚠️ Failed to send account deleted email:', emailError);
+        // Don't fail the deletion if email fails
+      }
+
       return json({
         success: true,
         message: 'Account deleted successfully',

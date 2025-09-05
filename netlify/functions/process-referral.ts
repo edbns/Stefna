@@ -107,6 +107,35 @@ export const handler: Handler = async (event) => {
     console.log('💰 Referrer new balance:', referrerBalance[0]?.credits);
     console.log('💰 New user new balance:', newUserBalance[0]?.credits);
     
+    // Send referral bonus email to referrer
+    try {
+      // Get referrer email
+      const referrerData = await qOne(`
+        SELECT email FROM users WHERE id = $1
+      `, [referrerId]);
+      
+      if (referrerData?.email) {
+        await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/sendEmail`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: referrerData.email,
+            subject: 'You earned bonus credits',
+            text: `Nice work!
+
+You earned +50 credits for referring a friend to Stefna. They signed up and joined the fun.
+
+Use your bonus now → stefna.xyz`,
+            type: 'referral_bonus'
+          })
+        });
+        console.log(`📧 Referral bonus email sent to referrer: ${referrerData.email}`);
+      }
+    } catch (emailError) {
+      console.warn('⚠️ Failed to send referral bonus email:', emailError);
+      // Don't fail the referral if email fails
+    }
+    
     return json({ 
       ok: true, 
       message: 'Referral processed successfully',

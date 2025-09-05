@@ -173,105 +173,42 @@ export const handler: Handler = async (event) => {
       const { data: emailData, error: emailError } = await resend.emails.send({
         from: 'Stefna <hello@stefna.xyz>',
         to: [email],
-        subject: `Your Stefna Login Code: ${otp}`,
+        subject: `Your Stefna Login Code **${otp}**`,
         html: `
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
+<html lang="en" style="margin:0; padding:0; background-color:#000;">
+  <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stefna Login Code</title>
-    <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            background-color: #000000; 
-            color: #ffffff;
-        }
-        .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background-color: #000000; 
-            padding: 40px 30px;
-            text-align: center;
-        }
-        .logo { 
-            text-align: center; 
-            margin-bottom: 40px;
-        }
-        .logo img {
-            height: 60px;
-            width: auto;
-        }
-        .content { 
-            line-height: 1.6;
-            text-align: center;
-        }
-        .otp-box { 
-            background-color: #1a1a1a; 
-            border: 2px solid #333333; 
-            border-radius: 8px; 
-            padding: 30px; 
-            text-align: center; 
-            margin: 30px 0;
-        }
-        .otp-code { 
-            font-size: 36px; 
-            font-weight: 700; 
-            color: #ffffff; 
-            letter-spacing: 4px; 
-            font-family: 'Courier New', monospace;
-        }
-        .expiry { 
-            color: #cccccc; 
-            font-size: 14px; 
-            margin-top: 15px;
-        }
-        .warning { 
-            background-color: #1a1a1a; 
-            border: 1px solid #333333; 
-            border-radius: 6px; 
-            padding: 15px; 
-            margin: 20px 0;
-            font-size: 14px;
-            color: #cccccc;
-        }
-        .footer { 
-            margin-top: 40px; 
-            font-size: 12px; 
-            color: #666666;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="logo">
-            <img src="https://stefna.xyz/logo.png" alt="Stefna" />
-        </div>
-        
-        <div class="content">
-            <h1>Your Login Code</h1>
-            <p>Use this code to sign in to your Stefna account:</p>
-            
-            <div class="otp-box">
-                <div class="otp-code">${otp}</div>
-                <div class="expiry">Expires in 10 minutes</div>
-            </div>
-            
-            <div class="warning">
-                <strong>Security Notice:</strong> Never share this code with anyone. Stefna will never ask for it.
-            </div>
-            
-            <p>If you didn't request this code, you can safely ignore this email.</p>
-        </div>
-        
-        <div class="footer">
-            <p>This email was sent to ${email}</p>
-            <p>&copy; 2024 Stefna. All rights reserved.</p>
-        </div>
+  </head>
+  <body style="background-color:#000; color:#fff; font-family:Arial, sans-serif; padding:0; margin:0;">
+    <div style="max-width:600px; margin:0 auto; padding:40px 20px; text-align:center;">
+      <img src="https://stefna.xyz/logo.png" alt="Stefna Logo" style="max-width:40px; margin-bottom:40px; display:block; margin-left:auto; margin-right:auto;">
+
+      <h1 style="font-size:20px; font-weight:bold; margin-bottom:16px;">Your Stefna Login Code</h1>
+      <p style="font-size:13px; line-height:1.6; margin:0 auto; max-width:90%;">
+        Hello,
+      </p>
+      <p style="font-size:13px; line-height:1.6; margin:0 auto; max-width:90%;">
+        Your one-time login code is:
+      </p>
+      
+      <div style="background-color:#1a1a1a; border:2px solid #333; border-radius:8px; padding:30px; margin:30px 0; text-align:center;">
+        <div style="font-size:36px; font-weight:700; color:#fff; letter-spacing:4px; font-family:'Courier New',monospace;">${otp}</div>
+        <div style="color:#ccc; font-size:14px; margin-top:15px;">Expires in 10 minutes</div>
+      </div>
+      
+      <div style="background-color:#1a1a1a; border:1px solid #333; border-radius:6px; padding:15px; margin:20px 0; font-size:14px; color:#ccc;">
+        This code will expire in 10 minutes. If you didn't request it, you can safely ignore this email.
+      </div>
+
+      <p style="font-size:14px; color:#aaa; margin-top:40px;">Stefna<br><p style="margin:5px 0 0; font-size:12px; color:#888888; text-align:center;">
+        If you didn't request this code, you can safely ignore this email.<br />
+        &copy; 2025 Stefna. All rights reserved.
+      </p>
     </div>
-</body>
+  </body>
 </html>`
       });
 

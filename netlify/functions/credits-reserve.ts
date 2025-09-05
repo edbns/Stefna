@@ -142,43 +142,6 @@ export const handler: Handler = async (event) => {
         }, { status: 403 });
       }
       
-      // Check if user is running low on credits and send warning email
-      if (currentBalance <= 6) { // 6 credits = 3 images remaining
-        try {
-          // Get user email from the database
-          const user = await qOne(`
-            SELECT email FROM users WHERE id = $1
-          `, [userId]);
-          
-          if (user?.email) {
-            const usagePercentage = Math.round(((30 - currentBalance) / 30) * 100);
-            const dailyUsed = 30 - currentBalance;
-            const dailyCap = 30;
-            const remainingCredits = currentBalance;
-            const isCritical = currentBalance <= 4; // Critical if 2 images or less remaining
-            
-            // Send low credit warning email
-            await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/send-credit-warning`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                to: user.email,
-                usagePercentage,
-                dailyUsed,
-                dailyCap,
-                remainingCredits,
-                isCritical
-              })
-            });
-            
-            console.log(`📧 Low credit warning email triggered for user ${userId} (${currentBalance} credits remaining)`);
-          }
-        } catch (emailError) {
-          console.warn('⚠️ Failed to send low credit warning email:', emailError);
-          // Don't block generation if email fails
-        }
-      }
-      
       console.log('🔒 Credit balance check passed:', currentBalance, '>=', cost);
       
       // Create credit transaction record using raw SQL (HOLD credits, don't deduct yet)

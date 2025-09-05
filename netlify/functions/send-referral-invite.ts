@@ -65,117 +65,47 @@ export const handler: Handler = async (event) => {
     await resend.emails.send({
       from: 'Stefna <hello@stefna.xyz>',
       to: [to],
-      subject: 'You\'ve Been Invited to Stefna – 25 Free Credits Inside',
+      subject: 'Your Friend Invited You to Try Stefna',
             html: `
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
+<html lang="en" style="margin:0; padding:0; background-color:#000;">
+  <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stefna Invitation</title>
-    <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            background-color: #000000; 
-            color: #ffffff;
-        }
-                            .container { 
-                        max-width: 600px; 
-                        margin: 0 auto; 
-                        background-color: #000000; 
-                        padding: 40px 30px;
-                        text-align: center;
-                    }
-        .logo { 
-            text-align: center; 
-            margin-bottom: 40px;
-        }
-        .logo img {
-            height: 60px;
-            width: auto;
-        }
-                            .content { 
-                        line-height: 1.6;
-                        text-align: center;
-                    }
-        .bonus-box { 
-            background-color: #1a1a1a; 
-            border: 2px solid #333333; 
-            border-radius: 8px; 
-            padding: 30px; 
-            text-align: center; 
-            margin: 30px 0;
-        }
-        .credits { 
-            font-size: 32px; 
-            font-weight: 700; 
-            color: #ffffff; 
-            margin: 20px 0;
-        }
-        .highlight { 
-            background-color: #1a1a1a; 
-            border-radius: 6px; 
-            padding: 20px; 
-            margin: 20px 0;
-            border: 1px solid #333333;
-        }
-        .cta { 
-            background-color: #ffffff; 
-            color: #000000; 
-            padding: 15px 30px; 
-            border-radius: 6px; 
-            text-decoration: none; 
-            display: inline-block; 
-            margin: 20px 0; 
-            font-weight: 600;
-        }
-                            .footer { 
-                        margin-top: 40px; 
-                        text-align: center; 
-                        color: #ffffff; 
-                        font-size: 14px;
-                        border-top: 1px solid #333333;
-                        padding-top: 20px;
-                    }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="logo">
-            <img src="https://stefna.xyz/logo.png" alt="Stefna" />
-        </div>
-        
-        <div class="content">
-            <h2 style="margin-top: 0; color: #ffffff;">You've Been Invited!</h2>
-            <p>Someone invited you to try Stefna — a new way to create high-quality AI images (and soon, videos).</p>
-            
-            <div class="bonus-box">
-                <div class="credits">25 Bonus Credits</div>
-                <p>As a referred user, you get <strong>25 bonus credits</strong> the moment you sign up.</p>
-                <p>No subscriptions, no verification, just creative freedom with a daily 30 credit limit for everyone.</p>
-            </div>
-            
-            <div class="highlight">
-                <strong>Use your 25 extra credits however you like — on top of your daily allowance.</strong>
-            </div>
-            
-            <div style="text-align: center;">
-                <a href="https://stefna.xyz/auth" class="cta">Join Now & Start Creating</a>
-            </div>
-            
-            <p style="font-size: 14px; color: #cccccc; text-align: center; margin-top: 20px;">
-                When you sign up, make sure to mention that <strong>${referrerEmail}</strong> invited you to get your bonus credits.
-            </p>
-        </div>
-        
-        <div class="footer">
-            <p>This email was sent to: ${to}</p>
-            <p>Stefna 2025 all rights reserved</p>
-        </div>
+  </head>
+  <body style="background-color:#000; color:#fff; font-family:Arial, sans-serif; padding:0; margin:0;">
+    <div style="max-width:600px; margin:0 auto; padding:40px 20px; text-align:center;">
+      <img src="https://stefna.xyz/logo.png" alt="Stefna Logo" style="max-width:40px; margin-bottom:40px; display:block; margin-left:auto; margin-right:auto;">
+
+      <h1 style="font-size:20px; font-weight:bold; margin-bottom:16px;">Your Friend Invited You to Try Stefna</h1>
+      <p style="font-size:13px; line-height:1.6; margin:0 auto; max-width:90%;">
+        Hey there,
+      </p>
+      <p style="font-size:13px; line-height:1.6; margin:0 auto; max-width:90%;">
+        Your friend invited you to try Stefna — the AI photo transformation studio that turns any selfie or Photo into cinematic magic.
+      </p>
+      <p style="font-size:13px; line-height:1.6; margin:0 auto; max-width:90%;">
+        Join now and you'll receive +25 free credits to get started right away.
+      </p>
+      
+      <div style="text-align:center; margin:20px 0;">
+        <a href="https://stefna.xyz/" style="background-color:#fff; color:#000; padding:15px 30px; border-radius:6px; text-decoration:none; display:inline-block; font-weight:600;">Claim your credits here</a>
+      </div>
+      
+      <p style="font-size:13px; line-height:1.6; margin:0 auto; max-width:90%;">
+        No account? No problem. It takes seconds.
+      </p>
+      <p style="font-size:13px; line-height:1.6; margin:0 auto; max-width:90%;">
+        Let your creativity run wild — no limits.
+      </p>
+
+      <p style="font-size:14px; color:#aaa; margin-top:40px;">Stefna<br><p style="margin:5px 0 0; font-size:12px; color:#888888; text-align:center;">
+        If you didn't sign up, you can safely ignore this email.<br />
+        &copy; 2025 Stefna. All rights reserved.
+      </p>
     </div>
-</body>
+  </body>
 </html>`,
       text: `Someone invited you to try Stefna — a new way to create high-quality AI images (and soon, videos).
 

@@ -72,6 +72,57 @@ export const handler: Handler = async (event) => {
       timestamp: now.toISOString()
     };
 
+    // Check if user is running low on credits and send warning email (only once per day)
+    if (currentCredits <= 6) { // 6 credits = 3 images remaining
+      try {
+        // Check if we can send email (respects frequency limits)
+        const canSendEmail = await qOne(`
+          SELECT can_send_email($1, 'credit_warning', 24) as can_send
+        `, [userId]);
+        
+        if (canSendEmail?.can_send) {
+          // Get user email from the database
+          const user = await qOne(`
+            SELECT email FROM users WHERE id = $1
+          `, [userId]);
+          
+          if (user?.email) {
+            // Send low credit warning email
+            await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/sendEmail`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: user.email,
+                subject: "You're almost out of credits today",
+                text: `Heads up — you're running low on credits.
+
+Don't worry, they refresh daily. Want more? Invite a friend and earn bonus credits instantly.
+
+Check your balance → stefna.xyz/profile
+
+---
+Don't want these emails? Unsubscribe here: https://stefna.xyz/unsubscribe?email=${encodeURIComponent(user.email)}&type=credit_warning`,
+                type: 'credits_low',
+                data: { remainingCredits: currentCredits }
+              })
+            });
+            
+            // Record that email was sent
+            await qOne(`
+              SELECT record_email_sent($1, 'credit_warning')
+            `, [userId]);
+            
+            console.log(`📧 Low credit warning email sent to user ${userId} (${currentCredits} credits remaining)`);
+          }
+        } else {
+          console.log(`📧 Credit warning email skipped for user ${userId} - already sent today`);
+        }
+      } catch (emailError) {
+        console.warn('⚠️ Failed to send low credit warning email:', emailError);
+        // Don't block quota check if email fails
+      }
+    }
+
     console.log('✅ [Quota] Retrieved quota:', quota);
 
     return json({

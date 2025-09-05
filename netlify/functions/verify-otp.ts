@@ -184,6 +184,42 @@ export const handler: Handler = async (event) => {
       );
 
       user = { id: userId, email: email.toLowerCase() };
+      
+      // Send welcome email for new users (with 5-minute delay)
+      try {
+        // Use setTimeout to delay the welcome email by 5 minutes
+        setTimeout(async () => {
+          try {
+            await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/sendEmail`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: email.toLowerCase(),
+                subject: 'Welcome to Stefna',
+                text: `Welcome!
+
+Thanks for joining Stefna — where moments turn into masterpieces. You've got 30 free credits today to try our AI transformations.
+
+Need help? Just reply to this email.
+
+Let's create something amazing.
+
+---
+Don't want these emails? Unsubscribe here: https://stefna.xyz/unsubscribe?email=${encodeURIComponent(email.toLowerCase())}&type=welcome`,
+                type: 'welcome'
+              })
+            });
+            console.log(`📧 Welcome email sent to new user: ${email}`);
+          } catch (delayedEmailError) {
+            console.warn('⚠️ Failed to send delayed welcome email:', delayedEmailError);
+          }
+        }, 5 * 60 * 1000); // 5 minutes delay
+        
+        console.log(`📧 Welcome email scheduled for new user: ${email} (5-minute delay)`);
+      } catch (emailError) {
+        console.warn('⚠️ Failed to schedule welcome email:', emailError);
+        // Don't block user creation if email fails
+      }
     } else {
       user = userResult.rows[0];
     }
