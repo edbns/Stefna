@@ -12,6 +12,8 @@ interface LQIPImageProps {
   aspectRatio?: number
   // Custom LQIP URL (if not using Cloudinary)
   lqipUrl?: string
+  // Skip LQIP loading state (for initial feed loading)
+  skipLoadingState?: boolean
 }
 
 const LQIPImage: React.FC<LQIPImageProps> = ({
@@ -22,7 +24,8 @@ const LQIPImage: React.FC<LQIPImageProps> = ({
   loading = 'lazy',
   decoding = 'async',
   aspectRatio,
-  lqipUrl
+  lqipUrl,
+  skipLoadingState = false
 }) => {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isLQIPLoaded, setIsLQIPLoaded] = useState(false)
@@ -85,8 +88,8 @@ const LQIPImage: React.FC<LQIPImageProps> = ({
       style={aspectRatio ? { aspectRatio } : undefined}
       onClick={onClick}
     >
-      {/* Dark grey placeholder while loading */}
-      {!isLoaded && (
+      {/* Dark grey placeholder while loading - skip during initial feed loading */}
+      {!isLoaded && !skipLoadingState && (
         <div className="absolute inset-0 w-full h-full bg-gray-800">
           {/* LQIP Placeholder - hidden until loaded to avoid flash */}
           <img

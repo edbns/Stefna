@@ -36,6 +36,8 @@ interface MasonryMediaGridProps {
   // Likes functionality
   onToggleLike?: (media: UserMedia) => void
   userLikes?: Record<string, boolean>
+  // Skip LQIP loading states during initial feed loading
+  skipImageLoadingStates?: boolean
 }
 
 const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
@@ -63,7 +65,9 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   onPresetTagClick,
   // Likes functionality
   onToggleLike,
-  userLikes = {}
+  userLikes = {},
+  // Skip LQIP loading states during initial feed loading
+  skipImageLoadingStates = false
 }) => {
   const gridRef = useRef<HTMLDivElement>(null)
   
@@ -196,6 +200,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                           loading="lazy"
                           decoding="async"
                           aspectRatio={item.width && item.height ? item.width / Math.max(1, item.height) : (item.aspectRatio || 1)}
+                          skipLoadingState={skipImageLoadingStates}
                         />
                       )}
                       <div className="absolute inset-0 grid place-items-center">
@@ -238,6 +243,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                           className="w-full h-auto object-cover opacity-75"
                           loading="lazy"
                           decoding="async"
+                          skipLoadingState={skipImageLoadingStates}
                         />
                         {/* Processing overlay */}
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -255,6 +261,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                           className="w-full h-auto object-cover"
                           loading="lazy"
                           decoding="async"
+                          skipLoadingState={skipImageLoadingStates}
                         />
                   )}
 
