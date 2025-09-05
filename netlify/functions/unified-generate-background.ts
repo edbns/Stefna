@@ -31,6 +31,17 @@ const CORS_JSON_HEADERS = {
   'Content-Type': 'application/json'
 } as const;
 
+// Helper function to build structured error responses
+function buildFailureResponse(error: string, message: string): UnifiedGenerationResponse {
+  return {
+    success: false,
+    status: 'failed',
+    error,
+    message,
+    hasOutput: false
+  };
+}
+
 // Aspect ratio utilities
 function getAspectRatioForMode(mode: string): string {
   switch (mode) {
@@ -2001,14 +2012,14 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
   if (!creditReservation.success) {
     console.error('❌ [Background] Credit reservation failed:', creditReservation.error);
     
-    // Throw error so main handler can catch it and return proper HTTP response
+    // Return structured error response instead of throwing
     if (creditReservation.error === 'INSUFFICIENT_CREDITS') {
-      console.log('🚨 [Background] Throwing INSUFFICIENT_CREDITS error for main handler');
-      throw new Error('INSUFFICIENT_CREDITS');
+      console.log('🚨 [Background] Returning INSUFFICIENT_CREDITS error response');
+      return buildFailureResponse('INSUFFICIENT_CREDITS', 'You need credits to generate content');
     }
     
-    // Throw other credit errors
-    throw new Error(creditReservation.error || 'Credit reservation failed');
+    // Return other credit errors
+    return buildFailureResponse(creditReservation.error || 'Credit reservation failed', creditReservation.error || 'Credit reservation failed');
   }
 
   try {
