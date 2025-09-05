@@ -9,8 +9,6 @@ export default defineConfig({
       'react', 
       'react-dom', 
       'lucide-react',
-      'jose',
-      'jsonwebtoken',
       'framer-motion',
       'clsx',
       'tailwind-merge',
@@ -42,12 +40,8 @@ export default defineConfig({
         manualChunks: {
           // Core React chunks
           vendor: ['react', 'react-dom'],
-          // Auth-related chunks
-          auth: ['jose', 'jsonwebtoken'],
           // UI and animation chunks
           ui: ['framer-motion', 'clsx', 'tailwind-merge'],
-          // Database and API chunks
-          data: ['pg'],
           // Utility chunks
           utils: ['lucide-react', 'nanoid', 'zustand', 'react-router-dom']
         }
