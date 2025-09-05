@@ -2054,7 +2054,8 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
       image_strength: request.mode === 'ghibli_reaction' ? 0.35 : 0.45, // Reduced for better quality
       guidance_scale: request.mode === 'ghibli_reaction' ? 6.0 : 7.5,
       additionalImages: request.additionalImages,
-      steps: 30
+      steps: 30,
+      mode: request.mode
     };
 
     // Provide negative_prompt to Stability/Replicate paths for neo_glitch to block humanization only for non-human sources
@@ -2066,9 +2067,13 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
         generationParams.negative_prompt = nonHumanBan;
       }
       // Increase effect so it still stylizes with neon/glitch
-      generationParams.image_strength = 0.55; // more stylization than 0.45
-      generationParams.guidance_scale = 8.5; // push stronger style guidance
+      generationParams.image_strength = looksLikeHuman ? 0.65 : 0.75; // stronger stylization
+      generationParams.guidance_scale = 10.0; // push stronger style guidance
       generationParams.style_preset = 'neon-punk';
+
+      // Enforce vivid neon glitch tokens to restore color/excitement
+      const neoGlitchTokens = ' vibrant neon colors, electric cyan and magenta, chromatic aberration, RGB split, scanlines, VHS noise, holographic overlays, datamosh artifacts, cyberpunk glow, high contrast, deep blacks';
+      generationParams.prompt = `${generationParams.prompt}${neoGlitchTokens}`;
     }
 
     if (request.mode === 'neo_glitch') {
