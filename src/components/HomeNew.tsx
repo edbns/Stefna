@@ -4316,9 +4316,11 @@ const HomeNew: React.FC = () => {
             {/* Clean disclaimer row under composer */}
             <div className="mt-3 text-center">
               <p className="text-xs text-white">
-                <span className="font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent animate-pulse relative overflow-hidden">
-                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></span>
-                  Disclaimer:
+                <span className="font-bold text-white relative overflow-hidden">
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-300/60 to-transparent animate-shimmer"></span>
+                  <span className="relative z-10 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+                    Disclaimer:
+                  </span>
                 </span> This AI goes full glitch mode. It might bend reality, swap genders, confuse animals with robots — and yes, even turn trees into neon jellyfish. It's wild. Enjoy the ride.
               </p>
             </div>
