@@ -43,16 +43,25 @@ const waitlistSignup: Handler = async (event) => {
         body: JSON.stringify({
           from: 'Stefna <hello@stefna.xyz>',
           to: [email],
-          subject: 'You\'re on the waitlist! 🎉',
+          subject: 'Get ready to create with AI',
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #000; color: #fff;">
               <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #fff; margin: 0;">Welcome to Stefna!</h1>
+                <h1 style="color: #fff; margin: 0;">Stefna</h1>
               </div>
               
               <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0 0 15px 0; font-size: 16px;">Thanks for joining our waitlist! You're in position <strong>#${waitlistData.position}</strong>.</p>
-                <p style="margin: 0; font-size: 14px; color: #ccc;">We'll notify you as soon as we launch. Get ready for AI-powered photo transformations!</p>
+                <p style="margin: 0 0 15px 0; font-size: 16px;">Hello,</p>
+                
+                <p style="margin: 0 0 15px 0; font-size: 16px;">Thanks for joining the waitlist for Stefna – your AI-powered creative studio.</p>
+                
+                <p style="margin: 0 0 15px 0; font-size: 16px;">You'll be among the first to know when we open up access. From cinematic edits to anime reactions and glitchy transformations, Stefna is designed to help you turn any photo into stunning visual art.</p>
+                
+                <p style="margin: 0 0 15px 0; font-size: 16px;">We'll notify you as soon as it's your turn to enter.</p>
+                
+                <p style="margin: 0 0 15px 0; font-size: 16px;">Until then, stay inspired</p>
+                
+                <p style="margin: 0; font-size: 16px;">PS: You can follow us on social for early previews and feature drops</p>
               </div>
               
               <div style="text-align: center; margin-top: 30px;">
