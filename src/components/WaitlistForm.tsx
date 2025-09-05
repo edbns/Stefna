@@ -110,12 +110,8 @@ const WaitlistForm: React.FC<WaitlistFormProps> = ({ referrerEmail }) => {
       {message && (
         <div style={{
           marginTop: '1rem',
-          padding: '0.75rem',
-          borderRadius: '8px',
           fontSize: '0.875rem',
-          backgroundColor: isSuccess ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-          color: isSuccess ? '#4ade80' : '#f87171',
-          border: `1px solid ${isSuccess ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+          color: 'white',
           width: '100%',
           textAlign: 'center'
         }}>

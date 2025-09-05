@@ -41,7 +41,7 @@ const waitlistSignup: Handler = async (event) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'Stefna <noreply@stefna.xyz>',
+          from: 'Stefna <hello@stefna.xyz>',
           to: [email],
           subject: 'You\'re on the waitlist! 🎉',
           html: `
