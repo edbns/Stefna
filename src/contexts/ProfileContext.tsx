@@ -96,7 +96,8 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
             shareToFeed: shareToFeed,
             // allowRemix removed
             onboarding_completed: userData.onboarding_completed || false,
-            createdAt: userData.createdAt
+            createdAt: userData.createdAt,
+            totalLikesReceived: userData.user?.totalLikesReceived || 0
           }
           
           setProfileData(profileData)

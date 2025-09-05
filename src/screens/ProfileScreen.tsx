@@ -1828,7 +1828,7 @@ const ProfileScreen: React.FC = () => {
                 <button
                   onClick={handleChangeEmail}
                   disabled={isChangingEmail || !newEmail.trim()}
-                  className="px-4 py-2 text-white rounded-lg transition-colors bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-black rounded-lg transition-colors bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                 >
                   {isChangingEmail ? "Updating..." : "Update Email"}
                 </button>
