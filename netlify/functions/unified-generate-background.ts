@@ -535,6 +535,7 @@ async function makeStabilityRequest(tier: string, params: any, apiKey: string): 
   form.append('output_format', params.output_format || 'jpeg');
   form.append("cfg_scale", String(params.guidance_scale ?? 7.5));
   form.append("steps", String(params.steps ?? 30));
+  if (params.style_preset) form.append('style_preset', String(params.style_preset));
 
   return fetch(MODEL_ENDPOINTS[tier as keyof typeof MODEL_ENDPOINTS], {
     method: 'POST',
@@ -2072,8 +2073,11 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
       generationParams.style_preset = 'neon-punk';
 
       // Enforce vivid neon glitch tokens to restore color/excitement
-      const neoGlitchTokens = ' vibrant neon colors, electric cyan and magenta, chromatic aberration, RGB split, scanlines, VHS noise, holographic overlays, datamosh artifacts, cyberpunk glow, high contrast, deep blacks';
+      const neoGlitchTokens = ' vibrant neon colors, electric cyan and magenta, neon purple glow, backlit rim light, chromatic aberration, RGB split, scanlines, VHS noise, holographic HUD overlays, datamosh artifacts, cyberpunk glow, high contrast, deep blacks, volumetric fog, neon reflections';
       generationParams.prompt = `${generationParams.prompt}${neoGlitchTokens}`;
+      // Mirror styling in negative prompt to avoid dull/muted results
+      const dullBan = 'muted colors, desaturated, low contrast, flat lighting, grayscale, washed out, pastel, minimal color';
+      generationParams.negative_prompt = generationParams.negative_prompt ? `${generationParams.negative_prompt}, ${dullBan}` : dullBan;
     }
 
     if (request.mode === 'neo_glitch') {
