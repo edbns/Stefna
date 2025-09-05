@@ -4316,7 +4316,7 @@ const HomeNew: React.FC = () => {
             {/* Clean disclaimer row under composer */}
             <div className="mt-3 text-center">
                               <p className="text-xs text-white">
-                <span className="font-bold">Disclaimer:</span> It's AI. It's smart, but not perfect. expect some fun, wild, and maybe a few "what were they thinking?" moments.
+                <span className="font-bold">Disclaimer:</span> This AI goes full glitch mode. It might bend reality, swap genders, confuse animals with robots — and yes, even turn trees into neon jellyfish. It's wild. Enjoy the ride.
               </p>
             </div>
           </div>
