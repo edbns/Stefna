@@ -500,42 +500,21 @@ async function makeStabilityRequest(tier: string, params: any, apiKey: string): 
   };
 
   const form = new FormData();
-  // Required: prompt
+  // Allow caller to provide full prompt and parameters per mode
   form.append("prompt", params.prompt);
-  // Optional: negative prompt
-  if (params.negative_prompt) form.append("negative_prompt", params.negative_prompt);
-
-  // If source image provided, attach as multipart 'image' and include strength per Stability docs
-  if (params.sourceAssetId) {
-    try {
-      const imgResp = await fetch(params.sourceAssetId);
-      if (!imgResp.ok) throw new Error(`Failed to fetch source image: ${imgResp.status}`);
-      const contentType = imgResp.headers.get('content-type') || 'image/jpeg';
-      const arrayBuf = await imgResp.arrayBuffer();
-      const blob = new Blob([arrayBuf], { type: contentType });
-      form.append('image', blob, 'source');
-      form.append('strength', String(params.image_strength ?? 0.35));
-    } catch (e) {
-      console.warn('[Stability.ai] Failed to attach source image; proceeding without image param:', e);
-    }
-  }
-
-  // Aspect ratio (Stability prefers aspect_ratio for Ultra/SD3.5)
-  if (params.aspect_ratio) {
-    form.append('aspect_ratio', String(params.aspect_ratio));
-  } else if (params.sourceWidth && params.sourceHeight) {
-    const r = params.sourceWidth / params.sourceHeight;
-    const ratios: Array<[string, number]> = [['1:1',1],['3:2',1.5],['2:3',0.6667],['4:5',0.8],['5:4',1.25],['16:9',1.7778],['21:9',2.3333],['9:16',0.5625],['9:21',0.4286]];
-    let best = '1:1'; let bestDiff = Infinity;
-    for (const [label, val] of ratios) { const diff = Math.abs(r - val); if (diff < bestDiff) { bestDiff = diff; best = label; } }
-    form.append('aspect_ratio', best);
-  }
-
-  // Output format and guidance
-  form.append('output_format', params.output_format || 'jpeg');
-  form.append("cfg_scale", String(params.guidance_scale ?? 7.5));
+  form.append("init_image", params.sourceAssetId);
+  form.append("image_strength", String(params.image_strength ?? 0.45));
   form.append("steps", String(params.steps ?? 30));
-  if (params.style_preset) form.append('style_preset', String(params.style_preset));
+  form.append("cfg_scale", String(params.guidance_scale ?? 7.5));
+  form.append("samples", "1");
+  form.append("output_format", params.output_format || "jpeg");
+
+  // Add width and height to preserve original aspect ratio
+  if (params.sourceWidth && params.sourceHeight) {
+    form.append("width", String(params.sourceWidth));
+    form.append("height", String(params.sourceHeight));
+    console.log(`📐 [Stability.ai] Preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
+  }
 
   return fetch(MODEL_ENDPOINTS[tier as keyof typeof MODEL_ENDPOINTS], {
     method: 'POST',
@@ -1357,14 +1336,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         bflInput.negative_prompt = `${bflInput.negative_prompt}, ${negativePrompt}`;
       }
 
-      // Hard protection for neo_glitch: if original subject is non-human, forbid humanization
-      if (mode === 'neo_glitch') {
-        const animalsInPrompt = detectAnimalsFromPrompt(originalPrompt);
-        if (animalsInPrompt && animalsInPrompt.length > 0) {
-          const nonHumanBan = 'human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
-          bflInput.negative_prompt = bflInput.negative_prompt ? `${bflInput.negative_prompt}, ${nonHumanBan}` : nonHumanBan;
-        }
-      }
+      // Hard protection for neo_glitch removed in revert (handled at preset-level if needed)
 
       console.log(`✨ [BFL Prompt Enhancement] Original: "${originalPrompt}"`);
       console.log(`✨ [BFL Prompt Enhancement] Enhanced: "${ultraEnhancedPrompt}"`);
@@ -2047,7 +2019,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
 
     // Provider selection based on mode
     // Build generation params per mode
-    let generationParams: any = {
+    const generationParams = {
       prompt: request.mode === 'ghibli_reaction'
         ? `${request.prompt}, subtle ghibli-inspired lighting, soft dreamy atmosphere, gentle anime influence, preserve original composition`
         : request.prompt,
@@ -2055,30 +2027,8 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
       image_strength: request.mode === 'ghibli_reaction' ? 0.35 : 0.45, // Reduced for better quality
       guidance_scale: request.mode === 'ghibli_reaction' ? 6.0 : 7.5,
       additionalImages: request.additionalImages,
-      steps: 30,
-      mode: request.mode
+      steps: 30
     };
-
-    // Provide negative_prompt to Stability/Replicate paths for neo_glitch to block humanization only for non-human sources
-    if (request.mode === 'neo_glitch') {
-      const srcUrl: string | undefined = request.sourceAssetId;
-      const looksLikeHuman = /person|people|face|portrait|man|woman|boy|girl|child|adult|human/i.test(generationParams.prompt);
-      if (!looksLikeHuman) {
-        const nonHumanBan = 'human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
-        generationParams.negative_prompt = nonHumanBan;
-      }
-      // Increase effect so it still stylizes with neon/glitch
-      generationParams.image_strength = looksLikeHuman ? 0.65 : 0.75; // stronger stylization
-      generationParams.guidance_scale = 10.0; // push stronger style guidance
-      generationParams.style_preset = 'neon-punk';
-
-      // Enforce vivid neon glitch tokens to restore color/excitement
-      const neoGlitchTokens = ' vibrant neon colors, electric cyan and magenta, neon purple glow, backlit rim light, chromatic aberration, RGB split, scanlines, VHS noise, holographic HUD overlays, datamosh artifacts, cyberpunk glow, high contrast, deep blacks, volumetric fog, neon reflections';
-      generationParams.prompt = `${generationParams.prompt}${neoGlitchTokens}`;
-      // Mirror styling in negative prompt to avoid dull/muted results
-      const dullBan = 'muted colors, desaturated, low contrast, flat lighting, grayscale, washed out, pastel, minimal color';
-      generationParams.negative_prompt = generationParams.negative_prompt ? `${generationParams.negative_prompt}, ${dullBan}` : dullBan;
-    }
 
     if (request.mode === 'neo_glitch') {
       // Neo Tokyo Glitch: Stability.ai as primary (reverted from BFL)

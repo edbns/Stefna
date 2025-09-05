@@ -101,15 +101,7 @@ export function enhancePromptForSpecificity(
   const promptLower = originalPrompt.toLowerCase();
   const hasNonHumanSubject = originalAnimals.length > 0 || nonHumanKeywords.some(k => promptLower.includes(k));
 
-  if (context === 'neo_glitch' && hasNonHumanSubject) {
-    // Forbid humanization when input is animal or non-human subject
-    negativePrompt += ', human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
-  }
-
-  // Prevent gender or ethnicity swaps for human inputs
-  if (context === 'neo_glitch' && !hasNonHumanSubject) {
-    negativePrompt += ', ethnicity change, race change, face swap, identity swap';
-  }
+  // Reverted neo_glitch-specific blocks (handled by presets/providers instead)
 
   // Enhanced negative prompt for better specificity (general)
   negativePrompt += ', cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face';
