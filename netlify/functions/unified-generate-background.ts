@@ -2001,24 +2001,14 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
   if (!creditReservation.success) {
     console.error('❌ [Background] Credit reservation failed:', creditReservation.error);
     
-    // Return a proper error response for insufficient credits
+    // Throw error so main handler can catch it and return proper HTTP response
     if (creditReservation.error === 'INSUFFICIENT_CREDITS') {
-      console.log('🚨 [Background] Returning INSUFFICIENT_CREDITS error response');
-      return {
-        success: false,
-        status: 'failed',
-        error: creditReservation.error,
-        errorType: 'INSUFFICIENT_CREDITS'
-      };
+      console.log('🚨 [Background] Throwing INSUFFICIENT_CREDITS error for main handler');
+      throw new Error('INSUFFICIENT_CREDITS');
     }
     
-    // Return other credit errors
-    return {
-      success: false,
-      status: 'failed',
-      error: creditReservation.error || 'Credit reservation failed',
-      errorType: 'CREDIT_ERROR'
-    };
+    // Throw other credit errors
+    throw new Error(creditReservation.error || 'Credit reservation failed');
   }
 
   try {
