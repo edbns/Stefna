@@ -56,6 +56,7 @@ const ProfileScreen: React.FC = () => {
   const [showChangeEmailModal, setShowChangeEmailModal] = useState(false)
   const [newEmail, setNewEmail] = useState('')
   const [isChangingEmail, setIsChangingEmail] = useState(false)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
 
 
 
@@ -870,16 +871,7 @@ const ProfileScreen: React.FC = () => {
       return
     }
 
-    const confirmed = window.confirm(
-      '⚠️ WARNING: This action cannot be undone!\n\n' +
-      'This will permanently delete:\n' +
-      '• All your media and content\n' +
-      '• Your account and profile\n' +
-      '• All your data and settings\n\n' +
-      'Are you absolutely sure you want to delete your account?'
-    )
-
-    if (!confirmed) return
+    setIsDeletingAccount(true)
 
     try {
       console.log('🗑️ [Profile] User requesting account deletion:', currentUser.id)
@@ -920,6 +912,8 @@ const ProfileScreen: React.FC = () => {
     } catch (error) {
       console.error('❌ [Profile] Account deletion error:', error)
       addNotification('Deletion Failed', 'Failed to delete account. Please try again.', 'error')
+    } finally {
+      setIsDeletingAccount(false)
     }
   }
 
@@ -1981,22 +1975,41 @@ const ProfileScreen: React.FC = () => {
                   </svg>
                 </div>
               </div>
-              <h1 className="text-xl font-bold text-white mb-2">Delete Account</h1>
-              <p className="text-white/60">This action cannot be undone</p>
+              <h1 className="text-xl font-bold text-white mb-2">⚠️ Delete Account</h1>
+              <p className="text-white/60 mb-4">This action cannot be undone!</p>
+              
+              {/* Warning Details */}
+              <div className="text-left bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
+                <p className="text-white/80 text-sm mb-2 font-medium">This will permanently delete:</p>
+                <ul className="text-white/70 text-sm space-y-1">
+                  <li>• All your media and content</li>
+                  <li>• Your account and profile</li>
+                  <li>• All your data and settings</li>
+                </ul>
+              </div>
             </div>
 
             {/* Action Buttons */}
             <div className="space-y-3">
               <button
                 onClick={handleDeleteAccount}
-                className="w-full bg-red-500 text-white font-semibold py-3 rounded-xl hover:bg-red-600 transition-colors"
+                disabled={isDeletingAccount}
+                className="w-full bg-red-500 text-white font-semibold py-3 rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                Delete Account Permanently
+                {isDeletingAccount ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Deleting Account...</span>
+                  </div>
+                ) : (
+                  'Delete Account Permanently'
+                )}
               </button>
               
               <button
                 onClick={() => setShowDeleteAccountModal(false)}
-                className="w-full bg-white/5 text-white font-semibold py-3 rounded-xl hover:bg-white/10 transition-colors border border-white/20"
+                disabled={isDeletingAccount}
+                className="w-full bg-white/5 text-white font-semibold py-3 rounded-xl hover:bg-white/10 transition-colors border border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
