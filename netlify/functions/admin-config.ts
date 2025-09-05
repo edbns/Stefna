@@ -114,7 +114,7 @@ const adminConfigHandler: Handler = async (event) => {
       const { action, data } = body
 
       if (!action) {
-        return json({ error: 'Action is required' }, { status: 400 })
+        return json({ error: 'Action is required' }, { status: 400 });
       }
 
       console.log(`⚙️ [Admin] System action: ${action}`)
