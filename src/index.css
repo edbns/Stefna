@@ -95,21 +95,43 @@ body {
   position: fixed; top: 0; left: 0; right: 0; z-index: 50;
 }
 
-/* Custom shimmer animation for disclaimer */
-@keyframes shimmer {
+/* Custom transparent fade animations for disclaimer */
+@keyframes fade-pulse {
   0% {
-    transform: translateX(-100%);
+    opacity: 0.3;
+    transform: scale(1);
   }
   50% {
-    transform: translateX(0%);
+    opacity: 0.8;
+    transform: scale(1.05);
   }
   100% {
-    transform: translateX(100%);
+    opacity: 0.3;
+    transform: scale(1);
   }
 }
 
-.animate-shimmer {
-  animation: shimmer 3s ease-in-out infinite;
+@keyframes text-glow {
+  0% {
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+    opacity: 0.8;
+  }
+  50% {
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 25px rgba(168, 85, 247, 0.4);
+    opacity: 1;
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+    opacity: 0.8;
+  }
+}
+
+.animate-fade-pulse {
+  animation: fade-pulse 4s ease-in-out infinite;
+}
+
+.animate-text-glow {
+  animation: text-glow 3s ease-in-out infinite;
 }
 
 /* Image fade-in effects */
