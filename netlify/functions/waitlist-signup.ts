@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import { json } from '@netlify/functions';
+import { json } from './_lib/http';
 import { q } from './_db';
 
 const waitlistSignup: Handler = async (event) => {
