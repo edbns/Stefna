@@ -55,44 +55,86 @@ const WaitlistForm: React.FC<WaitlistFormProps> = ({ referrerEmail }) => {
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email address"
-            className="w-full px-6 py-4 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all text-lg"
-            disabled={isLoading}
-            required
-          />
-        </div>
-        
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backdropFilter: 'blur(12px)',
+      background: 'rgba(0, 0, 0, 0.5)',
+      padding: '2rem',
+      borderRadius: '16px',
+      maxWidth: '400px',
+      width: '90%',
+      margin: '0 auto'
+    }}>
+      <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Enter your email"
+          required
+          disabled={isLoading}
+          style={{
+            width: '100%',
+            padding: '0.75rem 1rem',
+            fontSize: '1rem',
+            borderRadius: '8px',
+            border: 'none',
+            marginBottom: '1rem',
+            backgroundColor: 'white',
+            color: 'black'
+          }}
+        />
         <button
           type="submit"
           disabled={isLoading || !email.trim()}
-          className="w-full bg-white text-black py-4 px-8 rounded-lg font-semibold hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-lg"
+          style={{
+            width: '100%',
+            padding: '0.75rem 1rem',
+            fontSize: '1rem',
+            border: 'none',
+            borderRadius: '8px',
+            background: 'white',
+            color: 'black',
+            fontWeight: '500',
+            cursor: isLoading || !email.trim() ? 'not-allowed' : 'pointer',
+            opacity: isLoading || !email.trim() ? 0.5 : 1
+          }}
         >
           {isLoading ? 'Joining...' : 'Join the Waitlist'}
         </button>
       </form>
 
       {message && (
-        <div className={`mt-4 p-3 rounded-lg text-sm ${
-          isSuccess 
-            ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-            : 'bg-red-500/20 text-red-400 border border-red-500/30'
-        }`}>
+        <div style={{
+          marginTop: '1rem',
+          padding: '0.75rem',
+          borderRadius: '8px',
+          fontSize: '0.875rem',
+          backgroundColor: isSuccess ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+          color: isSuccess ? '#4ade80' : '#f87171',
+          border: `1px solid ${isSuccess ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+          width: '100%',
+          textAlign: 'center'
+        }}>
           {message}
         </div>
       )}
 
       {referrerEmail && (
-        <div className="mt-4 p-3 bg-white/5 rounded-lg text-center">
-          <p className="text-white/80 text-sm">
-            You were invited by {referrerEmail}! 🎉
-          </p>
+        <div style={{
+          marginTop: '1rem',
+          padding: '0.75rem',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '8px',
+          textAlign: 'center',
+          fontSize: '0.875rem',
+          color: 'rgba(255, 255, 255, 0.8)',
+          width: '100%'
+        }}>
+          You were invited by {referrerEmail}! 🎉
         </div>
       )}
     </div>

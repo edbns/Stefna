@@ -24,66 +24,10 @@ const ComingSoonPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="text-center max-w-md p-8">
-        <div 
-          className="w-24 h-24 mx-auto bg-transparent rounded-xl flex items-center justify-center"
-          style={{
-            animation: 'wave-shadow 3s ease-in-out infinite',
-            background: 'transparent',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
+        <div className="w-16 h-16 mx-auto mb-8">
           <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain" />
         </div>
         
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            @keyframes wave-shadow {
-              0% { 
-                transform: scale(1);
-                opacity: 0.4;
-                box-shadow: 
-                  0 0 0 0 rgba(168, 85, 247, 0.8),
-                  0 0 0 0 rgba(236, 72, 153, 0.6),
-                  0 0 0 0 rgba(239, 68, 68, 0.4);
-              }
-              25% { 
-                transform: scale(1.05);
-                opacity: 0.6;
-                box-shadow: 
-                  0 0 0 8px rgba(168, 85, 247, 0.4),
-                  0 0 0 4px rgba(236, 72, 153, 0.6),
-                  0 0 0 0 rgba(239, 68, 68, 0.8);
-              }
-              50% { 
-                transform: scale(1.1);
-                opacity: 0.8;
-                box-shadow: 
-                  0 0 0 16px rgba(168, 85, 247, 0.2),
-                  0 0 0 8px rgba(236, 72, 153, 0.4),
-                  0 0 0 4px rgba(239, 68, 68, 0.6);
-              }
-              75% { 
-                transform: scale(1.05);
-                opacity: 0.6;
-                box-shadow: 
-                  0 0 0 8px rgba(168, 85, 247, 0.4),
-                  0 0 0 16px rgba(236, 72, 153, 0.2),
-                  0 0 0 8px rgba(239, 68, 68, 0.4);
-              }
-              100% { 
-                transform: scale(1);
-                opacity: 0.4;
-                box-shadow: 
-                  0 0 0 0 rgba(168, 85, 247, 0.8),
-                  0 0 0 0 rgba(236, 72, 153, 0.6),
-                  0 0 0 0 rgba(239, 68, 68, 0.4);
-              }
-            }
-          `
-        }} />
         
         <div className="mt-8 space-y-6">
           <div className="pt-4">
@@ -114,6 +58,10 @@ const AppContent: React.FC = () => {
     isNetlifyPreview: window.location.hostname.includes('--'),
     isNetlifySubdomain: window.location.hostname === 'stefna.netlify.app'
   });
+  
+  // TEMPORARY: Show coming soon page for local testing
+  console.log('🚧 Showing Coming Soon page for local testing');
+  return <ComingSoonPage />
   
   // If on live domain, show coming soon page
   if (isLiveDomain) {
