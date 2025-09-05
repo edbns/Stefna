@@ -171,6 +171,12 @@ class SimpleGenerationService {
     } catch (error) {
       console.error('❌ [SimpleGeneration] Generation failed:', error);
 
+      // Re-throw INSUFFICIENT_CREDITS errors so frontend can handle them properly
+      if (error instanceof Error && error.message === 'INSUFFICIENT_CREDITS') {
+        console.log('🚨 [SimpleGeneration] Re-throwing INSUFFICIENT_CREDITS error for frontend handling');
+        throw error;
+      }
+
       return {
         success: false,
         status: 'failed',
