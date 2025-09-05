@@ -299,15 +299,7 @@ CREATE TABLE IF NOT EXISTS presets_config (
     updated_at TIMESTAMPTZ(6) DEFAULT NOW()
 );
 
--- Referral signups table
-CREATE TABLE IF NOT EXISTS referral_signups (
-    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    referrer_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    new_user_id TEXT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    referrer_email TEXT,
-    new_user_email TEXT,
-    created_at TIMESTAMPTZ(6) DEFAULT NOW()
-);
+-- Referral signups table removed - using email-based referrals only
 
 -- App configuration table
 CREATE TABLE IF NOT EXISTS app_config (
@@ -401,8 +393,7 @@ CREATE INDEX IF NOT EXISTS presets_config_active_idx ON presets_config(is_active
 CREATE INDEX IF NOT EXISTS idx_presets_config_preset_key ON presets_config(preset_key);
 CREATE INDEX IF NOT EXISTS presets_config_rotation_index_idx ON presets_config(preset_rotation_index);
 CREATE INDEX IF NOT EXISTS presets_config_week_idx ON presets_config(preset_week);
-CREATE INDEX IF NOT EXISTS idx_referral_signups_new_user ON referral_signups(new_user_id);
-CREATE INDEX IF NOT EXISTS idx_referral_signups_referrer ON referral_signups(referrer_user_id);
+-- Referral signups indexes removed
 
 -- ========================================
 -- TRIGGERS FOR UPDATED_AT COLUMNS
@@ -498,7 +489,7 @@ SELECT 'assets', COUNT(*) FROM assets
 UNION ALL
 SELECT 'presets_config', COUNT(*) FROM presets_config
 UNION ALL
-SELECT 'referral_signups', COUNT(*) FROM referral_signups
+-- Referral signups count removed
 UNION ALL
 SELECT 'app_config', COUNT(*) FROM app_config
 UNION ALL

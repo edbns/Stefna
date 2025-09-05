@@ -46,55 +46,53 @@ export const handler: Handler = async (event) => {
       let statistics = {}
 
       if (type === 'overview') {
-        // Get overall referral statistics
+        // Get overall referral statistics (email-based system)
         statistics = await q(`
           SELECT 
-            (SELECT COUNT(*) FROM users WHERE referral_code IS NOT NULL) as users_with_referral_code,
-            (SELECT COUNT(*) FROM users WHERE referred_by IS NOT NULL) as users_referred,
-            (SELECT COUNT(DISTINCT referred_by) FROM users WHERE referred_by IS NOT NULL) as unique_referrers,
-            (SELECT COUNT(*) FROM users WHERE referral_credits_earned > 0) as users_earned_credits,
-            (SELECT SUM(referral_credits_earned) FROM users) as total_credits_given,
-            (SELECT AVG(referral_credits_earned) FROM users WHERE referral_credits_earned > 0) as avg_credits_per_user,
-            (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '7 days' AND referred_by IS NOT NULL) as new_referrals_7d,
-            (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '30 days' AND referred_by IS NOT NULL) as new_referrals_30d
+            (SELECT COUNT(DISTINCT user_id) FROM credits_ledger WHERE reason = 'referral.referrer') as users_referred,
+            (SELECT COUNT(DISTINCT user_id) FROM credits_ledger WHERE reason = 'referral.referrer') as unique_referrers,
+            (SELECT COUNT(DISTINCT user_id) FROM credits_ledger WHERE reason = 'referral.referrer') as users_earned_credits,
+            (SELECT SUM(amount) FROM credits_ledger WHERE reason = 'referral.referrer') as total_credits_given,
+            (SELECT AVG(amount) FROM credits_ledger WHERE reason = 'referral.referrer') as avg_credits_per_user,
+            (SELECT COUNT(*) FROM credits_ledger WHERE reason = 'referral.referrer' AND created_at >= NOW() - INTERVAL '7 days') as new_referrals_7d,
+            (SELECT COUNT(*) FROM credits_ledger WHERE reason = 'referral.referrer' AND created_at >= NOW() - INTERVAL '30 days') as new_referrals_30d
         `)
 
-        // Get top referrers
+        // Get top referrers (email-based system)
         referrals = await q(`
           SELECT 
             u.id,
             u.email,
             u.name,
-            u.referral_code,
-            COUNT(r.id) as total_referrals,
-            SUM(r.referral_credits_earned) as total_credits_given,
-            MAX(r.created_at) as last_referral_date
+            COUNT(cl.id) as total_referrals,
+            SUM(cl.amount) as total_credits_given,
+            MAX(cl.created_at) as last_referral_date
           FROM users u
-          LEFT JOIN users r ON u.id = r.referred_by
-          WHERE u.referral_code IS NOT NULL
-          GROUP BY u.id, u.email, u.name, u.referral_code
-          HAVING COUNT(r.id) > 0
+          JOIN credits_ledger cl ON u.id = cl.user_id
+          WHERE cl.reason = 'referral.referrer'
+          GROUP BY u.id, u.email, u.name
           ORDER BY total_referrals DESC
           LIMIT $1 OFFSET $2
         `, [limitNum, offsetNum])
 
       } else if (type === 'relationships') {
-        // Get detailed referral relationships
+        // Get detailed referral relationships (email-based system)
         referrals = await q(`
           SELECT 
             referrer.id as referrer_id,
             referrer.email as referrer_email,
             referrer.name as referrer_name,
-            referrer.referral_code,
             referred.id as referred_id,
             referred.email as referred_email,
             referred.name as referred_name,
-            referred.created_at as referred_date,
-            referred.referral_credits_earned,
+            cl.created_at as referred_date,
+            cl.amount as referral_credits_earned,
             referred.last_login
-          FROM users referrer
-          JOIN users referred ON referrer.id = referred.referred_by
-          ORDER BY referred.created_at DESC
+          FROM credits_ledger cl
+          JOIN users referrer ON cl.user_id = referrer.id
+          JOIN users referred ON cl.details->>'referred_user' = referred.id::text
+          WHERE cl.reason = 'referral.referrer'
+          ORDER BY cl.created_at DESC
           LIMIT $1 OFFSET $2
         `, [limitNum, offsetNum])
 
@@ -104,41 +102,42 @@ export const handler: Handler = async (event) => {
             COUNT(*) as total_relationships,
             COUNT(CASE WHEN referred.last_login >= NOW() - INTERVAL '7 days' THEN 1 END) as active_referrals_7d,
             COUNT(CASE WHEN referred.last_login >= NOW() - INTERVAL '30 days' THEN 1 END) as active_referrals_30d,
-            AVG(referred.referral_credits_earned) as avg_credits_per_referral
-          FROM users referrer
-          JOIN users referred ON referrer.id = referred.referred_by
+            AVG(cl.amount) as avg_credits_per_referral
+          FROM credits_ledger cl
+          JOIN users referrer ON cl.user_id = referrer.id
+          JOIN users referred ON cl.details->>'referred_user' = referred.id::text
+          WHERE cl.reason = 'referral.referrer'
         `)
 
       } else if (type === 'rewards') {
-        // Get referral reward history
+        // Get referral reward history (email-based system)
         referrals = await q(`
           SELECT 
             u.id,
             u.email,
             u.name,
-            u.referral_credits_earned,
-            u.referral_code,
+            SUM(cl.amount) as referral_credits_earned,
             u.created_at as account_created,
             u.last_login,
-            COUNT(r.id) as successful_referrals
+            COUNT(cl.id) as successful_referrals
           FROM users u
-          LEFT JOIN users r ON u.id = r.referred_by
-          WHERE u.referral_credits_earned > 0
-          GROUP BY u.id, u.email, u.name, u.referral_credits_earned, u.referral_code, u.created_at, u.last_login
-          ORDER BY u.referral_credits_earned DESC
+          JOIN credits_ledger cl ON u.id = cl.user_id
+          WHERE cl.reason = 'referral.referrer'
+          GROUP BY u.id, u.email, u.name, u.created_at, u.last_login
+          ORDER BY referral_credits_earned DESC
           LIMIT $1 OFFSET $2
         `, [limitNum, offsetNum])
 
         // Get reward statistics
         statistics = await q(`
           SELECT 
-            SUM(referral_credits_earned) as total_credits_distributed,
-            COUNT(CASE WHEN referral_credits_earned > 0 THEN 1 END) as users_rewarded,
-            AVG(referral_credits_earned) as avg_credits_per_user,
-            MAX(referral_credits_earned) as max_credits_earned,
-            COUNT(CASE WHEN referral_credits_earned >= 10 THEN 1 END) as users_with_10_plus_credits
-          FROM users
-          WHERE referral_credits_earned > 0
+            SUM(amount) as total_credits_distributed,
+            COUNT(DISTINCT user_id) as users_rewarded,
+            AVG(amount) as avg_credits_per_user,
+            MAX(amount) as max_credits_earned,
+            COUNT(CASE WHEN amount >= 10 THEN 1 END) as users_with_10_plus_credits
+          FROM credits_ledger
+          WHERE reason = 'referral.referrer'
         `)
       }
 
@@ -146,24 +145,17 @@ export const handler: Handler = async (event) => {
       let totalCount = 0
       if (type === 'overview') {
         const countResult = await q(`
-          SELECT COUNT(*) as total FROM (
-            SELECT u.id FROM users u
-            LEFT JOIN users r ON u.id = r.referred_by
-            WHERE u.referral_code IS NOT NULL
-            GROUP BY u.id
-            HAVING COUNT(r.id) > 0
-          ) top_referrers
+          SELECT COUNT(DISTINCT user_id) as total FROM credits_ledger WHERE reason = 'referral.referrer'
         `)
         totalCount = countResult[0]?.total || 0
       } else if (type === 'relationships') {
         const countResult = await q(`
-          SELECT COUNT(*) as total FROM users referrer
-          JOIN users referred ON referrer.id = referred.referred_by
+          SELECT COUNT(*) as total FROM credits_ledger WHERE reason = 'referral.referrer'
         `)
         totalCount = countResult[0]?.total || 0
       } else if (type === 'rewards') {
         const countResult = await q(`
-          SELECT COUNT(*) as total FROM users WHERE referral_credits_earned > 0
+          SELECT COUNT(DISTINCT user_id) as total FROM credits_ledger WHERE reason = 'referral.referrer'
         `)
         totalCount = countResult[0]?.total || 0
       }
@@ -193,16 +185,17 @@ export const handler: Handler = async (event) => {
 
       switch (action) {
         case 'adjust_referral_credits':
-          // Adjust referral credits for a user
+          // Adjust referral credits for a user (email-based system)
           const { userId, credits } = data
           if (!userId || credits === undefined) {
             return json({ error: 'User ID and credits are required' }, { status: 400 })
           }
 
+          // Update credits_ledger instead of users table
           const updateResult = await q(`
-            UPDATE users 
-            SET referral_credits_earned = $1
-            WHERE id = $2
+            UPDATE credits_ledger 
+            SET amount = $1
+            WHERE user_id = $2 AND reason = 'referral.referrer'
           `, [credits, userId])
 
           console.log(`✅ [Admin] Adjusted referral credits for user ${userId}`)
@@ -212,11 +205,10 @@ export const handler: Handler = async (event) => {
           })
 
         case 'reset_referral_stats':
-          // Reset referral statistics
+          // Reset referral statistics (email-based system)
           const resetResult = await q(`
-            UPDATE users 
-            SET referral_credits_earned = 0
-            WHERE referral_credits_earned > 0
+            DELETE FROM credits_ledger 
+            WHERE reason = 'referral.referrer'
           `)
 
           console.log(`✅ [Admin] Reset all referral credits`)

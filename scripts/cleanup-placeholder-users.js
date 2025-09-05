@@ -100,18 +100,7 @@ async function cleanup() {
       console.log(`  ✓ Deleted ${storyPhotoResult.rowCount} records from story_photo`);
     }
 
-    // Special handling for referral_signups
-    const referralResult = await client.query(`
-      WITH placeholder_users AS (
-        SELECT id FROM users WHERE email LIKE 'user-%@placeholder.com'
-      )
-      DELETE FROM referral_signups 
-      WHERE referrer_user_id IN (SELECT id FROM placeholder_users) 
-         OR new_user_id IN (SELECT id FROM placeholder_users)
-    `);
-    if (referralResult.rowCount > 0) {
-      console.log(`  ✓ Deleted ${referralResult.rowCount} records from referral_signups`);
-    }
+    // Referral signups table removed - using email-based referrals only
 
     // Finally, delete the users
     const userResult = await client.query(

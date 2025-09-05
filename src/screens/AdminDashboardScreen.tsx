@@ -1558,10 +1558,6 @@ const AdminDashboardScreen: React.FC = () => {
                         {referralsStats && (
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                              <div className="text-2xl font-bold text-white">{referralsStats.users_with_referral_code || 0}</div>
-                              <div className="text-xs text-white/60">Users with Code</div>
-                            </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                               <div className="text-2xl font-bold text-white">{referralsStats.users_referred || 0}</div>
                               <div className="text-xs text-white/60">Users Referred</div>
                             </div>
@@ -1585,7 +1581,6 @@ const AdminDashboardScreen: React.FC = () => {
                                   {referralsType === 'overview' && (
                                     <>
                                       <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">User</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Referral Code</th>
                                       <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Total Referrals</th>
                                       <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Credits Given</th>
                                       <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Last Referral</th>
@@ -1619,9 +1614,6 @@ const AdminDashboardScreen: React.FC = () => {
                                         <td className="px-4 py-3">
                                           <div className="text-sm text-white">{referral.email}</div>
                                           {referral.name && <div className="text-xs text-white/60">{referral.name}</div>}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                          <div className="text-sm text-white font-mono">{referral.referral_code}</div>
                                         </td>
                                         <td className="px-4 py-3">
                                           <div className="text-sm text-white">{referral.total_referrals}</div>

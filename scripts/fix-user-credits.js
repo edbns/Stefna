@@ -102,24 +102,7 @@ async function fixUserCredits() {
     });
 
     // Check for any referral bonuses that might have been missed
-    const referralData = await client.query(`
-      SELECT 
-        r.referrer_user_id,
-        r.new_user_id,
-        u1.email as referrer_email,
-        u2.email as new_user_email
-      FROM referral_signups r
-      JOIN users u1 ON r.referrer_user_id = u1.id
-      JOIN users u2 ON r.new_user_id = u2.id
-    `);
-
-    if (referralData.rows.length > 0) {
-      console.log('\n📊 Referral relationships found:');
-      referralData.rows.forEach(ref => {
-        console.log(`  - ${ref.referrer_email} referred ${ref.new_user_email}`);
-      });
-      console.log('\nNote: Referral bonuses should be processed separately if not already applied.');
-    }
+    // Referral signups table removed - using email-based referrals only
 
     console.log('\n✅ User credits fixed successfully!');
     
