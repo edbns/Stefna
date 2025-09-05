@@ -2334,6 +2334,8 @@ export const handler: Handler = async (event, context) => {
       storyTimePresetId
     });
 
+    console.log('🔍 [Background] About to start validation...');
+
     // Validate required fields
     if (!mode || !userId) {
       return {
@@ -2501,12 +2503,20 @@ export const handler: Handler = async (event, context) => {
       }
     }
 
-    // Safe handler for story_time mode
+    // Story time mode is disabled - not ready yet
     if (mode === 'story_time') {
-      try {
-        console.log('[StoryTime] Handling story_time mode');
+      console.log('[StoryTime] Story time mode is disabled - not ready yet');
+      return {
+        statusCode: 400,
+        headers: CORS_JSON_HEADERS,
+        body: JSON.stringify({
+          success: false,
+          status: 'failed',
+          error: 'Story time mode is not available yet'
+        })
+      };
+    }
 
-        // Validate required fields for story_time
         if (!sourceAssetId) {
           return {
             statusCode: 400,
