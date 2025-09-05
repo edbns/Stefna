@@ -32,9 +32,50 @@ const waitlistSignup: Handler = async (event) => {
 
     console.log(`✅ [Waitlist] New signup: ${email}`);
 
+    // Send confirmation email
+    try {
+      const resendResponse = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'Stefna <noreply@stefna.xyz>',
+          to: [email],
+          subject: 'You\'re on the waitlist! 🎉',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #000; color: #fff;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #fff; margin: 0;">Welcome to Stefna!</h1>
+              </div>
+              
+              <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0 0 15px 0; font-size: 16px;">Thanks for joining our waitlist! You're in position <strong>#${waitlistData.position}</strong>.</p>
+                <p style="margin: 0; font-size: 14px; color: #ccc;">We'll notify you as soon as we launch. Get ready for AI-powered photo transformations!</p>
+              </div>
+              
+              <div style="text-align: center; margin-top: 30px;">
+                <p style="font-size: 12px; color: #666; margin: 0;">Powered by AI • Coming Soon</p>
+              </div>
+            </div>
+          `
+        }),
+      });
+
+      if (resendResponse.ok) {
+        console.log(`📧 [Waitlist] Confirmation email sent to: ${email}`);
+      } else {
+        console.error(`❌ [Waitlist] Failed to send email to: ${email}`);
+      }
+    } catch (emailError) {
+      console.error('📧 [Waitlist] Email error:', emailError);
+      // Don't fail the signup if email fails
+    }
+
     return json({
       success: true,
-      message: 'Successfully joined waitlist!',
+      message: 'Successfully joined waitlist! Check your email for confirmation.',
       position: waitlistData.position
     });
 
