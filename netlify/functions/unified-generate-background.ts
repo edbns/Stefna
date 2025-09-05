@@ -2034,6 +2034,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     
     // Return a proper error response for insufficient credits
     if (creditError.message && creditError.message.includes('Insufficient credits')) {
+      console.log('🚨 [Background] Returning INSUFFICIENT_CREDITS error response');
       return {
         success: false,
         status: 'failed',
