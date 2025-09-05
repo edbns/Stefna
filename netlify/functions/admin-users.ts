@@ -1,32 +1,19 @@
 import type { Handler } from "@netlify/functions";
 import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
+import { withAdminSecurity } from './_lib/adminSecurity';
+import { handleCORS, getAdminCORSHeaders } from './_lib/cors';
 
 
 
-export const handler: Handler = async (event) => {
+const adminUsersHandler: Handler = async (event) => {
   // Handle CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Secret',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-      }
-    };
-  }
+  const corsResponse = handleCORS(event, true); // true for admin
+  if (corsResponse) return corsResponse;
 
   try {
     if (event.httpMethod !== 'GET') {
       return json({ error: 'Method Not Allowed' }, { status: 405 })
-    }
-
-    // Verify admin access
-    const adminSecret = event.headers['x-admin-secret'] || event.headers['X-Admin-Secret']
-    
-    if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
-      return json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     console.log('🔍 [Admin] Fetching all users and stats...')
@@ -96,3 +83,6 @@ export const handler: Handler = async (event) => {
     return json({ error: 'Failed to fetch users' }, { status: 500 })
   }
 }
+
+// Export with admin security middleware
+export const handler = withAdminSecurity(adminUsersHandler);
