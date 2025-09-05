@@ -93,9 +93,20 @@ body {
 /* Prevent navbar jumping */
 .navbar-stable {
   position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-  transform: translateZ(0); /* Force hardware acceleration */
-  will-change: transform; /* Optimize for animations */
-  background: transparent !important; /* Ensure complete transparency */
+}
+
+/* Custom shimmer animation for disclaimer */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
 }
 
 /* Image fade-in effects */
