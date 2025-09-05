@@ -94,8 +94,25 @@ export function enhancePromptForSpecificity(
   // Add Stability Ultra specific enhancements
   enhancedPrompt += ' high quality, detailed, precise anatomy, accurate features';
 
-  // Enhanced negative prompt for better specificity
-  negativePrompt += 'cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face';
+  // Add strong anti-anthropomorphism for Neo Glitch when source is non-human
+  const nonHumanKeywords = [
+    'tree','plant','flower','rock','mountain','landscape','forest','river','ocean','lake','waterfall','building','architecture','cityscape','car','vehicle','boat','plane','airplane','train','road','street','sky','cloud','sunset','sunrise','beach','desert','snow','ice','fire','smoke'
+  ];
+  const promptLower = originalPrompt.toLowerCase();
+  const hasNonHumanSubject = originalAnimals.length > 0 || nonHumanKeywords.some(k => promptLower.includes(k));
+
+  if (context === 'neo_glitch' && hasNonHumanSubject) {
+    // Forbid humanization when input is animal or non-human subject
+    negativePrompt += ', human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
+  }
+
+  // Prevent gender or ethnicity swaps for human inputs
+  if (context === 'neo_glitch' && !hasNonHumanSubject) {
+    negativePrompt += ', ethnicity change, race change, face swap, identity swap';
+  }
+
+  // Enhanced negative prompt for better specificity (general)
+  negativePrompt += ', cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face';
 
   return {
     enhancedPrompt: enhancedPrompt.trim(),

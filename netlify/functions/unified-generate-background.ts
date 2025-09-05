@@ -1332,6 +1332,12 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         bflInput.negative_prompt = `${bflInput.negative_prompt}, ${negativePrompt}`;
       }
 
+      // Hard protection for neo_glitch: if original subject is non-human, forbid humanization
+      if (mode === 'neo_glitch') {
+        const nonHumanBan = 'human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
+        bflInput.negative_prompt = bflInput.negative_prompt ? `${bflInput.negative_prompt}, ${nonHumanBan}` : nonHumanBan;
+      }
+
       console.log(`✨ [BFL Prompt Enhancement] Original: "${originalPrompt}"`);
       console.log(`✨ [BFL Prompt Enhancement] Enhanced: "${ultraEnhancedPrompt}"`);
       if (negativePrompt) {
