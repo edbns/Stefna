@@ -36,6 +36,7 @@ export default defineConfig({
     target: 'es2020',
     minify: 'terser', // Better minification than esbuild for production
     rollupOptions: {
+      external: ['pg', 'jsonwebtoken', 'jose', 'resend'],
       output: {
         manualChunks: {
           // Core React chunks
