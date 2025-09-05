@@ -164,7 +164,7 @@ const adminConfigHandler: Handler = async (event) => {
       }
 
     } else {
-      return json({ error: 'Method not allowed' }, { status: 405 })
+      return json({ error: 'Method not allowed' }, { status: 405 });
     }
 
   } catch (error: any) {
