@@ -34,9 +34,14 @@ export const handler: Handler = async (event) => {
 
     if (event.httpMethod === 'GET') {
       // Get logs and analytics data
-      const { type = 'activity', limit = 100, offset = 0, days = 7 } = event.queryStringParameters || {}
+      const { type = 'activity', limit = '100', offset = '0', days = '7' } = event.queryStringParameters || {}
       
-      console.log('🔍 [Admin] Fetching logs and analytics:', { type, limit, offset, days })
+      // Ensure valid numbers
+      const limitNum = Math.max(1, Math.min(1000, parseInt(limit) || 100));
+      const offsetNum = Math.max(0, parseInt(offset) || 0);
+      const daysNum = Math.max(1, Math.min(30, parseInt(days) || 7));
+      
+      console.log('🔍 [Admin] Fetching logs and analytics:', { type, limit: limitNum, offset: offsetNum, days: daysNum })
       
       let logs = []
       let analytics = {}
@@ -147,7 +152,7 @@ export const handler: Handler = async (event) => {
           
           ORDER BY timestamp DESC
           LIMIT $1 OFFSET $2
-        `, [parseInt(limit), parseInt(offset)])
+        `, [limitNum, offsetNum])
 
         // Get activity analytics
         analytics = await q(`
@@ -252,12 +257,12 @@ export const handler: Handler = async (event) => {
       
       return json({
         logs,
-        analytics: analytics[0] || analytics,
+        analytics: Array.isArray(analytics) ? analytics[0] || {} : analytics,
         total: totalCount[0]?.total || 0,
         type,
-        days: parseInt(days),
-        limit: parseInt(limit),
-        offset: parseInt(offset),
+        days: daysNum,
+        limit: limitNum,
+        offset: offsetNum,
         timestamp: new Date().toISOString()
       })
 

@@ -41,7 +41,11 @@ export const handler: Handler = async (event) => {
 
   if (event.httpMethod === 'GET') {
     // Get user drafts
-    const { limit = 50, offset = 0 } = event.queryStringParameters || {};
+    const { limit = '50', offset = '0' } = event.queryStringParameters || {};
+    
+    // Ensure valid numbers
+    const limitNum = Math.max(1, Math.min(1000, parseInt(limit) || 50));
+    const offsetNum = Math.max(0, parseInt(offset) || 0);
     
     try {
       const drafts = await q(`
@@ -61,7 +65,7 @@ export const handler: Handler = async (event) => {
         WHERE user_id = $1 
         ORDER BY created_at DESC 
         LIMIT $2 OFFSET $3
-      `, [userId, parseInt(limit), parseInt(offset)]);
+      `, [userId, limitNum, offsetNum]);
 
       const totalCount = await qOne(`
         SELECT COUNT(*) as total FROM user_drafts WHERE user_id = $1
@@ -70,8 +74,8 @@ export const handler: Handler = async (event) => {
       return json({ 
         drafts, 
         total: totalCount?.total || 0,
-        limit: parseInt(limit), 
-        offset: parseInt(offset) 
+                limit: limitNum,
+        offset: offsetNum 
       }, { headers });
 
     } catch (error) {

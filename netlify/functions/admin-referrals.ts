@@ -34,9 +34,13 @@ export const handler: Handler = async (event) => {
 
     if (event.httpMethod === 'GET') {
       // Get referral statistics and data
-      const { limit = 50, offset = 0, type = 'overview' } = event.queryStringParameters || {}
+      const { limit = '50', offset = '0', type = 'overview' } = event.queryStringParameters || {}
       
-      console.log('🔍 [Admin] Fetching referral data:', { type, limit, offset })
+      // Ensure valid numbers
+      const limitNum = Math.max(1, Math.min(1000, parseInt(limit) || 50));
+      const offsetNum = Math.max(0, parseInt(offset) || 0);
+      
+      console.log('🔍 [Admin] Fetching referral data:', { type, limit: limitNum, offset: offsetNum })
       
       let referrals = []
       let statistics = {}
@@ -72,7 +76,7 @@ export const handler: Handler = async (event) => {
           HAVING COUNT(r.id) > 0
           ORDER BY total_referrals DESC
           LIMIT $1 OFFSET $2
-        `, [parseInt(limit), parseInt(offset)])
+        `, [limitNum, offsetNum])
 
       } else if (type === 'relationships') {
         // Get detailed referral relationships
@@ -92,7 +96,7 @@ export const handler: Handler = async (event) => {
           JOIN users referred ON referrer.id = referred.referred_by
           ORDER BY referred.created_at DESC
           LIMIT $1 OFFSET $2
-        `, [parseInt(limit), parseInt(offset)])
+        `, [limitNum, offsetNum])
 
         // Get relationship statistics
         statistics = await q(`
@@ -123,7 +127,7 @@ export const handler: Handler = async (event) => {
           GROUP BY u.id, u.email, u.name, u.referral_credits_earned, u.referral_code, u.created_at, u.last_login
           ORDER BY u.referral_credits_earned DESC
           LIMIT $1 OFFSET $2
-        `, [parseInt(limit), parseInt(offset)])
+        `, [limitNum, offsetNum])
 
         // Get reward statistics
         statistics = await q(`
@@ -168,11 +172,11 @@ export const handler: Handler = async (event) => {
       
       return json({
         referrals,
-        statistics: statistics[0] || statistics,
+        statistics: Array.isArray(statistics) ? statistics[0] || {} : statistics,
         total: totalCount,
         type,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
+        limit: limitNum,
+        offset: offsetNum,
         timestamp: new Date().toISOString()
       })
 

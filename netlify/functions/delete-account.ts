@@ -1,7 +1,7 @@
 import type { Handler } from "@netlify/functions";
 import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
-import { withAuth } from './_withAuth';
+import { requireAuth } from './_lib/auth';
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -22,13 +22,8 @@ export const handler: Handler = async (event) => {
 
   try {
     // Authenticate the user
-    const authResult = await withAuth(event);
-    if (!authResult.success) {
-      return json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userId = authResult.user.id;
-    const userEmail = authResult.user.email;
+    const { userId } = requireAuth(event.headers.authorization);
+    const userEmail = event.headers['x-user-email'] || 'unknown';
 
     console.log(`🗑️ [Account Deletion] User ${userId} (${userEmail}) requesting account deletion`);
 
@@ -45,14 +40,14 @@ export const handler: Handler = async (event) => {
 
     // Get counts for logging
     const mediaCounts = await Promise.all([
-      qCount('neo_glitch_media', 'user_id = $1', [userId]),
-      qCount('ghibli_reaction_media', 'user_id = $1', [userId]),
-      qCount('emotion_mask_media', 'user_id = $1', [userId]),
-      qCount('presets_media', 'user_id = $1', [userId]),
-      qCount('custom_prompt_media', 'user_id = $1', [userId]),
-      qCount('story', 'user_id = $1', [userId]),
-      qCount('likes', 'user_id = $1', [userId]),
-      qCount('user_settings', 'user_id = $1', [userId])
+      qCount('SELECT COUNT(*) as count FROM neo_glitch_media WHERE user_id = $1', [userId]),
+      qCount('SELECT COUNT(*) as count FROM ghibli_reaction_media WHERE user_id = $1', [userId]),
+      qCount('SELECT COUNT(*) as count FROM emotion_mask_media WHERE user_id = $1', [userId]),
+      qCount('SELECT COUNT(*) as count FROM presets_media WHERE user_id = $1', [userId]),
+      qCount('SELECT COUNT(*) as count FROM custom_prompt_media WHERE user_id = $1', [userId]),
+      qCount('SELECT COUNT(*) as count FROM story WHERE user_id = $1', [userId]),
+      qCount('SELECT COUNT(*) as count FROM likes WHERE user_id = $1', [userId]),
+      qCount('SELECT COUNT(*) as count FROM user_settings WHERE user_id = $1', [userId])
     ]);
 
     const [neoGlitch, ghibli, emotion, presets, custom, story, likes, settings] = mediaCounts;

@@ -34,9 +34,13 @@ export const handler: Handler = async (event) => {
 
     if (event.httpMethod === 'GET') {
       // Get all media with pagination and filtering
-      const { limit = 50, offset = 0, type, status, search } = event.queryStringParameters || {}
+      const { limit = '50', offset = '0', type, status, search } = event.queryStringParameters || {}
       
-      console.log('🔍 [Admin] Fetching media with filters:', { limit, offset, type, status, search })
+      // Ensure valid numbers
+      const limitNum = Math.max(1, Math.min(1000, parseInt(limit) || 50));
+      const offsetNum = Math.max(0, parseInt(offset) || 0);
+      
+      console.log('🔍 [Admin] Fetching media with filters:', { limit: limitNum, offset: offsetNum, type, status, search })
       
       // Build dynamic query based on filters
       let whereClause = "WHERE 1=1"
@@ -80,7 +84,7 @@ export const handler: Handler = async (event) => {
         ${whereClause}
         ORDER BY created_at DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-      `, [...queryParams, parseInt(limit), parseInt(offset)]);
+      `, [...queryParams, limitNum, offsetNum]);
 
       // Get total count
       const totalCount = await q(`
@@ -133,8 +137,8 @@ export const handler: Handler = async (event) => {
         media,
         total: totalCount[0]?.total || 0,
         stats: stats[0] || {},
-        limit: parseInt(limit),
-        offset: parseInt(offset),
+        limit: limitNum,
+        offset: offsetNum,
         timestamp: new Date().toISOString()
       })
 

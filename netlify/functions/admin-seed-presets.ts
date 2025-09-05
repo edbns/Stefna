@@ -44,7 +44,7 @@ export const handler: Handler = async (event) => {
         description: 'Cyberpunk aesthetic with glitch effects',
         strength: 1.0,
         category: 'cyberpunk',
-        is_enabled: true,
+        is_active: true,
         is_custom: false,
         metadata: { style: 'cyberpunk', effect: 'glitch' }
       },
@@ -54,7 +54,7 @@ export const handler: Handler = async (event) => {
         description: 'Studio Ghibli inspired artistic style',
         strength: 1.0,
         category: 'artistic',
-        is_enabled: true,
+        is_active: true,
         is_custom: false,
         metadata: { style: 'ghibli', inspiration: 'studio_ghibli' }
       },
@@ -64,7 +64,7 @@ export const handler: Handler = async (event) => {
         description: 'Emotional expression enhancement',
         strength: 1.0,
         category: 'portrait',
-        is_enabled: true,
+        is_active: true,
         is_custom: false,
         metadata: { style: 'portrait', enhancement: 'emotion' }
       },
@@ -74,7 +74,7 @@ export const handler: Handler = async (event) => {
         description: 'User-defined custom generation',
         strength: 1.0,
         category: 'custom',
-        is_enabled: true,
+        is_active: true,
         is_custom: true,
         metadata: { style: 'custom', user_defined: true }
       }
@@ -95,11 +95,11 @@ export const handler: Handler = async (event) => {
           await q(`
             UPDATE preset_config 
             SET name = $1, description = $2, strength = $3, category = $4, 
-                is_enabled = $5, is_custom = $6, metadata = $7, updated_at = NOW()
-            WHERE preset_key = $8
+                is_active = $5, metadata = $6, updated_at = NOW()
+            WHERE preset_key = $7
           `, [
             preset.name, preset.description, preset.strength, preset.category,
-            preset.is_enabled, preset.is_custom, preset.metadata, preset.preset_key
+            preset.is_active ? 1 : 0, JSON.stringify(preset.metadata), preset.preset_key
           ]);
           updatedCount++;
           console.log(`✏️ [Admin] Updated preset: ${preset.preset_key}`);
@@ -107,12 +107,12 @@ export const handler: Handler = async (event) => {
           // Create new preset
           const created = await q(`
             INSERT INTO preset_config (preset_key, name, description, strength, category, 
-                                     is_enabled, is_custom, metadata, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+                                     is_active, metadata, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
             RETURNING id
           `, [
             preset.preset_key, preset.name, preset.description, preset.strength,
-            preset.category, preset.is_enabled, preset.is_custom, preset.metadata
+            preset.category, preset.is_active ? 1 : 0, JSON.stringify(preset.metadata)
           ]);
           
           if (created && created.length > 0) {

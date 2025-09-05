@@ -11,6 +11,7 @@ import LoadingSpinner from './LoadingSpinner'
 import LQIPImage from './LQIPImage'
 
 import type { UserMedia } from '../services/userMediaService'
+import { mapErrorToUserMessage } from '../utils/errorMessages'
 import { useToasts } from './ui/Toasts'
 import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
@@ -1698,7 +1699,7 @@ const HomeNew: React.FC = () => {
       
       // Show error toast
       notifyError({ 
-        title: 'Failed', 
+        title: 'Generation Failed', 
         message: message || 'Try again' 
       })
       
@@ -2194,7 +2195,7 @@ const HomeNew: React.FC = () => {
     // 🛡️ Runtime Guard (For Safety) - Prevent unknown modes from crashing the app
     if (!['preset', 'custom', 'emotionmask', 'ghiblireact', 'neotokyoglitch', 'storytime', 'edit'].includes(kind)) {
       console.warn("[dispatchGenerate] Unknown mode: ", kind);
-              notifyError({ title: 'Failed', message: 'Try again' });
+              notifyError({ title: 'Invalid Mode', message: 'Try again with a valid option' });
       return;
     }
     
@@ -2211,7 +2212,7 @@ const HomeNew: React.FC = () => {
   const validateModel = (model: string) => {
     if (!ALLOWED_MODELS.includes(model)) {
       console.error("🚫 Invalid model:", model);
-              notifyError({ title: 'Failed', message: 'Try again' });
+              notifyError({ title: 'Invalid Model', message: 'Try again with a supported model' });
               return "bfl/flux-pro-1.1"; // Fallback to BFL model
     }
     return model;
@@ -2290,7 +2291,7 @@ const HomeNew: React.FC = () => {
       const presetId = options?.presetId || selectedPreset;
       if (!presetId) {
         console.error('❌ No preset ID provided');
-        notifyError({ title: 'Failed', message: 'Try again' });
+        notifyError({ title: 'No Preset Selected', message: 'Select a preset and try again' });
         endGeneration(genId);
         setNavGenerating(false);
         // Clear composer after error
@@ -2300,7 +2301,7 @@ const HomeNew: React.FC = () => {
       const preset = getPresetById(presetId as string, availablePresets);
       if (!preset) {
         console.error('❌ Invalid preset:', presetId);
-        notifyError({ title: 'Failed', message: 'Try again' });
+        notifyError({ title: 'Invalid Preset', message: 'Select a valid preset and try again' });
         endGeneration(genId);
         setNavGenerating(false);
         // Clear composer after error
@@ -2477,7 +2478,7 @@ const HomeNew: React.FC = () => {
       const storyImages = options?.storyTimeImages || [];
       if (storyImages.length < 3) {
         console.error('❌ Story Time requires at least 3 images');
-        notifyError({ title: 'Failed', message: 'Story Time requires at least 3 photos' });
+        notifyError({ title: 'Not Enough Photos', message: 'Add at least 3 photos for Story Time' });
         endGeneration(genId);
         setNavGenerating(false);
         // Clear composer after error
@@ -2791,27 +2792,13 @@ const HomeNew: React.FC = () => {
       }
       
       // Show user-friendly error message
-      let errorMessage = 'Please try again';
-      
       // Map technical errors to user-friendly messages
-      if (e instanceof Error) {
-        console.log('🚨 Error message:', e.message);
-        console.log('🚨 Error type:', e.constructor.name);
-        console.log('🚨 Full error:', e);
-        
-        if (e.message.includes('INSUFFICIENT_CREDITS') || e.message.includes('Insufficient credits') || e.message.includes('credits but only have')) {
-          errorMessage = 'Not enough credits. Please wait for daily reset or upgrade your plan.';
-          console.log('🚨 Setting insufficient credits message');
-        } else if (e.message.includes('timeout') || e.message.includes('ERR_TIMED_OUT')) {
-          errorMessage = 'Request timed out. Please try again with a smaller image or different prompt.';
-        } else {
-          errorMessage = e.message;
-        }
-      }
+      const errorForMapping = e instanceof Error ? e : new Error(String(e));
+      const { title: errorTitle, message: errorMessage } = mapErrorToUserMessage(errorForMapping);
       
-      console.log('🚨 Showing error notification:', errorMessage);
+      console.log('🚨 Showing error notification:', { title: errorTitle, message: errorMessage });
       // Show error notification
-      notifyError({ title: 'Failed', message: errorMessage });
+      notifyError({ title: errorTitle, message: errorMessage });
       
       console.log('🚨 Stopping generation and clearing state');
       // Clear generation state on error

@@ -75,7 +75,7 @@ const ProfileScreen: React.FC = () => {
   // Handle email change
   const handleChangeEmail = async () => {
     if (!newEmail.trim()) {
-      notifyError({ title: 'Error', message: 'Please enter a new email address' })
+      notifyError({ title: 'Error', message: 'Enter a new email address' })
       return
     }
 
@@ -100,7 +100,7 @@ const ProfileScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Email change error:', error)
-      notifyError({ title: 'Error', message: 'Failed to update email. Please try again.' })
+      notifyError({ title: 'Error', message: 'Failed to update email. Try again.' })
     } finally {
       setIsChangingEmail(false)
     }

@@ -162,7 +162,7 @@ export const handler: Handler = async (event) => {
   }
 
   if (event.httpMethod !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405);
+    return json({ error: 'Method not allowed' }, { status: 405 });
   }
 
   try {
@@ -170,7 +170,7 @@ export const handler: Handler = async (event) => {
     const { prompt, enhanceNegativePrompt = false } = body;
 
     if (!prompt || typeof prompt !== 'string') {
-      return json({ error: 'Prompt is required' }, 400);
+      return json({ error: 'Prompt is required' }, { status: 400 });
     }
 
     console.log('🔮 [Magic Wand] Processing prompt:', prompt);
@@ -226,6 +226,6 @@ export const handler: Handler = async (event) => {
     return json({ 
       error: 'Failed to enhance prompt',
       details: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    }, { status: 500 });
   }
 };
