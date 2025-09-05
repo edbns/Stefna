@@ -96,19 +96,26 @@ class SimpleGenerationService {
 
       // Read response body first to check for early failures
       let result;
+      let hasJsonBody = false;
       try {
         result = await response.json();
+        hasJsonBody = true;
       } catch (parseError) {
-        // If we can't parse JSON, create a synthetic error response
-        result = {
-          success: false,
-          status: 'failed',
-          error: `HTTP ${response.status}: ${response.statusText} (JSON parse failed)`
-        };
+        // If we can't parse JSON, it might be an empty body (202 response) or a real error
+        result = null;
+        hasJsonBody = false;
       }
 
-      // Check for early failure before starting polling
-      if (result && result.success === false && result.status === 'failed') {
+      // If this is a Netlify background function, it responds 202 with no body
+      if (response.status === 202) {
+        console.log('ℹ️ [SimpleGeneration] Background accepted (202), starting polling...');
+        
+        // Start polling for completion
+        return await this.pollForCompletion(request.runId, request.mode);
+      }
+
+      // Check for early failure only if we have a JSON body and it indicates failure
+      if (hasJsonBody && result && result.success === false && result.status === 'failed') {
         console.warn(`🚨 [SimpleGeneration] Early failure detected: ${result.error}`);
         console.warn(`🚨 [SimpleGeneration] Full failure response:`, JSON.stringify(result, null, 2));
         
@@ -122,14 +129,6 @@ class SimpleGenerationService {
         const errorMessage = result.error || result.message || 'Generation failed';
         console.log('🚨 [SimpleGeneration] Throwing early failure error:', errorMessage);
         throw new Error(errorMessage);
-      }
-
-      // If this is a Netlify background function, it responds 202 with no body
-      if (response.status === 202) {
-        console.log('ℹ️ [SimpleGeneration] Background accepted (202), starting polling...');
-        
-        // Start polling for completion
-        return await this.pollForCompletion(request.runId, request.mode);
       }
 
       if (!response.ok) {
