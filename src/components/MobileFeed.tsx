@@ -137,20 +137,6 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
         </div>
       ))}
 
-      {/* Mobile Notice */}
-      <div className="text-center py-8">
-        <div className="bg-white/5 rounded-xl p-6 space-y-3">
-          <h3 className="text-white font-semibold">📱 Mobile View</h3>
-          <p className="text-white/60 text-sm">
-            You're viewing Stefna on mobile. To create content and access your profile, 
-            please visit us on desktop or wait for our mobile app!
-          </p>
-          <div className="text-white/40 text-xs">
-            Browse, like, and share content • Desktop for full features
-          </div>
-        </div>
-      </div>
-
       {/* Bottom Banner */}
       <div className="fixed bottom-0 left-0 right-0 bg-white text-black py-3 px-4 z-50">
         <div className="text-center">
