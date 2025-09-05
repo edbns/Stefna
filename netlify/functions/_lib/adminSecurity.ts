@@ -1,7 +1,7 @@
 // Admin security utilities
 // Provides enhanced security for admin functions
 
-import { q } from './_db';
+import { q } from '../_db';
 
 /**
  * Check if an IP address is allowed for admin access

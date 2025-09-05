@@ -19,6 +19,7 @@ const adminConfigHandler: Handler = async (event) => {
   const corsResponse = handleCORS(event, true); // true for admin
   if (corsResponse) return corsResponse;
 
+  try {
     if (event.httpMethod === 'GET') {
       // Get system configuration and health
       console.log('🔍 [Admin] Fetching system configuration...')
@@ -106,7 +107,7 @@ const adminConfigHandler: Handler = async (event) => {
         creditStats: creditStats[0] || {},
         systemConfig,
         timestamp: new Date().toISOString()
-      })
+      });
 
     } else if (event.httpMethod === 'PUT') {
       // Update system configuration
@@ -136,7 +137,7 @@ const adminConfigHandler: Handler = async (event) => {
             success: true,
             message: 'Daily credits reset successfully',
             usersUpdated: resetResult.length
-          })
+          });
 
         case 'cleanup_old_media':
           // Clean up media older than 30 days
@@ -149,7 +150,7 @@ const adminConfigHandler: Handler = async (event) => {
             success: true,
             message: 'Old media cleanup completed',
             itemsCleaned: cleanupResult.length
-          })
+          });
 
         case 'update_feature_flag':
           // Update feature flags (would need a config table)
@@ -157,7 +158,7 @@ const adminConfigHandler: Handler = async (event) => {
           return json({
             success: true,
             message: 'Feature flag updated successfully'
-          })
+          });
 
         default:
           return json({ error: 'Invalid action' }, { status: 400 });
