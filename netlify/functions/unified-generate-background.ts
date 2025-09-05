@@ -502,6 +502,9 @@ async function makeStabilityRequest(tier: string, params: any, apiKey: string): 
   const form = new FormData();
   // Allow caller to provide full prompt and parameters per mode
   form.append("prompt", params.prompt);
+  if (params.negative_prompt) {
+    form.append("negative_prompt", params.negative_prompt);
+  }
   form.append("init_image", params.sourceAssetId);
   form.append("image_strength", String(params.image_strength ?? 0.45)); // Reduced default for better quality
   form.append("steps", String(params.steps ?? 30));
@@ -1156,7 +1159,10 @@ async function generateWithReplicate(params: any): Promise<UnifiedGenerationResp
       
       // Prepare IPA-safe prompt
       const ipaPrompt = `portrait photo of a ${params.prompt}, cinematic lighting, ultra realistic, sharp focus`;
-      const negativePrompt = 'cartoon, anime, exaggerated, distorted, low-res, mutated, doll, plastic, duplicate face';
+      let negativePrompt = 'cartoon, anime, exaggerated, distorted, low-res, mutated, doll, plastic, duplicate face';
+      if (params.mode === 'neo_glitch') {
+        negativePrompt += ', human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
+      }
       
       const replicateInput: any = {
         input: {
@@ -2029,6 +2035,12 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
       additionalImages: request.additionalImages,
       steps: 30
     };
+
+    // Provide negative_prompt to Stability/Replicate paths for neo_glitch to block humanization
+    if (request.mode === 'neo_glitch') {
+      const nonHumanBan = 'human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
+      (generationParams as any).negative_prompt = nonHumanBan;
+    }
 
     if (request.mode === 'neo_glitch') {
       // Neo Tokyo Glitch: Stability.ai as primary (reverted from BFL)
