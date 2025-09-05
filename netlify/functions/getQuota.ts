@@ -91,7 +91,7 @@ export const handler: Handler = async (event) => {
     }
 
     const currentCredits = userCredits.credits || 0;
-    const dailyCredits = 30; // Default daily credit limit
+    const dailyCredits = 30; // Daily credit limit
     const usedCredits = dailyCredits - currentCredits;
     const remainingCredits = currentCredits;
 
@@ -107,7 +107,7 @@ export const handler: Handler = async (event) => {
       remaining: Math.max(0, remainingCredits),
       weekly_used: 0, // For compatibility with TokenService
       dailyReset: tomorrow.toISOString(),
-      currentBalance: currentCredits,
+      currentBalance: currentCredits, // This should show the actual credits (28), not the limit (30)
       timestamp: now.toISOString()
     };
 
