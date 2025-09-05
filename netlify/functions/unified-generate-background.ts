@@ -1378,7 +1378,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         console.log(`📐 [BFL API] Ultra model - using aspect_ratio: ${aspectRatio}`);
         
         // Ultra models support raw mode for more natural look
-        bflInput.raw = params.raw ?? false; // Use preset value or default to false
+        bflInput.raw = params.raw ?? (mode === 'emotion_mask' ? true : false); // Use preset value or true for emotion_mask, false for others
         
         // Add additional Ultra model parameters
         bflInput.prompt_upsampling = params.prompt_upsampling ?? true; // Enhance prompt for better results
