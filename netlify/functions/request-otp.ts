@@ -2,6 +2,8 @@ import type { Handler } from '@netlify/functions';
 import { Client as PgClient } from 'pg';
 import { Resend } from 'resend';
 import { v4 as uuidv4 } from 'uuid';
+import { checkRateLimit, createRateLimitKey, RATE_LIMITS } from './_lib/rateLimit';
+import { handleCORS, getCORSHeaders } from './_lib/cors';
 
 // ============================================================================
 // VERSION: 7.0 - RAW SQL MIGRATION
@@ -14,24 +16,35 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Content-Type': 'application/json'
-      },
-      body: ''
-    };
-  }
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
 
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json' },
+      headers: { ...getCORSHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  // Rate limiting check for OTP requests
+  const rateLimitKey = createRateLimitKey(event, 'otp-request');
+  const isAllowed = checkRateLimit(rateLimitKey, RATE_LIMITS['otp-request']);
+  
+  if (!isAllowed) {
+    console.log('🚫 [Rate Limit] OTP request blocked for:', rateLimitKey);
+    return {
+      statusCode: 429,
+      headers: {
+        ...getCORSHeaders(),
+        'Content-Type': 'application/json',
+        'Retry-After': '900' // 15 minutes
+      },
+      body: JSON.stringify({ 
+        error: 'Rate limit exceeded',
+        message: 'Too many OTP requests. Please wait 15 minutes before trying again.',
+        retryAfter: 900
+      })
     };
   }
 
