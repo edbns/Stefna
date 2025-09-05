@@ -2657,7 +2657,7 @@ export const handler: Handler = async (event, context) => {
       errorMessage = error.message;
       
       // Set appropriate status codes for specific errors
-      if (error.message.includes('Insufficient credits')) {
+      if (error.message.includes('INSUFFICIENT_CREDITS') || error.message.includes('Insufficient credits')) {
         statusCode = 402; // Payment Required - standard for insufficient credits
         errorType = 'INSUFFICIENT_CREDITS';
       } else if (error.message.includes('timeout')) {
