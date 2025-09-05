@@ -796,7 +796,7 @@ async function calculateImageSimilarity(originalBase64: string, generatedBase64:
 
 // Centralized credit handling
 // Helper functions to call separate credit endpoints
-async function reserveCreditsViaEndpoint(userId: string, action: string, creditsNeeded: number, requestId: string): Promise<{ success: boolean; error?: string }> {
+async function reserveCreditsViaEndpoint(userId: string, action: string, creditsNeeded: number, requestId: string, userToken: string): Promise<{ success: boolean; error?: string }> {
   try {
     console.log(`💰 [Background] Reserving ${creditsNeeded} credits via endpoint for ${action}`);
     
@@ -804,7 +804,7 @@ async function reserveCreditsViaEndpoint(userId: string, action: string, credits
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || 'internal'}` // Use internal key for server-to-server calls
+        'Authorization': `Bearer ${userToken}` // Use the user's actual JWT token
       },
       body: JSON.stringify({
         action,
@@ -828,7 +828,7 @@ async function reserveCreditsViaEndpoint(userId: string, action: string, credits
   }
 }
 
-async function finalizeCreditsViaEndpoint(userId: string, requestId: string, success: boolean): Promise<void> {
+async function finalizeCreditsViaEndpoint(userId: string, requestId: string, success: boolean, userToken: string): Promise<void> {
   try {
     console.log(`💰 [Background] Finalizing credits via endpoint, success: ${success}`);
     
@@ -836,7 +836,7 @@ async function finalizeCreditsViaEndpoint(userId: string, requestId: string, suc
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || 'internal'}` // Use internal key for server-to-server calls
+        'Authorization': `Bearer ${userToken}` // Use the user's actual JWT token
       },
       body: JSON.stringify({
         request_id: requestId,
@@ -1904,7 +1904,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
 }
 
 // Main generation pipeline
-async function processGeneration(request: UnifiedGenerationRequest): Promise<UnifiedGenerationResponse> {
+async function processGeneration(request: UnifiedGenerationRequest, userToken: string): Promise<UnifiedGenerationResponse> {
   console.log(`🚀 [Background] Processing generation:`, {
     mode: request.mode,
     promptLength: request.prompt.length,
@@ -1935,7 +1935,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
         
         if (existing) {
           console.warn(`⚠️ [Background] Story generation ${request.runId} already exists in database, skipping duplicate`);
-          await finalizeCreditsViaEndpoint(request.userId, request.runId, false);
+          await finalizeCreditsViaEndpoint(request.userId, request.runId, false, userToken);
           return {
             success: false,
             status: 'failed',
@@ -1950,7 +1950,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
 
       if (existing) {
         console.warn(`⚠️ [Background] Generation ${request.runId} already exists in database, skipping duplicate`);
-        await finalizeCreditsViaEndpoint(request.userId, request.runId, false);
+        await finalizeCreditsViaEndpoint(request.userId, request.runId, false, userToken);
         return {
           success: false,
           status: 'failed',
@@ -1995,7 +1995,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
   const creditsNeeded = 2; // All generations cost 2 credits
   
   // Try to reserve credits - handle insufficient credits gracefully
-  const creditReservation = await reserveCreditsViaEndpoint(request.userId, action, creditsNeeded, request.runId);
+  const creditReservation = await reserveCreditsViaEndpoint(request.userId, action, creditsNeeded, request.runId, userToken);
   if (!creditReservation.success) {
     console.error('❌ [Background] Credit reservation failed:', creditReservation.error);
     
@@ -2266,7 +2266,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     // Generation will be saved to appropriate media table by saveGenerationResult()
 
     // Finalize credits on success (or IPA blocking failure)
-    await finalizeCreditsViaEndpoint(request.userId, request.runId, result.success);
+    await finalizeCreditsViaEndpoint(request.userId, request.runId, result.success, userToken);
 
     console.log(`✅ [Background] Generation completed:`, {
       mode: request.mode,
@@ -2283,7 +2283,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     // Error will be logged but generation status is tracked in credits_ledger
 
     // Finalize credits on failure (refund)
-    await finalizeCreditsViaEndpoint(request.userId, request.runId, false);
+    await finalizeCreditsViaEndpoint(request.userId, request.runId, false, userToken);
 
     return {
       success: false,
@@ -2311,6 +2311,20 @@ export const handler: Handler = async (event, context) => {
       statusCode: 405,
       headers: CORS_JSON_HEADERS,
       body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  // Extract user token for internal API calls
+  const userToken = event.headers?.authorization || event.headers?.Authorization;
+  if (!userToken) {
+    return {
+      statusCode: 401,
+      headers: CORS_JSON_HEADERS,
+      body: JSON.stringify({ 
+        success: false,
+        status: 'failed',
+        error: 'Missing authorization header' 
+      })
     };
   }
 
@@ -2424,7 +2438,7 @@ export const handler: Handler = async (event, context) => {
 
         // Process generation with timeout protection (10 minutes)
         const result = await Promise.race([
-          processGeneration(editGenerationRequest),
+          processGeneration(editGenerationRequest, userToken),
           new Promise<UnifiedGenerationResponse>((_, reject) =>
             setTimeout(() => reject(new Error('Edit generation timed out after 10 minutes')), 10 * 60 * 1000)
           )
@@ -2500,7 +2514,7 @@ export const handler: Handler = async (event, context) => {
 
         // Process generation with timeout protection (10 minutes)
         const result = await Promise.race([
-          processGeneration(storyGenerationRequest),
+          processGeneration(storyGenerationRequest, userToken),
           new Promise<UnifiedGenerationResponse>((_, reject) =>
             setTimeout(() => reject(new Error('Story generation timed out after 10 minutes')), 10 * 60 * 1000)
           )
@@ -2576,7 +2590,7 @@ export const handler: Handler = async (event, context) => {
 
         // Process generation with timeout protection (10 minutes)
         const result = await Promise.race([
-          processGeneration(editGenerationRequest),
+          processGeneration(editGenerationRequest, userToken),
           new Promise<UnifiedGenerationResponse>((_, reject) =>
             setTimeout(() => reject(new Error('Edit generation timed out after 10 minutes')), 10 * 60 * 1000)
           )
@@ -2625,7 +2639,7 @@ export const handler: Handler = async (event, context) => {
 
     // Process generation with timeout protection (10 minutes)
     const result = await Promise.race([
-      processGeneration(generationRequest),
+      processGeneration(generationRequest, userToken),
       new Promise<UnifiedGenerationResponse>((_, reject) =>
         setTimeout(() => reject(new Error('Generation timed out after 10 minutes')), 10 * 60 * 1000) // 10 minutes
       )
