@@ -2517,75 +2517,8 @@ export const handler: Handler = async (event, context) => {
       };
     }
 
-        if (!sourceAssetId) {
-          return {
-            statusCode: 400,
-            headers: CORS_JSON_HEADERS,
-            body: JSON.stringify({
-              success: false,
-              status: 'failed',
-              error: 'Missing sourceAssetId for story_time mode',
-            }),
-          };
-        }
 
-        if (!prompt) {
-          return {
-            statusCode: 400,
-            headers: CORS_JSON_HEADERS,
-            body: JSON.stringify({
-              success: false,
-              status: 'failed',
-              error: 'Missing prompt for story_time mode',
-            }),
-          };
-        }
 
-        console.log('[StoryTime] Valid parameters received, proceeding with generation');
-
-        // Create generation request for story_time
-        const storyGenerationRequest: UnifiedGenerationRequest = {
-          mode: 'story_time',
-          prompt,
-          sourceAssetId,
-          userId,
-          runId,
-          additionalImages,
-          storyTimePresetId,
-          meta,
-          ipaThreshold,
-          ipaRetries,
-          ipaBlocking
-        };
-
-        // Process generation with timeout protection (10 minutes)
-        const result = await Promise.race([
-          processGeneration(storyGenerationRequest, userToken),
-          new Promise<UnifiedGenerationResponse>((_, reject) =>
-            setTimeout(() => reject(new Error('Story generation timed out after 10 minutes')), 10 * 60 * 1000)
-          )
-        ]);
-
-        return {
-          statusCode: 200,
-          headers: CORS_JSON_HEADERS,
-          body: JSON.stringify(result)
-        };
-
-      } catch (err: any) {
-        console.error('[StoryTime ERROR]', err);
-        return {
-          statusCode: 500,
-          headers: CORS_JSON_HEADERS,
-          body: JSON.stringify({
-            success: false,
-            status: 'failed',
-            error: 'Story_time failed internally',
-            details: err?.message || 'Unknown error',
-          }),
-        };
-      }
-    }
 
     // Safe handler for edit-photo mode
     if (mode === 'edit-photo') {
