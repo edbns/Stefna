@@ -54,7 +54,7 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto space-y-4 pb-20">
+    <div className="w-full max-w-sm mx-auto space-y-4 pb-24">
       {feed.map((media) => (
         <div key={media.id} className="bg-white/5 rounded-xl overflow-hidden">
           {/* Media */}
@@ -148,6 +148,15 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
           <div className="text-white/40 text-xs">
             Browse, like, and share content • Desktop for full features
           </div>
+        </div>
+      </div>
+
+      {/* Bottom Banner */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white text-black py-3 px-4 z-50">
+        <div className="text-center">
+          <p className="text-sm font-medium">
+            Enjoy the full experience on our website — app coming soon!
+          </p>
         </div>
       </div>
     </div>

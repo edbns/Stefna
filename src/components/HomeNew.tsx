@@ -3659,18 +3659,20 @@ const HomeNew: React.FC = () => {
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
 
-      {/* Full Screen Media Viewer */}
-      <FullScreenMediaViewer
-        isOpen={viewerOpen}
-        media={viewerMedia}
-        startIndex={viewerStartIndex}
-        onClose={() => setViewerOpen(false)}
-        onShowAuth={() => navigate('/auth')}
-        // Likes functionality
-        onToggleLike={handleToggleLike}
-        userLikes={userLikes}
-        isLoggedIn={isAuthenticated}
-      />
+      {/* Full Screen Media Viewer - Hidden on Mobile */}
+      {!isMobile && (
+        <FullScreenMediaViewer
+          isOpen={viewerOpen}
+          media={viewerMedia}
+          startIndex={viewerStartIndex}
+          onClose={() => setViewerOpen(false)}
+          onShowAuth={() => navigate('/auth')}
+          // Likes functionality
+          onToggleLike={handleToggleLike}
+          userLikes={userLikes}
+          isLoggedIn={isAuthenticated}
+        />
+      )}
 
                 {/* Bottom-centered composer */}
           {isComposerOpen && (
