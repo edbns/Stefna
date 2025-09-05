@@ -143,6 +143,7 @@ class SimpleGenerationService {
       // Check for success: false in the response body (even with 200 status)
       if (result && result.success === false) {
         console.log('🚨 [SimpleGeneration] Detected success: false in response body');
+        console.log('🚨 [SimpleGeneration] Full result object:', JSON.stringify(result, null, 2));
         
         // Special handling for insufficient credits
         if (result.errorType === 'INSUFFICIENT_CREDITS' || result.error === 'INSUFFICIENT_CREDITS') {
