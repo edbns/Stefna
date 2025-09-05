@@ -2,7 +2,6 @@ import React, { useRef, useMemo } from 'react'
 import { UserMedia } from '../services/userMediaService'
 import { optimizeFeedImage } from '../utils/cloudinaryOptimization'
 import PresetTag from './PresetTag'
-import LQIPImage from './LQIPImage'
 // RemixIcon removed - no more remix functionality
 import { MediaCard as SpinnerCard } from './ui/Toasts'
 // LazyImage removed - using simple img tags for better performance
@@ -36,8 +35,6 @@ interface MasonryMediaGridProps {
   // Likes functionality
   onToggleLike?: (media: UserMedia) => void
   userLikes?: Record<string, boolean>
-  // Skip LQIP loading states during initial feed loading
-  skipImageLoadingStates?: boolean
 }
 
 const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
@@ -65,9 +62,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   onPresetTagClick,
   // Likes functionality
   onToggleLike,
-  userLikes = {},
-  // Skip LQIP loading states during initial feed loading
-  skipImageLoadingStates = false
+  userLikes = {}
 }) => {
   const gridRef = useRef<HTMLDivElement>(null)
   
@@ -193,14 +188,11 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                       {item.type === 'video' ? (
                         <video src={item.url} className="w-full h-auto object-cover opacity-50" muted />
                                             ) : (
-                        <LQIPImage
+                        <img
                           src={optimizeFeedImage(item.url)} 
                           alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
-                          className="w-full h-auto opacity-50 object-cover"
+                          className="w-full h-auto object-cover"
                           loading="lazy"
-                          decoding="async"
-                          aspectRatio={item.width && item.height ? item.width / Math.max(1, item.height) : (item.aspectRatio || 1)}
-                          skipLoadingState={skipImageLoadingStates}
                         />
                       )}
                       <div className="absolute inset-0 grid place-items-center">
@@ -237,13 +229,11 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   ) : (item.type as any) === 'story-time' && (item.status as any) === 'processing' ? (
                       // Story Time processing - show progress with photo
                       <div className="relative">
-                        <LQIPImage
+                        <img
                           src={optimizeFeedImage(item.url)}
                           alt="Story Time processing"
                           className="w-full h-auto object-cover opacity-75"
                           loading="lazy"
-                          decoding="async"
-                          skipLoadingState={skipImageLoadingStates}
                         />
                         {/* Processing overlay */}
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -255,14 +245,12 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                         </div>
                       </div>
                   ) : (
-                                              <LQIPImage
-                          src={optimizeFeedImage(item.url)} 
-                          alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
-                          className="w-full h-auto object-cover"
-                          loading="lazy"
-                          decoding="async"
-                          skipLoadingState={skipImageLoadingStates}
-                        />
+                    <img
+                      src={optimizeFeedImage(item.url)} 
+                      alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
+                      className="w-full h-auto object-cover"
+                      loading="lazy"
+                    />
                   )}
 
 

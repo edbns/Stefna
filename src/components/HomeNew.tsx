@@ -48,8 +48,6 @@ interface SafeMasonryGridProps {
   userLikes?: Record<string, boolean>
   isLoggedIn?: boolean
   onShowAuth?: () => void
-  // Skip LQIP loading states during initial feed loading
-  skipImageLoadingStates?: boolean
 }
 
 const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
@@ -61,8 +59,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   onToggleLike,
   userLikes = {},
   isLoggedIn = false,
-  onShowAuth,
-  skipImageLoadingStates = false
+  onShowAuth
 }) => {
   try {
     return (
@@ -79,7 +76,6 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         userLikes={userLikes}
         isLoggedIn={isLoggedIn}
         onShowAuth={onShowAuth}
-        skipImageLoadingStates={skipImageLoadingStates}
       />
     )
   } catch (error) {
@@ -3576,7 +3572,6 @@ const HomeNew: React.FC = () => {
                 userLikes={userLikes}
                 isLoggedIn={isAuthenticated}
                 onShowAuth={() => navigate('/auth')}
-                skipImageLoadingStates={isLoadingFeed}
               />
               
               {/* 🚀 Unified infinite scroll: Loading indicator */}

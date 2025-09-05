@@ -11,16 +11,12 @@ const SkeletonGrid: React.FC<SkeletonGridProps> = ({
   rows = 6, 
   className = '' 
 }) => {
-  // Generate variable heights to simulate real media cards
+  // Generate unified 1:1 square skeleton items
   const generateSkeletonItems = () => {
     const items = []
     for (let i = 0; i < rows; i++) {
-      // More consistent heights to prevent layout shifts
-      const heights = [
-        'h-48', 'h-56', 'h-52', 'h-60', 'h-44', 'h-64'
-      ]
-      const randomHeight = heights[Math.floor(Math.random() * heights.length)]
-      items.push(randomHeight)
+      // All items are 1:1 square format for consistency
+      items.push('aspect-square')
     }
     return items
   }
@@ -33,13 +29,11 @@ const SkeletonGrid: React.FC<SkeletonGridProps> = ({
       <div className="flex gap-1 w-full" style={{ maxWidth: '100%' }}>
         {[...Array(columns)].map((_, columnIndex) => (
           <div key={columnIndex} className="flex-1 flex flex-col gap-1 min-w-0">
-            {skeletonItems.map((height, itemIndex) => (
+            {skeletonItems.map((aspectClass, itemIndex) => (
               <div 
                 key={`${columnIndex}-${itemIndex}`} 
-                className={`${height} bg-gray-800 animate-pulse relative overflow-hidden rounded-sm w-full`}
+                className={`${aspectClass} bg-gray-800 animate-pulse relative overflow-hidden rounded-sm w-full`}
                 style={{ 
-                  minHeight: '192px', 
-                  maxHeight: '256px',
                   width: '100%',
                   flexShrink: 0
                 }}
