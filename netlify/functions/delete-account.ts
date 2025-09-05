@@ -23,11 +23,8 @@ export const handler: Handler = async (event) => {
   try {
     // Authenticate the user
     const { userId } = requireAuth(event.headers.authorization);
-    const userEmail = event.headers['x-user-email'] || 'unknown';
-
-    console.log(`🗑️ [Account Deletion] User ${userId} (${userEmail}) requesting account deletion`);
-
-    // Verify the user exists and get their data for logging
+    
+    // Get user email from database instead of relying on header
     const userData = await qOne(`
       SELECT id, email, created_at, total_likes_received 
       FROM users 
@@ -37,6 +34,10 @@ export const handler: Handler = async (event) => {
     if (!userData) {
       return json({ error: 'User not found' }, { status: 404 });
     }
+
+    const userEmail = userData.email || 'unknown';
+
+    console.log(`🗑️ [Account Deletion] User ${userId} (${userEmail}) requesting account deletion`);
 
     // Get counts for logging
     const mediaCounts = await Promise.all([

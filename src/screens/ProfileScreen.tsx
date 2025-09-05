@@ -881,21 +881,15 @@ const ProfileScreen: React.FC = () => {
 
     if (!confirmed) return
 
-    const finalConfirmation = window.confirm(
-      'FINAL WARNING: This is your last chance to cancel.\n\n' +
-      'Your account and all data will be permanently deleted.\n' +
-      'This action cannot be undone.\n\n' +
-      'Click OK to confirm deletion (or Cancel to abort):'
-    )
-
-    if (!finalConfirmation) return
-
     try {
       console.log('🗑️ [Profile] User requesting account deletion:', currentUser.id)
       
       const response = await authenticatedFetch('/.netlify/functions/delete-account', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-email': currentUser.email || 'unknown'
+        }
       })
 
       if (response.ok) {
