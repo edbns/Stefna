@@ -2785,10 +2785,13 @@ const HomeNew: React.FC = () => {
     } catch (e) {
       console.error('🚨 dispatchGenerate error caught:', e);
       
-      // 🛡️ RUN ID PROTECTION: Only handle errors for current run
+      // 🛡️ RUN ID PROTECTION: Allow credit errors to bubble regardless of run staleness
       if (currentRunId && currentRunId !== runId) {
-        console.warn('⚠️ Ignoring error for stale run:', runId, 'current:', currentRunId);
-        return;
+        const message = e instanceof Error ? e.message : String(e);
+        if (!message.includes('INSUFFICIENT_CREDITS')) {
+          console.warn('⚠️ Ignoring error for stale run:', runId, 'current:', currentRunId);
+          return;
+        }
       }
       
       // Show user-friendly error message

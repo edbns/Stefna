@@ -96,6 +96,10 @@ class SimpleGenerationService {
       } catch (preflightError) {
         // If preflight fails due to network or parsing, continue to attempt generation
         // Intentionally silent aside from debug log to avoid blocking on transient issues
+        if (preflightError instanceof Error && preflightError.message === 'INSUFFICIENT_CREDITS') {
+          // Re-throw so caller can handle and UI can show toast
+          throw preflightError;
+        }
         console.debug('ℹ️ [SimpleGeneration] Preflight quota check skipped due to error:', preflightError);
       }
 
