@@ -12,53 +12,6 @@ import { json } from './_lib/http';
 // - Gets user quota and usage information
 // ============================================================================
 
-// Check and reset daily credits if needed
-async function checkAndResetDailyCredits(): Promise<void> {
-  try {
-    // Get current date in UTC
-    const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    
-    // Get last reset date from app_config
-    const lastResetResult = await qOne(`
-      SELECT value FROM app_config WHERE key = 'last_credit_reset'
-    `);
-    
-    const lastResetDate = lastResetResult?.value || '1970-01-01';
-    
-    // If it's a new day, reset credits
-    if (currentDate > lastResetDate) {
-      console.log(`🔄 [Quota] Daily reset needed: ${lastResetDate} -> ${currentDate}`);
-      
-      // Get daily cap from app_config
-      const dailyCapResult = await qOne(`
-        SELECT value FROM app_config WHERE key = 'daily_cap'
-      `);
-      const dailyCap = parseInt(dailyCapResult?.value || '30');
-      
-      // Reset all user credits
-      const resetResult = await q(`
-        UPDATE user_credits 
-        SET credits = $1, updated_at = NOW()
-        WHERE user_id IS NOT NULL
-        RETURNING user_id
-      `, [dailyCap]);
-      
-      // Update last reset date
-      await q(`
-        INSERT INTO app_config (key, value)
-        VALUES ('last_credit_reset', $1)
-        ON CONFLICT (key) DO UPDATE SET 
-          value = $1
-      `, [currentDate]);
-      
-      console.log(`✅ [Quota] Daily reset completed: ${resetResult.length} users reset to ${dailyCap} credits`);
-    }
-  } catch (error) {
-    console.error('❌ [Quota] Daily reset check failed:', error);
-    // Don't throw - continue with quota check even if reset fails
-  }
-}
-
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
@@ -80,9 +33,6 @@ export const handler: Handler = async (event) => {
     const { userId } = requireAuth(event.headers.authorization);
     
     console.log('📊 [Quota] Getting quota for user:', userId);
-
-    // Check if daily reset is needed and perform it
-    await checkAndResetDailyCredits();
 
     // Get user's current credit balance
     const userCredits = await qOne(`

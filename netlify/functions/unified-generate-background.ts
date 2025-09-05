@@ -846,9 +846,6 @@ async function reserveCredits(userId: string, action: string, creditsNeeded: num
   try {
     console.log(`💰 [Background] Reserving ${creditsNeeded} credits for ${action}`);
     
-    // Check if daily reset is needed and perform it
-    await checkAndResetDailyCredits();
-    
     // Check user's current credit balance
     const userCredits = await qOne(`
       SELECT user_id, credits, balance FROM user_credits WHERE user_id = $1
