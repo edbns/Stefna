@@ -25,7 +25,7 @@ const ComingSoonPage: React.FC = () => {
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="text-center max-w-md p-8">
         <div 
-          className="w-32 h-32 mx-auto bg-transparent rounded-xl flex items-center justify-center"
+          className="w-24 h-24 mx-auto bg-transparent rounded-xl flex items-center justify-center"
           style={{
             animation: 'wave-shadow 3s ease-in-out infinite',
             background: 'transparent',
@@ -35,7 +35,7 @@ const ComingSoonPage: React.FC = () => {
             justifyContent: 'center'
           }}
         >
-          <img src="/logo.png" alt="Logo" className="w-24 h-24 object-contain" />
+          <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain" />
         </div>
         
         <style dangerouslySetInnerHTML={{

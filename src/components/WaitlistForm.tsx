@@ -55,15 +55,15 @@ const WaitlistForm: React.FC<WaitlistFormProps> = ({ referrerEmail }) => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="w-full max-w-lg mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email address"
-            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all"
+            className="w-full px-6 py-4 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all text-lg"
             disabled={isLoading}
             required
           />
@@ -72,7 +72,7 @@ const WaitlistForm: React.FC<WaitlistFormProps> = ({ referrerEmail }) => {
         <button
           type="submit"
           disabled={isLoading || !email.trim()}
-          className="w-full bg-white text-black py-3 px-6 rounded-lg font-semibold hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-full bg-white text-black py-4 px-8 rounded-lg font-semibold hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-lg"
         >
           {isLoading ? 'Joining...' : 'Join the Waitlist'}
         </button>
