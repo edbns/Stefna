@@ -37,10 +37,17 @@ const SkeletonGrid: React.FC<SkeletonGridProps> = ({
               <div 
                 key={`${columnIndex}-${itemIndex}`} 
                 className={`${height} bg-gray-800 animate-pulse relative overflow-hidden rounded-sm w-full`}
-                style={{ minHeight: '192px', maxHeight: '256px' }}
+                style={{ 
+                  minHeight: '192px', 
+                  maxHeight: '256px',
+                  width: '100%',
+                  flexShrink: 0
+                }}
               >
                 {/* Subtle gradient overlay to make it look more realistic */}
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 opacity-50"></div>
+                {/* Add a subtle shimmer effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse"></div>
               </div>
             ))}
           </div>

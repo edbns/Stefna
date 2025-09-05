@@ -1797,7 +1797,7 @@ const HomeNew: React.FC = () => {
   const loadFeed = async (isInitial = true) => {
     // Add minimum loading time to ensure skeleton is visible
     const startTime = Date.now()
-    const minLoadingTime = 800 // 800ms minimum loading time
+    const minLoadingTime = 1200 // Increased to 1.2s for better skeleton visibility
     
     try {
       if (isInitial) {
