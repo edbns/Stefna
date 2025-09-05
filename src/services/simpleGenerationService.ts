@@ -140,7 +140,7 @@ class SimpleGenerationService {
         throw new Error(errorMessage);
       }
 
-      // Check for success: false in the response body (even with 200 status)
+      // Check for success: false in the response body (even with 200 or 202 status)
       if (result && result.success === false) {
         console.log('🚨 [SimpleGeneration] Detected success: false in response body');
         console.log('🚨 [SimpleGeneration] Full result object:', JSON.stringify(result, null, 2));
