@@ -800,12 +800,13 @@ async function reserveCreditsViaEndpoint(userId: string, action: string, credits
   try {
     console.log(`💰 [Background] Reserving ${creditsNeeded} credits via endpoint for ${action}`);
     console.log("[Background] Passing Authorization to credits-reserve:", userToken);
+    console.log("[Background] Token starts with 'Bearer':", userToken?.startsWith('Bearer '));
     
     const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-reserve`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userToken}` // Use the user's actual JWT token
+        'Authorization': userToken // Use the full Authorization header (already includes "Bearer ")
       },
       body: JSON.stringify({
         action,
@@ -837,7 +838,7 @@ async function finalizeCreditsViaEndpoint(userId: string, requestId: string, suc
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userToken}` // Use the user's actual JWT token
+        'Authorization': userToken // Use the full Authorization header (already includes "Bearer ")
       },
       body: JSON.stringify({
         request_id: requestId,
