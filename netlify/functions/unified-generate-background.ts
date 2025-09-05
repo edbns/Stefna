@@ -799,6 +799,7 @@ async function calculateImageSimilarity(originalBase64: string, generatedBase64:
 async function reserveCreditsViaEndpoint(userId: string, action: string, creditsNeeded: number, requestId: string, userToken: string): Promise<{ success: boolean; error?: string }> {
   try {
     console.log(`💰 [Background] Reserving ${creditsNeeded} credits via endpoint for ${action}`);
+    console.log("[Background] Passing Authorization to credits-reserve:", userToken);
     
     const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-reserve`, {
       method: 'POST',
@@ -2316,6 +2317,8 @@ export const handler: Handler = async (event, context) => {
 
   // Extract user token for internal API calls
   const userToken = event.headers?.authorization || event.headers?.Authorization;
+  console.log("[Background] Incoming Authorization:", event.headers?.authorization);
+  
   if (!userToken) {
     return {
       statusCode: 401,
