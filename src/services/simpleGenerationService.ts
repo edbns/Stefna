@@ -140,6 +140,28 @@ class SimpleGenerationService {
         throw new Error(errorMessage);
       }
 
+      // Check for success: false in the response body (even with 200 status)
+      if (result && result.success === false) {
+        console.log('🚨 [SimpleGeneration] Detected success: false in response body');
+        
+        // Special handling for insufficient credits
+        if (result.errorType === 'INSUFFICIENT_CREDITS' || result.error === 'INSUFFICIENT_CREDITS') {
+          console.log('🚨 [SimpleGeneration] Detected INSUFFICIENT_CREDITS in success: false response, throwing error');
+          throw new Error('INSUFFICIENT_CREDITS');
+        }
+        
+        // Also check for insufficient credits in error message
+        if (result.error && result.error.includes('Insufficient credits')) {
+          console.log('🚨 [SimpleGeneration] Detected insufficient credits in success: false response, throwing error');
+          throw new Error('INSUFFICIENT_CREDITS');
+        }
+        
+        // For other failures, throw the error message
+        const errorMessage = result.error || result.message || 'Generation failed';
+        console.log('🚨 [SimpleGeneration] Throwing success: false error:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
       // Normalize backend unified-generate-background response
       const normalized = {
         success: !!result.success,
