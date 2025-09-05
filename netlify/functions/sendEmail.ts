@@ -261,15 +261,25 @@ Until then, stay inspired
     case 'waitlist_launch':
       emailBody = `Hello,
 
-Great news! Stefna is now live and ready for you to explore.
+You signed up. You waited.
+Now it's time to enter the glitch.
 
-From cinematic edits to anime reactions and glitchy transformations, your AI-powered creative studio is waiting.
+Stefna is officially live.
+From cinematic glow to anime-style emotion to full-blown neon chaos — your photos are now a canvas for AI to dream on.
 
-Start creating now → <a href="https://stefna.xyz" style="text-decoration:underline;color:#fff;">Stefna</a>
+Upload an image. Pick a mode.
+Let Stefna do the rest.
 
-Welcome to the future of AI creativity!
+Start Creating → <a href="https://stefna.xyz" style="text-decoration:underline;color:#fff;">Stefna</a>
 
-Stefna Team`;
+Some edits will be beautiful.
+Some will be strange.
+Some may turn your tree into a jellyfish.
+(Yes, really.)
+
+Let's make something unforgettable.
+
+<br />PS: Tag us if you share. Or don't. Stay mysterious — just like us`;
       break;
     
     default:

@@ -198,7 +198,7 @@ const adminConfigHandler: Handler = async (event) => {
                       body: JSON.stringify({
                         to: row.email,
                         type: 'waitlist_launch',
-                        subject: 'Stefna is now live!',
+                        subject: 'Stefna is live — your photos are about to get weird (in the best way)',
                         text: 'Launch notification email'
                       }),
                     });
