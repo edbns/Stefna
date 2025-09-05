@@ -2786,7 +2786,7 @@ const HomeNew: React.FC = () => {
       console.error('🚨 dispatchGenerate error caught:', e);
       
       // 🛡️ RUN ID PROTECTION: Only handle errors for current run
-      if (currentRunId !== runId) {
+      if (currentRunId && currentRunId !== runId) {
         console.warn('⚠️ Ignoring error for stale run:', runId, 'current:', currentRunId);
         return;
       }
