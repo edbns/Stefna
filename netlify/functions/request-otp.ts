@@ -173,7 +173,7 @@ export const handler: Handler = async (event) => {
       const { data: emailData, error: emailError } = await resend.emails.send({
         from: 'Stefna <hello@stefna.xyz>',
         to: [email],
-        subject: `Your Stefna Login Code **${otp}**`,
+        subject: `Your Stefna Login Code ${otp}`,
         html: `
 <!DOCTYPE html>
 <html lang="en" style="margin:0; padding:0; background-color:#000;">
@@ -194,14 +194,10 @@ export const handler: Handler = async (event) => {
         Your one-time login code is:
       </p>
       
-      <div style="background-color:#1a1a1a; border:2px solid #333; border-radius:8px; padding:30px; margin:30px 0; text-align:center;">
-        <div style="font-size:36px; font-weight:700; color:#fff; letter-spacing:4px; font-family:'Courier New',monospace;">${otp}</div>
-        <div style="color:#ccc; font-size:14px; margin-top:15px;">Expires in 10 minutes</div>
-      </div>
-      
-      <div style="background-color:#1a1a1a; border:1px solid #333; border-radius:6px; padding:15px; margin:20px 0; font-size:14px; color:#ccc;">
-        This code will expire in 10 minutes. If you didn't request it, you can safely ignore this email.
-      </div>
+              <div style="background-color:#1a1a1a; border:2px solid #333; border-radius:8px; padding:30px; margin:30px 0; text-align:center;">
+          <div style="font-size:36px; font-weight:700; color:#fff; letter-spacing:4px; font-family:'Courier New',monospace;">${otp}</div>
+          <div style="color:#ccc; font-size:14px; margin-top:15px;">Expires in 10 minutes</div>
+        </div>
 
       <p style="font-size:14px; color:#aaa; margin-top:40px;">Stefna<br><p style="margin:5px 0 0; font-size:12px; color:#888888; text-align:center;">
         If you didn't request this code, you can safely ignore this email.<br />

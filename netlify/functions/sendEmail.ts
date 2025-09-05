@@ -172,7 +172,7 @@ Your one-time login code is:
 
 **${otp}**
 
-This code will expire in 10 minutes. If you didn't request it, you can safely ignore this email.`;
+This code will expire in 10 minutes.`;
       break;
     
     case 'welcome':
