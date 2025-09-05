@@ -321,14 +321,14 @@ const BFL_EMOTION_MODELS = [
   }
 ];
 
-// STRICT: Ghibli reactions should ONLY use flux-pro-1.1-ultra
+// PREFERRED: Ghibli reactions prefer flux-pro-1.1-ultra but allow BFL fallbacks
 const BFL_GHIBLI_MODELS = [
   {
     endpoint: 'flux-pro-1.1-ultra',
     name: 'BFL Flux Pro 1.1 Ultra',
     cost: 'medium',
     priority: 1,
-    description: 'STRICT: Only endpoint for Ghibli reaction - no fallbacks'
+    description: 'PREFERRED: Primary endpoint for Ghibli reaction with BFL fallbacks'
   },
   {
     endpoint: 'flux-pro-1.1-pro',
@@ -1398,13 +1398,13 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         }
       }
       
-      // STRICT ENDPOINT VALIDATION FOR GHIBLI REACTIONS
+      // PREFERRED ENDPOINT FOR GHIBLI REACTIONS (Ultra preferred, but allow fallbacks)
       if (mode === 'ghibli_reaction') {
-        if (modelConfig.endpoint !== 'flux-pro-1.1-ultra') {
-          console.error(`🚨 [BFL STRICT] Ghibli reaction attempted to use wrong endpoint: ${modelConfig.endpoint}`);
-          throw new Error(`Ghibli reactions must use flux-pro-1.1-ultra, not ${modelConfig.endpoint}`);
+        if (modelConfig.endpoint === 'flux-pro-1.1-ultra') {
+          console.log(`✅ [BFL] Ghibli reaction using preferred endpoint: ${modelConfig.endpoint}`);
+        } else {
+          console.log(`🔄 [BFL] Ghibli reaction using fallback endpoint: ${modelConfig.endpoint}`);
         }
-        console.log(`✅ [BFL STRICT] Ghibli reaction using correct endpoint: ${modelConfig.endpoint}`);
       }
       
       console.log(`📤 [Background] BFL API request:`, {
