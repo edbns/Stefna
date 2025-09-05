@@ -2007,24 +2007,8 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
   const action = actionMap[request.mode];
   const creditsNeeded = 2; // All generations cost 2 credits
   
-  // Try to reserve credits - handle insufficient credits gracefully
-  const creditReservation = await reserveCreditsViaEndpoint(request.userId, action, creditsNeeded, request.runId, userToken);
-  if (!creditReservation.success) {
-    console.error('❌ [Background] Credit reservation failed:', creditReservation.error);
-    
-    // Return structured error response instead of throwing
-    if (creditReservation.error === 'INSUFFICIENT_CREDITS') {
-      console.log('🚨 [Background] Returning INSUFFICIENT_CREDITS error response');
-      const errorResponse = buildFailureResponse('INSUFFICIENT_CREDITS', 'You need credits to generate content');
-      console.log('🚨 [Background] Error response object:', JSON.stringify(errorResponse, null, 2));
-      return errorResponse;
-    }
-    
-    // Return other credit errors
-    const errorResponse = buildFailureResponse(creditReservation.error || 'Credit reservation failed', creditReservation.error || 'Credit reservation failed');
-    console.log('🚨 [Background] Credit error response object:', JSON.stringify(errorResponse, null, 2));
-    return errorResponse;
-  }
+  // Credits are already reserved in the main handler, so we can proceed directly
+  console.log(`✅ [Background] Credits already reserved, proceeding with generation`);
 
   try {
     let result: UnifiedGenerationResponse;
@@ -2625,6 +2609,55 @@ export const handler: Handler = async (event, context) => {
         };
       }
     }
+
+    // Reserve credits FIRST before starting generation
+    const creditsNeeded = 2; // All generations cost 2 credits
+    const action = `${mode}_generation`;
+    
+    console.log(`💰 [Background] Reserving ${creditsNeeded} credits via endpoint for ${action}`);
+    
+    // Pass the user's JWT token to credits-reserve
+    console.log(`[Background] Passing Authorization to credits-reserve: ${userToken}`);
+    console.log(`[Background] Token starts with 'Bearer': ${userToken.startsWith('Bearer')}`);
+    
+    const creditReservation = await fetch(`${process.env.URL}/.netlify/functions/credits-reserve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': userToken
+      },
+      body: JSON.stringify({
+        action: action,
+        cost: creditsNeeded,
+        request_id: runId
+      })
+    });
+
+    const creditResult = await creditReservation.json();
+    console.log(`💰 [Background] Credit reservation result:`, creditResult);
+
+    if (!creditResult.ok) {
+      console.error('❌ [Background] Credit reservation failed:', creditResult.error);
+      if (creditResult.error === 'INSUFFICIENT_CREDITS') {
+        console.log('🚨 [Background] Returning INSUFFICIENT_CREDITS error response');
+        const errorResponse = buildFailureResponse('INSUFFICIENT_CREDITS', 'You need credits to generate content');
+        console.log('🚨 [Background] Error response object:', JSON.stringify(errorResponse, null, 2));
+        return {
+          statusCode: 200,
+          headers: CORS_JSON_HEADERS,
+          body: JSON.stringify(errorResponse)
+        };
+      }
+      const errorResponse = buildFailureResponse(creditResult.error || 'Credit reservation failed', creditResult.error || 'Credit reservation failed');
+      console.log('🚨 [Background] Credit error response object:', JSON.stringify(errorResponse, null, 2));
+      return {
+        statusCode: 200,
+        headers: CORS_JSON_HEADERS,
+        body: JSON.stringify(errorResponse)
+      };
+    }
+
+    console.log(`✅ [Background] Credits reserved successfully, starting generation`);
 
     // Create generation request
     const generationRequest: UnifiedGenerationRequest = {
