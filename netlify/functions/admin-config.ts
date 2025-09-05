@@ -160,7 +160,7 @@ const adminConfigHandler: Handler = async (event) => {
           })
 
         default:
-          return json({ error: 'Invalid action' }, { status: 400 })
+          return json({ error: 'Invalid action' }, { status: 400 });
       }
 
     } else {
