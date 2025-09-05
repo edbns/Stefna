@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 
 /**
  * Hook to detect if the user is on a mobile device
+ * FORCES mobile view even if user requests desktop site
  * @returns boolean indicating if the device is mobile
  */
 export function useIsMobile(): boolean {
@@ -10,10 +11,10 @@ export function useIsMobile(): boolean {
 
   useEffect(() => {
     const checkIsMobile = () => {
-      // Check screen width
+      // Check screen width (primary detection)
       const isSmallScreen = window.innerWidth <= 768;
       
-      // Check user agent for mobile devices
+      // Check user agent for mobile devices (even if desktop site is requested)
       const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       );
@@ -21,7 +22,8 @@ export function useIsMobile(): boolean {
       // Check for touch capability
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       
-      // Consider it mobile if it's a small screen OR mobile user agent OR touch device
+      // FORCE mobile view if ANY of these conditions are true
+      // This overrides "Request Desktop Site" in mobile browsers
       setIsMobile(isSmallScreen || isMobileUserAgent || isTouchDevice);
     };
 

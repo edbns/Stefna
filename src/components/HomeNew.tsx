@@ -3456,17 +3456,15 @@ const HomeNew: React.FC = () => {
       {/* Mobile View - View Only Experience */}
       {isMobile ? (
         <div className="w-full min-h-screen bg-black">
-          {/* Mobile Header */}
-          <div className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm border-b border-white/10">
+          {/* Mobile Header - Transparent and Sticky */}
+          <div className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm">
             <div className="flex items-center justify-between p-4">
               <img 
                 src="/logo.png" 
                 alt="Stefna Logo" 
                 className="w-8 h-8 object-contain" 
               />
-              <div className="text-white/60 text-sm">
-                Mobile View
-              </div>
+              <div className="w-8 h-8"></div> {/* Spacer for centering */}
             </div>
           </div>
 
