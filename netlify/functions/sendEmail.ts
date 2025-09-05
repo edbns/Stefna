@@ -255,9 +255,7 @@ We'll notify you as soon as it's your turn to enter.
 
 Until then, stay inspired
 
-PS: You can follow us on social for early previews and feature drops
-
-Stefna`;
+<br />PS: You can follow us on social for early previews and feature drops`;
       break;
     
     default:
