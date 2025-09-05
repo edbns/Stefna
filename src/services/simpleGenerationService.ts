@@ -108,12 +108,12 @@ class SimpleGenerationService {
       }
 
       // Check for early failure before starting polling
-      if (result && result.success === false && result.status === 'failed' && result.hasOutput === false) {
+      if (result && result.success === false && result.status === 'failed') {
         console.warn(`🚨 [SimpleGeneration] Early failure detected: ${result.error}`);
         console.warn(`🚨 [SimpleGeneration] Full failure response:`, JSON.stringify(result, null, 2));
         
         // Special handling for insufficient credits
-        if (result.error === 'INSUFFICIENT_CREDITS') {
+        if (result.error && (result.error.includes('INSUFFICIENT_CREDITS') || result.error.includes('credits but only have'))) {
           console.log('🚨 [SimpleGeneration] Throwing INSUFFICIENT_CREDITS error for frontend handling');
           throw new Error('INSUFFICIENT_CREDITS');
         }
@@ -142,7 +142,7 @@ class SimpleGenerationService {
         }
         
         // Special handling for insufficient credits
-        if (result && result.errorType === 'INSUFFICIENT_CREDITS') {
+        if (result && result.error && (result.error.includes('INSUFFICIENT_CREDITS') || result.error.includes('credits but only have'))) {
           console.log('🚨 [SimpleGeneration] Detected INSUFFICIENT_CREDITS, throwing error');
           throw new Error('INSUFFICIENT_CREDITS');
         }
