@@ -244,6 +244,22 @@ No account? No problem. It takes seconds.
 Let your creativity run wild — no limits.`;
       break;
     
+    case 'waitlist_confirmation':
+      emailBody = `Hello,
+
+Thanks for joining the waitlist for Stefna – your AI-powered creative studio.
+
+You'll be among the first to know when we open up access. From cinematic edits to anime reactions and glitchy transformations, Stefna is designed to help you turn any photo into stunning visual art.
+
+We'll notify you as soon as it's your turn to enter.
+
+Until then, stay inspired
+
+PS: You can follow us on social for early previews and feature drops
+
+Stefna`;
+      break;
+    
     default:
       emailBody = text;
   }
