@@ -1,2 +1,8 @@
 /*
+  # Security Headers
   Content-Security-Policy: default-src 'self'; img-src 'self' data: blob: https://res.cloudinary.com https://fal.run; media-src 'self' data: blob: https://res.cloudinary.com https://fal.run; connect-src 'self' blob: https://api.cloudinary.com https://res.cloudinary.com https://fal.run https://stefna.netlify.app https://ingesteer.services-prod.nsvcs.net; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self'; worker-src 'self' blob:;
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()
