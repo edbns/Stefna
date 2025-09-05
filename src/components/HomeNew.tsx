@@ -6,9 +6,11 @@ const generateRunId = () => `run_${Date.now()}_${Math.random().toString(36).subs
 import { authenticatedFetch, signedFetch } from '../utils/apiClient'
 import authService from '../services/authService'
 import MasonryMediaGrid from './MasonryMediaGrid'
+import MobileFeed from './MobileFeed'
 import SkeletonGrid from './SkeletonGrid'
 import LoadingSpinner from './LoadingSpinner'
 import LQIPImage from './LQIPImage'
+import { useIsMobile } from '../hooks/useResponsive'
 
 import type { UserMedia } from '../services/userMediaService'
 import { mapErrorToUserMessage } from '../utils/errorMessages'
@@ -186,6 +188,9 @@ const HomeNew: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isEnhancing, setIsEnhancing] = useState(false)
   const [prompt, setPrompt] = useState('')
+
+  // Mobile detection
+  const isMobile = useIsMobile()
 
   // Database-driven presets for main presets mode (moved to very beginning)
   const [availablePresets, setAvailablePresets] = useState<DatabasePreset[]>([])
@@ -3448,14 +3453,50 @@ const HomeNew: React.FC = () => {
       {/* Hidden file uploader for intent-based uploads */}
       <HiddenUploader />
 
-      {/* Floating Logo - Top Left */}
-      <div className="fixed top-6 left-6 z-50 flex items-center">
-        <img 
-          src="/logo.png" 
-          alt="Stefna Logo" 
-          className="w-10 h-10 object-contain cursor-pointer hover:scale-110 transition-transform duration-200" 
-        />
-      </div>
+      {/* Mobile View - View Only Experience */}
+      {isMobile ? (
+        <div className="w-full min-h-screen bg-black">
+          {/* Mobile Header */}
+          <div className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm border-b border-white/10">
+            <div className="flex items-center justify-between p-4">
+              <img 
+                src="/logo.png" 
+                alt="Stefna Logo" 
+                className="w-8 h-8 object-contain" 
+              />
+              <div className="text-white/60 text-sm">
+                Mobile View
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Feed */}
+          <div className="pt-16 px-4">
+            {isLoadingFeed ? (
+              <div className="flex justify-center items-center py-20">
+                <LoadingSpinner />
+              </div>
+            ) : (
+              <MobileFeed
+                feed={feed}
+                onToggleLike={handleToggleLike}
+                userLikes={userLikes}
+                isLoggedIn={!!authService.getToken()}
+              />
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Desktop View - Full Experience */}
+          {/* Floating Logo - Top Left */}
+          <div className="fixed top-6 left-6 z-50 flex items-center">
+            <img 
+              src="/logo.png" 
+              alt="Stefna Logo" 
+              className="w-10 h-10 object-contain cursor-pointer hover:scale-110 transition-transform duration-200" 
+            />
+          </div>
       
       {/* Filter Banner - Center Top */}
       {activeFeedFilter && (
@@ -4294,6 +4335,8 @@ const HomeNew: React.FC = () => {
         onAgreementAccepted={() => setUserHasAgreed(true)}
         userHasAgreed={userHasAgreed || false}
       />
+        </>
+      )}
 
     </div>
   )
