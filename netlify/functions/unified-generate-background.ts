@@ -827,11 +827,10 @@ async function checkAndResetDailyCredits(): Promise<void> {
       
       // Update last reset date
       await q(`
-        INSERT INTO app_config (key, value, updated_at)
-        VALUES ('last_credit_reset', $1, NOW())
+        INSERT INTO app_config (key, value)
+        VALUES ('last_credit_reset', $1)
         ON CONFLICT (key) DO UPDATE SET 
-          value = $1,
-          updated_at = NOW()
+          value = $1
       `, [currentDate]);
       
       console.log(`✅ [Background] Daily reset completed: ${resetResult.length} users reset to ${dailyCap} credits`);
