@@ -189,25 +189,57 @@ export const handler: Handler = async (event) => {
         }
 
       } else if (disposition === 'commit') {
-        // COMMIT: Mark transaction as completed
-        console.log('💰 Processing credit commit...');
+        // COMMIT: Actually deduct credits now and mark transaction as completed
+        console.log('💰 Processing credit commit (deducting credits)...');
         
-        // Update transaction status to completed
-        await q(`
-          UPDATE credits_ledger SET status = $1, updated_at = NOW() WHERE id = $2
-        `, ['completed', creditTransaction.id]);
+        // Get current user credits
+        const userCredits = await qOne(`
+          SELECT credits FROM user_credits WHERE user_id = $1
+        `, [userId]);
 
-        console.log('✅ Credits committed successfully');
+        if (userCredits) {
+          const deductAmount = Math.abs(creditTransaction.amount); // Convert negative to positive
+          const newCredits = userCredits.credits - deductAmount;
+          
+          // Deduct credits from user balance
+          await q(`
+            UPDATE user_credits SET credits = $1, updated_at = NOW() WHERE user_id = $2
+          `, [newCredits, userId]);
 
-        return {
-          statusCode: 200,
-          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
-          body: JSON.stringify({
-            ok: true,
-            disposition: 'commit',
-            message: 'Credits committed successfully'
-          })
-        };
+          // Update transaction status to completed
+          await q(`
+            UPDATE credits_ledger SET status = $1, updated_at = NOW() WHERE id = $2
+          `, ['completed', creditTransaction.id]);
+
+          console.log('✅ Credits committed and deducted successfully:', {
+            deductAmount,
+            oldCredits: userCredits.credits,
+            newCredits
+          });
+
+          return {
+            statusCode: 200,
+            headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+            body: JSON.stringify({
+              ok: true,
+              disposition: 'commit',
+              deductAmount,
+              newCredits,
+              message: 'Credits committed and deducted successfully'
+            })
+          };
+        } else {
+          console.error('❌ User credits record not found for commit');
+          return {
+            statusCode: 500,
+            headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+            body: JSON.stringify({
+              ok: false,
+              error: "USER_CREDITS_NOT_FOUND",
+              message: "User credits record not found"
+            })
+          };
+        }
       } else {
         // This should never happen due to validation above, but handle it just in case
         console.error("❌ Invalid disposition after validation:", disposition);

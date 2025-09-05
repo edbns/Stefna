@@ -179,7 +179,7 @@ export const handler: Handler = async (event) => {
       
       console.log('🔒 Credit balance check passed:', currentBalance, '>=', cost);
       
-      // Create credit transaction record using raw SQL
+      // Create credit transaction record using raw SQL (HOLD credits, don't deduct yet)
       const creditTransactionResult = await q(`
         INSERT INTO credits_ledger (id, user_id, action, status, reason, amount, env, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
@@ -191,28 +191,17 @@ export const handler: Handler = async (event) => {
       }
 
       const creditTransaction = creditTransactionResult[0];
-      console.log('💰 Credit transaction created:', creditTransaction.id);
+      console.log('💰 Credit transaction created (HOLDING credits):', creditTransaction.id);
       
-      // Update user credits balance using raw SQL
-      const updatedCreditsResult = await q(`
-        UPDATE user_credits 
-        SET credits = $1, updated_at = NOW() 
-        WHERE user_id = $2
-        RETURNING user_id, credits, balance
-      `, [currentBalance - cost, userId]);
-
-      if (!updatedCreditsResult || updatedCreditsResult.length === 0) {
-        throw new Error('Failed to update user credits');
-      }
-
-      const updatedCredits = updatedCreditsResult[0];
-      console.log('💰 Credits updated:', updatedCredits.credits);
+      // DO NOT deduct credits yet - just hold them in the ledger
+      // Credits will be deducted in finalize step if generation succeeds
+      console.log('💰 Credits HELD (not deducted yet):', currentBalance, 'credits available');
         
       // Return success with request_id for finalization
       return json({
         ok: true,
         request_id: request_id,
-        balance: updatedCredits.credits,
+        balance: currentBalance, // Return current balance (credits not deducted yet)
         cost: cost,
         action: action
       }, { status: 200 });

@@ -795,96 +795,64 @@ async function calculateImageSimilarity(originalBase64: string, generatedBase64:
 }
 
 // Centralized credit handling
-async function reserveCredits(userId: string, action: string, creditsNeeded: number, requestId: string): Promise<boolean> {
+// Helper functions to call separate credit endpoints
+async function reserveCreditsViaEndpoint(userId: string, action: string, creditsNeeded: number, requestId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log(`💰 [Background] Reserving ${creditsNeeded} credits for ${action}`);
+    console.log(`💰 [Background] Reserving ${creditsNeeded} credits via endpoint for ${action}`);
     
-    // Check user's current credit balance
-    const userCredits = await qOne(`
-      SELECT user_id, credits, balance FROM user_credits WHERE user_id = $1
-    `, [userId]);
+    const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-reserve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || 'internal'}` // Use internal key for server-to-server calls
+      },
+      body: JSON.stringify({
+        action,
+        cost: creditsNeeded,
+        request_id: requestId
+      })
+    });
 
-    if (!userCredits) {
-      // Initialize user credits if they don't exist
-      console.log('💰 [Background] No credit balance found - initializing new user with starter credits...');
-      
-      const newUserCredits = await qOne(`
-        INSERT INTO user_credits (user_id, credits, balance, updated_at)
-        VALUES ($1, 30, 0, NOW())
-        RETURNING user_id, credits, balance
-      `, [userId]);
-      
-      if (!newUserCredits) {
-        throw new Error('Failed to initialize user credits');
-      }
-      
-      console.log(`✅ [Background] Successfully initialized user with 30 starter credits`);
+    const result = await response.json();
+    
+    if (!response.ok || !result.ok) {
+      console.error(`❌ [Background] Credit reservation failed:`, result);
+      return { success: false, error: result.error || 'Credit reservation failed' };
     }
 
-    const currentCredits = userCredits?.credits || 0;
-    console.log(`💰 [Background] Current daily credits: ${currentCredits}, needed: ${creditsNeeded}`);
-
-    if (currentCredits < creditsNeeded) {
-      throw new Error(`Insufficient credits: ${currentCredits} available, ${creditsNeeded} needed`);
-    }
-
-    // Create credit reservation
-    await q(`
-      INSERT INTO credits_ledger (user_id, action, amount, status, request_id, created_at)
-      VALUES ($1, $2, $3, 'reserved', $4, NOW())
-    `, [userId, action, creditsNeeded, requestId]);
-
-    // Update user daily credits
-    await q(`
-      UPDATE user_credits 
-      SET credits = credits - $1, updated_at = NOW()
-      WHERE user_id = $2
-    `, [creditsNeeded, userId]);
-
-    console.log(`✅ [Background] Credits reserved successfully`);
-    return true;
+    console.log(`✅ [Background] Credits reserved successfully via endpoint`);
+    return { success: true };
   } catch (error) {
-    console.error(`❌ [Background] Credit reservation failed:`, error);
-    throw error;
+    console.error(`❌ [Background] Credit reservation endpoint error:`, error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-async function finalizeCredits(userId: string, action: string, requestId: string, success: boolean): Promise<void> {
+async function finalizeCreditsViaEndpoint(userId: string, requestId: string, success: boolean): Promise<void> {
   try {
-    console.log(`💰 [Background] Finalizing credits for ${action}, success: ${success}`);
+    console.log(`💰 [Background] Finalizing credits via endpoint, success: ${success}`);
+    
+    const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/credits-finalize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || 'internal'}` // Use internal key for server-to-server calls
+      },
+      body: JSON.stringify({
+        request_id: requestId,
+        disposition: success ? 'commit' : 'refund'
+      })
+    });
 
-    if (success) {
-      // Mark reservation as completed
-      await q(`
-        UPDATE credits_ledger
-        SET status = 'completed', updated_at = NOW()
-        WHERE user_id = $1 AND request_id = $2 AND status = 'reserved'
-      `, [userId, requestId]);
+    const result = await response.json();
+    
+    if (!response.ok || !result.ok) {
+      console.error(`❌ [Background] Credit finalization failed:`, result);
     } else {
-      // Refund credits on failure
-      const reservation = await qOne(`
-        SELECT amount FROM credits_ledger
-        WHERE user_id = $1 AND request_id = $2 AND status = 'reserved'
-      `, [userId, requestId]);
-
-      if (reservation) {
-        await q(`
-          UPDATE user_credits
-          SET credits = credits + $1, updated_at = NOW()
-          WHERE user_id = $2
-        `, [reservation.amount, userId]);
-
-        await q(`
-          UPDATE credits_ledger
-          SET status = 'refunded', updated_at = NOW()
-          WHERE user_id = $1 AND request_id = $2 AND status = 'reserved'
-        `, [userId, requestId]);
-      }
+      console.log(`✅ [Background] Credits finalized successfully via endpoint`);
     }
-
-    console.log(`✅ [Background] Credits finalized successfully`);
   } catch (error) {
-    console.error(`❌ [Background] Credit finalization failed:`, error);
+    console.error(`❌ [Background] Credit finalization endpoint error:`, error);
   }
 }
 
@@ -1967,7 +1935,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
         
         if (existing) {
           console.warn(`⚠️ [Background] Story generation ${request.runId} already exists in database, skipping duplicate`);
-          await finalizeCredits(request.userId, request.mode + '_generation', request.runId, false);
+          await finalizeCreditsViaEndpoint(request.userId, request.runId, false);
           return {
             success: false,
             status: 'failed',
@@ -1982,7 +1950,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
 
       if (existing) {
         console.warn(`⚠️ [Background] Generation ${request.runId} already exists in database, skipping duplicate`);
-        await finalizeCredits(request.userId, request.mode + '_generation', request.runId, false);
+        await finalizeCreditsViaEndpoint(request.userId, request.runId, false);
         return {
           success: false,
           status: 'failed',
@@ -2027,24 +1995,28 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
   const creditsNeeded = 2; // All generations cost 2 credits
   
   // Try to reserve credits - handle insufficient credits gracefully
-  try {
-    await reserveCredits(request.userId, action, creditsNeeded, request.runId);
-  } catch (creditError: any) {
-    console.error('❌ [Background] Credit reservation failed:', creditError);
+  const creditReservation = await reserveCreditsViaEndpoint(request.userId, action, creditsNeeded, request.runId);
+  if (!creditReservation.success) {
+    console.error('❌ [Background] Credit reservation failed:', creditReservation.error);
     
     // Return a proper error response for insufficient credits
-    if (creditError.message && creditError.message.includes('Insufficient credits')) {
+    if (creditReservation.error === 'INSUFFICIENT_CREDITS') {
       console.log('🚨 [Background] Returning INSUFFICIENT_CREDITS error response');
       return {
         success: false,
         status: 'failed',
-        error: creditError.message,
+        error: creditReservation.error,
         errorType: 'INSUFFICIENT_CREDITS'
       };
     }
     
-    // Re-throw other errors
-    throw creditError;
+    // Return other credit errors
+    return {
+      success: false,
+      status: 'failed',
+      error: creditReservation.error || 'Credit reservation failed',
+      errorType: 'CREDIT_ERROR'
+    };
   }
 
   try {
@@ -2294,7 +2266,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     // Generation will be saved to appropriate media table by saveGenerationResult()
 
     // Finalize credits on success (or IPA blocking failure)
-    await finalizeCredits(request.userId, action, request.runId, result.success);
+    await finalizeCreditsViaEndpoint(request.userId, request.runId, result.success);
 
     console.log(`✅ [Background] Generation completed:`, {
       mode: request.mode,
@@ -2311,7 +2283,7 @@ async function processGeneration(request: UnifiedGenerationRequest): Promise<Uni
     // Error will be logged but generation status is tracked in credits_ledger
 
     // Finalize credits on failure (refund)
-    await finalizeCredits(request.userId, action, request.runId, false);
+    await finalizeCreditsViaEndpoint(request.userId, request.runId, false);
 
     return {
       success: false,
