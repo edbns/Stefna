@@ -38,6 +38,12 @@ export const handler: Handler = async (event) => {
 
     console.log('🔗 [Referral] Processing referral:', { referrerEmail, newUserId, newUserEmail });
 
+    // Get client IP for abuse prevention
+    const clientIP = event.headers['x-forwarded-for'] || 
+                    event.headers['x-real-ip'] || 
+                    event.headers['x-client-ip'] || 
+                    'unknown';
+
     // Find referrer by email
     const referrer = await q(`
       SELECT id FROM users WHERE email = $1
@@ -49,6 +55,21 @@ export const handler: Handler = async (event) => {
     
     const referrerId = referrer[0].id;
 
+    // Comprehensive referral validation
+    const validationResult = await q(`
+      SELECT * FROM validate_referral_request($1, $2, $3)
+    `, [referrerId, newUserEmail, clientIP]);
+    
+    const validation = validationResult[0];
+    if (!validation.is_valid) {
+      console.log('🚫 [Referral] Validation failed:', validation.error_message);
+      return json({ 
+        ok: false, 
+        error: "REFERRAL_VALIDATION_FAILED",
+        message: validation.error_message 
+      }, { status: 400 });
+    }
+
     // Check if this referral has already been processed
     const existingReferralGrant = await q(`
       SELECT id FROM credits_ledger 
@@ -59,6 +80,12 @@ export const handler: Handler = async (event) => {
       console.log(`ℹ️ Referral already processed for user ${newUserId}`);
       return json({ ok: true, message: 'Referral already processed' });
     }
+
+    // Log successful referral attempt
+    await q(`
+      INSERT INTO referral_attempts (referrer_id, attempt_type, referred_email, ip_address, created_at)
+      VALUES ($1, 'referral_processed', $2, $3, NOW())
+    `, [referrerId, newUserEmail, clientIP]);
 
     // Use hardcoded bonus amounts since appConfig table doesn't exist
     const refBonus = 50; // Referrer gets 50 credits

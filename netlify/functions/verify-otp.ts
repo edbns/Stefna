@@ -165,10 +165,47 @@ export const handler: Handler = async (event) => {
     let user;
     if (userResult.rows.length === 0) {
       console.log('👤 Creating new user...');
+      
+      // Get client IP for abuse prevention
+      const clientIP = event.headers['x-forwarded-for'] || 
+                      event.headers['x-real-ip'] || 
+                      event.headers['x-client-ip'] || 
+                      'unknown';
+      
+      // Check IP-based account creation limit
+      const ipLimitCheck = await client.query(
+        'SELECT check_ip_account_limit($1) as can_create',
+        [clientIP]
+      );
+      
+      if (!ipLimitCheck.rows[0].can_create) {
+        console.log('🚫 IP account limit exceeded:', clientIP);
+        return {
+          statusCode: 429,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            success: false,
+            error: 'ACCOUNT_LIMIT_EXCEEDED',
+            message: 'Too many accounts created from this IP address. Please try again later.'
+          })
+        };
+      }
+      
       const userId = uuidv4();
       await client.query(
         'INSERT INTO users (id, email, created_at) VALUES ($1, $2, NOW())',
         [userId, email.toLowerCase()]
+      );
+
+      // Log account creation for IP tracking
+      await client.query(
+        'INSERT INTO account_creation_log (ip_address, email, created_at) VALUES ($1, $2, NOW())',
+        [clientIP, email.toLowerCase()]
       );
 
       // Create user credits

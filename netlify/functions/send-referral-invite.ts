@@ -45,6 +45,62 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    // Get client IP for abuse prevention
+    const clientIP = event.headers['x-forwarded-for'] || 
+                    event.headers['x-real-ip'] || 
+                    event.headers['x-client-ip'] || 
+                    'unknown';
+
+    // Find referrer by email
+    const { q } = await import('./_db');
+    const referrer = await q(`
+      SELECT id FROM users WHERE email = $1
+    `, [referrerEmail]);
+    
+    if (!referrer || referrer.length === 0) {
+      return {
+        statusCode: 404,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'Referrer not found' })
+      };
+    }
+    
+    const referrerId = referrer[0].id;
+
+    // Comprehensive referral validation
+    const validationResult = await q(`
+      SELECT * FROM validate_referral_request($1, $2, $3)
+    `, [referrerId, to, clientIP]);
+    
+    const validation = validationResult[0];
+    if (!validation.is_valid) {
+      console.log('🚫 [Referral Invite] Validation failed:', validation.error_message);
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          error: 'REFERRAL_VALIDATION_FAILED',
+          message: validation.error_message 
+        })
+      };
+    }
+
+    // Log referral attempt
+    await q(`
+      INSERT INTO referral_attempts (referrer_id, attempt_type, referred_email, ip_address, created_at)
+      VALUES ($1, 'email_sent', $2, $3, NOW())
+    `, [referrerId, to, clientIP]);
+
     const resendApiKey = process.env.RESEND_API_KEY;
     if (!resendApiKey) {
       console.error('Missing RESEND_API_KEY environment variable');

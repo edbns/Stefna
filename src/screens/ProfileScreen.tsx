@@ -1127,8 +1127,19 @@ const ProfileScreen: React.FC = () => {
         
         addNotification('Invitation Sent', 'Your friend will receive an email invitation shortly', 'success')
       } else {
-        setInviteError(result.error || 'Failed to send invitation')
-        addNotification('Invitation Failed', result.error || 'Failed to send invitation', 'error')
+        // Handle specific validation errors
+        let errorMessage = result.error || 'Failed to send invitation'
+        
+        if (result.error === 'REFERRAL_VALIDATION_FAILED') {
+          errorMessage = result.message || 'Referral validation failed'
+        } else if (result.error === 'ACCOUNT_LIMIT_EXCEEDED') {
+          errorMessage = 'Too many accounts created from this IP address. Please try again later.'
+        } else if (result.error === 'REFERRER_NOT_FOUND') {
+          errorMessage = 'Referrer account not found. Please try again.'
+        }
+        
+        setInviteError(errorMessage)
+        addNotification('Invitation Failed', errorMessage, 'error')
       }
     } catch (error) {
       console.error('Failed to send invite:', error)
