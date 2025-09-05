@@ -2254,8 +2254,9 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
 
     // Generation will be saved to appropriate media table by saveGenerationResult()
 
-    // Finalize credits on success (or IPA blocking failure)
-    await finalizeCreditsViaEndpoint(request.userId, request.runId, result.success, userToken);
+    // Finalize credits: commit if there is output (image/video), even if IPA marked as failed
+    const shouldCommit = !!(result.success || (result as any).outputUrl || (result as any).videoUrl);
+    await finalizeCreditsViaEndpoint(request.userId, request.runId, shouldCommit, userToken);
 
     console.log(`✅ [Background] Generation completed:`, {
       mode: request.mode,
