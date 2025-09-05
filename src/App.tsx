@@ -86,32 +86,8 @@ const ComingSoonPage: React.FC = () => {
         }} />
         
         <div className="mt-8 space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Stefna</h1>
-            <p className="text-white/80 text-lg">AI-Powered Photo Transformation Studio</p>
-          </div>
-          
-          <div className="space-y-4">
-            <p className="text-white/70 text-sm leading-relaxed">
-              Transform your photos with AI magic. From cinematic glow to anime tears and glitchy chaos — 
-              Stefna turns any photo into stunning AI art.
-            </p>
-            
-            <div className="space-y-2 text-sm text-white/60">
-              <p>✨ Neo Tokyo Glitch effects</p>
-              <p>🎭 Ghibli-style reactions</p>
-              <p>😊 Emotion mask transformations</p>
-              <p>🎨 Custom AI presets</p>
-            </div>
-          </div>
-          
           <div className="pt-4">
             <WaitlistForm referrerEmail={referrerEmail || undefined} />
-          </div>
-          
-          <div className="text-xs text-white/50">
-            <p>Powered by Stability.ai, Fal.ai, BFL & more</p>
-            <p>Join the waitlist for early access</p>
           </div>
         </div>
       </div>
