@@ -40,15 +40,15 @@ export interface SimpleGenerationResult {
   type: GenerationMode;
 }
 
-// All generation modes now use the unified endpoint
+// All generation modes now use the unified wrapper endpoint
 const FUNCTION_ENDPOINTS: Record<GenerationMode, string> = {
-  'presets': '/.netlify/functions/unified-generate-background',
-  'custom-prompt': '/.netlify/functions/unified-generate-background',
-  'emotion-mask': '/.netlify/functions/unified-generate-background',
-  'ghibli-reaction': '/.netlify/functions/unified-generate-background',
-  'neo-glitch': '/.netlify/functions/unified-generate-background',
-  'story-time': '/.netlify/functions/unified-generate-background',
-  'edit-photo': '/.netlify/functions/unified-generate-background'
+  'presets': '/.netlify/functions/unified-generate',
+  'custom-prompt': '/.netlify/functions/unified-generate',
+  'emotion-mask': '/.netlify/functions/unified-generate',
+  'ghibli-reaction': '/.netlify/functions/unified-generate',
+  'neo-glitch': '/.netlify/functions/unified-generate',
+  'story-time': '/.netlify/functions/unified-generate',
+  'edit-photo': '/.netlify/functions/unified-generate'
 };
 
 class SimpleGenerationService {
@@ -78,6 +78,27 @@ class SimpleGenerationService {
     this.lastGenerationRequest = request;
 
     try {
+      // Preflight: check user quota before calling background function
+      try {
+        console.log('💰 [SimpleGeneration] Preflight quota check before generation');
+        const quotaResp = await authenticatedFetch('/.netlify/functions/getQuota', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (quotaResp.ok) {
+          const quota = await quotaResp.json();
+          const remaining = typeof quota.remaining === 'number' ? quota.remaining : undefined;
+          if (typeof remaining === 'number' && remaining < 2) {
+            console.warn('🚫 [SimpleGeneration] Insufficient credits detected in preflight, aborting');
+            throw new Error('INSUFFICIENT_CREDITS');
+          }
+        }
+      } catch (preflightError) {
+        // If preflight fails due to network or parsing, continue to attempt generation
+        // Intentionally silent aside from debug log to avoid blocking on transient issues
+        console.debug('ℹ️ [SimpleGeneration] Preflight quota check skipped due to error:', preflightError);
+      }
+
       const endpoint = FUNCTION_ENDPOINTS[request.mode];
       if (!endpoint) {
         throw new Error(`Unknown generation mode: ${request.mode}`);
@@ -370,6 +391,31 @@ class SimpleGenerationService {
         if (response.status === 404) {
           // Media not found yet, still processing
           console.log(`⏳ [SimpleGeneration] Media not found yet, still processing... (runId: ${runId})`);
+          // Early-exit guard: if user has no credits, stop polling immediately
+          try {
+            const quotaResp = await authenticatedFetch('/.netlify/functions/getQuota', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            if (quotaResp.ok) {
+              const quota = await quotaResp.json();
+              const remaining = typeof quota.remaining === 'number' ? quota.remaining : undefined;
+              if (typeof remaining === 'number' && remaining < 2) {
+                console.warn('🚫 [SimpleGeneration] Detected insufficient credits during polling, stopping');
+                return {
+                  success: false,
+                  jobId: runId,
+                  runId: runId,
+                  status: 'failed',
+                  error: 'INSUFFICIENT_CREDITS',
+                  type: mode
+                } as SimpleGenerationResult;
+              }
+            }
+          } catch (quotaCheckError) {
+            // Ignore quota check errors during polling and continue processing state
+            console.debug('ℹ️ [SimpleGeneration] Polling quota check skipped due to error:', quotaCheckError);
+          }
           return {
             success: true,
             jobId: runId,
