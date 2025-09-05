@@ -258,6 +258,20 @@ Until then, stay inspired
 <br />PS: You can follow us on social for early previews and feature drops`;
       break;
     
+    case 'waitlist_launch':
+      emailBody = `Hello,
+
+Great news! Stefna is now live and ready for you to explore.
+
+From cinematic edits to anime reactions and glitchy transformations, your AI-powered creative studio is waiting.
+
+Start creating now → <a href="https://stefna.xyz" style="text-decoration:underline;color:#fff;">Stefna</a>
+
+Welcome to the future of AI creativity!
+
+Stefna Team`;
+      break;
+    
     default:
       emailBody = text;
   }

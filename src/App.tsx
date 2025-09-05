@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ToastProvider } from './components/ui/Toasts'
 import { ProfileProvider } from './contexts/ProfileContext'
@@ -40,13 +40,39 @@ const ComingSoonPage: React.FC = () => {
 }
 
 const AppContent: React.FC = () => {
+  const [isLaunched, setIsLaunched] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   // Set up global error handling
   useEffect(() => {
     setupGlobalErrorHandling();
   }, []);
 
+  // Check launch status
+  useEffect(() => {
+    const checkLaunchStatus = async () => {
+      try {
+        const response = await fetch('/.netlify/functions/get-launch-status');
+        const data = await response.json();
+        
+        if (data.success) {
+          setIsLaunched(data.launch.is_launched);
+        } else {
+          console.error('Failed to get launch status:', data.error);
+          setIsLaunched(false); // Default to not launched
+        }
+      } catch (error) {
+        console.error('Error checking launch status:', error);
+        setIsLaunched(false); // Default to not launched
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkLaunchStatus();
+  }, []);
+
   // Check if we're on the live domain
-  // Only show Coming Soon on the main custom domain, allow testing on Netlify subdomain
   const isLiveDomain = window.location.hostname === 'stefna.xyz'
   
   // 🔍 DEBUG: Log domain detection
@@ -54,19 +80,30 @@ const AppContent: React.FC = () => {
     hostname: window.location.hostname,
     href: window.location.href,
     isLiveDomain,
+    isLaunched,
+    isLoading,
     isDev: import.meta.env.DEV,
     isNetlifyPreview: window.location.hostname.includes('--'),
     isNetlifySubdomain: window.location.hostname === 'stefna.netlify.app'
   });
   
-  // If on live domain, show coming soon page
-  if (isLiveDomain) {
-    console.log('🚧 Showing Coming Soon page for live domain');
+  // Show loading while checking launch status
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+  
+  // If on live domain and not launched, show coming soon page
+  if (isLiveDomain && !isLaunched) {
+    console.log('🚧 Showing Coming Soon page for live domain (not launched)');
     return <ComingSoonPage />
   }
 
-  console.log('🚀 Loading full app for development/local');
-  // For development, always show the full app
+  console.log('🚀 Loading full app');
+  // Show full app for development or if launched
 
   return (
     <div className="min-h-screen bg-black pb-16">

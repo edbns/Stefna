@@ -1333,6 +1333,81 @@ const AdminDashboardScreen: React.FC = () => {
                             </div>
                           </div>
                         </div>
+
+                        {/* Launch Control */}
+                        <div className="bg-white/5 rounded-xl border border-white/10 p-6">
+                          <h4 className="text-lg font-semibold text-white mb-4">Launch Control</h4>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-white font-medium">Site Status</p>
+                                <p className="text-white/60 text-sm">
+                                  {systemConfig?.systemConfig?.launch?.is_launched ? 'Live' : 'Coming Soon'}
+                                </p>
+                              </div>
+                              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                systemConfig?.systemConfig?.launch?.is_launched 
+                                  ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                  : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                              }`}>
+                                {systemConfig?.systemConfig?.launch?.is_launched ? 'LIVE' : 'COMING SOON'}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-white font-medium">Waitlist Count</p>
+                                <p className="text-white/60 text-sm">
+                                  {systemConfig?.systemConfig?.launch?.waitlist_count || 0} users waiting
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-white/10">
+                              <button
+                                onClick={async () => {
+                                  const newStatus = !systemConfig?.systemConfig?.launch?.is_launched;
+                                  const action = newStatus ? 'launch' : 'revert to coming soon';
+                                  
+                                  if (window.confirm(`Are you sure you want to ${action}? This will ${newStatus ? 'send launch emails to all waitlist users and make the site live' : 'revert the site to coming soon mode'}.`)) {
+                                    try {
+                                      const response = await authenticatedFetch('/.netlify/functions/admin-config', {
+                                        method: 'PUT',
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({
+                                          action: 'toggle_launch',
+                                          data: { is_launched: newStatus }
+                                        }),
+                                      });
+
+                                      if (response.ok) {
+                                        const result = await response.json();
+                                        alert(result.message);
+                                        // Refresh system config
+                                        fetchSystemConfig();
+                                      } else {
+                                        const error = await response.json();
+                                        alert(`Error: ${error.message || 'Failed to update launch status'}`);
+                                      }
+                                    } catch (error) {
+                                      console.error('Launch toggle error:', error);
+                                      alert('Failed to update launch status');
+                                    }
+                                  }
+                                }}
+                                className={`w-full px-4 py-3 rounded-lg font-medium transition-colors ${
+                                  systemConfig?.systemConfig?.launch?.is_launched
+                                    ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/30'
+                                    : 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
+                                }`}
+                              >
+                                {systemConfig?.systemConfig?.launch?.is_launched ? 'Revert to Coming Soon' : 'Launch Site'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
 

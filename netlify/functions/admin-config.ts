@@ -64,6 +64,12 @@ const adminConfigHandler: Handler = async (event) => {
           (SELECT AVG(credits) FROM users) as avg_credits_per_user
       `);
 
+      // Get launch status
+      const launchStatus = await q('SELECT * FROM get_launch_status()');
+      
+      // Get waitlist count
+      const waitlistCount = await qCount('SELECT COUNT(*) FROM waitlist');
+
       // Get system configuration (from environment variables)
       const systemConfig = {
         // API Configuration
@@ -79,6 +85,9 @@ const adminConfigHandler: Handler = async (event) => {
         
         // Database Configuration
         database_enabled: !!process.env.DATABASE_URL,
+        
+        // Launch Configuration
+        launch: launchStatus[0] || { is_launched: false, launch_date: null, waitlist_count: 0 },
         
         // Feature Flags
         features: {
@@ -158,6 +167,64 @@ const adminConfigHandler: Handler = async (event) => {
           return json({
             success: true,
             message: 'Feature flag updated successfully'
+          });
+
+        case 'toggle_launch':
+          // Toggle launch status
+          const { is_launched } = data;
+          if (typeof is_launched !== 'boolean') {
+            return json({ error: 'is_launched must be a boolean' }, { status: 400 });
+          }
+
+          const launchResult = await q('SELECT * FROM update_launch_status($1)', [is_launched]);
+          
+          // If launching, send notifications to waitlist
+          if (is_launched) {
+            try {
+              const waitlistEmails = await q('SELECT email FROM waitlist ORDER BY created_at ASC');
+              
+              // Send launch emails to waitlist (in batches to avoid rate limits)
+              const batchSize = 10;
+              for (let i = 0; i < waitlistEmails.length; i += batchSize) {
+                const batch = waitlistEmails.slice(i, i + batchSize);
+                
+                await Promise.all(batch.map(async (row: any) => {
+                  try {
+                    await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/sendEmail`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        to: row.email,
+                        type: 'waitlist_launch',
+                        subject: 'Stefna is now live!',
+                        text: 'Launch notification email'
+                      }),
+                    });
+                  } catch (emailError) {
+                    console.error(`Failed to send launch email to ${row.email}:`, emailError);
+                  }
+                }));
+                
+                // Small delay between batches
+                if (i + batchSize < waitlistEmails.length) {
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+              }
+              
+              console.log(`📧 [Admin] Sent launch notifications to ${waitlistEmails.length} waitlist users`);
+            } catch (notificationError) {
+              console.error('Failed to send launch notifications:', notificationError);
+              // Don't fail the launch if notifications fail
+            }
+          }
+          
+          console.log(`🚀 [Admin] Launch status updated: ${is_launched}`)
+          return json({
+            success: true,
+            message: is_launched ? 'Site launched successfully!' : 'Site reverted to coming soon',
+            launchStatus: launchResult[0]
           });
 
         default:
