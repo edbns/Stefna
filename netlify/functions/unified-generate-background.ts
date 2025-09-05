@@ -794,10 +794,61 @@ async function calculateImageSimilarity(originalBase64: string, generatedBase64:
   }
 }
 
+// Check and reset daily credits if needed
+async function checkAndResetDailyCredits(): Promise<void> {
+  try {
+    // Get current date in UTC
+    const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    // Get last reset date from app_config
+    const lastResetResult = await qOne(`
+      SELECT value FROM app_config WHERE key = 'last_credit_reset'
+    `);
+    
+    const lastResetDate = lastResetResult?.value || '1970-01-01';
+    
+    // If it's a new day, reset credits
+    if (currentDate > lastResetDate) {
+      console.log(`🔄 [Background] Daily reset needed: ${lastResetDate} -> ${currentDate}`);
+      
+      // Get daily cap from app_config
+      const dailyCapResult = await qOne(`
+        SELECT value FROM app_config WHERE key = 'daily_cap'
+      `);
+      const dailyCap = parseInt(dailyCapResult?.value || '30');
+      
+      // Reset all user credits
+      const resetResult = await q(`
+        UPDATE user_credits 
+        SET credits = $1, updated_at = NOW()
+        WHERE user_id IS NOT NULL
+        RETURNING user_id
+      `, [dailyCap]);
+      
+      // Update last reset date
+      await q(`
+        INSERT INTO app_config (key, value, updated_at)
+        VALUES ('last_credit_reset', $1, NOW())
+        ON CONFLICT (key) DO UPDATE SET 
+          value = $1,
+          updated_at = NOW()
+      `, [currentDate]);
+      
+      console.log(`✅ [Background] Daily reset completed: ${resetResult.length} users reset to ${dailyCap} credits`);
+    }
+  } catch (error) {
+    console.error('❌ [Background] Daily reset check failed:', error);
+    // Don't throw - continue with credit reservation even if reset fails
+  }
+}
+
 // Centralized credit handling
 async function reserveCredits(userId: string, action: string, creditsNeeded: number, requestId: string): Promise<boolean> {
   try {
     console.log(`💰 [Background] Reserving ${creditsNeeded} credits for ${action}`);
+    
+    // Check if daily reset is needed and perform it
+    await checkAndResetDailyCredits();
     
     // Check user's current credit balance
     const userCredits = await qOne(`
