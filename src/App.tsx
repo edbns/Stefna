@@ -139,6 +139,11 @@ const AppContent: React.FC = () => {
     isNetlifySubdomain: window.location.hostname === 'stefna.netlify.app'
   });
   
+  // TEMPORARY: Show coming soon page for testing
+  // TODO: Remove this and only show on live domain
+  console.log('🚧 Showing Coming Soon page for testing');
+  return <ComingSoonPage />
+  
   // If on live domain, show coming soon page
   if (isLiveDomain) {
     console.log('🚧 Showing Coming Soon page for live domain');
