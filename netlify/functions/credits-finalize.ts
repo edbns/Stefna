@@ -137,57 +137,24 @@ export const handler: Handler = async (event) => {
       });
 
       if (disposition === 'refund') {
-        // REFUND: Restore credits to user
-        console.log('💰 Processing credit refund...');
+        // REFUND: Release reservation only (no balance change)
+        // We hold credits in the ledger but do not deduct until commit
+        console.log('💰 Processing credit refund (release hold only, no balance change)...');
         
         // Update transaction status to refunded
         await q(`
           UPDATE credits_ledger SET status = $1, updated_at = NOW() WHERE id = $2
         `, ['refunded', creditTransaction.id]);
-
-        // Restore credits to user balance
-        const userCredits = await qOne(`
-          SELECT credits FROM user_credits WHERE user_id = $1
-        `, [userId]);
-
-        if (userCredits) {
-          const refundAmount = Math.abs(creditTransaction.amount); // Convert negative to positive
-          const newCredits = userCredits.credits + refundAmount;
-          
-          await q(`
-            UPDATE user_credits SET credits = $1, updated_at = NOW() WHERE user_id = $2
-          `, [newCredits, userId]);
-
-          console.log('✅ Credits refunded successfully:', {
-            refundAmount,
-            oldCredits: userCredits.credits,
-            newCredits
-          });
-
-          return {
-            statusCode: 200,
-            headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
-            body: JSON.stringify({
-              ok: true,
-              disposition: 'refund',
-              refundAmount,
-              newCredits,
-              message: 'Credits refunded successfully'
-            })
-          };
-        } else {
-          console.error('❌ User credits record not found for refund');
-          return {
-            statusCode: 500,
-            headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
-            body: JSON.stringify({
-              ok: false,
-              error: "USER_CREDITS_NOT_FOUND",
-              message: "User credits record not found"
-            })
-          };
-        }
-
+        
+        return {
+          statusCode: 200,
+          headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+          body: JSON.stringify({
+            ok: true,
+            disposition: 'refund',
+            message: 'Reservation released; no balance change'
+          })
+        };
       } else if (disposition === 'commit') {
         // COMMIT: Actually deduct credits now and mark transaction as completed
         console.log('💰 Processing credit commit (deducting credits)...');
