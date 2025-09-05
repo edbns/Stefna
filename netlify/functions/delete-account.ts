@@ -84,11 +84,7 @@ export const handler: Handler = async (event) => {
       console.log('🗑️ [Account Deletion] Deleting story photos...');
       await q(`DELETE FROM story_photo WHERE story_id IN (SELECT id FROM story WHERE user_id = $1)`, [userId]);
 
-      // 3. Delete likes given by the user
-      console.log('🗑️ [Account Deletion] Deleting likes given by user...');
-      await q(`DELETE FROM likes WHERE user_id = $1`, [userId]);
-
-      // 4. Update total_likes_received for users who received likes from this user
+      // 3. Update total_likes_received for users who received likes from this user (BEFORE deleting likes)
       console.log('🗑️ [Account Deletion] Updating total_likes_received for affected users...');
       await q(`
         UPDATE users 
@@ -112,25 +108,24 @@ export const handler: Handler = async (event) => {
         WHERE id IN (
           SELECT DISTINCT user_id 
           FROM (
-            SELECT user_id FROM neo_glitch_media
+            SELECT user_id FROM neo_glitch_media WHERE id IN (SELECT media_id FROM likes WHERE user_id = $1)
             UNION ALL
-            SELECT user_id FROM ghibli_reaction_media
+            SELECT user_id FROM ghibli_reaction_media WHERE id IN (SELECT media_id FROM likes WHERE user_id = $1)
             UNION ALL
-            SELECT user_id FROM emotion_mask_media
+            SELECT user_id FROM emotion_mask_media WHERE id IN (SELECT media_id FROM likes WHERE user_id = $1)
             UNION ALL
-            SELECT user_id FROM presets_media
+            SELECT user_id FROM presets_media WHERE id IN (SELECT media_id FROM likes WHERE user_id = $1)
             UNION ALL
-            SELECT user_id FROM custom_prompt_media
+            SELECT user_id FROM custom_prompt_media WHERE id IN (SELECT media_id FROM likes WHERE user_id = $1)
             UNION ALL
-            SELECT user_id FROM story
-          ) media_users
-          WHERE user_id IN (
-            SELECT DISTINCT target_user_id 
-            FROM likes 
-            WHERE user_id = $1
-          )
+            SELECT user_id FROM story WHERE id IN (SELECT media_id FROM likes WHERE user_id = $1)
+          ) affected_users
         )
       `, [userId]);
+
+      // 4. Delete likes given by the user
+      console.log('🗑️ [Account Deletion] Deleting likes given by user...');
+      await q(`DELETE FROM likes WHERE user_id = $1`, [userId]);
 
       // 5. Delete user settings
       console.log('🗑️ [Account Deletion] Deleting user settings...');
