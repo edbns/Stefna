@@ -2643,7 +2643,7 @@ export const handler: Handler = async (event, context) => {
         const errorResponse = buildFailureResponse('INSUFFICIENT_CREDITS', 'You need credits to generate content');
         console.log('🚨 [Background] Error response object:', JSON.stringify(errorResponse, null, 2));
         return {
-          statusCode: 202, // Use 202 but with error in body
+          statusCode: 400, // Use 400 Bad Request for insufficient credits
           headers: CORS_JSON_HEADERS,
           body: JSON.stringify(errorResponse)
         };
@@ -2651,7 +2651,7 @@ export const handler: Handler = async (event, context) => {
       const errorResponse = buildFailureResponse(creditResult.error || 'Credit reservation failed', creditResult.error || 'Credit reservation failed');
       console.log('🚨 [Background] Credit error response object:', JSON.stringify(errorResponse, null, 2));
       return {
-        statusCode: 202, // Use 202 but with error in body
+        statusCode: 400, // Use 400 Bad Request for other credit errors
         headers: CORS_JSON_HEADERS,
         body: JSON.stringify(errorResponse)
       };

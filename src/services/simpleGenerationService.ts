@@ -94,15 +94,7 @@ class SimpleGenerationService {
         body: JSON.stringify(payload)
       });
 
-      // If this is a Netlify background function, it responds 202 with no body
-      if (response.status === 202) {
-        console.log('ℹ️ [SimpleGeneration] Background accepted (202), starting polling...');
-        
-        // Start polling for completion
-        return await this.pollForCompletion(request.runId, request.mode);
-      }
-
-      // Read response body once for both success and error cases
+      // Read response body first to check for early failures
       let result;
       try {
         result = await response.json();
@@ -113,6 +105,31 @@ class SimpleGenerationService {
           status: 'failed',
           error: `HTTP ${response.status}: ${response.statusText} (JSON parse failed)`
         };
+      }
+
+      // Check for early failure before starting polling
+      if (result && result.success === false && result.status === 'failed' && result.hasOutput === false) {
+        console.warn(`🚨 [SimpleGeneration] Early failure detected: ${result.error}`);
+        console.warn(`🚨 [SimpleGeneration] Full failure response:`, JSON.stringify(result, null, 2));
+        
+        // Special handling for insufficient credits
+        if (result.error === 'INSUFFICIENT_CREDITS') {
+          console.log('🚨 [SimpleGeneration] Throwing INSUFFICIENT_CREDITS error for frontend handling');
+          throw new Error('INSUFFICIENT_CREDITS');
+        }
+        
+        // For other failures, throw the error message
+        const errorMessage = result.error || result.message || 'Generation failed';
+        console.log('🚨 [SimpleGeneration] Throwing early failure error:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      // If this is a Netlify background function, it responds 202 with no body
+      if (response.status === 202) {
+        console.log('ℹ️ [SimpleGeneration] Background accepted (202), starting polling...');
+        
+        // Start polling for completion
+        return await this.pollForCompletion(request.runId, request.mode);
       }
 
       if (!response.ok) {
@@ -140,28 +157,7 @@ class SimpleGenerationService {
         throw new Error(errorMessage);
       }
 
-      // Check for success: false in the response body (even with 200 or 202 status)
-      if (result && result.success === false) {
-        console.log('🚨 [SimpleGeneration] Detected success: false in response body');
-        console.log('🚨 [SimpleGeneration] Full result object:', JSON.stringify(result, null, 2));
-        
-        // Special handling for insufficient credits
-        if (result.errorType === 'INSUFFICIENT_CREDITS' || result.error === 'INSUFFICIENT_CREDITS') {
-          console.log('🚨 [SimpleGeneration] Detected INSUFFICIENT_CREDITS in success: false response, throwing error');
-          throw new Error('INSUFFICIENT_CREDITS');
-        }
-        
-        // Also check for insufficient credits in error message
-        if (result.error && result.error.includes('Insufficient credits')) {
-          console.log('🚨 [SimpleGeneration] Detected insufficient credits in success: false response, throwing error');
-          throw new Error('INSUFFICIENT_CREDITS');
-        }
-        
-        // For other failures, throw the error message
-        const errorMessage = result.error || result.message || 'Generation failed';
-        console.log('🚨 [SimpleGeneration] Throwing success: false error:', errorMessage);
-        throw new Error(errorMessage);
-      }
+      // Note: Early failure check is now handled above before polling starts
 
       // Normalize backend unified-generate-background response
       const normalized = {
@@ -225,6 +221,13 @@ class SimpleGenerationService {
         console.log(`📡 [SimpleGeneration] Polling attempt ${attempt}/${maxAttempts} (${Math.round(elapsed/1000)}s elapsed) for runId: ${runId}`);
         
         const statusResult = await this.checkStatus(runId, mode);
+        
+        // Backup check: If we detect a failure response, stop polling immediately
+        if (statusResult.success === false && statusResult.status === 'failed' && !statusResult.imageUrl && !statusResult.videoUrl) {
+          console.warn(`🚨 [Polling] Generation failed during polling: ${statusResult.error}`);
+          console.warn(`🚨 [Polling] Stopping polling and returning failure`);
+          return statusResult;
+        }
         
         if (statusResult.status === 'completed') {
           console.log(`✅ [SimpleGeneration] Generation completed after ${attempt} attempts (${Math.round(elapsed/1000)}s total)`);
