@@ -87,10 +87,9 @@ Just a quick reminder — your daily credits on Stefna have refreshed.
 
 Come back and transform your next photo. It only takes a moment.
 
-See what you can create → stefna.xyz
+See what you can create → Stefna
 
----
-Don't want these emails? Unsubscribe here: https://stefna.xyz/unsubscribe?email=${encodeURIComponent(user.email)}&type=inactive_reminder`,
+Don't want these emails? Unsubscribe.`,
             type: 'inactive_reminder'
           })
         });

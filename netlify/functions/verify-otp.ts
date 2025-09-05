@@ -204,8 +204,7 @@ Need help? Just reply to this email.
 
 Let's create something amazing.
 
----
-Don't want these emails? Unsubscribe here: https://stefna.xyz/unsubscribe?email=${encodeURIComponent(email.toLowerCase())}&type=welcome`,
+Don't want these emails? Unsubscribe.`,
                 type: 'welcome'
               })
             });

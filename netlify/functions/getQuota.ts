@@ -94,14 +94,13 @@ export const handler: Handler = async (event) => {
               body: JSON.stringify({
                 to: user.email,
                 subject: "You're almost out of credits today",
-                text: `Heads up — you're running low on credits.
+                                  text: `Heads up — you're running low on credits.
 
 Don't worry, they refresh daily. Want more? Invite a friend and earn bonus credits instantly.
 
-Check your balance → stefna.xyz/profile
+Check your balance → Stefna
 
----
-Don't want these emails? Unsubscribe here: https://stefna.xyz/unsubscribe?email=${encodeURIComponent(user.email)}&type=credit_warning`,
+Don't want these emails? Unsubscribe.`,
                 type: 'credits_low',
                 data: { remainingCredits: currentCredits }
               })

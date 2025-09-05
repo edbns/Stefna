@@ -184,8 +184,7 @@ Need help? Just reply to this email.
 
 Let's create something amazing.
 
----
-Don't want these emails? Unsubscribe here: https://stefna.xyz/unsubscribe?email={{EMAIL}}&type=welcome`;
+<br /><br />Don't want these emails? <a href="https://stefna.xyz/unsubscribe?email={{EMAIL}}&type=welcome" style="text-decoration:underline;color:#fff;">Unsubscribe</a>.`;
       break;
     
     case 'account_deleted':
@@ -205,10 +204,9 @@ Just a quick reminder — your daily credits on Stefna have refreshed.
 
 Come back and transform your next photo. It only takes a moment.
 
-See what you can create → stefna.xyz
+See what you can create → <a href="https://stefna.xyz" style="text-decoration:underline;color:#fff;">Stefna</a>
 
----
-Don't want these emails? Unsubscribe here: https://stefna.xyz/unsubscribe?email={{EMAIL}}&type=inactive_reminder`;
+<br /><br />Don't want these emails? <a href="https://stefna.xyz/unsubscribe?email={{EMAIL}}&type=inactive_reminder" style="text-decoration:underline;color:#fff;">Unsubscribe</a>.`;
       break;
     
     case 'referral_bonus':
@@ -216,10 +214,9 @@ Don't want these emails? Unsubscribe here: https://stefna.xyz/unsubscribe?email=
 
 You earned +50 credits for referring a friend to Stefna. They signed up and joined the fun.
 
-Use your bonus now → stefna.xyz
+Use your bonus now → <a href="https://stefna.xyz" style="text-decoration:underline;color:#fff;">Stefna</a>
 
----
-Don't want these emails? Unsubscribe here: https://stefna.xyz/unsubscribe?email={{EMAIL}}&type=referral_bonus`;
+<br /><br />Don't want these emails? <a href="https://stefna.xyz/unsubscribe?email={{EMAIL}}&type=referral_bonus" style="text-decoration:underline;color:#fff;">Unsubscribe</a>.`;
       break;
     
     case 'credits_low':
@@ -227,10 +224,9 @@ Don't want these emails? Unsubscribe here: https://stefna.xyz/unsubscribe?email=
 
 Don't worry, they refresh daily. Want more? Invite a friend and earn bonus credits instantly.
 
-Check your balance → stefna.xyz/profile
+Check your balance → <a href="https://stefna.xyz/profile" style="text-decoration:underline;color:#fff;">Stefna</a>
 
----
-Don't want these emails? Unsubscribe here: https://stefna.xyz/unsubscribe?email={{EMAIL}}&type=credit_warning`;
+<br /><br />Don't want these emails? <a href="https://stefna.xyz/unsubscribe?email={{EMAIL}}&type=credit_warning" style="text-decoration:underline;color:#fff;">Unsubscribe</a>.`;
       break;
     
     case 'referral':
@@ -241,7 +237,7 @@ Your friend invited you to try Stefna — the AI photo transformation studio tha
 Join now and you'll receive +25 free credits to get started right away.
 
 Claim your credits here:
-https://stefna.xyz/
+<a href="https://stefna.xyz/" style="text-decoration:underline;color:#fff;">Stefna</a>
 
 No account? No problem. It takes seconds.
 

@@ -125,7 +125,9 @@ export const handler: Handler = async (event) => {
 
 You earned +50 credits for referring a friend to Stefna. They signed up and joined the fun.
 
-Use your bonus now → stefna.xyz`,
+Use your bonus now → Stefna
+
+Don't want these emails? Unsubscribe.`,
             type: 'referral_bonus'
           })
         });
