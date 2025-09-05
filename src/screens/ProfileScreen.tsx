@@ -606,7 +606,8 @@ const ProfileScreen: React.FC = () => {
             const qRes = await authenticatedFetch('/.netlify/functions/getQuota', { method: 'GET' })
             if (qRes.ok) {
               const q = await qRes.json()
-              setTokenCount((q.daily_limit || 0) - (q.daily_used || 0))
+              // Use currentBalance directly - this is the actual remaining credits
+              setTokenCount(q.currentBalance || 0)
             } else {
               // Fallback to client service
               // Token service removed - use credits from user
