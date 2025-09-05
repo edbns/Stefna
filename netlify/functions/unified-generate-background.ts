@@ -2015,11 +2015,15 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
     // Return structured error response instead of throwing
     if (creditReservation.error === 'INSUFFICIENT_CREDITS') {
       console.log('🚨 [Background] Returning INSUFFICIENT_CREDITS error response');
-      return buildFailureResponse('INSUFFICIENT_CREDITS', 'You need credits to generate content');
+      const errorResponse = buildFailureResponse('INSUFFICIENT_CREDITS', 'You need credits to generate content');
+      console.log('🚨 [Background] Error response object:', JSON.stringify(errorResponse, null, 2));
+      return errorResponse;
     }
     
     // Return other credit errors
-    return buildFailureResponse(creditReservation.error || 'Credit reservation failed', creditReservation.error || 'Credit reservation failed');
+    const errorResponse = buildFailureResponse(creditReservation.error || 'Credit reservation failed', creditReservation.error || 'Credit reservation failed');
+    console.log('🚨 [Background] Credit error response object:', JSON.stringify(errorResponse, null, 2));
+    return errorResponse;
   }
 
   try {
@@ -2650,6 +2654,7 @@ export const handler: Handler = async (event, context) => {
       )
     ]);
 
+    console.log('🚀 [Background] Returning result with statusCode 200:', JSON.stringify(result, null, 2));
     return {
       statusCode: 200,
       headers: CORS_JSON_HEADERS,
