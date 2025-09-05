@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS waitlist (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) UNIQUE NOT NULL,
   referral_code VARCHAR(20) UNIQUE NOT NULL,
-  referred_by VARCHAR(20), -- Referral code of person who referred them
+  referred_by_email VARCHAR(255), -- Email of person who referred them
   position INTEGER, -- Position in waitlist
   status VARCHAR(20) DEFAULT 'waiting', -- waiting, notified, converted
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -20,7 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
 CREATE INDEX IF NOT EXISTS idx_waitlist_referral_code ON waitlist(referral_code);
 CREATE INDEX IF NOT EXISTS idx_waitlist_status ON waitlist(status);
 CREATE INDEX IF NOT EXISTS idx_waitlist_position ON waitlist(position);
-CREATE INDEX IF NOT EXISTS idx_waitlist_referred_by ON waitlist(referred_by);
+CREATE INDEX IF NOT EXISTS idx_waitlist_referred_by_email ON waitlist(referred_by_email);
 
 -- Function to generate unique referral code
 CREATE OR REPLACE FUNCTION generate_waitlist_referral_code()
@@ -49,7 +49,7 @@ $$ LANGUAGE plpgsql;
 -- Function to add user to waitlist
 CREATE OR REPLACE FUNCTION add_to_waitlist(
   p_email VARCHAR(255),
-  p_referred_by VARCHAR(20) DEFAULT NULL
+  p_referred_by_email VARCHAR(255) DEFAULT NULL
 )
 RETURNS JSONB AS $$
 DECLARE
@@ -64,10 +64,10 @@ BEGIN
   SELECT COALESCE(MAX(position), 0) + 1 INTO position FROM waitlist;
   
   -- Insert into waitlist
-  INSERT INTO waitlist (email, referral_code, referred_by, position)
-  VALUES (p_email, referral_code, p_referred_by, position)
+  INSERT INTO waitlist (email, referral_code, referred_by_email, position)
+  VALUES (p_email, referral_code, p_referred_by_email, position)
   ON CONFLICT (email) DO UPDATE SET
-    referred_by = COALESCE(EXCLUDED.referred_by, waitlist.referred_by),
+    referred_by_email = COALESCE(EXCLUDED.referred_by_email, waitlist.referred_by_email),
     updated_at = NOW()
   RETURNING 
     id, email, referral_code, position, status, created_at
@@ -95,19 +95,19 @@ BEGIN
     'waiting', COUNT(*) FILTER (WHERE status = 'waiting'),
     'notified', COUNT(*) FILTER (WHERE status = 'notified'),
     'converted', COUNT(*) FILTER (WHERE status = 'converted'),
-    'referrals_generated', COUNT(*) FILTER (WHERE referred_by IS NOT NULL),
+    'referrals_generated', COUNT(*) FILTER (WHERE referred_by_email IS NOT NULL),
     'top_referrers', (
       SELECT jsonb_agg(
         jsonb_build_object(
-          'referral_code', referred_by,
+          'referrer_email', referred_by_email,
           'count', count
         )
       )
       FROM (
-        SELECT referred_by, COUNT(*) as count
+        SELECT referred_by_email, COUNT(*) as count
         FROM waitlist
-        WHERE referred_by IS NOT NULL
-        GROUP BY referred_by
+        WHERE referred_by_email IS NOT NULL
+        GROUP BY referred_by_email
         ORDER BY count DESC
         LIMIT 10
       ) top_refs

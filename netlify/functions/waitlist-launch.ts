@@ -47,7 +47,7 @@ export const handler: Handler = async (event) => {
 
     // Get all waiting users
     const waitingUsers = await q(`
-      SELECT email, referral_code, position
+      SELECT email, referral_code, position, referred_by_email
       FROM waitlist
       WHERE status = 'waiting'
       ORDER BY position ASC
@@ -72,7 +72,7 @@ export const handler: Handler = async (event) => {
 
     // Send launch emails to all waiting users
     const results = await Promise.allSettled(
-      waitingUsers.map(user => sendLaunchEmail(user.email, user.referral_code, user.position))
+      waitingUsers.map(user => sendLaunchEmail(user.email, user.referral_code, user.position, user.referred_by_email))
     );
 
     // Count successful sends
@@ -122,7 +122,7 @@ export const handler: Handler = async (event) => {
 };
 
 // Send launch notification email
-async function sendLaunchEmail(email: string, referralCode: string, position: number) {
+async function sendLaunchEmail(email: string, referralCode: string, position: number, referredByEmail?: string) {
   const resendApiKey = process.env.RESEND_API_KEY;
   if (!resendApiKey) {
     throw new Error('RESEND_API_KEY not configured');
@@ -130,8 +130,8 @@ async function sendLaunchEmail(email: string, referralCode: string, position: nu
 
   const resend = new Resend(resendApiKey);
   
-  const signupLink = `https://stefna.xyz/auth?ref=${referralCode}`;
-  const referralLink = `https://stefna.xyz/auth?ref=${referralCode}`;
+  const signupLink = `https://stefna.xyz/auth?ref=${encodeURIComponent(email)}`;
+  const referralLink = `https://stefna.xyz/coming-soon?ref=${encodeURIComponent(email)}`;
   
   const emailHtml = `
 <!DOCTYPE html>
@@ -151,11 +151,11 @@ async function sendLaunchEmail(email: string, referralCode: string, position: nu
         The wait is over! Stefna is now live and ready to transform your photos with AI magic.
       </p>
       
-      <div style="background-color:#111; padding:20px; border-radius:8px; margin:20px 0;">
+              <div style="background-color:#111; padding:20px; border-radius:8px; margin:20px 0;">
         <p style="font-size:14px; margin:0; color:#fff;">
           <strong>Your Waitlist Position:</strong> #${position}<br>
-          <strong>Your Referral Code:</strong> ${referralCode}<br>
-          <strong>Bonus Credits:</strong> +50 for being on the waitlist!
+          <strong>Your Referral Email:</strong> ${email}<br>
+          <strong>Bonus Credits:</strong> +50 for being on the waitlist!${referredByEmail ? `<br><strong>Referred by:</strong> ${referredByEmail}` : ''}
         </p>
       </div>
       

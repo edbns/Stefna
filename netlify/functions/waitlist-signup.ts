@@ -30,7 +30,7 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const { email, referralCode } = JSON.parse(event.body || '{}');
+    const { email, referrerEmail } = JSON.parse(event.body || '{}');
     
     if (!email) {
       return {
@@ -61,7 +61,7 @@ export const handler: Handler = async (event) => {
     // Add to waitlist using database function
     const waitlistResult = await qOne(`
       SELECT add_to_waitlist($1, $2) as result
-    `, [email.toLowerCase(), referralCode || null]);
+    `, [email.toLowerCase(), referrerEmail || null]);
 
     if (!waitlistResult) {
       throw new Error('Failed to add to waitlist');

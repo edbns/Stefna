@@ -17,9 +17,9 @@ import { setupGlobalErrorHandling } from './utils/globalErrorHandler'
 import WaitlistForm from './components/WaitlistForm'
 
 const ComingSoonPage: React.FC = () => {
-  // Get referral code from URL params
+  // Get referrer email from URL params
   const urlParams = new URLSearchParams(window.location.search);
-  const referralCode = urlParams.get('ref');
+  const referrerEmail = urlParams.get('ref');
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
@@ -106,7 +106,7 @@ const ComingSoonPage: React.FC = () => {
           </div>
           
           <div className="pt-4">
-            <WaitlistForm referralCode={referralCode || undefined} />
+            <WaitlistForm referrerEmail={referrerEmail || undefined} />
           </div>
           
           <div className="text-xs text-white/50">

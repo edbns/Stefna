@@ -36,12 +36,12 @@ const waitlistStatsHandler: Handler = async (event) => {
       // Get top referrers
       const topReferrers = await q(`
         SELECT 
-          referred_by,
+          referred_by_email,
           COUNT(*) as referral_count,
           array_agg(email ORDER BY created_at DESC) as referred_emails
         FROM waitlist
-        WHERE referred_by IS NOT NULL
-        GROUP BY referred_by
+        WHERE referred_by_email IS NOT NULL
+        GROUP BY referred_by_email
         ORDER BY referral_count DESC
         LIMIT 20
       `);

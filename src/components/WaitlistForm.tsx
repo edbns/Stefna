@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 
 interface WaitlistFormProps {
-  referralCode?: string;
+  referrerEmail?: string;
 }
 
-const WaitlistForm: React.FC<WaitlistFormProps> = ({ referralCode }) => {
+const WaitlistForm: React.FC<WaitlistFormProps> = ({ referrerEmail }) => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -31,7 +31,7 @@ const WaitlistForm: React.FC<WaitlistFormProps> = ({ referralCode }) => {
         },
         body: JSON.stringify({
           email: email.trim(),
-          referralCode: referralCode
+          referrerEmail: referrerEmail
         }),
       });
 
@@ -88,10 +88,10 @@ const WaitlistForm: React.FC<WaitlistFormProps> = ({ referralCode }) => {
         </div>
       )}
 
-      {referralCode && (
+      {referrerEmail && (
         <div className="mt-4 p-3 bg-white/5 rounded-lg text-center">
           <p className="text-white/80 text-sm">
-            You were invited by a friend! 🎉
+            You were invited by {referrerEmail}! 🎉
           </p>
         </div>
       )}
