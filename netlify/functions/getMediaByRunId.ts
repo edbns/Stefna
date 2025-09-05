@@ -45,6 +45,7 @@ export const handler: Handler = async (event, context) => {
     }
 
     console.log(`🔍 [getMediaByRunId] Searching for media with runId: ${runId}`);
+    console.log(`🔍 [getMediaByRunId] RunId type: ${typeof runId}, length: ${runId?.length}`);
 
     // Search across all media tables for the exact runId
     const queries = [
@@ -114,6 +115,8 @@ export const handler: Handler = async (event, context) => {
             status: foundMedia.status
           });
           break;
+        } else {
+          console.log(`❌ [getMediaByRunId] No media found in ${query.split(' ')[1]} table for runId: ${runId}`);
         }
       } catch (error) {
         const tableName = query.split(' ')[1];
