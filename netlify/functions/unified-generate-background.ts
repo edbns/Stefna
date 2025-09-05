@@ -1358,8 +1358,11 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
 
       // Hard protection for neo_glitch: if original subject is non-human, forbid humanization
       if (mode === 'neo_glitch') {
-        const nonHumanBan = 'human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
-        bflInput.negative_prompt = bflInput.negative_prompt ? `${bflInput.negative_prompt}, ${nonHumanBan}` : nonHumanBan;
+        const animalsInPrompt = detectAnimalsFromPrompt(originalPrompt);
+        if (animalsInPrompt && animalsInPrompt.length > 0) {
+          const nonHumanBan = 'human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
+          bflInput.negative_prompt = bflInput.negative_prompt ? `${bflInput.negative_prompt}, ${nonHumanBan}` : nonHumanBan;
+        }
       }
 
       console.log(`✨ [BFL Prompt Enhancement] Original: "${originalPrompt}"`);
@@ -2043,7 +2046,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
 
     // Provider selection based on mode
     // Build generation params per mode
-    const generationParams = {
+    let generationParams: any = {
       prompt: request.mode === 'ghibli_reaction'
         ? `${request.prompt}, subtle ghibli-inspired lighting, soft dreamy atmosphere, gentle anime influence, preserve original composition`
         : request.prompt,
@@ -2054,10 +2057,18 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
       steps: 30
     };
 
-    // Provide negative_prompt to Stability/Replicate paths for neo_glitch to block humanization
+    // Provide negative_prompt to Stability/Replicate paths for neo_glitch to block humanization only for non-human sources
     if (request.mode === 'neo_glitch') {
-      const nonHumanBan = 'human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
-      (generationParams as any).negative_prompt = nonHumanBan;
+      const srcUrl: string | undefined = request.sourceAssetId;
+      const looksLikeHuman = /person|people|face|portrait|man|woman|boy|girl|child|adult|human/i.test(generationParams.prompt);
+      if (!looksLikeHuman) {
+        const nonHumanBan = 'human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
+        generationParams.negative_prompt = nonHumanBan;
+      }
+      // Increase effect so it still stylizes with neon/glitch
+      generationParams.image_strength = 0.55; // more stylization than 0.45
+      generationParams.guidance_scale = 8.5; // push stronger style guidance
+      generationParams.style_preset = 'neon-punk';
     }
 
     if (request.mode === 'neo_glitch') {
