@@ -197,4 +197,4 @@ Transform your photos into stunning AI art with cinematic glow, anime reactions,
 
 **Transform your photos into art. Experience the future of AI creativity with Stefna.**
 
-[stefna.xyz](https://stefna.xyz) | hello@stefna.xyz | [@stefnaxyz](https://twitter.com/stefnaxyz)
+[stefna.xyz](https://stefna.xyz) | hello@stefna.xyz | [@StefnaXYZ](https://twitter.com/StefnaXYZ)
