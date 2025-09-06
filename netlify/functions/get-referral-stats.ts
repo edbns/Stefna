@@ -46,13 +46,20 @@ export const handler: Handler = async (event) => {
       return json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get user's referral statistics from referral_attempts table only
-    const [referralAttempts, userEmail] = await Promise.all([
+    // Get user's referral statistics from both tables
+    const [referralAttempts, referralSignups, userEmail] = await Promise.all([
       // Count referral attempts (emails sent)
       qOne(`
         SELECT COUNT(*) as total_attempts
         FROM referral_attempts 
         WHERE referrer_id = $1 AND attempt_type = 'email_sent'
+      `, [userId]),
+      
+      // Count successful signups (actual referrals) - using correct column name
+      qOne(`
+        SELECT COUNT(*) as successful_signups
+        FROM referral_signups 
+        WHERE referrer_user_id_user_id = $1
       `, [userId]),
       
       // Get user's email for referral identifier
@@ -64,21 +71,23 @@ export const handler: Handler = async (event) => {
     console.log('📊 [Referral Stats] Raw query results:', {
       userId,
       referralAttempts,
+      referralSignups,
       userEmail
     });
 
     // Handle potential null/undefined results
     const totalAttempts = referralAttempts?.total_attempts ? parseInt(referralAttempts.total_attempts) : 0;
+    const successfulSignups = referralSignups?.successful_signups ? parseInt(referralSignups.successful_signups) : 0;
     const userEmailValue = userEmail?.email || '';
 
     console.log('📊 [Referral Stats] Processed values:', {
       totalAttempts,
+      successfulSignups,
       userEmailValue
     });
 
-    // For now, credits earned = 0 since we don't track successful signups separately
-    // This can be updated when we implement proper referral tracking
-    const creditsEarned = 0;
+    // Calculate credits earned (50 credits per successful referral)
+    const creditsEarned = successfulSignups * 50;
 
     const stats = {
       referralCode: userEmailValue,
