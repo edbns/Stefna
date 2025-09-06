@@ -1,5 +1,6 @@
 import type { Handler } from '@netlify/functions';
 import { Resend } from 'resend';
+import { q } from './_db';
 
 // Universal email function that handles all email types
 export const handler: Handler = async (event) => {
@@ -100,6 +101,37 @@ export const handler: Handler = async (event) => {
     }
 
     console.log('✅ Email sent successfully:', emailData?.id);
+    
+    // Log referral attempt in database if this is a referral email
+    if (type === 'referral' && data?.referrerEmail) {
+      try {
+        // Get client IP for abuse prevention
+        const clientIP = event.headers['x-forwarded-for'] || 
+                        event.headers['x-real-ip'] || 
+                        event.headers['x-client-ip'] || 
+                        'unknown';
+
+        // Find referrer by email
+        const referrer = await q(`
+          SELECT id FROM users WHERE email = $1
+        `, [data.referrerEmail]);
+        
+        if (referrer && referrer.length > 0) {
+          const referrerId = referrer[0].id;
+          
+          // Log referral attempt
+          await q(`
+            INSERT INTO referral_attempts (referrer_id, attempt_type, referred_email, ip_address, created_at)
+            VALUES ($1, 'email_sent', $2, $3, NOW())
+          `, [referrerId, to, clientIP]);
+          
+          console.log('✅ [Referral] Logged referral attempt:', { referrerId, referredEmail: to });
+        }
+      } catch (dbError) {
+        console.warn('⚠️ [Referral] Failed to log referral attempt:', dbError);
+        // Don't fail the email if database logging fails
+      }
+    }
     
     return {
       statusCode: 200,
@@ -237,9 +269,9 @@ Your friend invited you to try Stefna — the AI photo transformation studio tha
 Join now and you'll receive +25 free credits to get started right away.
 
 Claim your credits here:
-<a href="https://stefna.xyz/" style="text-decoration:underline;color:#fff;">Stefna</a>
+<a href="https://stefna.xyz/auth?ref=${data?.referrerEmail || ''}" style="text-decoration:underline;color:#fff;">Stefna</a>
 
-No account? No problem. It takes seconds.
+No account? Get one. It only takes seconds.
 
 Let your creativity run wild — no limits.`;
       break;
