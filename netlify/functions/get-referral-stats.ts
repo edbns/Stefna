@@ -59,7 +59,7 @@ export const handler: Handler = async (event) => {
       qOne(`
         SELECT COUNT(*) as successful_signups
         FROM referral_signups 
-        WHERE referrer_user_id_user_id = $1
+        WHERE referrer_user_id = $1
       `, [userId]),
       
       // Get user's email for referral identifier
