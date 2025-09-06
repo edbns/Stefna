@@ -146,11 +146,11 @@ export const handler: Handler = async (event) => {
       </p>
       
       <div style="text-align:center; margin:20px 0;">
-        <a href="https://stefna.xyz/" style="background-color:#fff; color:#000; padding:15px 30px; border-radius:6px; text-decoration:none; display:inline-block; font-weight:600;">Claim your credits here</a>
+        <a href="https://stefna.xyz/auth?ref=${referrerEmail}" style="background-color:#fff; color:#000; padding:15px 30px; border-radius:6px; text-decoration:none; display:inline-block; font-weight:600;">Claim your credits here</a>
       </div>
       
       <p style="font-size:13px; line-height:1.6; margin:0 auto; max-width:90%;">
-        No account? No problem. It takes seconds.
+        No account? Get one. It only takes seconds.
       </p>
       <p style="font-size:13px; line-height:1.6; margin:0 auto; max-width:90%;">
         Let your creativity run wild — no limits.
@@ -173,9 +173,9 @@ Use your 25 extra credits however you like — on top of your daily allowance.
 
 Join now and start creating:
 
-Click Here: https://stefna.xyz/auth
+Click Here: https://stefna.xyz/auth?ref=${referrerEmail}
 
-When you sign up, make sure to mention that ${referrerEmail} invited you to get your bonus credits.
+No account? Get one. It only takes seconds.
 
 — The Stefna Team`
     });
