@@ -88,6 +88,12 @@ export const handler: Handler = async (event) => {
       VALUES ($1, 'referral_processed', $2, $3, NOW())
     `, [referrerId, newUserEmail, clientIP]);
 
+    // Also insert into referral_signups table for stats
+    await q(`
+      INSERT INTO referral_signups (referrer_id, referred_user_id, referred_email, created_at)
+      VALUES ($1, $2, $3, NOW())
+    `, [referrerId, newUserId, newUserEmail]);
+
     // Use hardcoded bonus amounts since appConfig table doesn't exist
     const refBonus = 50; // Referrer gets 50 credits
     const newBonus = 25; // New user gets 25 credits
