@@ -7,7 +7,7 @@ const BASE_PROMPT = `Transform the human face into a realistic Ghibli-style reac
 const EMOTION_INSERTS = {
   tears: `Add delicate tears and a trembling expression.`,
   shock: `Widen the eyes and part the lips slightly to show surprise.`,
-  sparkle: `Add bright, magical sparkles around the face, shimmering eyes with golden highlights, and soft pink blush. Include floating sparkles and magical particles.`,
+  sparkle: `Add medium sparkles around the cheeks only, shimmering eyes with golden highlights, and soft pink blush. Keep sparkles focused on cheek area.`,
   sadness: `Add melancholic emotion with glossy eyes and distant gaze.`,
   love: `Add warm sparkle in the eyes, gentle blush, and glowing pastel lighting. Create a dreamy, cozy atmosphere with soft bokeh in the background.`,
 };
@@ -80,8 +80,8 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: `Transform the human face into a magical Ghibli-style sparkle reaction while preserving full identity, ethnicity, skin tone, and facial structure. Add bright, magical sparkles floating around the face, shimmering golden highlights in the eyes, and soft pink blush on the cheeks. Include numerous floating sparkles and magical particles throughout the composition. Use pastel cinematic tones with enhanced sparkle effects and dreamy lighting. Background should have gentle bokeh with sparkling light flares. Maintain original composition and realism with enhanced magical sparkle effects.`,
-    negative_prompt: `cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face, cartoon overlay, anime rendering, lineart, plastic skin, overexposed, unnatural colors, harsh sparkles`,
+    prompt: `Transform the human face into a magical Ghibli-style sparkle reaction while preserving full identity, ethnicity, skin tone, and facial structure. Add medium sparkles around the cheeks only, shimmering golden highlights in the eyes, and soft pink blush on the cheeks. Keep sparkles focused on the cheek area to complement the blush without overwhelming it. Use pastel cinematic tones with gentle sparkle effects and dreamy lighting. Background should have gentle bokeh with soft light flares. Maintain original composition and realism with subtle magical sparkle effects on cheeks.`,
+    negative_prompt: `cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face, cartoon overlay, anime rendering, lineart, plastic skin, overexposed, unnatural colors, harsh sparkles, excessive sparkles, sparkles all over face, overwhelming sparkles`,
     strength: 0.45,
     model: 'bfl/flux-pro-1.1-ultra',
     mode: 'i2i',
