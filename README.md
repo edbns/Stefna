@@ -1,332 +1,200 @@
-# Stefna AI - Advanced AI-Powered Photo Editor
+# Stefna – AI-Powered Studio for Artistic Photo Transformations
 
-Transform your photos with cutting-edge AI technology. A privacy-first, credit-based platform for creative photo editing and generation.
+Transform your photos into stunning AI art with cinematic glow, anime reactions, glitch effects, and more. Powered by cutting-edge AI models from Stability.ai, Fal.ai, BFL, OpenAI, and other leading providers.
 
-## 🚀 Quick Start
-
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Or run with Netlify Functions (recommended)
-netlify dev
-```
-
-## ✨ Features
-
-### 🎨 AI Generation Modes
-- **Presets**: Curated professional photo styles with weekly rotation
-- **Custom Prompt**: Free-form AI generation with your own prompts
-- **Emotion Mask**: Transform facial expressions with AI
-- **Ghibli Reaction**: Studio Ghibli-inspired artistic transformations
-- **Neo Tokyo Glitch**: Cyberpunk aesthetic with glitch effects
-- **Studio (Edit)**: Advanced photo editing with nano-banana AI
-- **Story Time**: Multi-image video generation (temporarily hidden)
-
-### 🛡️ Privacy & Security
-- **Privacy-First**: All content private by default
-- **No Social Media**: Pure creative tools, no social features
-- **Secure Auth**: JWT + OTP email verification
-- **Data Protection**: GDPR-compliant data handling
-
-### 💳 Credit System
-- **30 Daily Credits**: Free daily generation allowance
-- **Fair Usage**: Prevents abuse while keeping it accessible
-- **Admin Controls**: Comprehensive credit management system
-
-### 🎯 Advanced Features
-- **Real-time Face Detection**: TensorFlow.js-powered face landmarks
-- **Identity Preservation**: IPA system to maintain facial features
-- **Masonry Layout**: Responsive grid with dynamic sizing
-- **Infinite Scroll**: Seamless content browsing
-- **Admin Dashboard**: Full system management interface
-
-## 🏗️ Technology Stack
-
-### Frontend
-- **React 18**: Modern UI framework with hooks
-- **TypeScript**: Type-safe development
-- **Vite**: Fast build tool and dev server
-- **Tailwind CSS**: Utility-first styling
-- **Zustand**: Lightweight state management
-
-### Backend
-- **Netlify Functions**: Serverless backend
-- **PostgreSQL**: Reliable relational database
-- **Cloudinary**: Image storage and optimization
-- **JWT**: Secure authentication tokens
-
-### AI Providers
-- **BFL API**: Primary AI generation (Flux Pro 1.1 Ultra/Pro/Standard)
-- **Fal.ai**: Secondary provider with nano-banana for Studio mode
-- **Stability.ai**: Fallback provider for Neo Tokyo Glitch
-- **Replicate**: Emergency fallback for IPA failures
-
-### Development Tools
-- **ESLint**: Code quality and consistency
-- **Prettier**: Code formatting
-- **TypeScript**: Static type checking
-- **Netlify CLI**: Local development and deployment
-
-## 📁 Project Structure
-
-```
-stefna/
-├── src/
-│   ├── components/          # React components
-│   ├── screens/            # Page components
-│   ├── services/           # API and business logic
-│   ├── utils/              # Utility functions
-│   ├── presets/            # AI preset configurations
-│   └── config/             # App configuration
-├── netlify/
-│   └── functions/          # Serverless backend functions
-├── database/
-│   ├── schema/             # Database schema
-│   └── migrations/         # Database migrations
-├── scripts/                # Utility scripts
-└── migrations/             # SQL migration files
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file based on `env.example`:
-
-```bash
-# Database
-DATABASE_URL=postgresql://user:pass@host:port/db
-
-# AI APIs
-BFL_API_KEY=your_bfl_api_key
-FAL_KEY=your_fal_api_key
-STABILITY_API_KEY=your_stability_key
-REPLICATE_API_KEY=your_replicate_key
-
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# Email (Resend)
-RESEND_API_KEY=your_resend_key
-
-# Admin
-ADMIN_SECRET=your_admin_secret
-```
-
-### Database Setup
-
-```bash
-# Run migrations
-npm run migrate
-
-# Or manually run migration scripts
-node scripts/run-migration.js
-```
+🌐 **Official Website**: [https://stefna.xyz](https://stefna.xyz)
 
 ## 🎨 AI Generation Modes
 
-### Presets Mode
-- **Weekly Rotation**: 6 curated presets change weekly
-- **Professional Quality**: Optimized for consistent results
-- **Easy to Use**: One-click generation
+### **Presets Mode**
+- **Weekly Rotating Presets**: Fresh AI styles every week
+- **Professional Quality**: Cinematic, artistic, and creative transformations
+- **One-Click Generation**: Instant results with curated prompts
+- **Database-Driven**: Dynamic preset system with admin management
 
-### Custom Prompt Mode
-- **Free-form Input**: Write your own prompts
-- **Advanced Control**: Full creative freedom
+### **Custom Mode**
+- **Free-Form Prompts**: Type anything and watch AI bring it to life
+- **AI Enhancement**: Built-in prompt enhancement with ✨ magic wand
+- **Creative Freedom**: Unlimited possibilities for artistic expression
+- **Smart Suggestions**: AI-powered prompt improvements
+
+### **Studio Mode (Edit)**
+- **Precision Editing**: Targeted modifications to specific elements
+- **Professional Tools**: Advanced editing capabilities
+- **Context-Aware**: AI understands image context for better edits
+- **Studio-Quality Results**: Professional-grade transformations
+
+### **Emotion Mask™**
+- **Facial Expression AI**: Transform emotions with precision
+- **Realistic Reactions**: Natural-looking emotional changes
+- **Multiple Emotions**: Joy, surprise, sadness, anger, and more
+- **Identity Preservation**: Maintains facial features while changing emotions
+
+### **Ghibli Reaction**
+- **Studio Ghibli Style**: Anime-inspired transformations
+- **Emotional Depth**: Love, sparkle, wonder, and magical reactions
+- **Artistic Flair**: Hand-drawn animation aesthetics
+- **Nostalgic Appeal**: Classic anime art style
+
+### **Neo Tokyo Glitch**
+- **Cyberpunk Aesthetics**: Futuristic, neon-soaked transformations
+- **Glitch Art**: Digital distortion and electronic chaos
+- **Urban Decay**: Tokyo-inspired cyberpunk vibes
+- **High-Tech Low-Life**: Sci-fi meets street art
+
+### **Story Time**
+- **Video Generation**: Transform images into dynamic videos
+- **Narrative Flow**: AI creates story-driven content
+- **Multiple Scenes**: Complex multi-scene transformations
+- **Cinematic Quality**: Movie-like video generation
+
+## 🤖 AI Technology Stack
+
+### **Primary AI Providers**
+- **Stability.ai**: High-quality image generation and enhancement
+- **Fal.ai**: Advanced video generation and image processing
+- **BFL (Black Forest Labs)**: Cutting-edge AI models
+- **OpenAI**: GPT-powered prompt enhancement and processing
+
+### **Specialized Features**
+- **Identity Preservation Algorithm (IPA)**: Maintains facial features during transformation
 - **Prompt Enhancement**: AI-powered prompt optimization
+- **Safety Filters**: Content moderation and safety checks
+- **Quality Optimization**: Automatic image/video quality enhancement
 
-### Emotion Mask Mode
-- **Facial Expression**: Transform emotions with AI
-- **Identity Preservation**: Maintain facial features
-- **Real-time Detection**: TensorFlow.js face landmarks
+## 🛠️ Technology Stack
 
-### Ghibli Reaction Mode
-- **Studio Ghibli Style**: Artistic anime transformations
-- **BFL Ultra**: Highest quality generation
-- **Emotional Expressions**: Tears, joy, surprise, etc.
+### **Frontend**
+- **React.js**: Modern UI framework
+- **TypeScript**: Type-safe development
+- **Tailwind CSS**: Utility-first styling
+- **Vite**: Fast build tool and development server
+- **Lucide React**: Beautiful icon library
 
-### Neo Tokyo Glitch Mode
-- **Cyberpunk Aesthetic**: Futuristic glitch effects
-- **Stability.ai**: Specialized for this style
-- **Unique Visuals**: Distinctive artistic style
+### **Backend**
+- **Netlify Functions**: Serverless backend
+- **Node.js**: JavaScript runtime
+- **PostgreSQL**: Robust database system
+- **Prisma**: Type-safe database ORM
 
-### Studio Mode (Edit)
-- **Advanced Editing**: Professional photo editing
-- **Nano-banana AI**: Specialized for image-to-image
-- **Multiple Images**: Support for additional reference images
+### **Infrastructure**
+- **Netlify**: Hosting and deployment
+- **Cloudinary**: Image and video storage/CDN
+- **Resend**: Email delivery service
+- **JWT**: Secure authentication tokens
 
-## 🔐 Authentication
+### **Security & Performance**
+- **CORS Protection**: Cross-origin request security
+- **Rate Limiting**: API abuse prevention
+- **Security Headers**: CSP, HSTS, X-Frame-Options
+- **File Validation**: Upload security and type checking
+- **OTP Authentication**: Email-based secure login
 
-### User Registration
-1. **Email Verification**: OTP sent to email
-2. **Account Creation**: Automatic user profile setup
-3. **Credit Allocation**: 30 daily credits assigned
+## 🚀 Key Features
 
-### Admin Access
-- **Route**: `/dashboard/management/control`
-- **Secret**: Set via `ADMIN_SECRET` environment variable
-- **Features**: Media management, user management, system configuration
+### **User Experience**
+- **Mobile-Optimized**: Responsive design for all devices
+- **Real-Time Generation**: Live progress tracking
+- **Draft System**: Save work in progress
+- **User Profiles**: Personal galleries and statistics
+- **Social Features**: Like, share, and discover content
 
-## 💳 Credit System
+### **Admin Dashboard**
+- **User Management**: Comprehensive user administration
+- **Content Moderation**: Manual review and approval
+- **Analytics**: Usage statistics and insights
+- **Launch Control**: Site visibility management
+- **Preset Management**: Dynamic preset configuration
 
-### Daily Credits
-- **30 Credits**: Free daily allowance
-- **Reset**: Daily at midnight UTC
-- **Usage**: 1-2 credits per generation depending on mode
+### **Security Features**
+- **JWT Authentication**: Secure token-based auth
+- **OTP Verification**: Email-based login security
+- **Rate Limiting**: Prevents API abuse
+- **File Upload Security**: Type and size validation
+- **Referral Abuse Prevention**: Advanced fraud detection
 
-### Admin Controls
-- **Credit Adjustment**: Modify user credits
-- **Daily Reset**: Manual credit reset
-- **Usage Analytics**: Track credit consumption
+## 📱 Mobile Experience
 
-## 🎯 Development
+- **View-Only Mode**: Browse and like content on mobile
+- **Desktop Features**: Full creation tools on desktop
+- **Responsive Design**: Optimized for all screen sizes
+- **Touch-Friendly**: Mobile-optimized interactions
 
-### Local Development
+## 🔗 API Integration
 
-```bash
-# Install dependencies
-npm install
+### **AI Generation APIs**
+- **Stability.ai API**: Image generation and enhancement
+- **Fal.ai API**: Video generation and processing
+- **BFL API**: Advanced AI model access
+- **OpenAI API**: GPT-powered enhancements
 
-# Start development server
-npm run dev
+### **External Services**
+- **Cloudinary API**: Media storage and optimization
+- **Resend API**: Email delivery and notifications
+- **Google Analytics**: Usage tracking and insights
 
-# Start with Netlify Functions
-netlify dev
+## 🎯 SEO Optimization
 
-# Run tests
-npm test
+### **Meta Tags**
+- **Title**: "Stefna – AI-Powered Studio for Artistic Photo Transformations"
+- **Description**: "From cinematic glow to anime tears and glitchy chaos — Stefna transforms your photos into stunning AI art. Powered by Stability, Fal, BFL, OpenAI & more. Sign up and start creating."
+- **Open Graph**: Optimized social media sharing
+- **Twitter Cards**: Enhanced Twitter sharing experience
 
-# Build for production
-npm run build
-```
+### **Performance**
+- **Fast Loading**: Optimized images and code splitting
+- **Mobile-First**: Responsive design priority
+- **SEO-Friendly URLs**: Clean, descriptive routing
+- **Structured Data**: Rich snippets for search engines
 
-### Database Management
+## 🚀 Getting Started
 
-```bash
-# Run migrations
-npm run migrate
+### **For Users**
+1. Visit [stefna.xyz](https://stefna.xyz)
+2. Sign up with email (OTP verification)
+3. Upload your first image
+4. Choose a generation mode
+5. Watch AI transform your photos!
 
-# Seed presets
-node scripts/admin-seed-presets.js
+### **For Developers**
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables
+4. Run development server: `npm run dev`
+5. Deploy to Netlify
 
-# Cleanup placeholder users
-node scripts/cleanup-placeholder-users.js
-```
+## 📊 Analytics & Monitoring
 
-### Deployment
+- **Google Analytics 4**: Comprehensive usage tracking
+- **User Behavior**: Generation patterns and preferences
+- **Performance Metrics**: Load times and user engagement
+- **Error Tracking**: Real-time issue monitoring
 
-```bash
-# Deploy to Netlify
-git push origin main
+## 🔒 Privacy & Security
 
-# Or manual deployment
-netlify deploy --prod
-```
+- **Data Protection**: Secure user data handling
+- **Content Moderation**: AI-powered safety checks
+- **Secure Authentication**: JWT and OTP security
+- **File Security**: Upload validation and scanning
 
-## 📊 Admin Dashboard
+## 🌟 What Makes Stefna Special
 
-### Features
-- **Media Browser**: View and manage all generated content
-- **User Management**: View users, adjust credits, ban users
-- **System Configuration**: Manage presets, credits, settings
-- **Analytics**: Generation statistics and usage data
-- **Logs**: System logs and error tracking
+- **Multiple AI Providers**: Access to the best AI models
+- **Professional Quality**: Studio-grade results
+- **Creative Freedom**: From presets to custom prompts
+- **Mobile-Friendly**: Optimized for all devices
+- **Secure & Fast**: Enterprise-grade security and performance
 
-### Access
-- **URL**: `/dashboard/management/control`
-- **Authentication**: Admin secret required
-- **Privacy**: Noindex, nofollow meta tags
+## 📈 Future Roadmap
 
-## 🔧 API Endpoints
-
-### Generation
-- `POST /unified-generate-background`: Main generation endpoint
-- `POST /credits-reserve`: Reserve credits for generation
-- `POST /credits-finalize`: Finalize credit usage
-
-### Media
-- `GET /get-user-media`: Fetch user's media
-- `GET /get-public-feed`: Fetch public feed
-- `DELETE /delete-media`: Delete media
-
-### User
-- `GET /get-user-profile`: Fetch user profile
-- `POST /update-profile`: Update user profile
-- `POST /change-email`: Change user email
-
-### Admin
-- `GET /admin-media`: Admin media management
-- `GET /admin-config`: System configuration
-- `POST /admin-ban-user`: Ban user
-- `POST /admin-adjust-credits`: Adjust user credits
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Generation Fails**
-- Check API keys in environment variables
-- Verify credit balance
-- Check Netlify function logs
-
-**Database Errors**
-- Run migrations: `npm run migrate`
-- Check database connection
-- Verify `DATABASE_URL` format
-
-**Image Upload Issues**
-- Verify Cloudinary credentials
-- Check file size limits
-- Ensure proper file format
-
-### Debug Mode
-
-```bash
-# Enable debug logging
-DEBUG=true npm run dev
-
-# View Netlify function logs
-netlify functions:logs
-```
-
-## 📈 Performance
-
-### Optimizations
-- **Image Optimization**: Cloudinary automatic optimization
-- **Lazy Loading**: Images load as needed
-- **Caching**: Browser and CDN caching
-- **Code Splitting**: Dynamic imports for better loading
-
-### Monitoring
-- **Netlify Analytics**: Performance monitoring
-- **Error Tracking**: Automatic error logging
-- **User Analytics**: Generation statistics
-
-## 🤝 Contributing
-
-1. **Fork** the repository
-2. **Create** a feature branch
-3. **Make** your changes
-4. **Test** thoroughly
-5. **Submit** a pull request
-
-## 📄 License
-
-Private & Confidential - All rights reserved
-
-## 🆘 Support
-
-For technical support or questions:
-- Check the [CURRENT_STATE.md](./CURRENT_STATE.md) for detailed documentation
-- Review the [DEVELOPMENT_LOG_2024_12_19.md](./DEVELOPMENT_LOG_2024_12_19.md) for recent changes
-- Contact the development team
+- **Mobile App**: Native iOS and Android applications
+- **Advanced Editing**: More professional tools
+- **Community Features**: Enhanced social interactions
+- **API Access**: Developer-friendly API endpoints
+- **Enterprise Solutions**: Business and team features
 
 ---
 
-**Stefna AI** - Transforming creativity with AI technology 🎨✨
+**Transform your photos into art. Experience the future of AI creativity with Stefna.**
+
+🌐 [stefna.xyz](https://stefna.xyz) | 📧 hello@stefna.xyz | 🐦 [@stefna_ai](https://twitter.com/stefna_ai)
