@@ -1192,7 +1192,7 @@ const ProfileScreen: React.FC = () => {
   return (
     <div className="min-h-screen bg-glossy-black-950 flex">
       {/* Sidebar - 20% */}
-      <div className="w-[20%] bg-black p-4 pt-20 sticky top-0 h-screen overflow-y-auto flex flex-col">
+      <div className="w-[20%] bg-black p-4 pt-20 sticky top-0 h-screen overflow-hidden flex flex-col">
         {/* Back Arrow - Top Left */}
         <button 
           onClick={() => navigate('/')}
@@ -1205,7 +1205,7 @@ const ProfileScreen: React.FC = () => {
 
 
         {/* All Navigation Items in One Block */}
-        <div className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           <div className="space-y-1">
 
 
