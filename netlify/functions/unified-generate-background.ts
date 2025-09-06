@@ -2005,7 +2005,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
     'ghibli_reaction': 'ghibli_reaction_generation',
     'story_time': 'story_time_generate',
     'neo_glitch': 'neo_glitch_generation',
-    'edit': 'edit_photo_generation'
+    'edit': 'edit_generation'
   };
 
   const action = actionMap[request.mode];
@@ -2391,7 +2391,19 @@ export const handler: Handler = async (event, context) => {
 
     // Check credits FIRST before any processing
     const creditsNeeded = 2; // All generations cost 2 credits
-    const action = `${mode}_generation`;
+    
+    // Use proper action mapping
+    const actionMap: Record<GenerationMode, string> = {
+      'presets': 'presets_generation',
+      'custom': 'custom_prompt_generation',
+      'emotion_mask': 'emotion_mask_generation',
+      'ghibli_reaction': 'ghibli_reaction_generation',
+      'story_time': 'story_time_generate',
+      'neo_glitch': 'neo_glitch_generation',
+      'edit': 'edit_generation'
+    };
+    
+    const action = actionMap[mode];
     
     console.log(`💰 [Background] Checking credits FIRST before processing: ${creditsNeeded} credits for ${action}`);
     
