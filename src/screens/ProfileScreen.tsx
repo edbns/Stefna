@@ -1180,7 +1180,7 @@ const ProfileScreen: React.FC = () => {
   return (
     <div className="min-h-screen bg-glossy-black-950 flex">
       {/* Sidebar - 20% */}
-      <div className="w-[20%] bg-black p-4 pt-20 sticky top-0 h-screen overflow-hidden flex flex-col">
+      <div className="w-[20%] bg-black p-4 sticky top-0 h-screen overflow-hidden flex flex-col">
         {/* Back Arrow - Top Left - Sticky */}
         <button 
           onClick={() => navigate('/')}
