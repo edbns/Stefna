@@ -1,4 +1,5 @@
 // netlify/functions/send-referral-invite.ts
+// CACHE BUSTER: 2025-01-20 - Force function cache invalidation
 import { Handler } from '@netlify/functions';
 import { Resend } from 'resend';
 
