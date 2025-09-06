@@ -125,18 +125,6 @@ const ProfileScreen: React.FC = () => {
     }
   }, [])
 
-  // Handle user media updates (after saves)
-  useEffect(() => {
-    const handleUserMediaUpdated = () => {
-      console.log('🔄 User media updated event received, refreshing profile media...')
-      loadProfileFromDatabase()
-    }
-
-    window.addEventListener('userMediaUpdated', handleUserMediaUpdated)
-    return () => {
-      window.removeEventListener('userMediaUpdated', handleUserMediaUpdated)
-    }
-  }, [])
 
 
 
