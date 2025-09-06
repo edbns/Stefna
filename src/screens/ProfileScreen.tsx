@@ -562,12 +562,15 @@ const ProfileScreen: React.FC = () => {
   }
 
   // 🚀 INFINITE SCROLL: Load user media with pagination support
-  const loadUserMedia = async (isInitialLoad: boolean = true) => {
+  const loadUserMedia = async (isInitialLoad: boolean = true, pageNumber?: number) => {
     // Prevent duplicate loading only for non-initial loads
     if (isLoading && !isInitialLoad) {
       console.log('⚠️ [ProfileScreen] Already loading media, skipping duplicate call');
       return;
     }
+    
+    // Use provided page number or current mediaPage
+    const currentPage = pageNumber !== undefined ? pageNumber : mediaPage;
     
     try {
       // Get current user ID from auth service or use stored ID from profile
@@ -652,11 +655,11 @@ const ProfileScreen: React.FC = () => {
           setUserMedia(allMedia);
         } else {
           // Authenticated user: fetch from server with JWT and pagination
-          const offset = isInitialLoad ? 0 : mediaPage * mediaPageSize;
+          const offset = isInitialLoad ? 0 : currentPage * mediaPageSize;
           const limit = mediaPageSize;
           
           console.log('🚀 [ProfileScroll] Loading media page:', {
-            page: mediaPage,
+            page: currentPage,
             offset,
             limit,
             isInitialLoad
@@ -793,9 +796,12 @@ const ProfileScreen: React.FC = () => {
     setIsLoadingMoreMedia(true);
     
     try {
-      // Increment page before loading to get the next page
-      setMediaPage(prev => prev + 1);
-      await loadUserMedia(false); // false = not initial load
+      // Calculate next page number
+      const nextPage = mediaPage + 1;
+      setMediaPage(nextPage);
+      
+      // Load media with the correct page number
+      await loadUserMedia(false, nextPage);
     } catch (error) {
       console.error('❌ [ProfileScroll] Failed to load more media:', error);
       // Revert page increment on error
