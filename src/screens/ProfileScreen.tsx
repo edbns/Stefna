@@ -1602,7 +1602,6 @@ const ProfileScreen: React.FC = () => {
                 onMediaClick={handleMediaClick}
                 onEdit={handleEditDraft}
                 onDelete={handleDeleteDraft}
-                onShare={handleShare}
                 showActions={true}
                 className="pb-20"
                 deletingMediaIds={deletingMediaIds}
