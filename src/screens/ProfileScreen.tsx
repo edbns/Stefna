@@ -1958,18 +1958,10 @@ const ProfileScreen: React.FC = () => {
 
             {/* Header */}
             <div className="text-center mb-6">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </div>
-              </div>
-              <h1 className="text-xl font-bold text-white mb-2">⚠️ Delete Account</h1>
-              <p className="text-white/60 mb-4">This action cannot be undone!</p>
+              <h1 className="text-xl font-bold text-white mb-4">Delete Account</h1>
               
               {/* Warning Details */}
-              <div className="text-left bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
+              <div className="text-center mb-4">
                 <p className="text-white/80 text-sm mb-2 font-medium">This will permanently delete:</p>
                 <ul className="text-white/70 text-sm space-y-1">
                   <li>• All your media and content</li>
