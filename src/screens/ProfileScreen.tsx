@@ -441,9 +441,12 @@ const ProfileScreen: React.FC = () => {
         
         // Background refresh to ensure database sync
         setTimeout(() => {
-          loadUserMedia().catch(error => {
-            console.warn('Background refresh failed:', error)
-          })
+          const user = authService.getCurrentUser()
+          if (user) {
+            loadUserMedia().catch(error => {
+              console.warn('Background refresh failed:', error)
+            })
+          }
         }, 500)
       } else {
         addNotification('Delete Failed', 'No media items were deleted', 'error')
@@ -551,9 +554,12 @@ const ProfileScreen: React.FC = () => {
       
       // Background refresh to ensure database sync and user privacy
       setTimeout(() => {
-        loadUserMedia().catch(error => {
-          console.warn('Background refresh failed:', error)
-        })
+        const user = authService.getCurrentUser()
+        if (user) {
+          loadUserMedia().catch(error => {
+            console.warn('Background refresh failed:', error)
+          })
+        }
       }, 1000)
       
     } catch (error) {
@@ -864,9 +870,14 @@ const ProfileScreen: React.FC = () => {
       if (removeId) {
         setUserMedia(prev => prev.filter(m => m.id !== removeId))
       }
-      // Only refresh from server if explicitly requested
+      // Only refresh from server if explicitly requested AND user is authenticated
       if (e?.detail?.needsServerSync) {
-        loadUserMedia()
+        const user = authService.getCurrentUser()
+        if (user) {
+          loadUserMedia()
+        } else {
+          console.log('⚠️ [ProfileScreen] User not authenticated, skipping server sync')
+        }
       }
       
       // Also refresh drafts specifically
@@ -1969,9 +1980,12 @@ const ProfileScreen: React.FC = () => {
                 
                 // Background refresh to ensure database sync and user privacy
                 setTimeout(() => {
-                  loadUserMedia().catch(error => {
-                    console.warn('Background refresh failed:', error)
-                  })
+                  const user = authService.getCurrentUser()
+                  if (user) {
+                    loadUserMedia().catch(error => {
+                      console.warn('Background refresh failed:', error)
+                    })
+                  }
                 }, 1000)
                 
                 console.log('✅ Local state updated, media removed from UI')
