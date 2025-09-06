@@ -68,12 +68,19 @@ export const handler: Handler = async (event) => {
       `, [userId])
     ]);
 
+    console.log('📊 [Referral Stats] Raw query results:', {
+      userId,
+      referralAttempts,
+      referralSignups,
+      userEmail
+    });
+
     // Calculate credits earned (50 credits per successful referral)
     const creditsEarned = (referralSignups?.successful_signups || 0) * 50;
 
     const stats = {
       referralCode: userEmail?.email || '',
-      totalReferrals: referralAttempts?.total_attempts || 0, // Friends invited (attempts)
+      totalReferrals: referralAttempts?.total_attempts || 0, // Friends invited (emails sent)
       totalCreditsEarned: creditsEarned, // Credits earned (successful signups)
       recentReferrals: [],
       timestamp: new Date().toISOString()

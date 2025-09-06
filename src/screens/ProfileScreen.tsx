@@ -227,7 +227,12 @@ const ProfileScreen: React.FC = () => {
         } else {
           // Fallback: if profile didn't set currentUserId, try to load media anyway
           console.log('⚠️ Profile loaded but no currentUserId set, trying to load media anyway');
-          setTimeout(() => loadUserMedia(), 100);
+          setTimeout(() => {
+            const user = authService.getCurrentUser()
+            if (user) {
+              loadUserMedia();
+            }
+          }, 100);
         }
       });
       
@@ -558,6 +563,12 @@ const ProfileScreen: React.FC = () => {
 
   // 🚀 INFINITE SCROLL: Load user media with pagination support
   const loadUserMedia = async (isInitialLoad: boolean = true) => {
+    // Prevent duplicate loading
+    if (isLoading && isInitialLoad) {
+      console.log('⚠️ [ProfileScreen] Already loading media, skipping duplicate call');
+      return;
+    }
+    
     try {
       // Get current user ID from auth service or use stored ID from profile
       const user = authService.getCurrentUser()
