@@ -1193,7 +1193,7 @@ const ProfileScreen: React.FC = () => {
 
 
         {/* All Navigation Items in One Block */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pt-16">
           <div className="space-y-1">
 
 
