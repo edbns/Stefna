@@ -283,7 +283,7 @@ const ProfileScreen: React.FC = () => {
       }
     }
   }, [])
-  const [referralStats, setReferralStats] = useState<{ invites: number; tokensEarned: number; referralCode: string } | null>(null)
+  const [referralStats, setReferralStats] = useState<{ invites: number; tokensEarned: number; referralCode: string }>({ invites: 0, tokensEarned: 0, referralCode: '' })
   // const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [tokenCount, setTokenCount] = useState(0)
 
@@ -593,8 +593,8 @@ const ProfileScreen: React.FC = () => {
             if (referralRes.ok) {
               const stats = await referralRes.json()
               setReferralStats({
-                invites: stats.referred_count,
-                tokensEarned: stats.credits_from_referrals,
+                invites: stats.referred_count || 0,
+                tokensEarned: stats.credits_from_referrals || 0,
                 referralCode: '' // No codes needed for email-based referrals
               })
             } else {
@@ -1661,7 +1661,7 @@ const ProfileScreen: React.FC = () => {
 
               {/* Invite Friends Content */}
               <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl p-8">
-                {isAuthenticated && referralStats ? (
+                {isAuthenticated ? (
                   <div className="space-y-6">
                     {/* Benefits Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1713,18 +1713,14 @@ const ProfileScreen: React.FC = () => {
                     </form>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                       <div className="bg-white/5 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-white">{referralStats.invites}</div>
+                        <div className="text-2xl font-bold text-white">{referralStats.invites || 0}</div>
                         <div className="text-white/60 text-sm">Friends Invited</div>
                       </div>
                       <div className="bg-white/5 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-white">{referralStats.tokensEarned}</div>
+                        <div className="text-2xl font-bold text-white">{referralStats.tokensEarned || 0}</div>
                         <div className="text-white/60 text-sm">Credits Earned</div>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-white">{profileData.totalLikesReceived || 0}</div>
-                        <div className="text-white/60 text-sm">Total Likes</div>
                       </div>
                     </div>
                   </div>
