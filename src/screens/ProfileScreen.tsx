@@ -794,6 +794,47 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
+  // 🚀 INFINITE SCROLL: Handle last item intersection
+  const lastItemRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  const handleLastItemRef = (ref: HTMLDivElement | null) => {
+    // Clean up previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+    
+    lastItemRef.current = ref;
+    
+    if (!ref) return;
+    
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMoreMedia && !isLoadingMoreMedia) {
+          console.log('🚀 [ProfileScroll] Last item visible, loading more...');
+          loadMoreMedia();
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '100px'
+      }
+    );
+    
+    observerRef.current.observe(ref);
+  };
+
+  // Cleanup observer on unmount
+  useEffect(() => {
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
+
   // Load profile data when component mounts and user is authenticated
 
   // Load user media on component mount and when updated
@@ -1534,8 +1575,8 @@ const ProfileScreen: React.FC = () => {
                   onToggleSelection={toggleMediaSelection}
                   // Enhanced loading states for actions
                   deletingMediaIds={deletingMediaIds}
-                  // 🚀 INFINITE SCROLL: Simplified implementation for now
-                  onLastItemRef={undefined}
+                  // 🚀 INFINITE SCROLL: Connect intersection observer
+                  onLastItemRef={handleLastItemRef}
                 />
                 
                 {/* 🚀 INFINITE SCROLL: Loading indicator */}
