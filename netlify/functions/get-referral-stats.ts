@@ -45,27 +45,35 @@ export const handler: Handler = async (event) => {
       return json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get user's referral statistics from referral_attempts table
-    const referralStats = await qOne(`
-      SELECT 
-        COUNT(*) as total_referrals,
-        COUNT(CASE WHEN attempt_type = 'referral_processed' THEN 1 END) as successful_referrals
-      FROM referral_attempts 
-      WHERE referrer_id = $1
-    `, [userId]);
-
-    // Get user's email for referral identifier
-    const userEmail = await qOne(`
-      SELECT email FROM users WHERE id = $1
-    `, [userId]);
+    // Get user's referral statistics from both tables
+    const [referralAttempts, referralSignups, userEmail] = await Promise.all([
+      // Count referral attempts (emails sent)
+      qOne(`
+        SELECT COUNT(*) as total_attempts
+        FROM referral_attempts 
+        WHERE referrer_id = $1 AND attempt_type = 'email_sent'
+      `, [userId]),
+      
+      // Count successful signups (actual referrals)
+      qOne(`
+        SELECT COUNT(*) as successful_signups
+        FROM referral_signups 
+        WHERE referrer_id = $1
+      `, [userId]),
+      
+      // Get user's email for referral identifier
+      qOne(`
+        SELECT email FROM users WHERE id = $1
+      `, [userId])
+    ]);
 
     // Calculate credits earned (50 credits per successful referral)
-    const creditsEarned = (referralStats?.successful_referrals || 0) * 50;
+    const creditsEarned = (referralSignups?.successful_signups || 0) * 50;
 
     const stats = {
       referralCode: userEmail?.email || '',
-      totalReferrals: referralStats?.total_referrals || 0,
-      totalCreditsEarned: creditsEarned,
+      totalReferrals: referralAttempts?.total_attempts || 0, // Friends invited (attempts)
+      totalCreditsEarned: creditsEarned, // Credits earned (successful signups)
       recentReferrals: [],
       timestamp: new Date().toISOString()
     };
