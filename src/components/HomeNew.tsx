@@ -4314,7 +4314,7 @@ const HomeNew: React.FC = () => {
             </div>
             
             {/* Clean disclaimer row under composer */}
-            <div className="mt-3 text-center">
+            <div className="mt-1 text-center">
               <p className="text-xs text-white">
                 <span className="font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent animate-text-fade">
                   Disclaimer:
