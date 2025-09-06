@@ -42,7 +42,7 @@ Transform your photos into stunning AI art with cinematic glow, anime reactions,
 - **Urban Decay**: Tokyo-inspired cyberpunk vibes
 - **High-Tech Low-Life**: Sci-fi meets street art
 
-### **Story Time**
+### **Story Time** (Coming Soon)
 - **Video Generation**: Transform images into dynamic videos
 - **Narrative Flow**: AI creates story-driven content
 - **Multiple Scenes**: Complex multi-scene transformations
@@ -197,4 +197,4 @@ Transform your photos into stunning AI art with cinematic glow, anime reactions,
 
 **Transform your photos into art. Experience the future of AI creativity with Stefna.**
 
-🌐 [stefna.xyz](https://stefna.xyz) | 📧 hello@stefna.xyz | 🐦 [@stefna_ai](https://twitter.com/stefna_ai)
+[stefna.xyz](https://stefna.xyz) | hello@stefna.xyz | [@StefnaXYZ](https://twitter.com/StefnaXYZ)
