@@ -173,9 +173,9 @@ Your friend invited you to try Stefna — the AI photo transformation studio tha
 Join now and you'll receive +25 free credits to get started right away.
 
 Claim your credits here:
-https://stefna.xyz/
+https://stefna.xyz/auth?ref=${referralData.referrerEmail}
 
-No account? No problem. It takes seconds.
+No account? Get one. It only takes seconds.
 
 Let your creativity run wild — no limits.`,
       type: 'referral',
