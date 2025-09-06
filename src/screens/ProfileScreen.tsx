@@ -589,22 +589,26 @@ const ProfileScreen: React.FC = () => {
         try {
           // Load referral stats from real database
           try {
-            const referralRes = await authenticatedFetch('/.netlify/functions/get-referral-stats', { method: 'GET' })
+            const referralRes = await authenticatedFetch('/.netlify/functions/get-user-referral-stats', { method: 'GET' })
             if (referralRes.ok) {
-              const stats = await referralRes.json()
-              setReferralStats({
-                invites: stats.referred_count || 0,
-                tokensEarned: stats.credits_from_referrals || 0,
-                referralCode: '' // No codes needed for email-based referrals
-              })
+              const response = await referralRes.json()
+              if (response.ok && response.stats) {
+                setReferralStats({
+                  invites: response.stats.invites || 0,
+                  tokensEarned: response.stats.tokensEarned || 0,
+                  referralCode: response.stats.referralCode || ''
+                })
+              } else {
+                // Fallback to default values
+                setReferralStats({ invites: 0, tokensEarned: 0, referralCode: '' })
+              }
             } else {
-              // Fallback to client service
-              // Token service removed - use default values
+              // Fallback to default values
               setReferralStats({ invites: 0, tokensEarned: 0, referralCode: '' })
             }
-          } catch {
-            // Fallback to client service
-            // Token service removed - use default values
+          } catch (error) {
+            console.error('❌ [ProfileScreen] Failed to load referral stats:', error)
+            // Fallback to default values
             setReferralStats({ invites: 0, tokensEarned: 0, referralCode: '' })
           }
           
@@ -1172,7 +1176,7 @@ const ProfileScreen: React.FC = () => {
         let errorMessage = result.error || 'Failed to send invitation'
         
         if (result.error === 'REFERRAL_VALIDATION_FAILED') {
-          errorMessage = result.message || 'Referral validation failed'
+          errorMessage = 'Referral validation failed'
         } else if (result.error === 'ACCOUNT_LIMIT_EXCEEDED') {
           errorMessage = 'Too many accounts created from this IP address. Please try again later.'
         } else if (result.error === 'REFERRER_NOT_FOUND') {
