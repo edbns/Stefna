@@ -844,16 +844,9 @@ const ProfileScreen: React.FC = () => {
 
   // Load profile data when component mounts and user is authenticated
 
-  // Track if initial media load is complete to prevent duplicates
-  const [hasLoadedInitialMedia, setHasLoadedInitialMedia] = useState(false)
 
-  // Load user media on component mount and when updated
+  // Listen for user media updates from other components
   useEffect(() => {
-    if (!hasLoadedInitialMedia) {
-      loadUserMedia()
-      setHasLoadedInitialMedia(true)
-    }
-    
     // Listen for user media updates from other components
     const handleUserMediaUpdated = (e: any) => {
       console.log('🔄 ProfileScreen received userMediaUpdated event, refreshing...')
