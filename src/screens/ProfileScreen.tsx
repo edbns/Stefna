@@ -563,8 +563,8 @@ const ProfileScreen: React.FC = () => {
 
   // 🚀 INFINITE SCROLL: Load user media with pagination support
   const loadUserMedia = async (isInitialLoad: boolean = true) => {
-    // Prevent duplicate loading
-    if (isLoading && isInitialLoad) {
+    // Prevent duplicate loading only for non-initial loads
+    if (isLoading && !isInitialLoad) {
       console.log('⚠️ [ProfileScreen] Already loading media, skipping duplicate call');
       return;
     }
