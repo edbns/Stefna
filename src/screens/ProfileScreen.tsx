@@ -716,10 +716,9 @@ const ProfileScreen: React.FC = () => {
               setUserMedia(transformedMedia);
               setMediaPage(0);
             } else {
-              // Load more: append to existing media
+              // Load more: append to existing media (page already incremented in loadMoreMedia)
               console.log('📊 Appending', transformedMedia.length, 'more items to existing media');
               setUserMedia(prev => [...prev, ...transformedMedia]);
-              setMediaPage(prev => prev + 1);
             }
             
             // Update hasMore flag based on response
@@ -786,9 +785,13 @@ const ProfileScreen: React.FC = () => {
     setIsLoadingMoreMedia(true);
     
     try {
+      // Increment page before loading to get the next page
+      setMediaPage(prev => prev + 1);
       await loadUserMedia(false); // false = not initial load
     } catch (error) {
       console.error('❌ [ProfileScroll] Failed to load more media:', error);
+      // Revert page increment on error
+      setMediaPage(prev => Math.max(0, prev - 1));
     } finally {
       setIsLoadingMoreMedia(false);
     }
