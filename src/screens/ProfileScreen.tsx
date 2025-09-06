@@ -1184,7 +1184,7 @@ const ProfileScreen: React.FC = () => {
         {/* Back Arrow - Top Left - Sticky */}
         <button 
           onClick={() => navigate('/')}
-          className="sticky top-4 left-4 text-white/60 hover:text-white transition-colors duration-300 z-10 mb-2 bg-black/50 backdrop-blur-sm rounded-full p-2"
+          className="sticky top-2 left-4 text-white/60 hover:text-white transition-colors duration-300 z-10 mb-2 bg-black/50 backdrop-blur-sm rounded-full p-2"
           title="Go back"
         >
           <ArrowLeft size={20} />
