@@ -984,25 +984,6 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
-  // Simple share function that copies media URL to clipboard
-  const handleShare = async (media: UserMedia) => {
-    try {
-      // Auth guard: require JWT before attempting to share
-      if (!authService.getToken()) {
-        addNotification('Login Required', 'Please sign in to share media', 'warning')
-        navigate('/auth')
-        return
-      }
-
-      // Copy media URL to clipboard
-      await navigator.clipboard.writeText(media.url)
-      addNotification('Link Copied', 'Media link copied to clipboard!', 'success')
-      
-    } catch (error) {
-      console.error('Failed to copy media link:', error)
-      addNotification('Share Failed', 'Failed to copy link. Please try again.', 'error')
-    }
-  }
 
   // Handle unsharing media (making it private)
   const handleUnshare = async (media: UserMedia) => {
@@ -1537,7 +1518,6 @@ const ProfileScreen: React.FC = () => {
                   columns={3}
                   onMediaClick={handleMediaClick}
                   onDownload={handleDownload}
-                  onShare={handleShare}
                   onDelete={handleDeleteMedia}
                   showActions={true}
                   className="pb-20"
