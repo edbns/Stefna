@@ -43,22 +43,14 @@ export const MediaUploadAgreement: React.FC<MediaUploadAgreementProps> = ({
     }
   }, [isOpen, hasUserAgreed, isLoading]);
 
-  // Debug logging
-  console.log('🔍 MediaUploadAgreement render:', { 
-    isOpen, 
-    hasUserAgreed, 
-    isLoading, 
-    parentUserHasAgreed 
-  });
+  // Debug logging removed - component now only renders when needed
 
   // If user has already agreed or still loading, don't show the modal
   if (hasUserAgreed || isLoading) {
-    console.log('✅ User has agreed or still loading, not showing modal');
     return null;
   }
 
   if (!isOpen) {
-    console.log('❌ Modal not open, not showing');
     return null;
   }
 

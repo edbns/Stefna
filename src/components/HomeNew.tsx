@@ -4329,14 +4329,16 @@ const HomeNew: React.FC = () => {
 
       {/* Video Job Status Display removed in favor of unified toasts */}
 
-      {/* Media Upload Agreement Modal */}
-      <MediaUploadAgreement
-        isOpen={showUploadAgreement}
-        onClose={handleUploadAgreementCancel}
-        onAccept={handleUploadAgreementAccept}
-        onAgreementAccepted={() => setUserHasAgreed(true)}
-        userHasAgreed={userHasAgreed || false}
-      />
+      {/* Media Upload Agreement Modal - only render when needed */}
+      {showUploadAgreement && (
+        <MediaUploadAgreement
+          isOpen={showUploadAgreement}
+          onClose={handleUploadAgreementCancel}
+          onAccept={handleUploadAgreementAccept}
+          onAgreementAccepted={() => setUserHasAgreed(true)}
+          userHasAgreed={userHasAgreed || false}
+        />
+      )}
         </>
       )}
 
