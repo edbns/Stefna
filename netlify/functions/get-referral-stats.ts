@@ -46,7 +46,7 @@ export const handler: Handler = async (event) => {
       return json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get user's referral statistics from referral_attempts table
+    // Get user's referral statistics from both tables
     const [referralAttempts, referralSignups, userEmail] = await Promise.all([
       // Count referral attempts (emails sent)
       qOne(`
@@ -55,11 +55,11 @@ export const handler: Handler = async (event) => {
         WHERE referrer_id = $1 AND attempt_type = 'email_sent'
       `, [userId]),
       
-      // Count successful signups (actual referrals) - use referral_attempts table
+      // Count successful signups (actual referrals)
       qOne(`
         SELECT COUNT(*) as successful_signups
-        FROM referral_attempts 
-        WHERE referrer_id = $1 AND attempt_type = 'referral_processed'
+        FROM referral_signups 
+        WHERE referrer_id = $1
       `, [userId]),
       
       // Get user's email for referral identifier
