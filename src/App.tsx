@@ -40,34 +40,6 @@ const ComingSoonPage: React.FC = () => {
   )
 }
 
-const MobileRestrictedPage: React.FC = () => {
-  return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="text-center max-w-md p-8">
-        <div className="w-16 h-16 mx-auto mb-8">
-          <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain" />
-        </div>
-        
-        <h1 className="text-2xl font-bold text-white mb-4">Mobile App Coming Soon</h1>
-        <p className="text-gray-300 mb-6">
-          For the best experience, please visit our website on desktop or wait for our mobile app release.
-        </p>
-        
-        <div className="space-y-4">
-          <button 
-            onClick={() => window.location.href = '/'}
-            className="w-full bg-white text-black py-3 px-6 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-          >
-            View Gallery
-          </button>
-          <p className="text-sm text-gray-400">
-            Mobile app features coming soon
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 const AppContent: React.FC = () => {
   const [isLaunched, setIsLaunched] = useState<boolean | null>(null);
@@ -144,16 +116,16 @@ const AppContent: React.FC = () => {
           {/* Home route - always accessible */}
           <Route path="/" element={<HomeNew />} />
           
-          {/* Mobile restrictions - show restricted page for non-home routes */}
+          {/* Mobile restrictions - redirect to home for non-home routes */}
           {isMobile ? (
             <>
-              <Route path="/auth" element={<MobileRestrictedPage />} />
-              <Route path="/profile" element={<MobileRestrictedPage />} />
-              <Route path="/dashboard/management/control" element={<MobileRestrictedPage />} />
+              <Route path="/auth" element={<Navigate to="/" replace />} />
+              <Route path="/profile" element={<Navigate to="/" replace />} />
+              <Route path="/dashboard/management/control" element={<Navigate to="/" replace />} />
               <Route path="/gallery" element={<Navigate to="/" replace />} />
-              <Route path="/privacy" element={<MobileRestrictedPage />} />
-              <Route path="/terms" element={<MobileRestrictedPage />} />
-              <Route path="/cookies" element={<MobileRestrictedPage />} />
+              <Route path="/privacy" element={<Navigate to="/" replace />} />
+              <Route path="/terms" element={<Navigate to="/" replace />} />
+              <Route path="/cookies" element={<Navigate to="/" replace />} />
               <Route path="/coming-soon" element={<ComingSoonPage />} />
             </>
           ) : (
