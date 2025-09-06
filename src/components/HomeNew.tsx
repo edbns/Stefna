@@ -3783,9 +3783,9 @@ const HomeNew: React.FC = () => {
                       placeholder={(() => {
                         switch (composerState.mode) {
                           case 'edit': 
-                            return "Describe your studio edit (e.g., 'make the man drive the car down the coastline')"
+                            return "Change something, add something — your call ... tap ✨ for a little magic."
                           case 'custom': 
-                            return "Describe your vision... (click ✨ to enhance your prompt)"
+                            return "Type something weird. We'll make it art ... tap ✨ for a little magic."
                           default: 
                             return "Custom prompt (optional) - will be combined with selected preset"
                         }
