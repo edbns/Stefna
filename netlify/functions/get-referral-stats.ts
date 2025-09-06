@@ -45,14 +45,26 @@ export const handler: Handler = async (event) => {
       return json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Referral system was removed during cleanup - return empty stats
+    // Get user's referral statistics from credits_ledger
+    const referralStats = await qOne(`
+      SELECT 
+        COUNT(*) as total_referrals,
+        SUM(amount) as total_credits_earned
+      FROM credits_ledger 
+      WHERE user_id = $1 AND reason = 'referral.referrer'
+    `, [userId]);
+
+    // Get user's email for referral code (using email as referral identifier)
+    const userEmail = await qOne(`
+      SELECT email FROM users WHERE id = $1
+    `, [userId]);
+
     const stats = {
-      referralCode: null,
-      totalReferrals: 0,
-      totalCreditsEarned: 0,
+      referralCode: userEmail?.email || '',
+      totalReferrals: referralStats?.total_referrals || 0,
+      totalCreditsEarned: referralStats?.total_credits_earned || 0,
       recentReferrals: [],
-      timestamp: new Date().toISOString(),
-      note: 'Referral system has been removed'
+      timestamp: new Date().toISOString()
     };
 
     console.log('✅ [Referral Stats] Retrieved stats:', stats);

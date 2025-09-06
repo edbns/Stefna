@@ -589,13 +589,13 @@ const ProfileScreen: React.FC = () => {
         try {
           // Load referral stats from real database
           try {
-            const referralRes = await authenticatedFetch('/.netlify/functions/get-user-referral-stats', { method: 'GET' })
+            const referralRes = await authenticatedFetch('/.netlify/functions/get-referral-stats', { method: 'GET' })
             if (referralRes.ok) {
               const response = await referralRes.json()
-              if (response.ok && response.stats) {
+              if (response.success && response.stats) {
                 setReferralStats({
-                  invites: response.stats.invites || 0,
-                  tokensEarned: response.stats.tokensEarned || 0,
+                  invites: response.stats.totalReferrals || 0,
+                  tokensEarned: response.stats.totalCreditsEarned || 0,
                   referralCode: response.stats.referralCode || ''
                 })
               } else {
