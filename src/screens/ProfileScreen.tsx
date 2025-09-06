@@ -213,6 +213,19 @@ const ProfileScreen: React.FC = () => {
   const [isSendingInvite, setIsSendingInvite] = useState(false)
   const [inviteError, setInviteError] = useState('')
 
+  // Check authentication status on component mount
+  useEffect(() => {
+    const user = authService.getCurrentUser()
+    if (user) {
+      setIsAuthenticated(true)
+      setCurrentUserId(user.id)
+      console.log('✅ User authenticated on mount:', user.id)
+    } else {
+      setIsAuthenticated(false)
+      console.log('❌ User not authenticated on mount')
+    }
+  }, [])
+
   // Load profile data when component mounts and user is authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -579,9 +592,8 @@ const ProfileScreen: React.FC = () => {
         console.log('✅ Set currentUserId from auth service:', user.id);
       }
       
-      // Set authentication status and user tier
+      // Authentication status already set in initial useEffect
       if (user) {
-        setIsAuthenticated(true)
         // Map user tier from auth service
             // Removed tier system - all users get same experience
         
@@ -635,7 +647,7 @@ const ProfileScreen: React.FC = () => {
           setTokenCount(30)
         }
       } else {
-        setIsAuthenticated(false)
+        // Authentication status already set in initial useEffect
         // Removed tier system - all users get same experience
       }
 
