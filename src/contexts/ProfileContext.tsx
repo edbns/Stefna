@@ -97,7 +97,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
             // allowRemix removed
             onboarding_completed: userData.onboarding_completed || false,
             createdAt: userData.createdAt,
-            totalLikesReceived: userData.user?.totalLikesReceived || 0
+            totalLikesReceived: Math.max(userData.user?.totalLikesReceived || 0, 0)
           }
           
           setProfileData(profileData)

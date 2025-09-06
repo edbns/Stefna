@@ -1240,7 +1240,7 @@ const ProfileScreen: React.FC = () => {
                       <Heart size={16} className="text-white/60" />
                       <span className="text-xs font-medium text-white/60">{item.label}</span>
                     </div>
-                    <span className="text-xs font-medium text-white">{profileData.totalLikesReceived || 0}</span>
+                    <span className="text-xs font-medium text-white">{Math.max(profileData.totalLikesReceived || 0, 0)}</span>
                   </div>
                 )
               }
