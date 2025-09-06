@@ -439,15 +439,7 @@ const ProfileScreen: React.FC = () => {
           'success'
         )
         
-        // Background refresh to ensure database sync
-        setTimeout(() => {
-          const user = authService.getCurrentUser()
-          if (user) {
-            loadUserMedia().catch(error => {
-              console.warn('Background refresh failed:', error)
-            })
-          }
-        }, 500)
+        // Background refresh removed to prevent duplicate loading
       } else {
         addNotification('Delete Failed', 'No media items were deleted', 'error')
       }
@@ -552,15 +544,7 @@ const ProfileScreen: React.FC = () => {
       setSelectedMediaIds(new Set())
       setIsSelectionMode(false)
       
-      // Background refresh to ensure database sync and user privacy
-      setTimeout(() => {
-        const user = authService.getCurrentUser()
-        if (user) {
-          loadUserMedia().catch(error => {
-            console.warn('Background refresh failed:', error)
-          })
-        }
-      }, 1000)
+      // Background refresh removed to prevent duplicate loading
       
     } catch (error) {
       console.error('❌ Bulk delete error:', error)
@@ -605,18 +589,18 @@ const ProfileScreen: React.FC = () => {
                   tokensEarned: response.stats.totalCreditsEarned || 0,
                   referralCode: response.stats.referralCode || ''
                 })
+                console.log('✅ [ProfileScreen] Referral stats loaded:', response.stats)
               } else {
-                // Fallback to default values
-                setReferralStats({ invites: 0, tokensEarned: 0, referralCode: '' })
+                console.log('⚠️ [ProfileScreen] No referral stats in response, keeping current values')
+                // Don't reset to 0 - keep current values to prevent flickering
               }
             } else {
-              // Fallback to default values
-              setReferralStats({ invites: 0, tokensEarned: 0, referralCode: '' })
+              console.log('⚠️ [ProfileScreen] Failed to load referral stats, keeping current values')
+              // Don't reset to 0 - keep current values to prevent flickering
             }
           } catch (error) {
             console.error('❌ [ProfileScreen] Failed to load referral stats:', error)
-            // Fallback to default values
-            setReferralStats({ invites: 0, tokensEarned: 0, referralCode: '' })
+            // Don't reset to 0 - keep current values to prevent flickering
           }
           
           // Load token count - simplified for new credits system
@@ -1187,11 +1171,31 @@ const ProfileScreen: React.FC = () => {
         setInviteSuccess('Invitation sent successfully!')
         setInviteEmail('')
         
-        // Update referral stats
+        // Update referral stats optimistically
         if (referralStats) {
           const updatedStats = { ...referralStats, invites: referralStats.invites + 1 }
           setReferralStats(updatedStats)
         }
+        
+        // Refresh stats from server to ensure accuracy
+        setTimeout(async () => {
+          try {
+            const referralRes = await authenticatedFetch('/.netlify/functions/get-referral-stats', { method: 'GET' })
+            if (referralRes.ok) {
+              const response = await referralRes.json()
+              if (response.success && response.stats) {
+                setReferralStats({
+                  invites: response.stats.totalReferrals || 0,
+                  tokensEarned: response.stats.totalCreditsEarned || 0,
+                  referralCode: response.stats.referralCode || ''
+                })
+                console.log('✅ [ProfileScreen] Referral stats refreshed after invite:', response.stats)
+              }
+            }
+          } catch (error) {
+            console.error('❌ [ProfileScreen] Failed to refresh referral stats:', error)
+          }
+        }, 1000)
         
         addNotification('Invitation Sent', 'Your friend will receive an email invitation shortly', 'success')
       } else {
@@ -1996,15 +2000,7 @@ const ProfileScreen: React.FC = () => {
                   }
                 }
                 
-                // Background refresh to ensure database sync and user privacy
-                setTimeout(() => {
-                  const user = authService.getCurrentUser()
-                  if (user) {
-                    loadUserMedia().catch(error => {
-                      console.warn('Background refresh failed:', error)
-                    })
-                  }
-                }, 1000)
+                // Background refresh removed to prevent duplicate loading
                 
                 console.log('✅ Local state updated, media removed from UI')
                 
