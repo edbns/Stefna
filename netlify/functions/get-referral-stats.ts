@@ -75,12 +75,23 @@ export const handler: Handler = async (event) => {
       userEmail
     });
 
+    // Handle potential null/undefined results
+    const totalAttempts = referralAttempts?.total_attempts ? parseInt(referralAttempts.total_attempts) : 0;
+    const successfulSignups = referralSignups?.successful_signups ? parseInt(referralSignups.successful_signups) : 0;
+    const userEmailValue = userEmail?.email || '';
+
+    console.log('📊 [Referral Stats] Processed values:', {
+      totalAttempts,
+      successfulSignups,
+      userEmailValue
+    });
+
     // Calculate credits earned (50 credits per successful referral)
-    const creditsEarned = (referralSignups?.successful_signups || 0) * 50;
+    const creditsEarned = successfulSignups * 50;
 
     const stats = {
-      referralCode: userEmail?.email || '',
-      totalReferrals: referralAttempts?.total_attempts || 0, // Friends invited (emails sent)
+      referralCode: userEmailValue,
+      totalReferrals: totalAttempts, // Friends invited (emails sent)
       totalCreditsEarned: creditsEarned, // Credits earned (successful signups)
       recentReferrals: [],
       timestamp: new Date().toISOString()

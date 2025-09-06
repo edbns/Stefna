@@ -1208,7 +1208,7 @@ const ProfileScreen: React.FC = () => {
           }
         }, 1000)
         
-        addNotification('Invitation Sent', 'Your friend will receive an email invitation shortly', 'success')
+        console.log('✅ [Invite] Invitation sent successfully')
       } else {
         // Handle specific validation errors
         let errorMessage = result.error || 'Failed to send invitation'
@@ -1222,12 +1222,12 @@ const ProfileScreen: React.FC = () => {
         }
         
         setInviteError(errorMessage)
-        addNotification('Invitation Failed', errorMessage, 'error')
+        console.log('❌ [Invite] Invitation failed:', errorMessage)
       }
     } catch (error) {
       console.error('Failed to send invite:', error)
       setInviteError('Failed to send invitation. Please try again.')
-      addNotification('Invitation Failed', 'Failed to send invitation. Please try again.', 'error')
+      console.log('❌ [Invite] Network error:', error)
     } finally {
       setIsSendingInvite(false)
     }
