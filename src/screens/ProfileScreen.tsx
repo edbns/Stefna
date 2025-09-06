@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+// CACHE BUSTER: 2025-01-20 - Force frontend cache invalidation
 import { useNavigate } from 'react-router-dom'
 import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, ChevronRight, Coins, Users, Plus, Instagram as InstagramIcon, Facebook as FacebookIcon, Youtube as YouTubeIcon } from 'lucide-react'
 // RemixIcon import removed - no more remix functionality

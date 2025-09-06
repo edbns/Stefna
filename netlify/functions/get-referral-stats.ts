@@ -1,4 +1,5 @@
 import type { Handler } from "@netlify/functions";
+// CACHE BUSTER: 2025-01-20 - Force function cache invalidation
 import { q, qOne, qCount } from './_db';
 import { requireAuth } from "./_lib/auth";
 import { json } from "./_lib/http";
