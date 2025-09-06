@@ -9,7 +9,7 @@ const EMOTION_INSERTS = {
   shock: `Widen the eyes and part the lips slightly to show surprise.`,
   sparkle: `Add gentle sparkles, shimmer in the eyes, and soft blush.`,
   sadness: `Add melancholic emotion with glossy eyes and distant gaze.`,
-  love: `Add warm affection with soft smile and romantic sparkle.`,
+  love: `Add warm sparkle in the eyes, gentle blush, and glowing pastel lighting. Create a dreamy, cozy atmosphere with soft bokeh in the background.`,
 };
 
 export type GhibliReactionPreset = {
@@ -122,8 +122,8 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_love',
     label: 'Love',
-    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.love} Emphasize a soft smile, romantic eye sparkle, gentle blush, and glowing pastel lighting. Create a dreamy, cozy atmosphere with soft bokeh in the background. Maintain identity, skin tone, ethnicity, and facial structure fully intact.`,
-    negative_prompt: `cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face, anime outline, 2D face, manga, exaggerated hearts, stylized lipstick, face distortion, heavy makeup, artificial light, harsh shadows`,
+    prompt: `Transform the human face into a romantic Ghibli-style love reaction while preserving full identity, ethnicity, skin tone, and facial structure. Add soft pink blush on the cheeks, warm sparkle in the eyes, and a gentle, shy smile. Include subtle floating hearts or sparkles around the face to enhance emotional expression. Use pastel cinematic tones and soft golden lighting to create a dreamy, cozy atmosphere. Background should have gentle bokeh with subtle Ghibli-style light flares. Maintain original composition and realism with only slight anime influence.`,
+    negative_prompt: `over-exaggerated anime features, distortion, harsh shadows, washed out, identity loss, extra accessories, cartoonish eyes, blur`,
     strength: 0.35,
     model: 'bfl/flux-pro-1.1-ultra',
     mode: 'i2i',
