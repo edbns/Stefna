@@ -45,24 +45,27 @@ export const handler: Handler = async (event) => {
       return json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get user's referral statistics from credits_ledger
+    // Get user's referral statistics from referral_attempts table
     const referralStats = await qOne(`
       SELECT 
         COUNT(*) as total_referrals,
-        SUM(amount) as total_credits_earned
-      FROM credits_ledger 
-      WHERE user_id = $1 AND reason = 'referral.referrer'
+        COUNT(CASE WHEN attempt_type = 'referral_processed' THEN 1 END) as successful_referrals
+      FROM referral_attempts 
+      WHERE referrer_id = $1
     `, [userId]);
 
-    // Get user's email for referral code (using email as referral identifier)
+    // Get user's email for referral identifier
     const userEmail = await qOne(`
       SELECT email FROM users WHERE id = $1
     `, [userId]);
 
+    // Calculate credits earned (50 credits per successful referral)
+    const creditsEarned = (referralStats?.successful_referrals || 0) * 50;
+
     const stats = {
       referralCode: userEmail?.email || '',
       totalReferrals: referralStats?.total_referrals || 0,
-      totalCreditsEarned: referralStats?.total_credits_earned || 0,
+      totalCreditsEarned: creditsEarned,
       recentReferrals: [],
       timestamp: new Date().toISOString()
     };
