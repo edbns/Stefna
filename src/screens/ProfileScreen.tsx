@@ -1184,7 +1184,7 @@ const ProfileScreen: React.FC = () => {
         {/* Back Arrow - Top Left - Sticky */}
         <button 
           onClick={() => navigate('/')}
-          className="sticky top-6 left-4 text-white/60 hover:text-white transition-colors duration-300 z-10 mb-2 bg-black/50 backdrop-blur-sm rounded-full p-2"
+          className="sticky top-2 left-4 text-white/60 hover:text-white transition-colors duration-300 z-10 mb-2 bg-black/50 backdrop-blur-sm rounded-full p-2"
           title="Go back"
         >
           <ArrowLeft size={20} />
@@ -1193,7 +1193,7 @@ const ProfileScreen: React.FC = () => {
 
 
         {/* All Navigation Items in One Block */}
-        <div className="flex-1 overflow-y-auto pt-6">
+        <div className="flex-1 overflow-y-auto pt-2">
           <div className="space-y-1">
 
 
