@@ -18,7 +18,7 @@ const ThreadsIcon = ({ size, className }: { size: number; className: string }) =
 )
 
 // Custom X (formerly Twitter) icon since lucide-react still has the old Twitter logo
-const XIcon = ({ size, className }: { size: number; className: string }) => (
+const XIconCustom = ({ size, className }: { size: number; className: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
   </svg>
@@ -1181,10 +1181,10 @@ const ProfileScreen: React.FC = () => {
     <div className="min-h-screen bg-glossy-black-950 flex">
       {/* Sidebar - 20% */}
       <div className="w-[20%] bg-black p-4 pt-20 sticky top-0 h-screen overflow-hidden flex flex-col">
-        {/* Back Arrow - Top Left */}
+        {/* Back Arrow - Top Left - Sticky */}
         <button 
           onClick={() => navigate('/')}
-          className="absolute top-4 left-4 text-white/60 hover:text-white transition-colors duration-300 z-10"
+          className="sticky top-4 left-4 text-white/60 hover:text-white transition-colors duration-300 z-10 mb-4 bg-black/50 backdrop-blur-sm rounded-full p-2"
           title="Go back"
         >
           <ArrowLeft size={20} />
@@ -1352,7 +1352,7 @@ const ProfileScreen: React.FC = () => {
                 className="w-6 h-6 rounded-full flex items-center justify-center hover:opacity-90"
                 title="X"
               >
-                <XIcon size={18} className="text-white" />
+                <XIconCustom size={18} className="text-white" />
               </a>
               <a
                 href="https://www.facebook.com/Stefnaxyz"
