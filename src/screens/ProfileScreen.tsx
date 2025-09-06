@@ -732,8 +732,10 @@ const ProfileScreen: React.FC = () => {
               setUserMedia(prev => [...prev, ...transformedMedia]);
             }
             
-            // Update hasMore flag based on response
-            setHasMoreMedia(result.hasMore !== false);
+            // Update hasMore flag based on response - ensure it's properly set
+            const hasMore = result.hasMore !== false && transformedMedia.length === mediaPageSize;
+            console.log('📊 [InfiniteScroll] hasMore updated:', { hasMore, receivedItems: transformedMedia.length, pageSize: mediaPageSize });
+            setHasMoreMedia(hasMore);
             
                     // Remix functionality removed - no more remix processing
           } else {
@@ -808,6 +810,22 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
+  // 🚀 INFINITE SCROLL: Fallback mechanism - check if we need to load more when media changes
+  useEffect(() => {
+    if (userMedia.length > 0 && hasMoreMedia && !isLoadingMoreMedia && !isLoading) {
+      // Check if the last item is visible (fallback for intersection observer)
+      const lastItem = document.querySelector('[data-last-item="true"]');
+      if (lastItem) {
+        const rect = lastItem.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight + 200; // 200px buffer
+        if (isVisible) {
+          console.log('🚀 [ProfileScroll] Fallback: Last item visible, loading more...');
+          loadMoreMedia();
+        }
+      }
+    }
+  }, [userMedia.length, hasMoreMedia, isLoadingMoreMedia, isLoading]);
+
   // 🚀 INFINITE SCROLL: Handle last item intersection
   const lastItemRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -833,7 +851,7 @@ const ProfileScreen: React.FC = () => {
       },
       {
         threshold: 0.1,
-        rootMargin: '100px'
+        rootMargin: '200px' // Increased from 100px to trigger earlier
       }
     );
     

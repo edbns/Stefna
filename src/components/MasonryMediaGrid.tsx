@@ -143,6 +143,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   className="relative group cursor-pointer bg-white/5 overflow-hidden"
                   onClick={() => onMediaClick?.(item)}
                   ref={isLastItem ? onLastItemRef : undefined}
+                  data-last-item={isLastItem ? "true" : undefined}
                 >
                 {/* Media Container - Let images display naturally */}
                 <div 
