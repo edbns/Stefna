@@ -837,9 +837,15 @@ const ProfileScreen: React.FC = () => {
 
   // Load profile data when component mounts and user is authenticated
 
+  // Track if initial media load is complete to prevent duplicates
+  const [hasLoadedInitialMedia, setHasLoadedInitialMedia] = useState(false)
+
   // Load user media on component mount and when updated
   useEffect(() => {
-    loadUserMedia()
+    if (!hasLoadedInitialMedia) {
+      loadUserMedia()
+      setHasLoadedInitialMedia(true)
+    }
     
     // Listen for user media updates from other components
     const handleUserMediaUpdated = (e: any) => {
@@ -857,7 +863,10 @@ const ProfileScreen: React.FC = () => {
       if (removeId) {
         setUserMedia(prev => prev.filter(m => m.id !== removeId))
       }
-      loadUserMedia()
+      // Only refresh from server if explicitly requested
+      if (e?.detail?.needsServerSync) {
+        loadUserMedia()
+      }
       
       // Also refresh drafts specifically
       const user = authService.getCurrentUser()
