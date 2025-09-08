@@ -68,8 +68,12 @@ export const handler: Handler = async (event) => {
       let shareToFeed = existingSettings?.share_to_feed ?? false;
       if (body.share_to_feed !== undefined || body.shareToFeed !== undefined) {
         const requested = (body.share_to_feed !== undefined ? body.share_to_feed : body.shareToFeed) as boolean;
+        // Allow web with proper permission only
         if (Array.isArray(permissions) && permissions.includes('canManageFeed')) {
           shareToFeed = requested;
+        } else {
+          // Explicitly log and keep existing value for non-permitted tokens
+          console.warn('🚫 [User Settings] share_to_feed update denied due to missing permission', { userId, platform, requested });
         }
       }
 

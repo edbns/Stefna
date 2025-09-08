@@ -268,7 +268,20 @@ Don't want these emails? Unsubscribe.`,
       throw new Error('JWT_SECRET not configured');
     }
 
-    const platform = (typeof clientPlatform === 'string' && (clientPlatform === 'web' || clientPlatform === 'mobile')) ? clientPlatform : 'web';
+    // Derive platform safely: explicit body value wins; otherwise
+    // if origin matches SITE_URL treat as web, else default to mobile
+    const hdrOrigin = (event.headers['origin'] || event.headers['Origin'] || '') as string;
+    const siteUrl = process.env.SITE_URL || '';
+    let platform: 'web' | 'mobile';
+    if (clientPlatform === 'web' || clientPlatform === 'mobile') {
+      platform = clientPlatform;
+    } else if (siteUrl && hdrOrigin && hdrOrigin.includes(siteUrl.replace(/^https?:\/\//, ''))) {
+      platform = 'web';
+    } else if (hdrOrigin && /stefna\.xyz|netlify\.app|localhost|127\.0\.0\.1/.test(hdrOrigin)) {
+      platform = 'web';
+    } else {
+      platform = 'mobile';
+    }
     const permissions = platform === 'web' ? ['canManageFeed'] : [];
     const token = jwt.sign(
       { 
