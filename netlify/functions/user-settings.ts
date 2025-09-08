@@ -33,15 +33,14 @@ export const handler: Handler = async (event) => {
       
       // Get user settings
       const settings = await q(`
-        SELECT media_upload_agreed, share_to_feed, share_to_feed_mobile FROM user_settings WHERE user_id = $1
+        SELECT media_upload_agreed, share_to_feed FROM user_settings WHERE user_id = $1
       `, [userId]);
 
       if (!settings || settings.length === 0) {
         // Return default settings if none exist
         const defaultSettings = {
           media_upload_agreed: false,
-          share_to_feed: false,
-          share_to_feed_mobile: false
+          share_to_feed: false
         };
         
         return json({ settings: defaultSettings });
@@ -57,7 +56,7 @@ export const handler: Handler = async (event) => {
       
       // Get existing settings first to preserve values
       const existingSettings = await qOne(`
-        SELECT media_upload_agreed, share_to_feed, share_to_feed_mobile FROM user_settings WHERE user_id = $1
+        SELECT media_upload_agreed, share_to_feed FROM user_settings WHERE user_id = $1
       `, [userId]);
       
       // Use body values if provided, otherwise keep existing values
@@ -74,12 +73,6 @@ export const handler: Handler = async (event) => {
         }
       }
 
-      // Mobile-specific feed
-      let shareToFeedMobile = existingSettings?.share_to_feed_mobile ?? false;
-      if (body.share_to_feed_mobile !== undefined) {
-        shareToFeedMobile = !!body.share_to_feed_mobile;
-      }
-      
       // 🔧 DEBUG: Log the exact values being processed
       console.log('🔧 [User Settings] Processing update:', {
         userId,
@@ -94,16 +87,15 @@ export const handler: Handler = async (event) => {
       
       // Upsert user settings
       const updated = await q(`
-        INSERT INTO user_settings (user_id, media_upload_agreed, share_to_feed, share_to_feed_mobile, updated_at)
-        VALUES ($1, $2, $3, $4, NOW())
+        INSERT INTO user_settings (user_id, media_upload_agreed, share_to_feed, updated_at)
+        VALUES ($1, $2, $3, NOW())
         ON CONFLICT (user_id) 
         DO UPDATE SET 
           media_upload_agreed = EXCLUDED.media_upload_agreed,
           share_to_feed = EXCLUDED.share_to_feed,
-          share_to_feed_mobile = EXCLUDED.share_to_feed_mobile,
           updated_at = NOW()
         RETURNING *
-      `, [userId, mediaUploadAgreed, shareToFeed, shareToFeedMobile]);
+      `, [userId, mediaUploadAgreed, shareToFeed]);
 
       if (!updated || updated.length === 0) {
         throw new Error('Failed to update user settings');
@@ -116,9 +108,7 @@ export const handler: Handler = async (event) => {
       if ((existingSettings?.share_to_feed ?? false) !== updatedRow.share_to_feed) {
         changes.push({ field: 'share_to_feed', oldv: existingSettings?.share_to_feed, newv: updatedRow.share_to_feed });
       }
-      if ((existingSettings?.share_to_feed_mobile ?? false) !== updatedRow.share_to_feed_mobile) {
-        changes.push({ field: 'share_to_feed_mobile', oldv: existingSettings?.share_to_feed_mobile, newv: updatedRow.share_to_feed_mobile });
-      }
+      // no mobile-specific field auditing in this iteration
       for (const c of changes) {
         await q(`
           INSERT INTO settings_audit_log (user_id, field, old_value, new_value, platform)
