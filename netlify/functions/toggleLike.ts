@@ -37,7 +37,7 @@ export const handler: Handler = async (event) => {
   try {
     // Authenticate user
     const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
-    const { userId } = requireAuth(authHeader);
+    const { userId, platform } = requireAuth(authHeader);
 
     // Parse request body
     const { mediaId, mediaType } = JSON.parse(event.body || '{}') as ToggleLikeRequest;
@@ -46,7 +46,7 @@ export const handler: Handler = async (event) => {
       return json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Validate media type
+    // Validate media type and disallow likes from non-web if needed in future
     const validMediaTypes = ['custom_prompt', 'emotion_mask', 'ghibli_reaction', 'neo_glitch', 'presets', 'story'];
     if (!validMediaTypes.includes(mediaType)) {
       return json({ error: 'Invalid media type' }, { status: 400 });

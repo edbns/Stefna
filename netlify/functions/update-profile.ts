@@ -35,7 +35,7 @@ export const handler: Handler = async (event, context) => {
 
   try {
     // Use standardized authentication helper
-    const { userId } = requireAuth(event.headers.authorization);
+    const { userId, platform, permissions } = requireAuth(event.headers.authorization);
     const uid = userId;
     const email = `user-${uid}@placeholder.com`;
 

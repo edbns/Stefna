@@ -15,6 +15,7 @@ import { Handler } from '@netlify/functions';
 import { q, qOne } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { withAuth } from './_withAuth';
+import { requireAuth } from './_lib/auth';
 import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyAdvancedPromptEnhancements } from '../../src/utils/promptEnhancement';
 
 const FAL_BASE = 'https://fal.run';
@@ -2327,15 +2328,18 @@ export const handler: Handler = async (event, context) => {
   }
 
   try {
+    // Authenticate token and derive authoritative user context
+    const { userId: tokenUserId, platform, permissions } = requireAuth(String(userToken));
+
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { mode, prompt, sourceAssetId, userId, presetKey, emotionMaskPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, runId: frontendRunId } = body;
+    const { mode, prompt, sourceAssetId, userId: bodyUserId, presetKey, emotionMaskPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, runId: frontendRunId } = body;
 
     console.log('🚀 [Background] Received request:', {
       mode,
       prompt: prompt?.substring(0, 50),
       sourceAssetId: sourceAssetId ? 'present' : 'missing',
-      userId,
+      userId: tokenUserId,
       additionalImages: additionalImages?.length || 0,
       editImages: editImages?.length || 0,
       storyTimePresetId
@@ -2344,7 +2348,7 @@ export const handler: Handler = async (event, context) => {
     console.log('🔍 [Background] About to start validation...');
 
     // Validate required fields
-    if (!mode || !userId) {
+    if (!mode || !tokenUserId) {
       return {
         statusCode: 400,
         headers: CORS_JSON_HEADERS,
@@ -2354,6 +2358,11 @@ export const handler: Handler = async (event, context) => {
           error: 'Missing required fields: mode, userId' 
         })
       };
+    }
+
+    // Ignore spoofed userId from body; always trust token
+    if (bodyUserId && bodyUserId !== tokenUserId) {
+      console.warn('[Background] Body userId mismatch with token; ignoring body userId', { bodyUserId, tokenUserId, platform });
     }
 
     // Mode-specific validation
@@ -2389,6 +2398,22 @@ export const handler: Handler = async (event, context) => {
     const runId = frontendRunId || uuidv4();
     console.log('🔗 [Background] Using runId:', { frontendRunId, generatedRunId: runId, isFrontend: !!frontendRunId });
 
+    // Normalize and validate mode value against allowed set
+    const validModes: GenerationMode[] = ['presets','custom','emotion_mask','ghibli_reaction','story_time','neo_glitch','edit'];
+    const modeStr = String(mode);
+    if (!validModes.includes(modeStr as GenerationMode)) {
+      return {
+        statusCode: 400,
+        headers: CORS_JSON_HEADERS,
+        body: JSON.stringify({
+          success: false,
+          status: 'failed',
+          error: `Invalid mode: ${modeStr}`
+        })
+      };
+    }
+    const modeKey = modeStr as GenerationMode;
+
     // Check credits FIRST before any processing
     const creditsNeeded = 2; // All generations cost 2 credits
     
@@ -2403,7 +2428,7 @@ export const handler: Handler = async (event, context) => {
       'edit': 'edit_generation'
     };
     
-    const action = actionMap[mode];
+    const action = actionMap[modeKey];
     
     console.log(`💰 [Background] Checking credits FIRST before processing: ${creditsNeeded} credits for ${action}`);
     
@@ -2483,7 +2508,7 @@ export const handler: Handler = async (event, context) => {
           mode: 'edit', // Map edit-photo to edit mode internally
           prompt: editPrompt,
           sourceAssetId,
-          userId,
+          userId: tokenUserId,
           runId,
           editImages,
           editPrompt,
@@ -2576,7 +2601,7 @@ export const handler: Handler = async (event, context) => {
           mode: 'edit', // Map edit-photo to edit mode internally
           prompt: editPrompt,
           sourceAssetId,
-          userId,
+          userId: tokenUserId,
           runId,
           editImages,
           editPrompt,
@@ -2623,7 +2648,7 @@ export const handler: Handler = async (event, context) => {
       prompt,
       presetKey,
       sourceAssetId,
-      userId,
+      userId: tokenUserId,
       runId: runId, // Ensure runId is always defined
       emotionMaskPresetId,
       storyTimePresetId,
