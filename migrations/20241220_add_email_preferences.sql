@@ -45,6 +45,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Settings hardening (safe idempotent additions)
+-- 1) Mobile-specific feed toggle
+ALTER TABLE IF EXISTS user_settings
+  ADD COLUMN IF NOT EXISTS share_to_feed_mobile boolean NOT NULL DEFAULT false;
+
+-- 2) Audit log for settings writes
+CREATE TABLE IF NOT EXISTS settings_audit_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  field text NOT NULL,
+  old_value jsonb,
+  new_value jsonb,
+  platform text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_settings_audit_log_user ON settings_audit_log(user_id);
+
 -- Function to record email sent
 CREATE OR REPLACE FUNCTION record_email_sent(
   p_user_id TEXT,

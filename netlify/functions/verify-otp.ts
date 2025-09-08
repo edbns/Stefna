@@ -77,7 +77,7 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    const { email, code } = bodyData;
+    const { email, code, platform: clientPlatform } = bodyData;
     console.log('Parsed email:', email);
     console.log('Parsed code:', code ? '***' + code.slice(-2) : 'undefined');
 
@@ -268,10 +268,14 @@ Don't want these emails? Unsubscribe.`,
       throw new Error('JWT_SECRET not configured');
     }
 
+    const platform = (typeof clientPlatform === 'string' && (clientPlatform === 'web' || clientPlatform === 'mobile')) ? clientPlatform : 'web';
+    const permissions = platform === 'web' ? ['canManageFeed'] : [];
     const token = jwt.sign(
       { 
         userId: user.id, 
         email: user.email,
+        platform,
+        permissions,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
       },

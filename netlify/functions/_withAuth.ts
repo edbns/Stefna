@@ -9,7 +9,7 @@ export function withAuth(fn: (e: any, u: any) => Promise<any> | any): Handler {
     } catch (err: any) {
       // Normalize common auth failures
       const code =
-        /NO_BEARER|jwt malformed|invalid signature|jwt expired|audience|issuer/i.test(err?.message)
+        /NO_BEARER|Missing\/invalid Authorization|jwt malformed|invalid signature|jwt expired|audience|issuer/i.test(err?.message)
           ? 401
           : 500;
       return {
