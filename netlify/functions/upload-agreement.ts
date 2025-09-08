@@ -21,7 +21,7 @@ export const handler: Handler = withAuth(async (event, user) => {
   }
 
   try {
-    console.log('📝 [Upload Agreement] Recording agreement for user:', user.id);
+    console.log('📝 [Upload Agreement] Recording agreement for user:', user.userId);
 
     // Update user's media_upload_agreed setting in database
     await q(`
@@ -31,9 +31,9 @@ export const handler: Handler = withAuth(async (event, user) => {
       DO UPDATE SET 
         media_upload_agreed = true,
         updated_at = NOW()
-    `, [user.id]);
+    `, [user.userId]);
     
-    console.log('✅ [Upload Agreement] Agreement saved to database for user:', user.id);
+    console.log('✅ [Upload Agreement] Agreement saved to database for user:', user.userId);
     
     return json({ 
       success: true, 
