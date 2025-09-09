@@ -131,17 +131,13 @@ const adminConfigHandler: Handler = async (event) => {
 
       switch (action) {
         case 'reset_daily_credits':
-          // Reset all users' daily credits
+          // Reset all users' daily credits to 30 in user_credits table
           const resetResult = await q(`
-            UPDATE users 
-            SET credits = CASE 
-              WHEN credits < 10 THEN 10 
-              ELSE credits 
-            END
-            WHERE credits < 10
+            UPDATE user_credits 
+            SET credits = 30, updated_at = NOW()
           `)
           
-          console.log(`✅ [Admin] Reset daily credits for users`)
+          console.log(`✅ [Admin] Reset daily credits for users (set to 30) `)
           return json({
             success: true,
             message: 'Daily credits reset successfully',

@@ -98,8 +98,13 @@ export const handler: Handler = async (event) => {
       // Check user's current credit balance
       console.log('🔍 Checking user credit balance before reservation...');
       
-      let userCredits = await qOne(`
-        SELECT user_id, credits, balance FROM user_credits WHERE user_id = $1
+      let userCredits = await qOne<{
+        user_id: string;
+        credits: number;
+        balance: number;
+        updated_at: string;
+      }>(`
+        SELECT user_id, credits, balance, updated_at FROM user_credits WHERE user_id = $1
       `, [userId]);
       
       // Initialize user credits if they don't exist
@@ -126,7 +131,19 @@ export const handler: Handler = async (event) => {
         }
       }
       
-      const currentBalance = userCredits.credits || 0;
+      // On-read daily reset safeguard (00:00 UTC)
+      const dailyCredits = 30;
+      const now = new Date();
+      const todayUtc = new Date();
+      todayUtc.setUTCHours(0, 0, 0, 0);
+      let currentBalance = (userCredits?.credits ?? 0);
+      const lastUpdate = userCredits?.updated_at ? new Date(userCredits.updated_at) : now;
+      if (lastUpdate < todayUtc) {
+        await qOne(`
+          UPDATE user_credits SET credits = $1, updated_at = NOW() WHERE user_id = $2 RETURNING credits
+        `, [dailyCredits, userId]);
+        currentBalance = dailyCredits;
+      }
       console.log('💰 Current balance:', currentBalance, 'credits, requesting:', cost, 'credits');
       
       // Check if user has insufficient credits
