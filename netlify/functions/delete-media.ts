@@ -1,9 +1,11 @@
 // netlify/functions/delete-media.ts
 // Deletes media assets using raw SQL for consistent database access
+// Updated for mobile/web platform separation - userId extracted from JWT
 
 import type { Handler } from '@netlify/functions';
 import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
+import { requireAuth } from './_lib/auth';
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -34,18 +36,22 @@ export const handler: Handler = async (event) => {
   }
 
   try {
+    // Extract userId from JWT token (platform-aware authentication)
+    const auth = requireAuth(event.headers?.authorization || event.headers?.Authorization);
+    const userId = auth.userId;
+    
     const body = JSON.parse(event.body || '{}');
-    const { mediaId, userId } = body;
+    const { mediaId } = body;
 
     if (!mediaId) {
       return json({ error: 'Missing mediaId' }, { status: 400 });
     }
 
-    if (!userId) {
-      return json({ error: 'Missing userId' }, { status: 400 });
-    }
-
-    console.log('🗑️ [delete-media] Deleting media:', { mediaId, userId });
+    console.log('🗑️ [delete-media] Authenticated deletion:', { 
+      mediaId, 
+      userId,
+      platform: auth.platform 
+    });
 
     // First, verify the media exists and belongs to the user
     let mediaExists = false;
