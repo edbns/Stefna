@@ -1,10 +1,12 @@
 // netlify/functions/getUserMedia.ts
 // User media function - fetches user's media assets using raw SQL
 // Provides user-specific media data
+// Updated for mobile/web platform separation - userId extracted from JWT
 
 import type { Handler } from '@netlify/functions';
 import { json } from './_lib/http';
 import { q } from './_db';
+import { requireAuth } from './_lib/auth';
 
 // Helper function to create consistent response headers
 function createResponseHeaders(): Record<string, string> {
@@ -35,24 +37,20 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // Get query parameters
+    // Extract userId from JWT token (platform-aware authentication)
+    const auth = requireAuth(event.headers?.authorization || event.headers?.Authorization);
+    const userId = auth.userId;
+    
+    // Get query parameters (but not userId - it comes from JWT)
     const url = new URL(event.rawUrl);
-    const userId = url.searchParams.get('userId');
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const offset = parseInt(url.searchParams.get('offset') || '0');
 
-    if (!userId) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ error: 'userId parameter is required' })
-      };
-    }
+    console.log('🔐 [getUserMedia] Authenticated request:', {
+      userId,
+      platform: auth.platform,
+      permissions: auth.permissions
+    });
 
     console.log('🔍 [getUserMedia] Fetching media for user:', {
       userId,
@@ -152,16 +150,23 @@ export const handler: Handler = async (event) => {
     });
 
   } catch (error: any) {
-    console.error('💥 [getUserMedia] Media fetch error:', error);
+    console.error('💥 [getUserMedia] Error:', error);
+    
+    // Handle authentication errors specially
+    if (error.statusCode === 401 || error.message?.includes('Authorization') || error.message?.includes('JWT')) {
+      return {
+        statusCode: 401,
+        headers: createResponseHeaders(),
+        body: JSON.stringify({
+          error: 'AUTHENTICATION_REQUIRED',
+          message: 'Valid JWT token required in Authorization header'
+        })
+      };
+    }
     
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      },
+      headers: createResponseHeaders(),
       body: JSON.stringify({
         error: 'MEDIA_FETCH_FAILED',
         message: error.message,
