@@ -283,6 +283,14 @@ Don't want these emails? Unsubscribe.`,
       platform = 'mobile';
     }
     const permissions = platform === 'web' ? ['canManageFeed'] : [];
+    
+    // Platform-aware token expiration: 30 days for mobile, 24 hours for web
+    const expirationSeconds = platform === 'mobile' 
+      ? (30 * 24 * 60 * 60) // 30 days for mobile
+      : (24 * 60 * 60);     // 24 hours for web
+    
+    console.log(`🔐 [Auth] Generating ${platform} token with ${platform === 'mobile' ? '30-day' : '24-hour'} expiration`);
+    
     const token = jwt.sign(
       { 
         userId: user.id, 
@@ -290,7 +298,7 @@ Don't want these emails? Unsubscribe.`,
         platform,
         permissions,
         iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+        exp: Math.floor(Date.now() / 1000) + expirationSeconds
       },
       jwtSecret
     );
