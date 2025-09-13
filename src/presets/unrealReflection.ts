@@ -17,7 +17,7 @@ Enhanced prompts optimized for Nano Banana's verbosity preferences:
 - Desert Mirror: Cracked landscape with orange/gold sun flare, heat haze
 - Lumin Void: Swirling violet/silver fractal void, transcendent energy
 - Prism Break: Dark void with rainbow shards, high-fashion sci-fi
-- Eclipse Veil: Solar eclipse with gold/indigo corona, dramatic contrast
+- Chromatic Bloom: Vibrant nature bursts with butterflies/feathers, surreal overlays
 
 All presets use optimized strength (0.54-0.6) and guidance (7.0-7.5) for Nano Banana.
 
@@ -157,26 +157,26 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     image_prompt_strength: 0.6,
     aspect_ratio: '1:1'
   },
-  // 🌑 Eclipse Veil
+  // 🌈 Chromatic Bloom
   {
-    id: 'unreal_reflection_eclipse_veil',
-    label: 'Eclipse Veil',
-    prompt: 'Render this person under the shadow of a cosmic eclipse. One side of the face glows with warm golden light, the other fades into deep indigo shadow. A faint rim of light outlines their silhouette like the glowing corona of an eclipse. The background shows a blurred solar eclipse dominating the sky, casting dramatic contrast across the scene. Cinematic atmosphere emphasizes the tension between light and shadow, while the subject\'s face remains photoreal and sharp. Preserve the individual\'s identity, age, gender, and features with full fidelity.',
-    negative_prompt: 'horror, zombie, cartoon, anime, fantasy warrior, distorted face',
-    strength: 0.57,
+    id: 'unreal_reflection_chromatic_bloom',
+    label: 'Chromatic Bloom',
+    prompt: 'Reimagine this person with their identity intact while their face and head blend seamlessly into surreal bursts of vibrant nature. Blue butterflies or radiant feathers appear to grow from the skin, dissolving into colorful petals and glowing fragments. Use vivid tones like electric blue, fiery orange, radiant red, and pastel lavender. The background should be softly darkened, with cinematic bursts of light and color giving depth. Preserve the individual\'s real facial features, skin tone, age, and gender while merging them with this surreal blooming aura. Photoreal but dreamlike.',
+    negative_prompt: 'cartoonish, anime, low quality, overexaggerated makeup, distorted face, plastic skin, flat colors, harsh sparkles, glitch, fantasy armor',
+    strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'unreal_reflection',
-    guidance_scale: 7.1,
+    guidance_scale: 7.3,
     num_inference_steps: 30,
-    features: ['eclipse_veil', 'cosmic_shadow', 'rim_light', 'cinematic', 'identity_preserved'],
+    features: ['chromatic_bloom', 'vibrant_nature', 'butterflies_feathers', 'surreal_bloom', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 3,
     output_format: 'jpeg',
     raw: true,
-    image_prompt_strength: 0.57,
+    image_prompt_strength: 0.55,
     aspect_ratio: '4:5'
   }
 ];
