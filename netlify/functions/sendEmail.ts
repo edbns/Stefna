@@ -314,6 +314,16 @@ Let's make something unforgettable.
 <br />PS: Tag us if you share. Or don't. Stay mysterious — just like us`;
       break;
     
+    case 'daily_credits_refresh':
+      emailBody = `Credits refreshed — let's create.
+
+Your daily credits are topped up and ready. Dive back in and keep exploring.
+
+Want even more? Invite a friend and get bonus credits instantly.
+
+<br /><br />Don't want these emails? <a href="https://stefna.xyz/unsubscribe?email={{EMAIL}}&type=daily_credits_refresh" style="text-decoration:underline;color:#fff;">Unsubscribe</a>.`;
+      break;
+    
     default:
       emailBody = text;
   }
