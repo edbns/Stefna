@@ -2,7 +2,7 @@
 
 /*
 
-🧠 Unreal Reflection™ – Launch Pack (v1)
+🧠 Unreal Reflection™ – Refined Lineup (v1.1)
 
 Unreal Reflection™
 "Not who you are. Who you could've been."
@@ -103,26 +103,70 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     image_prompt_strength: 0.6,
     aspect_ratio: '1:1'
   },
-  // 👻 Future Ghost
+  // 🔮 Lumin Void (refined Future Ghost)
   {
-    id: 'unreal_reflection_future_ghost',
-    label: 'Future Ghost',
-    prompt: 'Render this person as a futuristic ghost-like version of themselves — with soft shadows around the body, white or silver irises, and a faint mist or light shimmer. Do not change the identity, age, gender, or face structure. Style should be photo-real with a surreal twist, not horror or fantasy.',
-    negative_prompt: 'scary, horror, blood, cartoon, anime, glowing skeleton, fantasy monster, gender swap',
-    strength: 0.52,
+    id: 'unreal_reflection_lumin_void',
+    label: 'Lumin Void',
+    prompt: 'Depict this person as a luminous void version of themselves, where their body edges dissolve into fractal light and soft shadows. Their eyes glow faintly with silver or golden light, not blank, but alive. The overall effect should be surreal, cinematic, and powerful — like a person halfway between the physical and energy state. Retain their identity, age, gender, ethnicity, and facial features.',
+    negative_prompt: 'horror, zombie, corpse, skull, cartoon, anime, fantasy monster, distortion, blur',
+    strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'unreal_reflection',
-    guidance_scale: 7.3,
+    guidance_scale: 7.2,
     num_inference_steps: 30,
-    features: ['future_ghost', 'soft_shadows', 'silver_irises', 'mist_effect', 'identity_preserved'],
+    features: ['lumin_void', 'fractal_light', 'dissolving_edges', 'glowing_eyes', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 3,
     output_format: 'jpeg',
     raw: true,
-    image_prompt_strength: 0.52,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '4:5'
+  },
+  // ✨ Prism Break
+  {
+    id: 'unreal_reflection_prism_break',
+    label: 'Prism Break',
+    prompt: 'Transform this person into a fractured prism reflection of themselves. Subtle cracks or fractures run across the skin, glowing with refracted rainbow light like broken glass. The effect should be cinematic, high-fashion, and photorealistic. Do not alter facial identity, age, or gender. Style should be mysterious and editorial, not fantasy or cartoon.',
+    negative_prompt: 'anime, cartoon, rainbow filter, glitter makeup, distortion, fantasy armor, horror',
+    strength: 0.58,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.0,
+    num_inference_steps: 30,
+    features: ['prism_break', 'fractured_glass', 'rainbow_light', 'editorial', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 3,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.58,
+    aspect_ratio: '1:1'
+  },
+  // 🌑 Eclipse Veil
+  {
+    id: 'unreal_reflection_eclipse_veil',
+    label: 'Eclipse Veil',
+    prompt: 'Render this person as if they are standing inside an eclipse. One side of the face is bathed in warm glow, the other side in deep cosmic shadow, with a faint rim of light outlining their silhouette like a solar eclipse. Maintain original identity, age, gender, and facial structure. Make it look cinematic and surreal, but photoreal, not fantasy.',
+    negative_prompt: 'horror, zombie, fantasy warrior, cartoon, anime, distorted face, blur',
+    strength: 0.54,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.4,
+    num_inference_steps: 30,
+    features: ['eclipse_veil', 'cosmic_shadow', 'rim_light', 'cinematic', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 3,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.54,
     aspect_ratio: '4:5'
   }
 ];
