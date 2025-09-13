@@ -58,14 +58,16 @@ export const handler: Handler = async (event) => {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Store OTP in database
+    // First, delete any existing email_change OTPs for this email
+    await q(`
+      DELETE FROM auth_otps 
+      WHERE email = $1 AND type = 'email_change'
+    `, [newEmail.toLowerCase()]);
+
+    // Then insert the new OTP
     await q(`
       INSERT INTO auth_otps (id, email, code, expires_at, created_at, type)
       VALUES ($1, $2, $3, $4, NOW(), 'email_change')
-      ON CONFLICT (email, type) 
-      DO UPDATE SET 
-        code = EXCLUDED.code,
-        expires_at = EXCLUDED.expires_at,
-        created_at = NOW()
     `, [uuidv4(), newEmail.toLowerCase(), otp, expiresAt]);
 
     // Send OTP email to the NEW email address
