@@ -2,7 +2,7 @@
 
 /*
 
-🧠 Unreal Reflection™ – Refined Lineup (v1.1)
+🧠 Unreal Reflection™ – Immersive Edition (v1.2)
 
 Unreal Reflection™
 "Not who you are. Who you could've been."
@@ -10,6 +10,14 @@ A photoreal, alternate-identity remix powered by Nano Banana.
 Think: a version of you from a mirror-dimension, dream-state, or forgotten past life.
 Identity-adjacent, not fantasy. Stylized, not cosplay.
 Built for scroll-stopping visuals that feel mysterious, ethereal, and beautiful.
+
+Each preset now features immersive cinematic backgrounds and unique color identities:
+- Digital Monk: Golden/bronze temple ruins with blue aura
+- Urban Oracle: Neon-lit alley with rain reflections
+- Desert Mirror: Cracked landscape with orange/gold sun flare
+- Lumin Void: Swirling violet/silver fractal void
+- Prism Break: Dark void with rainbow prism shards
+- Eclipse Veil: Solar eclipse with gold/indigo corona
 
 */
 
@@ -41,7 +49,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_digital_monk',
     label: 'Digital Monk',
-    prompt: 'Imagine an alternate version of this person as a futuristic monk with glowing cloth fragments, shaved head or close-cropped hair, and an aura of calm. Retain core facial identity, age, skin tone, and expression. Scene should feel timeless, with soft lighting and abstract fabric.',
+    prompt: 'Place the person in a minimal futuristic temple, glowing cloth fragments around them. Golden and bronze hues with a faint blue aura. Background should be blurred but atmospheric, cinematic lighting focused on the face. Imagine an alternate version of this person as a futuristic monk with glowing cloth fragments, shaved head or close-cropped hair, and an aura of calm. Retain core facial identity, age, skin tone, and expression. Scene should feel timeless, with soft lighting and abstract fabric.',
     negative_prompt: 'anime, cartoon, fantasy armor, heavy makeup, distorted face, exaggerated lighting, comic style',
     strength: 0.5,
     model: 'fal-ai/nano-banana/edit',
@@ -63,7 +71,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_urban_oracle',
     label: 'Urban Oracle',
-    prompt: 'Transform the person into a parallel reality version of an urban oracle — with mirrored or glowing eyes, futuristic streetwear, and a strong, silent stare. Keep real facial structure, skin tone, gender and age. Scene should feel cinematic and grounded in a dystopian or spiritual urban aesthetic.',
+    prompt: 'Background of a neon-lit futuristic alley, rain on the ground reflecting light. City lights glow behind, blurred for cinematic depth. Mirrored eyes reflecting neon colors. Transform the person into a parallel reality version of an urban oracle — with mirrored or glowing eyes, futuristic streetwear, and a strong, silent stare. Keep real facial structure, skin tone, gender and age. Scene should feel cinematic and grounded in a dystopian or spiritual urban aesthetic.',
     negative_prompt: 'anime, fantasy clothing, old age, child, gender swap, distortion, unrealistic colors',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
@@ -85,7 +93,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_desert_mirror',
     label: 'Desert Mirror',
-    prompt: 'Create a desert-inspired reflection of this person — with cracked skin texture like dried earth, sun-scorched tones, and glowing eyes full of resilience. Retain base identity, facial structure, and expression. Make the output feel poetic and real, not fantasy.',
+    prompt: 'Set in a cracked desert landscape, distant heat haze in background. Sun flare lighting the face with glowing orange and golden tones. Horizon blurred for depth. Create a desert-inspired reflection of this person — with cracked skin texture like dried earth, sun-scorched tones, and glowing eyes full of resilience. Retain base identity, facial structure, and expression. Make the output feel poetic and real, not fantasy.',
     negative_prompt: 'zombie, horror, cartoon, child, fantasy race, elf, extreme distortion',
     strength: 0.6,
     model: 'fal-ai/nano-banana/edit',
@@ -107,7 +115,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_lumin_void',
     label: 'Lumin Void',
-    prompt: 'Depict this person as a luminous void version of themselves, where their body edges dissolve into fractal light and soft shadows. Their eyes glow faintly with silver or golden light, not blank, but alive. The overall effect should be surreal, cinematic, and powerful — like a person halfway between the physical and energy state. Retain their identity, age, gender, ethnicity, and facial features.',
+    prompt: 'Surrounded by a fractal void of glowing violet and silver light. Background swirling with dissolving energy, cinematic contrast. Face kept sharp, edges dissolving into mist. Depict this person as a luminous void version of themselves, where their body edges dissolve into fractal light and soft shadows. Their eyes glow faintly with silver or golden light, not blank, but alive. The overall effect should be surreal, cinematic, and powerful — like a person halfway between the physical and energy state. Retain their identity, age, gender, ethnicity, and facial features.',
     negative_prompt: 'horror, zombie, corpse, skull, cartoon, anime, fantasy monster, distortion, blur',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
@@ -129,7 +137,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_prism_break',
     label: 'Prism Break',
-    prompt: 'Transform this person into a fractured prism reflection of themselves. Subtle cracks or fractures run across the skin, glowing with refracted rainbow light like broken glass. The effect should be cinematic, high-fashion, and photorealistic. Do not alter facial identity, age, or gender. Style should be mysterious and editorial, not fantasy or cartoon.',
+    prompt: 'Dark void background fractured open with glowing rainbow prism shards. Light scattering across the face and silhouette, sharp focus on eyes. Cinematic and high-fashion. Transform this person into a fractured prism reflection of themselves. Subtle cracks or fractures run across the skin, glowing with refracted rainbow light like broken glass. The effect should be cinematic, high-fashion, and photorealistic. Do not alter facial identity, age, or gender. Style should be mysterious and editorial, not fantasy or cartoon.',
     negative_prompt: 'anime, cartoon, rainbow filter, glitter makeup, distortion, fantasy armor, horror',
     strength: 0.58,
     model: 'fal-ai/nano-banana/edit',
@@ -151,7 +159,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_eclipse_veil',
     label: 'Eclipse Veil',
-    prompt: 'Render this person as if they are standing inside an eclipse. One side of the face is bathed in warm glow, the other side in deep cosmic shadow, with a faint rim of light outlining their silhouette like a solar eclipse. Maintain original identity, age, gender, and facial structure. Make it look cinematic and surreal, but photoreal, not fantasy.',
+    prompt: 'Backdrop of a massive solar eclipse, corona glowing in gold and indigo. Light rim outlining silhouette, half face in glow, half in shadow. Cinematic film look, shallow depth of field. Render this person as if they are standing inside an eclipse. One side of the face is bathed in warm glow, the other side in deep cosmic shadow, with a faint rim of light outlining their silhouette like a solar eclipse. Maintain original identity, age, gender, and facial structure. Make it look cinematic and surreal, but photoreal, not fantasy.',
     negative_prompt: 'horror, zombie, fantasy warrior, cartoon, anime, distorted face, blur',
     strength: 0.54,
     model: 'fal-ai/nano-banana/edit',
