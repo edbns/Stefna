@@ -673,92 +673,92 @@ const AdminDashboardScreen: React.FC = () => {
         <meta name="description" content="Admin dashboard - private access only" />
       </Helmet>
       
-            <div className="flex">
+      <div className="flex">
         {/* Sidebar */}
-        <div className="w-64 bg-black border-r border-white/10 min-h-screen p-4 flex flex-col">
-          <div className="flex-1 space-y-2">
+        <div className="w-64 bg-black border-r border-white/10 min-h-screen p-6 flex flex-col">
+          <div className="flex-1 space-y-1">
             <button
               onClick={() => setActiveTab('users')}
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
                 activeTab === 'users' 
-                  ? 'bg-white text-black' 
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                  ? 'text-white' 
+                  : 'text-white/60 hover:text-white'
               }`}
             >
-              <Users size={20} />
-              <span>Users Management</span>
+              <Users size={16} />
+              <span className="text-sm font-medium">Users Management</span>
             </button>
             
             <button
               onClick={() => setActiveTab('media')}
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
                 activeTab === 'media' 
-                  ? 'bg-white text-black' 
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                  ? 'text-white' 
+                  : 'text-white/60 hover:text-white'
               }`}
             >
-              <Image size={20} />
-              <span>Media Browser</span>
+              <Image size={16} />
+              <span className="text-sm font-medium">Media Browser</span>
             </button>
             
             <button
               onClick={() => setActiveTab('credits')}
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
                 activeTab === 'credits' 
-                  ? 'bg-white text-black' 
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                  ? 'text-white' 
+                  : 'text-white/60 hover:text-white'
               }`}
             >
-              <Coins size={20} />
-              <span>Credit System</span>
+              <Coins size={16} />
+              <span className="text-sm font-medium">Credit System</span>
             </button>
             
             <button
               onClick={() => setActiveTab('presets')}
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
                 activeTab === 'presets' 
-                  ? 'bg-white text-black' 
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                  ? 'text-white' 
+                  : 'text-white/60 hover:text-white'
               }`}
             >
-              <Settings size={20} />
-              <span>Preset Manager</span>
+              <Settings size={16} />
+              <span className="text-sm font-medium">Preset Manager</span>
             </button>
             
             <button
               onClick={() => setActiveTab('config')}
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
                 activeTab === 'config' 
-                  ? 'bg-white text-black' 
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                  ? 'text-white' 
+                  : 'text-white/60 hover:text-white'
               }`}
             >
-              <Settings size={20} />
-              <span>System Config</span>
+              <Settings size={16} />
+              <span className="text-sm font-medium">System Config</span>
             </button>
             
             <button
               onClick={() => setActiveTab('logs')}
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
                 activeTab === 'logs' 
-                  ? 'bg-white text-black' 
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                  ? 'text-white' 
+                  : 'text-white/60 hover:text-white'
               }`}
             >
-              <Activity size={20} />
-              <span>Logs & Analytics</span>
+              <Activity size={16} />
+              <span className="text-sm font-medium">Logs & Analytics</span>
             </button>
             
             <button
               onClick={() => setActiveTab('referrals')}
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
                 activeTab === 'referrals' 
-                  ? 'bg-white text-black' 
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
+                  ? 'text-white' 
+                  : 'text-white/60 hover:text-white'
               }`}
             >
-              <UserCheck size={20} />
-              <span>Referral System</span>
+              <UserCheck size={16} />
+              <span className="text-sm font-medium">Referral System</span>
             </button>
           </div>
           
@@ -766,71 +766,71 @@ const AdminDashboardScreen: React.FC = () => {
           <div className="mt-auto pt-4 border-t border-white/10">
             <button
               onClick={() => navigate('/')}
-              className="w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors text-white/80 hover:text-white hover:bg-white/10"
+              className="w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors text-white/60 hover:text-white"
             >
-              <LogOut size={20} />
-              <span>Exit Admin</span>
+              <LogOut size={16} />
+              <span className="text-sm font-medium">Exit Admin</span>
             </button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-6 pt-24">
           <div className="space-y-6">
             {/* Stats Overview */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-2xl font-bold text-white">{stats.totalUsers}</div>
-                <div className="text-xs text-white/60">Total Users</div>
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="text-xl font-semibold text-white">{stats.totalUsers}</div>
+                <div className="text-sm text-white/60">Total Users</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-2xl font-bold text-white">{stats.activeUsers}</div>
-                <div className="text-xs text-white/60">Active Users</div>
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="text-xl font-semibold text-white">{stats.activeUsers}</div>
+                <div className="text-sm text-white/60">Active Users</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-2xl font-bold text-white">{stats.bannedUsers}</div>
-                <div className="text-xs text-white/60">Banned Users</div>
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="text-xl font-semibold text-white">{stats.bannedUsers}</div>
+                <div className="text-sm text-white/60">Banned Users</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-2xl font-bold text-white">{stats.totalMedia}</div>
-                <div className="text-xs text-white/60">Total Media</div>
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="text-xl font-semibold text-white">{stats.totalMedia}</div>
+                <div className="text-sm text-white/60">Total Media</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-2xl font-bold text-white">{stats.totalCredits}</div>
-                <div className="text-xs text-white/60">Total Credits</div>
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="text-xl font-semibold text-white">{stats.totalCredits}</div>
+                <div className="text-sm text-white/60">Total Credits</div>
               </div>
             </div>
 
             {/* Tab Content */}
             {activeTab === 'users' && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-white">Users Management</h3>
                   <div className="flex items-center space-x-3">
                     <div className="relative">
-                      <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" />
+                      <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" />
                       <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search users..."
-                        className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40"
+                        className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/20"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Users Table */}
-                <div className="bg-white/5 rounded-xl overflow-hidden">
+                <div className="bg-white/5 rounded-lg overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-white/10">
+                      <thead className="bg-white/5">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">User</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Credits</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Joined</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Actions</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-white/60">User</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Credits</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Status</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Joined</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/10">
@@ -857,13 +857,13 @@ const AdminDashboardScreen: React.FC = () => {
                                 <div className="flex space-x-1">
                                   <button
                                     onClick={() => handleAdjustCredits(user.id, 1)}
-                                    className="w-6 h-6 bg-white/10 text-white rounded hover:bg-white/20 flex items-center justify-center"
+                                    className="w-6 h-6 bg-white/5 text-white rounded hover:bg-white/10 flex items-center justify-center transition-colors"
                                   >
                                     <Plus size={14} />
                                   </button>
                                   <button
                                     onClick={() => handleAdjustCredits(user.id, -1)}
-                                    className="w-6 h-6 bg-white/10 text-white rounded hover:bg-white/20 flex items-center justify-center"
+                                    className="w-6 h-6 bg-white/5 text-white rounded hover:bg-white/10 flex items-center justify-center transition-colors"
                                   >
                                     <Minus size={14} />
                                   </button>
@@ -873,18 +873,18 @@ const AdminDashboardScreen: React.FC = () => {
                             <td className="px-4 py-3">
                               <div className="flex items-center space-x-2">
                                 {user.isBanned ? (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white/10 text-white">
-                                    <UserX size={12} className="mr-1" />
+                                  <span className="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-white/5 text-white">
+                                    <UserX size={14} className="mr-1" />
                                     Banned
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white/10 text-white">
-                                    <UserCheck size={12} className="mr-1" />
+                                  <span className="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-white/5 text-white">
+                                    <UserCheck size={14} className="mr-1" />
                                     Active
                                   </span>
                                 )}
                                 {user.shareToFeed && (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white/10 text-white">
+                                  <span className="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-white/5 text-white">
                                     Public
                                   </span>
                                 )}
@@ -897,19 +897,15 @@ const AdminDashboardScreen: React.FC = () => {
                               <div className="flex items-center space-x-2">
                                 <button
                                   onClick={() => handleBanUser(user.id, !user.isBanned)}
-                                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                    user.isBanned
-                                      ? 'bg-white/10 text-white hover:bg-white/20'
-                                      : 'bg-white/10 text-white hover:bg-white/20'
-                                  }`}
+                                  className="px-3 py-1 rounded text-sm font-medium bg-white/5 text-white hover:bg-white/10 transition-colors"
                                 >
                                   {user.isBanned ? 'Unban' : 'Ban'}
                                 </button>
                                 <button
                                   onClick={() => handleDeleteUser(user.id)}
-                                  className="px-3 py-1 rounded text-xs font-medium bg-white/10 text-white hover:bg-white/20"
+                                  className="px-3 py-1 rounded text-sm font-medium bg-white/5 text-white hover:bg-white/10 transition-colors"
                                 >
-                                  <Trash2 size={12} />
+                                  <Trash2 size={14} />
                                 </button>
                               </div>
                             </td>
