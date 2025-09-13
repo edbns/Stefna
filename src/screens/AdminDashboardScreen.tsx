@@ -1406,7 +1406,7 @@ const AdminDashboardScreen: React.FC = () => {
                                         const result = await response.json();
                                         alert(result.message);
                                         // Refresh system config
-                                        fetchSystemConfig();
+                                        loadSystemConfig();
                                       } else {
                                         const error = await response.json();
                                         alert(`Error: ${error.message || 'Failed to update launch status'}`);
