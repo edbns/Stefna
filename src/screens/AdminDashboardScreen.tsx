@@ -1567,9 +1567,9 @@ const AdminDashboardScreen: React.FC = () => {
                             </select>
                             <button
                               onClick={handleResetReferralStats}
-                              className="px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors"
+                              className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
                             >
-                              Reset All Credits
+                              Reset Referral Stats
                             </button>
                           </div>
                         </div>
