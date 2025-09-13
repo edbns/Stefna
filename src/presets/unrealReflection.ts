@@ -157,28 +157,28 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     image_prompt_strength: 0.6,
     aspect_ratio: '1:1'
   },
-  // 🌈 Chromatic Bloom
-  {
-    id: 'unreal_reflection_chromatic_bloom',
-    label: 'Chromatic Bloom',
-    prompt: 'Close-up high-fashion editorial portrait styled for an avant-garde photoshoot. The subject\'s skin is seamlessly textured with intricate butterfly wing patterns that appear like delicate couture overlays, not painted designs. Hyper-detailed butterflies rest naturally on the head and shoulders, integrated elegantly into the styling. Translucent wing textures accent the contours around the eyes and cheekbones with a subtle bioluminescent glow. If the subject is human, dress them in minimal dark couture fabric or elegant high-fashion styling — never casual clothing, never costumes, never tribal or fantasy headdresses. The setting is a cinematic studio with a softly dark misty background, gradients of light, or faint glowing textures for depth. Lighting should be dramatic Rembrandt style with soft shadows. Photoreal, surreal yet elegant, ultra-high detail, sharp focus, professional editorial color grading.',
-    negative_prompt: 'cartoon, cosplay, casual clothing, tribal headdress, carnival costume, fantasy armor, distortion, butterflies covering entire face',
-    strength: 0.55,
-    model: 'fal-ai/nano-banana/edit',
-    mode: 'i2i',
-    input: 'image',
-    requiresSource: true,
-    source: 'unreal_reflection',
-    guidance_scale: 7.5,
-    num_inference_steps: 30,
-    features: ['chromatic_bloom', 'vibrant_nature', 'butterflies_feathers', 'surreal_bloom', 'identity_preserved'],
-    prompt_upsampling: true,
-    safety_tolerance: 3,
-    output_format: 'jpeg',
-    raw: true,
-    image_prompt_strength: 0.55,
-    aspect_ratio: '4:5'
-  }
+        // 🌈 Chromatic Bloom
+        {
+          id: 'unreal_reflection_chromatic_bloom',
+          label: 'Chromatic Bloom',
+          prompt: 'Close-up high-fashion editorial portrait styled for an avant-garde photoshoot. The subject\'s face and identity must remain intact with no distortion. Skin should NOT be painted — do not create face paint or mask-like designs. Instead, integrate intricate iridescent butterfly wing patterns as delicate couture overlays and textures around the eyes and cheekbones. Hyper-detailed butterflies may rest naturally on the head and shoulders, blending with the styling. If the subject is human, they must be dressed in minimal dark couture fabric or elegant high-fashion styling — never casual clothing, never costumes, never tribal or fantasy headdresses. The setting is a cinematic studio with a softly dark misty background, gradients of light, or faint glowing textures for depth. Lighting should be dramatic Rembrandt style with soft shadows. Photoreal, surreal yet elegant, ultra-high detail, sharp focus, professional editorial color grading.',
+          negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion',
+          strength: 0.55,
+          model: 'fal-ai/nano-banana/edit',
+          mode: 'i2i',
+          input: 'image',
+          requiresSource: true,
+          source: 'unreal_reflection',
+          guidance_scale: 7.5,
+          num_inference_steps: 30,
+          features: ['chromatic_bloom', 'vibrant_nature', 'butterflies_feathers', 'surreal_bloom', 'identity_preserved'],
+          prompt_upsampling: true,
+          safety_tolerance: 3,
+          output_format: 'jpeg',
+          raw: true,
+          image_prompt_strength: 0.55,
+          aspect_ratio: '4:5'
+        }
 ];
 
 export function getUnrealReflectionPreset(presetId: string): UnrealReflectionPreset | undefined {
