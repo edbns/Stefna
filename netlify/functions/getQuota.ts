@@ -56,25 +56,12 @@ export const handler: Handler = async (event) => {
     }
 
     const dailyCredits = 30; // Daily credit limit
-
-    // If last update was before today's 00:00 UTC, reset credits on read
-    const now = new Date();
-    const todayUtc = new Date();
-    todayUtc.setUTCHours(0, 0, 0, 0);
-    let currentCredits = userCredits.credits || 0;
-    const lastUpdate = userCredits.updated_at ? new Date(userCredits.updated_at) : now;
-    if (lastUpdate < todayUtc) {
-      await qOne(`
-        UPDATE user_credits SET credits = $1, updated_at = NOW() WHERE user_id = $2 RETURNING credits
-      `, [dailyCredits, userId]);
-      currentCredits = dailyCredits;
-      // refresh snapshot
-      userCredits = { ...userCredits, credits: dailyCredits, updated_at: now.toISOString(), balance: userCredits.balance } as any;
-    }
+    const currentCredits = userCredits.credits || 0;
     const usedCredits = Math.max(0, dailyCredits - currentCredits);
     const remainingCredits = Math.max(0, currentCredits);
 
     // Calculate next daily reset (assuming reset at midnight UTC)
+    const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     tomorrow.setUTCHours(0, 0, 0, 0);
