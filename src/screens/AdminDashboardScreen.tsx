@@ -1033,9 +1033,8 @@ const AdminDashboardScreen: React.FC = () => {
                               // TODO: Implement add preset modal
                               alert('Add preset functionality coming soon!')
                             }}
-                            className="px-4 py-2 bg-white/5 text-white rounded-lg hover:bg-white/10 transition-colors"
+                            className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
                           >
-                            <Plus size={16} className="mr-2" />
                             Add New Preset
                           </button>
                           
@@ -1060,9 +1059,8 @@ const AdminDashboardScreen: React.FC = () => {
                                 alert('Error seeding presets')
                               }
                             }}
-                            className="px-4 py-2 bg-white/5 text-white rounded-lg hover:bg-white/10 transition-colors"
+                            className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
                           >
-                            <RefreshCw size={16} className="mr-2" />
                             Seed Sample Presets
                           </button>
                         </div>
