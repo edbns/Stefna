@@ -1997,15 +1997,18 @@ const AdminDashboardScreen: React.FC = () => {
               {bulkAdjustment.type === 'config' && (
                 <div>
                   <label className="block text-sm font-medium text-white mb-2">Config Key</label>
-                  <select
-                    value={bulkAdjustment.configKey}
-                    onChange={(e) => setBulkAdjustment(prev => ({ ...prev, configKey: e.target.value }))}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
-                  >
-                    <option value="daily_cap">Daily Credit Cap</option>
-                    <option value="max_credits_per_user">Max Credits Per User</option>
-                    <option value="max_media_per_user">Max Media Per User</option>
-                  </select>
+                    <select
+                      value={bulkAdjustment.configKey}
+                      onChange={(e) => setBulkAdjustment(prev => ({ ...prev, configKey: e.target.value }))}
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
+                    >
+                      <option value="daily_cap">Daily Credit Cap</option>
+                      <option value="starter_grant">Starter Grant (New Users)</option>
+                      <option value="referral_referrer_bonus">Referral Referrer Bonus</option>
+                      <option value="referral_new_bonus">Referral New User Bonus</option>
+                      <option value="max_credits_per_user">Max Credits Per User</option>
+                      <option value="max_media_per_user">Max Media Per User</option>
+                    </select>
                 </div>
               )}
 
@@ -2020,7 +2023,15 @@ const AdminDashboardScreen: React.FC = () => {
                       'users with 0 credits'
                     }`
                   ) : (
-                    `Will adjust ${bulkAdjustment.configKey} by ${bulkAdjustment.amount || '0'}`
+                    `Will adjust ${
+                      bulkAdjustment.configKey === 'daily_cap' ? 'Daily Credit Cap' :
+                      bulkAdjustment.configKey === 'starter_grant' ? 'Starter Grant (New Users)' :
+                      bulkAdjustment.configKey === 'referral_referrer_bonus' ? 'Referral Referrer Bonus' :
+                      bulkAdjustment.configKey === 'referral_new_bonus' ? 'Referral New User Bonus' :
+                      bulkAdjustment.configKey === 'max_credits_per_user' ? 'Max Credits Per User' :
+                      bulkAdjustment.configKey === 'max_media_per_user' ? 'Max Media Per User' :
+                      bulkAdjustment.configKey
+                    } by ${bulkAdjustment.amount || '0'}`
                   )}
                 </p>
               </div>
