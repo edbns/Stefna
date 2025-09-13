@@ -1465,8 +1465,10 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
   let models;
   if (mode === 'presets' || mode === 'custom') {
     models = PHOTO_MODELS;
-  } else if (mode === 'ghibli_reaction' || mode === 'unreal_reflection') {
-    models = GHIBLI_MODELS; // Use high-quality models for both Ghibli and Emotion Mask
+  } else if (mode === 'ghibli_reaction') {
+    models = GHIBLI_MODELS; // Use high-quality models for Ghibli
+  } else if (mode === 'unreal_reflection') {
+    models = EDIT_MODELS; // Use nano-banana/edit for Unreal Reflection (same as Studio)
   } else if (mode === 'story_time') {
     models = VIDEO_MODELS;
   } else if (mode === 'edit') {
