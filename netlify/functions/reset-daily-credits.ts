@@ -1,6 +1,39 @@
 import type { Handler } from "@netlify/functions";
 import { q } from './_db';
 
+// Event-based alert helper
+async function sendEventAlert(event: string, details: string, data?: any) {
+  try {
+    const subject = `[EVENT] Stefna Alert: ${event}`
+    const body = `
+Event: ${event}
+Status: INFO
+Message: ${event} occurred
+Details: ${details}
+Data: ${data ? JSON.stringify(data, null, 2) : 'None'}
+
+Time: ${new Date().toLocaleString()}
+Dashboard: https://stefna.xyz/dashboard/management/control
+`
+
+    await fetch('/.netlify/functions/sendEmail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: 'alert@stefna.xyz',
+        from: 'alert@stefna.xyz',
+        subject,
+        text: body,
+        type: 'event_alert'
+      })
+    })
+
+    console.log(`📧 [Event Alert] Sent: ${event} - ${details}`)
+  } catch (alertError) {
+    console.error(`❌ [Event Alert] Failed to send:`, alertError)
+  }
+}
+
 // Netlify Scheduled Function (configure in Netlify UI or netlify.toml)
 // Cron suggestion: '0 0 * * *' UTC for daily at midnight
 
@@ -15,6 +48,12 @@ export const handler: Handler = async () => {
     `);
     
     console.log('✅ [Daily Reset] Credits reset successfully');
+    
+    // Send event alert for daily credit reset
+    await sendEventAlert('DAILY_CREDIT_RESET', 'Daily credit reset completed successfully', {
+      timestamp: new Date().toISOString(),
+      creditsReset: 30
+    });
     
     // Get all users to send daily credit refresh emails
     const users = await q(`
