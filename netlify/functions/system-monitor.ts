@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions'
-import { q, qOne } from '../_db'
+import { q, qOne } from './_db'
 
 // ============================================================================
 // SYSTEM MONITOR - Internal Alert System
