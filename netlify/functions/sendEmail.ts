@@ -327,6 +327,45 @@ Want even more? Invite a friend and get bonus credits instantly.
 <br /><br />Don't want these emails? <a href="https://stefna.xyz/unsubscribe?email={{EMAIL}}&type=daily_credits_refresh" style="text-decoration:underline;color:#fff;">Unsubscribe</a>.`;
       break;
     
+    case 'email_change_otp':
+      emailBody = `Verify your new email address.
+
+Your verification code is: <strong style="color:#fff;font-size:24px;letter-spacing:2px;">${data.otp}</strong>
+
+This code will expire in 10 minutes.
+
+If you didn't request this change, please contact us immediately.
+
+<br /><br />This email was sent to verify changing your email from ${data.currentEmail} to ${data.newEmail}.`;
+      break;
+    
+    case 'email_change_notification':
+      emailBody = `Your email address has been changed.
+
+Your Stefna account email has been updated from:
+<strong style="color:#fff;">${data.oldEmail}</strong>
+
+To:
+<strong style="color:#fff;">${data.newEmail}</strong>
+
+This change was made on ${new Date(data.changeTime).toLocaleString()}.
+
+If you didn't make this change, please contact us immediately to secure your account.`;
+      break;
+    
+    case 'email_change_confirmation':
+      emailBody = `Your email address has been updated.
+
+Your Stefna account email has been successfully changed to:
+<strong style="color:#fff;">${data.newEmail}</strong>
+
+Your previous email was: ${data.oldEmail}
+
+This change was made on ${new Date(data.changeTime).toLocaleString()}.
+
+You can now use this email address to sign in to your account.`;
+      break;
+    
     default:
       emailBody = text;
   }

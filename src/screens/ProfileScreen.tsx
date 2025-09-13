@@ -66,6 +66,9 @@ const ProfileScreen: React.FC = () => {
   const [isChangingEmail, setIsChangingEmail] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [currentEmail, setCurrentEmail] = useState('')
+  const [otpSent, setOtpSent] = useState(false)
+  const [otpCode, setOtpCode] = useState('')
+  const [isSendingOtp, setIsSendingOtp] = useState(false)
 
 
 
@@ -94,6 +97,36 @@ const ProfileScreen: React.FC = () => {
   useEffect(() => {
     loadCurrentEmail()
   }, [])
+
+  // Send OTP for email change
+  const handleSendOtp = async () => {
+    if (!newEmail.trim()) {
+      notifyError({ title: 'Error', message: 'Enter a new email address' })
+      return
+    }
+
+    setIsSendingOtp(true)
+    try {
+      const response = await authenticatedFetch('/.netlify/functions/request-email-change-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newEmail: newEmail.trim() })
+      })
+
+      if (response.ok) {
+        notifyReady({ title: 'Success', message: 'Verification code sent to your new email address!' })
+        setOtpSent(true)
+      } else {
+        const error = await response.json()
+        notifyError({ title: 'Error', message: error.error || 'Failed to send verification code' })
+      }
+    } catch (error) {
+      console.error('OTP send error:', error)
+      notifyError({ title: 'Error', message: 'Failed to send verification code. Try again.' })
+    } finally {
+      setIsSendingOtp(false)
+    }
+  }
   
 
 
@@ -112,12 +145,20 @@ const ProfileScreen: React.FC = () => {
       return
     }
 
+    if (!otpCode.trim()) {
+      notifyError({ title: 'Error', message: 'Enter the verification code' })
+      return
+    }
+
     setIsChangingEmail(true)
     try {
       const response = await authenticatedFetch('/.netlify/functions/change-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newEmail: newEmail.trim() })
+        body: JSON.stringify({ 
+          newEmail: newEmail.trim(),
+          otp: otpCode.trim()
+        })
       })
 
       if (response.ok) {
@@ -125,6 +166,8 @@ const ProfileScreen: React.FC = () => {
         notifyReady({ title: 'Success', message: 'Email updated successfully!' })
         setShowChangeEmailModal(false)
         setNewEmail('')
+        setOtpCode('')
+        setOtpSent(false)
         // Update current email state with the new email
         setCurrentEmail(data.newEmail)
         // Refresh profile data to get updated email
@@ -1910,6 +1953,8 @@ const ProfileScreen: React.FC = () => {
                 onClick={() => {
                   setShowChangeEmailModal(false)
                   setNewEmail('')
+                  setOtpCode('')
+                  setOtpSent(false)
                 }}
                 className="text-white/60 hover:text-white transition-colors"
               >
@@ -1919,19 +1964,39 @@ const ProfileScreen: React.FC = () => {
             
             <div className="space-y-4">
               <p className="text-white/80 text-sm">
-                Enter your new email address below. You'll need to verify this email address.
+                {otpSent 
+                  ? `We've sent a verification code to ${newEmail}. Enter the code below to complete the change.`
+                  : 'Enter your new email address below. We\'ll send a verification code to confirm the change.'
+                }
               </p>
               
-              <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">New Email Address</label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="Enter new email address"
-                  className="w-full bg-[#2a2a2a] border border-[#444444] rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
-                  disabled={isChangingEmail}
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-2">New Email Address</label>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Enter new email address"
+                    className="w-full bg-[#2a2a2a] border border-[#444444] rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
+                    disabled={isChangingEmail || otpSent}
+                  />
+                </div>
+
+                {otpSent && (
+                  <div>
+                    <label className="block text-white/80 text-sm font-medium mb-2">Verification Code</label>
+                    <input
+                      type="text"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value)}
+                      placeholder="Enter 6-digit code"
+                      className="w-full bg-[#2a2a2a] border border-[#444444] rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10 text-center text-lg tracking-widest"
+                      disabled={isChangingEmail}
+                      maxLength={6}
+                    />
+                  </div>
+                )}
               </div>
               
               <div className="flex justify-end space-x-3 pt-4">
@@ -1939,19 +2004,43 @@ const ProfileScreen: React.FC = () => {
                   onClick={() => {
                     setShowChangeEmailModal(false)
                     setNewEmail('')
+                    setOtpCode('')
+                    setOtpSent(false)
                   }}
                   disabled={isChangingEmail}
                   className="px-4 py-2 text-white rounded-lg transition-colors bg-white/10 hover:bg-white/20 disabled:opacity-50"
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={handleChangeEmail}
-                  disabled={isChangingEmail || !newEmail.trim()}
-                  className="px-4 py-2 text-black rounded-lg transition-colors bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-                >
-                  {isChangingEmail ? "Updating..." : "Update Email"}
-                </button>
+                
+                {!otpSent ? (
+                  <button
+                    onClick={handleSendOtp}
+                    disabled={isSendingOtp || !newEmail.trim()}
+                    className="px-4 py-2 text-black rounded-lg transition-colors bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                  >
+                    {isSendingOtp ? "Sending..." : "Send Code"}
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setOtpSent(false)
+                        setOtpCode('')
+                      }}
+                      className="px-4 py-2 text-white rounded-lg transition-colors bg-white/10 hover:bg-white/20"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handleChangeEmail}
+                      disabled={isChangingEmail || !otpCode.trim()}
+                      className="px-4 py-2 text-black rounded-lg transition-colors bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                    >
+                      {isChangingEmail ? "Updating..." : "Update Email"}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
