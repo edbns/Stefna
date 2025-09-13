@@ -1020,6 +1020,41 @@ const HomeNew: React.FC = () => {
     }
   `
 
+  // Beta shimmer animation styles
+  const betaShimmerStyles = `
+    @keyframes shimmer {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
+    }
+    
+    .beta-shimmer {
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+      background-size: 200% 100%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      animation: shimmer 2s ease-in-out infinite;
+    }
+  `
+
+  // Inject beta shimmer styles
+  useEffect(() => {
+    const styleId = 'beta-shimmer-styles'
+    let styleElement = document.getElementById(styleId) as HTMLStyleElement
+    
+    if (!styleElement) {
+      styleElement = document.createElement('style')
+      styleElement.id = styleId
+      document.head.appendChild(styleElement)
+    }
+    
+    styleElement.textContent = betaShimmerStyles
+  }, [betaShimmerStyles])
+
   // Inject Story Time styles
   useEffect(() => {
     if (composerState.mode === 'storytime') {
@@ -3488,12 +3523,15 @@ const HomeNew: React.FC = () => {
         <>
           {/* Desktop View - Full Experience */}
           {/* Floating Logo - Top Left */}
-          <div className="fixed top-6 left-6 z-50 flex items-center">
+          <div className="fixed top-6 left-6 z-50 flex items-center gap-3">
             <img 
               src="/logo.png" 
               alt="Stefna Logo" 
               className="w-10 h-10 object-contain cursor-pointer hover:scale-110 transition-transform duration-200" 
             />
+            <span className="text-white text-sm font-medium beta-shimmer">
+              beta.
+            </span>
           </div>
       
       {/* Filter Banner - Center Top */}

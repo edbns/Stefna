@@ -1310,8 +1310,29 @@ const AdminDashboardScreen: React.FC = () => {
 
                         {/* System Health */}
                         <div className="bg-white/5 rounded-xl border border-white/10 p-6">
-                          <h4 className="text-lg font-semibold text-white mb-4">System Health</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-lg font-semibold text-white">System Health</h4>
+                            <div className="flex items-center space-x-3">
+                              <button
+                                onClick={() => loadSystemConfig()}
+                                className="px-3 py-1 bg-white/5 text-white rounded hover:bg-white/10 transition-colors text-sm"
+                              >
+                                Refresh Health
+                              </button>
+                              <div className={`px-3 py-1 rounded text-sm font-medium ${
+                                systemConfig?.systemConfig?.overall_health === 'healthy' 
+                                  ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                  : systemConfig?.systemConfig?.overall_health === 'degraded'
+                                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                              }`}>
+                                {systemConfig?.systemConfig?.overall_health === 'healthy' ? 'All Systems Healthy' :
+                                 systemConfig?.systemConfig?.overall_health === 'degraded' ? 'Some Issues Detected' :
+                                 'System Issues'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <div className="flex items-center space-x-3">
                               <div className={`w-3 h-3 rounded-full ${systemConfig?.systemConfig?.fal_ai_enabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
                               <span className="text-sm text-white">Fal.ai API</span>
@@ -1321,8 +1342,16 @@ const AdminDashboardScreen: React.FC = () => {
                               <span className="text-sm text-white">BFL API</span>
                             </div>
                             <div className="flex items-center space-x-3">
+                              <div className={`w-3 h-3 rounded-full ${systemConfig?.systemConfig?.stability_enabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                              <span className="text-sm text-white">Stability.ai</span>
+                            </div>
+                            <div className="flex items-center space-x-3">
                               <div className={`w-3 h-3 rounded-full ${systemConfig?.systemConfig?.cloudinary_enabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
                               <span className="text-sm text-white">Cloudinary</span>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-3 h-3 rounded-full ${systemConfig?.systemConfig?.email_enabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                              <span className="text-sm text-white">Email Service</span>
                             </div>
                             <div className="flex items-center space-x-3">
                               <div className={`w-3 h-3 rounded-full ${systemConfig?.systemConfig?.database_enabled ? 'bg-green-500' : 'bg-red-500'}`}></div>

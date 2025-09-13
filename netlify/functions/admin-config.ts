@@ -70,21 +70,70 @@ const adminConfigHandler: Handler = async (event) => {
       // Get waitlist count
       const waitlistCount = await qCount('SELECT COUNT(*) FROM waitlist');
 
-      // Get system configuration (from environment variables)
+      // Get real system health from health check endpoint
+      let realHealthStatus = {
+        fal_ai_enabled: false,
+        bfl_api_enabled: false,
+        stability_enabled: false,
+        cloudinary_enabled: false,
+        email_enabled: false,
+        database_enabled: false,
+        overall_status: 'unknown'
+      };
+      
+      try {
+        // Call our health check function internally
+        const healthResponse = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/health-check`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (healthResponse.ok) {
+          const healthData = await healthResponse.json();
+          realHealthStatus = {
+            fal_ai_enabled: healthData.services?.find((s: any) => s.service === 'fal_ai')?.status === 'healthy',
+            bfl_api_enabled: healthData.services?.find((s: any) => s.service === 'bfl')?.status === 'healthy',
+            stability_enabled: healthData.services?.find((s: any) => s.service === 'stability_ai')?.status === 'healthy',
+            cloudinary_enabled: healthData.services?.find((s: any) => s.service === 'cloudinary')?.status === 'healthy',
+            email_enabled: healthData.services?.find((s: any) => s.service === 'email')?.status === 'healthy',
+            database_enabled: healthData.services?.find((s: any) => s.service === 'database')?.status === 'healthy',
+            overall_status: healthData.overallStatus || 'unknown'
+          };
+        }
+      } catch (healthError) {
+        console.warn('⚠️ [Admin] Health check failed, falling back to env vars:', healthError);
+        // Fallback to environment variable checks
+        realHealthStatus = {
+          fal_ai_enabled: !!process.env.FAL_AI_API_KEY,
+          bfl_api_enabled: !!process.env.BFL_API_KEY,
+          stability_enabled: !!process.env.STABILITY_API_KEY,
+          cloudinary_enabled: !!process.env.CLOUDINARY_CLOUD_NAME,
+          email_enabled: !!process.env.RESEND_API_KEY,
+          database_enabled: !!process.env.DATABASE_URL,
+          overall_status: 'degraded'
+        };
+      }
+
+      // Get system configuration with real health status
       const systemConfig = {
-        // API Configuration
-        fal_ai_enabled: !!process.env.FAL_AI_API_KEY,
-        bfl_api_enabled: !!process.env.BFL_API_KEY,
-        stability_enabled: !!process.env.STABILITY_API_KEY,
+        // API Configuration - Real Health Status
+        fal_ai_enabled: realHealthStatus.fal_ai_enabled,
+        bfl_api_enabled: realHealthStatus.bfl_api_enabled,
+        stability_enabled: realHealthStatus.stability_enabled,
         
-        // Cloudinary Configuration
-        cloudinary_enabled: !!process.env.CLOUDINARY_CLOUD_NAME,
+        // Cloudinary Configuration - Real Health Status
+        cloudinary_enabled: realHealthStatus.cloudinary_enabled,
         
-        // Email Configuration
-        email_enabled: !!process.env.RESEND_API_KEY,
+        // Email Configuration - Real Health Status
+        email_enabled: realHealthStatus.email_enabled,
         
-        // Database Configuration
-        database_enabled: !!process.env.DATABASE_URL,
+        // Database Configuration - Real Health Status
+        database_enabled: realHealthStatus.database_enabled,
+        
+        // Overall System Health
+        overall_health: realHealthStatus.overall_status,
         
         // Launch Configuration
         launch: launchStatus[0] || { is_launched: false, launch_date: null, waitlist_count: 0 },
