@@ -1,14 +1,16 @@
 // src/presets/ghibliReact.ts
 
-const BASE_PROMPT = `Transform the human face into a realistic Studio Ghibli-style reaction. Preserve full identity, age, gender, ethnicity, skin tone, and facial structure. Use soft lighting and pastel cinematic tones like a Ghibli animation frame. Subtle exaggeration only, never cartoonish.`
+// Base prompt template for consistent Ghibli style
+const BASE_PROMPT = `Transform the human face into a realistic Ghibli-style reaction with soft lighting, identity preservation, and subtle emotional exaggeration. Use pastel cinematic tones like a Studio Ghibli frame.`;
 
+// Emotion-specific inserts
 const EMOTION_INSERTS = {
-  tears: `Add delicate tear trails under the eyes, shimmering softly with light reflection. Expression should show vulnerability without distortion. Lighting should be warm and cinematic, with pastel evening tones.`,
-  shock: `Slightly widen the eyes and part the lips to show gentle surprise. Expression should look natural, not exaggerated. Lighting should be soft and cinematic with subtle warm glow, like a moment of awe in a Ghibli scene.`,
-  sparkle: `Add medium sparkles concentrated around the cheeks only, paired with soft golden highlights in the eyes and gentle pink blush. Keep sparkles subtle, never overwhelming, complementing the face instead of covering it. Background should have gentle bokeh light flares.`,
-  sadness: `Emphasize melancholic mood with glossy, teary eyes and a distant gaze. Expression should be softened but not distorted. Add a faint pastel evening background with warm shadows. Lighting should highlight emotional depth without exaggeration.`,
-  love: `Add soft pink blush across the cheeks, warm shimmer in the eyes, and a faint gentle smile. Subtle floating light flares or faint hearts may appear around the face, never exaggerated. Use pastel tones with warm golden cinematic lighting for a dreamy Ghibli atmosphere.`
-}
+  tears: `Add delicate tears and a trembling expression.`,
+  shock: `Widen the eyes and part the lips slightly to show surprise.`,
+  sparkle: `Add medium sparkles around the cheeks only, shimmering eyes with golden highlights, and soft pink blush. Keep sparkles focused on cheek area.`,
+  sadness: `Add melancholic emotion with glossy eyes and distant gaze.`,
+  love: `Add warm sparkle in the eyes, gentle blush, and glowing pastel lighting. Create a dreamy, cozy atmosphere with soft bokeh in the background.`,
+};
 
 export type GhibliReactionPreset = {
   id: string
@@ -36,8 +38,8 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_tears',
     label: 'Tears',
-    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.tears}`,
-    negative_prompt: `cartoonish, over-exaggerated features, overly large eyes, gender swap, multiple subjects, distortion, fake tears, anime lineart, plastic skin, harsh sparkles, unrealistic lighting`,
+    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.tears} Add delicate tears under the eyes, a trembling mouth, and a soft pink blush. Keep the face fully intact with original skin tone, gender, and identity. Use soft, cinematic lighting and warm pastel tones like a Ghibli film.`,
+    negative_prompt: `cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face, anime lines, face swap, fake tears, harsh lighting, shiny skin, photorealism`,
     strength: 0.45,
     model: 'bfl/flux-pro-1.1-ultra',
     mode: 'i2i',
@@ -57,8 +59,8 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_shock',
     label: 'Shock',
-    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.shock}`,
-    negative_prompt: `cartoonish, bug eyes, overly large eyes, gender swap, multiple subjects, anime outline, manga, distortion, plastic skin, harsh light`,
+    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.shock} Slightly widen the eyes, part the lips, and show light tension in the expression. Maintain identity, ethnicity, and facial realism. Add soft sparkles and cinematic warmth — like a frame from a Studio Ghibli film.`,
+    negative_prompt: `cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face, anime mask, bug eyes, unrealistic skin, face distortion`,
     strength: 0.45,
     model: 'bfl/flux-pro-1.1-ultra',
     mode: 'i2i',
@@ -78,8 +80,8 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_sparkle',
     label: 'Sparkle',
-    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.sparkle}`,
-    negative_prompt: `cartoonish, anime rendering, harsh sparkles, sparkles all over face, overexposed, lineart, glitter makeup, distortion, photorealism, plastic skin`,
+    prompt: `Transform the human face into a magical Ghibli-style sparkle reaction while preserving full identity, ethnicity, skin tone, and facial structure. Add medium sparkles around the cheeks only, shimmering golden highlights in the eyes, and soft pink blush on the cheeks. Keep sparkles focused on the cheek area to complement the blush without overwhelming it. Use pastel cinematic tones with gentle sparkle effects and dreamy lighting. Background should have gentle bokeh with soft light flares. Maintain original composition and realism with subtle magical sparkle effects on cheeks.`,
+    negative_prompt: `cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face, cartoon overlay, anime rendering, lineart, plastic skin, overexposed, unnatural colors, harsh sparkles, excessive sparkles, sparkles all over face, overwhelming sparkles`,
     strength: 0.45,
     model: 'bfl/flux-pro-1.1-ultra',
     mode: 'i2i',
@@ -99,8 +101,8 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_sadness',
     label: 'Sadness',
-    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.sadness}`,
-    negative_prompt: `cartoonish, anime outline, 2D crying face, exaggerated tears, manga style, gender swap, distortion, washed out skin, photorealism`,
+    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.sadness} Emphasize melancholic emotion through glossy, teary eyes, a distant gaze, and softened facial features. Slight tear trails may appear but no crying mouth. Preserve full identity, ethnicity, skin, and structure. Lighting should be dim, cinematic, and pastel-toned like a Ghibli evening scene.`,
+    negative_prompt: `cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face, anime outline, 2D face, exaggerated crying, manga, flat colors, face replacement, photorealism, harsh light, flat expression`,
     strength: 0.35,
     model: 'bfl/flux-pro-1.1-ultra',
     mode: 'i2i',
@@ -120,8 +122,8 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
   {
     id: 'ghibli_love',
     label: 'Love',
-    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.love}`,
-    negative_prompt: `cartoonish, over-exaggerated hearts, anime lines, blur, distortion, extra accessories, unrealistic sparkles, washed out`,
+    prompt: `Transform the human face into a romantic Ghibli-style love reaction while preserving full identity, ethnicity, skin tone, and facial structure. Add soft pink blush on the cheeks, warm sparkle in the eyes, and a gentle, shy smile. Include subtle floating hearts or sparkles around the face to enhance emotional expression. Use pastel cinematic tones and soft golden lighting to create a dreamy, cozy atmosphere. Background should have gentle bokeh with subtle Ghibli-style light flares. Maintain original composition and realism with only slight anime influence.`,
+    negative_prompt: `over-exaggerated anime features, distortion, harsh shadows, washed out, identity loss, extra accessories, cartoonish eyes, blur`,
     strength: 0.35,
     model: 'bfl/flux-pro-1.1-ultra',
     mode: 'i2i',
@@ -136,9 +138,9 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     raw: true,
     image_prompt_strength: 0.35,
     aspect_ratio: '3:4',
-    features: ['ghibli_style', 'emotional_reaction', 'love', 'soft_lighting', 'identity_preserved']
+    features: ['ghibli_style', 'emotional_reaction', 'love', 'bokeh_glow', 'soft_lighting', 'identity_preserved']
   }
-]
+];
 
 export function getGhibliReactionPreset(presetId: string): GhibliReactionPreset | undefined {
   return GHIBLI_REACTION_PRESETS.find(p => p.id === presetId)
