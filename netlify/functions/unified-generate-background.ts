@@ -1730,6 +1730,119 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
             editPrompt: params.editPrompt
           }
         };
+      } else if (mode === 'unreal_reflection') {
+        // Unreal Reflection mode with nano-banana/edit - Use same processing as Edit Mode
+        console.log(`✏️ [Unreal Reflection Mode] Processing single image for photo editing`);
+        
+        // For Unreal Reflection Mode, we only need the main image (like Edit Mode)
+        const mainImage = params.sourceAssetId;
+        
+        if (!mainImage) {
+          throw new Error("Unreal Reflection Mode requires a source image");
+        }
+        
+        console.log(`✏️ [Unreal Reflection Mode] Processing main image: ${typeof mainImage === 'string' ? mainImage.substring(0, 50) : 'File object'}...`);
+        
+        // Upload main image to Cloudinary to get public URL
+        const uploadedImageUrl = await uploadUrlToCloudinary(mainImage);
+        console.log(`✅ [Unreal Reflection Mode] Main image uploaded: ${uploadedImageUrl}`);
+        
+        // Use nano-banana/edit with single image
+        const unrealReflectionInput: any = {
+          image_urls: [uploadedImageUrl], // Use main image as base (array format)
+          prompt: params.prompt
+        };
+
+        // 🎯 ENHANCED PROMPT ENGINEERING FOR UNREAL REFLECTION MODE
+        // Apply enhanced prompt engineering for Unreal Reflection mode
+        const originalUnrealReflectionPrompt = params.prompt;
+        const detectedGender = detectGenderFromPrompt(originalUnrealReflectionPrompt);
+        const detectedAnimals = detectAnimalsFromPrompt(originalUnrealReflectionPrompt);
+        const detectedGroups = detectGroupsFromPrompt(originalUnrealReflectionPrompt);
+        
+        console.log(`🔍 [Unreal Reflection Mode Enhanced Prompt] Detected:`, {
+          gender: detectedGender,
+          animals: detectedAnimals,
+          groups: detectedGroups
+        });
+
+        // Apply enhanced prompt engineering for Unreal Reflection mode
+        const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(originalUnrealReflectionPrompt, {
+          preserveGender: true,
+          preserveAnimals: true,
+          preserveGroups: true,
+          originalGender: detectedGender,
+          originalAnimals: detectedAnimals,
+          originalGroups: detectedGroups,
+          context: 'unreal_reflection'
+        });
+
+        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Original: "${originalUnrealReflectionPrompt}"`);
+        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Enhanced: "${enhancedPrompt}"`);
+        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Negative: "${negativePrompt}"`);
+        
+        // Update the input with enhanced prompt
+        unrealReflectionInput.prompt = enhancedPrompt;
+        if (negativePrompt) {
+          unrealReflectionInput.negative_prompt = negativePrompt;
+        }
+
+        console.log(`✏️ [Unreal Reflection Mode] Generating edit with single image`);
+        
+        try {
+          result = await falInvoke(modelConfig.model, unrealReflectionInput);
+        } catch (falError) {
+          console.error(`❌ [Unreal Reflection Mode] Fal.ai generation failed:`, falError);
+          throw new Error(`Fal.ai Unreal Reflection generation failed: ${falError}`);
+        }
+        
+        // Check multiple possible image response formats
+        let resultImageUrl = null;
+        
+        // Format 1: result.data.images[0].url
+        if (result?.data?.images?.[0]?.url) {
+          resultImageUrl = result.data.images[0].url;
+        }
+        // Format 2: result.images[0].url
+        else if (result?.images?.[0]?.url) {
+          resultImageUrl = result.images[0].url;
+        }
+        // Format 3: result.data.image.url
+        else if (result?.data?.image?.url) {
+          resultImageUrl = result.data.image.url;
+        }
+        // Format 4: result.image.url
+        else if (result?.image?.url) {
+          resultImageUrl = result.image.url;
+        }
+        // Format 5: result.image_url
+        else if (result?.image_url) {
+          resultImageUrl = result.image_url;
+        }
+        
+        if (!resultImageUrl) {
+          throw new Error(`Unreal Reflection generation failed: No image URL found in response from ${modelConfig.name}`);
+        }
+        
+        console.log(`✅ [Unreal Reflection Mode] Edit generated successfully: ${resultImageUrl}`);
+        
+        // Download and upload to Cloudinary for permanent hosting
+        const cloudinaryUrl = await uploadUrlToCloudinary(resultImageUrl);
+        console.log(`✅ [Unreal Reflection Mode] Edit uploaded to Cloudinary: ${cloudinaryUrl}`);
+        
+        return {
+          success: true,
+          status: 'done',
+          provider: 'fal',
+          outputUrl: cloudinaryUrl,
+          runId: params.runId,
+          metadata: {
+            model: modelConfig.model,
+            totalImages: 1,
+            originalImageUrl: resultImageUrl,
+            unrealReflectionPrompt: params.prompt
+          }
+        };
       } else {
         // Convert Cloudinary signed URL to public URL for Fal.ai
         let processedImageUrl = params.sourceAssetId;
