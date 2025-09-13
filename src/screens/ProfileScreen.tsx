@@ -2019,6 +2019,10 @@ const ProfileScreen: React.FC = () => {
                 
                 // Background refresh removed to prevent duplicate loading
                 
+                // Dispatch event to refresh the main feed
+                window.dispatchEvent(new CustomEvent('refreshFeed'))
+                console.log('🔄 Dispatched refreshFeed event to update main feed')
+                
                 console.log('✅ Local state updated, media removed from UI')
                 
               } catch (error) {
