@@ -569,42 +569,103 @@ const AdminDashboardScreen: React.FC = () => {
     return users.filter(user => user.credits >= min && user.credits <= max).length
   }
 
-  const handleBulkCreditAdjustment = async () => {
-    const adjustment = prompt('Enter credit adjustment amount (positive to add, negative to subtract):')
-    if (!adjustment || isNaN(Number(adjustment))) {
+  // Bulk Credit Adjustment State
+  const [showBulkModal, setShowBulkModal] = useState(false)
+  const [bulkAdjustment, setBulkAdjustment] = useState({
+    type: 'users', // 'users' or 'config'
+    amount: '',
+    target: 'all', // 'all', 'low', 'high', 'zero'
+    configKey: 'daily_cap' // for config adjustments
+  })
+
+  const handleBulkCreditAdjustment = () => {
+    setShowBulkModal(true)
+  }
+
+  const executeBulkAdjustment = async () => {
+    if (!bulkAdjustment.amount || isNaN(Number(bulkAdjustment.amount))) {
       alert('Please enter a valid number')
       return
     }
 
-    const amount = Number(adjustment)
-    const usersWithLowCredits = users.filter(user => user.credits <= 5)
+    const amount = Number(bulkAdjustment.amount)
     
-    if (!confirm(`This will adjust credits by ${amount} for ${usersWithLowCredits.length} users with ≤5 credits. Continue?`)) {
-      return
-    }
-
     try {
       let successCount = 0
-      for (const user of usersWithLowCredits) {
-        const response = await authenticatedFetch('/.netlify/functions/admin-adjust-credits', {
-          method: 'POST',
+      let totalAffected = 0
+
+      if (bulkAdjustment.type === 'config') {
+        // Adjust app_config values
+        const response = await authenticatedFetch('/.netlify/functions/admin-config', {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'X-Admin-Secret': adminSecret
           },
-          body: JSON.stringify({ userId: user.id, adjustment: amount })
+          body: JSON.stringify({
+            action: 'bulk_config_adjustment',
+            data: {
+              key: bulkAdjustment.configKey,
+              adjustment: amount
+            }
+          })
         })
-        
+
         if (response.ok) {
-          successCount++
+          alert(`Successfully adjusted ${bulkAdjustment.configKey} by ${amount}`)
+          loadSystemConfig()
+        } else {
+          alert('Failed to adjust config value')
         }
+      } else {
+        // Adjust user credits
+        let targetUsers = users
+
+        if (bulkAdjustment.target === 'low') {
+          targetUsers = users.filter(user => user.credits <= 5)
+        } else if (bulkAdjustment.target === 'high') {
+          targetUsers = users.filter(user => user.credits > 20)
+        } else if (bulkAdjustment.target === 'zero') {
+          targetUsers = users.filter(user => user.credits === 0)
+        }
+
+        totalAffected = targetUsers.length
+
+        if (!confirm(`This will adjust credits by ${amount} for ${totalAffected} users. Continue?`)) {
+          return
+        }
+
+        for (const user of targetUsers) {
+          try {
+            const response = await authenticatedFetch('/.netlify/functions/admin-adjust-credits', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Secret': adminSecret
+              },
+              body: JSON.stringify({
+                userId: user.id,
+                adjustment: amount
+              })
+            })
+
+            if (response.ok) {
+              successCount++
+            }
+          } catch (error) {
+            console.error(`Failed to adjust credits for user ${user.id}:`, error)
+          }
+        }
+
+        alert(`Successfully adjusted credits for ${successCount}/${totalAffected} users`)
+        loadUsers()
       }
 
-      alert(`Successfully adjusted credits for ${successCount} users!`)
-      loadAdminData() // Reload data
+      setShowBulkModal(false)
+      setBulkAdjustment({ type: 'users', amount: '', target: 'all', configKey: 'daily_cap' })
     } catch (error) {
-      console.error('Failed to bulk adjust credits:', error)
-      alert('Error during bulk credit adjustment')
+      console.error('Bulk adjustment failed:', error)
+      alert('Bulk adjustment failed')
     }
   }
 
@@ -1882,6 +1943,107 @@ const AdminDashboardScreen: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Bulk Credit Adjustment Modal */}
+      {showBulkModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-black border border-white/10 rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-white mb-4">Bulk Credit Adjustment</h3>
+            
+            <div className="space-y-4">
+              {/* Adjustment Type */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Adjustment Type</label>
+                <select
+                  value={bulkAdjustment.type}
+                  onChange={(e) => setBulkAdjustment(prev => ({ ...prev, type: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
+                >
+                  <option value="users">User Credits</option>
+                  <option value="config">App Config Values</option>
+                </select>
+              </div>
+
+              {/* Amount */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Amount</label>
+                <input
+                  type="number"
+                  value={bulkAdjustment.amount}
+                  onChange={(e) => setBulkAdjustment(prev => ({ ...prev, amount: e.target.value }))}
+                  placeholder="Enter adjustment amount"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/20"
+                />
+              </div>
+
+              {/* Target Selection */}
+              {bulkAdjustment.type === 'users' && (
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Target Users</label>
+                  <select
+                    value={bulkAdjustment.target}
+                    onChange={(e) => setBulkAdjustment(prev => ({ ...prev, target: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
+                  >
+                    <option value="all">All Users</option>
+                    <option value="low">Users with ≤5 credits</option>
+                    <option value="high">Users with >20 credits</option>
+                    <option value="zero">Users with 0 credits</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Config Key Selection */}
+              {bulkAdjustment.type === 'config' && (
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Config Key</label>
+                  <select
+                    value={bulkAdjustment.configKey}
+                    onChange={(e) => setBulkAdjustment(prev => ({ ...prev, configKey: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
+                  >
+                    <option value="daily_cap">Daily Credit Cap</option>
+                    <option value="max_credits_per_user">Max Credits Per User</option>
+                    <option value="max_media_per_user">Max Media Per User</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Preview */}
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-sm text-white/60">
+                  {bulkAdjustment.type === 'users' ? (
+                    `Will adjust credits by ${bulkAdjustment.amount || '0'} for ${
+                      bulkAdjustment.target === 'all' ? 'all users' :
+                      bulkAdjustment.target === 'low' ? 'users with ≤5 credits' :
+                      bulkAdjustment.target === 'high' ? 'users with >20 credits' :
+                      'users with 0 credits'
+                    }`
+                  ) : (
+                    `Will adjust ${bulkAdjustment.configKey} by ${bulkAdjustment.amount || '0'}`
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowBulkModal(false)}
+                className="px-4 py-2 bg-white/5 text-white rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeBulkAdjustment}
+                className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
+              >
+                Execute Adjustment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

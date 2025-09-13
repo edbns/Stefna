@@ -214,6 +214,34 @@ const adminConfigHandler: Handler = async (event) => {
             message: 'Feature flag updated successfully'
           });
 
+        case 'bulk_config_adjustment':
+          // Adjust app_config values
+          const { key, adjustment } = data;
+          if (!key || typeof adjustment !== 'number') {
+            return json({ error: 'key and adjustment are required' }, { status: 400 });
+          }
+
+          // Get current value
+          const currentConfig = await qOne(`SELECT value FROM app_config WHERE key = $1`, [key]);
+          if (!currentConfig) {
+            return json({ error: `Config key '${key}' not found` }, { status: 404 });
+          }
+
+          const currentValue = parseInt(currentConfig.value) || 0;
+          const newValue = Math.max(0, currentValue + adjustment); // Ensure non-negative
+
+          // Update the config value
+          await q(`UPDATE app_config SET value = $1 WHERE key = $2`, [newValue.toString(), key]);
+
+          console.log(`✅ [Admin] Updated ${key}: ${currentValue} → ${newValue} (${adjustment > 0 ? '+' : ''}${adjustment})`);
+          return json({
+            success: true,
+            message: `Updated ${key} from ${currentValue} to ${newValue}`,
+            oldValue: currentValue,
+            newValue: newValue,
+            adjustment: adjustment
+          });
+
         case 'toggle_launch':
           // Toggle launch status
           const { is_launched } = data;
