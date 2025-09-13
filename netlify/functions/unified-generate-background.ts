@@ -18,6 +18,39 @@ import { withAuth } from './_withAuth';
 import { requireAuth } from './_lib/auth';
 import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyAdvancedPromptEnhancements } from '../../src/utils/promptEnhancement';
 
+// Immediate alert helper
+async function sendImmediateAlert(service: string, error: string, details: string) {
+  try {
+    const subject = `[CRITICAL] Stefna Alert: ${service.toUpperCase()} failed`
+    const body = `
+Service: ${service.toUpperCase()}
+Status: CRITICAL
+Message: ${service.toUpperCase()} failed during generation
+Details: ${error}
+Additional Info: ${details}
+
+Time: ${new Date().toLocaleString()}
+Dashboard: https://stefna.xyz/dashboard/management/control
+`
+
+    await fetch('/.netlify/functions/sendEmail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: 'alert@stefna.xyz',
+        from: 'alert@stefna.xyz',
+        subject,
+        text: body,
+        type: 'system_alert'
+      })
+    })
+
+    console.log(`🚨 [Immediate Alert] Sent: ${service} - ${error}`)
+  } catch (alertError) {
+    console.error(`❌ [Immediate Alert] Failed to send:`, alertError)
+  }
+}
+
 const FAL_BASE = 'https://fal.run';
 const FAL_KEY = process.env.FAL_KEY as string;
 const BFL_API_KEY = process.env.BFL_API_KEY as string;
@@ -606,6 +639,8 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
     return uploadResult.secure_url;
   } catch (error: any) {
     console.error('❌ [Background] Cloudinary signed upload error:', error);
+    // Send immediate alert for Cloudinary failures
+    await sendImmediateAlert('cloudinary', error.message, 'Cloudinary signed upload failed');
     throw error;
   }
 }
@@ -1042,6 +1077,8 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
 
   } catch (error) {
     console.error(`❌ [Background] Failed to save generation result to database:`, error);
+    // Send immediate alert for database issues
+    await sendImmediateAlert('database', error.message, `Failed to save ${request.mode} generation result`);
     // Don't throw here - generation was successful, just logging failed
   }
 }
@@ -1119,6 +1156,8 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
       } catch (error) {
         lastError = error;
         console.warn(`⚠️ [Background] Stability.ai ${tier.toUpperCase()} failed:`, error);
+        // Send immediate alert for Stability.ai failures
+        await sendImmediateAlert('stability', error.message, `Stability.ai ${tier} tier failed during generation`);
         continue; // Try next tier
       }
     }
@@ -1243,6 +1282,8 @@ async function generateWithReplicate(params: any): Promise<UnifiedGenerationResp
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.warn(`⚠️ [Background] Replicate ${modelConfig.name} failed:`, error);
+      // Send immediate alert for Replicate failures
+      await sendImmediateAlert('replicate', error.message, `Replicate ${modelConfig.name} failed during generation`);
       continue; // Try next model
     }
   }
