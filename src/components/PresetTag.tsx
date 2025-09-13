@@ -56,7 +56,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
     const typeNames: Record<string, string> = {
       'neo_glitch': 'Neo Tokyo Glitch',
       'ghibli_reaction': 'Ghibli Reaction',
-      'unreal_reflection': 'Emotion Mask',
+      'unreal_reflection': 'Unreal Reflection',
       'presets': 'Presets',
       'custom_prompt': 'Custom Prompt',
       'story_time': 'Story Time',
@@ -65,13 +65,13 @@ const PresetTag: React.FC<PresetTagProps> = ({
       // Media type mappings
       'neo-glitch': 'Neo Tokyo Glitch',
       'ghiblireact': 'Ghibli Reaction',
-      'unrealreflection': 'Emotion Mask',
+      'unrealreflection': 'Unreal Reflection',
       'preset': 'Presets',
       'custom': 'Custom Prompt',
       'storytime': 'Story Time',
       // Additional mappings
       'ghibli-reaction': 'Ghibli Reaction',
-      'emotion-mask': 'Emotion Mask',
+      'emotion-mask': 'Unreal Reflection',
       'custom-prompt': 'Custom Prompt',
       'story-time': 'Story Time'
     }
@@ -100,7 +100,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
       'sparkle': 'Sparkle',
       'tears': 'Tears',
       
-      // Emotion Mask
+      // Unreal Reflection
       'unreal_reflection_nostalgia': 'Nostalgia',
       'unreal_reflection_distance': 'Distance',
       'unreal_reflection_joy': 'Joy',

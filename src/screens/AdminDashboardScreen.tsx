@@ -1084,7 +1084,7 @@ const AdminDashboardScreen: React.FC = () => {
                               <option value="all">All Types</option>
                               <option value="neo_glitch">Neo Tokyo Glitch</option>
                               <option value="presets">Presets</option>
-                              <option value="unreal_reflection">Emotion Mask</option>
+                              <option value="unreal_reflection">Unreal Reflection</option>
                               <option value="ghibli_reaction">Ghibli Reaction</option>
                               <option value="custom_prompt">Custom Prompt</option>
                               <option value="edit">Studio</option>

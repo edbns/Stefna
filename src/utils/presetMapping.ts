@@ -57,7 +57,7 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   const typeDisplayNames: Record<string, string> = {
     'neo-glitch': 'Neo Tokyo Glitch',
     'ghibli-reaction': 'Ghibli Reaction',
-    'emotion-mask': 'Emotion Mask', 
+    'emotion-mask': 'Unreal Reflection', 
     'presets': 'Presets',
     'custom-prompt': 'Custom Prompt',
     'story-time': 'Story Time'
@@ -141,7 +141,7 @@ export function getFilterDisplayName(filterType: string): string {
   const filterDisplayNames: Record<string, string> = {
     'neo-glitch': 'Neo Tokyo Glitch',
     'ghibli-reaction': 'Ghibli Reaction',
-    'emotion-mask': 'Emotion Mask',
+    'emotion-mask': 'Unreal Reflection',
     'presets': 'Presets',
     'custom-prompt': 'Custom Prompt',
     'story-time': 'Story Time'
