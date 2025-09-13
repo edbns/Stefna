@@ -658,7 +658,7 @@ const AdminDashboardScreen: React.FC = () => {
         }
 
         alert(`Successfully adjusted credits for ${successCount}/${totalAffected} users`)
-        loadUsers()
+        loadAdminData()
       }
 
       setShowBulkModal(false)
@@ -1987,7 +1987,7 @@ const AdminDashboardScreen: React.FC = () => {
                   >
                     <option value="all">All Users</option>
                     <option value="low">Users with ≤5 credits</option>
-                    <option value="high">Users with >20 credits</option>
+                    <option value="high">Users with &gt;20 credits</option>
                     <option value="zero">Users with 0 credits</option>
                   </select>
                 </div>
@@ -2016,7 +2016,7 @@ const AdminDashboardScreen: React.FC = () => {
                     `Will adjust credits by ${bulkAdjustment.amount || '0'} for ${
                       bulkAdjustment.target === 'all' ? 'all users' :
                       bulkAdjustment.target === 'low' ? 'users with ≤5 credits' :
-                      bulkAdjustment.target === 'high' ? 'users with >20 credits' :
+                      bulkAdjustment.target === 'high' ? 'users with &gt;20 credits' :
                       'users with 0 credits'
                     }`
                   ) : (
