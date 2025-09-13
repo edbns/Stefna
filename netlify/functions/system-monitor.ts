@@ -290,8 +290,8 @@ Dashboard: https://stefna.xyz/dashboard/management/control
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: 'alert@stefna.xyz',
-          from: 'alert@stefna.xyz',
+          to: 'hello@stefna.xyz',
+          from: 'hello@stefna.xyz',
           subject,
           text: body,
           type: 'system_alert'
