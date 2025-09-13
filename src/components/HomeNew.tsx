@@ -1020,40 +1020,6 @@ const HomeNew: React.FC = () => {
     }
   `
 
-  // Beta shimmer animation styles
-  const betaShimmerStyles = `
-    @keyframes shimmer {
-      0% {
-        background-position: 200% 0;
-      }
-      100% {
-        background-position: -200% 0;
-      }
-    }
-    
-    .beta-shimmer {
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
-      background-size: 200% 100%;
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      animation: shimmer 2s ease-in-out infinite;
-    }
-  `
-
-  // Inject beta shimmer styles
-  useEffect(() => {
-    const styleId = 'beta-shimmer-styles'
-    let styleElement = document.getElementById(styleId) as HTMLStyleElement
-    
-    if (!styleElement) {
-      styleElement = document.createElement('style')
-      styleElement.id = styleId
-      document.head.appendChild(styleElement)
-    }
-    
-    styleElement.textContent = betaShimmerStyles
-  }, [betaShimmerStyles])
 
   // Inject Story Time styles
   useEffect(() => {
