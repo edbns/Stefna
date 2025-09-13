@@ -161,7 +161,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_chromatic_bloom',
     label: 'Chromatic Bloom',
-    prompt: 'Reimagine this person with their identity intact while their face and head blend seamlessly into surreal bursts of vibrant nature. Blue butterflies or radiant feathers appear to grow from the skin, dissolving into colorful petals and glowing fragments. Use vivid tones like electric blue, fiery orange, radiant red, and pastel lavender. The background should be softly darkened, with cinematic bursts of light and color giving depth. Preserve the individual\'s real facial features, skin tone, age, and gender while merging them with this surreal blooming aura. Photoreal but dreamlike.',
+    prompt: 'Transform this person into a surreal high-fashion portrait where butterfly wings and feathers blend seamlessly into the face and head, as if part of elaborate makeup and artistic design. Delicate butterfly patterns overlay the skin around the eyes and cheeks, while layered feathers extend outward like an avant-garde headpiece. The effect should be photoreal, cinematic, and editorial — elegant but bold. The background should be softly darkened with glowing accents that make the textures stand out. Preserve the person\'s full identity, skin tone, age, and facial features while fusing them naturally with this butterfly and feather fusion effect. Colors should emerge organically without being restricted, allowing the scene to choose its own palette.',
     negative_prompt: 'cartoonish, anime, low quality, overexaggerated makeup, distorted face, plastic skin, flat colors, harsh sparkles, glitch, fantasy armor',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
