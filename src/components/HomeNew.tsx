@@ -2290,7 +2290,9 @@ const HomeNew: React.FC = () => {
         ipaRetries: 2, // Moderate fallback
         ipaBlocking: true // Must pass to proceed
       };
-      console.log('🎨 CUSTOM MODE: Using user prompt only:', effectivePrompt);
+      if (import.meta.env.DEV) {
+        console.log('🎨 CUSTOM MODE: Using user prompt only:', effectivePrompt);
+      }
       
     } else if (kind === 'preset') {
       // PRESET MODE: Use ONLY the selected preset
@@ -2324,7 +2326,9 @@ const HomeNew: React.FC = () => {
         ipaRetries: 2, // Moderate fallback
         ipaBlocking: true // Must pass to proceed
       };
-      console.log('🎯 PRESET MODE: Using preset only:', effectivePrompt);
+      if (import.meta.env.DEV) {
+        console.log('🎯 PRESET MODE: Using preset only:', effectivePrompt);
+      }
       
     // Remix mode removed - focus on personal creativity
       
@@ -2375,7 +2379,9 @@ const HomeNew: React.FC = () => {
         ipaRetries: 3, // Aggressive fallback
         ipaBlocking: true // Must pass to proceed
       };
-      console.log('UNREAL REFLECTION MODE: Using ORIGINAL prompt:', unrealReflectionPreset.label, effectivePrompt);
+      if (import.meta.env.DEV) {
+        console.log('UNREAL REFLECTION MODE: Using ORIGINAL prompt:', unrealReflectionPreset.label, effectivePrompt);
+      }
     } else if (kind === 'ghiblireact') {
       // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
       const ghibliReactionPresetId = options?.ghibliReactionPresetId || selectedGhibliReactionPreset;
@@ -2416,7 +2422,9 @@ const HomeNew: React.FC = () => {
           ipaRetries: 2, // Moderate fallback
           ipaBlocking: true // Must pass to proceed
         };
-      console.log('GHIBLI REACTION MODE: Using BFL preset:', ghibliReactionPreset.label, 'Model:', ghibliReactionPreset.model);
+      if (import.meta.env.DEV) {
+        console.log('GHIBLI REACTION MODE: Using BFL preset:', ghibliReactionPreset.label, 'Model:', ghibliReactionPreset.model);
+      }
       
     } else if (kind === 'neotokyoglitch') {
       // NEO TOKYO GLITCH MODE: Use Replicate integration for maximum glitch intensity
@@ -2477,7 +2485,9 @@ const HomeNew: React.FC = () => {
         ipaBlocking: true, // Must pass to proceed
         presetKey: neoTokyoGlitchPresetId // Store the full preset ID instead of short key
         };
-      console.log('NEO TOKYO GLITCH MODE: Using preset parameters:', neoTokyoGlitchPreset.label, 'Model:', neoTokyoGlitchPreset.model);
+      if (import.meta.env.DEV) {
+        console.log('NEO TOKYO GLITCH MODE: Using preset parameters:', neoTokyoGlitchPreset.label, 'Model:', neoTokyoGlitchPreset.model);
+      }
       
     } else if (kind === 'storytime') {
       // STORY TIME MODE: Use multiple images for video generation
@@ -2515,7 +2525,9 @@ const HomeNew: React.FC = () => {
         ipaRetries: 2, // Moderate fallback
         ipaBlocking: true // Must pass to proceed
       };
-      console.log('✏️ EDIT MODE: Using user prompt for photo editing:', effectivePrompt);
+      if (import.meta.env.DEV) {
+        console.log('✏️ EDIT MODE: Using user prompt for photo editing:', effectivePrompt);
+      }
       
     } else {
       console.error('❌ Unknown generation kind:', kind);
@@ -2525,14 +2537,18 @@ const HomeNew: React.FC = () => {
       return;
     }
     
-    console.log('✅ Final effective prompt:', effectivePrompt);
-    console.log('✅ Generation metadata:', generationMeta);
+    if (import.meta.env.DEV) {
+      console.log('✅ Final effective prompt:', effectivePrompt);
+      console.log('✅ Generation metadata:', generationMeta);
+    }
     
     // Add "Make it obvious" test option for debugging
     const makeItObvious = prompt?.toLowerCase().includes('make it obvious') || prompt?.toLowerCase().includes('test');
     if (makeItObvious) {
       effectivePrompt = 'black-and-white line art, no color, heavy outlines, flat shading, cartoon style';
-      console.log('🔎 Using "Make it obvious" test prompt:', effectivePrompt);
+      if (import.meta.env.DEV) {
+        console.log('🔎 Using "Make it obvious" test prompt:', effectivePrompt);
+      }
     }
     
     if (!effectivePrompt) {
@@ -3354,7 +3370,9 @@ const HomeNew: React.FC = () => {
     if (!prompt.trim() || isEnhancing) return
     
     setIsEnhancing(true)
-    console.log('Magic Wand enhancing prompt:', prompt)
+    if (import.meta.env.DEV) {
+      console.log('Magic Wand enhancing prompt:', prompt)
+    }
     
     try {
       // Call OpenAI API for prompt enhancement
