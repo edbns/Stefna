@@ -1831,6 +1831,51 @@ const AdminDashboardScreen: React.FC = () => {
                           </div>
                         )}
 
+                        {/* Credit Reset Status */}
+                        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                          <h4 className="text-sm font-medium text-white mb-3">Daily Credit Reset Status</h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-white/60">Last Reset:</span>
+                              <span className="text-white">
+                                {systemConfig?.last_credit_reset ? 
+                                  new Date(systemConfig.last_credit_reset).toLocaleString() : 
+                                  'Never'
+                                }
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-white/60">Reset Status:</span>
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                systemConfig?.last_credit_reset ? 
+                                  (new Date().getTime() - new Date(systemConfig.last_credit_reset).getTime()) < 25 * 60 * 60 * 1000 ? // Less than 25 hours
+                                    'bg-green-500/20 text-green-400' : 
+                                    'bg-yellow-500/20 text-yellow-400'
+                                  : 'bg-red-500/20 text-red-400'
+                              }`}>
+                                {systemConfig?.last_credit_reset ? 
+                                  (new Date().getTime() - new Date(systemConfig.last_credit_reset).getTime()) < 25 * 60 * 60 * 1000 ? 
+                                    '✅ On Schedule' : 
+                                    '⚠️ Overdue'
+                                  : '❌ Never Reset'
+                                }
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-white/60">Next Expected:</span>
+                              <span className="text-white">
+                                {(() => {
+                                  const now = new Date()
+                                  const tomorrow = new Date(now)
+                                  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+                                  tomorrow.setUTCHours(0, 0, 0, 0)
+                                  return tomorrow.toLocaleString()
+                                })()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
                         {/* Credit Distribution Chart */}
                         <div className="bg-white/5 rounded-xl border border-white/10 p-6">
                           <h4 className="text-lg font-semibold text-white mb-4">Credit Distribution</h4>

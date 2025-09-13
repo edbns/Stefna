@@ -116,6 +116,13 @@ const adminConfigHandler: Handler = async (event) => {
         };
       }
 
+      // Get app config values
+      const appConfigs = await q(`SELECT key, value FROM app_config WHERE key IN ('daily_cap', 'last_credit_reset', 'starter_grant', 'referral_referrer_bonus', 'referral_new_bonus')`);
+      const configMap = appConfigs.reduce((acc: any, row: any) => {
+        acc[row.key] = row.value;
+        return acc;
+      }, {});
+
       // Get system configuration with real health status
       const systemConfig = {
         // API Configuration - Real Health Status
@@ -150,11 +157,18 @@ const adminConfigHandler: Handler = async (event) => {
         
         // Limits and Quotas
         limits: {
+          daily_cap: parseInt(configMap.daily_cap) || 30,
           max_credits_per_user: 100,
           daily_credit_reset: true,
           max_media_per_user: 1000,
           max_file_size_mb: 10
-        }
+        },
+        
+        // Credit Reset Info
+        last_credit_reset: configMap.last_credit_reset,
+        starter_grant: parseInt(configMap.starter_grant) || 30,
+        referral_referrer_bonus: parseInt(configMap.referral_referrer_bonus) || 50,
+        referral_new_bonus: parseInt(configMap.referral_new_bonus) || 25
       }
 
       console.log(`✅ [Admin] Retrieved system configuration`)
