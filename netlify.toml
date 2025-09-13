@@ -54,6 +54,9 @@
 [functions."reset-daily-credits"]
   schedule = "0 0 * * *"  # Daily at midnight UTC
 
+[functions."system-monitor"]
+  schedule = "*/15 * * * *"  # Every 15 minutes
+
 # Function dependencies are handled by top-level package.json
 
 # Cache optimization
