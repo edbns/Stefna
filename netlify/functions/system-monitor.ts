@@ -291,7 +291,7 @@ Dashboard: https://stefna.xyz/dashboard/management/control
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: 'hello@stefna.xyz',
-          from: 'hello@stefna.xyz',
+          from: 'System Alert <alert@stefna.xyz>',
           subject,
           text: body,
           type: 'system_alert'

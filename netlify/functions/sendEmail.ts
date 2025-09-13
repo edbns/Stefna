@@ -32,7 +32,7 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const { to, subject, text, html, type, data } = JSON.parse(event.body || '{}');
+    const { to, subject, text, html, type, data, from } = JSON.parse(event.body || '{}');
     
     if (!to || !subject) {
       return {
@@ -75,8 +75,11 @@ export const handler: Handler = async (event) => {
       emailHtml = generateUniversalTemplate(subject, text || '');
     }
 
+    // Use custom from address for system alerts, default to hello@stefna.xyz
+    const fromAddress = from || 'Stefna <hello@stefna.xyz>';
+
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: 'Stefna <hello@stefna.xyz>',
+      from: fromAddress,
       to: [to],
       subject: subject,
       html: emailHtml,
