@@ -938,16 +938,16 @@ const AdminDashboardScreen: React.FC = () => {
                         </div>
 
                         {/* Presets Table */}
-                        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                        <div className="bg-white/5 rounded-lg overflow-hidden">
                           <div className="overflow-x-auto">
                             <table className="w-full">
-                              <thead className="bg-white/10">
+                              <thead className="bg-white/5">
                                 <tr>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Preset</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Category</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Strength</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Status</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Actions</th>
+                                  <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Preset</th>
+                                  <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Category</th>
+                                  <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Strength</th>
+                                  <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Status</th>
+                                  <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Actions</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-white/10">
@@ -1004,14 +1004,14 @@ const AdminDashboardScreen: React.FC = () => {
                                             // TODO: Implement edit modal
                                             alert('Edit preset functionality coming soon!')
                                           }}
-                                          className="px-3 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                                          className="px-3 py-1 rounded text-sm font-medium bg-white/5 text-white hover:bg-white/10 transition-colors"
                                         >
                                           Edit
                                         </button>
                                         {preset.isCustom && (
                                           <button
                                             onClick={() => deletePreset(preset.id)}
-                                            className="px-3 py-1 rounded text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                                            className="px-3 py-1 rounded text-sm font-medium bg-white/5 text-white hover:bg-white/10 transition-colors"
                                           >
                                             Delete
                                           </button>
@@ -1026,15 +1026,16 @@ const AdminDashboardScreen: React.FC = () => {
                         </div>
 
                         {/* Add New Preset Button */}
-                        <div className="text-center space-y-3">
+                        <div className="flex items-center justify-center space-x-4">
                           <button
                             onClick={() => {
                               // TODO: Implement add preset modal
                               alert('Add preset functionality coming soon!')
                             }}
-                            className="px-6 py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors"
+                            className="px-4 py-2 bg-white/5 text-white rounded-lg hover:bg-white/10 transition-colors"
                           >
-                            + Add New Preset
+                            <Plus size={16} className="mr-2" />
+                            Add New Preset
                           </button>
                           
                           <button
@@ -1058,9 +1059,10 @@ const AdminDashboardScreen: React.FC = () => {
                                 alert('Error seeding presets')
                               }
                             }}
-                            className="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors"
+                            className="px-4 py-2 bg-white/5 text-white rounded-lg hover:bg-white/10 transition-colors"
                           >
-                            🌱 Seed Sample Presets
+                            <RefreshCw size={16} className="mr-2" />
+                            Seed Sample Presets
                           </button>
                         </div>
                       </div>
