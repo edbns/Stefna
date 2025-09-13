@@ -4,38 +4,6 @@ import { Client as PgClient } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import * as jwt from 'jsonwebtoken';
 
-// Event-based alert helper
-async function sendEventAlert(event: string, details: string, data?: any) {
-  try {
-    const subject = `[EVENT] Stefna Alert: ${event}`
-    const body = `
-Event: ${event}
-Status: INFO
-Message: ${event} occurred
-Details: ${details}
-Data: ${data ? JSON.stringify(data, null, 2) : 'None'}
-
-Time: ${new Date().toLocaleString()}
-Dashboard: https://stefna.xyz/dashboard/management/control
-`
-
-    await fetch('/.netlify/functions/sendEmail', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: 'alert@stefna.xyz',
-        from: 'alert@stefna.xyz',
-        subject,
-        text: body,
-        type: 'event_alert'
-      })
-    })
-
-    console.log(`📧 [Event Alert] Sent: ${event} - ${details}`)
-  } catch (alertError) {
-    console.error(`❌ [Event Alert] Failed to send:`, alertError)
-  }
-}
 
 export const handler: Handler = async (event) => {
   console.log('=== OTP VERIFICATION FUNCTION STARTED ===');
@@ -253,13 +221,6 @@ export const handler: Handler = async (event) => {
         [userId, false, false] // Privacy first: no upload consent, no public sharing by default
       );
 
-      // Send event alert for new user signup
-      await sendEventAlert('NEW_USER_SIGNUP', `New user registered: ${email}`, {
-        userId,
-        email: email.toLowerCase(),
-        ipAddress: clientIP,
-        timestamp: new Date().toISOString()
-      });
 
       user = { id: userId, email: email.toLowerCase() };
       
