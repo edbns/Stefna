@@ -62,7 +62,7 @@ export const handler: Handler = async (event) => {
             SELECT id, prompt, status, created_at FROM ghibli_reaction_media WHERE user_id = $1
           `, [userId]),
           q(`
-            SELECT id, prompt, status, created_at FROM emotion_mask_media WHERE user_id = $1
+            SELECT id, prompt, status, created_at FROM unreal_reflection_media WHERE user_id = $1
           `, [userId]),
           q(`
             SELECT id, prompt, status, created_at FROM presets_media WHERE user_id = $1

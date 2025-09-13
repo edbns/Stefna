@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS likes (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     media_id TEXT NOT NULL,
-    media_type TEXT NOT NULL, -- 'custom_prompt', 'emotion_mask', 'ghibli_reaction', 'neo_glitch', 'presets'
+    media_type TEXT NOT NULL, -- 'custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'neo_glitch', 'presets'
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     -- Ensure a user can only like a media item once
     UNIQUE(user_id, media_id, media_type)
@@ -27,7 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_likes_user ON likes(user_id);
 ALTER TABLE custom_prompt_media 
 ADD COLUMN IF NOT EXISTS likes_count INTEGER DEFAULT 0;
 
-ALTER TABLE emotion_mask_media 
+ALTER TABLE unreal_reflection_media 
 ADD COLUMN IF NOT EXISTS likes_count INTEGER DEFAULT 0;
 
 ALTER TABLE ghibli_reaction_media 
@@ -66,7 +66,7 @@ BEGIN
             FROM (
                 SELECT user_id FROM custom_prompt_media WHERE id = NEW.media_id AND NEW.media_type = 'custom_prompt'
                 UNION ALL
-                SELECT user_id FROM emotion_mask_media WHERE id = NEW.media_id AND NEW.media_type = 'emotion_mask'
+                SELECT user_id FROM unreal_reflection_media WHERE id = NEW.media_id AND NEW.media_type = 'unreal_reflection'
                 UNION ALL
                 SELECT user_id FROM ghibli_reaction_media WHERE id = NEW.media_id AND NEW.media_type = 'ghibli_reaction'
                 UNION ALL
@@ -90,7 +90,7 @@ BEGIN
             FROM (
                 SELECT user_id FROM custom_prompt_media WHERE id = OLD.media_id AND OLD.media_type = 'custom_prompt'
                 UNION ALL
-                SELECT user_id FROM emotion_mask_media WHERE id = OLD.media_id AND OLD.media_type = 'emotion_mask'
+                SELECT user_id FROM unreal_reflection_media WHERE id = OLD.media_id AND OLD.media_type = 'unreal_reflection'
                 UNION ALL
                 SELECT user_id FROM ghibli_reaction_media WHERE id = OLD.media_id AND OLD.media_type = 'ghibli_reaction'
                 UNION ALL
@@ -126,13 +126,13 @@ SET likes_count = (
     AND media_type = 'custom_prompt'
 );
 
--- Update emotion_mask_media
-UPDATE emotion_mask_media 
+-- Update unreal_reflection_media
+UPDATE unreal_reflection_media 
 SET likes_count = (
     SELECT COUNT(*) 
     FROM likes 
-    WHERE media_id = emotion_mask_media.id 
-    AND media_type = 'emotion_mask'
+    WHERE media_id = unreal_reflection_media.id 
+    AND media_type = 'unreal_reflection'
 );
 
 -- Update ghibli_reaction_media
@@ -170,7 +170,7 @@ SET total_likes_received = (
     WHERE media_id IN (
         SELECT id FROM custom_prompt_media WHERE user_id = users.id
         UNION ALL
-        SELECT id FROM emotion_mask_media WHERE user_id = users.id
+        SELECT id FROM unreal_reflection_media WHERE user_id = users.id
         UNION ALL
         SELECT id FROM ghibli_reaction_media WHERE user_id = users.id
         UNION ALL

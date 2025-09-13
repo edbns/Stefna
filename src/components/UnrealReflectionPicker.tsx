@@ -1,23 +1,23 @@
 import React from 'react';
-import { EMOTION_MASK_PRESETS, EmotionMaskPreset } from '../presets/emotionmask';
+import { UNREAL_REFLECTION_PRESETS, UnrealReflectionPreset } from '../presets/unrealreflection';
 
-interface EmotionMaskPickerProps {
-  presets?: EmotionMaskPreset[];
+interface UnrealReflectionPickerProps {
+  presets?: UnrealReflectionPreset[];
   value?: string;
   onChange?: (id: string) => void;
   disabled?: boolean;
 }
 
-export function EmotionMaskPicker({
-  presets = EMOTION_MASK_PRESETS,
+export function UnrealReflectionPicker({
+  presets = UNREAL_REFLECTION_PRESETS,
   value,
   onChange,
   disabled = false,
-}: EmotionMaskPickerProps) {
+}: UnrealReflectionPickerProps) {
   return (
     <div className="rounded-xl shadow-2xl p-3 w-80" style={{ backgroundColor: '#333333' }}>
       <div className="space-y-1">
-        {/* Emotion Mask preset options - including the None option from presets */}
+        {/* Unreal Reflection™ preset options */}
         {presets.map((preset) => (
           <button
             key={preset.id}

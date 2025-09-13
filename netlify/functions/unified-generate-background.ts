@@ -45,7 +45,7 @@ function buildFailureResponse(error: string, message: string): UnifiedGeneration
 function getAspectRatioForMode(mode: string): string {
   switch (mode) {
     case 'ghibli_reaction':
-    case 'emotion_mask':
+    case 'unreal_reflection':
     case 'custom':
     case 'presets':
       return '4:5'; // Instagram/Facebook/X-friendly portrait
@@ -227,7 +227,7 @@ async function falInvoke(model: string, input: any): Promise<any> {
 type GenerationMode = 
   | 'presets' 
   | 'custom' 
-  | 'emotion_mask' 
+  | 'unreal_reflection' 
   | 'ghibli_reaction' 
   | 'story_time' 
   | 'neo_glitch'
@@ -242,7 +242,7 @@ interface UnifiedGenerationRequest {
   sourceHeight?: number;
   userId: string;
   runId: string;
-  emotionMaskPresetId?: string;
+  unrealReflectionPresetId?: string;
   ghibliReactionPresetId?: string;
   storyTimePresetId?: string;
   additionalImages?: string[];
@@ -960,9 +960,9 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
         console.log(`✅ [Background] Saved custom result to database`);
         break;
 
-      case 'emotion_mask':
+      case 'unreal_reflection':
         await q(`
-          INSERT INTO emotion_mask_media (
+          INSERT INTO unreal_reflection_media (
             user_id, image_url, source_url, prompt, preset, run_id, fal_job_id, status, metadata
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `, [
@@ -970,13 +970,13 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
           baseData.image_url,
           baseData.source_url,
           baseData.prompt,
-          request.emotionMaskPresetId || 'default',
+          request.unrealReflectionPresetId || 'default',
           baseData.run_id,
           result.runId || request.runId,
           baseData.status,
           baseData.metadata
         ]);
-        console.log(`✅ [Background] Saved emotion_mask result to database`);
+        console.log(`✅ [Background] Saved unreal_reflection result to database`);
         break;
 
       case 'ghibli_reaction':
@@ -1261,7 +1261,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
   if (mode === 'presets' || mode === 'custom') {
     // Presets/Custom: Standard → Ultra → Pro → Fal.ai
     models = BFL_PHOTO_MODELS;
-  } else if (mode === 'emotion_mask') {
+  } else if (mode === 'unreal_reflection') {
     // Emotion: Ultra → Pro → Standard → Fal.ai
     models = BFL_EMOTION_MODELS;
   } else if (mode === 'ghibli_reaction') {
@@ -1364,7 +1364,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         console.log(`📐 [BFL API] Ultra model - using aspect_ratio: ${aspectRatio}`);
         
         // Ultra models support raw mode for more natural look
-        bflInput.raw = params.raw ?? (mode === 'emotion_mask' ? true : false); // Use preset value or true for emotion_mask, false for others
+        bflInput.raw = params.raw ?? (mode === 'unreal_reflection' ? true : false); // Use preset value or true for unreal_reflection, false for others
         
         // Add additional Ultra model parameters
         bflInput.prompt_upsampling = params.prompt_upsampling ?? true; // Enhance prompt for better results
@@ -1465,7 +1465,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
   let models;
   if (mode === 'presets' || mode === 'custom') {
     models = PHOTO_MODELS;
-  } else if (mode === 'ghibli_reaction' || mode === 'emotion_mask') {
+  } else if (mode === 'ghibli_reaction' || mode === 'unreal_reflection') {
     models = GHIBLI_MODELS; // Use high-quality models for both Ghibli and Emotion Mask
   } else if (mode === 'story_time') {
     models = VIDEO_MODELS;
@@ -1764,14 +1764,14 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         const input: any = {
           image_url: processedImageUrl,
           prompt: params.prompt, // Use the preset prompt from frontend
-          image_strength: (mode === 'ghibli_reaction' || mode === 'emotion_mask') ? 0.28 : 0.45, // Reduced for better quality preservation
-          guidance_scale: (mode === 'ghibli_reaction' || mode === 'emotion_mask') ? 7.0 : 7.5, // Lower guidance for subtler effect
+          image_strength: (mode === 'ghibli_reaction' || mode === 'unreal_reflection') ? 0.28 : 0.45, // Reduced for better quality preservation
+          guidance_scale: (mode === 'ghibli_reaction' || mode === 'unreal_reflection') ? 7.0 : 7.5, // Lower guidance for subtler effect
           seed: Math.floor(Math.random() * 1000000)
         };
         
         // 🎯 ENHANCED PROMPT ENGINEERING FOR FAL.AI
         // Apply enhanced prompt engineering for Fal.ai models
-        if (!(mode === 'ghibli_reaction' || mode === 'emotion_mask')) {
+        if (!(mode === 'ghibli_reaction' || mode === 'unreal_reflection')) {
           const originalPrompt = params.prompt;
           const detectedGender = detectGenderFromPrompt(originalPrompt);
           const detectedAnimals = detectAnimalsFromPrompt(originalPrompt);
@@ -1822,7 +1822,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         }
         
         // Add negative prompt for Ghibli/Emotion to prevent anime stylization
-        if (mode === 'ghibli_reaction' || mode === 'emotion_mask') {
+        if (mode === 'ghibli_reaction' || mode === 'unreal_reflection') {
           input.negative_prompt = 'anime, cartoon, drawing, unrealistic skin, illustration, 2d, lowres, distorted face, doll, plastic, overexaggerated features';
         }
         
@@ -1937,7 +1937,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
       'neo_glitch': 'neo_glitch_media',
       'presets': 'presets_media',
       'custom': 'custom_prompt_media',
-      'emotion_mask': 'emotion_mask_media',
+      'unreal_reflection': 'unreal_reflection_media',
       'ghibli_reaction': 'ghibli_reaction_media',
         'story_time': 'story', // Use story table instead of video_jobs
         'edit': 'edit_media'
@@ -2002,7 +2002,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
   const actionMap: Record<GenerationMode, string> = {
     'presets': 'presets_generation',
     'custom': 'custom_prompt_generation',
-    'emotion_mask': 'emotion_mask_generation',
+    'unreal_reflection': 'unreal_reflection_generation',
     'ghibli_reaction': 'ghibli_reaction_generation',
     'story_time': 'story_time_generate',
     'neo_glitch': 'neo_glitch_generation',
@@ -2059,10 +2059,22 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
       
       try {
         // Try BFL API first for supported modes with comprehensive fallbacks
-        if (['presets', 'custom', 'emotion_mask', 'ghibli_reaction'].includes(request.mode)) {
+        if (['presets', 'custom', 'ghibli_reaction'].includes(request.mode)) {
           console.log('🎨 [Background] Attempting generation with BFL API (Standard → Ultra → Pro → Fal.ai)');
           result = await generateWithBFL(request.mode, generationParams);
           console.log('✅ [Background] BFL API generation successful');
+        } else if (request.mode === 'unreal_reflection') {
+          // Unreal Reflection mode: Fal.ai nano-banana/edit → BFL fallbacks
+          console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit for Unreal Reflection');
+          try {
+            result = await generateWithFal(request.mode, generationParams);
+            console.log('✅ [Background] Fal.ai Unreal Reflection generation successful');
+          } catch (falError) {
+            console.warn('⚠️ [Background] Fal.ai Unreal Reflection failed, trying BFL fallbacks:', falError);
+            // Try BFL fallbacks for Unreal Reflection mode
+            result = await generateWithBFL(request.mode, generationParams);
+            console.log('✅ [Background] BFL Unreal Reflection fallback successful');
+          }
         } else if (request.mode === 'edit') {
           // Edit My Photo mode: Fal.ai nano-banana/edit → BFL fallbacks
           console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit');
@@ -2333,7 +2345,7 @@ export const handler: Handler = async (event, context) => {
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { mode, prompt, sourceAssetId, userId: bodyUserId, presetKey, emotionMaskPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, runId: frontendRunId } = body;
+    const { mode, prompt, sourceAssetId, userId: bodyUserId, presetKey, unrealReflectionPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, runId: frontendRunId } = body;
 
     console.log('🚀 [Background] Received request:', {
       mode,
@@ -2399,7 +2411,7 @@ export const handler: Handler = async (event, context) => {
     console.log('🔗 [Background] Using runId:', { frontendRunId, generatedRunId: runId, isFrontend: !!frontendRunId });
 
     // Normalize and validate mode value against allowed set
-    const validModes: GenerationMode[] = ['presets','custom','emotion_mask','ghibli_reaction','story_time','neo_glitch','edit'];
+    const validModes: GenerationMode[] = ['presets','custom','unreal_reflection','ghibli_reaction','story_time','neo_glitch','edit'];
     const modeStr = String(mode);
     if (!validModes.includes(modeStr as GenerationMode)) {
       return {
@@ -2421,7 +2433,7 @@ export const handler: Handler = async (event, context) => {
     const actionMap: Record<GenerationMode, string> = {
       'presets': 'presets_generation',
       'custom': 'custom_prompt_generation',
-      'emotion_mask': 'emotion_mask_generation',
+      'unreal_reflection': 'unreal_reflection_generation',
       'ghibli_reaction': 'ghibli_reaction_generation',
       'story_time': 'story_time_generate',
       'neo_glitch': 'neo_glitch_generation',
@@ -2650,7 +2662,7 @@ export const handler: Handler = async (event, context) => {
       sourceAssetId,
       userId: tokenUserId,
       runId: runId, // Ensure runId is always defined
-      emotionMaskPresetId,
+      unrealReflectionPresetId,
       storyTimePresetId,
       additionalImages,
       editImages,

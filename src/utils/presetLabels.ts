@@ -63,10 +63,10 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
       'emotion_surprised': 'Surprised',
       'emotion_love': 'Love',
       'emotion_loneliness': 'Lonely',
-      'emotion_mask_joy_sadness': 'Joy + Sadness',
-      'emotion_mask_strength_vulnerability': 'Strength + Vulnerability',
-      'emotion_mask_nostalgia_distance': 'Nostalgia + Distance',
-      'emotion_mask_peace_fear': 'Peace + Fear'
+      'unreal_reflection_joy_sadness': 'Joy + Sadness',
+      'unreal_reflection_strength_vulnerability': 'Strength + Vulnerability',
+      'unreal_reflection_nostalgia_distance': 'Nostalgia + Distance',
+      'unreal_reflection_peace_fear': 'Peace + Fear'
     }
     return emotionPresets[presetKey] || 'Emotion'
   }

@@ -262,7 +262,7 @@ Don't want these emails? Unsubscribe.`,
 
     console.log('✅ OTP verification successful for user:', user.id);
 
-    // Generate proper JWT token
+    // Generate proper JWT tokens (access + refresh)
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       throw new Error('JWT_SECRET not configured');
@@ -283,14 +283,30 @@ Don't want these emails? Unsubscribe.`,
       platform = 'mobile';
     }
     const permissions = platform === 'web' ? ['canManageFeed'] : [];
-    const token = jwt.sign(
+    
+    // Generate access token (24 hours)
+    const accessToken = jwt.sign(
       { 
         userId: user.id, 
         email: user.email,
         platform,
         permissions,
+        type: 'access',
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+      },
+      jwtSecret
+    );
+
+    // Generate refresh token (30 days)
+    const refreshToken = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email,
+        platform,
+        type: 'refresh',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days
       },
       jwtSecret
     );
@@ -305,7 +321,8 @@ Don't want these emails? Unsubscribe.`,
       },
       body: JSON.stringify({
         success: true,
-        token: token, // Generate a proper JWT token
+        accessToken: accessToken,
+        refreshToken: refreshToken,
         user: {
           id: user.id,
           email: user.email

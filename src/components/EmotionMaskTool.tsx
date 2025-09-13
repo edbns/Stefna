@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { useEmotionMask, FaceMaskOptions } from '../hooks/useEmotionMask';
+import { useUnrealReflection, FaceMaskOptions } from '../hooks/useUnrealReflection';
 
-export const EmotionMaskTool = () => {
+export const UnrealReflectionTool = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { generateMaskFromImage, generateSimpleMask, generateFullFaceMask } = useEmotionMask();
+  const { generateMaskFromImage, generateSimpleMask, generateFullFaceMask } = useUnrealReflection();
   const [isProcessing, setIsProcessing] = useState(false);
   const [maskData, setMaskData] = useState<string | null>(null);
   const [originalImage, setOriginalImage] = useState<string | null>(null);

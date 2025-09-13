@@ -35,7 +35,7 @@ async function cleanup() {
       )
       SELECT 
         (SELECT COUNT(*) FROM custom_prompt_media WHERE user_id IN (SELECT id FROM placeholder_users)) as custom,
-        (SELECT COUNT(*) FROM emotion_mask_media WHERE user_id IN (SELECT id FROM placeholder_users)) as emotion,
+        (SELECT COUNT(*) FROM unreal_reflection_media WHERE user_id IN (SELECT id FROM placeholder_users)) as emotion,
         (SELECT COUNT(*) FROM ghibli_reaction_media WHERE user_id IN (SELECT id FROM placeholder_users)) as ghibli,
         (SELECT COUNT(*) FROM neo_glitch_media WHERE user_id IN (SELECT id FROM placeholder_users)) as neo,
         (SELECT COUNT(*) FROM presets_media WHERE user_id IN (SELECT id FROM placeholder_users)) as presets
@@ -62,7 +62,7 @@ async function cleanup() {
       'user_credits',
       'user_settings',
       'custom_prompt_media',
-      'emotion_mask_media',
+      'unreal_reflection_media',
       'ghibli_reaction_media',
       'neo_glitch_media',
       'presets_media',

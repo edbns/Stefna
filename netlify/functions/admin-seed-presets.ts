@@ -59,7 +59,7 @@ export const handler: Handler = async (event) => {
         metadata: { style: 'ghibli', inspiration: 'studio_ghibli' }
       },
       {
-        preset_key: 'emotion_mask',
+        preset_key: 'unreal_reflection',
         name: 'Emotion Mask',
         description: 'Emotional expression enhancement',
         strength: 1.0,

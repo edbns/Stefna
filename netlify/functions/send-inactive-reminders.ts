@@ -38,7 +38,7 @@ export const handler: Handler = async (event) => {
           UNION ALL
           SELECT user_id FROM ghibli_reaction_media WHERE created_at > NOW() - INTERVAL '3 days'
           UNION ALL
-          SELECT user_id FROM emotion_mask_media WHERE created_at > NOW() - INTERVAL '3 days'
+          SELECT user_id FROM unreal_reflection_media WHERE created_at > NOW() - INTERVAL '3 days'
           UNION ALL
           SELECT user_id FROM presets_media WHERE created_at > NOW() - INTERVAL '3 days'
           UNION ALL

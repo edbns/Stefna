@@ -5,7 +5,7 @@ import { json } from './_lib/http';
 
 interface ToggleLikeRequest {
   mediaId: string;
-  mediaType: 'custom_prompt' | 'emotion_mask' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story';
+  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story';
 }
 
 export const handler: Handler = async (event) => {
@@ -47,7 +47,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Validate media type and disallow likes from non-web if needed in future
-    const validMediaTypes = ['custom_prompt', 'emotion_mask', 'ghibli_reaction', 'neo_glitch', 'presets', 'story'];
+    const validMediaTypes = ['custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'neo_glitch', 'presets', 'story'];
     if (!validMediaTypes.includes(mediaType)) {
       return json({ error: 'Invalid media type' }, { status: 400 });
     }

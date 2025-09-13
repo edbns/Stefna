@@ -30,7 +30,7 @@ BEGIN
                 UNION ALL
                 SELECT user_id FROM presets_media WHERE id = NEW.media_id AND NEW.media_type = 'presets'
                 UNION ALL
-                SELECT user_id FROM emotion_mask_media WHERE id = NEW.media_id AND NEW.media_type = 'emotion_mask'
+                SELECT user_id FROM unreal_reflection_media WHERE id = NEW.media_id AND NEW.media_type = 'unreal_reflection'
                 UNION ALL
                 SELECT user_id FROM ghibli_reaction_media WHERE id = NEW.media_id AND NEW.media_type = 'ghibli_reaction'
                 UNION ALL
@@ -55,7 +55,7 @@ BEGIN
                 UNION ALL
                 SELECT user_id FROM presets_media WHERE id = OLD.media_id AND NEW.media_type = 'presets'
                 UNION ALL
-                SELECT user_id FROM emotion_mask_media WHERE id = OLD.media_id AND OLD.media_type = 'emotion_mask'
+                SELECT user_id FROM unreal_reflection_media WHERE id = OLD.media_id AND OLD.media_type = 'unreal_reflection'
                 UNION ALL
                 SELECT user_id FROM ghibli_reaction_media WHERE id = OLD.media_id AND OLD.media_type = 'ghibli_reaction'
                 UNION ALL

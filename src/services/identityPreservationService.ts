@@ -26,7 +26,7 @@ export interface IPAPresetConfig {
 // Preset-specific IPA configurations
 export const IPA_PRESET_CONFIGS: Record<string, IPAPresetConfig> = {
   // Strict identity preservation - Emotion Mask
-  'emotion_mask_strict_ipa': {
+  'unreal_reflection_strict_ipa': {
     threshold: 0.7,
     retries: 3,
     blocking: true,

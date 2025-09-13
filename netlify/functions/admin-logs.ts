@@ -94,7 +94,7 @@ export const handler: Handler = async (event) => {
             em.created_at as timestamp,
             'media_generated' as action,
             'Generated emotion mask media' as description
-          FROM emotion_mask_media em
+          FROM unreal_reflection_media em
           JOIN users u ON em.user_id = u.id
           WHERE em.created_at >= NOW() - INTERVAL '${days} days' AND em.status = 'completed'
           
@@ -160,14 +160,14 @@ export const handler: Handler = async (event) => {
             COUNT(DISTINCT u.id) as active_users,
             COUNT(DISTINCT nm.user_id) as users_generated_neo_glitch,
             COUNT(DISTINCT pm.user_id) as users_generated_presets,
-            COUNT(DISTINCT em.user_id) as users_generated_emotion_mask,
+            COUNT(DISTINCT em.user_id) as users_generated_unreal_reflection,
             COUNT(DISTINCT gm.user_id) as users_generated_ghibli_reaction,
             COUNT(DISTINCT cm.user_id) as users_generated_custom_prompt,
             COUNT(DISTINCT edm.user_id) as users_generated_studio,
             COUNT(DISTINCT l.user_id) as users_liked_media,
             COUNT(nm.id) as neo_glitch_generated,
             COUNT(pm.id) as presets_generated,
-            COUNT(em.id) as emotion_mask_generated,
+            COUNT(em.id) as unreal_reflection_generated,
             COUNT(gm.id) as ghibli_reaction_generated,
             COUNT(cm.id) as custom_prompt_generated,
             COUNT(edm.id) as studio_generated,
@@ -175,7 +175,7 @@ export const handler: Handler = async (event) => {
           FROM users u
           LEFT JOIN neo_glitch_media nm ON u.id = nm.user_id AND nm.created_at >= NOW() - INTERVAL '${days} days' AND nm.status = 'completed'
           LEFT JOIN presets_media pm ON u.id = pm.user_id AND pm.created_at >= NOW() - INTERVAL '${days} days' AND pm.status = 'completed'
-          LEFT JOIN emotion_mask_media em ON u.id = em.user_id AND em.created_at >= NOW() - INTERVAL '${days} days' AND em.status = 'completed'
+          LEFT JOIN unreal_reflection_media em ON u.id = em.user_id AND em.created_at >= NOW() - INTERVAL '${days} days' AND em.status = 'completed'
           LEFT JOIN ghibli_reaction_media gm ON u.id = gm.user_id AND gm.created_at >= NOW() - INTERVAL '${days} days' AND gm.status = 'completed'
           LEFT JOIN custom_prompt_media cm ON u.id = cm.user_id AND cm.created_at >= NOW() - INTERVAL '${days} days' AND cm.status = 'completed'
           LEFT JOIN edit_media edm ON u.id = edm.user_id AND edm.created_at >= NOW() - INTERVAL '${days} days' AND edm.status = 'completed'
@@ -236,7 +236,7 @@ export const handler: Handler = async (event) => {
           SELECT pm.user_id FROM presets_media pm
           WHERE pm.created_at >= NOW() - INTERVAL '${days} days' AND pm.status = 'completed'
           UNION ALL
-          SELECT em.user_id FROM emotion_mask_media em
+          SELECT em.user_id FROM unreal_reflection_media em
           WHERE em.created_at >= NOW() - INTERVAL '${days} days' AND em.status = 'completed'
           UNION ALL
           SELECT gm.user_id FROM ghibli_reaction_media gm

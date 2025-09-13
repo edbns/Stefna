@@ -9,8 +9,8 @@
 ALTER TABLE custom_prompt_media 
 DROP COLUMN IF EXISTS aiml_job_id;
 
--- Drop aiml_job_id from emotion_mask_media table  
-ALTER TABLE emotion_mask_media 
+-- Drop aiml_job_id from unreal_reflection_media table  
+ALTER TABLE unreal_reflection_media 
 DROP COLUMN IF EXISTS aiml_job_id;
 
 -- Drop aiml_job_id from presets_media table
@@ -25,7 +25,7 @@ DROP COLUMN IF EXISTS aiml_job_id;
 ALTER TABLE custom_prompt_media 
 ADD COLUMN IF NOT EXISTS fal_job_id TEXT;
 
-ALTER TABLE emotion_mask_media 
+ALTER TABLE unreal_reflection_media 
 ADD COLUMN IF NOT EXISTS fal_job_id TEXT;
 
 ALTER TABLE presets_media 
@@ -40,7 +40,7 @@ ADD COLUMN IF NOT EXISTS fal_job_id TEXT;
 
 -- Add comments to clarify the purpose of each job ID field
 COMMENT ON COLUMN custom_prompt_media.fal_job_id IS 'Fal.ai generation job ID for tracking and debugging';
-COMMENT ON COLUMN emotion_mask_media.fal_job_id IS 'Fal.ai generation job ID for tracking and debugging';
+COMMENT ON COLUMN unreal_reflection_media.fal_job_id IS 'Fal.ai generation job ID for tracking and debugging';
 COMMENT ON COLUMN presets_media.fal_job_id IS 'Fal.ai generation job ID for tracking and debugging';
 COMMENT ON COLUMN ghibli_reaction_media.fal_job_id IS 'Fal.ai generation job ID for tracking and debugging';
 COMMENT ON COLUMN neo_glitch_media.stability_job_id IS 'Stability.ai generation job ID for tracking and debugging';
@@ -52,7 +52,7 @@ UPDATE custom_prompt_media
 SET fal_job_id = NULL
 WHERE fal_job_id IS NULL;
 
-UPDATE emotion_mask_media 
+UPDATE unreal_reflection_media 
 SET fal_job_id = NULL
 WHERE fal_job_id IS NULL;
 
@@ -62,14 +62,14 @@ WHERE fal_job_id IS NULL;
 
 -- Create indexes for the new fal_job_id columns
 CREATE INDEX IF NOT EXISTS idx_custom_prompt_media_fal_job_id ON custom_prompt_media(fal_job_id);
-CREATE INDEX IF NOT EXISTS idx_emotion_mask_media_fal_job_id ON emotion_mask_media(fal_job_id);
+CREATE INDEX IF NOT EXISTS idx_unreal_reflection_media_fal_job_id ON unreal_reflection_media(fal_job_id);
 CREATE INDEX IF NOT EXISTS idx_presets_media_fal_job_id ON presets_media(fal_job_id);
 CREATE INDEX IF NOT EXISTS idx_story_fal_job_id ON story(fal_job_id);
 CREATE INDEX IF NOT EXISTS idx_story_photo_fal_job_id ON story_photo(fal_job_id);
 
 -- Drop old indexes that are no longer needed
 DROP INDEX IF EXISTS idx_custom_prompt_media_aiml_job_id;
-DROP INDEX IF EXISTS idx_emotion_mask_media_aiml_job_id;
+DROP INDEX IF EXISTS idx_unreal_reflection_media_aiml_job_id;
 DROP INDEX IF EXISTS idx_ghibli_reaction_media_aiml_job_id;
 DROP INDEX IF EXISTS idx_presets_media_aiml_job_id;
 
@@ -79,6 +79,6 @@ SELECT
     column_name,
     data_type
 FROM information_schema.columns 
-WHERE table_name IN ('custom_prompt_media', 'emotion_mask_media', 'presets_media', 'ghibli_reaction_media', 'neo_glitch_media', 'story', 'story_photo')
+WHERE table_name IN ('custom_prompt_media', 'unreal_reflection_media', 'presets_media', 'ghibli_reaction_media', 'neo_glitch_media', 'story', 'story_photo')
 AND column_name LIKE '%job_id%'
 ORDER BY table_name, column_name;

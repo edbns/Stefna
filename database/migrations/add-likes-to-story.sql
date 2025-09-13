@@ -17,7 +17,7 @@ ALTER TABLE likes DROP CONSTRAINT IF EXISTS likes_user_id_media_id_media_type_ke
 -- Note: We need to update any existing check constraints if they exist
 ALTER TABLE likes DROP CONSTRAINT IF EXISTS likes_media_type_check;
 ALTER TABLE likes ADD CONSTRAINT likes_media_type_check 
-CHECK (media_type IN ('custom_prompt', 'emotion_mask', 'ghibli_reaction', 'neo_glitch', 'presets', 'story'));
+CHECK (media_type IN ('custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'neo_glitch', 'presets', 'story'));
 
 -- Recreate the unique constraint
 ALTER TABLE likes ADD CONSTRAINT likes_user_id_media_id_media_type_key 
@@ -49,7 +49,7 @@ BEGIN
             FROM (
                 SELECT user_id FROM custom_prompt_media WHERE id = NEW.media_id AND NEW.media_type = 'custom_prompt'
                 UNION ALL
-                SELECT user_id FROM emotion_mask_media WHERE id = NEW.media_id AND NEW.media_type = 'emotion_mask'
+                SELECT user_id FROM unreal_reflection_media WHERE id = NEW.media_id AND NEW.media_type = 'unreal_reflection'
                 UNION ALL
                 SELECT user_id FROM ghibli_reaction_media WHERE id = NEW.media_id AND NEW.media_type = 'ghibli_reaction'
                 UNION ALL
@@ -79,7 +79,7 @@ BEGIN
             FROM (
                 SELECT user_id FROM custom_prompt_media WHERE id = OLD.media_id AND OLD.media_type = 'custom_prompt'
                 UNION ALL
-                SELECT user_id FROM emotion_mask_media WHERE id = OLD.media_id AND OLD.media_type = 'emotion_mask'
+                SELECT user_id FROM unreal_reflection_media WHERE id = OLD.media_id AND OLD.media_type = 'unreal_reflection'
                 UNION ALL
                 SELECT user_id FROM ghibli_reaction_media WHERE id = OLD.media_id AND OLD.media_type = 'ghibli_reaction'
                 UNION ALL
@@ -123,7 +123,7 @@ SET total_likes_received = (
     WHERE media_id IN (
         SELECT id FROM custom_prompt_media WHERE user_id = users.id
         UNION ALL
-        SELECT id FROM emotion_mask_media WHERE user_id = users.id
+        SELECT id FROM unreal_reflection_media WHERE user_id = users.id
         UNION ALL
         SELECT id FROM ghibli_reaction_media WHERE user_id = users.id
         UNION ALL

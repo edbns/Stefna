@@ -43,7 +43,7 @@ export const handler: Handler = async (event) => {
     const mediaCounts = await Promise.all([
       qCount('SELECT COUNT(*) as count FROM neo_glitch_media WHERE user_id = $1', [userId]),
       qCount('SELECT COUNT(*) as count FROM ghibli_reaction_media WHERE user_id = $1', [userId]),
-      qCount('SELECT COUNT(*) as count FROM emotion_mask_media WHERE user_id = $1', [userId]),
+      qCount('SELECT COUNT(*) as count FROM unreal_reflection_media WHERE user_id = $1', [userId]),
       qCount('SELECT COUNT(*) as count FROM presets_media WHERE user_id = $1', [userId]),
       qCount('SELECT COUNT(*) as count FROM custom_prompt_media WHERE user_id = $1', [userId]),
       qCount('SELECT COUNT(*) as count FROM story WHERE user_id = $1', [userId]),
@@ -75,7 +75,7 @@ export const handler: Handler = async (event) => {
       console.log('🗑️ [Account Deletion] Deleting media...');
       await q(`DELETE FROM neo_glitch_media WHERE user_id = $1`, [userId]);
       await q(`DELETE FROM ghibli_reaction_media WHERE user_id = $1`, [userId]);
-      await q(`DELETE FROM emotion_mask_media WHERE user_id = $1`, [userId]);
+      await q(`DELETE FROM unreal_reflection_media WHERE user_id = $1`, [userId]);
       await q(`DELETE FROM presets_media WHERE user_id = $1`, [userId]);
       await q(`DELETE FROM custom_prompt_media WHERE user_id = $1`, [userId]);
       await q(`DELETE FROM story WHERE user_id = $1`, [userId]);
@@ -96,7 +96,7 @@ export const handler: Handler = async (event) => {
             UNION ALL
             SELECT id FROM ghibli_reaction_media WHERE user_id = users.id
             UNION ALL
-            SELECT id FROM emotion_mask_media WHERE user_id = users.id
+            SELECT id FROM unreal_reflection_media WHERE user_id = users.id
             UNION ALL
             SELECT id FROM presets_media WHERE user_id = users.id
             UNION ALL
@@ -112,7 +112,7 @@ export const handler: Handler = async (event) => {
             UNION ALL
             SELECT user_id FROM ghibli_reaction_media WHERE id IN (SELECT media_id FROM likes WHERE user_id = $1)
             UNION ALL
-            SELECT user_id FROM emotion_mask_media WHERE id IN (SELECT media_id FROM likes WHERE user_id = $1)
+            SELECT user_id FROM unreal_reflection_media WHERE id IN (SELECT media_id FROM likes WHERE user_id = $1)
             UNION ALL
             SELECT user_id FROM presets_media WHERE id IN (SELECT media_id FROM likes WHERE user_id = $1)
             UNION ALL

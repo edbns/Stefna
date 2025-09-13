@@ -61,7 +61,7 @@ export const handler: Handler = async (event) => {
     const tables = [
       { name: 'neo_glitch_media', display: 'neoGlitchMedia' },
       { name: 'custom_prompt_media', display: 'customPromptMedia' },
-      { name: 'emotion_mask_media', display: 'emotionMaskMedia' },
+      { name: 'unreal_reflection_media', display: 'emotionMaskMedia' },
       { name: 'ghibli_reaction_media', display: 'ghibliReactionMedia' },
       { name: 'presets_media', display: 'presetsMedia' },
       { name: 'story', display: 'story' }
@@ -142,7 +142,7 @@ export const handler: Handler = async (event) => {
     if (!deletedMedia) {
       try {
         const result = await q(`
-          DELETE FROM emotion_mask_media 
+          DELETE FROM unreal_reflection_media 
           WHERE id = $1 AND user_id = $2
           RETURNING id
         `, [mediaId, userId]);
@@ -235,7 +235,7 @@ export const handler: Handler = async (event) => {
           SELECT cloudinary_public_id, image_url 
           FROM ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
                 mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
-                mediaTable === 'emotionMaskMedia' ? 'emotion_mask_media' :
+                mediaTable === 'emotionMaskMedia' ? 'unreal_reflection_media' :
                 mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                 mediaTable === 'presetsMedia' ? 'presets_media' :
                 mediaTable === 'story' ? 'story' : 'custom_prompt_media'}
@@ -258,7 +258,7 @@ export const handler: Handler = async (event) => {
           FROM likes l
           JOIN ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
                 mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
-                mediaTable === 'emotionMaskMedia' ? 'emotion_mask_media' :
+                mediaTable === 'emotionMaskMedia' ? 'unreal_reflection_media' :
                 mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                 mediaTable === 'presetsMedia' ? 'presets_media' :
                 mediaTable === 'story' ? 'story' : 'custom_prompt_media'} m ON l.media_id = m.id
@@ -286,7 +286,7 @@ export const handler: Handler = async (event) => {
         const verifyResult = await q(`
           SELECT id FROM ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
                           mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
-                          mediaTable === 'emotionMaskMedia' ? 'emotion_mask_media' :
+                          mediaTable === 'emotionMaskMedia' ? 'unreal_reflection_media' :
                           mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                           mediaTable === 'presetsMedia' ? 'presets_media' :
                           mediaTable === 'story' ? 'story' : 'custom_prompt_media'}

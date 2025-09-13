@@ -29,7 +29,7 @@ import { uploadSourceToCloudinary } from '../services/uploadSource'
 import { storeSelectedFile } from '../services/mediaSource'
 import { useGenerationMode } from '../stores/generationMode'
 // MoodMorph removed - replaced with Anime Filters
-import { EmotionMaskPicker } from './EmotionMaskPicker'
+import { UnrealReflectionPicker } from './UnrealReflectionPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
 import { MediaUploadAgreement } from './MediaUploadAgreement'
@@ -109,7 +109,7 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
 import { DatabasePreset } from '../services/presetsService'
 // Preset collections now handled by database and simplified service
 // Individual preset services removed - using direct function calls
-import { EMOTION_MASK_PRESETS } from '../presets/emotionmask'
+import { UNREAL_REFLECTION_PRESETS } from '../presets/unrealReflection'
 import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
 import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
 import { resolvePresetForMode } from '../utils/resolvePresetForMode'
@@ -205,12 +205,12 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: null as 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit' | null, // remix mode removed
+    mode: null as 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit' | null, // remix mode removed
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
     // MoodMorph removed - replaced with Anime Filters
-    selectedEmotionMaskPresetId: null as string | null, // Separate from other presets
+    selectedUnrealReflectionPresetId: null as string | null, // Separate from other presets
     selectedGhibliReactionPresetId: null as string | null, // Ghibli Reaction presets
     selectedNeoTokyoGlitchPresetId: null as string | null, // Neo Tokyo Glitch presets
     customPrompt: '', // Custom mode gets its own prompt
@@ -292,7 +292,7 @@ const HomeNew: React.FC = () => {
 
   // Clear mode state after successful generation
   const clearModeAfterGeneration = () => {
-    console.log('🎭 Clearing mode after generation')
+    console.log('Clearing mode after generation')
     setSelectedMode(null)
   }
 
@@ -307,7 +307,7 @@ const HomeNew: React.FC = () => {
     setPreviewUrl(null)
     setPrompt('')
     // setSelectedPreset(null) // REMOVED - using composerState.selectedPresetId now
-    setSelectedEmotionMaskPreset(null)
+    setSelectedUnrealReflectionPreset(null)
     setSelectedGhibliReactionPreset(null)
     setSelectedNeoTokyoGlitchPreset(null)
     setSelectedMode(null)
@@ -321,7 +321,7 @@ const HomeNew: React.FC = () => {
       file: null,
       sourceUrl: null,
       selectedPresetId: null,
-      selectedEmotionMaskPresetId: null,
+      selectedUnrealReflectionPresetId: null,
       selectedGhibliReactionPresetId: null,
       selectedNeoTokyoGlitchPresetId: null,
       customPrompt: '',
@@ -367,12 +367,12 @@ const HomeNew: React.FC = () => {
 
   // Clear all options after generation (success or failure)
   const clearAllOptionsAfterGeneration = () => {
-    console.log('🎭 Clearing all options after generation')
+    console.log('Clearing all options after generation')
     
     // Clear everything EXCEPT the file - keep it for continued preset usage
     setPrompt('')
     // setSelectedPreset(null) // REMOVED - using composerState.selectedPresetId now
-    setSelectedEmotionMaskPreset(null)
+    setSelectedUnrealReflectionPreset(null)
     setSelectedGhibliReactionPreset(null)
     setSelectedNeoTokyoGlitchPreset(null)
     setSelectedMode(null)
@@ -384,7 +384,7 @@ const HomeNew: React.FC = () => {
       ...s,
       mode: null,
       selectedPresetId: null,
-      selectedEmotionMaskPresetId: null,
+      selectedUnrealReflectionPresetId: null,
       selectedGhibliReactionPresetId: null,
       selectedNeoTokyoGlitchPresetId: null,
       customPrompt: '',
@@ -393,7 +393,7 @@ const HomeNew: React.FC = () => {
       runOnOpen: false
     }))
     
-    console.log('🎭 Options cleared but file preserved for continued preset usage')
+    console.log('Options cleared but file preserved for continued preset usage')
   }
 
   // Clear preset when user exits composer (immediate to avoid race)
@@ -456,7 +456,7 @@ const HomeNew: React.FC = () => {
       
       // Check if click is outside all dropdown areas
       if (!target.closest('[data-presets-dropdown]') &&
-          !target.closest('[data-emotionmask-dropdown]') &&
+          !target.closest('[data-unrealreflection-dropdown]') &&
           !target.closest('[data-ghiblireact-dropdown]') &&
           !target.closest('[data-neotokyoglitch-dropdown]') &&
           !target.closest('[data-profile-dropdown]')) {
@@ -482,7 +482,7 @@ const HomeNew: React.FC = () => {
 
   // Debug composer state changes
   useEffect(() => {
-    console.log('🎭 Composer state changed:', {
+    console.log('Composer state changed:', {
       mode: composerState.mode,
       status: composerState.status,
       selectedPresetId: composerState.selectedPresetId,
@@ -507,20 +507,20 @@ const HomeNew: React.FC = () => {
     }
   }, [availablePresets])
 
-  // Close emotion mask dropdown when clicking outside or when other modes are selected
+  // Close unreal reflection dropdown when clicking outside or when other modes are selected
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element
-      const emotionMaskDropdown = document.querySelector('[data-emotionmask-dropdown]')
+      const unrealReflectionDropdown = document.querySelector('[data-unrealreflection-dropdown]')
       
-      if (emotionMaskDropdown && !emotionMaskDropdown.contains(target)) {
-        setEmotionMaskDropdownOpen(false)
+      if (unrealReflectionDropdown && !unrealReflectionDropdown.contains(target)) {
+        setUnrealReflectionDropdownOpen(false)
       }
     }
 
     const handleModeChange = () => {
-      if (composerState.mode !== 'emotionmask') {
-        setEmotionMaskDropdownOpen(false)
+      if (composerState.mode !== 'unrealreflection') {
+        setUnrealReflectionDropdownOpen(false)
       }
     }
 
@@ -710,8 +710,8 @@ const HomeNew: React.FC = () => {
   const [selectedEra, setSelectedEra] = useState<string | null>(null)
   const [selectedOp, setSelectedOp] = useState<string | null>(null)
   // MoodMorph removed - replaced with Anime Filters
-  const [selectedEmotionMaskPreset, setSelectedEmotionMaskPreset] = useState<string | null>(null)
-  const [emotionMaskDropdownOpen, setEmotionMaskDropdownOpen] = useState(false)
+  const [selectedUnrealReflectionPreset, setSelectedUnrealReflectionPreset] = useState<string | null>(null)
+  const [unrealReflectionDropdownOpen, setUnrealReflectionDropdownOpen] = useState(false)
   const [selectedGhibliReactionPreset, setSelectedGhibliReactionPreset] = useState<string | null>(null)
   const [ghibliReactionDropdownOpen, setGhibliReactionDropdownOpen] = useState(false)
   const [selectedNeoTokyoGlitchPreset, setSelectedNeoTokyoGlitchPreset] = useState<string | null>(null)
@@ -844,7 +844,7 @@ const HomeNew: React.FC = () => {
     setFilterOpen(false)
     setUserMenu(false)
     setPresetsOpen(false)
-    setEmotionMaskDropdownOpen(false)
+    setUnrealReflectionDropdownOpen(false)
     setGhibliReactionDropdownOpen(false)
     setNeoTokyoGlitchDropdownOpen(false)
     setProfileDropdownOpen(false)
@@ -1567,7 +1567,7 @@ const HomeNew: React.FC = () => {
     if (isComposerOpen) {
       import('../stores/generationStore').then(({ useGenerationStore }) => {
         const genState = useGenerationStore.getState()
-        console.log('🎭 Composer opened with state:', { 
+        console.log('Composer opened with state:', { 
           previewUrl, 
           selectedFile: selectedFile?.name, 
           genStoreFile: genState.selectedFile instanceof File ? genState.selectedFile.name : 'not a File',
@@ -1588,7 +1588,7 @@ const HomeNew: React.FC = () => {
     if (isComposerOpen && showUploadAgreement && pendingFile) {
       // Wait a bit for the composer to fully render and be visible
       const timer = setTimeout(() => {
-        console.log('🎭 Composer is ready, closing agreement modal')
+        console.log('Composer is ready, closing agreement modal')
         setShowUploadAgreement(false)
         setPendingFile(null)
       }, 300) // Small delay to ensure smooth transition
@@ -2169,12 +2169,12 @@ const HomeNew: React.FC = () => {
 
   // NEW CLEAN GENERATION DISPATCHER - NO MORE MIXED LOGIC
   async function dispatchGenerate(
-    kind: 'preset' | 'custom' | 'emotionmask' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit', // remix removed
+    kind: 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit', // remix removed
     options?: {
       presetId?: string;
       presetData?: any;
       // MoodMorph removed - replaced with Anime Filters
-      emotionMaskPresetId?: string;
+      unrealReflectionPresetId?: string;
       ghibliReactionPresetId?: string;
       neoTokyoGlitchPresetId?: string;
       customPrompt?: string;
@@ -2198,7 +2198,7 @@ const HomeNew: React.FC = () => {
     console.info('▶ NEW dispatchGenerate', { kind, options, runId });
     
     // 🛡️ Runtime Guard (For Safety) - Prevent unknown modes from crashing the app
-    if (!['preset', 'custom', 'emotionmask', 'ghiblireact', 'neotokyoglitch', 'storytime', 'edit'].includes(kind)) {
+    if (!['preset', 'custom', 'unrealreflection', 'ghiblireact', 'neotokyoglitch', 'storytime', 'edit'].includes(kind)) {
       console.warn("[dispatchGenerate] Unknown mode: ", kind);
               notifyError({ title: 'Invalid Mode', message: 'Try again with a valid option' });
       return;
@@ -2274,8 +2274,8 @@ const HomeNew: React.FC = () => {
     let effectivePrompt = '';
     let generationMeta: any = null;
     
-    // 🧠 Debug logging for generation dispatch
-    console.log("🧠 Dispatching generation with mode:", kind);
+    // Debug logging for generation dispatch
+    console.log("Dispatching generation with mode:", kind);
     console.log("🎯 Options:", options);
     
     if (kind === 'custom') {
@@ -2327,54 +2327,54 @@ const HomeNew: React.FC = () => {
       
     // Remix mode removed - focus on personal creativity
       
-    } else if (kind === 'emotionmask') {
+    } else if (kind === 'unrealreflection') {
       // HYBRID EMOTION MASK MODE: Use curated presets or dynamic prompts
-      const emotionMaskPresetId = options?.emotionMaskPresetId || selectedEmotionMaskPreset;
+      const unrealReflectionPresetId = options?.unrealReflectionPresetId || selectedUnrealReflectionPreset;
       
-      if (!emotionMaskPresetId) {
-        console.error('❌ Invalid Emotion Mask preset:', emotionMaskPresetId);
-        console.error('❌ Invalid Emotion Mask preset: Please select an emotional variant first')
+      if (!unrealReflectionPresetId) {
+        console.error('❌ Invalid Unreal Reflection preset:', unrealReflectionPresetId);
+        console.error('❌ Invalid Unreal Reflection preset: Please select a reflection variant first')
         endGeneration(genId);
         setNavGenerating(false);
         return;
       }
       
-      const emotionMaskPreset = EMOTION_MASK_PRESETS.find(p => p.id === emotionMaskPresetId);
-      if (!emotionMaskPreset) {
-        console.error('❌ Emotion Mask preset not found:', emotionMaskPresetId);
-        console.error('❌ Emotion Mask preset not found: Please select a valid emotional variant')
+      const unrealReflectionPreset = UNREAL_REFLECTION_PRESETS.find(p => p.id === unrealReflectionPresetId);
+      if (!unrealReflectionPreset) {
+        console.error('❌ Unreal Reflection preset not found:', unrealReflectionPresetId);
+        console.error('❌ Unreal Reflection preset not found: Please select a valid reflection variant')
         endGeneration(genId);
         setNavGenerating(false);
         return;
       }
       
-      // 🎭 EMOTION MASK MODE: ALWAYS use the original, curated prompt
-      // NO MORE SYNTHETIC PROMPT GENERATION - preserve emotional intent
-      effectivePrompt = emotionMaskPreset.prompt;
+      // UNREAL REFLECTION MODE: ALWAYS use the original, curated prompt
+      // NO MORE SYNTHETIC PROMPT GENERATION - preserve reflection intent
+      effectivePrompt = unrealReflectionPreset.prompt;
       
-            // Emotion Mask uses strict IPA (threshold: 0.7) - no manual control needed
-      const adjustedStrength = emotionMaskPreset.strength;
+            // Unreal Reflection uses strict IPA (threshold: 0.7) - no manual control needed
+      const adjustedStrength = unrealReflectionPreset.strength;
       
       generationMeta = { 
-        mode: 'emotionmask', 
-        emotionMaskPresetId, 
-        emotionMaskPresetLabel: emotionMaskPreset.label,
-        model: emotionMaskPreset.model, // Use preset model (BFL)
+        mode: 'unrealreflection', 
+        unrealReflectionPresetId, 
+        unrealReflectionPresetLabel: unrealReflectionPreset.label,
+        model: unrealReflectionPreset.model, // Use preset model (BFL)
         strength: adjustedStrength, // Use preset strength
-        guidance_scale: emotionMaskPreset.guidance_scale, // Use preset guidance
-        num_inference_steps: emotionMaskPreset.num_inference_steps, // Use preset steps
-        prompt_upsampling: emotionMaskPreset.prompt_upsampling, // Use preset upsampling
-        safety_tolerance: emotionMaskPreset.safety_tolerance, // Use preset safety
-        output_format: emotionMaskPreset.output_format, // Use preset format
-        raw: emotionMaskPreset.raw, // Use preset raw mode
-        image_prompt_strength: emotionMaskPreset.image_prompt_strength, // Use preset image strength
-        aspect_ratio: emotionMaskPreset.aspect_ratio, // Use preset aspect ratio
-        generation_type: "emotion_mask_strict_ipa", // Strict identity preservation
+        guidance_scale: unrealReflectionPreset.guidance_scale, // Use preset guidance
+        num_inference_steps: unrealReflectionPreset.num_inference_steps, // Use preset steps
+        prompt_upsampling: unrealReflectionPreset.prompt_upsampling, // Use preset upsampling
+        safety_tolerance: unrealReflectionPreset.safety_tolerance, // Use preset safety
+        output_format: unrealReflectionPreset.output_format, // Use preset format
+        raw: unrealReflectionPreset.raw, // Use preset raw mode
+        image_prompt_strength: unrealReflectionPreset.image_prompt_strength, // Use preset image strength
+        aspect_ratio: unrealReflectionPreset.aspect_ratio, // Use preset aspect ratio
+        generation_type: "unreal_reflection_strict_ipa", // Strict identity preservation
         ipaThreshold: 0.75, // High similarity required for Neo Tokyo Glitch
         ipaRetries: 3, // Aggressive fallback
         ipaBlocking: true // Must pass to proceed
       };
-      console.log('🎭 EMOTION MASK MODE: Using ORIGINAL prompt:', emotionMaskPreset.label, effectivePrompt);
+      console.log('UNREAL REFLECTION MODE: Using ORIGINAL prompt:', unrealReflectionPreset.label, effectivePrompt);
     } else if (kind === 'ghiblireact') {
       // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
       const ghibliReactionPresetId = options?.ghibliReactionPresetId || selectedGhibliReactionPreset;
@@ -2415,7 +2415,7 @@ const HomeNew: React.FC = () => {
           ipaRetries: 2, // Moderate fallback
           ipaBlocking: true // Must pass to proceed
         };
-      console.log('🎭 GHIBLI REACTION MODE: Using BFL preset:', ghibliReactionPreset.label, 'Model:', ghibliReactionPreset.model);
+      console.log('GHIBLI REACTION MODE: Using BFL preset:', ghibliReactionPreset.label, 'Model:', ghibliReactionPreset.model);
       
     } else if (kind === 'neotokyoglitch') {
       // NEO TOKYO GLITCH MODE: Use Replicate integration for maximum glitch intensity
@@ -2476,7 +2476,7 @@ const HomeNew: React.FC = () => {
         ipaBlocking: true, // Must pass to proceed
         presetKey: neoTokyoGlitchPresetId // Store the full preset ID instead of short key
         };
-      console.log('🎭 NEO TOKYO GLITCH MODE: Using preset parameters:', neoTokyoGlitchPreset.label, 'Model:', neoTokyoGlitchPreset.model);
+      console.log('NEO TOKYO GLITCH MODE: Using preset parameters:', neoTokyoGlitchPreset.label, 'Model:', neoTokyoGlitchPreset.model);
       
     } else if (kind === 'storytime') {
       // STORY TIME MODE: Use multiple images for video generation
@@ -2580,7 +2580,7 @@ const HomeNew: React.FC = () => {
         switch (kind) {
           case 'preset': return 'presets';
           case 'custom': return 'custom-prompt';
-          case 'emotionmask': return 'emotion-mask';
+          case 'unrealreflection': return 'emotion-mask';
           case 'ghiblireact': return 'ghibli-reaction';
           case 'neotokyoglitch': return 'neo-glitch';
           case 'storytime': return 'story-time';
@@ -2632,7 +2632,7 @@ const HomeNew: React.FC = () => {
         sourceHeight: sourceHeight,
         userId: authService.getCurrentUser()?.id || '',
         runId: runId,
-        emotionMaskPresetId: generationMeta?.emotionMaskPresetId,
+        unrealReflectionPresetId: generationMeta?.unrealReflectionPresetId,
         ghibliReactionPresetId: generationMeta?.ghibliReactionPresetId,
         neoGlitchPresetId: generationMeta?.neoTokyoGlitchPresetId,
         storyTimePresetId: generationMeta?.storyTimePresetId,
@@ -3063,10 +3063,10 @@ const HomeNew: React.FC = () => {
   // generateRemix function removed - no more remix functionality
 
   // 5. EMOTION MASK MODE GENERATION - Uses selected emotional variant
-  const generateEmotionMask = async () => {
-    console.log('🎭 EMOTION MASK MODE: Generating emotional truth portrait')
+  const generateUnrealReflection = async () => {
+    console.log('EMOTION MASK MODE: Generating emotional truth portrait')
     
-    if (!selectedEmotionMaskPreset) {
+    if (!selectedUnrealReflectionPreset) {
       console.error('❌ Emotion Mask preset required: Please select an emotional variant first')
       return
     }
@@ -3074,18 +3074,18 @@ const HomeNew: React.FC = () => {
     // Update composer state for Emotion Mask mode
     setComposerState(s => ({
       ...s,
-      mode: 'emotionmask',
+      mode: 'unrealreflection',
       selectedPresetId: null, // Clear preset
       
-      selectedEmotionMaskPresetId: selectedEmotionMaskPreset, // Set selected emotional variant
+      selectedUnrealReflectionPresetId: selectedUnrealReflectionPreset, // Set selected emotional variant
       customPrompt: '', // Clear custom prompt
       status: 'idle',
       error: null
     }))
     
-    // Generate with ONLY the selected Emotion Mask variant - no other contamination
-    await dispatchGenerate('emotionmask', {
-      emotionMaskPresetId: selectedEmotionMaskPreset
+    // Generate with ONLY the selected Unreal Reflection variant - no other contamination
+    await dispatchGenerate('unrealreflection', {
+      unrealReflectionPresetId: selectedUnrealReflectionPreset
     });
     
     // Clear composer after successful generation
@@ -3353,7 +3353,7 @@ const HomeNew: React.FC = () => {
     if (!prompt.trim() || isEnhancing) return
     
     setIsEnhancing(true)
-    console.log('🔮 Magic Wand enhancing prompt:', prompt)
+    console.log('Magic Wand enhancing prompt:', prompt)
     
     try {
       // Call OpenAI API for prompt enhancement
@@ -3361,12 +3361,12 @@ const HomeNew: React.FC = () => {
       
       if (result.success && result.enhancedPrompt) {
         setPrompt(result.enhancedPrompt)
-        console.log('🔮 Prompt enhanced successfully:', result.enhancedPrompt)
+        console.log('Prompt enhanced successfully:', result.enhancedPrompt)
         
         // Show success toast
         notifyReady({ 
           title: 'Prompt Enhanced', 
-          message: 'Your prompt has been enhanced with AI magic! ✨' 
+          message: 'Your prompt has been enhanced with AI magic!' 
         })
       } else {
         console.error('❌ Magic Wand returned no enhancement')
@@ -3586,7 +3586,7 @@ const HomeNew: React.FC = () => {
         <div className="pt-0">
           {isLoadingFeed ? (
             <div className="w-full">
-              {/* 🎨 Engaging skeleton loading inspired by Sora's aesthetic */}
+              {/* Engaging skeleton loading inspired by Sora's aesthetic */}
               <SkeletonGrid columns={3} rows={6} />
             </div>
           ) : feed.length > 0 ? (
@@ -3613,7 +3613,7 @@ const HomeNew: React.FC = () => {
               {/* End of feed indicator */}
               {!hasMoreFeed && feed.length > 0 && (
                 <div className="text-center py-8 text-white/40 text-sm">
-                  ✨ You've reached the end of the feed
+                  You've reached the end of the feed
                 </div>
               )}
               
@@ -3783,9 +3783,9 @@ const HomeNew: React.FC = () => {
                       placeholder={(() => {
                         switch (composerState.mode) {
                           case 'edit': 
-                            return "Change something, add something — your call ... tap ✨ for a little magic."
+                            return "Change something, add something — your call ... tap for a little magic."
                           case 'custom': 
-                            return "Type something weird. We'll make it art ... tap ✨ for a little magic."
+                            return "Type something weird. We'll make it art ... tap for a little magic."
                           default: 
                             return "Custom prompt (optional) - will be combined with selected preset"
                         }
@@ -3805,7 +3805,7 @@ const HomeNew: React.FC = () => {
                       {isEnhancing ? (
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       ) : (
-                        <span className="text-lg">✨</span>
+                        <span className="text-lg"></span>
                       )}
                     </button>
                   <div className="absolute bottom-2 right-2 text-white/30 text-xs">
@@ -3962,53 +3962,53 @@ const HomeNew: React.FC = () => {
                   {/* MoodMorph removed - replaced with Anime Filters */}
 
                   {/* Emotion Mask™ button - SINGLE BUTTON with dropdown */}
-                  <div className="relative" data-emotionmask-dropdown>
+                  <div className="relative" data-unrealreflection-dropdown>
                     <button
                       onClick={async () => {
                         // Check authentication first
                         if (!checkAuthAndRedirect()) return
                         
-                        if (composerState.mode === 'emotionmask') {
+                        if (composerState.mode === 'unrealreflection') {
                           // Already in Emotion Mask mode - toggle dropdown
                           closeAllDropdowns()
-                          setEmotionMaskDropdownOpen((v) => !v)
+                          setUnrealReflectionDropdownOpen((v) => !v)
                         } else {
                           // Switch to Emotion Mask mode AND show dropdown immediately
                           closeAllDropdowns()
-                          setComposerState(s => ({ ...s, mode: 'emotionmask' }))
+                          setComposerState(s => ({ ...s, mode: 'unrealreflection' }))
                           setSelectedMode('presets') // Set selectedMode to match the new system
-                          setSelectedEmotionMaskPreset(null)
-                          setEmotionMaskDropdownOpen(true) // Show dropdown immediately
+                          setSelectedUnrealReflectionPreset(null)
+                          setUnrealReflectionDropdownOpen(true) // Show dropdown immediately
                         }
                       }}
                       className={
-                        composerState.mode === 'emotionmask'
+                        composerState.mode === 'unrealreflection'
                           ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                           : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
                       }
-                      title={isAuthenticated ? 'Switch to Emotion Mask™ mode' : 'Explore Emotion Mask™ mode'}
+                      title={isAuthenticated ? 'Switch to Unreal Reflection™ mode' : 'Explore Unreal Reflection™ mode'}
                     >
-                      {selectedEmotionMaskPreset ? 
-                        EMOTION_MASK_PRESETS.find(p => p.id === selectedEmotionMaskPreset)?.label || 'Emotion Mask™' 
-                        : 'Emotion Mask™'
+                      {selectedUnrealReflectionPreset ? 
+                        UNREAL_REFLECTION_PRESETS.find(p => p.id === selectedUnrealReflectionPreset)?.label || 'Unreal Reflection™' 
+                        : 'Unreal Reflection™'
                       }
                     </button>
                     
-                    {/* Emotion Mask presets dropdown - show when in Emotion Mask mode */}
-                    {composerState.mode === 'emotionmask' && emotionMaskDropdownOpen && (
+                    {/* Unreal Reflection™ presets dropdown - show when in Unreal Reflection mode */}
+                    {composerState.mode === 'unrealreflection' && unrealReflectionDropdownOpen && (
                       <div className="absolute bottom-full left-0 mb-2 z-50">
-                        <EmotionMaskPicker
-                          value={selectedEmotionMaskPreset || undefined}
+                        <UnrealReflectionPicker
+                          value={selectedUnrealReflectionPreset || undefined}
                             onChange={async (presetId) => {
-                            setSelectedEmotionMaskPreset(presetId || null)
-                            setEmotionMaskDropdownOpen(false)
+                            setSelectedUnrealReflectionPreset(presetId || null)
+                            setUnrealReflectionDropdownOpen(false)
                               
-                            // Auto-generate when Emotion Mask preset is selected
+                            // Auto-generate when Unreal Reflection preset is selected
                               if (presetId && selectedFile && isAuthenticated) {
-                              console.log('🎭 Auto-generating Emotion Mask with preset:', presetId)
+                              console.log('Auto-generating Unreal Reflection with preset:', presetId)
                                 try {
-                                await dispatchGenerate('emotionmask', {
-                                  emotionMaskPresetId: presetId
+                                await dispatchGenerate('unrealreflection', {
+                                  unrealReflectionPresetId: presetId
                                   })
                                 // Clear composer after successful generation
                                 setTimeout(() => {
@@ -4075,7 +4075,7 @@ const HomeNew: React.FC = () => {
                             
                             // Auto-generate when Ghibli Reaction preset is selected
                             if (presetId && selectedFile && isAuthenticated) {
-                              console.log('🎭 Auto-generating Ghibli Reaction with preset:', presetId)
+                              console.log('Auto-generating Ghibli Reaction with preset:', presetId)
                               try {
                                 await dispatchGenerate('ghiblireact', {
                                   ghibliReactionPresetId: presetId
@@ -4145,7 +4145,7 @@ const HomeNew: React.FC = () => {
                             
                             // Auto-generate when Neo Tokyo Glitch preset is selected
                             if (presetId && selectedFile && isAuthenticated) {
-                              console.log('🎭 Auto-generating Neo Tokyo Glitch with preset:', presetId)
+                              console.log('Auto-generating Neo Tokyo Glitch with preset:', presetId)
                               try {
                                 await dispatchGenerate('neotokyoglitch', {
                                   neoTokyoGlitchPresetId: presetId
@@ -4270,7 +4270,7 @@ const HomeNew: React.FC = () => {
                           // Handle different generation modes
                           if (composerState.mode === 'custom') {
                             // Custom mode - use dispatchGenerate directly
-                            console.log('🎭 Custom mode - calling dispatchGenerate')
+                            console.log('Custom mode - calling dispatchGenerate')
                           await dispatchGenerate('custom', {
                           customPrompt: prompt
                         })

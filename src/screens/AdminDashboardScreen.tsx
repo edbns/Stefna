@@ -1084,7 +1084,7 @@ const AdminDashboardScreen: React.FC = () => {
                               <option value="all">All Types</option>
                               <option value="neo_glitch">Neo Tokyo Glitch</option>
                               <option value="presets">Presets</option>
-                              <option value="emotion_mask">Emotion Mask</option>
+                              <option value="unreal_reflection">Emotion Mask</option>
                               <option value="ghibli_reaction">Ghibli Reaction</option>
                               <option value="custom_prompt">Custom Prompt</option>
                               <option value="edit">Studio</option>
@@ -1166,7 +1166,7 @@ const AdminDashboardScreen: React.FC = () => {
                                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                         item.type === 'neo_glitch' ? 'bg-purple-500/20 text-purple-400' :
                                         item.type === 'presets' ? 'bg-blue-500/20 text-blue-400' :
-                                        item.type === 'emotion_mask' ? 'bg-green-500/20 text-green-400' :
+                                        item.type === 'unreal_reflection' ? 'bg-green-500/20 text-green-400' :
                                         item.type === 'ghibli_reaction' ? 'bg-yellow-500/20 text-yellow-400' :
                                         item.type === 'custom_prompt' ? 'bg-orange-500/20 text-orange-400' :
                                         'bg-red-500/20 text-red-400'
@@ -1292,7 +1292,7 @@ const AdminDashboardScreen: React.FC = () => {
                                 <div className="text-xs text-white/60">Presets</div>
                               </div>
                               <div className="text-center">
-                                <div className="text-2xl font-bold text-white">{systemConfig.mediaStats?.emotion_mask_24h || 0}</div>
+                                <div className="text-2xl font-bold text-white">{systemConfig.mediaStats?.unreal_reflection_24h || 0}</div>
                                 <div className="text-xs text-white/60">Emotion</div>
                               </div>
                               <div className="text-center">

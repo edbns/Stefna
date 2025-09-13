@@ -63,9 +63,9 @@ export const handler: Handler = async (event, context) => {
        ORDER BY created_at DESC 
        LIMIT 1`,
       
-      // Emotion mask media - use preset column instead of emotion_mask_preset_id
-      `SELECT 'emotion_mask' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, likes_count 
-       FROM emotion_mask_media 
+      // Emotion mask media - use preset column instead of unreal_reflection_preset_id
+      `SELECT 'unreal_reflection' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, likes_count 
+       FROM unreal_reflection_media 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
        LIMIT 1`,
@@ -152,7 +152,7 @@ export const handler: Handler = async (event, context) => {
       type: foundMedia.type === 'story' ? 'video' : 'photo',
       url: foundMedia.image_url,
       prompt: foundMedia.prompt,
-      presetKey: foundMedia.preset || foundMedia.emotion_mask_preset_id || foundMedia.ghibli_reaction_preset_id || foundMedia.story_time_preset_id,
+      presetKey: foundMedia.preset || foundMedia.unreal_reflection_preset_id || foundMedia.ghibli_reaction_preset_id || foundMedia.story_time_preset_id,
       runId: foundMedia.run_id,
       timestamp: foundMedia.created_at,
       status: foundMedia.status,

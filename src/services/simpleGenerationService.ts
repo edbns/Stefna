@@ -308,7 +308,7 @@ class SimpleGenerationService {
     const modeMap: Record<GenerationMode, string> = {
       'presets': 'presets',
       'custom-prompt': 'custom',
-      'emotion-mask': 'emotion_mask',
+      'emotion-mask': 'unreal_reflection',
       'ghibli-reaction': 'ghibli_reaction',
       'neo-glitch': 'neo_glitch',
       'story-time': 'story_time',

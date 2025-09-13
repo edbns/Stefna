@@ -142,7 +142,7 @@ export const GhibliReactionTool = () => {
       {/* Reaction Options */}
       {originalImage && (
         <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
-          <h3 className="font-semibold mb-3 text-purple-800">🎭 Ghibli Reaction Effects</h3>
+          <h3 className="font-semibold mb-3 text-purple-800">Ghibli Reaction Effects</h3>
 
           {/* Effect Toggles */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -187,7 +187,7 @@ export const GhibliReactionTool = () => {
                 onChange={(e) => updateOption('enableEyeShine', e.target.checked)}
                 className="mr-2"
               />
-              <label htmlFor="enableEyeShine" className="text-sm font-medium">Eye Shine ✨</label>
+              <label htmlFor="enableEyeShine" className="text-sm font-medium">Eye Shine</label>
             </div>
           </div>
 

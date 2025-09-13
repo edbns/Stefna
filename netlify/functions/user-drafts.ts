@@ -1,6 +1,7 @@
 import type { Handler } from "@netlify/functions";
 import { q, qOne } from './_db';
 import { json } from './_lib/http';
+import { requireAuth } from './_lib/auth';
 
 export const handler: Handler = async (event) => {
   // CORS headers
@@ -14,32 +15,13 @@ export const handler: Handler = async (event) => {
     return { statusCode: 200, headers };
   }
 
-  // Get user from authorization header
-  const authHeader = event.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return json({ error: 'Unauthorized' }, { status: 401, headers });
-  }
-
-  const token = authHeader.substring(7);
-  let userId: string;
-
   try {
-    // Verify token and get user ID
-    const user = await qOne(`
-      SELECT id FROM users WHERE auth_token = $1 AND auth_token_expires_at > NOW()
-    `, [token]);
+    // Use standardized authentication helper
+    const { userId } = requireAuth(event.headers.authorization);
     
-    if (!user) {
-      return json({ error: 'Invalid or expired token' }, { status: 401, headers });
-    }
-    
-    userId = user.id;
-  } catch (error) {
-    console.error('Token verification failed:', error);
-    return json({ error: 'Authentication failed' }, { status: 401, headers });
-  }
+    console.log('🔐 Auth context:', { userId });
 
-  if (event.httpMethod === 'GET') {
+    if (event.httpMethod === 'GET') {
     // Get user drafts
     const { limit = '50', offset = '0' } = event.queryStringParameters || {};
     
@@ -175,7 +157,12 @@ export const handler: Handler = async (event) => {
       console.error('Failed to delete draft:', error);
       return json({ error: 'Failed to delete draft' }, { status: 500, headers });
     }
-  }
+    }
 
-  return json({ error: 'Method not allowed' }, { status: 405, headers });
+    return json({ error: 'Method not allowed' }, { status: 405, headers });
+
+  } catch (error) {
+    console.error('Handler error:', error);
+    return json({ error: 'Internal server error' }, { status: 500, headers });
+  }
 };

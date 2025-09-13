@@ -76,11 +76,12 @@ const AuthScreen: React.FC = () => {
 
       if (response.ok) {
         // Store token and user data
-        const token = data.token || 'temp-token' // Handle case where no token is returned
+        const accessToken = data.accessToken || data.token || 'temp-token' // Handle both new and old format
+        const refreshToken = data.refreshToken // New refresh token
         const user = data.user
         
         // Update authService immediately
-        authService.setAuthState(token, user)
+        authService.setAuthState(accessToken, user, refreshToken)
         
         setSuccess('Login successful!')
         // Navigate immediately to prevent visual glitches

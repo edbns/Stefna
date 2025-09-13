@@ -71,7 +71,7 @@ export const handler: Handler = async (event) => {
       SELECT COUNT(*) as total FROM (
         SELECT id::text FROM ghibli_reaction_media WHERE user_id = $1
         UNION ALL
-        SELECT id::text FROM emotion_mask_media WHERE user_id = $1
+        SELECT id::text FROM unreal_reflection_media WHERE user_id = $1
         UNION ALL
         SELECT id::text FROM presets_media WHERE user_id = $1
         UNION ALL
@@ -93,7 +93,7 @@ export const handler: Handler = async (event) => {
       SELECT * FROM (
         SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'ghibli_reaction' as media_type FROM ghibli_reaction_media WHERE user_id = $1
         UNION ALL
-        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'emotion_mask' as media_type FROM emotion_mask_media WHERE user_id = $1
+        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'unreal_reflection' as media_type FROM unreal_reflection_media WHERE user_id = $1
         UNION ALL
         SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'presets' as media_type FROM presets_media WHERE user_id = $1
         UNION ALL

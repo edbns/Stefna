@@ -79,7 +79,7 @@ export const handler: Handler = async (event) => {
     // Validate action values - updated to include all new generation types
     const allowedActions = [
       'image.gen', 'video.gen', 'mask.gen', 
-      'emotionmask', 'emotion_mask_generation',
+      'unrealreflection', 'unreal_reflection_generation',
       'preset', 'presets', 'presets_generation',
       'custom', 'custom_prompt_generation',
       'ghiblireact', 'ghibli_reaction_generation',

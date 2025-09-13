@@ -43,13 +43,13 @@ const adminConfigHandler: Handler = async (event) => {
         SELECT 
           (SELECT COUNT(*) FROM neo_glitch_media WHERE status = 'completed') as neo_glitch_total,
           (SELECT COUNT(*) FROM presets_media WHERE status = 'completed') as presets_total,
-          (SELECT COUNT(*) FROM emotion_mask_media WHERE status = 'completed') as emotion_mask_total,
+          (SELECT COUNT(*) FROM unreal_reflection_media WHERE status = 'completed') as unreal_reflection_total,
           (SELECT COUNT(*) FROM ghibli_reaction_media WHERE status = 'completed') as ghibli_reaction_total,
           (SELECT COUNT(*) FROM custom_prompt_media WHERE status = 'completed') as custom_prompt_total,
           (SELECT COUNT(*) FROM edit_media WHERE status = 'completed') as edit_total,
           (SELECT COUNT(*) FROM neo_glitch_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as neo_glitch_24h,
           (SELECT COUNT(*) FROM presets_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as presets_24h,
-          (SELECT COUNT(*) FROM emotion_mask_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as emotion_mask_24h,
+          (SELECT COUNT(*) FROM unreal_reflection_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as unreal_reflection_24h,
           (SELECT COUNT(*) FROM ghibli_reaction_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as ghibli_reaction_24h,
           (SELECT COUNT(*) FROM custom_prompt_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as custom_prompt_24h,
           (SELECT COUNT(*) FROM edit_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as edit_24h

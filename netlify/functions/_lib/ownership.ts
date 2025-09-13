@@ -25,8 +25,8 @@ export async function verifyMediaOwnership(
       case 'ghibli_reaction':
         tableName = 'ghibli_reaction_media';
         break;
-      case 'emotion_mask':
-        tableName = 'emotion_mask_media';
+      case 'unreal_reflection':
+        tableName = 'unreal_reflection_media';
         break;
       case 'presets':
         tableName = 'presets_media';

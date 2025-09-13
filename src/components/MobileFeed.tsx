@@ -44,7 +44,7 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
               <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full">
                 {media.mode === 'neo_glitch' ? 'Neo Tokyo Glitch' :
                  media.mode === 'ghibli_reaction' ? 'Ghibli Reaction' :
-                 media.mode === 'emotion_mask' ? 'Emotion Mask' :
+                 media.mode === 'unreal_reflection' ? 'Emotion Mask' :
                  media.mode === 'presets' ? 'Presets' :
                  media.mode === 'custom_prompt' ? 'Custom Prompt' :
                  media.mode === 'edit' ? 'Studio' : 'AI'}

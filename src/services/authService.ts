@@ -12,6 +12,7 @@ export interface AuthState {
   isAuthenticated: boolean
   user: User | null
   token: string | null
+  refreshToken: string | null
 }
 
 class AuthService {
@@ -19,7 +20,8 @@ class AuthService {
   private authState: AuthState = {
     isAuthenticated: false,
     user: null,
-    token: null
+    token: null,
+    refreshToken: null
   }
   private authChangeListeners: ((authState: AuthState) => void)[] = []
 
@@ -38,10 +40,12 @@ class AuthService {
   private loadAuthState(): void {
     try {
       const token = localStorage.getItem('auth_token')
+      const refreshToken = localStorage.getItem('refresh_token')
       const userData = localStorage.getItem('user_data')
 
       console.log('🔐 loadAuthState:', { 
         hasToken: !!token, 
+        hasRefreshToken: !!refreshToken,
         tokenType: typeof token,
         tokenPreview: token ? `${token.substring(0, 50)}...` : 'none',
         hasUserData: !!userData
@@ -54,7 +58,8 @@ class AuthService {
           this.authState = {
             isAuthenticated: true,
             user,
-            token
+            token,
+            refreshToken: refreshToken || null
           }
           console.log('🔐 Auth state loaded successfully:', { 
             isAuthenticated: this.authState.isAuthenticated,
@@ -100,12 +105,13 @@ class AuthService {
   }
 
   // Set auth state after successful login
-  setAuthState(token: string, user: User): void {
+  setAuthState(accessToken: string, user: User, refreshToken?: string): void {
     console.log('🔐 setAuthState called:', { 
-      tokenType: typeof token,
-      tokenPreview: token ? `${token.substring(0, 50)}...` : 'none',
+      tokenType: typeof accessToken,
+      tokenPreview: accessToken ? `${accessToken.substring(0, 50)}...` : 'none',
       userType: typeof user,
-      hasUser: !!user
+      hasUser: !!user,
+      hasRefreshToken: !!refreshToken
     });
     
     const wasAuthenticated = this.authState.isAuthenticated
@@ -113,9 +119,13 @@ class AuthService {
     this.authState = {
       isAuthenticated: true,
       user,
-      token
+      token: accessToken,
+      refreshToken: refreshToken || null
     }
-    localStorage.setItem('auth_token', token)
+    localStorage.setItem('auth_token', accessToken)
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken)
+    }
     localStorage.setItem('user_data', JSON.stringify(user))
     
     console.log('🔐 Auth state set successfully:', { 
@@ -135,10 +145,55 @@ class AuthService {
     this.authState = {
       isAuthenticated: false,
       user: null,
-      token: null
+      token: null,
+      refreshToken: null
     }
     localStorage.removeItem('auth_token')
+    localStorage.removeItem('refresh_token')
     localStorage.removeItem('user_data')
+  }
+
+  // Refresh access token using refresh token
+  async refreshAccessToken(): Promise<boolean> {
+    try {
+      const refreshToken = this.authState.refreshToken || localStorage.getItem('refresh_token')
+      
+      if (!refreshToken) {
+        console.log('🔐 No refresh token available')
+        return false
+      }
+
+      console.log('🔄 Attempting to refresh access token...')
+      
+      const response = await fetch('/.netlify/functions/refresh-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ refreshToken })
+      })
+
+      if (!response.ok) {
+        console.log('🔐 Token refresh failed:', response.status)
+        return false
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.accessToken) {
+        // Update the access token
+        this.authState.token = data.accessToken
+        localStorage.setItem('auth_token', data.accessToken)
+        
+        console.log('✅ Access token refreshed successfully')
+        return true
+      }
+      
+      return false
+    } catch (error) {
+      console.error('🔐 Token refresh error:', error)
+      return false
+    }
   }
 
   // Logout user

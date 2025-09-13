@@ -62,7 +62,7 @@ const adminUsersHandler: Handler = async (event) => {
     ] = await Promise.all([
       qCount(`SELECT COUNT(*) FROM neo_glitch_media`),
       qCount(`SELECT COUNT(*) FROM ghibli_reaction_media`),
-      qCount(`SELECT COUNT(*) FROM emotion_mask_media`),
+      qCount(`SELECT COUNT(*) FROM unreal_reflection_media`),
       qCount(`SELECT COUNT(*) FROM presets_media`),
       qCount(`SELECT COUNT(*) FROM custom_prompt_media`),
       qCount(`SELECT COUNT(*) FROM story`)

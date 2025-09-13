@@ -11,7 +11,7 @@ export interface FaceMaskOptions {
   smoothEdges?: boolean;
 }
 
-export interface EmotionMaskOptions {
+export interface UnrealReflectionOptions {
   enableCinematicLighting: boolean;
   enableSkinEnhancement: boolean;
   enableExpressionBoost: boolean;
@@ -20,7 +20,7 @@ export interface EmotionMaskOptions {
   expressionIntensity: number; // 0.1-1.0
 }
 
-export interface EmotionMaskResult {
+export interface UnrealReflectionResult {
   processedImage: string;
   metadata: {
     effects: string[];
@@ -29,7 +29,7 @@ export interface EmotionMaskResult {
   };
 }
 
-export function useEmotionMask() {
+export function useUnrealReflection() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const generateMaskFromImage = async (

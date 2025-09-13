@@ -353,9 +353,9 @@ await sessionCache.cacheFileUpload(file, result);
 const cached = await sessionCache.getCachedUpload(file);
 
 // 2. Namespaced caching for different modules
-await sessionCache.cacheFileUpload(file, result, 'emotion_mask');
+await sessionCache.cacheFileUpload(file, result, 'unreal_reflection');
 await sessionCache.cacheFileUpload(file, result, 'neotokyo_glitch');
-const cached = await sessionCache.getCachedUpload(file, 'emotion_mask');
+const cached = await sessionCache.getCachedUpload(file, 'unreal_reflection');
 
 // 3. User preferences with namespaces
 sessionCache.setUserPreference('theme', 'dark', 'ui');
@@ -363,9 +363,9 @@ sessionCache.setUserPreference('quality', 'high', 'generation');
 const theme = sessionCache.getUserPreference('theme', 'ui');
 
 // 4. Generation options with namespaces
-sessionCache.setGenerationOptions('emotion_mask', options, 'fx');
+sessionCache.setGenerationOptions('unreal_reflection', options, 'fx');
 sessionCache.setGenerationOptions('neotokyo_glitch', options, 'fx');
-const options = sessionCache.getGenerationOptions('emotion_mask', 'fx');
+const options = sessionCache.getGenerationOptions('unreal_reflection', 'fx');
 
 // 5. Eviction monitoring
 sessionCache.setEvictionCallback((key, value) => {

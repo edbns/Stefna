@@ -1,6 +1,7 @@
 import type { Handler } from "@netlify/functions";
 import { q, qOne } from './_db';
 import { json } from './_lib/http';
+import { requireAuth } from './_lib/auth';
 
 export const handler: Handler = async (event) => {
   // CORS headers
@@ -19,32 +20,10 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // Get user from authorization header
-    const authHeader = event.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return json({ error: 'Unauthorized' }, { status: 401, headers });
-    }
-
-    const token = authHeader.substring(7);
-    let userId: string;
-    let currentEmail: string;
-
-    try {
-      // Verify token and get user ID
-      const user = await qOne(`
-        SELECT id, email FROM users WHERE auth_token = $1 AND auth_token_expires_at > NOW()
-      `, [token]);
-      
-      if (!user) {
-        return json({ error: 'Invalid or expired token' }, { status: 401, headers });
-      }
-      
-      userId = user.id;
-      currentEmail = user.email;
-    } catch (error) {
-      console.error('Token verification failed:', error);
-      return json({ error: 'Authentication failed' }, { status: 401, headers });
-    }
+    // Use standardized authentication helper
+    const { userId, email: currentEmail } = requireAuth(event.headers.authorization);
+    
+    console.log('🔐 Auth context:', { userId, currentEmail });
 
     // Parse request body
     const { newEmail } = JSON.parse(event.body || '{}');

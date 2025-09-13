@@ -4,6 +4,22 @@ function getToken() {
   return authService.getAuthState().token || localStorage.getItem('auth_token') || localStorage.getItem('token')
 }
 
+// Show session expired alert and logout
+function showSessionExpiredAlert() {
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined' && typeof alert !== 'undefined') {
+    alert('Session Expired\n\nFor your security, please sign in again.')
+  }
+  
+  // Logout and redirect to login
+  authService.logout()
+  
+  // Redirect to login page
+  if (typeof window !== 'undefined') {
+    window.location.href = '/auth'
+  }
+}
+
 export async function signedFetch(url: string, opts: RequestInit = {}): Promise<Response> {
   const token = getToken()
   const baseHeaders: Record<string, string> = {}
@@ -19,7 +35,29 @@ export async function signedFetch(url: string, opts: RequestInit = {}): Promise<
     baseHeaders['x-app-key'] = functionAppKey
   }
 
-  return fetch(url, { ...opts, headers: { ...baseHeaders, ...(opts.headers || {}) } })
+  const response = await fetch(url, { ...opts, headers: { ...baseHeaders, ...(opts.headers || {}) } })
+  
+  // Handle 401 errors with automatic token refresh
+  if (response.status === 401 && token) {
+    console.log('🔄 Received 401, attempting token refresh...')
+    
+    const refreshSuccess = await authService.refreshAccessToken()
+    
+    if (refreshSuccess) {
+      // Retry the request with new token
+      const newToken = getToken()
+      if (newToken) {
+        baseHeaders['Authorization'] = `Bearer ${newToken}`
+        return fetch(url, { ...opts, headers: { ...baseHeaders, ...(opts.headers || {}) } })
+      }
+    } else {
+      // Refresh failed, show session expired alert
+      console.log('🔐 Token refresh failed, showing session expired alert')
+      showSessionExpiredAlert()
+    }
+  }
+  
+  return response
 }
 
 export async function authenticatedFetch(url: string, opts: RequestInit = {}): Promise<Response> {

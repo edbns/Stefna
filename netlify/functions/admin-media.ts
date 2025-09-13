@@ -72,7 +72,7 @@ export const handler: Handler = async (event) => {
           UNION ALL
           SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'emotion_mask' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM emotion_mask_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'unreal_reflection' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM unreal_reflection_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'ghibli_reaction' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM ghibli_reaction_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
@@ -93,7 +93,7 @@ export const handler: Handler = async (event) => {
           UNION ALL
           SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'emotion_mask' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM emotion_mask_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'unreal_reflection' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM unreal_reflection_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'ghibli_reaction' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM ghibli_reaction_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
@@ -112,7 +112,7 @@ export const handler: Handler = async (event) => {
           COUNT(DISTINCT user_id) as unique_users,
           COUNT(CASE WHEN type = 'neo_glitch' THEN 1 END) as neo_glitch_count,
           COUNT(CASE WHEN type = 'presets' THEN 1 END) as presets_count,
-          COUNT(CASE WHEN type = 'emotion_mask' THEN 1 END) as emotion_mask_count,
+          COUNT(CASE WHEN type = 'unreal_reflection' THEN 1 END) as unreal_reflection_count,
           COUNT(CASE WHEN type = 'ghibli_reaction' THEN 1 END) as ghibli_reaction_count,
           COUNT(CASE WHEN type = 'custom_prompt' THEN 1 END) as custom_prompt_count,
           COUNT(CASE WHEN type = 'edit' THEN 1 END) as edit_count
@@ -121,7 +121,7 @@ export const handler: Handler = async (event) => {
           UNION ALL
           SELECT 'presets' as type, user_id FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'emotion_mask' as type, user_id FROM emotion_mask_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'unreal_reflection' as type, user_id FROM unreal_reflection_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'ghibli_reaction' as type, user_id FROM ghibli_reaction_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
@@ -161,8 +161,8 @@ export const handler: Handler = async (event) => {
         case 'presets':
           deleteResult = await q(`DELETE FROM presets_media WHERE id = $1`, [id])
           break
-        case 'emotion_mask':
-          deleteResult = await q(`DELETE FROM emotion_mask_media WHERE id = $1`, [id])
+        case 'unreal_reflection':
+          deleteResult = await q(`DELETE FROM unreal_reflection_media WHERE id = $1`, [id])
           break
         case 'ghibli_reaction':
           deleteResult = await q(`DELETE FROM ghibli_reaction_media WHERE id = $1`, [id])

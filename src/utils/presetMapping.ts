@@ -33,7 +33,7 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   const typeMapping: Record<string, string> = {
     'neo_glitch': 'neo-glitch',
     'ghibli_reaction': 'ghibli-reaction', 
-    'emotion_mask': 'emotion-mask',
+    'unreal_reflection': 'emotion-mask',
     'presets': 'presets',
     'custom_prompt': 'custom-prompt',
     'story_time': 'story-time',
@@ -44,7 +44,7 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   const mediaTypeMapping: Record<string, string> = {
     'neo-glitch': 'neo-glitch',
     'ghiblireact': 'ghibli-reaction',
-    'emotionmask': 'emotion-mask', 
+    'unrealreflection': 'emotion-mask', 
     'preset': 'presets',
     'custom': 'custom-prompt',
     'storytime': 'story-time'
@@ -117,7 +117,7 @@ export function getPresetTypeForFilter(item: any): string {
   const typeMapping: Record<string, string> = {
     'neo_glitch': 'neo-glitch',
     'ghibli_reaction': 'ghibli-reaction', 
-    'emotion_mask': 'emotion-mask',
+    'unreal_reflection': 'emotion-mask',
     'presets': 'presets',
     'custom_prompt': 'custom-prompt',
     'story_time': 'story-time',

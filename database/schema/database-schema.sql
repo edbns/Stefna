@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS custom_prompt_media (
 );
 
 -- Emotion mask media table
-CREATE TABLE IF NOT EXISTS emotion_mask_media (
+CREATE TABLE IF NOT EXISTS unreal_reflection_media (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     image_url TEXT, -- Nullable: populated when job completes
@@ -346,10 +346,10 @@ CREATE INDEX IF NOT EXISTS idx_custom_prompt_media_user_id_created_at ON custom_
 CREATE INDEX IF NOT EXISTS idx_custom_prompt_media_fal_job_id ON custom_prompt_media(fal_job_id);
 CREATE INDEX IF NOT EXISTS idx_custom_prompt_media_preset ON custom_prompt_media(preset);
 
-CREATE INDEX IF NOT EXISTS idx_emotion_mask_media_status ON emotion_mask_media(status);
-CREATE INDEX IF NOT EXISTS idx_emotion_mask_media_user_id_created_at ON emotion_mask_media(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_emotion_mask_media_fal_job_id ON emotion_mask_media(fal_job_id);
-CREATE INDEX IF NOT EXISTS idx_emotion_mask_media_preset ON emotion_mask_media(preset);
+CREATE INDEX IF NOT EXISTS idx_unreal_reflection_media_status ON unreal_reflection_media(status);
+CREATE INDEX IF NOT EXISTS idx_unreal_reflection_media_user_id_created_at ON unreal_reflection_media(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_unreal_reflection_media_fal_job_id ON unreal_reflection_media(fal_job_id);
+CREATE INDEX IF NOT EXISTS idx_unreal_reflection_media_preset ON unreal_reflection_media(preset);
 
 CREATE INDEX IF NOT EXISTS idx_ghibli_reaction_media_status ON ghibli_reaction_media(status);
 CREATE INDEX IF NOT EXISTS idx_ghibli_reaction_media_user_id_created_at ON ghibli_reaction_media(user_id, created_at DESC);
@@ -468,7 +468,7 @@ SELECT 'credits_ledger', COUNT(*) FROM credits_ledger
 UNION ALL
 SELECT 'custom_prompt_media', COUNT(*) FROM custom_prompt_media
 UNION ALL
-SELECT 'emotion_mask_media', COUNT(*) FROM emotion_mask_media
+SELECT 'unreal_reflection_media', COUNT(*) FROM unreal_reflection_media
 UNION ALL
 SELECT 'ghibli_reaction_media', COUNT(*) FROM ghibli_reaction_media
 UNION ALL

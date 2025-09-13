@@ -17,8 +17,8 @@ SET status = 'private',
     updated_at = NOW()
 WHERE status = 'public';
 
--- Update emotion_mask_media  
-UPDATE emotion_mask_media 
+-- Update unreal_reflection_media  
+UPDATE unreal_reflection_media 
 SET status = 'private', 
     updated_at = NOW()
 WHERE status = 'public';
@@ -57,11 +57,11 @@ SELECT
 FROM ghibli_reaction_media
 UNION ALL
 SELECT 
-    'emotion_mask_media' as table_name,
+    'unreal_reflection_media' as table_name,
     COUNT(*) as total_records,
     COUNT(CASE WHEN status = 'private' THEN 1 END) as private_media,
     COUNT(CASE WHEN status = 'public' THEN 1 END) as public_media
-FROM emotion_mask_media
+FROM unreal_reflection_media
 UNION ALL
 SELECT 
     'presets_media' as table_name,

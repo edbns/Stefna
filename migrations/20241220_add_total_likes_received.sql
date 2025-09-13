@@ -11,7 +11,7 @@ SET total_likes_received = (
     UNION ALL
     SELECT id FROM ghibli_reaction_media WHERE user_id = users.id
     UNION ALL
-    SELECT id FROM emotion_mask_media WHERE user_id = users.id
+    SELECT id FROM unreal_reflection_media WHERE user_id = users.id
     UNION ALL
     SELECT id FROM presets_media WHERE user_id = users.id
     UNION ALL
@@ -37,7 +37,7 @@ BEGIN
       UNION ALL
       SELECT user_id FROM ghibli_reaction_media WHERE id = COALESCE(NEW.media_id, OLD.media_id)
       UNION ALL
-      SELECT user_id FROM emotion_mask_media WHERE id = COALESCE(NEW.media_id, OLD.media_id)
+      SELECT user_id FROM unreal_reflection_media WHERE id = COALESCE(NEW.media_id, OLD.media_id)
       UNION ALL
       SELECT user_id FROM presets_media WHERE id = COALESCE(NEW.media_id, OLD.media_id)
       UNION ALL
@@ -58,7 +58,7 @@ BEGIN
           UNION ALL
           SELECT id FROM ghibli_reaction_media WHERE user_id = target_user_id
           UNION ALL
-          SELECT id FROM emotion_mask_media WHERE user_id = target_user_id
+          SELECT id FROM unreal_reflection_media WHERE user_id = target_user_id
           UNION ALL
           SELECT id FROM presets_media WHERE user_id = target_user_id
           UNION ALL

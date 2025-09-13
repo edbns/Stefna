@@ -1,7 +1,7 @@
 export function getAspectRatioForMode(mode: string): string {
   switch (mode) {
     case 'ghibli_reaction':
-    case 'emotion_mask':
+    case 'unreal_reflection':
     case 'custom':
     case 'presets':
       return '4:5'; // Instagram/Facebook/X-friendly portrait
