@@ -156,6 +156,38 @@ export const handler: Handler = async (event) => {
           `, [dailyCredits, userId]);
           currentBalance = dailyCredits;
           console.log(`🔄 [Credits] Personal 24h reset for user ${userId}: ${lastResetTime.toISOString()} → ${now.toISOString()}`);
+          
+          // SAFE: Send refresh email (completely non-blocking)
+          try {
+            // Get user email for refresh notification
+            const userEmail = await qOne(`
+              SELECT email FROM users WHERE id = $1
+            `, [userId]);
+            
+            if (userEmail?.email) {
+              // Send refresh email using existing email service
+              await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/sendEmail`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  to: userEmail.email,
+                  subject: 'Credits refreshed — let\'s create.',
+                  type: 'daily_credits_refresh',
+                  data: { 
+                    userId: userId,
+                    resetTime: now.toISOString(),
+                    newBalance: dailyCredits
+                  }
+                })
+              });
+              
+              console.log(`📧 [Credits] Refresh email sent to ${userEmail.email} after credit reset`);
+            }
+          } catch (emailError) {
+            // Email failure should NEVER affect credit functionality
+            console.warn('⚠️ [Credits] Refresh email failed but credit reset succeeded:', emailError);
+            // Continue normally - credits are working fine
+          }
         }
       }
       console.log('💰 Current balance:', currentBalance, 'credits, requesting:', cost, 'credits');
