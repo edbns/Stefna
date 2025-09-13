@@ -250,7 +250,7 @@ export const handler: Handler = async (event) => {
         // 1. Delete all likes for this media
         const likesDeleted = await q(`
           DELETE FROM likes 
-          WHERE media_id = $1
+          WHERE media_id::text = $1::text
         `, [mediaId]);
         console.log('🗑️ [delete-media] Deleted likes:', likesDeleted?.length || 0);
         
@@ -287,7 +287,7 @@ export const handler: Handler = async (event) => {
                 mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                 mediaTable === 'presetsMedia' ? 'presets_media' :
                 mediaTable === 'story' ? 'story' :
-                mediaTable === 'editMedia' ? 'edit_media' : 'custom_prompt_media'} m ON l.media_id = m.id
+                mediaTable === 'editMedia' ? 'edit_media' : 'custom_prompt_media'} m ON l.media_id::text = m.id::text
           WHERE m.user_id = $1
         `, [userId]);
         
