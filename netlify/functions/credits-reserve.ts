@@ -131,18 +131,32 @@ export const handler: Handler = async (event) => {
         }
       }
       
-      // On-read daily reset safeguard (00:00 UTC)
+      // Personal 24-hour reset based on account creation time
       const dailyCredits = 30;
       const now = new Date();
-      const todayUtc = new Date();
-      todayUtc.setUTCHours(0, 0, 0, 0);
       let currentBalance = (userCredits?.credits ?? 0);
-      const lastUpdate = userCredits?.updated_at ? new Date(userCredits.updated_at) : now;
-      if (lastUpdate < todayUtc) {
-        await qOne(`
-          UPDATE user_credits SET credits = $1, updated_at = NOW() WHERE user_id = $2 RETURNING credits
-        `, [dailyCredits, userId]);
-        currentBalance = dailyCredits;
+      
+      // Get user's account creation time
+      const user = await qOne(`
+        SELECT created_at FROM users WHERE id = $1
+      `, [userId]);
+      
+      if (user?.created_at) {
+        const accountCreated = new Date(user.created_at);
+        const lastUpdate = userCredits?.updated_at ? new Date(userCredits.updated_at) : accountCreated;
+        
+        // Calculate next reset time (24 hours from last reset, or from account creation)
+        const lastResetTime = lastUpdate > accountCreated ? lastUpdate : accountCreated;
+        const nextResetTime = new Date(lastResetTime.getTime() + (24 * 60 * 60 * 1000));
+        
+        // If it's time for a reset (24 hours have passed)
+        if (now >= nextResetTime) {
+          await qOne(`
+            UPDATE user_credits SET credits = $1, updated_at = NOW() WHERE user_id = $2 RETURNING credits
+          `, [dailyCredits, userId]);
+          currentBalance = dailyCredits;
+          console.log(`🔄 [Credits] Personal 24h reset for user ${userId}: ${lastResetTime.toISOString()} → ${now.toISOString()}`);
+        }
       }
       console.log('💰 Current balance:', currentBalance, 'credits, requesting:', cost, 'credits');
       
