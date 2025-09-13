@@ -49,31 +49,9 @@ export const handler: Handler = async (event) => {
 
     console.log('🗑️ [delete-media] Authenticated deletion:', { 
       mediaId, 
-      mediaIdType: typeof mediaId,
       userId,
       platform: auth.platform 
     });
-
-    // Debug: Check what media actually exists for this user
-    const debugQuery = await q(`
-      SELECT id, media_type FROM (
-        SELECT id::text, 'ghibli_reaction' as media_type FROM ghibli_reaction_media WHERE user_id = $1
-        UNION ALL
-        SELECT id::text, 'unreal_reflection' as media_type FROM unreal_reflection_media WHERE user_id = $1
-        UNION ALL
-        SELECT id::text, 'presets' as media_type FROM presets_media WHERE user_id = $1
-        UNION ALL
-        SELECT id::text, 'custom_prompt' as media_type FROM custom_prompt_media WHERE user_id = $1
-        UNION ALL
-        SELECT id::text, 'neo_glitch' as media_type FROM neo_glitch_media WHERE user_id = $1
-        UNION ALL
-        SELECT id::text, 'edit' as media_type FROM edit_media WHERE user_id = $1
-      ) as combined_media
-      ORDER BY id
-      LIMIT 10
-    `, [userId]);
-    
-    console.log('🔍 [delete-media] Debug - First 10 media IDs for user:', debugQuery);
 
     // First, verify the media exists and belongs to the user
     let mediaExists = false;
@@ -86,7 +64,8 @@ export const handler: Handler = async (event) => {
       { name: 'unreal_reflection_media', display: 'unrealReflectionMedia' },
       { name: 'ghibli_reaction_media', display: 'ghibliReactionMedia' },
       { name: 'presets_media', display: 'presetsMedia' },
-      { name: 'story', display: 'story' }
+      { name: 'story', display: 'story' },
+      { name: 'edit_media', display: 'editMedia' }
     ];
     
     for (const table of tables) {
@@ -240,6 +219,29 @@ export const handler: Handler = async (event) => {
       }
     }
 
+    // Try Edit Media
+    if (!deletedMedia) {
+      try {
+        const result = await q(`
+          DELETE FROM edit_media 
+          WHERE id = $1 AND user_id = $2
+          RETURNING id
+        `, [mediaId, userId]);
+        console.log('🔍 [delete-media] Edit Media result:', { result, length: result?.length });
+        if (result && result.length > 0) {
+          deletedMedia = result;
+          deletedFromTable = 'editMedia';
+        }
+      } catch (error: any) {
+        console.error('❌ [delete-media] Edit Media delete error:', { 
+          error: error.message, 
+          code: error.code, 
+          detail: error.detail,
+          constraint: error.constraint 
+        });
+      }
+    }
+
     if (deletedMedia) {
       console.log('✅ [delete-media] Media deleted successfully from', deletedFromTable, ':', mediaId);
       
@@ -260,7 +262,8 @@ export const handler: Handler = async (event) => {
                 mediaTable === 'unrealReflectionMedia' ? 'unreal_reflection_media' :
                 mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                 mediaTable === 'presetsMedia' ? 'presets_media' :
-                mediaTable === 'story' ? 'story' : 'custom_prompt_media'}
+                mediaTable === 'story' ? 'story' :
+                mediaTable === 'editMedia' ? 'edit_media' : 'custom_prompt_media'}
           WHERE id = $1
         `, [mediaId]);
         
@@ -283,7 +286,8 @@ export const handler: Handler = async (event) => {
                 mediaTable === 'unrealReflectionMedia' ? 'unreal_reflection_media' :
                 mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                 mediaTable === 'presetsMedia' ? 'presets_media' :
-                mediaTable === 'story' ? 'story' : 'custom_prompt_media'} m ON l.media_id = m.id
+                mediaTable === 'story' ? 'story' :
+                mediaTable === 'editMedia' ? 'edit_media' : 'custom_prompt_media'} m ON l.media_id = m.id
           WHERE m.user_id = $1
         `, [userId]);
         
@@ -311,7 +315,8 @@ export const handler: Handler = async (event) => {
                           mediaTable === 'unrealReflectionMedia' ? 'unreal_reflection_media' :
                           mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                           mediaTable === 'presetsMedia' ? 'presets_media' :
-                          mediaTable === 'story' ? 'story' : 'custom_prompt_media'}
+                          mediaTable === 'story' ? 'story' :
+                          mediaTable === 'editMedia' ? 'edit_media' : 'custom_prompt_media'}
           WHERE id = $1
         `, [mediaId]);
         
