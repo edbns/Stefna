@@ -310,6 +310,7 @@ const HomeNew: React.FC = () => {
     setSelectedUnrealReflectionPreset(null)
     setSelectedGhibliReactionPreset(null)
     setSelectedNeoTokyoGlitchPreset(null)
+    setIsUnrealReflection3DEnabled(false)
     setSelectedMode(null)
     setIsVideoPreview(false)
     setIsGenerating(false)
@@ -712,6 +713,7 @@ const HomeNew: React.FC = () => {
   // MoodMorph removed - replaced with Anime Filters
   const [selectedUnrealReflectionPreset, setSelectedUnrealReflectionPreset] = useState<string | null>(null)
   const [unrealReflectionDropdownOpen, setUnrealReflectionDropdownOpen] = useState(false)
+  const [isUnrealReflection3DEnabled, setIsUnrealReflection3DEnabled] = useState(false)
   const [selectedGhibliReactionPreset, setSelectedGhibliReactionPreset] = useState<string | null>(null)
   const [ghibliReactionDropdownOpen, setGhibliReactionDropdownOpen] = useState(false)
   const [selectedNeoTokyoGlitchPreset, setSelectedNeoTokyoGlitchPreset] = useState<string | null>(null)
@@ -4021,6 +4023,10 @@ const HomeNew: React.FC = () => {
                       <div className="absolute bottom-full left-0 mb-2 z-50">
                         <UnrealReflectionPicker
                           value={selectedUnrealReflectionPreset || undefined}
+                          on3DToggle={(enabled) => {
+                            setIsUnrealReflection3DEnabled(enabled);
+                            console.log('3D enabled for Unreal Reflection:', enabled);
+                          }}
                             onChange={async (presetId) => {
                             setSelectedUnrealReflectionPreset(presetId || null)
                             setUnrealReflectionDropdownOpen(false)
@@ -4030,7 +4036,8 @@ const HomeNew: React.FC = () => {
                               console.log('Auto-generating Unreal Reflection with preset:', presetId)
                                 try {
                                 await dispatchGenerate('unrealreflection', {
-                                  unrealReflectionPresetId: presetId
+                                  unrealReflectionPresetId: presetId,
+                                  enable3D: isUnrealReflection3DEnabled
                                   })
                                 // Clear composer after successful generation
                                 setTimeout(() => {

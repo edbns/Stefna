@@ -74,6 +74,63 @@ function buildFailureResponse(error: string, message: string): UnifiedGeneration
   };
 }
 
+// 🆕 3D Generation Helper Function
+async function convertTo3D(imageUrl: string): Promise<any> {
+  const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
+  
+  if (!STABILITY_API_KEY) {
+    console.error('❌ [3D] STABILITY_API_KEY not configured');
+    return null;
+  }
+
+  console.log(`🎨 [3D] Converting image to 3D: ${imageUrl}`);
+
+  try {
+    // Try fast 3D first
+    let response = await fetch('https://api.stability.ai/v2beta/3d/stable-fast-3d', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${STABILITY_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        image_url: imageUrl
+      })
+    });
+
+    if (!response.ok) {
+      console.warn(`⚠️ [3D] Fast 3D failed (${response.status}), trying point-aware 3D`);
+      
+      // Fallback to point-aware 3D
+      response = await fetch('https://api.stability.ai/v2beta/3d/stable-point-aware-3d', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${STABILITY_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          image_url: imageUrl
+        })
+      });
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ [3D] Both 3D models failed: ${response.status} - ${errorText}`);
+      return null;
+    }
+
+    const result = await response.json();
+    console.log(`✅ [3D] 3D generation successful. Keys: ${Object.keys(result).join(', ')}`);
+    
+    return result;
+
+  } catch (error) {
+    console.error('❌ [3D] 3D generation error:', error);
+    return null;
+  }
+}
+
 // Aspect ratio utilities
 function getAspectRatioForMode(mode: string): string {
   switch (mode) {
@@ -286,6 +343,8 @@ interface UnifiedGenerationRequest {
   ipaThreshold?: number;
   ipaRetries?: number;
   ipaBlocking?: boolean;
+  // 3D Generation parameters
+  enable3D?: boolean;
 }
 
 interface UnifiedGenerationResponse {
@@ -296,6 +355,7 @@ interface UnifiedGenerationResponse {
   error?: string;
   runId?: string;
   errorType?: string;
+  model3D?: any; // 3D model data (OBJ, GLTF URLs, etc.)
   // IPA results
   ipaResults?: {
     similarity: number;
@@ -998,8 +1058,9 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
       case 'unreal_reflection':
         await q(`
           INSERT INTO unreal_reflection_media (
-            user_id, image_url, source_url, prompt, preset, run_id, fal_job_id, status, metadata
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            user_id, image_url, source_url, prompt, preset, run_id, fal_job_id, status, metadata,
+            obj_url, gltf_url, texture_url, model_3d_metadata
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         `, [
           baseData.user_id,
           baseData.image_url,
@@ -1009,9 +1070,14 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
           baseData.run_id,
           result.runId || request.runId,
           baseData.status,
-          baseData.metadata
+          baseData.metadata,
+          // 3D model data
+          result.model3D?.obj_url || null,
+          result.model3D?.gltf_url || null,
+          result.model3D?.texture_url || null,
+          result.model3D ? JSON.stringify(result.model3D) : null
         ]);
-        console.log(`✅ [Background] Saved unreal_reflection result to database`);
+        console.log(`✅ [Background] Saved unreal_reflection result to database${result.model3D ? ' (with 3D model)' : ''}`);
         break;
 
       case 'ghibli_reaction':
@@ -2166,7 +2232,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
   };
 
   const action = actionMap[request.mode];
-  const creditsNeeded = 2; // All generations cost 2 credits
+  const creditsNeeded = request.enable3D ? 4 : 2; // 2 credits for 2D, 4 credits for 2D+3D
   
   // Credits are already reserved in the main handler, so we can proceed directly
   console.log(`✅ [Background] Credits already reserved, proceeding with generation`);
@@ -2225,11 +2291,46 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
           try {
             result = await generateWithFal(request.mode, generationParams);
             console.log('✅ [Background] Fal.ai Unreal Reflection generation successful');
+            
+            // 🆕 3D Generation: If 3D is enabled and 2D generation succeeded
+            if (request.enable3D && result.success && result.outputUrl) {
+              console.log('🎨 [Background] Starting 3D generation for Unreal Reflection');
+              try {
+                const model3D = await convertTo3D(result.outputUrl);
+                if (model3D) {
+                  result.model3D = model3D;
+                  console.log('✅ [Background] 3D generation successful');
+                } else {
+                  console.warn('⚠️ [Background] 3D generation failed, but 2D result available');
+                }
+              } catch (error3D) {
+                console.error('❌ [Background] 3D generation error:', error3D);
+                // Don't fail the whole generation if 3D fails - user still gets 2D result
+              }
+            }
+            
           } catch (falError) {
             console.warn('⚠️ [Background] Fal.ai Unreal Reflection failed, trying BFL fallbacks:', falError);
             // Try BFL fallbacks for Unreal Reflection mode
             result = await generateWithBFL(request.mode, generationParams);
             console.log('✅ [Background] BFL Unreal Reflection fallback successful');
+            
+            // 🆕 3D Generation: If 3D is enabled and BFL fallback succeeded
+            if (request.enable3D && result.success && result.outputUrl) {
+              console.log('🎨 [Background] Starting 3D generation for Unreal Reflection (BFL fallback)');
+              try {
+                const model3D = await convertTo3D(result.outputUrl);
+                if (model3D) {
+                  result.model3D = model3D;
+                  console.log('✅ [Background] 3D generation successful');
+                } else {
+                  console.warn('⚠️ [Background] 3D generation failed, but 2D result available');
+                }
+              } catch (error3D) {
+                console.error('❌ [Background] 3D generation error:', error3D);
+                // Don't fail the whole generation if 3D fails - user still gets 2D result
+              }
+            }
           }
         } else if (request.mode === 'edit') {
           // Edit My Photo mode: Fal.ai nano-banana/edit → BFL fallbacks
@@ -2501,7 +2602,7 @@ export const handler: Handler = async (event, context) => {
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { mode, prompt, sourceAssetId, userId: bodyUserId, presetKey, unrealReflectionPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, runId: frontendRunId } = body;
+    const { mode, prompt, sourceAssetId, userId: bodyUserId, presetKey, unrealReflectionPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, enable3D, runId: frontendRunId } = body;
 
     console.log('🚀 [Background] Received request:', {
       mode,
@@ -2583,7 +2684,7 @@ export const handler: Handler = async (event, context) => {
     const modeKey = modeStr as GenerationMode;
 
     // Check credits FIRST before any processing
-    const creditsNeeded = 2; // All generations cost 2 credits
+    const creditsNeeded = enable3D ? 4 : 2; // 2 credits for 2D, 4 credits for 2D+3D
     
     // Use proper action mapping
     const actionMap: Record<GenerationMode, string> = {
@@ -2827,7 +2928,9 @@ export const handler: Handler = async (event, context) => {
       // IPA parameters
       ipaThreshold,
       ipaRetries,
-      ipaBlocking
+      ipaBlocking,
+      // 3D parameters
+      enable3D
     };
 
     // Process generation with timeout protection (10 minutes)
