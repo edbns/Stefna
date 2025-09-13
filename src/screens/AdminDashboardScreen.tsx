@@ -14,7 +14,8 @@ import {
   Trash2,
   Search,
   Plus,
-  Minus
+  Minus,
+  RefreshCw
 } from 'lucide-react'
 import { authenticatedFetch } from '../utils/apiClient'
 import { Helmet } from 'react-helmet'
