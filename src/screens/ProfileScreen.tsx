@@ -65,11 +65,35 @@ const ProfileScreen: React.FC = () => {
   const [newEmail, setNewEmail] = useState('')
   const [isChangingEmail, setIsChangingEmail] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [currentEmail, setCurrentEmail] = useState('')
 
 
 
   // Use profile context
   const { profileData, updateProfile, refreshProfile } = useProfile()
+
+  // Load current email from database
+  const loadCurrentEmail = async () => {
+    try {
+      const response = await authenticatedFetch('/.netlify/functions/get-user-profile', {
+        method: 'GET'
+      })
+      
+      if (response.ok) {
+        const userData = await response.json()
+        setCurrentEmail(userData.user?.email || userData.email || '')
+      }
+    } catch (error) {
+      console.error('Failed to load current email:', error)
+      // Fallback to auth service email
+      setCurrentEmail(authService.getCurrentUser()?.email || '')
+    }
+  }
+
+  // Load email on component mount
+  useEffect(() => {
+    loadCurrentEmail()
+  }, [])
   
 
 
@@ -101,6 +125,8 @@ const ProfileScreen: React.FC = () => {
         notifyReady({ title: 'Success', message: 'Email updated successfully!' })
         setShowChangeEmailModal(false)
         setNewEmail('')
+        // Update current email state with the new email
+        setCurrentEmail(data.newEmail)
         // Refresh profile data to get updated email
         refreshProfile()
       } else {
@@ -1816,7 +1842,7 @@ const ProfileScreen: React.FC = () => {
                       <div className="flex items-center space-x-3">
                         <input
                           type="email"
-                          value={authService.getCurrentUser()?.email || 'user@example.com'}
+                          value={currentEmail || 'user@example.com'}
                           disabled
                           className="flex-1 bg-[#2a2a2a] border border-[#444444] rounded-lg px-4 py-3 text-white/60 cursor-not-allowed"
                         />
