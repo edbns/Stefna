@@ -61,7 +61,7 @@ export const handler: Handler = async (event) => {
     const tables = [
       { name: 'neo_glitch_media', display: 'neoGlitchMedia' },
       { name: 'custom_prompt_media', display: 'customPromptMedia' },
-      { name: 'unreal_reflection_media', display: 'emotionMaskMedia' },
+      { name: 'unreal_reflection_media', display: 'unrealReflectionMedia' },
       { name: 'ghibli_reaction_media', display: 'ghibliReactionMedia' },
       { name: 'presets_media', display: 'presetsMedia' },
       { name: 'story', display: 'story' }
@@ -146,13 +146,13 @@ export const handler: Handler = async (event) => {
           WHERE id = $1 AND user_id = $2
           RETURNING id
         `, [mediaId, userId]);
-        console.log('🔍 [delete-media] Emotion Mask result:', { result, length: result?.length });
+        console.log('🔍 [delete-media] Unreal Reflection result:', { result, length: result?.length });
         if (result && result.length > 0) {
           deletedMedia = result;
-          deletedFromTable = 'emotionMaskMedia';
+          deletedFromTable = 'unrealReflectionMedia';
         }
       } catch (error: any) {
-        console.error('❌ [delete-media] Emotion Mask delete error:', { 
+        console.error('❌ [delete-media] Unreal Reflection delete error:', { 
           error: error.message, 
           code: error.code, 
           detail: error.detail,
@@ -232,10 +232,10 @@ export const handler: Handler = async (event) => {
         
         // 2. Get media info for Cloudinary cleanup
         const mediaInfo = await q(`
-          SELECT cloudinary_public_id, image_url 
+          SELECT image_url 
           FROM ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
                 mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
-                mediaTable === 'emotionMaskMedia' ? 'unreal_reflection_media' :
+                mediaTable === 'unrealReflectionMedia' ? 'unreal_reflection_media' :
                 mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                 mediaTable === 'presetsMedia' ? 'presets_media' :
                 mediaTable === 'story' ? 'story' : 'custom_prompt_media'}
@@ -244,9 +244,9 @@ export const handler: Handler = async (event) => {
         
         // 3. Clean up Cloudinary assets (if we have the info)
         if (mediaInfo && mediaInfo.length > 0) {
-          const cloudinaryPublicId = mediaInfo[0]?.cloudinary_public_id;
-          if (cloudinaryPublicId) {
-            console.log('🗑️ [delete-media] Cleaning up Cloudinary asset:', cloudinaryPublicId);
+          const imageUrl = mediaInfo[0]?.image_url;
+          if (imageUrl) {
+            console.log('🗑️ [delete-media] Media image URL for cleanup:', imageUrl);
             // Note: Cloudinary cleanup would require Cloudinary SDK - for now we log it
             // In production, you'd want to actually delete the Cloudinary asset
           }
@@ -258,7 +258,7 @@ export const handler: Handler = async (event) => {
           FROM likes l
           JOIN ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
                 mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
-                mediaTable === 'emotionMaskMedia' ? 'unreal_reflection_media' :
+                mediaTable === 'unrealReflectionMedia' ? 'unreal_reflection_media' :
                 mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                 mediaTable === 'presetsMedia' ? 'presets_media' :
                 mediaTable === 'story' ? 'story' : 'custom_prompt_media'} m ON l.media_id = m.id
@@ -286,7 +286,7 @@ export const handler: Handler = async (event) => {
         const verifyResult = await q(`
           SELECT id FROM ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
                           mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
-                          mediaTable === 'emotionMaskMedia' ? 'unreal_reflection_media' :
+                          mediaTable === 'unrealReflectionMedia' ? 'unreal_reflection_media' :
                           mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                           mediaTable === 'presetsMedia' ? 'presets_media' :
                           mediaTable === 'story' ? 'story' : 'custom_prompt_media'}
