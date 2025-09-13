@@ -2,7 +2,7 @@
 
 /*
 
-🧠 Unreal Reflection™ – Immersive Edition (v1.2)
+🧠 Unreal Reflection™ – Nano Banana Optimized (v1.3)
 
 Unreal Reflection™
 "Not who you are. Who you could've been."
@@ -11,13 +11,15 @@ Think: a version of you from a mirror-dimension, dream-state, or forgotten past 
 Identity-adjacent, not fantasy. Stylized, not cosplay.
 Built for scroll-stopping visuals that feel mysterious, ethereal, and beautiful.
 
-Each preset now features immersive cinematic backgrounds and unique color identities:
-- Digital Monk: Golden/bronze temple ruins with blue aura
-- Urban Oracle: Neon-lit alley with rain reflections
-- Desert Mirror: Cracked landscape with orange/gold sun flare
-- Lumin Void: Swirling violet/silver fractal void
-- Prism Break: Dark void with rainbow prism shards
-- Eclipse Veil: Solar eclipse with gold/indigo corona
+Enhanced prompts optimized for Nano Banana's verbosity preferences:
+- Digital Monk: Golden/bronze temple with blue aura, meditative atmosphere
+- Urban Oracle: Neon-lit alley with purple/cyan/magenta tones, rain reflections
+- Desert Mirror: Cracked landscape with orange/gold sun flare, heat haze
+- Lumin Void: Swirling violet/silver fractal void, transcendent energy
+- Prism Break: Dark void with rainbow shards, high-fashion sci-fi
+- Eclipse Veil: Solar eclipse with gold/indigo corona, dramatic contrast
+
+All presets use optimized strength (0.54-0.6) and guidance (7.0-7.5) for Nano Banana.
 
 */
 
@@ -49,9 +51,9 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_digital_monk',
     label: 'Digital Monk',
-    prompt: 'Place the person in a minimal futuristic temple, glowing cloth fragments around them. Golden and bronze hues with a faint blue aura. Background should be blurred but atmospheric, cinematic lighting focused on the face. Imagine an alternate version of this person as a futuristic monk with glowing cloth fragments, shaved head or close-cropped hair, and an aura of calm. Retain core facial identity, age, skin tone, and expression. Scene should feel timeless, with soft lighting and abstract fabric.',
-    negative_prompt: 'anime, cartoon, fantasy armor, heavy makeup, distorted face, exaggerated lighting, comic style',
-    strength: 0.5,
+    prompt: 'Visualize an alternate version of this person as a futuristic monk. The head is clean-shaved or closely cropped, radiating calm wisdom. Fragments of glowing cloth float around their shoulders, shimmering with golden and bronze light. Place them in a minimalist futuristic temple, with faint blue aura and diffused golden rays filtering through. The atmosphere should feel timeless, meditative, and cinematic, with depth of field focusing on the face. Preserve the individual\'s true identity, age, gender, and facial features in photoreal clarity.',
+    negative_prompt: 'anime, cartoon, fantasy armor, horror, zombie, distorted face, makeup',
+    strength: 0.54,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
     input: 'image',
@@ -64,66 +66,66 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     safety_tolerance: 3,
     output_format: 'jpeg',
     raw: true,
-    image_prompt_strength: 0.5,
+    image_prompt_strength: 0.54,
     aspect_ratio: '1:1'
   },
   // 🧿 Urban Oracle
   {
     id: 'unreal_reflection_urban_oracle',
     label: 'Urban Oracle',
-    prompt: 'Background of a neon-lit futuristic alley, rain on the ground reflecting light. City lights glow behind, blurred for cinematic depth. Mirrored eyes reflecting neon colors. Transform the person into a parallel reality version of an urban oracle — with mirrored or glowing eyes, futuristic streetwear, and a strong, silent stare. Keep real facial structure, skin tone, gender and age. Scene should feel cinematic and grounded in a dystopian or spiritual urban aesthetic.',
-    negative_prompt: 'anime, fantasy clothing, old age, child, gender swap, distortion, unrealistic colors',
-    strength: 0.55,
-    model: 'fal-ai/nano-banana/edit',
-    mode: 'i2i',
-    input: 'image',
-    requiresSource: true,
-    source: 'unreal_reflection',
-    guidance_scale: 7.5,
-    num_inference_steps: 30,
-    features: ['urban_oracle', 'mirrored_eyes', 'futuristic_streetwear', 'cinematic', 'identity_preserved'],
-    prompt_upsampling: true,
-    safety_tolerance: 3,
-    output_format: 'jpeg',
-    raw: true,
-    image_prompt_strength: 0.55,
-    aspect_ratio: '4:5'
-  },
-  // 🏜️ Desert Mirror
-  {
-    id: 'unreal_reflection_desert_mirror',
-    label: 'Desert Mirror',
-    prompt: 'Set in a cracked desert landscape, distant heat haze in background. Sun flare lighting the face with glowing orange and golden tones. Horizon blurred for depth. Create a desert-inspired reflection of this person — with cracked skin texture like dried earth, sun-scorched tones, and glowing eyes full of resilience. Retain base identity, facial structure, and expression. Make the output feel poetic and real, not fantasy.',
-    negative_prompt: 'zombie, horror, cartoon, child, fantasy race, elf, extreme distortion',
-    strength: 0.6,
-    model: 'fal-ai/nano-banana/edit',
-    mode: 'i2i',
-    input: 'image',
-    requiresSource: true,
-    source: 'unreal_reflection',
-    guidance_scale: 6.8,
-    num_inference_steps: 30,
-    features: ['desert_mirror', 'cracked_skin', 'sun_scorched', 'glowing_eyes', 'identity_preserved'],
-    prompt_upsampling: false,
-    safety_tolerance: 3,
-    output_format: 'jpeg',
-    raw: true,
-    image_prompt_strength: 0.6,
-    aspect_ratio: '1:1'
-  },
-  // 🔮 Lumin Void (refined Future Ghost)
-  {
-    id: 'unreal_reflection_lumin_void',
-    label: 'Lumin Void',
-    prompt: 'Surrounded by a fractal void of glowing violet and silver light. Background swirling with dissolving energy, cinematic contrast. Face kept sharp, edges dissolving into mist. Depict this person as a luminous void version of themselves, where their body edges dissolve into fractal light and soft shadows. Their eyes glow faintly with silver or golden light, not blank, but alive. The overall effect should be surreal, cinematic, and powerful — like a person halfway between the physical and energy state. Retain their identity, age, gender, ethnicity, and facial features.',
-    negative_prompt: 'horror, zombie, corpse, skull, cartoon, anime, fantasy monster, distortion, blur',
-    strength: 0.55,
+    prompt: 'Transform this person into an urban oracle from a parallel reality. Their eyes are mirrored or glowing, reflecting the neon city around them. They wear futuristic streetwear — a hood or jacket with subtle tech textures. Place them in a rain-soaked alley lit with neon signs, glowing reflections shimmering on the wet ground. The background should blur into cinematic depth, while sharp focus captures the subject\'s intense gaze. Infuse the scene with purple, cyan, and magenta neon tones. Preserve full identity, age, gender, and features in a photoreal style.',
+    negative_prompt: 'anime, cartoon, medieval, fantasy armor, distorted face, horror',
+    strength: 0.56,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'unreal_reflection',
     guidance_scale: 7.2,
+    num_inference_steps: 30,
+    features: ['urban_oracle', 'mirrored_eyes', 'futuristic_streetwear', 'cinematic', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 3,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.56,
+    aspect_ratio: '4:5'
+  },
+  // 🏜️ Desert Mirror
+  {
+    id: 'unreal_reflection_desert_mirror',
+    label: 'Desert Mirror',
+    prompt: 'Capture the essence of a being sculpted by the desert. Subtle cracked textures mirror dried earth across the skin, with sun-scorched tones radiating resilience. Eyes glow faintly with determination. Place the subject against a vast cracked desert floor under a blazing sun, heat haze shimmering in the distance. Infuse warm orange and golden light for a cinematic atmosphere. Lighting should enhance the skin textures and emphasize the glowing resilience in the eyes. Preserve the individual\'s identity, age, gender, and features with photoreal precision.',
+    negative_prompt: 'zombie, horror, cartoon, anime, fantasy race, distorted face',
+    strength: 0.58,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.3,
+    num_inference_steps: 30,
+    features: ['desert_mirror', 'cracked_skin', 'sun_scorched', 'glowing_eyes', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 3,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.58,
+    aspect_ratio: '1:1'
+  },
+  // 🌌 Lumin Void (refined Future Ghost)
+  {
+    id: 'unreal_reflection_lumin_void',
+    label: 'Lumin Void',
+    prompt: 'Depict this person dissolving into light and energy. Their body edges fragment into glowing fractal mist, blending silver, violet, and faint electric blue hues. Their eyes emit a soft metallic glow — alive, not blank. Surround them with a cosmic void swirling in fractal light, as if they exist halfway between matter and energy. Cinematic focus keeps the face sharp, while the edges fade into luminous abstraction. Atmosphere should feel transcendent and surreal yet photoreal. Preserve the individual\'s true face, age, and features.',
+    negative_prompt: 'horror, zombie, corpse, cartoon, anime, fantasy monster, distortion',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.4,
     num_inference_steps: 30,
     features: ['lumin_void', 'fractal_light', 'dissolving_edges', 'glowing_eyes', 'identity_preserved'],
     prompt_upsampling: true,
@@ -133,48 +135,48 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     image_prompt_strength: 0.55,
     aspect_ratio: '4:5'
   },
-  // ✨ Prism Break
+  // 🌈 Prism Break
   {
     id: 'unreal_reflection_prism_break',
     label: 'Prism Break',
-    prompt: 'Dark void background fractured open with glowing rainbow prism shards. Light scattering across the face and silhouette, sharp focus on eyes. Cinematic and high-fashion. Transform this person into a fractured prism reflection of themselves. Subtle cracks or fractures run across the skin, glowing with refracted rainbow light like broken glass. The effect should be cinematic, high-fashion, and photorealistic. Do not alter facial identity, age, or gender. Style should be mysterious and editorial, not fantasy or cartoon.',
-    negative_prompt: 'anime, cartoon, rainbow filter, glitter makeup, distortion, fantasy armor, horror',
-    strength: 0.58,
+    prompt: 'Reimagine this person as if their reality fractured into light. Subtle cracks spread across their skin, glowing with refracted rainbow tones like shattered glass. Prism shards float around them in a dark void, scattering pink, cyan, and golden light. The face is illuminated by sharp cinematic lighting, emphasizing both the cracks and the vivid colors. The background glows faintly with rainbow refractions, blurred for depth. Style should feel like high-fashion sci-fi, photoreal and editorial. Preserve identity, age, gender, and facial structure.',
+    negative_prompt: 'anime, cartoon, glitter makeup, horror, fantasy armor, distortion',
+    strength: 0.6,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'unreal_reflection',
-    guidance_scale: 7.0,
+    guidance_scale: 7.5,
     num_inference_steps: 30,
     features: ['prism_break', 'fractured_glass', 'rainbow_light', 'editorial', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 3,
     output_format: 'jpeg',
     raw: true,
-    image_prompt_strength: 0.58,
+    image_prompt_strength: 0.6,
     aspect_ratio: '1:1'
   },
   // 🌑 Eclipse Veil
   {
     id: 'unreal_reflection_eclipse_veil',
     label: 'Eclipse Veil',
-    prompt: 'Backdrop of a massive solar eclipse, corona glowing in gold and indigo. Light rim outlining silhouette, half face in glow, half in shadow. Cinematic film look, shallow depth of field. Render this person as if they are standing inside an eclipse. One side of the face is bathed in warm glow, the other side in deep cosmic shadow, with a faint rim of light outlining their silhouette like a solar eclipse. Maintain original identity, age, gender, and facial structure. Make it look cinematic and surreal, but photoreal, not fantasy.',
-    negative_prompt: 'horror, zombie, fantasy warrior, cartoon, anime, distorted face, blur',
-    strength: 0.54,
+    prompt: 'Render this person under the shadow of a cosmic eclipse. One side of the face glows with warm golden light, the other fades into deep indigo shadow. A faint rim of light outlines their silhouette like the glowing corona of an eclipse. The background shows a blurred solar eclipse dominating the sky, casting dramatic contrast across the scene. Cinematic atmosphere emphasizes the tension between light and shadow, while the subject\'s face remains photoreal and sharp. Preserve the individual\'s identity, age, gender, and features with full fidelity.',
+    negative_prompt: 'horror, zombie, cartoon, anime, fantasy warrior, distorted face',
+    strength: 0.57,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'unreal_reflection',
-    guidance_scale: 7.4,
+    guidance_scale: 7.1,
     num_inference_steps: 30,
     features: ['eclipse_veil', 'cosmic_shadow', 'rim_light', 'cinematic', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 3,
     output_format: 'jpeg',
     raw: true,
-    image_prompt_strength: 0.54,
+    image_prompt_strength: 0.57,
     aspect_ratio: '4:5'
   }
 ];
