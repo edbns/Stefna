@@ -317,7 +317,7 @@ Let's make something unforgettable.
     case 'daily_credits_refresh':
       emailBody = `Credits refreshed — let's create.
 
-Your personal 24-hour credits are topped up and ready. Dive back in and keep exploring.
+Your daily credits are topped up and ready. Dive back in and keep exploring.
 
 Want even more? Invite a friend and get bonus credits instantly.
 

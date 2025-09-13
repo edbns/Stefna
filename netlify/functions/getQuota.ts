@@ -66,48 +66,6 @@ export const handler: Handler = async (event) => {
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     tomorrow.setUTCHours(0, 0, 0, 0);
 
-    // Check if this is a personal 24-hour reset and send credit refresh email
-    const user = await qOne(`
-      SELECT created_at, email FROM users WHERE id = $1
-    `, [userId]);
-    
-    if (user?.created_at) {
-      const accountCreated = new Date(user.created_at);
-      const lastUpdate = userCredits?.updated_at ? new Date(userCredits.updated_at) : accountCreated;
-      
-      // Calculate next reset time (24 hours from last reset, or from account creation)
-      const lastResetTime = lastUpdate > accountCreated ? lastUpdate : accountCreated;
-      const nextResetTime = new Date(lastResetTime.getTime() + (24 * 60 * 60 * 1000));
-      
-      // If it's time for a reset (24 hours have passed)
-      if (now >= nextResetTime) {
-        // Send credit refresh email
-        try {
-          // Check if we can send email (respects frequency limits)
-          const canSendEmail = await qOne(`
-            SELECT can_send_email($1, 'daily_credits_refresh', 24) as can_send
-          `, [userId]);
-          
-          if (canSendEmail?.can_send && user.email) {
-            // Send personal 24-hour credit refresh email
-            await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/sendEmail`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                to: user.email,
-                subject: "Your credits are refreshed",
-                type: 'daily_credits_refresh'
-              })
-            });
-            
-            console.log(`📧 [Quota] Sent personal 24h credit refresh email to: ${user.email}`);
-          }
-        } catch (emailError) {
-          console.warn(`⚠️ [Quota] Failed to send personal 24h credit refresh email:`, emailError);
-        }
-      }
-    }
-
     const quota = {
       daily_limit: dailyCredits,
       daily_used: Math.max(0, usedCredits),
