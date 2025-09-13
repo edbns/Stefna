@@ -49,9 +49,31 @@ export const handler: Handler = async (event) => {
 
     console.log('🗑️ [delete-media] Authenticated deletion:', { 
       mediaId, 
+      mediaIdType: typeof mediaId,
       userId,
       platform: auth.platform 
     });
+
+    // Debug: Check what media actually exists for this user
+    const debugQuery = await q(`
+      SELECT id, media_type FROM (
+        SELECT id::text, 'ghibli_reaction' as media_type FROM ghibli_reaction_media WHERE user_id = $1
+        UNION ALL
+        SELECT id::text, 'unreal_reflection' as media_type FROM unreal_reflection_media WHERE user_id = $1
+        UNION ALL
+        SELECT id::text, 'presets' as media_type FROM presets_media WHERE user_id = $1
+        UNION ALL
+        SELECT id::text, 'custom_prompt' as media_type FROM custom_prompt_media WHERE user_id = $1
+        UNION ALL
+        SELECT id::text, 'neo_glitch' as media_type FROM neo_glitch_media WHERE user_id = $1
+        UNION ALL
+        SELECT id::text, 'edit' as media_type FROM edit_media WHERE user_id = $1
+      ) as combined_media
+      ORDER BY id
+      LIMIT 10
+    `, [userId]);
+    
+    console.log('🔍 [delete-media] Debug - First 10 media IDs for user:', debugQuery);
 
     // First, verify the media exists and belongs to the user
     let mediaExists = false;
