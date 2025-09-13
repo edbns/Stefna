@@ -438,7 +438,10 @@ const AdminDashboardScreen: React.FC = () => {
   }
 
   const handleResetDailyCredits = async () => {
-    if (!confirm('Are you sure you want to reset daily credits for all users? This will give users with less than 10 credits a boost to 10 credits.')) {
+    // Get the current daily cap from system config
+    const dailyCap = systemConfig?.limits?.daily_cap || 30
+    
+    if (!confirm(`Are you sure you want to reset daily credits for all users? This will give all users ${dailyCap} credits.`)) {
       return
     }
     
@@ -453,11 +456,14 @@ const AdminDashboardScreen: React.FC = () => {
       })
       
       if (response.ok) {
-        alert('Daily credits reset successfully!')
-        loadSystemConfig()
+        alert(`Daily credits reset successfully! All users now have ${dailyCap} credits.`)
+        loadAdminData()
+      } else {
+        alert('Failed to reset daily credits')
       }
     } catch (error) {
       console.error('Failed to reset daily credits:', error)
+      alert('Error resetting daily credits')
     }
   }
 
