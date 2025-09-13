@@ -330,7 +330,7 @@ Want even more? Invite a friend and get bonus credits instantly.
     case 'email_change_otp':
       emailBody = `Verify your new email address.
 
-Your verification code is: <strong style="color:#fff;font-size:24px;letter-spacing:2px;">${data.otp}</strong>
+Your verification code is: <strong style="color:#fff;font-size:16px;letter-spacing:1px;">${data.otp}</strong>
 
 This code will expire in 10 minutes.
 
