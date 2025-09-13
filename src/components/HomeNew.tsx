@@ -3805,7 +3805,9 @@ const HomeNew: React.FC = () => {
                       {isEnhancing ? (
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       ) : (
-                        <span className="text-lg"></span>
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M7.5 5.6L5 7l1.4-2.5L5 2l2.5 1.4L10 2 8.6 4.5 10 7 7.5 5.6zm12 9.8L22 14l-1.4 2.5L22 19l-2.5-1.4L17 19l1.4-2.5L17 14l2.5 1.4zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5L22 2zM2 22l2.5-1.4L7 22l-1.4-2.5L7 17l-2.5 1.4L2 17l1.4 2.5L2 22z"/>
+                        </svg>
                       )}
                     </button>
                   <div className="absolute bottom-2 right-2 text-white/30 text-xs">
