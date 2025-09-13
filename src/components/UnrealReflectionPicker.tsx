@@ -1,5 +1,5 @@
 import React from 'react';
-import { UNREAL_REFLECTION_PRESETS, UnrealReflectionPreset } from '../presets/unrealreflection';
+import { UNREAL_REFLECTION_PRESETS, UnrealReflectionPreset } from '../presets/unrealReflection';
 
 interface UnrealReflectionPickerProps {
   presets?: UnrealReflectionPreset[];
