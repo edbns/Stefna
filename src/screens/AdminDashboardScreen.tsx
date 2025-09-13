@@ -1239,12 +1239,6 @@ const AdminDashboardScreen: React.FC = () => {
                           <h3 className="text-lg font-semibold text-white">System Configuration</h3>
                           <div className="flex items-center space-x-3">
                             <button
-                              onClick={handleResetDailyCredits}
-                              className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors"
-                            >
-                              Reset Daily Credits
-                            </button>
-                            <button
                               onClick={handleCleanupOldMedia}
                               className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors"
                             >
@@ -1735,13 +1729,13 @@ const AdminDashboardScreen: React.FC = () => {
                           <div className="flex items-center space-x-3">
                             <button
                               onClick={handleResetDailyCredits}
-                              className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors"
+                              className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
                             >
                               Reset Daily Credits
                             </button>
                             <button
                               onClick={handleBulkCreditAdjustment}
-                              className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors"
+                              className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
                             >
                               Bulk Adjust Credits
                             </button>
