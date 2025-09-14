@@ -27,17 +27,6 @@ export function UnrealReflectionPicker({
   return (
     <div className="rounded-xl shadow-2xl p-3 w-80" style={{ backgroundColor: '#333333' }}>
       <div className="space-y-2">
-        {/* Video Generation Option - DISABLED (Too Expensive) */}
-        <button
-          onClick={handleVideoToggle}
-          className="w-full flex items-center justify-center px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 bg-gray-400 text-gray-600 cursor-not-allowed"
-          disabled={true}
-        >
-          <span>Video Generation (Disabled)</span>
-        </button>
-        
-        {/* Separator */}
-        <div className="border-t border-gray-500/30 my-2"></div>
         
         {/* Unreal Reflection™ preset options */}
         {presets.map((preset) => (
