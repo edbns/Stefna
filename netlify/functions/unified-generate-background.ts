@@ -164,6 +164,54 @@ async function convertTo3D(imageUrl: string): Promise<any> {
   }
 }
 
+// 🎬 Video Generation Helper Function
+async function generateVideo(imageUrl: string, prompt: string): Promise<any> {
+  console.log(`🎬 [Video] Generating video from image: ${imageUrl}`);
+  console.log(`🎬 [Video] Using prompt: ${prompt}`);
+
+  try {
+    // Try Veo3 fast first (4 credits)
+    const fastVideoInput = {
+      image_url: imageUrl,
+      prompt: prompt,
+      duration: 4,
+      aspect_ratio: '9:16'
+    };
+
+    console.log('🎬 [Video] Trying Veo3 fast model...');
+    let result = await falInvoke('fal-ai/veo3/fast/image-to-video', fastVideoInput);
+    
+    if (result && result.video_url) {
+      console.log('✅ [Video] Veo3 fast generation successful');
+      return {
+        video_url: result.video_url,
+        duration: 4,
+        model: 'veo3-fast'
+      };
+    }
+
+    // Fallback to regular Veo3 (4 credits)
+    console.log('🎬 [Video] Fast model failed, trying regular Veo3...');
+    result = await falInvoke('fal-ai/veo3/image-to-video', fastVideoInput);
+    
+    if (result && result.video_url) {
+      console.log('✅ [Video] Veo3 generation successful');
+      return {
+        video_url: result.video_url,
+        duration: 4,
+        model: 'veo3'
+      };
+    }
+
+    console.error('❌ [Video] Both Veo3 models failed');
+    return null;
+
+  } catch (error) {
+    console.error('❌ [Video] Video generation error:', error);
+    return null;
+  }
+}
+
 // Aspect ratio utilities
 function getAspectRatioForMode(mode: string): string {
   switch (mode) {
@@ -376,9 +424,9 @@ interface UnifiedGenerationRequest {
   ipaThreshold?: number;
   ipaRetries?: number;
   ipaBlocking?: boolean;
-  // 3D Generation parameters
-  enable3D?: boolean;
-  for3D?: boolean; // Use 3D-friendly prompt for better 3D results
+  // Video Generation parameters
+  enableVideo?: boolean;
+  forVideo?: boolean; // Use video-friendly prompt for better video results
 }
 
 interface UnifiedGenerationResponse {
@@ -389,7 +437,7 @@ interface UnifiedGenerationResponse {
   error?: string;
   runId?: string;
   errorType?: string;
-  model3D?: any; // 3D model data (OBJ, GLTF URLs, etc.)
+  videoData?: any; // Video data (URL, duration, model, etc.)
   // IPA results
   ipaResults?: {
     similarity: number;
@@ -2415,20 +2463,20 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             result = await generateWithFal(request.mode, generationParams);
             console.log('✅ [Background] Fal.ai Unreal Reflection generation successful');
             
-            // 🆕 3D Generation: If 3D is enabled and 2D generation succeeded
-            if (request.enable3D && result.success && result.outputUrl) {
-              console.log('🎨 [Background] Starting 3D generation for Unreal Reflection');
+            // 🎬 Video Generation: If video is enabled and 2D generation succeeded
+            if (request.enableVideo && result.success && result.outputUrl) {
+              console.log('🎬 [Background] Starting video generation for Unreal Reflection');
               try {
-                const model3D = await convertTo3D(result.outputUrl);
-                if (model3D) {
-                  result.model3D = model3D;
-                  console.log('✅ [Background] 3D generation successful');
+                const videoData = await generateVideo(result.outputUrl, effectivePrompt);
+                if (videoData) {
+                  result.videoData = videoData;
+                  console.log('✅ [Background] Video generation successful');
                 } else {
-                  console.warn('⚠️ [Background] 3D generation failed, but 2D result available');
+                  console.warn('⚠️ [Background] Video generation failed, but 2D result available');
                 }
-              } catch (error3D) {
-                console.error('❌ [Background] 3D generation error:', error3D);
-                // Don't fail the whole generation if 3D fails - user still gets 2D result
+              } catch (errorVideo) {
+                console.error('❌ [Background] Video generation error:', errorVideo);
+                // Don't fail the whole generation if video fails - user still gets 2D result
               }
             }
             
@@ -2438,20 +2486,20 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             result = await generateWithBFL(request.mode, generationParams);
             console.log('✅ [Background] BFL Unreal Reflection fallback successful');
             
-            // 🆕 3D Generation: If 3D is enabled and BFL fallback succeeded
-            if (request.enable3D && result.success && result.outputUrl) {
-              console.log('🎨 [Background] Starting 3D generation for Unreal Reflection (BFL fallback)');
+            // 🎬 Video Generation: If video is enabled and BFL fallback succeeded
+            if (request.enableVideo && result.success && result.outputUrl) {
+              console.log('🎬 [Background] Starting video generation for Unreal Reflection (BFL fallback)');
               try {
-                const model3D = await convertTo3D(result.outputUrl);
-                if (model3D) {
-                  result.model3D = model3D;
-                  console.log('✅ [Background] 3D generation successful');
+                const videoData = await generateVideo(result.outputUrl, effectivePrompt);
+                if (videoData) {
+                  result.videoData = videoData;
+                  console.log('✅ [Background] Video generation successful');
                 } else {
-                  console.warn('⚠️ [Background] 3D generation failed, but 2D result available');
+                  console.warn('⚠️ [Background] Video generation failed, but 2D result available');
                 }
-              } catch (error3D) {
-                console.error('❌ [Background] 3D generation error:', error3D);
-                // Don't fail the whole generation if 3D fails - user still gets 2D result
+              } catch (errorVideo) {
+                console.error('❌ [Background] Video generation error:', errorVideo);
+                // Don't fail the whole generation if video fails - user still gets 2D result
               }
             }
           }
@@ -2725,7 +2773,7 @@ export const handler: Handler = async (event, context) => {
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { mode, prompt, sourceAssetId, userId: bodyUserId, presetKey, unrealReflectionPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, enable3D, for3D, runId: frontendRunId } = body;
+    const { mode, prompt, sourceAssetId, userId: bodyUserId, presetKey, unrealReflectionPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, enableVideo, forVideo, runId: frontendRunId } = body;
 
     console.log('🚀 [Background] Received request:', {
       mode,
@@ -2735,17 +2783,17 @@ export const handler: Handler = async (event, context) => {
       additionalImages: additionalImages?.length || 0,
       editImages: editImages?.length || 0,
       storyTimePresetId,
-      enable3D,
-      for3D
+      enableVideo,
+      forVideo
     });
 
-    // 🎯 3D-Friendly Prompt Enhancement (not override)
+    // 🎬 Video-Friendly Prompt Enhancement (not override)
     let effectivePrompt = prompt;
-    if (for3D === true) {
-      console.log('🎯 [3D Mode] Enhancing prompt for better 3D results while preserving preset identity');
-      // Keep the original preset prompt but add 3D-friendly enhancements
-      effectivePrompt = `${prompt} Use clear lighting and strong contrast. Avoid surreal overlays on the face. No face paint, no distortion, no blending with background.`;
-      console.log('🎯 [3D Mode] Enhanced prompt:', effectivePrompt);
+    if (forVideo === true) {
+      console.log('🎬 [Video Mode] Using tailored generic prompt for better video results');
+      // Use the tailored generic prompt for Unreal Reflection video generation
+      effectivePrompt = "Reveal an alternate self emerging from shadows. Soft cinematic lighting illuminates subtle transformations as the subject is surrounded by flickering light particles and floating shapes. The background shifts between surreal textures and minimal dark tones. The subject remains still, eyes reflecting mystery and resilience. Slow camera movement, poetic mood, 9:16 format.";
+      console.log('🎬 [Video Mode] Tailored generic prompt:', effectivePrompt);
     }
 
     console.log('🔍 [Background] About to start validation...');
@@ -2818,7 +2866,7 @@ export const handler: Handler = async (event, context) => {
     const modeKey = modeStr as GenerationMode;
 
     // Check credits FIRST before any processing
-    const creditsNeeded = enable3D ? 4 : 2; // 2 credits for 2D, 4 credits for 2D+3D
+    const creditsNeeded = enableVideo ? 6 : 2; // 2 credits for 2D, 6 credits for 2D+Video
     
     // Use proper action mapping
     const actionMap: Record<GenerationMode, string> = {
@@ -2919,9 +2967,9 @@ export const handler: Handler = async (event, context) => {
           ipaThreshold,
           ipaRetries,
           ipaBlocking,
-          // 3D parameters
-          enable3D,
-          for3D
+          // Video parameters
+          enableVideo,
+          forVideo
         };
 
         // Process generation with timeout protection (10 minutes)
@@ -3015,9 +3063,9 @@ export const handler: Handler = async (event, context) => {
           ipaThreshold,
           ipaRetries,
           ipaBlocking,
-          // 3D parameters
-          enable3D,
-          for3D
+          // Video parameters
+          enableVideo,
+          forVideo
         };
 
         // Process generation with timeout protection (10 minutes)
@@ -3069,9 +3117,9 @@ export const handler: Handler = async (event, context) => {
       ipaThreshold,
       ipaRetries,
       ipaBlocking,
-      // 3D parameters
-      enable3D,
-      for3D
+      // Video parameters
+      enableVideo,
+      forVideo
     };
 
     // Process generation with timeout protection (10 minutes)
