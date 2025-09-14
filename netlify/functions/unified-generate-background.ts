@@ -165,15 +165,18 @@ async function convertTo3D(imageUrl: string): Promise<any> {
 }
 
 // 🎬 Video Generation Helper Function
-async function generateVideo(imageUrl: string, prompt: string): Promise<any> {
+async function generateVideo(imageUrl: string): Promise<any> {
   console.log(`🎬 [Video] Generating video from image: ${imageUrl}`);
-  console.log(`🎬 [Video] Using prompt: ${prompt}`);
+  
+  // Use the tailored generic prompt for Unreal Reflection video generation
+  const tailoredPrompt = "Reveal an alternate self emerging from shadows. Soft cinematic lighting illuminates subtle transformations as the subject is surrounded by flickering light particles and floating shapes. The background shifts between surreal textures and minimal dark tones. The subject remains still, eyes reflecting mystery and resilience. Slow camera movement, poetic mood, 9:16 format.";
+  console.log(`🎬 [Video] Using tailored generic prompt: ${tailoredPrompt}`);
 
   try {
     // Try Veo3 fast first (4 credits)
     const fastVideoInput = {
       image_url: imageUrl,
-      prompt: prompt,
+      prompt: tailoredPrompt,
       duration: 4,
       aspect_ratio: '9:16'
     };
@@ -2467,7 +2470,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             if (request.enableVideo && result.success && result.outputUrl) {
               console.log('🎬 [Background] Starting video generation for Unreal Reflection');
               try {
-                const videoData = await generateVideo(result.outputUrl, effectivePrompt);
+                const videoData = await generateVideo(result.outputUrl);
                 if (videoData) {
                   result.videoData = videoData;
                   console.log('✅ [Background] Video generation successful');
@@ -2490,7 +2493,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             if (request.enableVideo && result.success && result.outputUrl) {
               console.log('🎬 [Background] Starting video generation for Unreal Reflection (BFL fallback)');
               try {
-                const videoData = await generateVideo(result.outputUrl, effectivePrompt);
+                const videoData = await generateVideo(result.outputUrl);
                 if (videoData) {
                   result.videoData = videoData;
                   console.log('✅ [Background] Video generation successful');
