@@ -33,7 +33,7 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   const typeMapping: Record<string, string> = {
     'neo_glitch': 'neo-glitch',
     'ghibli_reaction': 'ghibli-reaction', 
-    'unreal_reflection': 'emotion-mask',
+    'unreal_reflection': 'unreal-reflection',
     'presets': 'presets',
     'custom_prompt': 'custom-prompt',
     'story_time': 'story-time',
@@ -44,7 +44,7 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   const mediaTypeMapping: Record<string, string> = {
     'neo-glitch': 'neo-glitch',
     'ghiblireact': 'ghibli-reaction',
-    'unrealreflection': 'emotion-mask', 
+    'unrealreflection': 'unreal-reflection', 
     'preset': 'presets',
     'custom': 'custom-prompt',
     'storytime': 'story-time'
@@ -57,7 +57,7 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   const typeDisplayNames: Record<string, string> = {
     'neo-glitch': 'Neo Tokyo Glitch',
     'ghibli-reaction': 'Ghibli Reaction',
-    'emotion-mask': 'Unreal Reflection', 
+    'unreal-reflection': 'Unreal Reflection', 
     'presets': 'Presets',
     'custom-prompt': 'Custom Prompt',
     'story-time': 'Story Time'
@@ -117,7 +117,7 @@ export function getPresetTypeForFilter(item: any): string {
   const typeMapping: Record<string, string> = {
     'neo_glitch': 'neo-glitch',
     'ghibli_reaction': 'ghibli-reaction', 
-    'unreal_reflection': 'emotion-mask',
+    'unreal_reflection': 'unreal-reflection',
     'presets': 'presets',
     'custom_prompt': 'custom-prompt',
     'story_time': 'story-time',
@@ -141,7 +141,7 @@ export function getFilterDisplayName(filterType: string): string {
   const filterDisplayNames: Record<string, string> = {
     'neo-glitch': 'Neo Tokyo Glitch',
     'ghibli-reaction': 'Ghibli Reaction',
-    'emotion-mask': 'Unreal Reflection',
+    'unreal-reflection': 'Unreal Reflection',
     'presets': 'Presets',
     'custom-prompt': 'Custom Prompt',
     'story-time': 'Story Time'

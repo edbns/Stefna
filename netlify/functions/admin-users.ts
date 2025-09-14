@@ -55,7 +55,7 @@ const adminUsersHandler: Handler = async (event) => {
     const [
       neoGlitchCount,
       ghibliCount,
-      emotionMaskCount,
+      unrealReflectionCount,
       presetsCount,
       customPromptCount,
       storyCount
@@ -68,7 +68,7 @@ const adminUsersHandler: Handler = async (event) => {
       qCount(`SELECT COUNT(*) FROM story`)
     ])
 
-    stats.totalMedia = neoGlitchCount + ghibliCount + emotionMaskCount + presetsCount + customPromptCount + storyCount
+    stats.totalMedia = neoGlitchCount + ghibliCount + unrealReflectionCount + presetsCount + customPromptCount + storyCount
 
     console.log(`✅ [Admin] Retrieved ${users.length} users and stats`)
 

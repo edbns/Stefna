@@ -5,7 +5,7 @@
 import { authenticatedFetch } from '../utils/apiClient'
 import authService from './authService';
 
-export type GenerationMode = 'presets' | 'custom-prompt' | 'emotion-mask' | 'ghibli-reaction' | 'neo-glitch' | 'story-time' | 'edit-photo';
+export type GenerationMode = 'presets' | 'custom-prompt' | 'unreal-reflection' | 'ghibli-reaction' | 'neo-glitch' | 'story-time' | 'edit-photo';
 
 export interface SimpleGenerationRequest {
   mode: GenerationMode;
@@ -16,7 +16,7 @@ export interface SimpleGenerationRequest {
   sourceHeight?: number;
   userId: string;
   runId: string;
-  emotionMaskPresetId?: string;
+  unrealReflectionPresetId?: string;
   ghibliReactionPresetId?: string;
   neoGlitchPresetId?: string;
   storyTimePresetId?: string;
@@ -46,7 +46,7 @@ export interface SimpleGenerationResult {
 const FUNCTION_ENDPOINTS: Record<GenerationMode, string> = {
   'presets': '/.netlify/functions/unified-generate',
   'custom-prompt': '/.netlify/functions/unified-generate',
-  'emotion-mask': '/.netlify/functions/unified-generate',
+  'unreal-reflection': '/.netlify/functions/unified-generate',
   'ghibli-reaction': '/.netlify/functions/unified-generate',
   'neo-glitch': '/.netlify/functions/unified-generate',
   'story-time': '/.netlify/functions/unified-generate',
@@ -310,7 +310,7 @@ class SimpleGenerationService {
     const modeMap: Record<GenerationMode, string> = {
       'presets': 'presets',
       'custom-prompt': 'custom',
-      'emotion-mask': 'unreal_reflection',
+      'unreal-reflection': 'unreal_reflection',
       'ghibli-reaction': 'ghibli_reaction',
       'neo-glitch': 'neo_glitch',
       'story-time': 'story_time',
@@ -345,10 +345,10 @@ class SimpleGenerationService {
       case 'custom-prompt':
         return basePayload;
 
-      case 'emotion-mask':
+      case 'unreal-reflection':
         return {
           ...basePayload,
-          emotionMaskPresetId: request.emotionMaskPresetId
+          unrealReflectionPresetId: request.unrealReflectionPresetId
         };
 
       case 'ghibli-reaction':

@@ -95,7 +95,7 @@ export const UnrealReflectionTool = () => {
     if (!maskData) return;
     
     const link = document.createElement('a');
-    link.download = 'emotion-mask.png';
+    link.download = 'unreal-reflection.png';
     link.href = maskData;
     link.click();
   };

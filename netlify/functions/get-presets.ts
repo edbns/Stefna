@@ -1,7 +1,7 @@
 // netlify/functions/get-presets.ts
 // Fetch available presets from database with rotation system
 // Returns currently available presets (respecting 25-preset rotation)
-// Separate from standalone modes (ghibli, emotion mask, neo glitch)
+// Separate from standalone modes (ghibli, unreal reflection, neo glitch)
 
 import { Handler } from '@netlify/functions';
 import { q } from './_db';

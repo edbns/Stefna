@@ -93,7 +93,7 @@ export const handler: Handler = async (event) => {
             u.id as user_id,
             em.created_at as timestamp,
             'media_generated' as action,
-            'Generated emotion mask media' as description
+            'Generated unreal reflection media' as description
           FROM unreal_reflection_media em
           JOIN users u ON em.user_id = u.id
           WHERE em.created_at >= NOW() - INTERVAL '${days} days' AND em.status = 'completed'

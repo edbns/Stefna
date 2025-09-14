@@ -397,21 +397,21 @@ const BFL_EMOTION_MODELS = [
     name: 'BFL Flux Pro 1.1 Ultra',
     cost: 'medium',
     priority: 1,
-    description: 'Primary - direct BFL API for emotion mask'
+    description: 'Primary - direct BFL API for unreal reflection'
   },
   {
     endpoint: 'flux-pro-1.1-pro',
     name: 'BFL Flux Pro 1.1 Pro',
     cost: 'medium',
     priority: 2,
-    description: 'Fallback - high quality alternative for emotion mask'
+    description: 'Fallback - high quality alternative for unreal reflection'
   },
   {
     endpoint: 'flux-pro-1.1',
     name: 'BFL Flux Pro 1.1',
     cost: 'low',
     priority: 3,
-    description: 'Fallback - standard quality for emotion mask'
+    description: 'Fallback - standard quality for unreal reflection'
   }
 ];
 

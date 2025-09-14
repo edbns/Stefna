@@ -2601,7 +2601,7 @@ const HomeNew: React.FC = () => {
         switch (kind) {
           case 'preset': return 'presets';
           case 'custom': return 'custom-prompt';
-          case 'unrealreflection': return 'emotion-mask';
+          case 'unrealreflection': return 'unreal-reflection';
           case 'ghiblireact': return 'ghibli-reaction';
           case 'neotokyoglitch': return 'neo-glitch';
           case 'storytime': return 'story-time';

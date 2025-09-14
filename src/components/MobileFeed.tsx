@@ -41,7 +41,7 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
       'storytime': 'Story Time',
       // Additional mappings
       'ghibli-reaction': 'Ghibli Reaction',
-      'emotion-mask': 'Unreal Reflection',
+      'unreal-reflection': 'Unreal Reflection',
       'custom-prompt': 'Custom Prompt',
       'story-time': 'Story Time'
     }
