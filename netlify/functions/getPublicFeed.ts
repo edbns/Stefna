@@ -4,13 +4,12 @@
 
 import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions';
 import { q } from './_db';
+import { handleCORS, getCORSHeaders } from './_lib/cors';
 
 // Helper function to create consistent response headers
 function createResponseHeaders(): Record<string, string> {
   return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    ...getCORSHeaders(),
     'Content-Type': 'application/json'
   };
 }
@@ -19,13 +18,8 @@ function createResponseHeaders(): Record<string, string> {
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: createResponseHeaders(),
-      body: ''
-    };
-  }
+  const corsResponse = handleCORS(event);
+  if (corsResponse) return corsResponse;
 
   if (event.httpMethod !== 'GET') {
     return {
@@ -131,9 +125,6 @@ export const handler: Handler = async (event) => {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
       },
       body: JSON.stringify({ 
         items: processedRows || [], 
@@ -151,9 +142,6 @@ export const handler: Handler = async (event) => {
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
       },
       body: JSON.stringify({ 
         error: 'FEED_FETCH_FAILED',

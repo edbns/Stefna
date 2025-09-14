@@ -16,7 +16,7 @@ const rateLimitStore = new Map<string, RateLimitEntry>();
 
 // Rate limit configurations
 export const RATE_LIMITS = {
-  'otp-request': { maxRequests: 9999, windowMs: 60 * 1000 }, // TEMPORARILY DISABLED - unlimited for testing
+  'otp-request': { maxRequests: 5, windowMs: 15 * 60 * 1000 }, // 5 requests per 15 minutes
   'generation': { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 requests per hour
   'api-calls': { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 requests per hour
   'admin-functions': { maxRequests: 50, windowMs: 60 * 60 * 1000 }, // 50 admin requests per hour
