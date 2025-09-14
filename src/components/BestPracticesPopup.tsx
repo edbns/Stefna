@@ -54,7 +54,7 @@ export default function BestPracticesPopup() {
 
             <div>
               <p className="font-semibold">3. Keep a relaxed expression</p>
-              <p>Neutral faces work better. Reaction modes will enhance automatically.</p>
+              <p>Neutral faces work better. AI modes will enhance your expression automatically.</p>
             </div>
 
             <div>
@@ -65,7 +65,9 @@ export default function BestPracticesPopup() {
             <div>
               <p className="font-semibold">More tips</p>
               <p>• Magic Wand enhances prompts
-                <br />• Unreal Reflection is best for alternate-reality realism</p>
+                <br />• Unreal Reflection creates alternate-reality realism
+                <br />• Ghibli Reaction adds animated emotions
+                <br />• Neo Tokyo Glitch for surreal transformations</p>
             </div>
 
             <p className="text-gray-400 italic">Every mode is different. Experiment, enjoy the process, and make it yours.</p>
