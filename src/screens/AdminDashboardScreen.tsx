@@ -38,6 +38,13 @@ interface AdminStats {
   totalCredits: number
   bannedUsers: number
   activeUsers: number
+  quotaStatus?: {
+    quota_enabled: boolean
+    quota_limit: number
+    current_count: number
+    quota_reached: boolean
+    remaining_slots: number
+  }
 }
 
 interface PresetConfig {
@@ -182,6 +189,23 @@ const AdminDashboardScreen: React.FC = () => {
         setUsers(usersData.users || [])
         setStats(usersData.stats || stats)
         console.log('✅ [Admin] Users loaded:', usersData.users?.length || 0)
+      }
+
+      // Load quota status
+      console.log('🔍 [Admin] Loading quota status...')
+      const quotaResponse = await authenticatedFetch('/.netlify/functions/check-quota', {
+        method: 'GET'
+      })
+      
+      if (quotaResponse.ok) {
+        const quotaData = await quotaResponse.json()
+        if (quotaData.success && quotaData.quota) {
+          setStats(prevStats => ({
+            ...prevStats,
+            quotaStatus: quotaData.quota
+          }))
+          console.log('✅ [Admin] Quota status loaded:', quotaData.quota)
+        }
       }
 
       // Load presets
@@ -846,7 +870,7 @@ const AdminDashboardScreen: React.FC = () => {
         <div className="flex-1 p-6 pt-24">
           <div className="space-y-6">
             {/* Stats Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="text-xl font-semibold text-white">{stats.totalUsers}</div>
                 <div className="text-sm text-white/60">Total Users</div>
@@ -867,11 +891,111 @@ const AdminDashboardScreen: React.FC = () => {
                 <div className="text-xl font-semibold text-white">{stats.totalCredits}</div>
                 <div className="text-sm text-white/60">Total Credits</div>
               </div>
+              {stats.quotaStatus && (
+                <div className={`rounded-lg p-4 ${
+                  stats.quotaStatus.quota_reached 
+                    ? 'bg-red-500/10 border border-red-500/20' 
+                    : 'bg-white/5'
+                }`}>
+                  <div className={`text-xl font-semibold ${
+                    stats.quotaStatus.quota_reached ? 'text-red-400' : 'text-white'
+                  }`}>
+                    {stats.quotaStatus.current_count}/{stats.quotaStatus.quota_limit}
+                  </div>
+                  <div className="text-sm text-white/60">
+                    {stats.quotaStatus.quota_reached ? 'Quota Reached' : 'Beta Users'}
+                  </div>
+                  {stats.quotaStatus.quota_enabled && (
+                    <div className="text-xs text-white/40 mt-1">
+                      {stats.quotaStatus.remaining_slots} slots left
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Tab Content */}
             {activeTab === 'users' && (
               <div className="space-y-6">
+                {/* Quota Status Section */}
+                {stats.quotaStatus && (
+                  <div className="bg-white/5 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4">Beta Quota Status</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className={`rounded-lg p-4 ${
+                        stats.quotaStatus.quota_reached 
+                          ? 'bg-red-500/10 border border-red-500/20' 
+                          : 'bg-white/5'
+                      }`}>
+                        <div className={`text-2xl font-semibold ${
+                          stats.quotaStatus.quota_reached ? 'text-red-400' : 'text-white'
+                        }`}>
+                          {stats.quotaStatus.current_count}/{stats.quotaStatus.quota_limit}
+                        </div>
+                        <div className="text-sm text-white/60">
+                          {stats.quotaStatus.quota_reached ? 'Quota Reached' : 'Beta Users'}
+                        </div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-2xl font-semibold text-white">
+                          {stats.quotaStatus.remaining_slots}
+                        </div>
+                        <div className="text-sm text-white/60">Slots Remaining</div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className={`text-2xl font-semibold ${
+                          stats.quotaStatus.quota_enabled ? 'text-green-400' : 'text-gray-400'
+                        }`}>
+                          {stats.quotaStatus.quota_enabled ? 'Active' : 'Disabled'}
+                        </div>
+                        <div className="text-sm text-white/60">Quota System</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quota Status Section */}
+                {stats.quotaStatus ? (
+                  <div className="bg-white/5 rounded-lg p-4 mb-4">
+                    <h4 className="text-md font-semibold text-white mb-3">Beta Quota Status</h4>
+                    <div className="flex items-center space-x-6">
+                      <div className={`px-4 py-2 rounded-lg ${
+                        stats.quotaStatus.quota_reached 
+                          ? 'bg-red-500/10 border border-red-500/20' 
+                          : 'bg-white/10'
+                      }`}>
+                        <div className={`text-lg font-semibold ${
+                          stats.quotaStatus.quota_reached ? 'text-red-400' : 'text-white'
+                        }`}>
+                          {stats.quotaStatus.current_count}/{stats.quotaStatus.quota_limit}
+                        </div>
+                        <div className="text-xs text-white/60">
+                          {stats.quotaStatus.quota_reached ? 'Quota Reached' : 'Beta Users'}
+                        </div>
+                      </div>
+                      <div className="px-4 py-2 rounded-lg bg-white/10">
+                        <div className="text-lg font-semibold text-white">
+                          {stats.quotaStatus.remaining_slots}
+                        </div>
+                        <div className="text-xs text-white/60">Slots Left</div>
+                      </div>
+                      <div className="px-4 py-2 rounded-lg bg-white/10">
+                        <div className={`text-lg font-semibold ${
+                          stats.quotaStatus.quota_enabled ? 'text-green-400' : 'text-gray-400'
+                        }`}>
+                          {stats.quotaStatus.quota_enabled ? 'Active' : 'Disabled'}
+                        </div>
+                        <div className="text-xs text-white/60">System</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
+                    <h4 className="text-md font-semibold text-red-400 mb-2">Quota Status Not Loaded</h4>
+                    <p className="text-xs text-red-300">Check console for quota loading errors</p>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-white">Users Management</h3>
                   <div className="flex items-center space-x-3">

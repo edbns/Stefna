@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 
 interface WaitlistFormProps {
   referrerEmail?: string;
+  onSuccess?: () => void;
 }
 
-const WaitlistForm: React.FC<WaitlistFormProps> = ({ referrerEmail }) => {
+const WaitlistForm: React.FC<WaitlistFormProps> = ({ referrerEmail, onSuccess }) => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -41,6 +42,13 @@ const WaitlistForm: React.FC<WaitlistFormProps> = ({ referrerEmail }) => {
         setMessage(data.message);
         setIsSuccess(true);
         setEmail('');
+        
+        // Call onSuccess callback if provided
+        if (onSuccess) {
+          setTimeout(() => {
+            onSuccess();
+          }, 1500); // Small delay to show success message
+        }
       } else {
         setMessage(data.error || 'Something went wrong. Please try again.');
         setIsSuccess(false);
@@ -55,20 +63,13 @@ const WaitlistForm: React.FC<WaitlistFormProps> = ({ referrerEmail }) => {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backdropFilter: 'blur(12px)',
-      background: 'rgba(0, 0, 0, 0.5)',
-      padding: '2rem',
-      borderRadius: '16px',
-      maxWidth: '400px',
-      width: '90%',
-      margin: '0 auto'
-    }}>
-      <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+    <div className="w-full max-w-md mx-auto">
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-semibold text-white mb-2">Join the Waitlist</h2>
+        <p className="text-gray-400 text-sm">Get notified when spots open up</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="email"
           value={email}
@@ -76,61 +77,36 @@ const WaitlistForm: React.FC<WaitlistFormProps> = ({ referrerEmail }) => {
           placeholder="Enter your email"
           required
           disabled={isLoading}
-          style={{
-            width: '100%',
-            padding: '0.75rem 1rem',
-            fontSize: '1rem',
-            borderRadius: '8px',
-            border: 'none',
-            marginBottom: '1rem',
-            backgroundColor: 'white',
-            color: 'black'
-          }}
+          className="w-full px-4 py-3 bg-white text-black rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-gray-300"
         />
         <button
           type="submit"
           disabled={isLoading || !email.trim()}
-          style={{
-            width: '100%',
-            padding: '0.75rem 1rem',
-            fontSize: '1rem',
-            border: 'none',
-            borderRadius: '8px',
-            background: 'white',
-            color: 'black',
-            fontWeight: '500',
-            cursor: isLoading || !email.trim() ? 'not-allowed' : 'pointer',
-            opacity: isLoading || !email.trim() ? 0.5 : 1
-          }}
+          className={`w-full py-3 px-4 rounded-lg font-medium text-sm transition-all duration-200 ${
+            email.trim() && !isLoading
+              ? 'bg-white text-black hover:bg-gray-100'
+              : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+          }`}
         >
-          {isLoading ? 'Joining...' : 'Join the Waitlist'}
+          {isLoading ? 'Joining...' : 'Join Waitlist'}
         </button>
       </form>
 
       {message && (
-        <div style={{
-          marginTop: '1rem',
-          fontSize: '0.875rem',
-          color: 'white',
-          width: '100%',
-          textAlign: 'center'
-        }}>
+        <div className={`mt-4 p-3 rounded-lg text-sm text-center ${
+          isSuccess 
+            ? 'bg-gray-800 text-white border border-gray-600' 
+            : 'bg-red-900/20 text-red-400 border border-red-500/20'
+        }`}>
           {message}
         </div>
       )}
 
       {referrerEmail && (
-        <div style={{
-          marginTop: '1rem',
-          padding: '0.75rem',
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '8px',
-          textAlign: 'center',
-          fontSize: '0.875rem',
-          color: 'rgba(255, 255, 255, 0.8)',
-          width: '100%'
-        }}>
-          You were invited by {referrerEmail}! 🎉
+        <div className="mt-4 p-3 bg-gray-800 border border-gray-600 rounded-lg text-center">
+          <p className="text-gray-300 text-sm">
+            You were invited by <span className="text-white font-medium">{referrerEmail}</span>
+          </p>
         </div>
       )}
     </div>

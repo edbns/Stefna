@@ -11,6 +11,8 @@ import SkeletonGrid from './SkeletonGrid'
 import LoadingSpinner from './LoadingSpinner'
 import LQIPImage from './LQIPImage'
 import { useIsMobile } from '../hooks/useResponsive'
+import { useQuotaStatus } from '../hooks/useQuotaStatus'
+import WaitlistForm from './WaitlistForm'
 
 import type { UserMedia } from '../services/userMediaService'
 import { mapErrorToUserMessage } from '../utils/errorMessages'
@@ -191,6 +193,12 @@ const HomeNew: React.FC = () => {
 
   // Mobile detection
   const isMobile = useIsMobile()
+
+  // Waitlist modal state
+  const [showWaitlistModal, setShowWaitlistModal] = useState(false)
+
+  // Quota status
+  const { quotaReached } = useQuotaStatus()
 
   // Database-driven presets for main presets mode (moved to very beginning)
   const [availablePresets, setAvailablePresets] = useState<DatabasePreset[]>([])
@@ -3563,13 +3571,25 @@ const HomeNew: React.FC = () => {
 
         {/* Login/Profile Button */}
         {!isAuthenticated ? (
-          <button
-            onClick={() => navigate('/auth')}
-            className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-white/90 hover:scale-105"
-            aria-label="Login"
-          >
-            <span className="text-sm font-medium">Login</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {quotaReached ? (
+              <button
+                onClick={() => setShowWaitlistModal(true)}
+                className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-white/90 hover:scale-105"
+                aria-label="Join Waitlist"
+              >
+                <span className="text-sm font-medium">Join Waitlist</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate('/auth')}
+                className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-white/90 hover:scale-105"
+                aria-label="Login"
+              >
+                <span className="text-sm font-medium">Login</span>
+              </button>
+            )}
+          </div>
         ) : (
           <div className="relative">
             <button
@@ -4376,6 +4396,25 @@ const HomeNew: React.FC = () => {
           onAgreementAccepted={() => setUserHasAgreed(true)}
           userHasAgreed={userHasAgreed || false}
         />
+      )}
+
+      {/* Waitlist Modal */}
+      {showWaitlistModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-black border border-white/20 rounded-xl p-6 max-w-md w-full relative">
+            <button
+              onClick={() => setShowWaitlistModal(false)}
+              className="absolute top-4 right-4 text-white/60 hover:text-white text-xl"
+            >
+              ×
+            </button>
+            <WaitlistForm 
+              onSuccess={() => {
+                setShowWaitlistModal(false)
+              }}
+            />
+          </div>
+        </div>
       )}
         </>
       )}

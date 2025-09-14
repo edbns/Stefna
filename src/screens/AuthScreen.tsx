@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, ArrowLeft, ArrowRight, CheckCircle, XCircle } from 'lucide-react'
 import authService from '../services/authService'
+import WaitlistForm from '../components/WaitlistForm'
 
 const AuthScreen: React.FC = () => {
   const navigate = useNavigate()
@@ -11,6 +12,8 @@ const AuthScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showWaitlistModal, setShowWaitlistModal] = useState(false)
+  const [quotaReached, setQuotaReached] = useState(false)
   
   // Extract referrer email from URL parameters
   const [referrerEmail] = useState(() => {
@@ -25,6 +28,29 @@ const AuthScreen: React.FC = () => {
     setSuccess('') // Clear any previous success message
 
     try {
+      // First check if quota allows this user to sign up
+      const quotaResponse = await fetch('/.netlify/functions/check-quota', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      })
+
+      const quotaData = await quotaResponse.json()
+
+      if (!quotaData.success) {
+        setError('Unable to check quota. Please try again.')
+        return
+      }
+
+      if (!quotaData.canSignUp) {
+        setError('Beta quota reached. Please join our waitlist for the next batch.')
+        setQuotaReached(true)
+        return
+      }
+
+      // If quota check passes, proceed with OTP request
       const response = await fetch('/.netlify/functions/request-otp', {
         method: 'POST',
         headers: {
@@ -251,9 +277,19 @@ const AuthScreen: React.FC = () => {
 
           {/* Messages */}
           {error && (
-            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center space-x-2">
-              <XCircle size={16} className="text-red-400" />
-              <span className="text-red-400 text-sm">{error}</span>
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <div className="flex items-center space-x-2 mb-2">
+                <XCircle size={16} className="text-red-400" />
+                <span className="text-red-400 text-sm">{error}</span>
+              </div>
+              {quotaReached && (
+                <button
+                  onClick={() => setShowWaitlistModal(true)}
+                  className="w-full py-2 px-4 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+                >
+                  Join Waitlist
+                </button>
+              )}
             </div>
           )}
 
@@ -275,6 +311,27 @@ const AuthScreen: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Waitlist Modal */}
+      {showWaitlistModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-black border border-white/20 rounded-xl p-6 max-w-md w-full relative">
+            <button
+              onClick={() => setShowWaitlistModal(false)}
+              className="absolute top-4 right-4 text-white/60 hover:text-white text-xl"
+            >
+              ×
+            </button>
+            <WaitlistForm 
+              referrerEmail={referrerEmail}
+              onSuccess={() => {
+                setShowWaitlistModal(false)
+                navigate('/')
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
