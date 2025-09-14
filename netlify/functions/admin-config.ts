@@ -31,9 +31,9 @@ const adminConfigHandler: Handler = async (event) => {
           (SELECT COUNT(*) FROM users) as total_users,
           (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '24 hours') as new_users_24h,
           (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '7 days') as new_users_7d,
-          (SELECT COUNT(*) FROM users WHERE last_login >= NOW() - INTERVAL '24 hours') as active_users_24h,
-          (SELECT COUNT(*) FROM users WHERE last_login >= NOW() - INTERVAL '7 days') as active_users_7d,
-          (SELECT COUNT(*) FROM users WHERE is_banned = true) as banned_users,
+          (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '24 hours') as active_users_24h,
+          (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '7 days') as active_users_7d,
+          (SELECT COUNT(*) FROM users WHERE created_at < NOW() - INTERVAL '30 days') as inactive_users,
           (SELECT COUNT(*) FROM user_settings WHERE share_to_feed = true) as public_users,
           (SELECT COUNT(*) FROM likes) as total_likes,
           (SELECT COUNT(*) FROM likes WHERE created_at >= NOW() - INTERVAL '24 hours') as likes_24h
@@ -268,11 +268,11 @@ const adminConfigHandler: Handler = async (event) => {
             return json({ error: `Config key '${key}' not found` }, { status: 404 });
           }
 
-          const currentValue = parseInt(currentConfig.value) || 0;
+          const currentValue = typeof currentConfig.value === 'string' ? parseInt(currentConfig.value) : (typeof currentConfig.value === 'number' ? currentConfig.value : 0);
           const newValue = Math.max(0, currentValue + adjustment); // Ensure non-negative
 
           // Update the config value
-          await q(`UPDATE app_config SET value = $1 WHERE key = $2`, [newValue.toString(), key]);
+          await q(`UPDATE app_config SET value = $1::jsonb WHERE key = $2`, [JSON.stringify(newValue), key]);
 
           console.log(`✅ [Admin] Updated ${key}: ${currentValue} → ${newValue} (${adjustment > 0 ? '+' : ''}${adjustment})`);
           return json({
