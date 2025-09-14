@@ -194,11 +194,12 @@ const HomeNew: React.FC = () => {
   // Mobile detection
   const isMobile = useIsMobile()
 
+  // Quota status
+  const { quotaReached } = useQuotaStatus()
+  
   // Waitlist modal state
   const [showWaitlistModal, setShowWaitlistModal] = useState(false)
 
-  // Quota status
-  const { quotaReached } = useQuotaStatus()
 
   // Database-driven presets for main presets mode (moved to very beginning)
   const [availablePresets, setAvailablePresets] = useState<DatabasePreset[]>([])
@@ -3572,21 +3573,20 @@ const HomeNew: React.FC = () => {
         {/* Login/Profile Button */}
         {!isAuthenticated ? (
           <div className="flex items-center gap-2">
-            {quotaReached ? (
+            <button
+              onClick={() => navigate('/auth')}
+              className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-white/90 hover:scale-105"
+              aria-label="Login"
+            >
+              <span className="text-sm font-medium">Login</span>
+            </button>
+            {quotaReached && (
               <button
                 onClick={() => setShowWaitlistModal(true)}
-                className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-white/90 hover:scale-105"
+                className="px-4 py-2 bg-gray-600 text-white rounded-full border border-gray-500 transition-all duration-300 hover:bg-gray-500 hover:scale-105"
                 aria-label="Join Waitlist"
               >
                 <span className="text-sm font-medium">Join Waitlist</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate('/auth')}
-                className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-white/90 hover:scale-105"
-                aria-label="Login"
-              >
-                <span className="text-sm font-medium">Login</span>
               </button>
             )}
           </div>
@@ -4398,6 +4398,9 @@ const HomeNew: React.FC = () => {
         />
       )}
 
+        </>
+      )}
+
       {/* Waitlist Modal */}
       {showWaitlistModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -4415,8 +4418,6 @@ const HomeNew: React.FC = () => {
             />
           </div>
         </div>
-      )}
-        </>
       )}
 
     </div>
