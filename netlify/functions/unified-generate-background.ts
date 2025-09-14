@@ -178,7 +178,8 @@ async function generateVideo(imageUrl: string): Promise<any> {
       image_url: imageUrl,
       prompt: tailoredPrompt,
       duration: '8s',
-      aspect_ratio: '9:16'
+      aspect_ratio: '9:16',
+      audio: false // Disable audio to reduce costs
     };
 
     console.log('🎬 [Video] Trying Veo3 fast model...');
