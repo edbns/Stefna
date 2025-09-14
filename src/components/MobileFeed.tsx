@@ -161,9 +161,9 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
               />
             )}
             
-            {/* Media Type Badge - Completely Transparent */}
+            {/* Media Type Badge */}
             <div className="absolute top-2 left-2">
-              <span className="px-2 py-1 text-white text-xs">
+              <span className="px-2 py-1 bg-black/80 text-white text-xs rounded-full border border-white/20">
                 {getMediaTypeDisplay(media)}
               </span>
             </div>
