@@ -63,7 +63,10 @@ export const handler: Handler = async (event) => {
     select f.*
     from feed f
     join allowed_users u on u.user_id = f.user_id
-    order by f.likes_count desc, f.created_at desc
+    order by 
+      case when f.likes_count > 0 then 0 else 1 end,  -- Liked media first
+      f.likes_count desc,  -- Then by likes count
+      random()  -- Then shuffle the rest randomly
     limit $1 offset $2
   `;
 
