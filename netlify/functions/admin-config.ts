@@ -59,10 +59,10 @@ const adminConfigHandler: Handler = async (event) => {
       // Get credit statistics
       const creditStats = await q(`
         SELECT 
-          (SELECT SUM(credits) FROM users) as total_credits_in_system,
-          (SELECT COUNT(*) FROM users WHERE credits > 0) as users_with_credits,
-          (SELECT COUNT(*) FROM users WHERE credits = 0) as users_without_credits,
-          (SELECT AVG(credits) FROM users) as avg_credits_per_user
+          (SELECT SUM(credits) FROM user_credits) as total_credits_in_system,
+          (SELECT COUNT(*) FROM user_credits WHERE credits > 0) as users_with_credits,
+          (SELECT COUNT(*) FROM user_credits WHERE credits = 0 OR credits IS NULL) as users_without_credits,
+          (SELECT AVG(credits) FROM user_credits WHERE credits IS NOT NULL) as avg_credits_per_user
       `);
 
       // Get launch status
