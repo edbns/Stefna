@@ -28,7 +28,6 @@ async function createTestUsers() {
         id: userId,
         email: email,
         name: `Test User ${i}`,
-        tier: 'free',
         created_at: new Date().toISOString()
       });
     }
@@ -38,10 +37,9 @@ async function createTestUsers() {
     // Insert test users
     for (const user of testUsers) {
       await client.query(`
-        INSERT INTO users (id, email, name, tier, created_at)
-        VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (email) DO NOTHING
-      `, [user.id, user.email, user.name, user.tier, user.created_at]);
+        INSERT INTO users (id, email, name, created_at)
+        VALUES ($1, $2, $3, $4)
+      `, [user.id, user.email, user.name, user.created_at]);
     }
 
     // Create user credits for test users
@@ -49,7 +47,6 @@ async function createTestUsers() {
       await client.query(`
         INSERT INTO user_credits (user_id, credits, balance, updated_at)
         VALUES ($1, 30, 0, NOW())
-        ON CONFLICT (user_id) DO NOTHING
       `, [user.id]);
     }
 
