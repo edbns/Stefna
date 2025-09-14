@@ -49,16 +49,18 @@ interface AdminStats {
 
 interface PresetConfig {
   id: string
-  presetKey: string
-  name: string
-  description: string
-  strength: number
-  category: string
-  isEnabled: boolean
-  isCustom: boolean
-  metadata: any
-  createdAt: string
-  updatedAt: string
+  preset_key: string
+  preset_name: string
+  preset_description: string
+  preset_category: string
+  preset_prompt: string
+  preset_negative_prompt: string
+  preset_strength: number
+  preset_rotation_index: number
+  preset_week: number | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }
 
 const AdminDashboardScreen: React.FC = () => {
@@ -326,14 +328,14 @@ const AdminDashboardScreen: React.FC = () => {
         },
         body: JSON.stringify({
           id: presetId,
-          updates: { isEnabled }
+          updates: { isActive: isEnabled }
         })
       })
       
       if (response.ok) {
         // Update local state
         setPresets(prev => prev.map(preset => 
-          preset.id === presetId ? { ...preset, isEnabled } : preset
+          preset.id === presetId ? { ...preset, is_active: isEnabled } : preset
         ))
       }
     } catch (error) {
@@ -705,9 +707,9 @@ const AdminDashboardScreen: React.FC = () => {
   )
 
   const filteredPresets = presets.filter(preset => 
-    preset.name.toLowerCase().includes(presetSearchTerm.toLowerCase()) ||
-    preset.presetKey.toLowerCase().includes(presetSearchTerm.toLowerCase()) ||
-    preset.category.toLowerCase().includes(presetSearchTerm.toLowerCase())
+    preset.preset_name?.toLowerCase().includes(presetSearchTerm.toLowerCase()) ||
+    preset.preset_key?.toLowerCase().includes(presetSearchTerm.toLowerCase()) ||
+    preset.preset_category?.toLowerCase().includes(presetSearchTerm.toLowerCase())
   )
 
   // If not authenticated, show login screen
@@ -1147,25 +1149,25 @@ const AdminDashboardScreen: React.FC = () => {
                                   <tr key={preset.id} className="hover:bg-white/5">
                                     <td className="px-4 py-3">
                                       <div>
-                                        <div className="text-sm font-medium text-white">{preset.name}</div>
-                                        <div className="text-xs text-white/60">{preset.presetKey}</div>
-                                        {preset.description && (
-                                          <div className="text-xs text-white/40 mt-1">{preset.description}</div>
+                                        <div className="text-sm font-medium text-white">{preset.preset_name}</div>
+                                        <div className="text-xs text-white/60">{preset.preset_key}</div>
+                                        {preset.preset_description && (
+                                          <div className="text-xs text-white/40 mt-1">{preset.preset_description}</div>
                                         )}
                                       </div>
                                     </td>
                                     <td className="px-4 py-3">
                                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
-                                        {preset.category}
+                                        {preset.preset_category}
                                       </span>
                                     </td>
                                     <td className="px-4 py-3">
                                       <div className="flex items-center space-x-2">
-                                        <span className="text-sm text-white">{preset.strength}</span>
+                                        <span className="text-sm text-white">{preset.preset_strength}</span>
                                         <div className="w-16 bg-white/10 rounded-full h-2">
                                           <div 
                                             className="bg-white h-2 rounded-full transition-all duration-300"
-                                            style={{ width: `${Math.min(preset.strength * 100, 100)}%` }}
+                                            style={{ width: `${Math.min((preset.preset_strength || 1) * 100, 100)}%` }}
                                           ></div>
                                         </div>
                                       </div>
@@ -1173,18 +1175,18 @@ const AdminDashboardScreen: React.FC = () => {
                                     <td className="px-4 py-3">
                                       <div className="flex items-center space-x-2">
                                         <button
-                                          onClick={() => togglePreset(preset.id, !preset.isEnabled)}
+                                          onClick={() => togglePreset(preset.id, !preset.is_active)}
                                           className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                            preset.isEnabled
+                                            preset.is_active
                                               ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
                                               : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
                                           }`}
                                         >
-                                          {preset.isEnabled ? 'Enabled' : 'Disabled'}
+                                          {preset.is_active ? 'Enabled' : 'Disabled'}
                                         </button>
-                                        {preset.isCustom && (
+                                        {preset.preset_week && (
                                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400">
-                                            Custom
+                                            Week {preset.preset_week}
                                           </span>
                                         )}
                                       </div>
@@ -1200,7 +1202,7 @@ const AdminDashboardScreen: React.FC = () => {
                                         >
                                           Edit
                                         </button>
-                                        {preset.isCustom && (
+                                        {preset.preset_week && (
                                           <button
                                             onClick={() => deletePreset(preset.id)}
                                             className="px-3 py-1 rounded text-sm font-medium bg-white/5 text-white hover:bg-white/10 transition-colors"
