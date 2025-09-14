@@ -128,6 +128,8 @@ const AppContent: React.FC = () => {
               <Route path="/terms" element={<Navigate to="/" replace />} />
               <Route path="/cookies" element={<Navigate to="/" replace />} />
               <Route path="/coming-soon" element={<ComingSoonPage />} />
+              {/* Catch-all route for mobile - redirect any other route to home */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </>
           ) : (
             <>
