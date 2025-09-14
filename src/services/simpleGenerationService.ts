@@ -127,10 +127,12 @@ class SimpleGenerationService {
       try {
         result = await response.json();
         hasJsonBody = true;
+        console.log('🔍 [SimpleGeneration] Parsed JSON response:', JSON.stringify(result, null, 2));
       } catch (parseError) {
         // If we can't parse JSON, it might be an empty body (202 response) or a real error
         result = null;
         hasJsonBody = false;
+        console.log('❌ [SimpleGeneration] Failed to parse JSON response:', parseError);
       }
 
       // If this is a Netlify background function, it responds 202 with no body
@@ -142,6 +144,14 @@ class SimpleGenerationService {
       }
 
       // Check for early failure only if we have a JSON body and it indicates failure
+      console.log('🔍 [SimpleGeneration] Checking early failure conditions:', {
+        hasJsonBody,
+        hasResult: !!result,
+        success: result?.success,
+        status: result?.status,
+        error: result?.error
+      });
+      
       if (hasJsonBody && result && result.success === false && result.status === 'failed') {
         console.warn(`🚨 [SimpleGeneration] Early failure detected: ${result.error}`);
         console.warn(`🚨 [SimpleGeneration] Full failure response:`, JSON.stringify(result, null, 2));
@@ -149,6 +159,7 @@ class SimpleGenerationService {
         // Special handling for insufficient credits
         if (result.error && (result.error.includes('INSUFFICIENT_CREDITS') || result.error.includes('credits but only have'))) {
           console.log('🚨 [SimpleGeneration] Throwing INSUFFICIENT_CREDITS error for frontend handling');
+          console.log('🚨 [SimpleGeneration] About to throw INSUFFICIENT_CREDITS error to stop spinner');
           throw new Error('INSUFFICIENT_CREDITS');
         }
         
