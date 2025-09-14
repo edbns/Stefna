@@ -211,7 +211,7 @@ export const handler: Handler = async (event) => {
 
       // Create user credits
       await client.query(
-        'INSERT INTO user_credits (user_id, credits, balance) VALUES ($1, 30, 0)',
+        'INSERT INTO user_credits (user_id, credits, balance) VALUES ($1, 14, 0)',
         [userId]
       );
 

@@ -58,7 +58,7 @@ async function fixUserCredits() {
         INSERT INTO user_credits (user_id, credits, balance, created_at, updated_at)
         VALUES ($1, $2, $3, NOW(), NOW())
         ON CONFLICT (user_id) DO NOTHING
-      `, [user.id, 30, 0]); // 30 daily credits, 0 balance (can be earned through referrals)
+      `, [user.id, 14, 0]); // 14 daily credits, 0 balance (can be earned through referrals)
       
       console.log(`  ✓ Created credits for ${user.email}`);
     }

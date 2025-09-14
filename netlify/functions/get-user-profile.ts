@@ -76,11 +76,11 @@ export const handler: Handler = async (event) => {
         `, [userId])
       ]);
 
-      const balance = userCredits?.balance ?? 30; // Use balance (lifetime credits) or default to 30
+      const balance = userCredits?.balance ?? 14; // Use balance (lifetime credits) or default to 14
       
       // Get daily cap directly from database
       const dailyCapResult = await qOne(`SELECT value FROM app_config WHERE key = 'daily_cap'`);
-      const dailyCap = parseInt(dailyCapResult?.value || '30');
+      const dailyCap = parseInt(dailyCapResult?.value || '14');
 
       
 
@@ -94,7 +94,7 @@ export const handler: Handler = async (event) => {
         daily_cap: dailyCap,
         credits: { 
           balance,
-          daily: userCredits?.credits ?? 30 // Daily spending limit
+          daily: userCredits?.credits ?? 14 // Daily spending limit
         },
         media: {
           count: userMedia.length,

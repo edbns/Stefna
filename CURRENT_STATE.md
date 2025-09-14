@@ -119,7 +119,7 @@ Testing checklist after toggling providers:
 
 ## 💳 Credit System
 
-Each user gets 30 daily credits. Generation costs:
+Each user gets 14 daily credits (7 photos per day). Generation costs:
 - Standard generation: 2 credits
 - Neo Tokyo Glitch: 2 credits
 - Story Time (video): 2 credits

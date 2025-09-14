@@ -247,7 +247,7 @@ See what you can create → <a href="https://stefna.xyz" style="text-decoration:
     case 'referral_bonus':
       emailBody = `Nice work!
 
-You earned +50 credits for referring a friend to Stefna. They signed up and joined the fun.
+You earned +10 credits for referring a friend to Stefna. They signed up and joined the fun.
 
 Use your bonus now → <a href="https://stefna.xyz" style="text-decoration:underline;color:#fff;">Stefna</a>
 
@@ -269,7 +269,7 @@ Check your balance → <a href="https://stefna.xyz/profile" style="text-decorati
 
 Your friend invited you to try Stefna — the AI photo transformation studio that turns any selfie or Photo into cinematic magic.
 
-Join now and you'll receive +25 free credits to get started right away.
+Join now and you'll receive +10 free credits to get started right away.
 
 Claim your credits here:
 <a href="https://stefna.xyz/auth?ref=${data?.referrerEmail || ''}" style="text-decoration:underline;color:#fff;">Stefna</a>

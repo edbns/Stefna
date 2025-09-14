@@ -132,7 +132,7 @@ export const handler: Handler = async (event) => {
       }
       
       // Personal 24-hour reset based on account creation time
-      const dailyCredits = 30;
+      const dailyCredits = 14;
       const now = new Date();
       let currentBalance = (userCredits?.credits ?? 0);
       

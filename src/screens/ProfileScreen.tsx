@@ -697,16 +697,16 @@ const ProfileScreen: React.FC = () => {
             } else {
               // Fallback to client service
               // Token service removed - use credits from user
-              setTokenCount(30) // Default daily credits
+              setTokenCount(14) // Default daily credits
             }
           } catch {
             // Token service removed - use default values
-            setTokenCount(30) // Default daily credits
+            setTokenCount(14) // Default daily credits
           }
         } catch (error) {
           console.error('Failed to load referral stats or token count:', error)
-          // Simplified: all users get same daily limit (30)
-          setTokenCount(30)
+          // Simplified: all users get same daily limit (14)
+          setTokenCount(14)
         }
       } else {
         // Authentication status already set in initial useEffect
@@ -1784,11 +1784,11 @@ const ProfileScreen: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="bg-white/5 rounded-lg p-4 text-center">
                         <div className="text-white font-semibold mb-2 text-lg">You Get</div>
-                        <div className="text-white/60">+50 credits after friend's first media</div>
+                        <div className="text-white/60">+10 credits after friend's first media</div>
                       </div>
                       <div className="bg-white/5 rounded-lg p-4 text-center">
                         <div className="text-white font-semibold mb-2 text-lg">Friend Gets</div>
-                        <div className="text-white/60">+25 credits on signup</div>
+                        <div className="text-white/60">+10 credits on signup</div>
                       </div>
                     </div>
 

@@ -86,8 +86,8 @@ export const handler: Handler = async (event) => {
       userEmailValue
     });
 
-    // Calculate credits earned (50 credits per successful referral)
-    const creditsEarned = successfulSignups * 50;
+    // Calculate credits earned (10 credits per successful referral)
+    const creditsEarned = successfulSignups * 10;
 
     const stats = {
       referralCode: userEmailValue,

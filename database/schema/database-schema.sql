@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
 -- User credits table
 CREATE TABLE IF NOT EXISTS user_credits (
     user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    credits INTEGER DEFAULT 30,  -- Daily spending limit (resets daily)
+    credits INTEGER DEFAULT 14,  -- Daily spending limit (resets daily)
     balance INTEGER DEFAULT 0,   -- Total lifetime balance (for referral bonuses)
     created_at TIMESTAMPTZ(6) DEFAULT NOW(),
     updated_at TIMESTAMPTZ(6) DEFAULT NOW()
@@ -423,8 +423,8 @@ CREATE TRIGGER update_ai_generations_updated_at BEFORE UPDATE ON ai_generations 
 -- Insert default app configuration
 INSERT INTO app_config (key, value) VALUES 
     ('starter_grant', '30'),
-    ('referral_referrer_bonus', '50'),
-    ('referral_new_bonus', '25')
+    ('referral_referrer_bonus', '10'),
+    ('referral_new_bonus', '10')
 ON CONFLICT (key) DO NOTHING;
 
 -- Insert default presets

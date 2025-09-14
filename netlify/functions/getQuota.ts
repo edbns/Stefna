@@ -47,15 +47,15 @@ export const handler: Handler = async (event) => {
       // User doesn't have credits record, return default quota
       return json({
         ok: true,
-        dailyCredits: 30,
+        dailyCredits: 14,
         usedCredits: 0,
-        remainingCredits: 30,
+        remainingCredits: 14,
         dailyReset: new Date().toISOString().split('T')[0], // Today's date
-        message: 'New user - starting with 30 daily credits'
+        message: 'New user - starting with 14 daily credits'
       });
     }
 
-    const dailyCredits = 30; // Daily credit limit
+    const dailyCredits = 14; // Daily credit limit
     const currentCredits = userCredits.credits || 0;
     const usedCredits = Math.max(0, dailyCredits - currentCredits);
     const remainingCredits = Math.max(0, currentCredits);
@@ -72,7 +72,7 @@ export const handler: Handler = async (event) => {
       remaining: Math.max(0, remainingCredits),
       weekly_used: 0, // For compatibility with TokenService
       dailyReset: tomorrow.toISOString(),
-      currentBalance: currentCredits, // This should show the actual credits (28), not the limit (30)
+      currentBalance: currentCredits, // This should show the actual credits, not the limit (14)
       timestamp: now.toISOString()
     };
 

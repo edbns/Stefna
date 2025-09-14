@@ -167,8 +167,8 @@ const adminConfigHandler: Handler = async (event) => {
         // Credit Reset Info
         last_credit_reset: configMap.last_credit_reset,
         starter_grant: parseInt(configMap.starter_grant) || 30,
-        referral_referrer_bonus: parseInt(configMap.referral_referrer_bonus) || 50,
-        referral_new_bonus: parseInt(configMap.referral_new_bonus) || 25
+        referral_referrer_bonus: parseInt(configMap.referral_referrer_bonus) || 10,
+        referral_new_bonus: parseInt(configMap.referral_new_bonus) || 10
       }
 
       console.log(`✅ [Admin] Retrieved system configuration`)
@@ -194,13 +194,13 @@ const adminConfigHandler: Handler = async (event) => {
 
       switch (action) {
         case 'reset_daily_credits':
-          // Reset all users' daily credits to 30 in user_credits table
+          // Reset all users' daily credits to 14 in user_credits table
           const resetResult = await q(`
             UPDATE user_credits 
-            SET credits = 30, updated_at = NOW()
+            SET credits = 14, updated_at = NOW()
           `)
           
-          console.log(`✅ [Admin] Reset daily credits for users (set to 30) `)
+          console.log(`✅ [Admin] Reset daily credits for users (set to 14) `)
           return json({
             success: true,
             message: 'Daily credits reset successfully',

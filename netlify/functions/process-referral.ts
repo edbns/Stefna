@@ -95,8 +95,8 @@ export const handler: Handler = async (event) => {
     `, [referrerId, newUserId, newUserEmail]);
 
     // Use hardcoded bonus amounts since appConfig table doesn't exist
-    const refBonus = 50; // Referrer gets 50 credits
-    const newBonus = 25; // New user gets 25 credits
+    const refBonus = 10; // Referrer gets 10 credits
+    const newBonus = 10; // New user gets 10 credits
 
     // Grant to referrer
     const referrerCredits = await q(`
@@ -157,7 +157,7 @@ export const handler: Handler = async (event) => {
             subject: 'You earned bonus credits',
             text: `Nice work!
 
-You earned +50 credits for referring a friend to Stefna. They signed up and joined the fun.
+You earned +10 credits for referring a friend to Stefna. They signed up and joined the fun.
 
 Use your bonus now → Stefna
 

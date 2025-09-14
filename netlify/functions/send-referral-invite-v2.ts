@@ -143,7 +143,7 @@ export const handler: Handler = async (event) => {
         Your friend invited you to try Stefna — the AI photo transformation studio that turns any selfie or Photo into cinematic magic.
       </p>
       <p style="font-size:13px; line-height:1.6; margin:0 auto; max-width:90%;">
-        Join now and you'll receive +25 free credits to get started right away.
+        Join now and you'll receive +10 free credits to get started right away.
       </p>
       
       <div style="text-align:center; margin:20px 0;">
@@ -166,11 +166,11 @@ export const handler: Handler = async (event) => {
 </html>`,
       text: `Someone invited you to try Stefna — a new way to create high-quality AI images (and soon, videos).
 
-As a referred user, you get 25 bonus credits the moment you sign up.
+As a referred user, you get 10 bonus credits the moment you sign up.
 
-No subscriptions, no verification, just creative freedom with a daily 30 credit limit for everyone.
+No subscriptions, no verification, just creative freedom with a daily 14 credit limit for everyone.
 
-Use your 25 extra credits however you like — on top of your daily allowance.
+Use your 10 extra credits however you like — on top of your daily allowance.
 
 Join now and start creating:
 
