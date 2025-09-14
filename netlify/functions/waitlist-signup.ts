@@ -26,9 +26,8 @@ const waitlistSignup: Handler = async (event) => {
       return json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Add to waitlist
-    const result = await q('SELECT add_to_waitlist($1)', [email]);
-    const waitlistData = result[0];
+    // Add to waitlist (simple insert)
+    await q('INSERT INTO waitlist (email, created_at) VALUES ($1, NOW())', [email]);
 
     console.log(`✅ [Waitlist] New signup: ${email}`);
 
@@ -59,8 +58,7 @@ const waitlistSignup: Handler = async (event) => {
 
     return json({
       success: true,
-      message: 'Successfully joined the waitlist! Check your email for confirmation.',
-      position: waitlistData.position
+      message: 'Successfully joined the waitlist! Check your email for confirmation.'
     });
 
   } catch (error: any) {
