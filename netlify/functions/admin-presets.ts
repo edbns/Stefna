@@ -146,4 +146,6 @@ const adminPresetsHandler: Handler = async (event) => {
   }
 };
 
-export { withAdminSecurity(adminPresetsHandler) as handler };
+const handler = withAdminSecurity(adminPresetsHandler);
+
+export { handler };
