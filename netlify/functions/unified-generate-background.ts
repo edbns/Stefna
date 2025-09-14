@@ -143,10 +143,10 @@ async function convertTo3D(imageUrl: string): Promise<any> {
     
     // Convert binary to base64 for Cloudinary upload
     const base64 = Buffer.from(glbBuffer).toString('base64');
-    const dataUrl = `data:model/gltf-binary;base64,${base64}`;
+    const dataUrl = `data:application/octet-stream;base64,${base64}`;
     
-    // Upload GLB to Cloudinary
-    const cloudinaryUrl = await uploadBase64ToCloudinary(dataUrl);
+    // Upload GLB to Cloudinary as raw file
+    const cloudinaryUrl = await uploadRawToCloudinary(dataUrl, 'glb');
     console.log(`✅ [3D] GLB uploaded to Cloudinary: ${cloudinaryUrl}`);
     
     return {
@@ -731,6 +731,60 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
     console.error('❌ [Background] Cloudinary signed upload error:', error);
     // Send immediate alert for Cloudinary failures
     await sendImmediateAlert('cloudinary', error.message, 'Cloudinary signed upload failed');
+    throw error;
+  }
+}
+
+// Upload raw files (like GLB) to Cloudinary
+async function uploadRawToCloudinary(dataUrl: string, fileExtension: string): Promise<string> {
+  try {
+    console.log(`☁️ [Cloudinary] Starting signed upload for raw file (.${fileExtension})`);
+
+    // Get signed upload parameters
+    const signUrl = process.env.URL ? `${process.env.URL}/.netlify/functions/cloudinary-sign` : 'https://stefna.xyz/.netlify/functions/cloudinary-sign';
+    
+    const signResponse = await fetch(signUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resource_type: 'raw' }),
+      signal: AbortSignal.timeout(10000)
+    });
+
+    if (!signResponse.ok) {
+      throw new Error(`Sign request failed: ${signResponse.status}`);
+    }
+
+    const signData = await signResponse.json();
+    console.log(`🔐 [Cloudinary] Got signed upload parameters for raw file`);
+
+    // Upload with signed parameters
+    const formData = new FormData();
+    formData.append('file', dataUrl);
+    formData.append('timestamp', signData.timestamp);
+    formData.append('signature', signData.signature);
+    formData.append('api_key', signData.apiKey);
+    formData.append('folder', 'stefna/generated');
+    formData.append('resource_type', 'raw');
+
+    const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${signData.cloudName}/raw/upload`, {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(30000)
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      throw new Error(`Cloudinary upload failed: ${uploadResponse.status} - ${errorText}`);
+    }
+
+    const result = await uploadResponse.json();
+    console.log(`✅ [Cloudinary] Raw file upload successful: ${result.secure_url}`);
+    return result.secure_url;
+
+  } catch (error: any) {
+    console.error('❌ [Background] Cloudinary raw upload error:', error);
+    // Send immediate alert for Cloudinary failures
+    await sendImmediateAlert('cloudinary', error.message, 'Cloudinary raw upload failed');
     throw error;
   }
 }
