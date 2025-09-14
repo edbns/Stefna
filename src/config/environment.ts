@@ -69,7 +69,7 @@ class EnvironmentService {
     
     console.log('✅ Fal.ai API key found:', falApiKey ? 'Configured' : 'Missing')
     
-    // Note: Supabase configuration is no longer required since we use Neon backend
+    // Note: Database configuration uses Neon backend
     // All database operations now go through our Netlify functions
     
     // In development mode, always allow generation
