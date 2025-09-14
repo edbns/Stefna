@@ -26,6 +26,8 @@ export interface SimpleGenerationRequest {
   ipaThreshold?: number;
   ipaRetries?: number;
   ipaBlocking?: boolean;
+  // 3D Generation parameters
+  enable3D?: boolean;
 }
 
 export interface SimpleGenerationResult {
@@ -327,7 +329,9 @@ class SimpleGenerationService {
       // IPA parameters
       ipaThreshold: request.ipaThreshold,
       ipaRetries: request.ipaRetries,
-      ipaBlocking: request.ipaBlocking
+      ipaBlocking: request.ipaBlocking,
+      // 3D parameters
+      enable3D: request.enable3D
     };
 
     // Add mode-specific parameters

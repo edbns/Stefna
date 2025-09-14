@@ -2185,6 +2185,8 @@ const HomeNew: React.FC = () => {
       storyTimePresetId?: string;
       editImages?: string[];
       editPrompt?: string;
+      // 3D Generation parameters
+      enable3D?: boolean;
       // sourceUrl and originalPrompt removed - no more remix functionality
     }
   ) {
@@ -2660,7 +2662,9 @@ const HomeNew: React.FC = () => {
         // IPA (Identity Preservation Analysis) parameters
         ipaThreshold: generationMeta?.ipaThreshold || 0.7, // 70% similarity required (increased from 65%)
         ipaRetries: generationMeta?.ipaRetries || 3, // 3 retry attempts (increased from 2)
-        ipaBlocking: generationMeta?.ipaBlocking || true // Block if IPA fails
+        ipaBlocking: generationMeta?.ipaBlocking || true, // Block if IPA fails
+        // 3D Generation parameters
+        enable3D: options?.enable3D || false
       });
           
       console.log('✅ [Unified] Service result:', result);
@@ -3104,7 +3108,8 @@ const HomeNew: React.FC = () => {
     
     // Generate with ONLY the selected Unreal Reflection variant - no other contamination
     await dispatchGenerate('unrealreflection', {
-      unrealReflectionPresetId: selectedUnrealReflectionPreset
+      unrealReflectionPresetId: selectedUnrealReflectionPreset,
+      enable3D: isUnrealReflection3DEnabled
     });
     
     // Clear composer after successful generation
