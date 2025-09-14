@@ -1586,6 +1586,7 @@ const AdminDashboardScreen: React.FC = () => {
                                         method: 'PUT',
                                         headers: {
                                           'Content-Type': 'application/json',
+                                          'X-Admin-Secret': adminSecret
                                         },
                                         body: JSON.stringify({
                                           action: 'toggle_launch',
