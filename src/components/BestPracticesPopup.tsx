@@ -1,19 +1,37 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 
 export default function BestPracticesPopup() {
   const [open, setOpen] = useState(false)
+  const popupRef = useRef<HTMLDivElement>(null)
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [open])
 
   return (
-    <div className="fixed bottom-4 left-4 z-50">
+    <div className="fixed bottom-4 left-4 z-50" ref={popupRef}>
       <button
-        className="text-xs px-3 py-1 border border-white text-white bg-black/60 hover:bg-black transition rounded"
-        onClick={() => setOpen(true)}
+        className="text-xs px-3 py-1 text-white bg-gray-700 hover:bg-gray-600 transition rounded"
+        onClick={() => setOpen(!open)}
       >
         Best Practices
       </button>
 
       {open && (
-        <div className="absolute bottom-10 left-0 w-[320px] max-w-[90vw] bg-[#111] text-white border border-[#333] rounded-xl p-4 shadow-lg">
+        <div className="absolute bottom-10 left-0 w-[320px] max-w-[90vw] bg-gray-800 text-white rounded-xl p-4 shadow-lg">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-sm font-semibold">Best Results Guide</h2>
             <button
