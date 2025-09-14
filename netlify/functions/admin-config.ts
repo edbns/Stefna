@@ -293,18 +293,25 @@ const adminConfigHandler: Handler = async (event) => {
           const launchResult = await q('SELECT * FROM update_launch_status($1::boolean)', [is_launched.toString()]);
           
           // If launching, send notifications to waitlist
+          let waitlistEmails: any[] = [];
+          let successCount = 0;
+          let failCount = 0;
+          
           if (is_launched) {
             try {
-              const waitlistEmails = await q('SELECT email FROM waitlist ORDER BY created_at ASC');
+              waitlistEmails = await q('SELECT email FROM waitlist ORDER BY created_at ASC');
               
               // Send launch emails to waitlist (in batches to avoid rate limits)
               const batchSize = 10;
+              
               for (let i = 0; i < waitlistEmails.length; i += batchSize) {
                 const batch = waitlistEmails.slice(i, i + batchSize);
+                console.log(`📧 [Admin] Processing batch ${Math.floor(i/batchSize) + 1}: ${batch.length} emails`);
                 
-                await Promise.all(batch.map(async (row: any) => {
+                const batchResults = await Promise.allSettled(batch.map(async (row: any) => {
                   try {
-                    await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/sendEmail`, {
+                    console.log(`📧 [Admin] Sending launch email to: ${row.email}`);
+                    const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/sendEmail`, {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
@@ -316,10 +323,30 @@ const adminConfigHandler: Handler = async (event) => {
                         text: 'Launch notification email'
                       }),
                     });
+                    
+                    if (!response.ok) {
+                      const errorText = await response.text();
+                      throw new Error(`HTTP ${response.status}: ${errorText}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log(`✅ [Admin] Launch email sent successfully to ${row.email}:`, result.emailId);
+                    return { email: row.email, success: true };
                   } catch (emailError) {
-                    console.error(`Failed to send launch email to ${row.email}:`, emailError);
+                    const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
+                    console.error(`❌ [Admin] Failed to send launch email to ${row.email}:`, emailError);
+                    return { email: row.email, success: false, error: errorMessage };
                   }
                 }));
+                
+                // Count results
+                batchResults.forEach(result => {
+                  if (result.status === 'fulfilled' && result.value.success) {
+                    successCount++;
+                  } else {
+                    failCount++;
+                  }
+                });
                 
                 // Small delay between batches
                 if (i + batchSize < waitlistEmails.length) {
@@ -327,7 +354,7 @@ const adminConfigHandler: Handler = async (event) => {
                 }
               }
               
-              console.log(`📧 [Admin] Sent launch notifications to ${waitlistEmails.length} waitlist users`);
+              console.log(`📧 [Admin] Launch notification results: ${successCount} sent, ${failCount} failed out of ${waitlistEmails.length} total`);
             } catch (notificationError) {
               console.error('Failed to send launch notifications:', notificationError);
               // Don't fail the launch if notifications fail
@@ -338,7 +365,14 @@ const adminConfigHandler: Handler = async (event) => {
           return json({
             success: true,
             message: is_launched ? 'Site launched successfully!' : 'Site reverted to coming soon',
-            launchStatus: launchResult[0]
+            launchStatus: launchResult[0],
+            ...(is_launched && { 
+              notifications: {
+                total: waitlistEmails?.length || 0,
+                sent: successCount || 0,
+                failed: failCount || 0
+              }
+            })
           });
 
         default:
