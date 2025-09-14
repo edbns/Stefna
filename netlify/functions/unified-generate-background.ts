@@ -137,10 +137,23 @@ async function convertTo3D(imageUrl: string): Promise<any> {
       return null;
     }
 
-    const result = await response.json();
-    console.log(`✅ [3D] 3D generation successful. Keys: ${Object.keys(result).join(', ')}`);
+    // Handle binary GLB response - don't parse as JSON
+    const glbBuffer = await response.arrayBuffer();
+    console.log(`✅ [3D] 3D generation successful. GLB size: ${glbBuffer.byteLength} bytes`);
     
-    return result;
+    // Convert binary to base64 for Cloudinary upload
+    const base64 = Buffer.from(glbBuffer).toString('base64');
+    const dataUrl = `data:model/gltf-binary;base64,${base64}`;
+    
+    // Upload GLB to Cloudinary
+    const cloudinaryUrl = await uploadBase64ToCloudinary(dataUrl);
+    console.log(`✅ [3D] GLB uploaded to Cloudinary: ${cloudinaryUrl}`);
+    
+    return {
+      gltf_url: cloudinaryUrl,
+      file_size: glbBuffer.byteLength,
+      format: 'glb'
+    };
 
   } catch (error) {
     console.error('❌ [3D] 3D generation error:', error);
