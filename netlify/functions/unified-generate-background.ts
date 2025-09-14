@@ -182,7 +182,9 @@ async function generateVideo(imageUrl: string): Promise<any> {
     };
 
     console.log('🎬 [Video] Trying Veo3 fast model...');
-    let result = await falInvoke('fal-ai/veo3/fast/image-to-video', fastVideoInput);
+    let result = await falInvoke('fal-ai/veo3/fast/image-to-video', fastVideoInput, {
+      timeout: 120000 // 2 minutes timeout for video generation
+    });
     
     if (result && result.video_url) {
       console.log('✅ [Video] Veo3 fast generation successful');
@@ -195,7 +197,9 @@ async function generateVideo(imageUrl: string): Promise<any> {
 
     // Fallback to regular Veo3 (4 credits)
     console.log('🎬 [Video] Fast model failed, trying regular Veo3...');
-    result = await falInvoke('fal-ai/veo3/image-to-video', fastVideoInput);
+    result = await falInvoke('fal-ai/veo3/image-to-video', fastVideoInput, {
+      timeout: 120000 // 2 minutes timeout for video generation
+    });
     
     if (result && result.video_url) {
       console.log('✅ [Video] Veo3 generation successful');
