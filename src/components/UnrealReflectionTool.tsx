@@ -35,7 +35,7 @@ export const UnrealReflectionTool = () => {
           
           setMaskData(maskDataUrl);
           setOriginalImage(URL.createObjectURL(file));
-          console.log('Emotion Mask ready:', maskDataUrl);
+          console.log('Unreal Reflection Mask ready:', maskDataUrl);
         } catch (maskError) {
           setError(`Mask generation failed: ${maskError}`);
           console.error('Mask generation error:', maskError);
@@ -115,7 +115,7 @@ export const UnrealReflectionTool = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">🎭 Emotion Mask v2.0</h2>
+      <h2 className="text-2xl font-bold mb-6">🎭 Unreal Reflection Tool</h2>
       
       {/* File Input */}
       <div className="mb-6">
@@ -238,7 +238,7 @@ export const UnrealReflectionTool = () => {
             <h3 className="text-lg font-semibold mb-2">Generated Mask</h3>
             <img 
               src={maskData} 
-              alt="Emotion Mask" 
+              alt="Unreal Reflection Mask" 
               className="w-full h-auto rounded-lg border border-gray-200 bg-gray-100"
             />
           </div>
