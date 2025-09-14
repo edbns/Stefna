@@ -22,7 +22,7 @@ export default function BestPracticesPopup() {
   }, [open])
 
   return (
-    <div className="fixed bottom-4 left-4 z-50" ref={popupRef}>
+    <div className="fixed bottom-4 left-4 z-50 hidden md:block" ref={popupRef}>
       <button
         className="text-xs px-3 py-1 text-white bg-gray-700 hover:bg-gray-600 transition rounded"
         onClick={() => setOpen(!open)}
