@@ -44,11 +44,11 @@ const AuthScreen: React.FC = () => {
         return
       }
 
-      if (!quotaData.canSignUp) {
-        setError('Beta quota reached. Please join our waitlist for the next batch.')
-        setQuotaReached(true)
-        return
-      }
+          if (!quotaData.canSignUp) {
+            setError('Beta full. Join the waitlist to be first in line for the next drop.')
+            setQuotaReached(true)
+            return
+          }
 
       // If quota check passes, proceed with OTP request
       const response = await fetch('/.netlify/functions/request-otp', {

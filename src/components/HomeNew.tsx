@@ -3586,7 +3586,7 @@ const HomeNew: React.FC = () => {
                 className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-gray-100 hover:scale-105 relative overflow-hidden"
                 aria-label="Join Waitlist"
               >
-                <span className="text-sm font-medium relative z-10">Beta full. Join the waitlist to be first in line for the next drop</span>
+                <span className="text-sm font-medium relative z-10">Join Waitlist</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
               </button>
             )}
