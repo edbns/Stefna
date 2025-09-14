@@ -87,32 +87,32 @@ export const handler: Handler = async (event) => {
       try {
         // Check if preset already exists
         const existing = await q(`
-          SELECT id FROM preset_config WHERE preset_key = $1
+          SELECT id FROM presets_config WHERE preset_key = $1
         `, [preset.preset_key]);
 
         if (existing && existing.length > 0) {
           // Update existing preset
           await q(`
-            UPDATE preset_config 
-            SET name = $1, description = $2, strength = $3, category = $4, 
-                is_active = $5, metadata = $6, updated_at = NOW()
-            WHERE preset_key = $7
+            UPDATE presets_config 
+            SET preset_name = $1, preset_description = $2, preset_strength = $3, preset_category = $4, 
+                is_active = $5, preset_prompt = $6, preset_negative_prompt = $7, updated_at = NOW()
+            WHERE preset_key = $8
           `, [
-            preset.name, preset.description, preset.strength, preset.category,
-            preset.is_active ? 1 : 0, JSON.stringify(preset.metadata), preset.preset_key
+            preset.preset_name, preset.preset_description, preset.preset_strength, preset.preset_category,
+            preset.is_active, preset.preset_prompt || '', preset.preset_negative_prompt || '', preset.preset_key
           ]);
           updatedCount++;
           console.log(`✏️ [Admin] Updated preset: ${preset.preset_key}`);
         } else {
           // Create new preset
           const created = await q(`
-            INSERT INTO preset_config (preset_key, name, description, strength, category, 
-                                     is_active, metadata, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+            INSERT INTO presets_config (preset_key, preset_name, preset_description, preset_strength, preset_category, 
+                                     is_active, preset_prompt, preset_negative_prompt, preset_rotation_index, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
             RETURNING id
           `, [
-            preset.preset_key, preset.name, preset.description, preset.strength,
-            preset.category, preset.is_active ? 1 : 0, JSON.stringify(preset.metadata)
+            preset.preset_key, preset.preset_name, preset.preset_description, preset.preset_strength,
+            preset.preset_category, preset.is_active, preset.preset_prompt || '', preset.preset_negative_prompt || '', 0
           ]);
           
           if (created && created.length > 0) {

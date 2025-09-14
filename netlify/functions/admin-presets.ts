@@ -26,10 +26,11 @@ const adminPresetsHandler: Handler = async (event) => {
       
       try {
         const presets = await q(`
-          SELECT id, preset_key, name, description, strength, category, is_enabled, is_custom, 
-                 metadata::text as metadata_text, created_at, updated_at
-          FROM preset_config 
-          ORDER BY category ASC, name ASC
+          SELECT id, preset_key, preset_name, preset_description, preset_category, 
+                 preset_prompt, preset_negative_prompt, preset_strength, 
+                 preset_rotation_index, preset_week, is_active, created_at, updated_at
+          FROM presets_config 
+          ORDER BY preset_category ASC, preset_name ASC
         `);
 
         console.log(`✅ [Admin] Retrieved ${presets.length} preset configurations`)
@@ -49,19 +50,32 @@ const adminPresetsHandler: Handler = async (event) => {
     } else if (event.httpMethod === 'POST') {
       // Create new preset configuration
       const body = JSON.parse(event.body || '{}')
-      const { presetKey, name, description, strength, category, metadata } = body
+      const { presetKey, presetName, presetDescription, presetCategory, presetPrompt, presetNegativePrompt, presetStrength, presetWeek } = body
 
-      if (!presetKey || !name) {
-        return json({ error: 'Preset key and name are required' }, { status: 400 })
+      if (!presetKey || !presetName || !presetPrompt) {
+        return json({ error: 'Preset key, name, and prompt are required' }, { status: 400 })
       }
 
       console.log(`➕ [Admin] Creating new preset: ${presetKey}`)
 
       const newPreset = await q(`
-        INSERT INTO preset_config (preset_key, name, description, strength, category, is_enabled, is_custom, metadata, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+        INSERT INTO presets_config (preset_key, preset_name, preset_description, preset_category, 
+                                   preset_prompt, preset_negative_prompt, preset_strength, 
+                                   preset_rotation_index, preset_week, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
         RETURNING *
-      `, [presetKey, name, description || '', strength || 1.0, category || 'custom', true, true, JSON.stringify(metadata || {})]);
+      `, [
+        presetKey, 
+        presetName, 
+        presetDescription || '', 
+        presetCategory || 'custom', 
+        presetPrompt,
+        presetNegativePrompt || '',
+        presetStrength || 1.0,
+        0, // preset_rotation_index - default to 0
+        presetWeek || null,
+        true // is_active - default to true
+      ]);
 
       if (!newPreset || newPreset.length === 0) {
         throw new Error('Failed to create preset');
@@ -86,20 +100,27 @@ const adminPresetsHandler: Handler = async (event) => {
 
       console.log(`✏️ [Admin] Updating preset: ${id}`)
 
-      // Build dynamic UPDATE query with proper JSONB handling
+      // Build dynamic UPDATE query - map field names to actual column names
+      const fieldMapping: { [key: string]: string } = {
+        'name': 'preset_name',
+        'description': 'preset_description',
+        'category': 'preset_category',
+        'prompt': 'preset_prompt',
+        'negativePrompt': 'preset_negative_prompt',
+        'strength': 'preset_strength',
+        'week': 'preset_week',
+        'isActive': 'is_active'
+      };
+
       const updateFields = Object.keys(updates).map((key, index) => {
-        return `${key} = $${index + 2}`;
+        const columnName = fieldMapping[key] || key;
+        return `${columnName} = $${index + 2}`;
       }).join(', ');
       
-      const updateValues = Object.values(updates).map(value => {
-        if (typeof value === 'object' && value !== null) {
-          return JSON.stringify(value);
-        }
-        return value;
-      });
+      const updateValues = Object.values(updates);
       
       const updatedPreset = await q(`
-        UPDATE preset_config 
+        UPDATE presets_config 
         SET ${updateFields}, updated_at = NOW()
         WHERE id = $1
         RETURNING *
@@ -129,7 +150,7 @@ const adminPresetsHandler: Handler = async (event) => {
       console.log(`🗑️ [Admin] Deleting preset: ${id}`)
 
       const result = await q(`
-        DELETE FROM preset_config WHERE id = $1
+        DELETE FROM presets_config WHERE id = $1
       `, [id]);
 
       console.log(`✅ [Admin] Deleted preset: ${id}`)
