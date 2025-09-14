@@ -29,6 +29,11 @@ export interface UserMedia {
   // allowRemix removed
   visibility?: 'public' | 'private' // New: explicit visibility field
   tags: string[]
+  // 3D model fields
+  obj_url?: string;
+  gltf_url?: string;
+  texture_url?: string;
+  model_3d_metadata?: any;
   metadata: {
     quality: 'standard' | 'high'
     generationTime: number

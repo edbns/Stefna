@@ -138,13 +138,20 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
             </div>
 
             {/* Tag - Bottom Left (inside media frame) */}
-            <div className="absolute bottom-2 left-2 z-30">
+            <div className="absolute bottom-2 left-2 z-30 flex gap-1">
               <PresetTag 
                 item={current} 
                 presetKey={current.metadata?.presetKey || current.presetKey}
                 onClick={() => {}} 
                 className="bg-black/70 backdrop-blur-sm"
               />
+              
+              {/* 3D Tag - Show if media has 3D model */}
+              {(current.obj_url || current.gltf_url) && (
+                <div className="px-2 py-1 bg-blue-500/80 backdrop-blur-sm rounded text-white text-xs font-medium">
+                  3D
+                </div>
+              )}
             </div>
 
             {/* Like Button - Bottom Right (inside media frame) */}

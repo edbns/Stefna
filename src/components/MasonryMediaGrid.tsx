@@ -260,7 +260,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                       <>
 
                         {/* Preset Tag */}
-                        <div className="absolute bottom-2 left-2">
+                        <div className="absolute bottom-2 left-2 flex gap-1">
                           <PresetTag 
                             presetKey={item.metadata?.presetKey || item.presetKey} 
                             type={item.metadata?.presetType || item.type}
@@ -288,6 +288,13 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                               }
                             }}
                           />
+                          
+                          {/* 3D Tag - Show if media has 3D model */}
+                          {(item.obj_url || item.gltf_url) && (
+                            <div className="px-2 py-1 bg-blue-500/80 backdrop-blur-sm rounded text-white text-xs font-medium">
+                              3D
+                            </div>
+                          )}
                         </div>
 
                         {/* Actions - Bottom */}
