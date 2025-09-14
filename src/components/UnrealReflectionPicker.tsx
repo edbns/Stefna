@@ -6,7 +6,7 @@ interface UnrealReflectionPickerProps {
   value?: string;
   onChange?: (id: string) => void;
   disabled?: boolean;
-  on3DToggle?: (enabled: boolean) => void;
+  onVideoToggle?: (enabled: boolean) => void;
 }
 
 export function UnrealReflectionPicker({
@@ -14,30 +14,30 @@ export function UnrealReflectionPicker({
   value,
   onChange,
   disabled = false,
-  on3DToggle,
+  onVideoToggle,
 }: UnrealReflectionPickerProps) {
-  const [is3DEnabled, setIs3DEnabled] = useState(false);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
 
-  const handle3DToggle = () => {
-    const newState = !is3DEnabled;
-    setIs3DEnabled(newState);
-    on3DToggle?.(newState);
+  const handleVideoToggle = () => {
+    const newState = !isVideoEnabled;
+    setIsVideoEnabled(newState);
+    onVideoToggle?.(newState);
   };
 
   return (
     <div className="rounded-xl shadow-2xl p-3 w-80" style={{ backgroundColor: '#333333' }}>
       <div className="space-y-2">
-        {/* 3D Generation Option - Simple Dark Gray Button */}
+        {/* Video Generation Option - Simple Dark Gray Button */}
         <button
-          onClick={handle3DToggle}
+          onClick={handleVideoToggle}
           className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
-            is3DEnabled 
+            isVideoEnabled 
               ? 'bg-white text-black' 
-              : 'bg-gray-600 text-white hover:bg-gray-500 3d-shimmer'
+              : 'bg-gray-600 text-white hover:bg-gray-500 video-shimmer'
           }`}
           disabled={disabled}
         >
-          <span>{is3DEnabled ? '3D Enabled' : 'Enable 3D'}</span>
+          <span>{isVideoEnabled ? 'Video Enabled' : 'Generate Video'}</span>
         </button>
         
         {/* Separator */}

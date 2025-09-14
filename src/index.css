@@ -242,15 +242,15 @@ body {
   animation: beta-shimmer 2s ease-in-out infinite;
 }
 
-/* 3D button shimmer animation */
-@keyframes 3d-shimmer {
+/* Video button shimmer animation */
+@keyframes video-shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-.3d-shimmer {
+.video-shimmer {
   background: linear-gradient(90deg, #4a5568, #6b7280, #4a5568);
   background-size: 200% 100%;
-  animation: 3d-shimmer 3s ease-in-out infinite;
+  animation: video-shimmer 3s ease-in-out infinite;
 }
 
 /* Navigation Alignment Fixes */

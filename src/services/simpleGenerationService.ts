@@ -26,9 +26,9 @@ export interface SimpleGenerationRequest {
   ipaThreshold?: number;
   ipaRetries?: number;
   ipaBlocking?: boolean;
-  // 3D Generation parameters
-  enable3D?: boolean;
-  for3D?: boolean; // Use 3D-friendly prompt for better 3D results
+  // Video Generation parameters
+  enableVideo?: boolean;
+  forVideo?: boolean; // Use video-friendly prompt for better video results
 }
 
 export interface SimpleGenerationResult {
@@ -342,9 +342,9 @@ class SimpleGenerationService {
       ipaThreshold: request.ipaThreshold,
       ipaRetries: request.ipaRetries,
       ipaBlocking: request.ipaBlocking,
-      // 3D parameters
-      enable3D: request.enable3D,
-      for3D: request.for3D
+      // Video parameters
+      enableVideo: request.enableVideo,
+      forVideo: request.forVideo
     };
 
     // Add mode-specific parameters

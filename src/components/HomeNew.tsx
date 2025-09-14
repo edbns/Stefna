@@ -310,7 +310,7 @@ const HomeNew: React.FC = () => {
     setSelectedUnrealReflectionPreset(null)
     setSelectedGhibliReactionPreset(null)
     setSelectedNeoTokyoGlitchPreset(null)
-    setIsUnrealReflection3DEnabled(false)
+    setIsUnrealReflectionVideoEnabled(false)
     setSelectedMode(null)
     setIsVideoPreview(false)
     setIsGenerating(false)
@@ -713,7 +713,7 @@ const HomeNew: React.FC = () => {
   // MoodMorph removed - replaced with Anime Filters
   const [selectedUnrealReflectionPreset, setSelectedUnrealReflectionPreset] = useState<string | null>(null)
   const [unrealReflectionDropdownOpen, setUnrealReflectionDropdownOpen] = useState(false)
-  const [isUnrealReflection3DEnabled, setIsUnrealReflection3DEnabled] = useState(false)
+  const [isUnrealReflectionVideoEnabled, setIsUnrealReflectionVideoEnabled] = useState(false)
   const [selectedGhibliReactionPreset, setSelectedGhibliReactionPreset] = useState<string | null>(null)
   const [ghibliReactionDropdownOpen, setGhibliReactionDropdownOpen] = useState(false)
   const [selectedNeoTokyoGlitchPreset, setSelectedNeoTokyoGlitchPreset] = useState<string | null>(null)
@@ -2185,9 +2185,9 @@ const HomeNew: React.FC = () => {
       storyTimePresetId?: string;
       editImages?: string[];
       editPrompt?: string;
-      // 3D Generation parameters
-      enable3D?: boolean;
-      for3D?: boolean; // Use 3D-friendly prompt for better 3D results
+      // Video Generation parameters
+    enableVideo?: boolean;
+    forVideo?: boolean; // Use video-friendly prompt for better video results
       // sourceUrl and originalPrompt removed - no more remix functionality
     }
   ) {
@@ -2380,7 +2380,7 @@ const HomeNew: React.FC = () => {
         image_prompt_strength: unrealReflectionPreset.image_prompt_strength, // Use preset image strength
         aspect_ratio: unrealReflectionPreset.aspect_ratio, // Use preset aspect ratio
         generation_type: "unreal_reflection_strict_ipa", // Strict identity preservation
-        ipaThreshold: isUnrealReflection3DEnabled ? 0.65 : 0.75, // Lower threshold for 3D mode (stylized transformations)
+        ipaThreshold: isUnrealReflectionVideoEnabled ? 0.65 : 0.75, // Lower threshold for video mode (stylized transformations)
         ipaRetries: 3, // Aggressive fallback
         ipaBlocking: true // Must pass to proceed
       };
@@ -2664,9 +2664,9 @@ const HomeNew: React.FC = () => {
         ipaThreshold: generationMeta?.ipaThreshold || 0.7, // 70% similarity required (increased from 65%)
         ipaRetries: generationMeta?.ipaRetries || 3, // 3 retry attempts (increased from 2)
         ipaBlocking: generationMeta?.ipaBlocking || true, // Block if IPA fails
-        // 3D Generation parameters
-        enable3D: options?.enable3D || false,
-        for3D: options?.for3D || false // Use 3D-friendly prompt when 3D is enabled
+        // Video Generation parameters
+        enableVideo: options?.enableVideo || false,
+        forVideo: options?.forVideo || false // Use video-friendly prompt when video is enabled
       });
           
       console.log('✅ [Unified] Service result:', result);
@@ -3111,8 +3111,8 @@ const HomeNew: React.FC = () => {
     // Generate with ONLY the selected Unreal Reflection variant - no other contamination
     await dispatchGenerate('unrealreflection', {
       unrealReflectionPresetId: selectedUnrealReflectionPreset,
-      enable3D: isUnrealReflection3DEnabled,
-      for3D: isUnrealReflection3DEnabled // Use 3D-friendly prompt when 3D is enabled
+      enableVideo: isUnrealReflectionVideoEnabled,
+      forVideo: isUnrealReflectionVideoEnabled // Use video-friendly prompt when video is enabled
     });
     
     // Clear composer after successful generation
@@ -4031,9 +4031,9 @@ const HomeNew: React.FC = () => {
                       <div className="absolute bottom-full left-0 mb-2 z-50">
                         <UnrealReflectionPicker
                           value={selectedUnrealReflectionPreset || undefined}
-                          on3DToggle={(enabled) => {
-                            setIsUnrealReflection3DEnabled(enabled);
-                            console.log('3D enabled for Unreal Reflection:', enabled);
+                          onVideoToggle={(enabled) => {
+                            setIsUnrealReflectionVideoEnabled(enabled);
+                            console.log('Video enabled for Unreal Reflection:', enabled);
                           }}
                             onChange={async (presetId) => {
                             setSelectedUnrealReflectionPreset(presetId || null)
@@ -4045,8 +4045,8 @@ const HomeNew: React.FC = () => {
                                 try {
                                 await dispatchGenerate('unrealreflection', {
                                   unrealReflectionPresetId: presetId,
-                                  enable3D: isUnrealReflection3DEnabled,
-                                  for3D: isUnrealReflection3DEnabled // Use 3D-friendly prompt when 3D is enabled
+                                  enableVideo: isUnrealReflectionVideoEnabled,
+                                  forVideo: isUnrealReflectionVideoEnabled // Use video-friendly prompt when video is enabled
                                   })
                                 // Clear composer after successful generation
                                 setTimeout(() => {
