@@ -2379,7 +2379,7 @@ const HomeNew: React.FC = () => {
         image_prompt_strength: unrealReflectionPreset.image_prompt_strength, // Use preset image strength
         aspect_ratio: unrealReflectionPreset.aspect_ratio, // Use preset aspect ratio
         generation_type: "unreal_reflection_strict_ipa", // Strict identity preservation
-        ipaThreshold: 0.75, // High similarity required for Neo Tokyo Glitch
+        ipaThreshold: isUnrealReflection3DEnabled ? 0.65 : 0.75, // Lower threshold for 3D mode (stylized transformations)
         ipaRetries: 3, // Aggressive fallback
         ipaBlocking: true // Must pass to proceed
       };

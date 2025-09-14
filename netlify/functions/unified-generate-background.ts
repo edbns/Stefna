@@ -33,7 +33,11 @@ Time: ${new Date().toLocaleString()}
 Dashboard: https://stefna.xyz/dashboard/management/control
 `
 
-    await fetch('/.netlify/functions/sendEmail', {
+    const sendEmailUrl = process.env.URL 
+      ? `${process.env.URL}/.netlify/functions/sendEmail`
+      : 'https://stefna.xyz/.netlify/functions/sendEmail';
+    
+    await fetch(sendEmailUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -141,12 +145,8 @@ async function convertTo3D(imageUrl: string): Promise<any> {
     const glbBuffer = await response.arrayBuffer();
     console.log(`✅ [3D] 3D generation successful. GLB size: ${glbBuffer.byteLength} bytes`);
     
-    // Convert binary to base64 for Cloudinary upload
-    const base64 = Buffer.from(glbBuffer).toString('base64');
-    const dataUrl = `data:application/octet-stream;base64,${base64}`;
-    
-    // Upload GLB to Cloudinary as 3D model (using image endpoint)
-    const cloudinaryUrl = await uploadBase64ToCloudinary(dataUrl);
+    // Upload GLB directly as binary data to Cloudinary
+    const cloudinaryUrl = await uploadGLBToCloudinary(glbBuffer);
     console.log(`✅ [3D] GLB uploaded to Cloudinary: ${cloudinaryUrl}`);
     
     return {
@@ -737,6 +737,89 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
     console.error('❌ [Background] Cloudinary signed upload error:', error);
     // Send immediate alert for Cloudinary failures
     await sendImmediateAlert('cloudinary', error.message, 'Cloudinary signed upload failed');
+    throw error;
+  }
+}
+
+// Upload GLB binary data directly to Cloudinary
+async function uploadGLBToCloudinary(glbBuffer: ArrayBuffer): Promise<string> {
+  try {
+    console.log('☁️ [Cloudinary] Starting signed upload for GLB file');
+
+    // Get signed upload parameters
+    const signUrl = process.env.URL
+      ? `${process.env.URL}/.netlify/functions/cloudinary-sign`
+      : `https://${process.env.CONTEXT === 'production' ? '' : process.env.BRANCH + '--'}stefna.netlify.app/.netlify/functions/cloudinary-sign`;
+
+    console.log('🔐 [Cloudinary] Using sign URL:', signUrl);
+
+    const signResponse = await fetch(signUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: 'stefna/generated' })
+    });
+
+    if (!signResponse.ok) {
+      const errorText = await signResponse.text();
+      throw new Error(`Cloudinary sign failed: ${signResponse.status} - ${errorText}`);
+    }
+
+    let signData;
+    try {
+      signData = await signResponse.json();
+    } catch (parseError) {
+      console.error('❌ [Cloudinary] Failed to parse sign response:', parseError);
+      throw new Error('Invalid response from Cloudinary sign service');
+    }
+
+    if (!signData || !signData.cloudName || !signData.apiKey || !signData.signature) {
+      console.error('❌ [Cloudinary] Invalid sign data:', signData);
+      throw new Error('Missing required Cloudinary sign parameters');
+    }
+
+    // Prepare signed upload with binary GLB data
+    const formData = new FormData();
+    formData.append('file', new Blob([glbBuffer], { type: 'model/gltf-binary' }), 'generated.glb');
+    formData.append('timestamp', signData.timestamp);
+    formData.append('signature', signData.signature);
+    formData.append('api_key', signData.apiKey);
+    formData.append('folder', 'stefna/generated');
+    formData.append('resource_type', 'auto'); // Enable auto-detection for GLB files
+
+    const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${signData.cloudName}/auto/upload`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('❌ [Cloudinary] Upload response not OK:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        errorText: errorText.substring(0, 200)
+      });
+      throw new Error(`Cloudinary upload failed: ${uploadResponse.status} - ${errorText}`);
+    }
+
+    let uploadResult;
+    try {
+      uploadResult = await uploadResponse.json();
+    } catch (parseError) {
+      console.error('❌ [Cloudinary] Failed to parse upload response:', parseError);
+      throw new Error('Invalid response from Cloudinary upload');
+    }
+
+    if (!uploadResult || !uploadResult.secure_url) {
+      console.error('❌ [Cloudinary] No secure_url in upload result:', uploadResult);
+      throw new Error('Cloudinary upload succeeded but no URL returned');
+    }
+
+    console.log('✅ [Cloudinary] GLB upload successful:', uploadResult.secure_url);
+    return uploadResult.secure_url;
+  } catch (error: any) {
+    console.error('❌ [Background] Cloudinary GLB upload error:', error);
+    // Send immediate alert for Cloudinary failures
+    await sendImmediateAlert('cloudinary', error.message, 'Cloudinary GLB upload failed');
     throw error;
   }
 }
