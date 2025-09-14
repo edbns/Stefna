@@ -2739,12 +2739,13 @@ export const handler: Handler = async (event, context) => {
       for3D
     });
 
-    // 🎯 3D-Friendly Prompt Override
+    // 🎯 3D-Friendly Prompt Enhancement (not override)
     let effectivePrompt = prompt;
     if (for3D === true) {
-      console.log('🎯 [3D Mode] Using 3D-friendly prompt for better 3D results');
-      effectivePrompt = "Transform the subject in the photo to look like a high-end fashion model. Do not write any text or magazine names. Place 7 to 8 black and blue butterflies blooming around the hair and shoulders only. Use clear lighting and strong contrast. If the subject is human, dress them in minimal dark couture clothing with clean lines. Keep the background soft and dark. Avoid surreal overlays on the face. No face paint, no distortion, no blending with background.";
-      console.log('🎯 [3D Mode] 3D-friendly prompt:', effectivePrompt);
+      console.log('🎯 [3D Mode] Enhancing prompt for better 3D results while preserving preset identity');
+      // Keep the original preset prompt but add 3D-friendly enhancements
+      effectivePrompt = `${prompt} Use clear lighting and strong contrast. Avoid surreal overlays on the face. No face paint, no distortion, no blending with background.`;
+      console.log('🎯 [3D Mode] Enhanced prompt:', effectivePrompt);
     }
 
     console.log('🔍 [Background] About to start validation...');
