@@ -16,6 +16,7 @@ import { initializeAuthBootstrap } from './services/authBootstrap'
 import { setupGlobalErrorHandling } from './utils/globalErrorHandler'
 import WaitlistForm from './components/WaitlistForm'
 import { useIsMobile } from './hooks/useResponsive'
+import LoadingSpinner from './components/LoadingSpinner'
 
 const ComingSoonPage: React.FC = () => {
   // Get referrer email from URL params
@@ -94,7 +95,7 @@ const AppContent: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <LoadingSpinner size="lg" text="Loading Stefna..." />
       </div>
     );
   }
