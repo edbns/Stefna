@@ -3508,7 +3508,7 @@ const HomeNew: React.FC = () => {
                 feed={feed}
                 onToggleLike={handleToggleLike}
                 userLikes={userLikes}
-                isLoggedIn={!!authService.getToken()}
+                isLoggedIn={!!authService.getToken() || !!localStorage.getItem('auth_token')}
               />
             )}
           </div>

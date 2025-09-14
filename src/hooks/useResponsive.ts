@@ -7,7 +7,24 @@ import { useState, useEffect } from 'react';
  * @returns boolean indicating if the device is mobile
  */
 export function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(false);
+  // Initialize with immediate check to prevent flash
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    
+    // Check screen width (primary detection)
+    const isSmallScreen = window.innerWidth <= 768;
+    
+    // Check user agent for mobile devices (even if desktop site is requested)
+    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+    
+    // Check for touch capability
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    // FORCE mobile view if ANY of these conditions are true
+    return isSmallScreen || isMobileUserAgent || isTouchDevice;
+  });
 
   useEffect(() => {
     const checkIsMobile = () => {
