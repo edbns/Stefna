@@ -86,31 +86,48 @@ async function convertTo3D(imageUrl: string): Promise<any> {
   console.log(`🎨 [3D] Converting image to 3D: ${imageUrl}`);
 
   try {
-    // Try fast 3D first
+    // First, download the image from Cloudinary
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      console.error(`❌ [3D] Failed to download image: ${imageResponse.status}`);
+      return null;
+    }
+    
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' });
+    
+    // Try fast 3D first (10 credits)
+    const formData = new FormData();
+    formData.append('image', imageBlob, 'image.jpg');
+    formData.append('texture_resolution', '1024');
+    formData.append('foreground_ratio', '0.85');
+    
     let response = await fetch('https://api.stability.ai/v2beta/3d/stable-fast-3d', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${STABILITY_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${STABILITY_API_KEY}`
+        // Don't set Content-Type - let fetch set it automatically for FormData
       },
-      body: JSON.stringify({
-        image_url: imageUrl
-      })
+      body: formData
     });
 
     if (!response.ok) {
       console.warn(`⚠️ [3D] Fast 3D failed (${response.status}), trying point-aware 3D`);
       
-      // Fallback to point-aware 3D
+      // Fallback to point-aware 3D (4 credits)
+      const formData2 = new FormData();
+      formData2.append('image', imageBlob, 'image.jpg');
+      formData2.append('texture_resolution', '1024');
+      formData2.append('foreground_ratio', '1.3');
+      formData2.append('guidance_scale', '3');
+      
       response = await fetch('https://api.stability.ai/v2beta/3d/stable-point-aware-3d', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${STABILITY_API_KEY}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${STABILITY_API_KEY}`
+          // Don't set Content-Type - let fetch set it automatically for FormData
         },
-        body: JSON.stringify({
-          image_url: imageUrl
-        })
+        body: formData2
       });
     }
 
