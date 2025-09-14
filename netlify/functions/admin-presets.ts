@@ -24,17 +24,27 @@ const adminPresetsHandler: Handler = async (event) => {
       // Get all preset configurations
       console.log('🔍 [Admin] Fetching preset configurations...')
       
-      const presets = await q(`
-        SELECT * FROM preset_config 
-        ORDER BY category ASC, name ASC
-      `);
+      try {
+        const presets = await q(`
+          SELECT id, preset_key, name, description, strength, category, is_enabled, is_custom, 
+                 metadata::text as metadata_text, created_at, updated_at
+          FROM preset_config 
+          ORDER BY category ASC, name ASC
+        `);
 
-      console.log(`✅ [Admin] Retrieved ${presets.length} preset configurations`)
-      
-      return json({
-        presets,
-        timestamp: new Date().toISOString()
-      })
+        console.log(`✅ [Admin] Retrieved ${presets.length} preset configurations`)
+        
+        return json({
+          presets,
+          timestamp: new Date().toISOString()
+        })
+      } catch (error) {
+        console.error('❌ [Admin] Error fetching presets:', error);
+        return json({ 
+          error: 'Failed to fetch presets',
+          details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 });
+      }
 
     } else if (event.httpMethod === 'POST') {
       // Create new preset configuration
@@ -49,7 +59,7 @@ const adminPresetsHandler: Handler = async (event) => {
 
       const newPreset = await q(`
         INSERT INTO preset_config (preset_key, name, description, strength, category, is_enabled, is_custom, metadata, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
         RETURNING *
       `, [presetKey, name, description || '', strength || 1.0, category || 'custom', true, true, JSON.stringify(metadata || {})]);
 
@@ -78,10 +88,6 @@ const adminPresetsHandler: Handler = async (event) => {
 
       // Build dynamic UPDATE query with proper JSONB handling
       const updateFields = Object.keys(updates).map((key, index) => {
-        const value = updates[key];
-        if (key === 'metadata' && typeof value === 'object') {
-          return `${key} = $${index + 2}::jsonb`;
-        }
         return `${key} = $${index + 2}`;
       }).join(', ');
       

@@ -66,10 +66,21 @@ const adminConfigHandler: Handler = async (event) => {
       `);
 
       // Get launch status
-      const launchStatus = await q('SELECT * FROM get_launch_status()');
+      let launchStatus;
+      try {
+        launchStatus = await q('SELECT * FROM get_launch_status()');
+      } catch (error) {
+        console.warn('⚠️ [Admin] Launch status query failed:', error);
+        launchStatus = [{ is_launched: false, launch_date: null, waitlist_count: 0 }];
+      }
       
       // Get waitlist count
-      const waitlistCount = await qCount('SELECT COUNT(*) FROM waitlist');
+      let waitlistCount = 0;
+      try {
+        waitlistCount = await qCount('SELECT COUNT(*) FROM waitlist');
+      } catch (error) {
+        console.warn('⚠️ [Admin] Waitlist count query failed:', error);
+      }
 
       // Get real system health from direct health checks
       let realHealthStatus = {
@@ -120,11 +131,24 @@ const adminConfigHandler: Handler = async (event) => {
       }
 
       // Get app config values
-      const appConfigs = await q(`SELECT key, value FROM app_config WHERE key IN ('daily_cap', 'last_credit_reset', 'starter_grant', 'referral_referrer_bonus', 'referral_new_bonus')`);
-      const configMap = appConfigs.reduce((acc: any, row: any) => {
-        acc[row.key] = row.value;
-        return acc;
-      }, {});
+      let appConfigs: any[] = [];
+      let configMap: any = {};
+      try {
+        appConfigs = await q(`SELECT key, value FROM app_config WHERE key IN ('daily_cap', 'last_credit_reset', 'starter_grant', 'referral_referrer_bonus', 'referral_new_bonus')`);
+        configMap = appConfigs.reduce((acc: any, row: any) => {
+          acc[row.key] = row.value;
+          return acc;
+        }, {});
+      } catch (error) {
+        console.warn('⚠️ [Admin] App config query failed:', error);
+        configMap = {
+          daily_cap: '30',
+          last_credit_reset: null,
+          starter_grant: '30',
+          referral_referrer_bonus: '10',
+          referral_new_bonus: '5'
+        };
+      }
 
       // Get system configuration with real health status
       const systemConfig = {
