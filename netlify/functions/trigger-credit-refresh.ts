@@ -37,6 +37,31 @@ export const handler: Handler = async (event) => {
     const responseData = result.result;
     console.log('✅ [Credit Refresh] Check completed:', responseData);
 
+    // If users were processed, automatically process the email queue
+    if (responseData.users_processed > 0) {
+      console.log('📧 [Credit Refresh] Processing email queue automatically...');
+      
+      try {
+        // Call the email notification listener to process queued emails
+        const emailResponse = await fetch(`${process.env.URL || 'https://stefna.xyz'}/.netlify/functions/email-notification-listener`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (emailResponse.ok) {
+          const emailResult = await emailResponse.json();
+          console.log('✅ [Credit Refresh] Email queue processed:', emailResult);
+        } else {
+          console.error('❌ [Credit Refresh] Email processing failed:', emailResponse.status);
+        }
+      } catch (emailError) {
+        console.error('❌ [Credit Refresh] Email processing error:', emailError);
+        // Don't fail the credit refresh if email processing fails
+      }
+    }
+
     return json({
       success: true,
       message: 'Credit refresh check completed successfully',

@@ -151,6 +151,8 @@ const AppContent: React.FC = () => {
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/cookies" element={<CookiesPolicy />} />
               <Route path="/coming-soon" element={<ComingSoonPage />} />
+              {/* Catch-all route for desktop - redirect unknown routes to home */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </>
           )}
         </Routes>
