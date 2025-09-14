@@ -3583,10 +3583,11 @@ const HomeNew: React.FC = () => {
             {quotaReached && (
               <button
                 onClick={() => setShowWaitlistModal(true)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-full border border-gray-500 transition-all duration-300 hover:bg-gray-500 hover:scale-105"
+                className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-gray-100 hover:scale-105 relative overflow-hidden"
                 aria-label="Join Waitlist"
               >
-                <span className="text-sm font-medium">Join Waitlist</span>
+                <span className="text-sm font-medium relative z-10">Beta full. Join the waitlist to be first in line for the next drop</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
               </button>
             )}
           </div>
