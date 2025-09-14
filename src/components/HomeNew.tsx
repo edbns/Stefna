@@ -2187,6 +2187,7 @@ const HomeNew: React.FC = () => {
       editPrompt?: string;
       // 3D Generation parameters
       enable3D?: boolean;
+      for3D?: boolean; // Use 3D-friendly prompt for better 3D results
       // sourceUrl and originalPrompt removed - no more remix functionality
     }
   ) {
@@ -2664,7 +2665,8 @@ const HomeNew: React.FC = () => {
         ipaRetries: generationMeta?.ipaRetries || 3, // 3 retry attempts (increased from 2)
         ipaBlocking: generationMeta?.ipaBlocking || true, // Block if IPA fails
         // 3D Generation parameters
-        enable3D: options?.enable3D || false
+        enable3D: options?.enable3D || false,
+        for3D: options?.for3D || false // Use 3D-friendly prompt when 3D is enabled
       });
           
       console.log('✅ [Unified] Service result:', result);
@@ -3109,7 +3111,8 @@ const HomeNew: React.FC = () => {
     // Generate with ONLY the selected Unreal Reflection variant - no other contamination
     await dispatchGenerate('unrealreflection', {
       unrealReflectionPresetId: selectedUnrealReflectionPreset,
-      enable3D: isUnrealReflection3DEnabled
+      enable3D: isUnrealReflection3DEnabled,
+      for3D: isUnrealReflection3DEnabled // Use 3D-friendly prompt when 3D is enabled
     });
     
     // Clear composer after successful generation
@@ -4042,7 +4045,8 @@ const HomeNew: React.FC = () => {
                                 try {
                                 await dispatchGenerate('unrealreflection', {
                                   unrealReflectionPresetId: presetId,
-                                  enable3D: isUnrealReflection3DEnabled
+                                  enable3D: isUnrealReflection3DEnabled,
+                                  for3D: isUnrealReflection3DEnabled // Use 3D-friendly prompt when 3D is enabled
                                   })
                                 // Clear composer after successful generation
                                 setTimeout(() => {

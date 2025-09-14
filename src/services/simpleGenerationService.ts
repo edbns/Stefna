@@ -28,6 +28,7 @@ export interface SimpleGenerationRequest {
   ipaBlocking?: boolean;
   // 3D Generation parameters
   enable3D?: boolean;
+  for3D?: boolean; // Use 3D-friendly prompt for better 3D results
 }
 
 export interface SimpleGenerationResult {
@@ -157,7 +158,7 @@ class SimpleGenerationService {
         console.warn(`🚨 [SimpleGeneration] Full failure response:`, JSON.stringify(result, null, 2));
         
         // Special handling for insufficient credits
-        if (result.error && (result.error.includes('INSUFFICIENT_CREDITS') || result.error.includes('credits but only have'))) {
+        if (result.error && (result.error.includes('INSUFFICIENT_CREDITS') || result.error.includes('credits but only have') || result.error.includes('You need credits'))) {
           console.log('🚨 [SimpleGeneration] Throwing INSUFFICIENT_CREDITS error for frontend handling');
           console.log('🚨 [SimpleGeneration] About to throw INSUFFICIENT_CREDITS error to stop spinner');
           throw new Error('INSUFFICIENT_CREDITS');
@@ -179,7 +180,7 @@ class SimpleGenerationService {
         }
         
         // Special handling for insufficient credits
-        if (result && result.error && (result.error.includes('INSUFFICIENT_CREDITS') || result.error.includes('credits but only have'))) {
+        if (result && result.error && (result.error.includes('INSUFFICIENT_CREDITS') || result.error.includes('credits but only have') || result.error.includes('You need credits'))) {
           console.log('🚨 [SimpleGeneration] Detected INSUFFICIENT_CREDITS, throwing error');
           throw new Error('INSUFFICIENT_CREDITS');
         }
@@ -342,7 +343,8 @@ class SimpleGenerationService {
       ipaRetries: request.ipaRetries,
       ipaBlocking: request.ipaBlocking,
       // 3D parameters
-      enable3D: request.enable3D
+      enable3D: request.enable3D,
+      for3D: request.for3D
     };
 
     // Add mode-specific parameters

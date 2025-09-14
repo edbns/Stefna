@@ -375,6 +375,7 @@ interface UnifiedGenerationRequest {
   ipaBlocking?: boolean;
   // 3D Generation parameters
   enable3D?: boolean;
+  for3D?: boolean; // Use 3D-friendly prompt for better 3D results
 }
 
 interface UnifiedGenerationResponse {
@@ -2721,7 +2722,7 @@ export const handler: Handler = async (event, context) => {
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { mode, prompt, sourceAssetId, userId: bodyUserId, presetKey, unrealReflectionPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, enable3D, runId: frontendRunId } = body;
+    const { mode, prompt, sourceAssetId, userId: bodyUserId, presetKey, unrealReflectionPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, enable3D, for3D, runId: frontendRunId } = body;
 
     console.log('🚀 [Background] Received request:', {
       mode,
@@ -2730,8 +2731,18 @@ export const handler: Handler = async (event, context) => {
       userId: tokenUserId,
       additionalImages: additionalImages?.length || 0,
       editImages: editImages?.length || 0,
-      storyTimePresetId
+      storyTimePresetId,
+      enable3D,
+      for3D
     });
+
+    // 🎯 3D-Friendly Prompt Override
+    let effectivePrompt = prompt;
+    if (for3D === true) {
+      console.log('🎯 [3D Mode] Using 3D-friendly prompt for better 3D results');
+      effectivePrompt = "Transform the subject in the photo to look like a high-end fashion model. Do not write any text or magazine names. Place 7 to 8 black and blue butterflies blooming around the hair and shoulders only. Use clear lighting and strong contrast. If the subject is human, dress them in minimal dark couture clothing with clean lines. Keep the background soft and dark. Avoid surreal overlays on the face. No face paint, no distortion, no blending with background.";
+      console.log('🎯 [3D Mode] 3D-friendly prompt:', effectivePrompt);
+    }
 
     console.log('🔍 [Background] About to start validation...');
 
@@ -2894,7 +2905,7 @@ export const handler: Handler = async (event, context) => {
         // Create generation request for edit-photo
         const editGenerationRequest: UnifiedGenerationRequest = {
           mode: 'edit', // Map edit-photo to edit mode internally
-          prompt: editPrompt,
+          prompt: effectivePrompt, // Use 3D-friendly prompt if for3D is true
           sourceAssetId,
           userId: tokenUserId,
           runId,
@@ -2903,7 +2914,10 @@ export const handler: Handler = async (event, context) => {
           meta,
           ipaThreshold,
           ipaRetries,
-          ipaBlocking
+          ipaBlocking,
+          // 3D parameters
+          enable3D,
+          for3D
         };
 
         // Process generation with timeout protection (10 minutes)
@@ -2987,7 +3001,7 @@ export const handler: Handler = async (event, context) => {
         // Create generation request for edit-photo
         const editGenerationRequest: UnifiedGenerationRequest = {
           mode: 'edit', // Map edit-photo to edit mode internally
-          prompt: editPrompt,
+          prompt: effectivePrompt, // Use 3D-friendly prompt if for3D is true
           sourceAssetId,
           userId: tokenUserId,
           runId,
@@ -2996,7 +3010,10 @@ export const handler: Handler = async (event, context) => {
           meta,
           ipaThreshold,
           ipaRetries,
-          ipaBlocking
+          ipaBlocking,
+          // 3D parameters
+          enable3D,
+          for3D
         };
 
         // Process generation with timeout protection (10 minutes)
@@ -3033,7 +3050,7 @@ export const handler: Handler = async (event, context) => {
     // Create generation request
     const generationRequest: UnifiedGenerationRequest = {
       mode,
-      prompt,
+      prompt: effectivePrompt, // Use 3D-friendly prompt if for3D is true
       presetKey,
       sourceAssetId,
       userId: tokenUserId,
@@ -3049,7 +3066,8 @@ export const handler: Handler = async (event, context) => {
       ipaRetries,
       ipaBlocking,
       // 3D parameters
-      enable3D
+      enable3D,
+      for3D
     };
 
     // Process generation with timeout protection (10 minutes)
