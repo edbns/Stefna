@@ -83,16 +83,21 @@ const adminConfigHandler: Handler = async (event) => {
       };
       
       try {
-        // Perform direct health checks
-        const healthData = await performHealthChecks();
+        // Perform direct health checks with timeout
+        const healthPromise = performHealthChecks();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Health check timeout')), 10000)
+        );
+        
+        const healthData = await Promise.race([healthPromise, timeoutPromise]) as any;
         
         realHealthStatus = {
-          fal_ai_enabled: healthData.results.find(s => s.service === 'fal_ai')?.status === 'healthy',
-          bfl_api_enabled: healthData.results.find(s => s.service === 'bfl')?.status === 'healthy',
-          stability_enabled: healthData.results.find(s => s.service === 'stability_ai')?.status === 'healthy',
-          cloudinary_enabled: healthData.results.find(s => s.service === 'cloudinary')?.status === 'healthy',
-          email_enabled: healthData.results.find(s => s.service === 'email')?.status === 'healthy',
-          database_enabled: healthData.results.find(s => s.service === 'database')?.status === 'healthy',
+          fal_ai_enabled: healthData.results.find((s: any) => s.service === 'fal_ai')?.status === 'healthy',
+          bfl_api_enabled: healthData.results.find((s: any) => s.service === 'bfl')?.status === 'healthy',
+          stability_enabled: healthData.results.find((s: any) => s.service === 'stability_ai')?.status === 'healthy',
+          cloudinary_enabled: healthData.results.find((s: any) => s.service === 'cloudinary')?.status === 'healthy',
+          email_enabled: healthData.results.find((s: any) => s.service === 'email')?.status === 'healthy',
+          database_enabled: healthData.results.find((s: any) => s.service === 'database')?.status === 'healthy',
           overall_status: healthData.overallStatus
         };
         
