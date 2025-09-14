@@ -302,13 +302,15 @@ const adminConfigHandler: Handler = async (event) => {
               waitlistEmails = await q('SELECT email FROM waitlist ORDER BY created_at ASC');
               
               // Send launch emails to waitlist (in batches to avoid rate limits)
-              const batchSize = 10;
+              const batchSize = 5; // Smaller batches since we send sequentially
               
               for (let i = 0; i < waitlistEmails.length; i += batchSize) {
                 const batch = waitlistEmails.slice(i, i + batchSize);
                 console.log(`📧 [Admin] Processing batch ${Math.floor(i/batchSize) + 1}: ${batch.length} emails`);
                 
-                const batchResults = await Promise.allSettled(batch.map(async (row: any) => {
+                // Send emails sequentially to respect Resend's 2 requests/second rate limit
+                const batchResults = [];
+                for (const row of batch) {
                   try {
                     console.log(`📧 [Admin] Sending launch email to: ${row.email}`);
                     const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/sendEmail`, {
@@ -331,17 +333,20 @@ const adminConfigHandler: Handler = async (event) => {
                     
                     const result = await response.json();
                     console.log(`✅ [Admin] Launch email sent successfully to ${row.email}:`, result.emailId);
-                    return { email: row.email, success: true };
+                    batchResults.push({ email: row.email, success: true });
                   } catch (emailError) {
                     const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
                     console.error(`❌ [Admin] Failed to send launch email to ${row.email}:`, emailError);
-                    return { email: row.email, success: false, error: errorMessage };
+                    batchResults.push({ email: row.email, success: false, error: errorMessage });
                   }
-                }));
+                  
+                  // Wait 500ms between emails to respect Resend's 2 requests/second limit
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                }
                 
                 // Count results
                 batchResults.forEach(result => {
-                  if (result.status === 'fulfilled' && result.value.success) {
+                  if (result.success) {
                     successCount++;
                   } else {
                     failCount++;
