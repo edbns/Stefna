@@ -6,8 +6,17 @@
 // Runs the credit refresh trigger migration
 // ============================================================================
 
-const { Pool } = require('pg');
-require('dotenv').config();
+import pkg from 'pg';
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const { Pool } = pkg;
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -20,8 +29,6 @@ async function runMigration() {
     console.log('🔄 Running credit refresh trigger migration...');
     
     // Read the migration file
-    const fs = require('fs');
-    const path = require('path');
     const migrationPath = path.join(__dirname, '..', 'migrations', '20241220_add_credit_refresh_trigger.sql');
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
     

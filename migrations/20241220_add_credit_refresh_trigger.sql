@@ -17,7 +17,7 @@ BEGIN
         SELECT 
             u.id as user_id,
             u.email,
-            uc.updated_at,
+            u.updated_at,
             u.created_at
         FROM users u
         LEFT JOIN user_credits uc ON u.id = uc.user_id
@@ -25,6 +25,7 @@ BEGIN
             u.email IS NOT NULL 
             AND u.email != ''
             AND u.email != 'user-placeholder@example.com'
+            AND u.updated_at < NOW() - INTERVAL '24 hours'
             AND (
                 uc.updated_at IS NULL 
                 OR uc.updated_at < NOW() - INTERVAL '24 hours'
@@ -44,25 +45,26 @@ BEGIN
             credits = daily_credits,
             updated_at = NOW();
 
-        -- Queue email for sending
+        -- Queue email for sending (only if not already queued recently)
         INSERT INTO email_queue (
             email,
             subject,
-            email_type,
-            data,
+            type,
             status,
             created_at
-        ) VALUES (
+        ) 
+        SELECT 
             user_record.email,
             'Credits refreshed — let''s create.',
             'daily_credits_refresh',
-            jsonb_build_object(
-                'userId', user_record.user_id,
-                'resetTime', NOW()::text,
-                'newBalance', daily_credits
-            ),
             'pending',
             NOW()
+        WHERE NOT EXISTS (
+            SELECT 1 FROM email_queue eq 
+            WHERE eq.email = user_record.email 
+            AND eq.type = 'daily_credits_refresh' 
+            AND eq.status IN ('pending', 'sent')
+            AND eq.created_at > NOW() - INTERVAL '23 hours'
         );
 
         -- Log the action
@@ -70,10 +72,10 @@ BEGIN
     END LOOP;
 
     -- Update global last reset time
-    INSERT INTO app_config (key, value, updated_at)
-    VALUES ('last_credit_reset', NOW()::text, NOW())
+    INSERT INTO app_config (key, value)
+    VALUES ('last_credit_reset', to_jsonb(NOW()::text))
     ON CONFLICT (key) 
-    DO UPDATE SET value = NOW()::text, updated_at = NOW();
+    DO UPDATE SET value = to_jsonb(NOW()::text);
 
     RAISE NOTICE 'Credit refresh email queue process completed';
 END;
