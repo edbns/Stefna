@@ -46,68 +46,9 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
       'story-time': 'Story Time'
     }
     
-    // Map preset keys to display names (same as PresetTag)
+    // Map preset keys to display names - REMOVED specific mappings to show only type names
     const presetNames: Record<string, string> = {
-      // Neo Tokyo Glitch
-      'neo_tokyo_glitch': 'Neo Tokyo Glitch',
-      'cyberpunk_glitch': 'Cyberpunk Glitch',
-      'digital_distortion': 'Digital Distortion',
-      'matrix_glitch': 'Matrix Glitch',
-      'holographic_glitch': 'Holographic Glitch',
-      'retro_glitch': 'Retro Glitch',
-      
-      // Ghibli Reaction
-      'ghibli_blush': 'Blush',
-      'ghibli_dreamy': 'Dreamy',
-      'ghibli_magical': 'Magical',
-      'ghibli_shock': 'Shock',
-      'ghibli_sparkle': 'Sparkle',
-      'ghibli_tears': 'Tears',
-      'blush': 'Blush',
-      'dreamy': 'Dreamy',
-      'magical': 'Magical',
-      'shock': 'Shock',
-      'sparkle': 'Sparkle',
-      'tears': 'Tears',
-      
-      // Unreal Reflection
-      'unreal_reflection_digital_monk': 'Digital Monk',
-      'unreal_reflection_urban_oracle': 'Urban Oracle',
-      'unreal_reflection_desert_mirror': 'Desert Mirror',
-      'unreal_reflection_lumin_void': 'Lumin Void',
-      'unreal_reflection_prism_break': 'Prism Break',
-      'unreal_reflection_chromatic_bloom': 'Chromatic Bloom',
-      'digital_monk': 'Digital Monk',
-      'urban_oracle': 'Urban Oracle',
-      'desert_mirror': 'Desert Mirror',
-      'lumin_void': 'Lumin Void',
-      'prism_break': 'Prism Break',
-      'chromatic_bloom': 'Chromatic Bloom',
-      
-      // Presets
-      'flux_dev': 'Flux Dev',
-      'flux_pro': 'Flux Pro',
-      'flux_realism': 'Flux Realism',
-      'flux_creative': 'Flux Creative',
-      'flux_artistic': 'Flux Artistic',
-      'flux_photorealistic': 'Flux Photorealistic',
-      'tropical_boost': 'Tropical Boost',
-      'vintage_fade': 'Vintage Fade',
-      'cinematic_grade': 'Cinematic Grade',
-      'monochrome_mood': 'Monochrome Mood',
-      'warm_sunset': 'Warm Sunset',
-      'cool_blue': 'Cool Blue',
-      'dramatic_contrast': 'Dramatic Contrast',
-      'soft_pastel': 'Soft Pastel',
-      'bold_vibrant': 'Bold Vibrant',
-      'muted_elegant': 'Muted Elegant',
-      
-      // Custom Prompt
-      'custom': 'Custom Prompt',
-      
-      // Story Time
-      'story_time': 'Story Time',
-      'story': 'Story Time'
+      // All specific preset mappings removed - only showing type names now
     }
     
     // If we have a preset key, use it

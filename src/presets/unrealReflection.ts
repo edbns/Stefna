@@ -2,7 +2,7 @@
 
 /*
 
-🧠 Unreal Reflection™ – Nano Banana Optimized (v1.3)
+🧠 Unreal Reflection™ – Nano Banana Optimized (v1.4)
 
 Unreal Reflection™
 "Not who you are. Who you could've been."
@@ -14,12 +14,12 @@ Built for scroll-stopping visuals that feel mysterious, ethereal, and beautiful.
 Enhanced prompts optimized for Nano Banana's verbosity preferences:
 - Digital Monk: Golden/bronze temple with blue aura, meditative atmosphere
 - Urban Oracle: Neon-lit alley with purple/cyan/magenta tones, rain reflections
-- Desert Mirror: Cracked landscape with orange/gold sun flare, heat haze
-- Lumin Void: Swirling violet/silver fractal void, transcendent energy
-- Prism Break: Dark void with rainbow shards, high-fashion sci-fi
-- Chromatic Bloom: Vibrant nature bursts with butterflies/feathers, surreal overlays
+- Desert Mirror: Layered desert robes, cracked terrain, golden light
+- Lumin Void: Iridescent surreal fashion dissolving into fractal light
+- Prism Break: High-fashion sci-fi, reflective materials, shattered reality
+- Chromatic Bloom: Editorial with butterflies/feathers, couture styling
 
-All presets use optimized strength (0.54-0.6) and guidance (7.0-7.5) for Nano Banana.
+All presets use optimized strength (0.54–0.6) and guidance (7.0–7.5) for Nano Banana.
 
 */
 
@@ -95,7 +95,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_desert_mirror',
     label: 'Desert Mirror',
-    prompt: 'Capture the essence of a being sculpted by the desert. Subtle cracked textures mirror dried earth across the skin, with sun-scorched tones radiating resilience. Eyes glow faintly with determination. Place the subject against a vast cracked desert floor under a blazing sun, heat haze shimmering in the distance. Infuse warm orange and golden light for a cinematic atmosphere. Lighting should enhance the skin textures and emphasize the glowing resilience in the eyes. Preserve the individual\'s identity, age, gender, and features with photoreal precision.',
+    prompt: 'Capture the essence of a being sculpted by the desert. Subtle cracked textures mirror dried earth across the skin, with sun-scorched tones radiating resilience. The subject wears flowing desert-layered robes in beige and gold, slightly weathered by sand. Eyes glow faintly with determination. Place them against a vast cracked desert floor under a blazing sun, heat haze shimmering in the distance. Infuse warm orange and golden light for a cinematic atmosphere. Lighting should enhance the skin textures and emphasize the glowing resilience in the eyes. Preserve the individual\'s identity, age, gender, and features with photoreal precision.',
     negative_prompt: 'zombie, horror, cartoon, anime, fantasy race, distorted face',
     strength: 0.58,
     model: 'fal-ai/nano-banana/edit',
@@ -113,11 +113,11 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     image_prompt_strength: 0.58,
     aspect_ratio: '1:1'
   },
-  // 🌌 Lumin Void (refined Future Ghost)
+  // 🌌 Lumin Void
   {
     id: 'unreal_reflection_lumin_void',
     label: 'Lumin Void',
-    prompt: 'Depict this person dissolving into light and energy. Their body edges fragment into glowing fractal mist, blending silver, violet, and faint electric blue hues. Their eyes emit a soft metallic glow — alive, not blank. Surround them with a cosmic void swirling in fractal light, as if they exist halfway between matter and energy. Cinematic focus keeps the face sharp, while the edges fade into luminous abstraction. Atmosphere should feel transcendent and surreal yet photoreal. Preserve the individual\'s true face, age, and features.',
+    prompt: 'Depict this person dissolving into light and energy. Their body edges fragment into glowing fractal mist, blending silver, violet, and faint electric blue hues. They are dressed in futuristic iridescent fashion — smooth contours, alien fabrics, and faint metallic shimmer. Their eyes emit a soft metallic glow — alive, not blank. Surround them with a cosmic void swirling in fractal light, as if they exist halfway between matter and energy. Cinematic focus keeps the face sharp, while the edges fade into luminous abstraction. Atmosphere should feel transcendent and surreal yet photoreal. Preserve the individual\'s true face, age, and features.',
     negative_prompt: 'horror, zombie, corpse, cartoon, anime, fantasy monster, distortion',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
@@ -139,7 +139,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_prism_break',
     label: 'Prism Break',
-    prompt: 'Reimagine this person as if their reality fractured into light. Subtle cracks spread across their skin, glowing with refracted rainbow tones like shattered glass. Prism shards float around them in a dark void, scattering pink, cyan, and golden light. The face is illuminated by sharp cinematic lighting, emphasizing both the cracks and the vivid colors. The background glows faintly with rainbow refractions, blurred for depth. Style should feel like high-fashion sci-fi, photoreal and editorial. Preserve identity, age, gender, and facial structure.',
+    prompt: 'Reimagine this person as if their reality fractured into light. Subtle cracks spread across their skin, glowing with refracted rainbow tones like shattered glass. They are dressed in avant-garde, high-fashion materials — metallic fabrics, asymmetric cuts, and flowing translucent textures. Prism shards float around them in a dark void, scattering pink, cyan, and golden light. The face is illuminated by sharp cinematic lighting, emphasizing both the cracks and the vivid colors. The background glows faintly with rainbow refractions, blurred for depth. Style should feel like high-fashion sci-fi, photoreal and editorial. Preserve identity, age, gender, and facial structure.',
     negative_prompt: 'anime, cartoon, glitter makeup, horror, fantasy armor, distortion',
     strength: 0.6,
     model: 'fal-ai/nano-banana/edit',
@@ -157,28 +157,28 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     image_prompt_strength: 0.6,
     aspect_ratio: '1:1'
   },
-        // 🌈 Chromatic Bloom
-        {
-          id: 'unreal_reflection_chromatic_bloom',
-          label: 'Chromatic Bloom',
-          prompt: 'Transform the subject in the photo to look like a high-end magazine cover model, but do not write or include any magazine name. Style them in minimal dark couture clothing. Add exactly 7 to 8 butterflies in black and blue, placed only on the hair and shoulders, never covering the face. The makeup should look amazing — minimal, elegant, and eye-catching. Use a cinematic dark background to emphasize the subject. Lighting should be dramatic and professional, with sharp focus and high detail. The overall result must feel photoreal, stylish, and desirable, making viewers want their own photo in this style.',
-          negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion',
-          strength: 0.55,
-          model: 'fal-ai/nano-banana/edit',
-          mode: 'i2i',
-          input: 'image',
-          requiresSource: true,
-          source: 'unreal_reflection',
-          guidance_scale: 7.5,
-          num_inference_steps: 30,
-          features: ['chromatic_bloom', 'vibrant_nature', 'butterflies_feathers', 'surreal_bloom', 'identity_preserved'],
-          prompt_upsampling: true,
-          safety_tolerance: 3,
-          output_format: 'jpeg',
-          raw: true,
-          image_prompt_strength: 0.55,
-          aspect_ratio: '4:5'
-        }
+  // 🌺 Chromatic Bloom
+  {
+    id: 'unreal_reflection_chromatic_bloom',
+    label: 'Chromatic Bloom',
+    prompt: 'Transform the subject in the photo to look like a high-end magazine cover model, but do not write or include any magazine name. Style them in minimal dark couture clothing. Add exactly 7 to 8 butterflies in black and blue, placed only on the hair and shoulders, never covering the face. The makeup should look amazing — minimal, elegant, and eye-catching. Use a cinematic dark background to emphasize the subject. Lighting should be dramatic and professional, with sharp focus and high detail. The overall result must feel photoreal, stylish, and desirable, making viewers want their own photo in this style.',
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['chromatic_bloom', 'vibrant_nature', 'butterflies_feathers', 'surreal_bloom', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 3,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '4:5'
+  }
 ];
 
 export function getUnrealReflectionPreset(presetId: string): UnrealReflectionPreset | undefined {
