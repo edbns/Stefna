@@ -27,22 +27,17 @@ export function UnrealReflectionPicker({
   return (
     <div className="rounded-xl shadow-2xl p-3 w-80" style={{ backgroundColor: '#333333' }}>
       <div className="space-y-2">
-        {/* 3D Generation Option - Prominent Button */}
+        {/* 3D Generation Option - Simple Dark Gray Button */}
         <button
           onClick={handle3DToggle}
-          className={(() => {
-            const baseClass = 'w-full flex items-center justify-center px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105';
-            const activeClass = 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25';
-            const inactiveClass = 'bg-gray-600 text-gray-200 hover:bg-gray-500 3d-shimmer';
-            return `${baseClass} ${is3DEnabled ? activeClass : inactiveClass}`;
-          })()}
+          className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
+            is3DEnabled 
+              ? 'bg-white text-black' 
+              : 'bg-gray-600 text-white hover:bg-gray-500 3d-shimmer'
+          }`}
           disabled={disabled}
         >
-          <span className="flex items-center gap-2">
-            <span className="text-lg">🎯</span>
-            <span>{is3DEnabled ? '3D Enabled' : 'Enable 3D'}</span>
-            {is3DEnabled && <span className="text-xs opacity-80">+2 credits</span>}
-          </span>
+          <span>{is3DEnabled ? '3D Enabled' : 'Enable 3D'}</span>
         </button>
         
         {/* Separator */}
