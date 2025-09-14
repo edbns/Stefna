@@ -141,7 +141,7 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
   return (
     <div className="w-full max-w-sm mx-auto space-y-4 pb-24">
       {feed.map((media) => (
-        <div key={media.id} className="bg-white/5 rounded-xl overflow-hidden">
+        <div key={media.id} className="bg-white/5 overflow-hidden">
           {/* Media */}
           <div className="relative">
             {media.type === 'video' ? (
@@ -161,9 +161,9 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
               />
             )}
             
-            {/* Media Type Badge */}
+            {/* Media Type Badge - Completely Transparent */}
             <div className="absolute top-2 left-2">
-              <span className="px-2 py-1 bg-black/80 text-white text-xs rounded-full border border-white/20">
+              <span className="px-2 py-1 text-white text-xs">
                 {getMediaTypeDisplay(media)}
               </span>
             </div>
