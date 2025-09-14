@@ -291,7 +291,7 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                           
                           {/* 3D Tag - Show if media has 3D model */}
                           {(item.obj_url || item.gltf_url) && (
-                            <div className="px-2 py-1 bg-blue-500/80 backdrop-blur-sm rounded text-white text-xs font-medium">
+                            <div className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded text-white text-xs font-medium">
                               3D
                             </div>
                           )}
