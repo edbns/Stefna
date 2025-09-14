@@ -2471,21 +2471,11 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             result = await generateWithFal(request.mode, generationParams);
             console.log('✅ [Background] Fal.ai Unreal Reflection generation successful');
             
-            // 🎬 Video Generation: If video is enabled and 2D generation succeeded
+            // 🎬 Video Generation: DISABLED (Too Expensive - $1+ per 5 seconds)
             if (request.enableVideo && result.success && result.outputUrl) {
-              console.log('🎬 [Background] Starting video generation for Unreal Reflection');
-              try {
-                const videoData = await generateVideo(result.outputUrl);
-                if (videoData) {
-                  result.videoData = videoData;
-                  console.log('✅ [Background] Video generation successful');
-                } else {
-                  console.warn('⚠️ [Background] Video generation failed, but 2D result available');
-                }
-              } catch (errorVideo) {
-                console.error('❌ [Background] Video generation error:', errorVideo);
-                // Don't fail the whole generation if video fails - user still gets 2D result
-              }
+              console.log('🚫 [Background] Video generation disabled - too expensive ($1+ per 5 seconds)');
+              console.log('🚫 [Background] Skipping video generation to prevent costs');
+              // Video generation disabled due to high costs
             }
             
           } catch (falError) {
@@ -2494,21 +2484,11 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             result = await generateWithBFL(request.mode, generationParams);
             console.log('✅ [Background] BFL Unreal Reflection fallback successful');
             
-            // 🎬 Video Generation: If video is enabled and BFL fallback succeeded
+            // 🎬 Video Generation: DISABLED (Too Expensive - $1+ per 5 seconds)
             if (request.enableVideo && result.success && result.outputUrl) {
-              console.log('🎬 [Background] Starting video generation for Unreal Reflection (BFL fallback)');
-              try {
-                const videoData = await generateVideo(result.outputUrl);
-                if (videoData) {
-                  result.videoData = videoData;
-                  console.log('✅ [Background] Video generation successful');
-                } else {
-                  console.warn('⚠️ [Background] Video generation failed, but 2D result available');
-                }
-              } catch (errorVideo) {
-                console.error('❌ [Background] Video generation error:', errorVideo);
-                // Don't fail the whole generation if video fails - user still gets 2D result
-              }
+              console.log('🚫 [Background] Video generation disabled - too expensive ($1+ per 5 seconds)');
+              console.log('🚫 [Background] Skipping video generation to prevent costs');
+              // Video generation disabled due to high costs
             }
           }
         } else if (request.mode === 'edit') {
@@ -2868,7 +2848,7 @@ export const handler: Handler = async (event, context) => {
     const modeKey = modeStr as GenerationMode;
 
     // Check credits FIRST before any processing
-    const creditsNeeded = enableVideo ? 6 : 2; // 2 credits for 2D, 6 credits for 2D+Video
+    const creditsNeeded = 2; // Only 2D generation - video disabled due to high costs
     
     // Use proper action mapping
     const actionMap: Record<GenerationMode, string> = {
