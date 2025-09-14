@@ -177,7 +177,7 @@ async function generateVideo(imageUrl: string): Promise<any> {
     const fastVideoInput = {
       image_url: imageUrl,
       prompt: tailoredPrompt,
-      duration: 4,
+      duration: '8s',
       aspect_ratio: '9:16'
     };
 
@@ -188,7 +188,7 @@ async function generateVideo(imageUrl: string): Promise<any> {
       console.log('✅ [Video] Veo3 fast generation successful');
       return {
         video_url: result.video_url,
-        duration: 4,
+        duration: '8s',
         model: 'veo3-fast'
       };
     }
@@ -201,7 +201,7 @@ async function generateVideo(imageUrl: string): Promise<any> {
       console.log('✅ [Video] Veo3 generation successful');
       return {
         video_url: result.video_url,
-        duration: 4,
+        duration: '8s',
         model: 'veo3'
       };
     }
@@ -2790,14 +2790,8 @@ export const handler: Handler = async (event, context) => {
       forVideo
     });
 
-    // 🎬 Video-Friendly Prompt Enhancement (not override)
+    // Keep original prompt for 2D generation - don't override preset prompts
     let effectivePrompt = prompt;
-    if (forVideo === true) {
-      console.log('🎬 [Video Mode] Using tailored generic prompt for better video results');
-      // Use the tailored generic prompt for Unreal Reflection video generation
-      effectivePrompt = "Reveal an alternate self emerging from shadows. Soft cinematic lighting illuminates subtle transformations as the subject is surrounded by flickering light particles and floating shapes. The background shifts between surreal textures and minimal dark tones. The subject remains still, eyes reflecting mystery and resilience. Slow camera movement, poetic mood, 9:16 format.";
-      console.log('🎬 [Video Mode] Tailored generic prompt:', effectivePrompt);
-    }
 
     console.log('🔍 [Background] About to start validation...');
 
