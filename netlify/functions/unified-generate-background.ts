@@ -87,7 +87,8 @@ async function convertTo3D(imageUrl: string): Promise<any> {
     return null;
   }
 
-  console.log(`🎨 [3D] Converting image to 3D: ${imageUrl}`);
+  console.log(`🎨 [3D] Converting image to 3D with optimized parameters: ${imageUrl}`);
+  console.log(`🎯 [3D] Using parameters: texture_resolution=1024, foreground_ratio=0.92, remesh=quad, vertex_count=8000`);
 
   try {
     // First, download the image from Cloudinary
@@ -100,11 +101,13 @@ async function convertTo3D(imageUrl: string): Promise<any> {
     const imageBuffer = await imageResponse.arrayBuffer();
     const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' });
     
-    // Try fast 3D first (10 credits)
+    // Try fast 3D first (10 credits) with optimized parameters for fashion/stylized content
     const formData = new FormData();
     formData.append('image', imageBlob, 'image.jpg');
-    formData.append('texture_resolution', '1024');
-    formData.append('foreground_ratio', '0.85');
+    formData.append('texture_resolution', '1024');        // Keep default - good quality
+    formData.append('foreground_ratio', '0.92');          // Less padding = tighter crop for fashion
+    formData.append('remesh', 'quad');                    // Cleaner face layout for stylized output
+    formData.append('vertex_count', '8000');             // Keep mesh light but recognizable
     
     let response = await fetch('https://api.stability.ai/v2beta/3d/stable-fast-3d', {
       method: 'POST',
@@ -118,12 +121,12 @@ async function convertTo3D(imageUrl: string): Promise<any> {
     if (!response.ok) {
       console.warn(`⚠️ [3D] Fast 3D failed (${response.status}), trying point-aware 3D`);
       
-      // Fallback to point-aware 3D (4 credits)
+      // Fallback to point-aware 3D (4 credits) with optimized parameters
       const formData2 = new FormData();
       formData2.append('image', imageBlob, 'image.jpg');
-      formData2.append('texture_resolution', '1024');
-      formData2.append('foreground_ratio', '1.3');
-      formData2.append('guidance_scale', '3');
+      formData2.append('texture_resolution', '1024');        // Keep default - good quality
+      formData2.append('foreground_ratio', '0.92');          // Less padding = tighter crop for fashion
+      formData2.append('guidance_scale', '3');              // Keep existing guidance
       
       response = await fetch('https://api.stability.ai/v2beta/3d/stable-point-aware-3d', {
         method: 'POST',
