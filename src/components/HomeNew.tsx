@@ -35,6 +35,7 @@ import { UnrealReflectionPicker } from './UnrealReflectionPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
 import { MediaUploadAgreement } from './MediaUploadAgreement'
+import BestPracticesPopup from './BestPracticesPopup'
 import { paramsForI2ISharp } from '../services/infer-params'
 import MagicWandService from '../services/magicWandService'
 
@@ -4420,6 +4421,9 @@ const HomeNew: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Best Practices Popup */}
+      <BestPracticesPopup />
 
     </div>
   )
