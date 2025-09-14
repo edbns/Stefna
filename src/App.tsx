@@ -101,9 +101,18 @@ const AppContent: React.FC = () => {
   }
   
   // If on live domain and not launched, show coming soon page
+  // But allow dashboard access for admin
   if (isLiveDomain && !isLaunched) {
     console.log('🚧 Showing Coming Soon page for live domain (not launched)');
-    return <ComingSoonPage />
+    
+    // Check if user is trying to access dashboard
+    const currentPath = window.location.pathname;
+    if (currentPath === '/dashboard/management/control') {
+      console.log('🔧 Dashboard access detected, showing full app');
+      // Allow dashboard access even when not launched
+    } else {
+      return <ComingSoonPage />
+    }
   }
 
   console.log('🚀 Loading full app');
