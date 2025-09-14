@@ -1,6 +1,8 @@
 import type { Handler } from "@netlify/functions";
 import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
+import { withAdminSecurity } from './_lib/adminSecurity';
+import { handleCORS, getAdminCORSHeaders } from './_lib/cors';
 
 // ============================================================================
 // VERSION: 7.0 - RAW SQL MIGRATION
@@ -11,24 +13,12 @@ import { json } from './_lib/http';
 // - Manages preset configurations
 // ============================================================================
 
-export const handler: Handler = async (event) => {
+const adminPresetsHandler: Handler = async (event) => {
   // Handle CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
-      }
-    };
-  }
+  const corsResponse = handleCORS(event, true); // true for admin
+  if (corsResponse) return corsResponse;
 
   try {
-    // Basic admin check (you may want to enhance this)
-    if (!event.headers.authorization) {
-      return json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     if (event.httpMethod === 'GET') {
       // Get all preset configurations
@@ -59,9 +49,9 @@ export const handler: Handler = async (event) => {
 
       const newPreset = await q(`
         INSERT INTO preset_config (preset_key, name, description, strength, category, is_enabled, is_custom, metadata, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, NOW(), NOW())
         RETURNING *
-      `, [presetKey, name, description || '', strength || 1.0, category || 'custom', true, true, metadata || {}]);
+      `, [presetKey, name, description || '', strength || 1.0, category || 'custom', true, true, JSON.stringify(metadata || {})]);
 
       if (!newPreset || newPreset.length === 0) {
         throw new Error('Failed to create preset');
@@ -86,9 +76,21 @@ export const handler: Handler = async (event) => {
 
       console.log(`✏️ [Admin] Updating preset: ${id}`)
 
-      // Build dynamic UPDATE query
-      const updateFields = Object.keys(updates).map((key, index) => `${key} = $${index + 2}`).join(', ');
-      const updateValues = Object.values(updates);
+      // Build dynamic UPDATE query with proper JSONB handling
+      const updateFields = Object.keys(updates).map((key, index) => {
+        const value = updates[key];
+        if (key === 'metadata' && typeof value === 'object') {
+          return `${key} = $${index + 2}::jsonb`;
+        }
+        return `${key} = $${index + 2}`;
+      }).join(', ');
+      
+      const updateValues = Object.values(updates).map(value => {
+        if (typeof value === 'object' && value !== null) {
+          return JSON.stringify(value);
+        }
+        return value;
+      });
       
       const updatedPreset = await q(`
         UPDATE preset_config 
@@ -143,3 +145,5 @@ export const handler: Handler = async (event) => {
     }, { status: 500 });
   }
 };
+
+export { withAdminSecurity(adminPresetsHandler) as handler };
