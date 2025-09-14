@@ -658,7 +658,7 @@ async function uploadBase64ToCloudinary(base64Data: string): Promise<string> {
     // Detect if this is a GLB file (3D model) or regular image
     const isGLB = base64Data.startsWith('data:application/octet-stream');
     const fileType = isGLB ? '3D model' : 'image';
-    const mimeType = isGLB ? 'model/gltf-binary' : 'image/png';
+    const mimeType = isGLB ? 'application/octet-stream' : 'image/png';
     const fileName = isGLB ? 'generated.glb' : 'generated.png';
     
     console.log(`☁️ [Cloudinary] Starting signed upload for ${fileType}`);
