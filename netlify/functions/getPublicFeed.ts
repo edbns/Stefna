@@ -35,6 +35,66 @@ export const handler: Handler = async (event) => {
     };
   }
 
+  // 🔧 AUTO-MIGRATION: Check and add 3D columns if missing
+  try {
+    console.log('🔍 [getPublicFeed] Checking for 3D columns...');
+    
+    // Check if obj_url column exists in unreal_reflection_media
+    const columnCheck = await q(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'unreal_reflection_media' 
+      AND column_name = 'obj_url'
+    `);
+    
+    if (columnCheck.length === 0) {
+      console.log('🔄 [getPublicFeed] 3D columns missing, adding them...');
+      
+      // Add 3D columns to all media tables
+      const migrationQueries = [
+        `ALTER TABLE unreal_reflection_media ADD COLUMN IF NOT EXISTS obj_url TEXT`,
+        `ALTER TABLE unreal_reflection_media ADD COLUMN IF NOT EXISTS gltf_url TEXT`,
+        `ALTER TABLE unreal_reflection_media ADD COLUMN IF NOT EXISTS texture_url TEXT`,
+        `ALTER TABLE unreal_reflection_media ADD COLUMN IF NOT EXISTS model_3d_metadata JSONB`,
+        `ALTER TABLE presets_media ADD COLUMN IF NOT EXISTS obj_url TEXT`,
+        `ALTER TABLE presets_media ADD COLUMN IF NOT EXISTS gltf_url TEXT`,
+        `ALTER TABLE presets_media ADD COLUMN IF NOT EXISTS texture_url TEXT`,
+        `ALTER TABLE presets_media ADD COLUMN IF NOT EXISTS model_3d_metadata JSONB`,
+        `ALTER TABLE custom_prompt_media ADD COLUMN IF NOT EXISTS obj_url TEXT`,
+        `ALTER TABLE custom_prompt_media ADD COLUMN IF NOT EXISTS gltf_url TEXT`,
+        `ALTER TABLE custom_prompt_media ADD COLUMN IF NOT EXISTS texture_url TEXT`,
+        `ALTER TABLE custom_prompt_media ADD COLUMN IF NOT EXISTS model_3d_metadata JSONB`,
+        `ALTER TABLE ghibli_reaction_media ADD COLUMN IF NOT EXISTS obj_url TEXT`,
+        `ALTER TABLE ghibli_reaction_media ADD COLUMN IF NOT EXISTS gltf_url TEXT`,
+        `ALTER TABLE ghibli_reaction_media ADD COLUMN IF NOT EXISTS texture_url TEXT`,
+        `ALTER TABLE ghibli_reaction_media ADD COLUMN IF NOT EXISTS model_3d_metadata JSONB`,
+        `ALTER TABLE neo_glitch_media ADD COLUMN IF NOT EXISTS obj_url TEXT`,
+        `ALTER TABLE neo_glitch_media ADD COLUMN IF NOT EXISTS gltf_url TEXT`,
+        `ALTER TABLE neo_glitch_media ADD COLUMN IF NOT EXISTS texture_url TEXT`,
+        `ALTER TABLE neo_glitch_media ADD COLUMN IF NOT EXISTS model_3d_metadata JSONB`,
+        `ALTER TABLE edit_media ADD COLUMN IF NOT EXISTS obj_url TEXT`,
+        `ALTER TABLE edit_media ADD COLUMN IF NOT EXISTS gltf_url TEXT`,
+        `ALTER TABLE edit_media ADD COLUMN IF NOT EXISTS texture_url TEXT`,
+        `ALTER TABLE edit_media ADD COLUMN IF NOT EXISTS model_3d_metadata JSONB`
+      ];
+
+      for (const query of migrationQueries) {
+        try {
+          await q(query);
+          console.log(`✅ [getPublicFeed] Added column: ${query.substring(0, 50)}...`);
+        } catch (error: any) {
+          console.log(`⚠️ [getPublicFeed] Column may already exist: ${error.message}`);
+        }
+      }
+      
+      console.log('✅ [getPublicFeed] 3D columns migration completed');
+    } else {
+      console.log('✅ [getPublicFeed] 3D columns already exist');
+    }
+  } catch (migrationError: any) {
+    console.warn('⚠️ [getPublicFeed] Migration check failed, continuing:', migrationError.message);
+  }
+
   const limit = Math.max(1, Math.min(200, Number(event.queryStringParameters?.limit ?? 100))); // Increased from 20 to 100, max 200
   const offset = Math.max(0, Number(event.queryStringParameters?.offset ?? 0));
 
