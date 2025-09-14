@@ -286,11 +286,14 @@ Time: ${new Date().toLocaleString()}
 Dashboard: https://stefna.xyz/dashboard/management/control
 `
 
+      // Get admin email from environment variable, fallback to hello@stefna.xyz
+      const adminEmail = process.env.ADMIN_EMAIL || 'hello@stefna.xyz';
+      
       await fetch('/.netlify/functions/sendEmail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: 'hello@stefna.xyz',
+          to: adminEmail,
           from: 'System Alert <alert@stefna.xyz>',
           subject,
           text: body,
