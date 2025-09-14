@@ -131,65 +131,10 @@ export const handler: Handler = async (event) => {
         }
       }
       
-      // Personal 24-hour reset based on account creation time
+      // Get current credit balance (reset logic moved to database trigger)
       const dailyCredits = 14;
-      const now = new Date();
-      let currentBalance = (userCredits?.credits ?? 0);
+      const currentBalance = (userCredits?.credits ?? 0);
       
-      // Get user's account creation time
-      const user = await qOne(`
-        SELECT created_at FROM users WHERE id = $1
-      `, [userId]);
-      
-      if (user?.created_at) {
-        const accountCreated = new Date(user.created_at);
-        const lastUpdate = userCredits?.updated_at ? new Date(userCredits.updated_at) : accountCreated;
-        
-        // Calculate next reset time (24 hours from last reset, or from account creation)
-        const lastResetTime = lastUpdate > accountCreated ? lastUpdate : accountCreated;
-        const nextResetTime = new Date(lastResetTime.getTime() + (24 * 60 * 60 * 1000));
-        
-        // If it's time for a reset (24 hours have passed)
-        if (now >= nextResetTime) {
-          await qOne(`
-            UPDATE user_credits SET credits = $1, updated_at = NOW() WHERE user_id = $2 RETURNING credits
-          `, [dailyCredits, userId]);
-          currentBalance = dailyCredits;
-          console.log(`🔄 [Credits] Personal 24h reset for user ${userId}: ${lastResetTime.toISOString()} → ${now.toISOString()}`);
-          
-          // SAFE: Send refresh email (completely non-blocking)
-          try {
-            // Get user email for refresh notification
-            const userEmail = await qOne(`
-              SELECT email FROM users WHERE id = $1
-            `, [userId]);
-            
-            if (userEmail?.email) {
-              // Send refresh email using existing email service
-              await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/sendEmail`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  to: userEmail.email,
-                  subject: 'Credits refreshed — let\'s create.',
-                  type: 'daily_credits_refresh',
-                  data: { 
-                    userId: userId,
-                    resetTime: now.toISOString(),
-                    newBalance: dailyCredits
-                  }
-                })
-              });
-              
-              console.log(`📧 [Credits] Refresh email sent to ${userEmail.email} after credit reset`);
-            }
-          } catch (emailError) {
-            // Email failure should NEVER affect credit functionality
-            console.warn('⚠️ [Credits] Refresh email failed but credit reset succeeded:', emailError);
-            // Continue normally - credits are working fine
-          }
-        }
-      }
       console.log('💰 Current balance:', currentBalance, 'credits, requesting:', cost, 'credits');
       
       // Check if user has insufficient credits
