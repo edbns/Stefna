@@ -3,6 +3,7 @@ import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
 import { withAdminSecurity } from './_lib/adminSecurity';
 import { handleCORS, getAdminCORSHeaders } from './_lib/cors';
+import { performHealthChecks } from './_lib/healthCheck';
 
 // ============================================================================
 // ADMIN SYSTEM CONFIGURATION
@@ -70,7 +71,7 @@ const adminConfigHandler: Handler = async (event) => {
       // Get waitlist count
       const waitlistCount = await qCount('SELECT COUNT(*) FROM waitlist');
 
-      // Get real system health from health check endpoint
+      // Get real system health from direct health checks
       let realHealthStatus = {
         fal_ai_enabled: false,
         bfl_api_enabled: false,
@@ -78,30 +79,27 @@ const adminConfigHandler: Handler = async (event) => {
         cloudinary_enabled: false,
         email_enabled: false,
         database_enabled: false,
-        overall_status: 'unknown'
+        overall_status: 'unknown' as 'healthy' | 'degraded' | 'unhealthy'
       };
       
       try {
-        // Call our health check function internally
-        const healthResponse = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/health-check`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
+        // Perform direct health checks
+        const healthData = await performHealthChecks();
         
-        if (healthResponse.ok) {
-          const healthData = await healthResponse.json();
-          realHealthStatus = {
-            fal_ai_enabled: healthData.services?.find((s: any) => s.service === 'fal_ai')?.status === 'healthy',
-            bfl_api_enabled: healthData.services?.find((s: any) => s.service === 'bfl')?.status === 'healthy',
-            stability_enabled: healthData.services?.find((s: any) => s.service === 'stability_ai')?.status === 'healthy',
-            cloudinary_enabled: healthData.services?.find((s: any) => s.service === 'cloudinary')?.status === 'healthy',
-            email_enabled: healthData.services?.find((s: any) => s.service === 'email')?.status === 'healthy',
-            database_enabled: healthData.services?.find((s: any) => s.service === 'database')?.status === 'healthy',
-            overall_status: healthData.overallStatus || 'unknown'
-          };
-        }
+        realHealthStatus = {
+          fal_ai_enabled: healthData.results.find(s => s.service === 'fal_ai')?.status === 'healthy',
+          bfl_api_enabled: healthData.results.find(s => s.service === 'bfl')?.status === 'healthy',
+          stability_enabled: healthData.results.find(s => s.service === 'stability_ai')?.status === 'healthy',
+          cloudinary_enabled: healthData.results.find(s => s.service === 'cloudinary')?.status === 'healthy',
+          email_enabled: healthData.results.find(s => s.service === 'email')?.status === 'healthy',
+          database_enabled: healthData.results.find(s => s.service === 'database')?.status === 'healthy',
+          overall_status: healthData.overallStatus
+        };
+        
+        console.log('✅ [Admin] Health checks completed:', {
+          overall: healthData.overallStatus,
+          summary: healthData.summary
+        });
       } catch (healthError) {
         console.warn('⚠️ [Admin] Health check failed, falling back to env vars:', healthError);
         // Fallback to environment variable checks
@@ -263,7 +261,7 @@ const adminConfigHandler: Handler = async (event) => {
             return json({ error: 'is_launched must be a boolean' }, { status: 400 });
           }
 
-          const launchResult = await q('SELECT * FROM update_launch_status($1)', [is_launched]);
+          const launchResult = await q('SELECT * FROM update_launch_status($1::boolean)', [is_launched.toString()]);
           
           // If launching, send notifications to waitlist
           if (is_launched) {
