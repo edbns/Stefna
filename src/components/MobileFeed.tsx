@@ -1,6 +1,7 @@
-// Mobile-optimized feed component for view-only experience
-import React from 'react';
+// Mobile-optimized feed component with generation capabilities
+import React, { useState } from 'react';
 import type { UserMedia } from '../services/userMediaService';
+import MobileGenerationApp from './MobileGenerationApp';
 
 interface MobileFeedProps {
   feed: UserMedia[];
@@ -15,6 +16,22 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
   userLikes = {},
   isLoggedIn = false
 }) => {
+  const [showGenerationApp, setShowGenerationApp] = useState(false);
+
+  // If user wants to generate content, show the full generation app
+  if (showGenerationApp) {
+    return (
+      <div className="mobile-feed">
+        <button 
+          className="back-to-feed-button"
+          onClick={() => setShowGenerationApp(false)}
+        >
+          ← Back to Feed
+        </button>
+        <MobileGenerationApp />
+      </div>
+    );
+  }
 
   // Function to get proper media type display (same logic as desktop PresetTag)
   const getMediaTypeDisplay = (media: UserMedia): string => {
@@ -112,12 +129,20 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
         </div>
       ))}
 
-      {/* Bottom Banner */}
+      {/* Bottom Banner with Create Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-white text-black py-3 px-4 z-50">
         <div className="text-center">
-          <p className="text-sm font-medium">
+          <p className="text-sm font-medium mb-3">
             Enjoy the full experience on our website — app coming soon!
           </p>
+          {isLoggedIn && (
+            <button 
+              className="bg-black text-white px-6 py-2 rounded-full text-sm font-medium"
+              onClick={() => setShowGenerationApp(true)}
+            >
+              ✨ Create Content
+            </button>
+          )}
         </div>
       </div>
     </div>
