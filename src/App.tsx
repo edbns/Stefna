@@ -120,7 +120,7 @@ const AppContent: React.FC = () => {
           {/* Mobile restrictions - redirect to home for non-home routes */}
           {isMobile ? (
             <>
-              <Route path="/auth" element={<AuthScreen />} />
+              <Route path="/auth" element={<Navigate to="/" replace />} />
               <Route path="/profile" element={<Navigate to="/" replace />} />
               <Route path="/dashboard/management/control" element={<Navigate to="/" replace />} />
               <Route path="/gallery" element={<Navigate to="/" replace />} />
