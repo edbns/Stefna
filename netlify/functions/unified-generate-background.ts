@@ -1782,6 +1782,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
     models = GHIBLI_MODELS; // Use high-quality models for Ghibli
   } else if (mode === 'unreal_reflection') {
     models = EDIT_MODELS; // Use nano-banana/edit for Unreal Reflection (same as Studio)
+  } else if (mode === 'parallel_self') {
+    models = EDIT_MODELS; // Use nano-banana/edit for Parallel Self (same as Studio)
   } else if (mode === 'story_time') {
     models = VIDEO_MODELS;
   } else if (mode === 'edit') {
