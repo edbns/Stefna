@@ -66,7 +66,7 @@ export const handler: Handler = async (event) => {
       { name: 'ghibli_reaction_media', display: 'ghibliReactionMedia', idField: 'id' },
       { name: 'presets_media', display: 'presetsMedia', idField: 'id' },
       { name: 'story', display: 'story', idField: 'id' },
-      { name: 'edit_media', display: 'editMedia', idField: 'run_id' }, // edit_media uses run_id for lookups
+      { name: 'edit_media', display: 'editMedia', idField: 'id' }, // edit_media now uses id (TEXT) like other tables
       { name: 'parallel_self_media', display: 'parallelSelfMedia', idField: 'id' }
     ];
     
@@ -221,13 +221,13 @@ export const handler: Handler = async (event) => {
       }
     }
 
-    // Try Edit Media (uses run_id for lookup, not id)
+    // Try Edit Media (now uses id like other tables)
     if (!deletedMedia) {
       try {
         const result = await q(`
           DELETE FROM edit_media 
-          WHERE run_id = $1 AND user_id = $2
-          RETURNING run_id
+          WHERE id = $1 AND user_id = $2
+          RETURNING id
         `, [mediaId, userId]);
         console.log('🔍 [delete-media] Edit Media result:', { result, length: result?.length });
         if (result && result.length > 0) {
@@ -290,7 +290,7 @@ export const handler: Handler = async (event) => {
                 mediaTable === 'story' ? 'story' :
                 mediaTable === 'editMedia' ? 'edit_media' :
                 mediaTable === 'parallelSelfMedia' ? 'parallel_self_media' : 'custom_prompt_media'}
-          WHERE ${mediaTable === 'editMedia' ? 'run_id' : 'id'} = $1
+          WHERE id = $1
         `, [mediaId]);
         
         // 3. Clean up Cloudinary assets (if we have the info)
@@ -314,7 +314,7 @@ export const handler: Handler = async (event) => {
                 mediaTable === 'presetsMedia' ? 'presets_media' :
                 mediaTable === 'story' ? 'story' :
                 mediaTable === 'editMedia' ? 'edit_media' :
-                mediaTable === 'parallelSelfMedia' ? 'parallel_self_media' : 'custom_prompt_media'} m ON l.media_id::text = m.${mediaTable === 'editMedia' ? 'run_id' : 'id'}::text
+                mediaTable === 'parallelSelfMedia' ? 'parallel_self_media' : 'custom_prompt_media'} m ON l.media_id::text = m.id::text
           WHERE m.user_id = $1
         `, [userId]);
         
@@ -337,14 +337,15 @@ export const handler: Handler = async (event) => {
       // Verify the media was actually deleted
       try {
         const verifyResult = await q(`
-          SELECT ${mediaTable === 'editMedia' ? 'run_id' : 'id'} FROM ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
+          SELECT id FROM ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
                           mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
                           mediaTable === 'unrealReflectionMedia' ? 'unreal_reflection_media' :
                           mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                           mediaTable === 'presetsMedia' ? 'presets_media' :
                           mediaTable === 'story' ? 'story' :
-                          mediaTable === 'editMedia' ? 'edit_media' : 'custom_prompt_media'}
-          WHERE ${mediaTable === 'editMedia' ? 'run_id' : 'id'} = $1
+                          mediaTable === 'editMedia' ? 'edit_media' :
+                          mediaTable === 'parallelSelfMedia' ? 'parallel_self_media' : 'custom_prompt_media'}
+          WHERE id = $1
         `, [mediaId]);
         
         if (verifyResult && verifyResult.length > 0) {
