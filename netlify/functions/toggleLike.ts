@@ -83,7 +83,7 @@ export const handler: Handler = async (event) => {
 
     // Check if user already liked this media
     const existingLike = await q(
-      'SELECT id FROM likes WHERE user_id = $1 AND media_id = $2 AND media_type = $3',
+      'SELECT id FROM likes WHERE user_id = $1 AND media_id = $2::text AND media_type = $3',
       [userId, mediaId, mediaType]
     );
 
@@ -93,14 +93,14 @@ export const handler: Handler = async (event) => {
     if (existingLike.length > 0) {
       // Unlike - remove the like
       await q(
-        'DELETE FROM likes WHERE user_id = $1 AND media_id = $2 AND media_type = $3',
+        'DELETE FROM likes WHERE user_id = $1 AND media_id = $2::text AND media_type = $3',
         [userId, mediaId, mediaType]
       );
       liked = false;
     } else {
       // Like - add the like
       await q(
-        'INSERT INTO likes (user_id, media_id, media_type) VALUES ($1, $2, $3)',
+        'INSERT INTO likes (user_id, media_id, media_type) VALUES ($1, $2::text, $3)',
         [userId, mediaId, mediaType]
       );
       liked = true;
@@ -108,7 +108,7 @@ export const handler: Handler = async (event) => {
 
     // Get updated likes count from the likes table
     const countResult = await q(
-      'SELECT COUNT(*) as count FROM likes WHERE media_id = $1 AND media_type = $2',
+      'SELECT COUNT(*) as count FROM likes WHERE media_id = $1::text AND media_type = $2',
       [mediaId, mediaType]
     );
     likesCount = Math.max(0, countResult[0]?.count || 0); // Ensure minimum is 0
