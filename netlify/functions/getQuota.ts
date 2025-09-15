@@ -30,7 +30,22 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const { userId } = requireAuth(event.headers.authorization);
+    // Handle missing authorization header gracefully
+    const authHeader = event.headers?.authorization || event.headers?.Authorization;
+    
+    if (!authHeader) {
+      console.warn('⚠️ [Quota] No Authorization header provided');
+      return json({ 
+        ok: false, 
+        error: 'Authentication required',
+        daily_limit: 14,
+        daily_used: 0,
+        remaining: 0,
+        currentBalance: 0
+      }, { status: 401 });
+    }
+    
+    const { userId } = requireAuth(authHeader);
     
     console.log('📊 [Quota] Getting quota for user:', userId);
 
@@ -92,10 +107,27 @@ export const handler: Handler = async (event) => {
 
   } catch (error) {
     console.error('💥 [Quota] Error:', error);
+    
+    // Handle authentication errors specifically
+    if (error instanceof Error && error.message.includes('Missing/invalid Authorization')) {
+      return json({ 
+        ok: false,
+        error: 'Authentication required',
+        daily_limit: 14,
+        daily_used: 0,
+        remaining: 0,
+        currentBalance: 0
+      }, { status: 401 });
+    }
+    
     return json({ 
       ok: false,
       error: 'QUOTA_ERROR',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
+      daily_limit: 14,
+      daily_used: 0,
+      remaining: 0,
+      currentBalance: 0
     }, { status: 500 });
   }
 };
