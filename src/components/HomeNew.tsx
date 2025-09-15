@@ -3232,8 +3232,10 @@ const HomeNew: React.FC = () => {
       
       // Debug logging for filtering
       console.log(`🔍 [Filter] Item ${item.id}:`, {
-        presetKey: item.presetKey,
-        metadataPresetType: item.metadata?.presetType,
+        itemPresetType: item.presetType,
+        itemType: item.type,
+        itemMetadataPresetType: item.metadata?.presetType,
+        itemPresetKey: item.presetKey,
         calculatedPresetType: presetType,
         activeFeedFilter,
         matches: presetType === activeFeedFilter

@@ -275,10 +275,12 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                                 const filterType = getPresetTypeForFilter(item)
                                 console.log('🔍 [MasonryMediaGrid] PresetTag clicked:', { 
                                   filterType, 
+                                  itemPresetType: item.presetType,
                                   itemType: item.type, 
                                   metadataType: item.metadata?.presetType,
                                   presetKey: item.presetKey,
-                                  metadataPresetKey: item.metadata?.presetKey
+                                  metadataPresetKey: item.metadata?.presetKey,
+                                  fullItem: item
                                 })
                                 
                                 // Scroll to top when filter is applied
