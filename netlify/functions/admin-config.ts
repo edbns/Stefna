@@ -142,7 +142,7 @@ const adminConfigHandler: Handler = async (event) => {
       } catch (error) {
         console.warn('⚠️ [Admin] App config query failed:', error);
         configMap = {
-          daily_cap: '30',
+          daily_cap: '14',
           last_credit_reset: null,
           starter_grant: '30',
           referral_referrer_bonus: '10',
@@ -184,7 +184,7 @@ const adminConfigHandler: Handler = async (event) => {
         
         // Limits and Quotas
         limits: {
-          daily_cap: parseInt(configMap.daily_cap) || 30,
+          daily_cap: parseInt(configMap.daily_cap) || 14,
           max_credits_per_user: 100,
           daily_credit_reset: true,
           max_media_per_user: 1000,

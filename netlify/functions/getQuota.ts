@@ -44,18 +44,24 @@ export const handler: Handler = async (event) => {
     `, [userId]);
 
     if (!userCredits) {
+      // Get daily cap from database for new users too
+      const dailyCapResult = await qOne(`SELECT value FROM app_config WHERE key = 'daily_cap'`);
+      const dailyCredits = parseInt(dailyCapResult?.value || '14');
+      
       // User doesn't have credits record, return default quota
       return json({
         ok: true,
-        dailyCredits: 14,
+        dailyCredits: dailyCredits,
         usedCredits: 0,
-        remainingCredits: 14,
+        remainingCredits: dailyCredits,
         dailyReset: new Date().toISOString().split('T')[0], // Today's date
-        message: 'New user - starting with 14 daily credits'
+        message: `New user - starting with ${dailyCredits} daily credits`
       });
     }
 
-    const dailyCredits = 14; // Daily credit limit
+    // Get daily cap from database
+    const dailyCapResult = await qOne(`SELECT value FROM app_config WHERE key = 'daily_cap'`);
+    const dailyCredits = parseInt(dailyCapResult?.value || '14');
     const currentCredits = userCredits.credits || 0;
     const usedCredits = Math.max(0, dailyCredits - currentCredits);
     const remainingCredits = Math.max(0, currentCredits);

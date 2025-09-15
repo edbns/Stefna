@@ -15,7 +15,8 @@ import {
   Search,
   Plus,
   Minus,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react'
 import { authenticatedFetch } from '../utils/apiClient'
 import { Helmet } from 'react-helmet'
@@ -23,10 +24,8 @@ import { Helmet } from 'react-helmet'
 interface User {
   id: string
   email: string
-  name?: string
-  avatarUrl?: string
   createdAt: string
-  lastLogin?: string
+  lastActive?: string
   credits: number
   isBanned: boolean
   shareToFeed: boolean
@@ -75,11 +74,55 @@ const AdminDashboardScreen: React.FC = () => {
     totalMedia: 0,
     totalCredits: 0,
     bannedUsers: 0,
-    activeUsers: 0
+    activeUsers: 0,
+    quotaStatus: {
+      quota_enabled: false,
+      quota_limit: 0,
+      current_count: 0,
+      quota_reached: false,
+      remaining_slots: 0
+    }
   })
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [presetSearchTerm, setPresetSearchTerm] = useState('')
+  const [userFilter, setUserFilter] = useState<'all' | 'active' | 'banned' | 'low-credits' | 'inactive'>('all')
+  const [userSort, setUserSort] = useState<'newest' | 'oldest' | 'credits-high' | 'credits-low'>('newest')
+  const [usersPerPage, setUsersPerPage] = useState(25)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  // Modal State
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'ban' | 'unban' | 'delete' | 'delete-media' | 'reset-credits' | 'delete-preset' | 'validation'
+    userId?: string
+    userEmail?: string
+    mediaId?: string
+    mediaType?: string
+    presetId?: string
+    presetName?: string
+    title?: string
+    message?: string
+    onConfirm?: () => void
+  } | null>(null)
+  
+  // Media View Modal State
+  const [showMediaModal, setShowMediaModal] = useState(false)
+  const [selectedMedia, setSelectedMedia] = useState<any>(null)
+  
+  // Add Preset Modal State
+  const [showAddPresetModal, setShowAddPresetModal] = useState(false)
+  const [showEditPresetModal, setShowEditPresetModal] = useState(false)
+  const [editingPreset, setEditingPreset] = useState<PresetConfig | null>(null)
+  const [newPreset, setNewPreset] = useState({
+    preset_name: '',
+    preset_key: '',
+    preset_description: '',
+    preset_category: 'Custom',
+    preset_strength: 0.5,
+    is_active: true,
+    preset_week: null
+  })
 
   // Media Browser State
   const [media, setMedia] = useState<any[]>([])
@@ -221,27 +264,15 @@ const AdminDashboardScreen: React.FC = () => {
   }
 
   const handleBanUser = async (userId: string, ban: boolean) => {
-    try {
-      const response = await authenticatedFetch('/.netlify/functions/admin-ban-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Secret': adminSecret
-        },
-        body: JSON.stringify({ userId, ban })
-      })
-      
-      if (response.ok) {
-        // Update local state
-        setUsers(prev => prev.map(user => 
-          user.id === userId ? { ...user, isBanned: ban } : user
-        ))
-        // Reload stats
-        loadAdminData()
-      }
-    } catch (error) {
-      console.error('Failed to ban/unban user:', error)
-    }
+    const user = users.find(u => u.id === userId)
+    if (!user) return
+
+    setConfirmAction({
+      type: ban ? 'ban' : 'unban',
+      userId,
+      userEmail: user.email
+    })
+    setShowConfirmModal(true)
   }
 
   const handleAdjustCredits = async (userId: string, adjustment: number) => {
@@ -269,35 +300,112 @@ const AdminDashboardScreen: React.FC = () => {
   }
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      return
-    }
-    
+    const user = users.find(u => u.id === userId)
+    if (!user) return
+
+    setConfirmAction({
+      type: 'delete',
+      userId,
+      userEmail: user.email
+    })
+    setShowConfirmModal(true)
+  }
+
+  const executeConfirmAction = async () => {
+    if (!confirmAction) return
+
     try {
+      if (confirmAction.type === 'delete') {
       const response = await authenticatedFetch('/.netlify/functions/admin-delete-user', {
         method: 'DELETE',
         headers: {
           'X-Admin-Secret': adminSecret
         },
-        body: JSON.stringify({ userId })
+          body: JSON.stringify({ userId: confirmAction.userId })
       })
       
       if (response.ok) {
-        // Remove user from local state
-        setUsers(prev => prev.filter(user => user.id !== userId))
-        // Reload stats
+          setUsers(prev => prev.filter(user => user.id !== confirmAction.userId))
         loadAdminData()
+        }
+      } else if (confirmAction.type === 'delete-media') {
+        const response = await authenticatedFetch('/.netlify/functions/admin-media', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Secret': adminSecret
+          },
+          body: JSON.stringify({ id: confirmAction.mediaId, type: confirmAction.mediaType })
+        })
+        
+        if (response.ok) {
+          setMedia(prev => prev.filter(item => !(item.id === confirmAction.mediaId && item.type === confirmAction.mediaType)))
+          setMediaTotal(prev => prev - 1)
+        }
+      } else if (confirmAction.type === 'reset-credits') {
+        const dailyCap = systemConfig?.limits?.daily_cap || 14
+        const response = await authenticatedFetch('/.netlify/functions/admin-config', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Secret': adminSecret
+          },
+          body: JSON.stringify({ action: 'reset_daily_credits' })
+        })
+        
+        if (response.ok) {
+          loadAdminData()
+          loadSystemConfig()
+        }
+      } else if (confirmAction.type === 'delete-preset') {
+        const response = await authenticatedFetch('/.netlify/functions/admin-presets-config', {
+          method: 'DELETE',
+          headers: {
+            'X-Admin-Secret': adminSecret
+          },
+          body: JSON.stringify({ id: confirmAction.presetId })
+        })
+        
+        if (response.ok) {
+          setPresets(prev => prev.filter(preset => preset.id !== confirmAction.presetId))
+        }
+      } else {
+        const ban = confirmAction.type === 'ban'
+        const response = await authenticatedFetch('/.netlify/functions/admin-ban-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Secret': adminSecret
+          },
+          body: JSON.stringify({ userId: confirmAction.userId, ban })
+        })
+        
+        if (response.ok) {
+          setUsers(prev => prev.map(user => 
+            user.id === confirmAction.userId ? { ...user, isBanned: ban } : user
+          ))
+          loadAdminData()
+        }
       }
     } catch (error) {
-      console.error('Failed to delete user:', error)
+      console.error('Action failed:', error)
+    } finally {
+      setShowConfirmModal(false)
+      setConfirmAction(null)
     }
+  }
+
+  // Media View Functions
+  const handleViewMedia = (mediaItem: any) => {
+    setSelectedMedia(mediaItem)
+    setShowMediaModal(true)
   }
 
   // Preset management functions
   const loadPresets = async () => {
     console.log('🔍 [Admin] Loading presets with secret:', adminSecret ? '***' : 'none')
     try {
-      const response = await authenticatedFetch('/.netlify/functions/admin-presets', {
+      const response = await authenticatedFetch('/.netlify/functions/admin-presets-config', {
         method: 'GET',
         headers: {
           'X-Admin-Secret': adminSecret
@@ -320,7 +428,7 @@ const AdminDashboardScreen: React.FC = () => {
 
   const togglePreset = async (presetId: string, isEnabled: boolean) => {
     try {
-      const response = await authenticatedFetch('/.netlify/functions/admin-presets', {
+      const response = await authenticatedFetch('/.netlify/functions/admin-presets-config', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -343,51 +451,119 @@ const AdminDashboardScreen: React.FC = () => {
     }
   }
 
-  const updatePreset = async (presetId: string, updates: Partial<PresetConfig>) => {
+  const addPreset = async () => {
+    if (!newPreset.preset_name || !newPreset.preset_key) {
+      setConfirmAction({
+        type: 'validation',
+        title: 'Missing Information',
+        message: 'Please fill in preset name and key',
+        onConfirm: () => setConfirmAction(null)
+      })
+      return
+    }
+    
     try {
-      const response = await authenticatedFetch('/.netlify/functions/admin-presets', {
+      const response = await authenticatedFetch('/.netlify/functions/admin-presets-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Secret': adminSecret
+        },
+        body: JSON.stringify(newPreset)
+      })
+      
+      if (response.ok) {
+        const addedPreset = await response.json()
+        setPresets(prev => [...prev, addedPreset])
+        setShowAddPresetModal(false)
+        setNewPreset({
+          preset_name: '',
+          preset_key: '',
+          preset_description: '',
+          preset_category: 'Custom',
+          preset_strength: 0.5,
+          is_active: true,
+          preset_week: null
+        })
+      } else {
+        setConfirmAction({
+          type: 'validation',
+          title: 'Error',
+          message: 'Failed to add preset. Please try again.',
+          onConfirm: () => setConfirmAction(null)
+        })
+      }
+    } catch (error) {
+      console.error('Failed to add preset:', error)
+      setConfirmAction({
+        type: 'validation',
+        title: 'Error',
+        message: 'Failed to add preset. Please try again.',
+        onConfirm: () => setConfirmAction(null)
+      })
+    }
+  }
+
+  const editPreset = (preset: PresetConfig) => {
+    setEditingPreset(preset)
+    setShowEditPresetModal(true)
+  }
+
+  const updatePreset = async () => {
+    if (!editingPreset) return
+
+    try {
+      const response = await authenticatedFetch('/.netlify/functions/admin-presets-config', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'X-Admin-Secret': adminSecret
         },
         body: JSON.stringify({
-          id: presetId,
-          updates
+          id: editingPreset.id,
+          updates: editingPreset
         })
       })
       
       if (response.ok) {
-        // Update local state
         setPresets(prev => prev.map(preset => 
-          preset.id === presetId ? { ...preset, ...updates } : preset
+          preset.id === editingPreset.id ? editingPreset : preset
         ))
+        setShowEditPresetModal(false)
+        setEditingPreset(null)
       }
     } catch (error) {
       console.error('Failed to update preset:', error)
     }
   }
 
-  const deletePreset = async (presetId: string) => {
-    if (!confirm('Are you sure you want to delete this preset? This action cannot be undone.')) {
-      return
-    }
-    
-    try {
-      const response = await authenticatedFetch('/.netlify/functions/admin-presets', {
+  const deletePreset = (presetId: string) => {
+    const preset = presets.find(p => p.id === presetId)
+    if (preset) {
+      setConfirmAction({
+        type: 'delete-preset',
+        presetId: presetId,
+        presetName: preset.preset_name,
+        onConfirm: async () => {
+          try {
+            const response = await authenticatedFetch('/.netlify/functions/admin-presets-config', {
         method: 'DELETE',
         headers: {
+                'Content-Type': 'application/json',
           'X-Admin-Secret': adminSecret
         },
         body: JSON.stringify({ id: presetId })
       })
       
       if (response.ok) {
-        // Remove preset from local state
-        setPresets(prev => prev.filter(preset => preset.id !== presetId))
+              setPresets(prev => prev.filter(p => p.id !== presetId))
       }
     } catch (error) {
       console.error('Failed to delete preset:', error)
+          }
+          setConfirmAction(null)
+        }
+      })
     }
   }
 
@@ -420,28 +596,12 @@ const AdminDashboardScreen: React.FC = () => {
   }
 
   const handleDeleteMedia = async (id: string, type: string) => {
-    if (!confirm('Are you sure you want to delete this media? This action cannot be undone.')) {
-      return
-    }
-    
-    try {
-      const response = await authenticatedFetch('/.netlify/functions/admin-media', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Secret': adminSecret
-        },
-        body: JSON.stringify({ id, type })
-      })
-      
-      if (response.ok) {
-        // Remove media from local state
-        setMedia(prev => prev.filter(item => !(item.id === id && item.type === type)))
-        setMediaTotal(prev => prev - 1)
-      }
-    } catch (error) {
-      console.error('Failed to delete media:', error)
-    }
+    setConfirmAction({
+      type: 'delete-media',
+      mediaId: id,
+      mediaType: type
+    })
+    setShowConfirmModal(true)
   }
 
   // System Configuration Functions
@@ -464,33 +624,11 @@ const AdminDashboardScreen: React.FC = () => {
   }
 
   const handleResetDailyCredits = async () => {
-    // Get the current daily cap from system config
-    const dailyCap = systemConfig?.limits?.daily_cap || 30
-    
-    if (!confirm(`Are you sure you want to reset daily credits for all users? This will give all users ${dailyCap} credits.`)) {
-      return
-    }
-    
-    try {
-      const response = await authenticatedFetch('/.netlify/functions/admin-config', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Secret': adminSecret
-        },
-        body: JSON.stringify({ action: 'reset_daily_credits' })
-      })
-      
-      if (response.ok) {
-        alert(`Daily credits reset successfully! All users now have ${dailyCap} credits.`)
-        loadAdminData()
-      } else {
-        alert('Failed to reset daily credits')
-      }
-    } catch (error) {
-      console.error('Failed to reset daily credits:', error)
-      alert('Error resetting daily credits')
-    }
+    const dailyCap = systemConfig?.limits?.daily_cap || 14
+    setConfirmAction({
+      type: 'reset-credits'
+    })
+    setShowConfirmModal(true)
   }
 
   const handleCleanupOldMedia = async () => {
@@ -596,11 +734,6 @@ const AdminDashboardScreen: React.FC = () => {
     }
   }
 
-  // Credit System Helper Functions
-  const getUsersWithCreditsRange = (min: number, max: number) => {
-    return users.filter(user => user.credits >= min && user.credits <= max).length
-  }
-
   // Bulk Credit Adjustment State
   const [showBulkModal, setShowBulkModal] = useState(false)
   const [bulkAdjustment, setBulkAdjustment] = useState({
@@ -616,7 +749,6 @@ const AdminDashboardScreen: React.FC = () => {
 
   const executeBulkAdjustment = async () => {
     if (!bulkAdjustment.amount || isNaN(Number(bulkAdjustment.amount))) {
-      alert('Please enter a valid number')
       return
     }
 
@@ -644,10 +776,7 @@ const AdminDashboardScreen: React.FC = () => {
         })
 
         if (response.ok) {
-          alert(`Successfully adjusted ${bulkAdjustment.configKey} by ${amount}`)
           loadSystemConfig()
-        } else {
-          alert('Failed to adjust config value')
         }
       } else {
         // Adjust user credits
@@ -662,10 +791,6 @@ const AdminDashboardScreen: React.FC = () => {
         }
 
         totalAffected = targetUsers.length
-
-        if (!confirm(`This will adjust credits by ${amount} for ${totalAffected} users. Continue?`)) {
-          return
-        }
 
         for (const user of targetUsers) {
           try {
@@ -689,7 +814,6 @@ const AdminDashboardScreen: React.FC = () => {
           }
         }
 
-        alert(`Successfully adjusted credits for ${successCount}/${totalAffected} users`)
         loadAdminData()
       }
 
@@ -701,10 +825,55 @@ const AdminDashboardScreen: React.FC = () => {
     }
   }
 
-  const filteredUsers = users.filter(user => 
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredUsers = users
+    .filter(user => {
+      // Search filter
+      const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      // Status filter
+      let matchesFilter = true
+      switch (userFilter) {
+        case 'active':
+          matchesFilter = !user.isBanned
+          break
+        case 'banned':
+          matchesFilter = user.isBanned
+          break
+        case 'low-credits':
+          matchesFilter = user.credits <= 5
+          break
+        case 'inactive':
+          // Users inactive for more than 7 days
+          const sevenDaysAgo = new Date()
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+          matchesFilter = !user.lastActive || new Date(user.lastActive) < sevenDaysAgo
+          break
+        case 'all':
+        default:
+          matchesFilter = true
+      }
+      
+      return matchesSearch && matchesFilter
+    })
+    .sort((a, b) => {
+      switch (userSort) {
+        case 'oldest':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        case 'credits-high':
+          return b.credits - a.credits
+        case 'credits-low':
+          return a.credits - b.credits
+        case 'newest':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+    })
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage)
+  const startIndex = (currentPage - 1) * usersPerPage
+  const endIndex = startIndex + usersPerPage
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex)
 
   const filteredPresets = presets.filter(preset => 
     preset.preset_name?.toLowerCase().includes(presetSearchTerm.toLowerCase()) ||
@@ -722,7 +891,7 @@ const AdminDashboardScreen: React.FC = () => {
             <div className="mb-8">
               <Shield size={80} className="text-red-500/60 mx-auto mb-4" />
               <h1 className="text-3xl font-bold text-white mb-2">Admin Access</h1>
-              <p className="text-white/60">Enter the admin secret to continue</p>
+              <p className="text-gray-400">Enter the admin secret to continue</p>
             </div>
             
             <div className="space-y-4">
@@ -731,7 +900,7 @@ const AdminDashboardScreen: React.FC = () => {
                 value={adminSecret}
                 onChange={(e) => setAdminSecret(e.target.value)}
                 placeholder="Enter admin secret"
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40"
+                className="w-full px-4 py-3 bg-gray-600 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
               />
               
               <button
@@ -746,7 +915,7 @@ const AdminDashboardScreen: React.FC = () => {
             <div className="mt-8">
               <button
                 onClick={() => navigate('/')}
-                className="text-white/40 hover:text-white/60 transition-colors"
+                className="text-gray-500 hover:text-gray-400 transition-colors"
               >
                 ← Back to Home
               </button>
@@ -768,347 +937,394 @@ const AdminDashboardScreen: React.FC = () => {
       </Helmet>
       
       <div className="flex">
-        {/* Sidebar */}
-        <div className="w-64 bg-black border-r border-white/10 min-h-screen p-6 flex flex-col">
-          <div className="flex-1 space-y-1">
+        {/* Modern Sidebar */}
+        <div className="w-72 bg-black border-r border-gray-600 h-screen flex flex-col shadow-sm fixed left-0 top-0 overflow-y-auto z-10">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-600">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                <Shield size={16} className="text-black" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-white">Admin Dashboard</h1>
+                <p className="text-sm text-gray-400">Stefna Management</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex-1 p-4 space-y-2">
             <button
               onClick={() => setActiveTab('users')}
-              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-3 px-4 text-left transition-all duration-200 rounded-lg ${
                 activeTab === 'users' 
-                  ? 'text-white' 
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-white text-black shadow-sm' 
+                  : 'text-gray-300 hover:bg-gray-600 hover:text-white'
               }`}
             >
-              <Users size={16} />
-              <span className="text-sm font-medium">Users Management</span>
+              <Users size={18} />
+              <span className="font-medium">Users Management</span>
             </button>
             
             <button
               onClick={() => setActiveTab('media')}
-              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-3 px-4 text-left transition-all duration-200 rounded-lg ${
                 activeTab === 'media' 
-                  ? 'text-white' 
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-white text-black shadow-sm' 
+                  : 'text-gray-300 hover:bg-gray-600 hover:text-white'
               }`}
             >
-              <Image size={16} />
-              <span className="text-sm font-medium">Media Browser</span>
+              <Image size={18} />
+              <span className="font-medium">Media Browser</span>
             </button>
             
             <button
               onClick={() => setActiveTab('credits')}
-              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-3 px-4 text-left transition-all duration-200 rounded-lg ${
                 activeTab === 'credits' 
-                  ? 'text-white' 
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-white text-black shadow-sm' 
+                  : 'text-gray-300 hover:bg-gray-600 hover:text-white'
               }`}
             >
-              <Coins size={16} />
-              <span className="text-sm font-medium">Credit System</span>
+              <Coins size={18} />
+              <span className="font-medium">Credit System</span>
             </button>
             
             <button
               onClick={() => setActiveTab('presets')}
-              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-3 px-4 text-left transition-all duration-200 rounded-lg ${
                 activeTab === 'presets' 
-                  ? 'text-white' 
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-white text-black shadow-sm' 
+                  : 'text-gray-300 hover:bg-gray-600 hover:text-white'
               }`}
             >
-              <Settings size={16} />
-              <span className="text-sm font-medium">Preset Manager</span>
+              <Settings size={18} />
+              <span className="font-medium">Preset Manager</span>
             </button>
             
             <button
               onClick={() => setActiveTab('config')}
-              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-3 px-4 text-left transition-all duration-200 rounded-lg ${
                 activeTab === 'config' 
-                  ? 'text-white' 
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-white text-black shadow-sm' 
+                  : 'text-gray-300 hover:bg-gray-600 hover:text-white'
               }`}
             >
-              <Settings size={16} />
-              <span className="text-sm font-medium">System Config</span>
+              <Settings size={18} />
+              <span className="font-medium">System Config</span>
             </button>
             
             <button
               onClick={() => setActiveTab('logs')}
-              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-3 px-4 text-left transition-all duration-200 rounded-lg ${
                 activeTab === 'logs' 
-                  ? 'text-white' 
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-white text-black shadow-sm' 
+                  : 'text-gray-300 hover:bg-gray-600 hover:text-white'
               }`}
             >
-              <Activity size={16} />
-              <span className="text-sm font-medium">Logs & Analytics</span>
+              <Activity size={18} />
+              <span className="font-medium">Logs & Analytics</span>
             </button>
             
             <button
               onClick={() => setActiveTab('referrals')}
-              className={`w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 py-3 px-4 text-left transition-all duration-200 rounded-lg ${
                 activeTab === 'referrals' 
-                  ? 'text-white' 
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-white text-black shadow-sm' 
+                  : 'text-gray-300 hover:bg-gray-600 hover:text-white'
               }`}
             >
-              <UserCheck size={16} />
-              <span className="text-sm font-medium">Referral System</span>
+              <UserCheck size={18} />
+              <span className="font-medium">Referral System</span>
             </button>
           </div>
           
-          {/* Exit Button at Bottom */}
-          <div className="mt-auto pt-4 border-t border-white/10">
+          {/* Exit Button */}
+          <div className="p-4 border-t border-gray-600">
             <button
               onClick={() => navigate('/')}
-              className="w-full flex items-center space-x-3 py-2 px-3 text-left transition-colors text-white/60 hover:text-white"
+              className="w-full flex items-center space-x-3 py-3 px-4 text-left transition-all duration-200 rounded-lg text-gray-300 hover:bg-gray-600 hover:text-white"
             >
-              <LogOut size={16} />
-              <span className="text-sm font-medium">Exit Admin</span>
+              <LogOut size={18} />
+              <span className="font-medium">Exit Admin</span>
             </button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-6 pt-24">
-          <div className="space-y-6">
+        <div className="flex-1 p-8 ml-72">
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white capitalize">{activeTab.replace('_', ' ')}</h2>
+                <p className="text-gray-400 mt-1">Manage and monitor your Stefna platform</p>
+              </div>
+            </div>
+
             {/* Stats Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-xl font-semibold text-white">{stats.totalUsers}</div>
-                <div className="text-sm text-white/60">Total Users</div>
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-6">
+              <div className="bg-black rounded-xl p-6 shadow-sm border border-gray-600">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">Total Users</p>
+                    <p className="text-2xl font-bold text-white mt-1">{stats.totalUsers}</p>
               </div>
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-xl font-semibold text-white">{stats.activeUsers}</div>
-                <div className="text-sm text-white/60">Active Users</div>
               </div>
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-xl font-semibold text-white">{stats.bannedUsers}</div>
-                <div className="text-sm text-white/60">Banned Users</div>
               </div>
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-xl font-semibold text-white">{stats.totalMedia}</div>
-                <div className="text-sm text-white/60">Total Media</div>
+              
+              <div className="bg-black rounded-xl p-6 shadow-sm border border-gray-600">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">Active Users</p>
+                    <p className="text-2xl font-bold text-white mt-1">{stats.activeUsers}</p>
               </div>
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-xl font-semibold text-white">{stats.totalCredits}</div>
-                <div className="text-sm text-white/60">Total Credits</div>
               </div>
+              </div>
+              
+              <div className="bg-black rounded-xl p-6 shadow-sm border border-gray-600">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">Banned Users</p>
+                    <p className="text-2xl font-bold text-white mt-1">{stats.bannedUsers}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-black rounded-xl p-6 shadow-sm border border-gray-600">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">Total Media</p>
+                    <p className="text-2xl font-bold text-white mt-1">{stats.totalMedia}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-black rounded-xl p-6 shadow-sm border border-gray-600">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">Total Credits</p>
+                    <p className="text-2xl font-bold text-white mt-1">{stats.totalCredits}</p>
+                  </div>
+                </div>
+              </div>
+              
               {stats.quotaStatus && (
-                <div className={`rounded-lg p-4 ${
+                <div className={`rounded-xl p-6 shadow-sm border ${
                   stats.quotaStatus.quota_reached 
-                    ? 'bg-red-500/10 border border-red-500/20' 
-                    : 'bg-white/5'
+                    ? 'bg-red-500/10 border-red-500/20' 
+                    : 'bg-black border-gray-600'
                 }`}>
-                  <div className={`text-xl font-semibold ${
-                    stats.quotaStatus.quota_reached ? 'text-red-400' : 'text-white'
-                  }`}>
-                    {stats.quotaStatus.current_count}/{stats.quotaStatus.quota_limit}
+                  <div>
+                    <p className={`text-sm font-medium ${
+                      stats.quotaStatus.quota_reached ? 'text-red-400' : 'text-gray-400'
+                    }`}>
+                      {stats.quotaStatus.quota_reached ? 'Quota Reached' : 'Beta Users'}
+                    </p>
+                    <p className={`text-2xl font-bold mt-1 ${
+                  stats.quotaStatus.quota_reached ? 'text-red-400' : 'text-white'
+                }`}>
+                  {stats.quotaStatus.current_count}/{stats.quotaStatus.quota_limit}
+                    </p>
+                {stats.quotaStatus.quota_enabled && (
+                      <p className="text-xs text-gray-500 mt-1">
+                    {stats.quotaStatus.remaining_slots} slots left
+                      </p>
+                )}
                   </div>
-                  <div className="text-sm text-white/60">
-                    {stats.quotaStatus.quota_reached ? 'Quota Reached' : 'Beta Users'}
-                  </div>
-                  {stats.quotaStatus.quota_enabled && (
-                    <div className="text-xs text-white/40 mt-1">
-                      {stats.quotaStatus.remaining_slots} slots left
-                    </div>
-                  )}
                 </div>
               )}
             </div>
 
             {/* Tab Content */}
             {activeTab === 'users' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {/* Quota Status Section */}
                 {stats.quotaStatus && (
-                  <div className="bg-white/5 rounded-lg p-6">
+                  <div className="bg-black rounded-xl p-6 shadow-sm border border-gray-600">
                     <h3 className="text-lg font-semibold text-white mb-4">Beta Quota Status</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className={`rounded-lg p-4 ${
                         stats.quotaStatus.quota_reached 
                           ? 'bg-red-500/10 border border-red-500/20' 
-                          : 'bg-white/5'
+                          : 'bg-black border border-gray-600'
                       }`}>
-                        <div className={`text-2xl font-semibold ${
-                          stats.quotaStatus.quota_reached ? 'text-red-400' : 'text-white'
-                        }`}>
+                        <div className="text-2xl font-semibold text-white">
                           {stats.quotaStatus.current_count}/{stats.quotaStatus.quota_limit}
                         </div>
-                        <div className="text-sm text-white/60">
+                        <div className="text-sm text-gray-400">
                           {stats.quotaStatus.quota_reached ? 'Quota Reached' : 'Beta Users'}
                         </div>
                       </div>
-                      <div className="bg-white/5 rounded-lg p-4">
+                      <div className="bg-black border border-gray-600 rounded-lg p-4">
                         <div className="text-2xl font-semibold text-white">
                           {stats.quotaStatus.remaining_slots}
                         </div>
-                        <div className="text-sm text-white/60">Slots Remaining</div>
+                        <div className="text-sm text-gray-400">Slots Remaining</div>
                       </div>
-                      <div className="bg-white/5 rounded-lg p-4">
-                        <div className={`text-2xl font-semibold ${
-                          stats.quotaStatus.quota_enabled ? 'text-green-400' : 'text-gray-400'
-                        }`}>
+                      <div className="bg-black border border-gray-600 rounded-lg p-4">
+                        <div className="text-2xl font-semibold text-white">
                           {stats.quotaStatus.quota_enabled ? 'Active' : 'Disabled'}
                         </div>
-                        <div className="text-sm text-white/60">Quota System</div>
+                        <div className="text-sm text-gray-400">Quota System</div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Quota Status Section */}
-                {stats.quotaStatus ? (
-                  <div className="bg-white/5 rounded-lg p-4 mb-4">
-                    <h4 className="text-md font-semibold text-white mb-3">Beta Quota Status</h4>
-                    <div className="flex items-center space-x-6">
-                      <div className={`px-4 py-2 rounded-lg ${
-                        stats.quotaStatus.quota_reached 
-                          ? 'bg-red-500/10 border border-red-500/20' 
-                          : 'bg-white/10'
-                      }`}>
-                        <div className={`text-lg font-semibold ${
-                          stats.quotaStatus.quota_reached ? 'text-red-400' : 'text-white'
-                        }`}>
-                          {stats.quotaStatus.current_count}/{stats.quotaStatus.quota_limit}
-                        </div>
-                        <div className="text-xs text-white/60">
-                          {stats.quotaStatus.quota_reached ? 'Quota Reached' : 'Beta Users'}
-                        </div>
-                      </div>
-                      <div className="px-4 py-2 rounded-lg bg-white/10">
-                        <div className="text-lg font-semibold text-white">
-                          {stats.quotaStatus.remaining_slots}
-                        </div>
-                        <div className="text-xs text-white/60">Slots Left</div>
-                      </div>
-                      <div className="px-4 py-2 rounded-lg bg-white/10">
-                        <div className={`text-lg font-semibold ${
-                          stats.quotaStatus.quota_enabled ? 'text-green-400' : 'text-gray-400'
-                        }`}>
-                          {stats.quotaStatus.quota_enabled ? 'Active' : 'Disabled'}
-                        </div>
-                        <div className="text-xs text-white/60">System</div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
-                    <h4 className="text-md font-semibold text-red-400 mb-2">Quota Status Not Loaded</h4>
-                    <p className="text-xs text-red-300">Check console for quota loading errors</p>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between">
+                {/* Users Management Section */}
+                <div className="bg-black rounded-xl p-6 shadow-sm border border-gray-600">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
                   <h3 className="text-lg font-semibold text-white">Users Management</h3>
+                      <p className="text-sm text-gray-400 mt-1">Manage user accounts, credits, and permissions</p>
+                    </div>
                   <div className="flex items-center space-x-3">
                     <div className="relative">
-                      <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" />
+                      <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
                       <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search users..."
-                        className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/20"
+                          className="pl-10 pr-4 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
                       />
                     </div>
+                      <button className="px-4 py-2 bg-gray-600 text-white border border-gray-600 rounded-lg">
+                        Export Users
+                      </button>
                   </div>
                 </div>
 
-                {/* Users Table */}
-                <div className="bg-white/5 rounded-lg overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-white/5">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-white/60">User</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Credits</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Status</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Joined</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/10">
-                        {filteredUsers.map((user) => (
-                          <tr key={user.id} className="hover:bg-white/5">
-                            <td className="px-4 py-3">
+            {/* Filter Bar */}
+            <div className="flex items-center space-x-4 mb-6">
+              <select 
+                value={userFilter}
+                onChange={(e) => {
+                  setUserFilter(e.target.value as any)
+                  setCurrentPage(1) // Reset to first page when filter changes
+                }}
+                className="px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-600"
+              >
+                <option value="all">All Users</option>
+                <option value="active">Active</option>
+                <option value="banned">Banned</option>
+                <option value="low-credits">Low Credits</option>
+                <option value="inactive">Inactive (7+ days)</option>
+              </select>
+              <select 
+                value={userSort}
+                onChange={(e) => {
+                  setUserSort(e.target.value as any)
+                  setCurrentPage(1) // Reset to first page when sort changes
+                }}
+                className="px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-600"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="credits-high">Credits (High to Low)</option>
+                <option value="credits-low">Credits (Low to High)</option>
+              </select>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-400">Show:</span>
+                <select 
+                  value={usersPerPage}
+                  onChange={(e) => {
+                    setUsersPerPage(Number(e.target.value))
+                    setCurrentPage(1) // Reset to first page when page size changes
+                  }}
+                  className="px-2 py-1 bg-gray-600 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-gray-600"
+                >
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Users Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {paginatedUsers.map((user) => (
+                <div key={user.id} className="bg-black border border-gray-600 rounded-xl p-4">
+                  <div className="flex items-start justify-between mb-3">
                               <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
-                                  {user.avatarUrl ? (
-                                    <img src={user.avatarUrl} alt="" className="w-8 h-8 rounded-full" />
-                                  ) : (
-                                    <span className="text-white/60 text-sm">{user.email[0].toUpperCase()}</span>
-                                  )}
+                      <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center">
+                        <span className="text-white text-lg font-semibold">{user.email[0].toUpperCase()}</span>
                                 </div>
                                 <div>
-                                  <div className="text-sm font-medium text-white">{user.email}</div>
-                                  {user.name && <div className="text-xs text-white/60">{user.name}</div>}
+                        <div className="text-sm font-medium text-white truncate max-w-[150px]" title={user.email}>
+                          {user.email}
                                 </div>
+                        <div className="text-xs text-gray-400">
+                          Joined: {new Date(user.createdAt).toLocaleDateString()}
                               </div>
-                            </td>
-                            <td className="px-4 py-3">
+                        <div className="text-xs text-gray-400">
+                          Last active: {user.lastActive ? new Date(user.lastActive).toLocaleDateString() : 'Never'}
+                        </div>
+                      </div>
+                              </div>
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-600 text-white">
+                      {user.isBanned ? 'Banned' : 'Active'}
+                    </span>
+                              </div>
+
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">Credits</span>
+                      <span className="text-sm font-semibold text-white">{user.credits}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">Privacy</span>
+                      <span className="text-xs text-gray-400">{user.shareToFeed ? 'Public' : 'Private'}</span>
+                    </div>
+                  </div>
+
                               <div className="flex items-center space-x-2">
-                                <span className="text-sm text-white">{user.credits}</span>
-                                <div className="flex space-x-1">
                                   <button
-                                    onClick={() => handleAdjustCredits(user.id, 1)}
-                                    className="w-6 h-6 bg-white/5 text-white rounded hover:bg-white/10 flex items-center justify-center transition-colors"
-                                  >
-                                    <Plus size={14} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleAdjustCredits(user.id, -1)}
-                                    className="w-6 h-6 bg-white/5 text-white rounded hover:bg-white/10 flex items-center justify-center transition-colors"
-                                  >
-                                    <Minus size={14} />
-                                  </button>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center space-x-2">
-                                {user.isBanned ? (
-                                  <span className="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-white/5 text-white">
-                                    <UserX size={14} className="mr-1" />
-                                    Banned
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-white/5 text-white">
-                                    <UserCheck size={14} className="mr-1" />
-                                    Active
-                                  </span>
-                                )}
-                                {user.shareToFeed && (
-                                  <span className="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-white/5 text-white">
-                                    Public
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-white/60">
-                              {new Date(user.createdAt).toLocaleDateString()}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center space-x-2">
-                                <button
                                   onClick={() => handleBanUser(user.id, !user.isBanned)}
-                                  className="px-3 py-1 rounded text-sm font-medium bg-white/5 text-white hover:bg-white/10 transition-colors"
-                                >
-                                  {user.isBanned ? 'Unban' : 'Ban'}
-                                </button>
-                                <button
+                      className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-gray-600 text-white"
+                                  >
+                      {user.isBanned ? 'Unban User' : 'Ban User'}
+                                  </button>
+                                  <button
                                   onClick={() => handleDeleteUser(user.id)}
-                                  className="px-3 py-1 rounded text-sm font-medium bg-white/5 text-white hover:bg-white/10 transition-colors"
+                      className="px-3 py-2 bg-gray-600 text-white rounded-lg"
+                                  >
+                      <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                        ))}
+                              </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-600">
+              <div className="text-sm text-gray-400">
+                Showing {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users
+              </div>
+                              <div className="flex items-center space-x-2">
+                                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  <Trash2 size={14} />
+                  Previous
+                                </button>
+                <span className="px-3 py-1 bg-gray-700 text-white rounded text-sm">
+                  {currentPage} of {totalPages}
+                </span>
+                                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                  Next
                                 </button>
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
                   </div>
                 </div>
+
               </div>
             )}
 
@@ -1116,160 +1332,116 @@ const AdminDashboardScreen: React.FC = () => {
                     {activeTab === 'presets' && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold text-white">Preset System Manager</h3>
+                          <h3 className="text-lg font-semibold text-white">Preset Manager</h3>
                           <div className="flex items-center space-x-3">
                             <div className="relative">
-                              <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" />
+                              <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
                               <input
                                 type="text"
                                 value={presetSearchTerm}
                                 onChange={(e) => setPresetSearchTerm(e.target.value)}
                                 placeholder="Search presets..."
-                                className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40"
+                                className="pl-10 pr-4 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
                               />
                             </div>
+                            <button
+                              onClick={() => setShowAddPresetModal(true)}
+                              className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium"
+                            >
+                              Add New Preset
+                            </button>
                           </div>
                         </div>
 
-                        {/* Presets Table */}
-                        <div className="bg-white/5 rounded-lg overflow-hidden">
-                          <div className="overflow-x-auto">
-                            <table className="w-full">
-                              <thead className="bg-white/5">
-                                <tr>
-                                  <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Preset</th>
-                                  <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Category</th>
-                                  <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Strength</th>
-                                  <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Status</th>
-                                  <th className="px-4 py-3 text-left text-sm font-medium text-white/60">Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-white/10">
+                        {/* Presets Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {filteredPresets.map((preset) => (
-                                  <tr key={preset.id} className="hover:bg-white/5">
-                                    <td className="px-4 py-3">
-                                      <div>
-                                        <div className="text-sm font-medium text-white">{preset.preset_name}</div>
-                                        <div className="text-xs text-white/60">{preset.preset_key}</div>
+                            <div key={preset.id} className="bg-black border border-gray-600 rounded-xl p-4">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-white truncate" title={preset.preset_name}>
+                                    {preset.preset_name}
+                                  </div>
+                                  <div className="text-xs text-gray-400 mt-1">
+                                    {preset.preset_key}
+                                  </div>
                                         {preset.preset_description && (
-                                          <div className="text-xs text-white/40 mt-1">{preset.preset_description}</div>
+                                    <div className="text-xs text-gray-500 mt-2 line-clamp-2">
+                                      {preset.preset_description}
+                                    </div>
                                         )}
                                       </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
+                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-600 text-white">
                                         {preset.preset_category}
                                       </span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <div className="flex items-center space-x-2">
-                                        <span className="text-sm text-white">{preset.preset_strength}</span>
-                                        <div className="w-16 bg-white/10 rounded-full h-2">
+                              </div>
+                              
+                              <div className="space-y-2 mb-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-gray-400">Strength</span>
+                                  <span className="text-sm font-semibold text-white">{preset.preset_strength}</span>
+                                </div>
+                                <div className="w-full bg-gray-600 rounded-full h-2">
                                           <div 
                                             className="bg-white h-2 rounded-full transition-all duration-300"
                                             style={{ width: `${Math.min((preset.preset_strength || 1) * 100, 100)}%` }}
                                           ></div>
                                         </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-gray-400">Status</span>
+                                  <span className="text-xs text-gray-400">
+                                    {preset.is_active ? 'Enabled' : 'Disabled'}
+                                  </span>
                                       </div>
-                                    </td>
-                                    <td className="px-4 py-3">
+                                {preset.preset_week && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs text-gray-400">Week</span>
+                                    <span className="text-xs text-gray-400">Week {preset.preset_week}</span>
+                                  </div>
+                                )}
+                              </div>
+                              
                                       <div className="flex items-center space-x-2">
                                         <button
                                           onClick={() => togglePreset(preset.id, !preset.is_active)}
-                                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                            preset.is_active
-                                              ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                                              : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                                          }`}
-                                        >
-                                          {preset.is_active ? 'Enabled' : 'Disabled'}
+                                  className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-gray-600 text-white"
+                                >
+                                  {preset.is_active ? 'Disable' : 'Enable'}
                                         </button>
-                                        {preset.preset_week && (
-                                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400">
-                                            Week {preset.preset_week}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <div className="flex items-center space-x-2">
                                         <button
-                                          onClick={() => {
-                                            // TODO: Implement edit modal
-                                            alert('Edit preset functionality coming soon!')
-                                          }}
-                                          className="px-3 py-1 rounded text-sm font-medium bg-white/5 text-white hover:bg-white/10 transition-colors"
+                                          onClick={() => editPreset(preset)}
+                                  className="px-3 py-2 bg-gray-600 text-white rounded-lg"
                                         >
-                                          Edit
+                                  <Settings size={14} />
                                         </button>
                                         {preset.preset_week && (
                                           <button
                                             onClick={() => deletePreset(preset.id)}
-                                            className="px-3 py-1 rounded text-sm font-medium bg-white/5 text-white hover:bg-white/10 transition-colors"
+                                    className="px-3 py-2 bg-gray-600 text-white rounded-lg"
                                           >
-                                            Delete
+                                    <Trash2 size={14} />
                                           </button>
                                         )}
                                       </div>
-                                    </td>
-                                  </tr>
+                            </div>
                                 ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-
-                        {/* Add New Preset Button */}
-                        <div className="flex items-center justify-center space-x-4">
-                          <button
-                            onClick={() => {
-                              // TODO: Implement add preset modal
-                              alert('Add preset functionality coming soon!')
-                            }}
-                            className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
-                          >
-                            Add New Preset
-                          </button>
-                          
-                          <button
-                            onClick={async () => {
-                              try {
-                                const response = await authenticatedFetch('/.netlify/functions/admin-seed-presets', {
-                                  method: 'POST',
-                                  headers: {
-                                    'X-Admin-Secret': adminSecret
-                                  }
-                                })
-                                
-                                if (response.ok) {
-                                  alert('Sample presets seeded successfully!')
-                                  loadPresets() // Reload presets
-                                } else {
-                                  alert('Failed to seed presets')
-                                }
-                              } catch (error) {
-                                console.error('Failed to seed presets:', error)
-                                alert('Error seeding presets')
-                              }
-                            }}
-                            className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
-                          >
-                            Seed Sample Presets
-                          </button>
                         </div>
                       </div>
                     )}
 
                     {/* Media Browser Tab */}
                     {activeTab === 'media' && (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
+                      <div className="space-y-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                          <div>
                           <h3 className="text-lg font-semibold text-white">Media Browser</h3>
-                          <div className="flex items-center space-x-3">
+                            <p className="text-sm text-gray-400 mt-1">Browse and manage all generated media</p>
+                          </div>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                             <select
                               value={mediaFilter.type || 'all'}
                               onChange={(e) => setMediaFilter(prev => ({ ...prev, type: e.target.value }))}
-                              className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-white/40"
+                              className="px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-600"
                             >
                               <option value="all">All Types</option>
                               <option value="neo_glitch">Neo Tokyo Glitch</option>
@@ -1280,13 +1452,13 @@ const AdminDashboardScreen: React.FC = () => {
                               <option value="edit">Studio</option>
                             </select>
                             <div className="relative">
-                              <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" />
+                              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
                               <input
                                 type="text"
                                 value={mediaFilter.search || ''}
                                 onChange={(e) => setMediaFilter(prev => ({ ...prev, search: e.target.value }))}
                                 placeholder="Search media..."
-                                className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40"
+                                className="pl-10 pr-4 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gray-600"
                               />
                             </div>
                           </div>
@@ -1294,128 +1466,97 @@ const AdminDashboardScreen: React.FC = () => {
 
                         {/* Media Statistics */}
                         {mediaStats && (
-                          <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                              <div className="text-2xl font-bold text-white">{mediaStats.total_media || 0}</div>
-                              <div className="text-xs text-white/60">Total Media</div>
-                            </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                              <div className="text-2xl font-bold text-white">{mediaStats.unique_users || 0}</div>
-                              <div className="text-xs text-white/60">Unique Users</div>
-                            </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{mediaStats.neo_glitch_count || 0}</div>
-                              <div className="text-xs text-white/60">Neo Tokyo</div>
+                              <div className="text-xs text-gray-400">Neo Tokyo</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{mediaStats.presets_count || 0}</div>
-                              <div className="text-xs text-white/60">Presets</div>
+                              <div className="text-xs text-gray-400">Presets</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{mediaStats.custom_prompt_count || 0}</div>
-                              <div className="text-xs text-white/60">Custom</div>
+                              <div className="text-xs text-gray-400">Custom</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{mediaStats.edit_count || 0}</div>
-                              <div className="text-xs text-white/60">Studio</div>
+                              <div className="text-xs text-gray-400">Studio</div>
                             </div>
                           </div>
                         )}
 
-                        {/* Media Table */}
-                        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
-                          <div className="overflow-x-auto">
-                            <table className="w-full">
-                              <thead className="bg-white/10">
-                                <tr>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Media</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">User</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Type</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Prompt</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Likes</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Date</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-white/10">
+                        {/* Media Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                 {media.map((item: any) => (
-                                  <tr key={`${item.type}-${item.id}`} className="hover:bg-white/5">
-                                    <td className="px-4 py-3">
-                                      <div className="flex items-center space-x-3">
+                            <div key={`${item.type}-${item.id}`} className="bg-black border border-gray-600 rounded-xl overflow-hidden">
+                              {/* Media Image */}
+                              <div className="aspect-square relative">
                                         <img
                                           src={item.finalUrl}
-                                          alt="Media"
-                                          className="w-12 h-12 rounded-lg object-cover"
-                                        />
-                                      </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <div className="text-sm text-white">{item.user_id}</div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                        item.type === 'neo_glitch' ? 'bg-purple-500/20 text-purple-400' :
-                                        item.type === 'presets' ? 'bg-blue-500/20 text-blue-400' :
-                                        item.type === 'unreal_reflection' ? 'bg-green-500/20 text-green-400' :
-                                        item.type === 'ghibli_reaction' ? 'bg-yellow-500/20 text-yellow-400' :
-                                        item.type === 'custom_prompt' ? 'bg-orange-500/20 text-orange-400' :
-                                        'bg-red-500/20 text-red-400'
-                                      }`}>
+                                  alt="Generated media"
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute top-2 right-2">
+                                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-600 text-white">
                                         {item.type === 'edit' ? 'Studio' : item.type.replace('_', ' ')}
                                       </span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <div className="text-sm text-white/80 max-w-xs truncate" title={item.prompt}>
+                                </div>
+                              </div>
+                              
+                              {/* Media Info */}
+                              <div className="p-4 space-y-3">
+                                <div className="space-y-2">
+                                  <div className="text-sm text-white font-medium truncate" title={item.prompt}>
                                         {item.prompt}
                                       </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <div className="text-sm text-white">{item.likes_count || 0}</div>
-                                    </td>
-                                    <td className="px-4 py-3 text-sm text-white/60">
+                                  <div className="flex items-center justify-between text-xs text-gray-400">
+                                    <span>User: {item.user_id}</span>
+                                    <span>{item.likes_count || 0} likes</span>
+                                  </div>
+                                  <div className="text-xs text-gray-400">
                                       {new Date(item.created_at).toLocaleDateString()}
-                                    </td>
-                                    <td className="px-4 py-3">
+                                  </div>
+                                </div>
+                                
+                                {/* Actions */}
                                       <div className="flex items-center space-x-2">
                                         <button
-                                          onClick={() => window.open(item.finalUrl, '_blank')}
-                                          className="px-3 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                                    onClick={() => handleViewMedia(item)}
+                                    className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-gray-600 text-white"
                                         >
                                           View
                                         </button>
                                         <button
                                           onClick={() => handleDeleteMedia(item.id, item.type)}
-                                          className="px-3 py-1 rounded text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                                    className="px-3 py-2 bg-gray-600 text-white rounded-lg"
                                         >
-                                          Delete
+                                    <Trash2 size={14} />
                                         </button>
                                       </div>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
                           </div>
+                            </div>
+                          ))}
                         </div>
 
                         {/* Pagination */}
                         {mediaTotal > 0 && (
                           <div className="flex items-center justify-between">
-                            <div className="text-sm text-white/60">
+                            <div className="text-sm text-gray-400">
                               Showing {media.length} of {mediaTotal} media items
                             </div>
                             <div className="flex items-center space-x-2">
                               <button
                                 onClick={() => setMediaOffset(Math.max(0, mediaOffset - 50))}
                                 disabled={mediaOffset === 0}
-                                className="px-3 py-1 rounded text-xs font-medium bg-white/10 text-white hover:bg-white/20 disabled:opacity-50"
+                                className="px-3 py-1 rounded text-xs font-medium bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50"
                               >
                                 Previous
                               </button>
                               <button
                                 onClick={() => setMediaOffset(mediaOffset + 50)}
                                 disabled={media.length < 50}
-                                className="px-3 py-1 rounded text-xs font-medium bg-white/10 text-white hover:bg-white/20 disabled:opacity-50"
+                                className="px-3 py-1 rounded text-xs font-medium bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50"
                               >
                                 Next
                               </button>
@@ -1443,66 +1584,66 @@ const AdminDashboardScreen: React.FC = () => {
                         {/* System Statistics */}
                         {systemConfig && (
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{systemConfig.systemStats?.total_users || 0}</div>
-                              <div className="text-xs text-white/60">Total Users</div>
+                              <div className="text-xs text-gray-400">Total Users</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{systemConfig.systemStats?.new_users_24h || 0}</div>
-                              <div className="text-xs text-white/60">New Users (24h)</div>
+                              <div className="text-xs text-gray-400">New Users (24h)</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{systemConfig.systemStats?.active_users_24h || 0}</div>
-                              <div className="text-xs text-white/60">Active Users (24h)</div>
+                              <div className="text-xs text-gray-400">Active Users (24h)</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{systemConfig.systemStats?.total_likes || 0}</div>
-                              <div className="text-xs text-white/60">Total Likes</div>
+                              <div className="text-xs text-gray-400">Total Likes</div>
                             </div>
                           </div>
                         )}
 
                         {/* Media Generation Statistics */}
                         {systemConfig && (
-                          <div className="bg-white/5 rounded-xl border border-white/10 p-6">
+                          <div className="bg-black rounded-xl border border-gray-600 p-6">
                             <h4 className="text-lg font-semibold text-white mb-4">Media Generation (24h)</h4>
                             <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                               <div className="text-center">
                                 <div className="text-2xl font-bold text-white">{systemConfig.mediaStats?.neo_glitch_24h || 0}</div>
-                                <div className="text-xs text-white/60">Neo Tokyo</div>
+                                <div className="text-xs text-gray-400">Neo Tokyo</div>
                               </div>
                               <div className="text-center">
                                 <div className="text-2xl font-bold text-white">{systemConfig.mediaStats?.presets_24h || 0}</div>
-                                <div className="text-xs text-white/60">Presets</div>
+                                <div className="text-xs text-gray-400">Presets</div>
                               </div>
                               <div className="text-center">
                                 <div className="text-2xl font-bold text-white">{systemConfig.mediaStats?.unreal_reflection_24h || 0}</div>
-                                <div className="text-xs text-white/60">Emotion</div>
+                                <div className="text-xs text-gray-400">Emotion</div>
                               </div>
                               <div className="text-center">
                                 <div className="text-2xl font-bold text-white">{systemConfig.mediaStats?.ghibli_reaction_24h || 0}</div>
-                                <div className="text-xs text-white/60">Ghibli</div>
+                                <div className="text-xs text-gray-400">Ghibli</div>
                               </div>
                               <div className="text-center">
                                 <div className="text-2xl font-bold text-white">{systemConfig.mediaStats?.custom_prompt_24h || 0}</div>
-                                <div className="text-xs text-white/60">Custom</div>
+                                <div className="text-xs text-gray-400">Custom</div>
                               </div>
                               <div className="text-center">
                                 <div className="text-2xl font-bold text-white">{systemConfig.mediaStats?.edit_24h || 0}</div>
-                                <div className="text-xs text-white/60">Studio</div>
+                                <div className="text-xs text-gray-400">Studio</div>
                               </div>
                             </div>
                           </div>
                         )}
 
                         {/* System Health */}
-                        <div className="bg-white/5 rounded-xl border border-white/10 p-6">
+                        <div className="bg-black rounded-xl border border-gray-600 p-6">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-lg font-semibold text-white">System Health</h4>
                             <div className="flex items-center space-x-3">
                               <button
                                 onClick={() => loadSystemConfig()}
-                                className="px-3 py-1 bg-white/5 text-white rounded hover:bg-white/10 transition-colors text-sm"
+                                className="px-3 py-1 bg-black text-white rounded hover:bg-gray-600 transition-colors text-sm"
                               >
                                 Refresh Health
                               </button>
@@ -1548,13 +1689,13 @@ const AdminDashboardScreen: React.FC = () => {
                         </div>
 
                         {/* Launch Control */}
-                        <div className="bg-white/5 rounded-xl border border-white/10 p-6">
+                        <div className="bg-black rounded-xl border border-gray-600 p-6">
                           <h4 className="text-lg font-semibold text-white mb-4">Launch Control</h4>
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
                               <div>
                                 <p className="text-white font-medium">Site Status</p>
-                                <p className="text-white/60 text-sm">
+                                <p className="text-gray-400 text-sm">
                                   {systemConfig?.systemConfig?.launch?.is_launched ? 'Live' : 'Coming Soon'}
                                 </p>
                               </div>
@@ -1570,13 +1711,13 @@ const AdminDashboardScreen: React.FC = () => {
                             <div className="flex items-center justify-between">
                               <div>
                                 <p className="text-white font-medium">Waitlist Count</p>
-                                <p className="text-white/60 text-sm">
+                                <p className="text-gray-400 text-sm">
                                   {systemConfig?.systemConfig?.launch?.waitlist_count || 0} users waiting
                                 </p>
                               </div>
                             </div>
 
-                            <div className="pt-4 border-t border-white/10">
+                            <div className="pt-4 border-t border-gray-600">
                               <button
                                 onClick={async () => {
                                   const newStatus = !systemConfig?.systemConfig?.launch?.is_launched;
@@ -1634,7 +1775,7 @@ const AdminDashboardScreen: React.FC = () => {
                             <select
                               value={logsType}
                               onChange={(e) => setLogsType(e.target.value)}
-                              className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-white/40"
+                              className="px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-600"
                             >
                               <option value="activity">Activity Logs</option>
                               <option value="errors">Error Logs</option>
@@ -1643,7 +1784,7 @@ const AdminDashboardScreen: React.FC = () => {
                             <select
                               value={logsDays}
                               onChange={(e) => setLogsDays(parseInt(e.target.value))}
-                              className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-white/40"
+                              className="px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-600"
                             >
                               <option value={7}>Last 7 Days</option>
                               <option value={30}>Last 30 Days</option>
@@ -1655,41 +1796,41 @@ const AdminDashboardScreen: React.FC = () => {
                         {/* Analytics Overview */}
                         {logsAnalytics && (
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{logsAnalytics.active_users || 0}</div>
-                              <div className="text-xs text-white/60">Active Users</div>
+                              <div className="text-xs text-gray-400">Active Users</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{logsAnalytics.neo_glitch_generated || 0}</div>
-                              <div className="text-xs text-white/60">Neo Tokyo Generated</div>
+                              <div className="text-xs text-gray-400">Neo Tokyo Generated</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{logsAnalytics.custom_prompt_generated || 0}</div>
-                              <div className="text-xs text-white/60">Custom Generated</div>
+                              <div className="text-xs text-gray-400">Custom Generated</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{logsAnalytics.likes_given || 0}</div>
-                              <div className="text-xs text-white/60">Likes Given</div>
+                              <div className="text-xs text-gray-400">Likes Given</div>
                             </div>
                           </div>
                         )}
 
                         {/* Logs Table */}
-                        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                        <div className="bg-black rounded-xl border border-gray-600 overflow-hidden">
                           <div className="overflow-x-auto">
                             <table className="w-full">
-                              <thead className="bg-white/10">
+                              <thead className="bg-gray-600">
                                 <tr>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Time</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">User</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Action</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Description</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Time</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Action</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Description</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-white/10">
+                              <tbody className="divide-y divide-gray-600">
                                 {logs.map((log: any) => (
-                                  <tr key={`${log.log_type}-${log.timestamp}`} className="hover:bg-white/5">
-                                    <td className="px-4 py-3 text-sm text-white/60">
+                                  <tr key={`${log.log_type}-${log.timestamp}`} className="hover:bg-black">
+                                    <td className="px-4 py-3 text-sm text-gray-400">
                                       {new Date(log.timestamp).toLocaleString()}
                                     </td>
                                     <td className="px-4 py-3">
@@ -1706,7 +1847,7 @@ const AdminDashboardScreen: React.FC = () => {
                                       </span>
                                     </td>
                                     <td className="px-4 py-3">
-                                      <div className="text-sm text-white/80 max-w-xs truncate" title={log.description}>
+                                      <div className="text-sm text-gray-200 max-w-xs truncate" title={log.description}>
                                         {log.description}
                                       </div>
                                     </td>
@@ -1720,21 +1861,21 @@ const AdminDashboardScreen: React.FC = () => {
                         {/* Pagination */}
                         {logsTotal > 0 && (
                           <div className="flex items-center justify-between">
-                            <div className="text-sm text-white/60">
+                            <div className="text-sm text-gray-400">
                               Showing {logs.length} of {logsTotal} log entries
                             </div>
                             <div className="flex items-center space-x-2">
                               <button
                                 onClick={() => setLogsOffset(Math.max(0, logsOffset - 100))}
                                 disabled={logsOffset === 0}
-                                className="px-3 py-1 rounded text-xs font-medium bg-white/10 text-white hover:bg-white/20 disabled:opacity-50"
+                                className="px-3 py-1 rounded text-xs font-medium bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50"
                               >
                                 Previous
                               </button>
                               <button
                                 onClick={() => setLogsOffset(logsOffset + 100)}
                                 disabled={logs.length < 100}
-                                className="px-3 py-1 rounded text-xs font-medium bg-white/10 text-white hover:bg-white/20 disabled:opacity-50"
+                                className="px-3 py-1 rounded text-xs font-medium bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50"
                               >
                                 Next
                               </button>
@@ -1753,7 +1894,7 @@ const AdminDashboardScreen: React.FC = () => {
                             <select
                               value={referralsType}
                               onChange={(e) => setReferralsType(e.target.value)}
-                              className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-white/40"
+                              className="px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-600"
                             >
                               <option value="overview">Overview</option>
                               <option value="relationships">Relationships</option>
@@ -1761,7 +1902,7 @@ const AdminDashboardScreen: React.FC = () => {
                             </select>
                             <button
                               onClick={handleResetReferralStats}
-                              className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
+                              className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-100 transition-colors"
                             >
                               Reset Referral Stats
                             </button>
@@ -1771,63 +1912,63 @@ const AdminDashboardScreen: React.FC = () => {
                         {/* Referral Statistics */}
                         {referralsStats && (
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{referralsStats.users_referred || 0}</div>
-                              <div className="text-xs text-white/60">Users Referred</div>
+                              <div className="text-xs text-gray-400">Users Referred</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{referralsStats.total_credits_given || 0}</div>
-                              <div className="text-xs text-white/60">Total Credits Given</div>
+                              <div className="text-xs text-gray-400">Total Credits Given</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{referralsStats.new_referrals_7d || 0}</div>
-                              <div className="text-xs text-white/60">New Referrals (7d)</div>
+                              <div className="text-xs text-gray-400">New Referrals (7d)</div>
                             </div>
                           </div>
                         )}
 
                         {/* Referrals Table */}
-                        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                        <div className="bg-black rounded-xl border border-gray-600 overflow-hidden">
                           <div className="overflow-x-auto">
                             <table className="w-full">
-                              <thead className="bg-white/10">
+                              <thead className="bg-gray-600">
                                 <tr>
                                   {referralsType === 'overview' && (
                                     <>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">User</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Total Referrals</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Credits Given</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Last Referral</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Total Referrals</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Credits Given</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Last Referral</th>
                                     </>
                                   )}
                                   {referralsType === 'relationships' && (
                                     <>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Referrer</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Referred User</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Date</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Credits Earned</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Last Login</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Referrer</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Referred User</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Credits Earned</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Last Login</th>
                                     </>
                                   )}
                                   {referralsType === 'rewards' && (
                                     <>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">User</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Credits Earned</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Referrals</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Account Created</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Last Login</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Credits Earned</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Referrals</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Account Created</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Last Login</th>
                                     </>
                                   )}
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-white/10">
+                              <tbody className="divide-y divide-gray-600">
                                 {referrals.map((referral: any) => (
-                                  <tr key={`${referralsType}-${referral.id || referral.referrer_id}`} className="hover:bg-white/5">
+                                  <tr key={`${referralsType}-${referral.id || referral.referrer_id}`} className="hover:bg-black">
                                     {referralsType === 'overview' && (
                                       <>
                                         <td className="px-4 py-3">
                                           <div className="text-sm text-white">{referral.email}</div>
-                                          {referral.name && <div className="text-xs text-white/60">{referral.name}</div>}
+                                          {referral.name && <div className="text-xs text-gray-400">{referral.name}</div>}
                                         </td>
                                         <td className="px-4 py-3">
                                           <div className="text-sm text-white">{referral.total_referrals}</div>
@@ -1835,7 +1976,7 @@ const AdminDashboardScreen: React.FC = () => {
                                         <td className="px-4 py-3">
                                           <div className="text-sm text-white">{referral.total_credits_given}</div>
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-white/60">
+                                        <td className="px-4 py-3 text-sm text-gray-400">
                                           {referral.last_referral_date ? new Date(referral.last_referral_date).toLocaleDateString() : 'Never'}
                                         </td>
                                       </>
@@ -1844,19 +1985,19 @@ const AdminDashboardScreen: React.FC = () => {
                                       <>
                                         <td className="px-4 py-3">
                                           <div className="text-sm text-white">{referral.referrer_email}</div>
-                                          {referral.referrer_name && <div className="text-xs text-white/60">{referral.referrer_name}</div>}
+                                          {referral.referrer_name && <div className="text-xs text-gray-400">{referral.referrer_name}</div>}
                                         </td>
                                         <td className="px-4 py-3">
                                           <div className="text-sm text-white">{referral.referred_email}</div>
-                                          {referral.referred_name && <div className="text-xs text-white/60">{referral.referred_name}</div>}
+                                          {referral.referred_name && <div className="text-xs text-gray-400">{referral.referred_name}</div>}
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-white/60">
+                                        <td className="px-4 py-3 text-sm text-gray-400">
                                           {new Date(referral.referred_date).toLocaleDateString()}
                                         </td>
                                         <td className="px-4 py-3">
                                           <div className="text-sm text-white">{referral.referral_credits_earned}</div>
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-white/60">
+                                        <td className="px-4 py-3 text-sm text-gray-400">
                                           {referral.last_login ? new Date(referral.last_login).toLocaleDateString() : 'Never'}
                                         </td>
                                       </>
@@ -1865,7 +2006,7 @@ const AdminDashboardScreen: React.FC = () => {
                                       <>
                                         <td className="px-4 py-3">
                                           <div className="text-sm text-white">{referral.email}</div>
-                                          {referral.name && <div className="text-xs text-white/60">{referral.name}</div>}
+                                          {referral.name && <div className="text-xs text-gray-400">{referral.name}</div>}
                                         </td>
                                         <td className="px-4 py-3">
                                           <div className="text-sm text-white">{referral.referral_credits_earned}</div>
@@ -1873,10 +2014,10 @@ const AdminDashboardScreen: React.FC = () => {
                                         <td className="px-4 py-3">
                                           <div className="text-sm text-white">{referral.successful_referrals}</div>
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-white/60">
+                                        <td className="px-4 py-3 text-sm text-gray-400">
                                           {new Date(referral.account_created).toLocaleDateString()}
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-white/60">
+                                        <td className="px-4 py-3 text-sm text-gray-400">
                                           {referral.last_login ? new Date(referral.last_login).toLocaleDateString() : 'Never'}
                                         </td>
                                       </>
@@ -1891,21 +2032,21 @@ const AdminDashboardScreen: React.FC = () => {
                         {/* Pagination */}
                         {referralsTotal > 0 && (
                           <div className="flex items-center justify-between">
-                            <div className="text-sm text-white/60">
+                            <div className="text-sm text-gray-400">
                               Showing {referrals.length} of {referralsTotal} referral entries
                             </div>
                             <div className="flex items-center space-x-2">
                               <button
                                 onClick={() => setReferralsOffset(Math.max(0, referralsOffset - 50))}
                                 disabled={referralsOffset === 0}
-                                className="px-3 py-1 rounded text-xs font-medium bg-white/10 text-white hover:bg-white/20 disabled:opacity-50"
+                                className="px-3 py-1 rounded text-xs font-medium bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50"
                               >
                                 Previous
                               </button>
                               <button
                                 onClick={() => setReferralsOffset(referralsOffset + 50)}
                                 disabled={referrals.length < 50}
-                                className="px-3 py-1 rounded text-xs font-medium bg-white/10 text-white hover:bg-white/20 disabled:opacity-50"
+                                className="px-3 py-1 rounded text-xs font-medium bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50"
                               >
                                 Next
                               </button>
@@ -1923,13 +2064,13 @@ const AdminDashboardScreen: React.FC = () => {
                           <div className="flex items-center space-x-3">
                             <button
                               onClick={handleResetDailyCredits}
-                              className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
+                              className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-100 transition-colors"
                             >
                               Reset Daily Credits
                             </button>
                             <button
                               onClick={handleBulkCreditAdjustment}
-                              className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
+                              className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-100 transition-colors"
                             >
                               Bulk Adjust Credits
                             </button>
@@ -1939,31 +2080,31 @@ const AdminDashboardScreen: React.FC = () => {
                         {/* Credit Statistics */}
                         {systemConfig && (
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{systemConfig.creditStats?.total_credits_in_system || 0}</div>
-                              <div className="text-xs text-white/60">Total Credits in System</div>
+                              <div className="text-xs text-gray-400">Total Credits in System</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{systemConfig.creditStats?.users_with_credits || 0}</div>
-                              <div className="text-xs text-white/60">Users with Credits</div>
+                              <div className="text-xs text-gray-400">Users with Credits</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{systemConfig.creditStats?.users_without_credits || 0}</div>
-                              <div className="text-xs text-white/60">Users without Credits</div>
+                              <div className="text-xs text-gray-400">Users without Credits</div>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="bg-black rounded-xl p-4 border border-gray-600">
                               <div className="text-2xl font-bold text-white">{Math.round(systemConfig.creditStats?.avg_credits_per_user || 0)}</div>
-                              <div className="text-xs text-white/60">Avg Credits per User</div>
+                              <div className="text-xs text-gray-400">Avg Credits per User</div>
                             </div>
                           </div>
                         )}
 
                         {/* Credit Reset Status */}
-                        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                        <div className="bg-black rounded-lg p-4 border border-gray-600">
                           <h4 className="text-sm font-medium text-white mb-3">Daily Credit Reset Status</h4>
                           <div className="space-y-2">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-white/60">Last Reset:</span>
+                              <span className="text-gray-400">Last Reset:</span>
                               <span className="text-white">
                                 {systemConfig?.last_credit_reset ? 
                                   new Date(systemConfig.last_credit_reset).toLocaleString() : 
@@ -1972,24 +2113,24 @@ const AdminDashboardScreen: React.FC = () => {
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-white/60">Reset Status:</span>
+                              <span className="text-gray-400">Reset Status:</span>
                               <span className={`px-2 py-1 rounded text-xs font-medium ${
                                 systemConfig?.last_credit_reset ? 
                                   (new Date().getTime() - new Date(systemConfig.last_credit_reset).getTime()) < 25 * 60 * 60 * 1000 ? // Less than 25 hours
-                                    'bg-green-500/20 text-green-400' : 
-                                    'bg-yellow-500/20 text-yellow-400'
-                                  : 'bg-red-500/20 text-red-400'
+                                    'bg-gray-600 text-white' : 
+                                    'bg-gray-600 text-white'
+                                  : 'bg-gray-600 text-white'
                               }`}>
                                 {systemConfig?.last_credit_reset ? 
                                   (new Date().getTime() - new Date(systemConfig.last_credit_reset).getTime()) < 25 * 60 * 60 * 1000 ? 
-                                    '✅ On Schedule' : 
-                                    '⚠️ Overdue'
-                                  : '❌ Never Reset'
+                                    'On Schedule' : 
+                                    'Overdue'
+                                  : 'Never Reset'
                                 }
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-white/60">Next Expected:</span>
+                              <span className="text-gray-400">Next Expected:</span>
                               <span className="text-white">
                                 {(() => {
                                   const now = new Date()
@@ -2003,88 +2144,32 @@ const AdminDashboardScreen: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Credit Distribution Chart */}
-                        <div className="bg-white/5 rounded-xl border border-white/10 p-6">
-                          <h4 className="text-lg font-semibold text-white mb-4">Credit Distribution</h4>
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-white">0 Credits</span>
-                              <div className="flex items-center space-x-2">
-                                <div className="w-32 bg-white/10 rounded-full h-2">
-                                  <div 
-                                    className="bg-red-500 h-2 rounded-full" 
-                                    style={{ width: `${(systemConfig?.creditStats?.users_without_credits / stats.totalUsers) * 100 || 0}%` }}
-                                  ></div>
-                                </div>
-                                <span className="text-sm text-white/60">{systemConfig?.creditStats?.users_without_credits || 0} users</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-white">1-10 Credits</span>
-                              <div className="flex items-center space-x-2">
-                                <div className="w-32 bg-white/10 rounded-full h-2">
-                                  <div 
-                                    className="bg-yellow-500 h-2 rounded-full" 
-                                    style={{ width: `${(getUsersWithCreditsRange(1, 10) / stats.totalUsers) * 100 || 0}%` }}
-                                  ></div>
-                                </div>
-                                <span className="text-sm text-white/60">{getUsersWithCreditsRange(1, 10)} users</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-white">11-50 Credits</span>
-                              <div className="flex items-center space-x-2">
-                                <div className="w-32 bg-white/10 rounded-full h-2">
-                                  <div 
-                                    className="bg-blue-500 h-2 rounded-full" 
-                                    style={{ width: `${(getUsersWithCreditsRange(11, 50) / stats.totalUsers) * 100 || 0}%` }}
-                                  ></div>
-                                </div>
-                                <span className="text-sm text-white/60">{getUsersWithCreditsRange(11, 50)} users</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-white">50+ Credits</span>
-                              <div className="flex items-center space-x-2">
-                                <div className="w-32 bg-white/10 rounded-full h-2">
-                                  <div 
-                                    className="bg-green-500 h-2 rounded-full" 
-                                    style={{ width: `${(getUsersWithCreditsRange(51, 999) / stats.totalUsers) * 100 || 0}%` }}
-                                  ></div>
-                                </div>
-                                <span className="text-sm text-white/60">{getUsersWithCreditsRange(51, 999)} users</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
                         {/* Users with Low Credits */}
-                        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
-                          <div className="p-4 border-b border-white/10">
+                        <div className="bg-black rounded-xl border border-gray-600 overflow-hidden">
+                          <div className="p-4 border-b border-gray-600">
                             <h4 className="text-lg font-semibold text-white">Users with Low Credits (≤5)</h4>
                           </div>
                           <div className="overflow-x-auto">
                             <table className="w-full">
-                              <thead className="bg-white/10">
+                              <thead className="bg-gray-600">
                                 <tr>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">User</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Credits</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Last Login</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Actions</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Credits</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Last Login</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-white/10">
+                              <tbody className="divide-y divide-gray-600">
                                 {users.filter(user => user.credits <= 5).slice(0, 10).map((user) => (
-                                  <tr key={user.id} className="hover:bg-white/5">
+                                  <tr key={user.id} className="hover:bg-black">
                                     <td className="px-4 py-3">
                                       <div className="text-sm text-white">{user.email}</div>
-                                      {user.name && <div className="text-xs text-white/60">{user.name}</div>}
                                     </td>
                                     <td className="px-4 py-3">
                                       <div className="text-sm text-white">{user.credits}</div>
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-white/60">
-                                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                                    <td className="px-4 py-3 text-sm text-gray-400">
+                                      {new Date(user.createdAt).toLocaleDateString()}
                                     </td>
                                     <td className="px-4 py-3">
                                       <div className="flex items-center space-x-2">
@@ -2114,8 +2199,8 @@ const AdminDashboardScreen: React.FC = () => {
                     {/* Other tabs will be implemented next */}
                     {activeTab !== 'users' && activeTab !== 'presets' && activeTab !== 'media' && activeTab !== 'config' && activeTab !== 'logs' && activeTab !== 'referrals' && activeTab !== 'credits' && (
                       <div className="text-center py-12">
-                        <div className="text-white/40 text-lg">Coming Soon...</div>
-                        <div className="text-white/20 text-sm mt-2">This section is under development</div>
+                        <div className="text-gray-500 text-lg">Coming Soon...</div>
+                        <div className="text-gray-500 text-sm mt-2">This section is under development</div>
                       </div>
                     )}
           </div>
@@ -2125,7 +2210,7 @@ const AdminDashboardScreen: React.FC = () => {
       {/* Bulk Credit Adjustment Modal */}
       {showBulkModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-black border border-white/10 rounded-lg p-6 w-full max-w-md">
+          <div className="bg-black border border-gray-600 rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-white mb-4">Bulk Credit Adjustment</h3>
             
             <div className="space-y-4">
@@ -2135,7 +2220,7 @@ const AdminDashboardScreen: React.FC = () => {
                 <select
                   value={bulkAdjustment.type}
                   onChange={(e) => setBulkAdjustment(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
+                  className="w-full px-3 py-2 bg-black border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-600"
                 >
                   <option value="users">User Credits</option>
                   <option value="config">App Config Values</option>
@@ -2150,7 +2235,7 @@ const AdminDashboardScreen: React.FC = () => {
                   value={bulkAdjustment.amount}
                   onChange={(e) => setBulkAdjustment(prev => ({ ...prev, amount: e.target.value }))}
                   placeholder="Enter adjustment amount"
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/20"
+                  className="w-full px-3 py-2 bg-black border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
                 />
               </div>
 
@@ -2161,7 +2246,7 @@ const AdminDashboardScreen: React.FC = () => {
                   <select
                     value={bulkAdjustment.target}
                     onChange={(e) => setBulkAdjustment(prev => ({ ...prev, target: e.target.value }))}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
+                    className="w-full px-3 py-2 bg-black border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-600"
                   >
                     <option value="all">All Users</option>
                     <option value="low">Users with ≤5 credits</option>
@@ -2178,7 +2263,7 @@ const AdminDashboardScreen: React.FC = () => {
                     <select
                       value={bulkAdjustment.configKey}
                       onChange={(e) => setBulkAdjustment(prev => ({ ...prev, configKey: e.target.value }))}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
+                      className="w-full px-3 py-2 bg-black border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-600"
                     >
                       <option value="daily_cap">Daily Credit Cap</option>
                       <option value="starter_grant">Starter Grant (New Users)</option>
@@ -2191,8 +2276,8 @@ const AdminDashboardScreen: React.FC = () => {
               )}
 
               {/* Preview */}
-              <div className="bg-white/5 rounded-lg p-3">
-                <p className="text-sm text-white/60">
+              <div className="bg-black rounded-lg p-3">
+                <p className="text-sm text-gray-400">
                   {bulkAdjustment.type === 'users' ? (
                     `Will adjust credits by ${bulkAdjustment.amount || '0'} for ${
                       bulkAdjustment.target === 'all' ? 'all users' :
@@ -2219,15 +2304,369 @@ const AdminDashboardScreen: React.FC = () => {
             <div className="flex items-center justify-end space-x-3 mt-6">
               <button
                 onClick={() => setShowBulkModal(false)}
-                className="px-4 py-2 bg-white/5 text-white rounded-lg hover:bg-white/10 transition-colors"
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={executeBulkAdjustment}
-                className="px-4 py-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors"
+                className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-100 transition-colors"
               >
                 Execute Adjustment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal */}
+      {showConfirmModal && confirmAction && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-black border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                {confirmAction.type === 'delete' ? (
+                  <Trash2 size={20} className="text-white" />
+                ) : confirmAction.type === 'delete-media' ? (
+                  <Trash2 size={20} className="text-white" />
+                ) : confirmAction.type === 'reset-credits' ? (
+                  <RefreshCw size={20} className="text-white" />
+                ) : confirmAction.type === 'delete-preset' ? (
+                  <Trash2 size={20} className="text-white" />
+                ) : confirmAction.type === 'ban' ? (
+                  <UserX size={20} className="text-white" />
+                ) : (
+                  <UserCheck size={20} className="text-white" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  {confirmAction.type === 'delete' ? 'Delete User' : 
+                   confirmAction.type === 'delete-media' ? 'Delete Media' :
+                   confirmAction.type === 'reset-credits' ? 'Reset Daily Credits' :
+                   confirmAction.type === 'delete-preset' ? 'Delete Preset' :
+                   confirmAction.type === 'ban' ? 'Ban User' : 'Unban User'}
+                </h3>
+                <p className="text-sm text-gray-400">Confirm this action</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-200 mb-2">
+                {confirmAction.type === 'delete' 
+                  ? `Are you sure you want to delete ${confirmAction.userEmail}? This action cannot be undone.`
+                  : confirmAction.type === 'delete-media'
+                  ? `Are you sure you want to delete this media? This action cannot be undone.`
+                  : confirmAction.type === 'reset-credits'
+                  ? `Are you sure you want to reset daily credits for all users? This will give all users ${systemConfig?.limits?.daily_cap || 14} credits.`
+                  : confirmAction.type === 'delete-preset'
+                  ? `Are you sure you want to delete "${confirmAction.presetName}"? This action cannot be undone.`
+                  : confirmAction.type === 'ban'
+                  ? `Are you sure you want to ban ${confirmAction.userEmail}? They will lose access to the platform.`
+                  : `Are you sure you want to unban ${confirmAction.userEmail}? They will regain access to the platform.`
+                }
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false)
+                  setConfirmAction(null)
+                }}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeConfirmAction}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg"
+              >
+                {confirmAction.type === 'delete' ? 'Delete' : 
+                 confirmAction.type === 'delete-media' ? 'Delete Media' :
+                 confirmAction.type === 'reset-credits' ? 'Reset Credits' :
+                 confirmAction.type === 'delete-preset' ? 'Delete Preset' :
+                 confirmAction.type === 'ban' ? 'Ban User' : 'Unban User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Media View Modal */}
+      {showMediaModal && selectedMedia && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-black border border-gray-600 rounded-xl p-6 max-w-2xl w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Media Preview</h3>
+                <p className="text-sm text-gray-400">View generated media</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowMediaModal(false)
+                  setSelectedMedia(null)
+                }}
+                className="p-2 bg-gray-600 text-white rounded-lg"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Media Image */}
+              <div className="relative">
+                <img
+                  src={selectedMedia.finalUrl}
+                  alt="Generated media"
+                  className="w-full max-h-96 object-contain rounded-lg"
+                />
+              </div>
+              
+              {/* Media Info */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-600 text-white">
+                    {selectedMedia.type === 'edit' ? 'Studio' : selectedMedia.type.replace('_', ' ')}
+                  </span>
+                  <span className="text-sm text-gray-400">{selectedMedia.likes_count || 0} likes</span>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Prompt:</p>
+                  <p className="text-white">{selectedMedia.prompt}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-400">User ID:</p>
+                    <p className="text-white">{selectedMedia.user_id}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Created:</p>
+                    <p className="text-white">{new Date(selectedMedia.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Preset Modal */}
+      {showAddPresetModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-black border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                <Settings size={20} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Add New Preset</h3>
+                <p className="text-sm text-gray-400">Create a new preset configuration</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Preset Name</label>
+                <input
+                  type="text"
+                  value={newPreset.preset_name}
+                  onChange={(e) => setNewPreset(prev => ({ ...prev, preset_name: e.target.value }))}
+                  placeholder="Enter preset name"
+                  className="w-full px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Preset Key</label>
+                <input
+                  type="text"
+                  value={newPreset.preset_key}
+                  onChange={(e) => setNewPreset(prev => ({ ...prev, preset_key: e.target.value }))}
+                  placeholder="Enter preset key (e.g., custom_preset)"
+                  className="w-full px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
+                <textarea
+                  value={newPreset.preset_description}
+                  onChange={(e) => setNewPreset(prev => ({ ...prev, preset_description: e.target.value }))}
+                  placeholder="Enter preset description"
+                  rows={3}
+                  className="w-full px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
+                <select
+                  value={newPreset.preset_category}
+                  onChange={(e) => setNewPreset(prev => ({ ...prev, preset_category: e.target.value }))}
+                  className="w-full px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-600"
+                >
+                  <option value="Custom">Custom</option>
+                  <option value="Cyberpunk">Cyberpunk</option>
+                  <option value="Vintage">Vintage</option>
+                  <option value="Studio">Studio</option>
+                  <option value="Fantasy">Fantasy</option>
+                  <option value="Urban">Urban</option>
+                  <option value="Portrait">Portrait</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Strength: {newPreset.preset_strength}</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={newPreset.preset_strength}
+                  onChange={(e) => setNewPreset(prev => ({ ...prev, preset_strength: parseFloat(e.target.value) }))}
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={newPreset.is_active}
+                    onChange={(e) => setNewPreset(prev => ({ ...prev, is_active: e.target.checked }))}
+                    className="w-4 h-4 text-gray-600 bg-gray-600 border-gray-600 rounded focus:ring-gray-600"
+                  />
+                  <span className="text-sm text-gray-400">Active</span>
+                </label>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setShowAddPresetModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addPreset}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg"
+              >
+                Add Preset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Preset Modal */}
+      {showEditPresetModal && editingPreset && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-black border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                <Settings size={20} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Edit Preset</h3>
+                <p className="text-sm text-gray-400">Modify preset configuration</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Preset Name</label>
+                <input
+                  type="text"
+                  value={editingPreset.preset_name}
+                  onChange={(e) => setEditingPreset(prev => prev ? { ...prev, preset_name: e.target.value } : null)}
+                  placeholder="Enter preset name"
+                  className="w-full px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Preset Key</label>
+                <input
+                  type="text"
+                  value={editingPreset.preset_key}
+                  onChange={(e) => setEditingPreset(prev => prev ? { ...prev, preset_key: e.target.value } : null)}
+                  placeholder="Enter preset key (e.g., custom_preset)"
+                  className="w-full px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
+                <textarea
+                  value={editingPreset.preset_description}
+                  onChange={(e) => setEditingPreset(prev => prev ? { ...prev, preset_description: e.target.value } : null)}
+                  placeholder="Enter preset description"
+                  rows={3}
+                  className="w-full px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
+                <select
+                  value={editingPreset.preset_category}
+                  onChange={(e) => setEditingPreset(prev => prev ? { ...prev, preset_category: e.target.value } : null)}
+                  className="w-full px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-600"
+                >
+                  <option value="Custom">Custom</option>
+                  <option value="Artistic">Artistic</option>
+                  <option value="Photography">Photography</option>
+                  <option value="Cinematic">Cinematic</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Strength: {Math.round(editingPreset.preset_strength * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={editingPreset.preset_strength}
+                  onChange={(e) => setEditingPreset(prev => prev ? { ...prev, preset_strength: parseFloat(e.target.value) } : null)}
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={editingPreset.is_active}
+                    onChange={(e) => setEditingPreset(prev => prev ? { ...prev, is_active: e.target.checked } : null)}
+                    className="w-4 h-4 text-gray-600 bg-gray-600 border-gray-600 rounded focus:ring-gray-600"
+                  />
+                  <span className="text-sm text-gray-400">Active</span>
+                </label>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  setShowEditPresetModal(false)
+                  setEditingPreset(null)
+                }}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={updatePreset}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg"
+              >
+                Update Preset
               </button>
             </div>
           </div>
