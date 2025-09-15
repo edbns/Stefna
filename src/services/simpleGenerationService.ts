@@ -5,7 +5,7 @@
 import { authenticatedFetch } from '../utils/apiClient'
 import authService from './authService';
 
-export type GenerationMode = 'presets' | 'custom-prompt' | 'unreal-reflection' | 'ghibli-reaction' | 'neo-glitch' | 'story-time' | 'edit-photo';
+export type GenerationMode = 'presets' | 'custom-prompt' | 'unreal-reflection' | 'ghibli-reaction' | 'neo-glitch' | 'story-time' | 'edit-photo' | 'parallel-self';
 
 export interface SimpleGenerationRequest {
   mode: GenerationMode;
@@ -20,6 +20,7 @@ export interface SimpleGenerationRequest {
   ghibliReactionPresetId?: string;
   neoGlitchPresetId?: string;
   storyTimePresetId?: string;
+  parallelSelfPresetId?: string;
   additionalImages?: File[];
   meta?: any;
   // IPA (Identity Preservation Analysis) parameters
@@ -51,7 +52,8 @@ const FUNCTION_ENDPOINTS: Record<GenerationMode, string> = {
   'ghibli-reaction': '/.netlify/functions/unified-generate',
   'neo-glitch': '/.netlify/functions/unified-generate',
   'story-time': '/.netlify/functions/unified-generate',
-  'edit-photo': '/.netlify/functions/unified-generate'
+  'edit-photo': '/.netlify/functions/unified-generate',
+  'parallel-self': '/.netlify/functions/unified-generate'
 };
 
 class SimpleGenerationService {
@@ -326,7 +328,8 @@ class SimpleGenerationService {
       'ghibli-reaction': 'ghibli_reaction',
       'neo-glitch': 'neo_glitch',
       'story-time': 'story_time',
-      'edit-photo': 'edit'
+      'edit-photo': 'edit',
+      'parallel-self': 'parallel_self'
     };
 
     const basePayload = {
@@ -388,6 +391,12 @@ class SimpleGenerationService {
           ...basePayload,
           editImages: request.additionalImages,
           editPrompt: request.prompt
+        };
+
+      case 'parallel-self':
+        return {
+          ...basePayload,
+          parallelSelfPresetId: request.parallelSelfPresetId
         };
 
       default:

@@ -410,7 +410,8 @@ type GenerationMode =
   | 'ghibli_reaction' 
   | 'story_time' 
   | 'neo_glitch'
-  | 'edit';
+  | 'edit'
+  | 'parallel_self';
 
 interface UnifiedGenerationRequest {
   mode: GenerationMode;
@@ -424,6 +425,7 @@ interface UnifiedGenerationRequest {
   unrealReflectionPresetId?: string;
   ghibliReactionPresetId?: string;
   storyTimePresetId?: string;
+  parallelSelfPresetId?: string;
   additionalImages?: string[];
   editImages?: string[];
   editPrompt?: string;
@@ -1257,6 +1259,31 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
           result.model3D ? JSON.stringify(result.model3D) : null
         ]);
         console.log(`✅ [Background] Saved unreal_reflection result to database${result.model3D ? ' (with 3D model)' : ''}`);
+        break;
+
+      case 'parallel_self':
+        await q(`
+          INSERT INTO parallel_self_media (
+            user_id, image_url, source_url, prompt, preset, run_id, fal_job_id, status, metadata,
+            obj_url, gltf_url, texture_url, model_3d_metadata
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `, [
+          baseData.user_id,
+          baseData.image_url,
+          baseData.source_url,
+          baseData.prompt,
+          request.parallelSelfPresetId || 'default',
+          baseData.run_id,
+          result.runId || request.runId,
+          baseData.status,
+          baseData.metadata,
+          // 3D model data
+          result.model3D?.obj_url || null,
+          result.model3D?.gltf_url || null,
+          result.model3D?.texture_url || null,
+          result.model3D ? JSON.stringify(result.model3D) : null
+        ]);
+        console.log(`✅ [Background] Saved parallel_self result to database${result.model3D ? ' (with 3D model)' : ''}`);
         break;
 
       case 'ghibli_reaction':
@@ -2129,6 +2156,119 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
             unrealReflectionPrompt: params.prompt
           }
         };
+      } else if (mode === 'parallel_self') {
+        // Parallel Self mode with nano-banana/edit - Use same processing as Unreal Reflection Mode
+        console.log(`✏️ [Parallel Self Mode] Processing single image for photo editing`);
+        
+        // For Parallel Self Mode, we only need the main image (like Unreal Reflection Mode)
+        const mainImage = params.sourceAssetId;
+        
+        if (!mainImage) {
+          throw new Error("Parallel Self Mode requires a source image");
+        }
+        
+        console.log(`✏️ [Parallel Self Mode] Processing main image: ${typeof mainImage === 'string' ? mainImage.substring(0, 50) : 'File object'}...`);
+        
+        // Upload main image to Cloudinary to get public URL
+        const uploadedImageUrl = await uploadUrlToCloudinary(mainImage);
+        console.log(`✅ [Parallel Self Mode] Main image uploaded: ${uploadedImageUrl}`);
+        
+        // Use nano-banana/edit with single image
+        const parallelSelfInput: any = {
+          image_urls: [uploadedImageUrl], // Use main image as base (array format)
+          prompt: params.prompt
+        };
+
+        // 🎯 ENHANCED PROMPT ENGINEERING FOR PARALLEL SELF MODE
+        // Apply enhanced prompt engineering for Parallel Self mode
+        const originalParallelSelfPrompt = params.prompt;
+        const detectedGender = detectGenderFromPrompt(originalParallelSelfPrompt);
+        const detectedAnimals = detectAnimalsFromPrompt(originalParallelSelfPrompt);
+        const detectedGroups = detectGroupsFromPrompt(originalParallelSelfPrompt);
+        
+        console.log(`🔍 [Parallel Self Mode Enhanced Prompt] Detected:`, {
+          gender: detectedGender,
+          animals: detectedAnimals,
+          groups: detectedGroups
+        });
+
+        // Apply enhanced prompt engineering for Parallel Self mode
+        const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(originalParallelSelfPrompt, {
+          preserveGender: true,
+          preserveAnimals: true,
+          preserveGroups: true,
+          originalGender: detectedGender,
+          originalAnimals: detectedAnimals,
+          originalGroups: detectedGroups,
+          context: 'parallel_self'
+        });
+
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Original: "${originalParallelSelfPrompt}"`);
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Enhanced: "${enhancedPrompt}"`);
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Negative: "${negativePrompt}"`);
+        
+        // Update the input with enhanced prompt
+        parallelSelfInput.prompt = enhancedPrompt;
+        if (negativePrompt) {
+          parallelSelfInput.negative_prompt = negativePrompt;
+        }
+
+        console.log(`✏️ [Parallel Self Mode] Generating edit with single image`);
+        
+        try {
+          result = await falInvoke(modelConfig.model, parallelSelfInput);
+        } catch (falError) {
+          console.error(`❌ [Parallel Self Mode] Fal.ai generation failed:`, falError);
+          throw new Error(`Fal.ai Parallel Self generation failed: ${falError}`);
+        }
+        
+        // Check multiple possible image response formats
+        let resultImageUrl = null;
+        
+        // Format 1: result.data.images[0].url
+        if (result?.data?.images?.[0]?.url) {
+          resultImageUrl = result.data.images[0].url;
+        }
+        // Format 2: result.images[0].url
+        else if (result?.images?.[0]?.url) {
+          resultImageUrl = result.images[0].url;
+        }
+        // Format 3: result.data.image.url
+        else if (result?.data?.image?.url) {
+          resultImageUrl = result.data.image.url;
+        }
+        // Format 4: result.image.url
+        else if (result?.image?.url) {
+          resultImageUrl = result.image.url;
+        }
+        // Format 5: result.image_url
+        else if (result?.image_url) {
+          resultImageUrl = result.image_url;
+        }
+        
+        if (!resultImageUrl) {
+          throw new Error(`Parallel Self generation failed: No image URL found in response from ${modelConfig.name}`);
+        }
+        
+        console.log(`✅ [Parallel Self Mode] Edit generated successfully: ${resultImageUrl}`);
+        
+        // Download and upload to Cloudinary for permanent hosting
+        const cloudinaryUrl = await uploadUrlToCloudinary(resultImageUrl);
+        console.log(`✅ [Parallel Self Mode] Edit uploaded to Cloudinary: ${cloudinaryUrl}`);
+        
+        return {
+          success: true,
+          status: 'done',
+          provider: 'fal',
+          outputUrl: cloudinaryUrl,
+          runId: params.runId,
+          metadata: {
+            model: modelConfig.model,
+            totalImages: 1,
+            originalImageUrl: resultImageUrl,
+            parallelSelfPrompt: params.prompt
+          }
+        };
       } else {
         // Convert Cloudinary signed URL to public URL for Fal.ai
         let processedImageUrl = params.sourceAssetId;
@@ -2341,7 +2481,8 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
       'unreal_reflection': 'unreal_reflection_media',
       'ghibli_reaction': 'ghibli_reaction_media',
         'story_time': 'story', // Use story table instead of video_jobs
-        'edit': 'edit_media'
+        'edit': 'edit_media',
+        'parallel_self': 'parallel_self_media'
     };
 
     const tableName = tablesToCheck[request.mode as keyof typeof tablesToCheck];
@@ -2407,7 +2548,8 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
     'ghibli_reaction': 'ghibli_reaction_generation',
     'story_time': 'story_time_generate',
     'neo_glitch': 'neo_glitch_generation',
-    'edit': 'edit_generation'
+    'edit': 'edit_generation',
+    'parallel_self': 'parallel_self_generation'
   };
 
   const action = actionMap[request.mode];
@@ -2502,6 +2644,33 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             // Try BFL fallbacks for edit mode
             result = await generateWithBFL('edit', generationParams);
             console.log('✅ [Background] BFL edit fallback successful');
+          }
+        } else if (request.mode === 'parallel_self') {
+          // Parallel Self mode: Fal.ai nano-banana/edit → BFL fallbacks
+          console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit for Parallel Self');
+          try {
+            result = await generateWithFal(request.mode, generationParams);
+            console.log('✅ [Background] Fal.ai Parallel Self generation successful');
+            
+            // 🎬 Video Generation: DISABLED (Too Expensive - $1+ per 5 seconds)
+            if (request.enableVideo && result.success && result.outputUrl) {
+              console.log('🚫 [Background] Video generation disabled - too expensive ($1+ per 5 seconds)');
+              console.log('🚫 [Background] Skipping video generation to prevent costs');
+              // Video generation disabled due to high costs
+            }
+            
+          } catch (falError) {
+            console.warn('⚠️ [Background] Fal.ai Parallel Self failed, trying BFL fallbacks:', falError);
+            // Try BFL fallbacks for Parallel Self mode
+            result = await generateWithBFL(request.mode, generationParams);
+            console.log('✅ [Background] BFL Parallel Self fallback successful');
+            
+            // 🎬 Video Generation: DISABLED (Too Expensive - $1+ per 5 seconds)
+            if (request.enableVideo && result.success && result.outputUrl) {
+              console.log('🚫 [Background] Video generation disabled - too expensive ($1+ per 5 seconds)');
+              console.log('🚫 [Background] Skipping video generation to prevent costs');
+              // Video generation disabled due to high costs
+            }
           }
         } else if (request.mode === 'story_time') {
           // Story Time mode: Fal.ai only (video generation)
@@ -2761,7 +2930,7 @@ export const handler: Handler = async (event, context) => {
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { mode, prompt, sourceAssetId, userId: bodyUserId, presetKey, unrealReflectionPresetId, storyTimePresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, enableVideo, forVideo, runId: frontendRunId } = body;
+    const { mode, prompt, sourceAssetId, userId: bodyUserId, presetKey, unrealReflectionPresetId, storyTimePresetId, parallelSelfPresetId, additionalImages, editImages, editPrompt, meta, ipaThreshold, ipaRetries, ipaBlocking, enableVideo, forVideo, runId: frontendRunId } = body;
 
     console.log('🚀 [Background] Received request:', {
       mode,
@@ -2832,7 +3001,7 @@ export const handler: Handler = async (event, context) => {
     console.log('🔗 [Background] Using runId:', { frontendRunId, generatedRunId: runId, isFrontend: !!frontendRunId });
 
     // Normalize and validate mode value against allowed set
-    const validModes: GenerationMode[] = ['presets','custom','unreal_reflection','ghibli_reaction','story_time','neo_glitch','edit'];
+    const validModes: GenerationMode[] = ['presets','custom','unreal_reflection','ghibli_reaction','story_time','neo_glitch','edit','parallel_self'];
     const modeStr = String(mode);
     if (!validModes.includes(modeStr as GenerationMode)) {
       return {
@@ -2858,7 +3027,8 @@ export const handler: Handler = async (event, context) => {
       'ghibli_reaction': 'ghibli_reaction_generation',
       'story_time': 'story_time_generate',
       'neo_glitch': 'neo_glitch_generation',
-      'edit': 'edit_generation'
+      'edit': 'edit_generation',
+      'parallel_self': 'parallel_self_generation'
     };
     
     const action = actionMap[modeKey];
@@ -3091,6 +3261,7 @@ export const handler: Handler = async (event, context) => {
       runId: runId, // Ensure runId is always defined
       unrealReflectionPresetId,
       storyTimePresetId,
+      parallelSelfPresetId,
       additionalImages,
       editImages,
       editPrompt,
