@@ -763,7 +763,7 @@ const ProfileScreen: React.FC = () => {
               return {
                 id: item.id,
                 userId: item.userId,
-                type: item.mediaType === 'video' ? 'video' : 'photo',
+                type: item.mediaType || item.type || 'photo', // Use actual mediaType from database
                 url: toAbsoluteCloudinaryUrl(item.finalUrl) || item.finalUrl,
                 prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
                 aspectRatio: 4/3, // Default aspect ratio
@@ -782,7 +782,7 @@ const ProfileScreen: React.FC = () => {
                   generationTime: 0,
                   modelVersion: '1.0',
                   presetKey: item.presetKey,
-                  presetType: item.type || item.mediaType
+                  presetType: item.mediaType || item.type || 'photo' // Use actual mediaType
                 }
               };
             });
