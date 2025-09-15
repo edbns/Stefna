@@ -86,6 +86,8 @@ export const handler: Handler = async (event) => {
       'neotokyoglitch', 'neo_glitch_generation',
       // edit mode
       'edit', 'edit_generation',
+      // parallel self mode
+      'parallel_self_generation',
       // storytime aliases
       'storytime', 'story_time', 'story-time', 'story_time_create', 'story_time_generate', 'story_time_gen'
     ];
