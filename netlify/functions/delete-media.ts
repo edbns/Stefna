@@ -66,7 +66,8 @@ export const handler: Handler = async (event) => {
       { name: 'ghibli_reaction_media', display: 'ghibliReactionMedia', idField: 'id' },
       { name: 'presets_media', display: 'presetsMedia', idField: 'id' },
       { name: 'story', display: 'story', idField: 'id' },
-      { name: 'edit_media', display: 'editMedia', idField: 'run_id' } // edit_media uses run_id for lookups
+      { name: 'edit_media', display: 'editMedia', idField: 'run_id' }, // edit_media uses run_id for lookups
+      { name: 'parallel_self_media', display: 'parallelSelfMedia', idField: 'id' }
     ];
     
     for (const table of tables) {
@@ -243,6 +244,29 @@ export const handler: Handler = async (event) => {
       }
     }
 
+    // Try Parallel Self Media
+    if (!deletedMedia) {
+      try {
+        const result = await q(`
+          DELETE FROM parallel_self_media 
+          WHERE id = $1 AND user_id = $2
+          RETURNING id
+        `, [mediaId, userId]);
+        console.log('🔍 [delete-media] Parallel Self Media result:', { result, length: result?.length });
+        if (result && result.length > 0) {
+          deletedMedia = result;
+          deletedFromTable = 'parallelSelfMedia';
+        }
+      } catch (error: any) {
+        console.error('❌ [delete-media] Parallel Self Media delete error:', { 
+          error: error.message, 
+          code: error.code, 
+          detail: error.detail,
+          constraint: error.constraint 
+        });
+      }
+    }
+
     if (deletedMedia) {
       console.log('✅ [delete-media] Media deleted successfully from', deletedFromTable, ':', mediaId);
       
@@ -264,7 +288,8 @@ export const handler: Handler = async (event) => {
                 mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                 mediaTable === 'presetsMedia' ? 'presets_media' :
                 mediaTable === 'story' ? 'story' :
-                mediaTable === 'editMedia' ? 'edit_media' : 'custom_prompt_media'}
+                mediaTable === 'editMedia' ? 'edit_media' :
+                mediaTable === 'parallelSelfMedia' ? 'parallel_self_media' : 'custom_prompt_media'}
           WHERE ${mediaTable === 'editMedia' ? 'run_id' : 'id'} = $1
         `, [mediaId]);
         
@@ -288,7 +313,8 @@ export const handler: Handler = async (event) => {
                 mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
                 mediaTable === 'presetsMedia' ? 'presets_media' :
                 mediaTable === 'story' ? 'story' :
-                mediaTable === 'editMedia' ? 'edit_media' : 'custom_prompt_media'} m ON l.media_id::text = m.${mediaTable === 'editMedia' ? 'run_id' : 'id'}::text
+                mediaTable === 'editMedia' ? 'edit_media' :
+                mediaTable === 'parallelSelfMedia' ? 'parallel_self_media' : 'custom_prompt_media'} m ON l.media_id::text = m.${mediaTable === 'editMedia' ? 'run_id' : 'id'}::text
           WHERE m.user_id = $1
         `, [userId]);
         
