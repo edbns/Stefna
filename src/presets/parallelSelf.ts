@@ -13,7 +13,6 @@ Built for scroll-stopping visuals that feel mysterious, ethereal, and beautiful.
 
 Enhanced prompts optimized for Nano Banana's verbosity preferences:
 - Rain Dancer: Cinematic rain scene with emotional depth and resilience
-- The Scholar of Silence: Timeless wisdom with architectural backgrounds
 - The Untouchable: Grayscale fashion portrait with minimalist power
 - Holiday Mirage: Golden-hour luxury fantasy with tropical blur
 - The One That Got Away: Fleeting moment after gala with dramatic lighting
@@ -69,28 +68,6 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     raw: true,
     image_prompt_strength: 0.58,
     aspect_ratio: '4:5'
-  },
-  // 📚 The Scholar of Silence
-  {
-    id: 'parallel_self_scholar_silence',
-    label: 'The Scholar of Silence',
-    prompt: 'Render the subject as a figure of deep inner thought — their clothing timeless but fashion-forward: neutral tones, layered textures, worn like armor made of silence. Eyes are calm, observant, almost unnerving in their awareness. Place them in a forgotten library, desert ruin, or soft modernist architecture — somewhere quiet, empty, holding history. Light falls softly across one side of the face, with shadows hinting at an untold story. Skin details are highly preserved. Focus on posture, gaze, and quiet symbolism. The mood is powerful but unspoken.',
-    negative_prompt: 'distortion, anime, horror, military outfit, fantasy race, clown makeup, vibrant cartoon color schemes',
-    strength: 0.56,
-    model: 'fal-ai/nano-banana/edit',
-    mode: 'i2i',
-    input: 'image',
-    requiresSource: true,
-    source: 'parallel_self',
-    guidance_scale: 7.0,
-    num_inference_steps: 30,
-    features: ['scholar_silence', 'timeless_wisdom', 'architectural_background', 'quiet_symbolism', 'identity_preserved'],
-    prompt_upsampling: true,
-    safety_tolerance: 3,
-    output_format: 'jpeg',
-    raw: true,
-    image_prompt_strength: 0.56,
-    aspect_ratio: '1:1'
   },
   // 👑 The Untouchable
   {
@@ -184,8 +161,8 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
   {
     id: 'parallel_self_afterglow',
     label: 'Afterglow',
-    prompt: 'Frame a frozen moment of post-party shimmer. The subject stands beneath soft disco reflections, skin glowing in soft gold and silver tones. Their minimal clubwear — a shimmering slip dress or sheer shirt — catches cinematic lens flares. Their eyes are unfocused, like they\'re reliving the night in memory. The scene glows softly: dreamlike, nostalgic, intimate. Grain and blur give the image the texture of a vintage dream.',
-    negative_prompt: 'hard flash, sharp detail, neon chaos, crowds, dancing pose, vibrant clothing, full-body',
+    prompt: 'A cinematic portrait of a figure illuminated by the fading glow of a disco ball. Their minimal clubwear — a shimmering slip dress or sleek open-collar shirt — catches fragments of gold and silver light. Soft lens flares and glints of reflected sparkles scatter across their skin, creating an intimate, nostalgic glow. Their expression is serene, lost in memory, as if the night has already ended but the light still lingers. Background dissolves into blurred lights and shadows of a quiet, empty club, with grainy texture and soft cinematic blur giving the image a dreamlike after-party feeling.',
+    negative_prompt: 'cartoon, neon chaos, crowds, smiling group shots, distorted anatomy, oversaturated colors, nightclub cliché',
     strength: 0.57,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
