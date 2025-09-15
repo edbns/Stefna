@@ -15,7 +15,7 @@ interface UserLikesResponse {
 
 export async function toggleLike(
   mediaId: string, 
-  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit'
+  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit' | 'parallel_self'
 ): Promise<ToggleLikeResponse> {
   try {
     const response = await authenticatedFetch('/.netlify/functions/toggleLike', {
@@ -59,8 +59,8 @@ export async function getUserLikes(): Promise<UserLikesResponse> {
 }
 
 // Helper to map database media type to API media type
-export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit' {
-  const typeMapping: Record<string, 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit'> = {
+export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit' | 'parallel_self' {
+  const typeMapping: Record<string, 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit' | 'parallel_self'> = {
     'custom_prompt': 'custom_prompt',
     'unreal_reflection': 'unreal_reflection',
     'ghibli_reaction': 'ghibli_reaction',
@@ -69,13 +69,15 @@ export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'unreal_re
     'story': 'story',
     'story_time': 'story',
     'edit': 'edit', // Studio items use edit directly - no mapping!
+    'parallel_self': 'parallel_self',
     // Also handle variations that might come from the feed
     'custom': 'custom_prompt',
     'unrealreflection': 'unreal_reflection',
     'ghiblireact': 'ghibli_reaction',
     'neo-glitch': 'neo_glitch',
     'preset': 'presets',
-    'storytime': 'story'
+    'storytime': 'story',
+    'parallel-self': 'parallel_self'
   };
   
   return typeMapping[dbType] || 'presets';

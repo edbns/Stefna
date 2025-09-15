@@ -28,7 +28,8 @@ export function mapPresetToDisplay(item: any): PresetMapping {
     'custom_prompt': 'custom-prompt',
     'story_time': 'story-time',
     'story': 'story-time',
-    'edit': 'edit'
+    'edit': 'edit',
+    'parallel_self': 'parallel-self'
   }
   
   // Map mediaType to type if type is not available
@@ -52,7 +53,8 @@ export function mapPresetToDisplay(item: any): PresetMapping {
     'presets': 'Presets',
     'custom-prompt': 'Custom Prompt',
     'story-time': 'Story Time',
-    'edit': 'Studio'
+    'edit': 'Studio',
+    'parallel-self': 'Parallel Self'
   }
   
   const displayName = typeDisplayNames[mappedType] || 'AI Generated'
@@ -105,7 +107,8 @@ export function getPresetTypeForFilter(item: any): string {
     'custom_prompt': 'custom-prompt',
     'story_time': 'story-time',
     'story': 'story-time',
-    'edit': 'edit'
+    'edit': 'edit',
+    'parallel_self': 'parallel-self'
   }
   
   const mappedType = typeMapping[presetType] || presetType
@@ -124,7 +127,8 @@ export function getFilterDisplayName(filterType: string): string {
     'presets': 'Presets',
     'custom-prompt': 'Custom Prompt',
     'story-time': 'Story Time',
-    'edit': 'Studio'
+    'edit': 'Studio',
+    'parallel-self': 'Parallel Self'
   }
   
   return filterDisplayNames[filterType] || filterType.charAt(0).toUpperCase() + filterType.slice(1)
