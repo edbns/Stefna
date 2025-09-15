@@ -62,18 +62,6 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
 }) => {
   const gridRef = useRef<HTMLDivElement>(null)
   
-  // 🔍 DEBUG: Log preset data for first few items
-  React.useEffect(() => {
-    if (media.length > 0) {
-      console.log('🔍 [MasonryMediaGrid] Media data sample:', media.slice(0, 3).map(item => ({
-        id: item.id,
-        presetKey: item.metadata?.presetKey || item.presetKey,
-        presetType: item.metadata?.presetType,
-        metadata: item.metadata
-      })));
-    }
-  }, [media]);
-
   // Generate true masonry layout based on aspect ratios
   const masonryColumns = useMemo(() => {
     if (media.length === 0) return []

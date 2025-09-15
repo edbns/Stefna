@@ -18,17 +18,6 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   const type = item.type || item.metadata?.presetType || item.mediaType;
   const presetKey = item.presetKey || item.metadata?.presetKey || item.preset;
   
-  console.log('🔍 [PresetMapping] Input:', { 
-    itemType: item.type, 
-    itemMetadataType: item.metadata?.presetType,
-    itemMediaType: item.mediaType,
-    itemPresetKey: item.presetKey,
-    itemMetadataPresetKey: item.metadata?.presetKey,
-    itemPreset: item.preset,
-    resolvedType: type,
-    resolvedPresetKey: presetKey
-  });
-  
   // Map database types to display types
   const typeMapping: Record<string, string> = {
     'neo_glitch': 'neo-glitch',
@@ -99,16 +88,6 @@ export function getPresetDisplayText(item: any, showPresetKey: boolean = true): 
  * Get preset type for filtering
  */
 export function getPresetTypeForFilter(item: any): string {
-  // Debug logging to see what data we're working with
-  console.log('🔍 [getPresetTypeForFilter] Input item:', {
-    itemType: item.type,
-    itemMetadataType: item.metadata?.presetType,
-    itemMediaType: item.mediaType,
-    itemPresetKey: item.presetKey,
-    itemMetadataPresetKey: item.metadata?.presetKey,
-    itemPreset: item.preset
-  })
-  
   // The backend sends the preset type in item.type (e.g., 'neo_glitch', 'presets', etc.)
   // But the frontend stores it in item.presetType to avoid conflicts with item.type ('photo'/'video')
   // Use item.presetType first, then fall back to item.type, then metadata
@@ -127,11 +106,6 @@ export function getPresetTypeForFilter(item: any): string {
   }
   
   const mappedType = typeMapping[presetType] || presetType
-  
-  console.log('🔍 [getPresetTypeForFilter] Result:', {
-    inputPresetType: presetType,
-    mappedType: mappedType
-  })
   
   return mappedType
 }

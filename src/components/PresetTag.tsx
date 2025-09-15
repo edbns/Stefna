@@ -37,14 +37,6 @@ const PresetTag: React.FC<PresetTagProps> = ({
     const actualType = item?.presetType || item?.metadata?.presetType || item?.type || type
     const actualPresetKey = item?.metadata?.presetKey || item?.presetKey || presetKey
     
-    console.log('🔍 [PresetTag] Data:', {
-      itemPresetType: item?.presetType,
-      itemMetadataPresetType: item?.metadata?.presetType,
-      itemType: item?.type,
-      actualType,
-      actualPresetKey
-    })
-    
     // If we have no data, don't show anything
     if (!actualType && !actualPresetKey) {
       // console.log('❌ [PresetTag] No data available, not rendering') // REMOVED - excessive debug logging
