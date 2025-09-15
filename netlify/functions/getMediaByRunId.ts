@@ -97,6 +97,13 @@ export const handler: Handler = async (event, context) => {
        FROM edit_media 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
+       LIMIT 1`,
+      
+      // Parallel Self media
+      `SELECT 'parallel_self' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, GREATEST(COALESCE(likes_count, 0), 0) as likes_count 
+       FROM parallel_self_media 
+       WHERE run_id = $1 
+       ORDER BY created_at DESC 
        LIMIT 1`
     ];
 
