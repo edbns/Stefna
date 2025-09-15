@@ -112,12 +112,17 @@ export const handler: Handler = async (event) => {
       if ((existingSettings?.share_to_feed ?? false) !== updatedRow.share_to_feed) {
         changes.push({ field: 'share_to_feed', oldv: existingSettings?.share_to_feed, newv: updatedRow.share_to_feed });
       }
-      // no mobile-specific field auditing in this iteration
-      for (const c of changes) {
-        await q(`
-          INSERT INTO settings_audit_log (user_id, field, old_value, new_value, platform)
-          VALUES ($1, $2, $3::jsonb, $4::jsonb, $5)
-        `, [userId, c.field, JSON.stringify(c.oldv), JSON.stringify(c.newv), platform || 'unknown']);
+      // Optional audit logging - don't fail if table doesn't exist
+      try {
+        for (const c of changes) {
+          await q(`
+            INSERT INTO settings_audit_log (user_id, field, old_value, new_value, platform)
+            VALUES ($1, $2, $3::jsonb, $4::jsonb, $5)
+          `, [userId, c.field, JSON.stringify(c.oldv), JSON.stringify(c.newv), platform || 'unknown']);
+        }
+      } catch (auditError) {
+        console.warn('⚠️ [User Settings] Audit logging failed (table may not exist):', auditError?.message);
+        // Continue without failing the main operation
       }
 
       return json({ 
