@@ -15,7 +15,8 @@ export interface PresetMapping {
  */
 export function mapPresetToDisplay(item: any): PresetMapping {
   // Handle both direct properties and metadata properties
-  const type = item.type || item.metadata?.presetType || item.mediaType;
+  // Use item.presetType first (which comes from backend item.type), then fall back to item.type
+  const type = item.presetType || item.type || item.metadata?.presetType || item.mediaType;
   const presetKey = item.presetKey || item.metadata?.presetKey || item.preset;
   
   // Map database types to display types
@@ -26,7 +27,8 @@ export function mapPresetToDisplay(item: any): PresetMapping {
     'presets': 'presets',
     'custom_prompt': 'custom-prompt',
     'story_time': 'story-time',
-    'story': 'story-time'
+    'story': 'story-time',
+    'edit': 'edit'
   }
   
   // Map mediaType to type if type is not available
@@ -49,7 +51,8 @@ export function mapPresetToDisplay(item: any): PresetMapping {
     'unreal-reflection': 'Unreal Reflection', 
     'presets': 'Presets',
     'custom-prompt': 'Custom Prompt',
-    'story-time': 'Story Time'
+    'story-time': 'Story Time',
+    'edit': 'Studio'
   }
   
   const displayName = typeDisplayNames[mappedType] || 'AI Generated'
@@ -88,10 +91,10 @@ export function getPresetDisplayText(item: any, showPresetKey: boolean = true): 
  * Get preset type for filtering
  */
 export function getPresetTypeForFilter(item: any): string {
-  // The backend sends the preset type in item.type (e.g., 'neo_glitch', 'presets', etc.)
-  // But the frontend stores it in item.presetType to avoid conflicts with item.type ('photo'/'video')
-  // Use item.presetType first, then fall back to item.type, then metadata
-  const presetType = item.presetType || item.type || item.metadata?.presetType || item.mediaType || 'presets'
+  // The backend sends the preset type in item.type (e.g., 'neo_glitch', 'presets', 'edit')
+  // The frontend stores it in item.presetType for consistency
+  // Use item.presetType first (which comes from backend item.type), then fall back to item.type
+  const presetType = item.presetType || item.type || 'presets'
   
   // Map the preset type to the filter format
   const typeMapping: Record<string, string> = {

@@ -1919,8 +1919,8 @@ const HomeNew: React.FC = () => {
               quality: 'high', 
               generationTime: 0, 
               modelVersion: '1.0',
-              presetKey: item.presetKey, // Backend sends presetKey (camelCase)
-              presetType: item.type, // Backend sends type
+              presetKey: item.presetKey || null, // Backend sends presetKey (camelCase) - can be null for edit
+              presetType: item.type, // Backend sends type (e.g., 'neo_glitch', 'presets', 'edit')
               // Story Time video metadata
               videoResults: item.metadata?.videoResults,
               totalVideos: item.metadata?.totalVideos,
@@ -1929,8 +1929,8 @@ const HomeNew: React.FC = () => {
             // Store additional fields needed for functionality
             cloudinaryPublicId: item.cloudinaryPublicId,
             mediaType: item.mediaType,
-            // Store the original preset type for filtering
-            presetType: item.type, // Backend sends the actual preset type here
+            // Store the original preset type for filtering - use the backend type directly
+            presetType: item.type, // Backend sends the actual preset type here (e.g., 'neo_glitch', 'presets', 'edit')
           })
         })
           .filter((item: UserMedia | null): item is UserMedia => item !== null) // Filter out null items
@@ -3239,16 +3239,18 @@ const HomeNew: React.FC = () => {
       // Use the new mapping utility for consistent filtering
       const presetType = getPresetTypeForFilter(item)
       
-      // Debug logging for filtering
-      console.log(`🔍 [Filter] Item ${item.id}:`, {
-        itemPresetType: item.presetType,
-        itemType: item.type,
-        itemMetadataPresetType: item.metadata?.presetType,
-        itemPresetKey: item.presetKey,
-        calculatedPresetType: presetType,
-        activeFeedFilter,
-        matches: presetType === activeFeedFilter
-      })
+      // Debug logging for filtering (only log mismatches to reduce noise)
+      if (presetType !== activeFeedFilter) {
+        console.log(`🔍 [Filter] Item ${item.id} filtered out:`, {
+          itemPresetType: item.presetType,
+          itemType: item.type,
+          itemMetadataPresetType: item.metadata?.presetType,
+          itemPresetKey: item.presetKey,
+          calculatedPresetType: presetType,
+          activeFeedFilter,
+          reason: 'presetType mismatch'
+        })
+      }
       
       if (presetType !== activeFeedFilter) return false
     }
