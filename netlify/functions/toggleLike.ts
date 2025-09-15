@@ -42,6 +42,14 @@ export const handler: Handler = async (event) => {
     // Parse request body
     const { mediaId, mediaType } = JSON.parse(event.body || '{}') as ToggleLikeRequest;
 
+    console.log('🔍 [toggleLike] Debug info:', {
+      mediaId,
+      mediaType,
+      mediaIdType: typeof mediaId,
+      userId,
+      platform
+    });
+
     if (!mediaId || !mediaType) {
       return json({ error: 'Missing required fields' }, { status: 400 });
     }
