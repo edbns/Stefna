@@ -15,7 +15,7 @@ interface UserLikesResponse {
 
 export async function toggleLike(
   mediaId: string, 
-  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story'
+  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit'
 ): Promise<ToggleLikeResponse> {
   try {
     const response = await authenticatedFetch('/.netlify/functions/toggleLike', {
@@ -59,8 +59,8 @@ export async function getUserLikes(): Promise<UserLikesResponse> {
 }
 
 // Helper to map database media type to API media type
-export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' {
-  const typeMapping: Record<string, 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story'> = {
+export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit' {
+  const typeMapping: Record<string, 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit'> = {
     'custom_prompt': 'custom_prompt',
     'unreal_reflection': 'unreal_reflection',
     'ghibli_reaction': 'ghibli_reaction',
@@ -68,7 +68,7 @@ export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'unreal_re
     'presets': 'presets',
     'story': 'story',
     'story_time': 'story',
-    'edit': 'story', // Studio items map to story for likes
+    'edit': 'edit', // Studio items use edit directly - no mapping!
     // Also handle variations that might come from the feed
     'custom': 'custom_prompt',
     'unrealreflection': 'unreal_reflection',
