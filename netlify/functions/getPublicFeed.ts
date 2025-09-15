@@ -53,7 +53,7 @@ export const handler: Handler = async (event) => {
       union all
       select 'custom_prompt'   as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom_prompt' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'edit'            as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, null as preset, status, created_at, 'edit' as "mediaType", null as "presetKey", prompt, 0 as likes_count from edit_media            where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'edit'            as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, null as preset, status, created_at, 'edit' as "mediaType", null as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from edit_media            where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
     ),
     feed_with_user_likes as (
       select f.*, 
