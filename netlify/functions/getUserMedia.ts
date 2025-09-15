@@ -80,6 +80,8 @@ export const handler: Handler = async (event) => {
         SELECT id::text FROM neo_glitch_media WHERE user_id = $1
         UNION ALL
         SELECT id::text FROM edit_media WHERE user_id = $1
+        UNION ALL
+        SELECT id::text FROM parallel_self_media WHERE user_id = $1
       ) as combined_media
     `;
 
@@ -102,6 +104,8 @@ export const handler: Handler = async (event) => {
         SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, stability_job_id as fal_job_id, 'neo_glitch' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata FROM neo_glitch_media WHERE user_id = $1
         UNION ALL
         SELECT id::text, user_id, image_url, prompt, 'edit' as preset, created_at, run_id, fal_job_id, 'edit' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata FROM edit_media WHERE user_id = $1
+        UNION ALL
+        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'parallel_self' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata FROM parallel_self_media WHERE user_id = $1
       ) as combined_media
       ORDER BY created_at DESC
       LIMIT $2 OFFSET $3
