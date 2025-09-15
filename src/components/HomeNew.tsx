@@ -1831,7 +1831,11 @@ const HomeNew: React.FC = () => {
         expectedItems: `${offset}-${offset + pageSize - 1}`
       })
       
-      const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${pageSize}&offset=${offset}`)
+      // Get current user ID for personalized sorting
+      const currentUser = authService.getCurrentUser()
+      const userIdParam = currentUser?.id ? `&userId=${currentUser.id}` : ''
+      
+      const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${pageSize}&offset=${offset}${userIdParam}`)
       console.log('📡 Feed response status:', res.status)
       
       if (res.ok) {

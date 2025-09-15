@@ -32,6 +32,7 @@ export const handler: Handler = async (event) => {
 
   const limit = Math.max(1, Math.min(200, Number(event.queryStringParameters?.limit ?? 100))); // Increased from 20 to 100, max 200
   const offset = Math.max(0, Number(event.queryStringParameters?.offset ?? 0));
+  const userId = event.queryStringParameters?.userId; // Optional user ID for personalized sorting
 
 
 
@@ -53,13 +54,23 @@ export const handler: Handler = async (event) => {
       select 'custom_prompt'   as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom_prompt' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
       select 'edit'            as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, null as preset, status, created_at, 'edit' as "mediaType", null as "presetKey", prompt, 0 as likes_count from edit_media            where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+    ),
+    feed_with_user_likes as (
+      select f.*, 
+             case when $3::text is not null and exists(
+               select 1 from likes l 
+               where l.media_id = f.id 
+               and l.media_type = f.type 
+               and l.user_id = $3::text
+             ) then 1 else 0 end as user_liked
+      from feed f
+      join allowed_users u on u.user_id = f.user_id
     )
-    select f.*
-    from feed f
-    join allowed_users u on u.user_id = f.user_id
+    select *
+    from feed_with_user_likes
     order by 
-      case when f.likes_count > 0 then 0 else 1 end,  -- Liked media first
-      f.likes_count desc,  -- Then by likes count
+      user_liked desc,  -- User's liked media first
+      likes_count desc,  -- Then by total likes count
       random()  -- Then shuffle the rest randomly
     limit $1 offset $2
   `;
@@ -99,7 +110,7 @@ export const handler: Handler = async (event) => {
     const totalCount = totalCountResult[0]?.total || 0;
     console.info('🔒 [getPublicFeed] Total items available:', totalCount);
     
-    const rows = await q(sql, [limit, offset]);
+    const rows = await q(sql, [limit, offset, userId]);
     console.info('🔒 [getPublicFeed] Feed items found:', rows.length);
     
     // Debug: Log first few items to see their structure
