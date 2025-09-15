@@ -18,6 +18,45 @@ import { withAuth } from './_withAuth';
 import { requireAuth } from './_lib/auth';
 import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyAdvancedPromptEnhancements } from '../../src/utils/promptEnhancement';
 
+// Prompt sanitization functions for Fal.ai content policy compliance
+function sanitizePromptForFal(prompt: string): string {
+  return prompt
+    // Replace problematic body/clothing terms
+    .replace(/clings to (?:their )?body/gi, 'draped closely')
+    .replace(/clings to/gi, 'draped closely')
+    .replace(/revealing the contours/gi, 'showing the silhouette')
+    .replace(/revealing contours/gi, 'showing silhouette')
+    .replace(/contours of/gi, 'silhouette of')
+    .replace(/precise anatomy/gi, 'detailed features')
+    .replace(/accurate features/gi, 'realistic details')
+    // Remove problematic weighting syntax
+    .replace(/\(person:[\d.]+\)/gi, '')
+    .replace(/\(subject:[\d.]+\)/gi, '')
+    .replace(/\(figure:[\d.]+\)/gi, '')
+    // Clean up extra spaces
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function sanitizeNegativePromptForFal(negativePrompt: string): string {
+  if (!negativePrompt) return '';
+  
+  return negativePrompt
+    // Remove gender change terms
+    .replace(/gender change/gi, '')
+    .replace(/gender swap/gi, '')
+    .replace(/opposite gender/gi, '')
+    .replace(/gender swap/gi, '')
+    // Keep identity preservation terms
+    .replace(/identity preserved/gi, 'identity maintained')
+    // Clean up extra spaces and commas
+    .replace(/,\s*,/g, ',')
+    .replace(/,\s*$/g, '')
+    .replace(/^\s*,/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Immediate alert helper
 async function sendImmediateAlert(service: string, error: string, details: string) {
   try {
@@ -2208,14 +2247,19 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           context: 'parallel_self'
         });
 
+        // Sanitize prompt for Fal.ai content policy compliance
+        const sanitizedPrompt = sanitizePromptForFal(enhancedPrompt);
+        const sanitizedNegativePrompt = sanitizeNegativePromptForFal(negativePrompt);
+
         console.log(`✨ [Parallel Self Mode Enhanced Prompt] Original: "${originalParallelSelfPrompt}"`);
         console.log(`✨ [Parallel Self Mode Enhanced Prompt] Enhanced: "${enhancedPrompt}"`);
-        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Negative: "${negativePrompt}"`);
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Sanitized: "${sanitizedPrompt}"`);
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Negative: "${sanitizedNegativePrompt}"`);
         
-        // Update the input with enhanced prompt
-        parallelSelfInput.prompt = enhancedPrompt;
-        if (negativePrompt) {
-          parallelSelfInput.negative_prompt = negativePrompt;
+        // Update the input with sanitized prompt
+        parallelSelfInput.prompt = sanitizedPrompt;
+        if (sanitizedNegativePrompt) {
+          parallelSelfInput.negative_prompt = sanitizedNegativePrompt;
         }
 
         console.log(`✏️ [Parallel Self Mode] Generating edit with single image`);
