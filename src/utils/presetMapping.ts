@@ -109,9 +109,9 @@ export function getPresetTypeForFilter(item: any): string {
     itemPreset: item.preset
   })
   
-  // For feed items, the preset type is in item.metadata.presetType
-  // This comes from the backend where item.type contains the actual preset type
-  const presetType = item.metadata?.presetType || item.type || item.mediaType || 'presets'
+  // The backend sends the preset type in item.type (e.g., 'neo_glitch', 'presets', etc.)
+  // Use item.type directly since that's what the backend provides
+  const presetType = item.type || item.metadata?.presetType || item.mediaType || 'presets'
   
   // Map the preset type to the filter format
   const typeMapping: Record<string, string> = {
@@ -121,7 +121,8 @@ export function getPresetTypeForFilter(item: any): string {
     'presets': 'presets',
     'custom_prompt': 'custom-prompt',
     'story_time': 'story-time',
-    'story': 'story-time'
+    'story': 'story-time',
+    'edit': 'edit'
   }
   
   const mappedType = typeMapping[presetType] || presetType
@@ -144,7 +145,8 @@ export function getFilterDisplayName(filterType: string): string {
     'unreal-reflection': 'Unreal Reflection',
     'presets': 'Presets',
     'custom-prompt': 'Custom Prompt',
-    'story-time': 'Story Time'
+    'story-time': 'Story Time',
+    'edit': 'Story'
   }
   
   return filterDisplayNames[filterType] || filterType.charAt(0).toUpperCase() + filterType.slice(1)
