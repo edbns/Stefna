@@ -30,7 +30,7 @@ interface MasonryMediaGridProps {
   // Loading states for actions
   deletingMediaIds?: Set<string>
   // Filter functionality
-  onPresetTagClick?: (presetType: string) => void
+  // onPresetTagClick removed - tags are no longer clickable
   // Likes functionality
   onToggleLike?: (media: UserMedia) => void
   userLikes?: Record<string, boolean>
@@ -56,8 +56,6 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   isLoggedIn = true,
   // Loading states for actions
   deletingMediaIds = new Set(),
-  // Filter functionality
-  onPresetTagClick,
   // Likes functionality
   onToggleLike,
   userLikes = {}
@@ -266,28 +264,10 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             type={item.metadata?.presetType || item.type}
                             item={item}
                             size="sm"
-                            clickable={!!onPresetTagClick}
+                            clickable={false}
                             showPresetKey={true}
-                            onClick={(e) => {
-                              e.stopPropagation() // Prevent click from bubbling to media card
-                              if (onPresetTagClick) {
-                                // Use the correct mapping utility for filtering
-                                const filterType = getPresetTypeForFilter(item)
-                                console.log('🔍 [MasonryMediaGrid] PresetTag clicked:', { 
-                                  filterType, 
-                                  itemPresetType: item.presetType,
-                                  itemType: item.type, 
-                                  metadataType: item.metadata?.presetType,
-                                  presetKey: item.presetKey,
-                                  metadataPresetKey: item.metadata?.presetKey,
-                                  fullItem: item
-                                })
-                                
-                                // Scroll to top when filter is applied
-                                window.scrollTo({ top: 0, behavior: 'smooth' })
-                                
-                                onPresetTagClick(filterType)
-                              }
+                            onClick={() => {
+                              // Tags are disabled - no filtering functionality
                             }}
                           />
                           

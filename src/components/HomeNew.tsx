@@ -49,7 +49,7 @@ interface SafeMasonryGridProps {
   handleMediaClick: (media: UserMedia) => void
   // handleRemix removed - no more remix functionality
   onLastItemRef?: (ref: HTMLDivElement | null) => void
-  onPresetTagClick?: (presetType: string) => void
+  // onPresetTagClick removed - tags are no longer clickable
   onToggleLike?: (media: UserMedia) => void
   userLikes?: Record<string, boolean>
   isLoggedIn?: boolean
@@ -61,7 +61,6 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
   handleMediaClick,
   onLastItemRef,
   // handleRemix removed
-  onPresetTagClick,
   onToggleLike,
   userLikes = {},
   isLoggedIn = false,
@@ -77,7 +76,6 @@ const SafeMasonryGrid: React.FC<SafeMasonryGridProps> = ({
         showActions={true}
         className="pb-24 w-full"
         onLastItemRef={onLastItemRef}
-        onPresetTagClick={onPresetTagClick}
         onToggleLike={onToggleLike}
         userLikes={userLikes}
         isLoggedIn={isLoggedIn}
@@ -3495,9 +3493,6 @@ const HomeNew: React.FC = () => {
     <div className="flex min-h-screen bg-black relative overflow-hidden w-full">
       {/* Hidden file uploader for intent-based uploads */}
       <HiddenUploader />
-      
-      {/* Error Test Button - TEMPORARY FOR TESTING */}
-      <ErrorTest />
 
       {/* Mobile View - View Only Experience */}
       {isMobile ? (
@@ -3657,7 +3652,6 @@ const HomeNew: React.FC = () => {
                 handleMediaClick={handleMediaClick}
                 onLastItemRef={setLastItemRef}
                 // handleRemix removed
-                onPresetTagClick={(presetType) => setActiveFeedFilter(presetType)}
                 onToggleLike={handleToggleLike}
                 userLikes={userLikes}
                 isLoggedIn={isAuthenticated}
