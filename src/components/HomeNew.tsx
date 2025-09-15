@@ -32,6 +32,7 @@ import { storeSelectedFile } from '../services/mediaSource'
 import { useGenerationMode } from '../stores/generationMode'
 // MoodMorph removed - replaced with Anime Filters
 import { UnrealReflectionPicker } from './UnrealReflectionPicker'
+import { ParallelSelfPicker } from './ParallelSelfPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
 import { MediaUploadAgreement } from './MediaUploadAgreement'
@@ -115,6 +116,7 @@ import { DatabasePreset } from '../services/presetsService'
 import { UNREAL_REFLECTION_PRESETS } from '../presets/unrealReflection'
 import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
 import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
+import { PARALLEL_SELF_PRESETS } from '../presets/parallelSelf'
 import { resolvePresetForMode } from '../utils/resolvePresetForMode'
 
 // Database presets are now loaded dynamically - no need for static PRESETS object
@@ -220,7 +222,7 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: null as 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit' | null, // remix mode removed
+    mode: null as 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'neotokyoglitch' | 'parallelself' | 'storytime' | 'edit' | null, // remix mode removed
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
@@ -733,6 +735,8 @@ const HomeNew: React.FC = () => {
   const [ghibliReactionDropdownOpen, setGhibliReactionDropdownOpen] = useState(false)
   const [selectedNeoTokyoGlitchPreset, setSelectedNeoTokyoGlitchPreset] = useState<string | null>(null)
   const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(false)
+  const [selectedParallelSelfPreset, setSelectedParallelSelfPreset] = useState<string | null>(null)
+  const [parallelSelfDropdownOpen, setParallelSelfDropdownOpen] = useState(false)
   const [selectedStoryTimePreset, setSelectedStoryTimePreset] = useState<string | null>(null)
 
   const [additionalStoryImages, setAdditionalStoryImages] = useState<File[]>([])
@@ -2193,7 +2197,7 @@ const HomeNew: React.FC = () => {
 
   // NEW CLEAN GENERATION DISPATCHER - NO MORE MIXED LOGIC
   async function dispatchGenerate(
-    kind: 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'neotokyoglitch' | 'storytime' | 'edit', // remix removed
+    kind: 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'neotokyoglitch' | 'parallelself' | 'storytime' | 'edit', // remix removed
     options?: {
       presetId?: string;
       presetData?: any;
@@ -2201,6 +2205,7 @@ const HomeNew: React.FC = () => {
       unrealReflectionPresetId?: string;
       ghibliReactionPresetId?: string;
       neoTokyoGlitchPresetId?: string;
+      parallelSelfPresetId?: string;
       customPrompt?: string;
       storyTimeImages?: string[];
       storyTimePresetId?: string;
@@ -2225,7 +2230,7 @@ const HomeNew: React.FC = () => {
     console.info('▶ NEW dispatchGenerate', { kind, options, runId });
     
     // 🛡️ Runtime Guard (For Safety) - Prevent unknown modes from crashing the app
-    if (!['preset', 'custom', 'unrealreflection', 'ghiblireact', 'neotokyoglitch', 'storytime', 'edit'].includes(kind)) {
+    if (!['preset', 'custom', 'unrealreflection', 'ghiblireact', 'neotokyoglitch', 'parallelself', 'storytime', 'edit'].includes(kind)) {
       console.warn("[dispatchGenerate] Unknown mode: ", kind);
               notifyError({ title: 'Invalid Mode', message: 'Try again with a valid option' });
       return;
@@ -2407,6 +2412,49 @@ const HomeNew: React.FC = () => {
       };
       if (import.meta.env.DEV) {
         console.log('UNREAL REFLECTION MODE: Using ORIGINAL prompt:', unrealReflectionPreset.label, effectivePrompt);
+      }
+    } else if (kind === 'parallelself') {
+      // PARALLEL SELF MODE: Use the selected Parallel Self preset
+      const parallelSelfPresetId = options?.parallelSelfPresetId || selectedParallelSelfPreset;
+      
+      if (!parallelSelfPresetId) {
+        console.error('❌ Invalid Parallel Self preset:', parallelSelfPresetId);
+        console.error('❌ Invalid Parallel Self preset: Please select a Parallel Self variant first')
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
+      }
+      
+      const parallelSelfPreset = PARALLEL_SELF_PRESETS.find(p => p.id === parallelSelfPresetId);
+      if (!parallelSelfPreset) {
+        console.error('❌ Parallel Self preset not found:', parallelSelfPresetId);
+        console.error('❌ Parallel Self preset not found: Please select a valid Parallel Self variant')
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
+      }
+      
+      effectivePrompt = parallelSelfPreset.prompt;
+      generationMeta = { 
+        mode: 'parallelself', 
+        parallelSelfPresetId, 
+        parallelSelfLabel: parallelSelfPreset.label, 
+        model: parallelSelfPreset.model, // Use preset model (BFL)
+        guidance_scale: parallelSelfPreset.guidance_scale, // Use preset guidance
+        num_inference_steps: parallelSelfPreset.num_inference_steps, // Use preset steps
+        prompt_upsampling: parallelSelfPreset.prompt_upsampling, // Use preset upsampling
+        safety_tolerance: parallelSelfPreset.safety_tolerance, // Use preset safety
+        output_format: parallelSelfPreset.output_format, // Use preset format
+        raw: parallelSelfPreset.raw, // Use preset raw mode
+        image_prompt_strength: parallelSelfPreset.image_prompt_strength, // Use preset image strength
+        aspect_ratio: parallelSelfPreset.aspect_ratio, // Use preset aspect ratio
+        generation_type: "parallel_self_strict_ipa", // Strict identity preservation
+        ipaThreshold: 0.75, // High threshold for identity preservation
+        ipaRetries: 3, // Aggressive fallback
+        ipaBlocking: true // Must pass to proceed
+      };
+      if (import.meta.env.DEV) {
+        console.log('PARALLEL SELF MODE: Using ORIGINAL prompt:', parallelSelfPreset.label, effectivePrompt);
       }
     } else if (kind === 'ghiblireact') {
       // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
@@ -2678,6 +2726,7 @@ const HomeNew: React.FC = () => {
         unrealReflectionPresetId: generationMeta?.unrealReflectionPresetId,
         ghibliReactionPresetId: generationMeta?.ghibliReactionPresetId,
         neoGlitchPresetId: generationMeta?.neoTokyoGlitchPresetId,
+        parallelSelfPresetId: generationMeta?.parallelSelfPresetId,
         storyTimePresetId: generationMeta?.storyTimePresetId,
         additionalImages: generationMeta?.storyTimeImages,
         meta: generationMeta,
@@ -4094,6 +4143,65 @@ const HomeNew: React.FC = () => {
                       )}
                       
 
+                  </div>
+
+                  {/* Parallel Self™ button - SINGLE BUTTON with dropdown */}
+                  <div className="relative" data-parallelself-dropdown>
+                    <button
+                      onClick={() => {
+                        if (isAuthenticated) {
+                          setComposerState(s => ({ ...s, mode: 'parallelself' }))
+                          setParallelSelfDropdownOpen(!parallelSelfDropdownOpen)
+                        } else {
+                          navigate('/auth')
+                        }
+                      }}
+                      className={
+                        composerState.mode === 'parallelself'
+                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                      }
+                      title={isAuthenticated ? 'Switch to Parallel Self™ mode' : 'Explore Parallel Self™ mode'}
+                    >
+                      {selectedParallelSelfPreset ? 
+                        PARALLEL_SELF_PRESETS.find(p => p.id === selectedParallelSelfPreset)?.label || 'Parallel Self™' 
+                        : 'Parallel Self™'
+                      }
+                    </button>
+                    
+                    {/* Parallel Self™ presets dropdown - show when in Parallel Self mode */}
+                    {composerState.mode === 'parallelself' && parallelSelfDropdownOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 z-50">
+                        <ParallelSelfPicker
+                          value={selectedParallelSelfPreset || undefined}
+                          onChange={async (presetId) => {
+                            setSelectedParallelSelfPreset(presetId || null)
+                            setParallelSelfDropdownOpen(false)
+                              
+                            // Auto-generate when Parallel Self preset is selected
+                            if (presetId && selectedFile && isAuthenticated) {
+                              console.log('Auto-generating Parallel Self with preset:', presetId)
+                              try {
+                                await dispatchGenerate('parallelself', {
+                                  parallelSelfPresetId: presetId
+                                })
+                                // Clear composer after successful generation
+                                setTimeout(() => {
+                                  clearAllOptionsAfterGeneration()
+                                }, 500)
+                              } catch (error) {
+                                console.error('❌ Parallel Self auto-generation failed:', error)
+                                // Clear composer after generation error
+                                setTimeout(() => {
+                                  clearAllOptionsAfterGeneration()
+                                }, 300)
+                              }
+                            }
+                          }}
+                          disabled={!isAuthenticated}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Studio Ghibli Reaction™ button - SINGLE BUTTON with dropdown */}
