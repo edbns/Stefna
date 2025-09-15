@@ -1122,15 +1122,15 @@ const AdminDashboardScreen: React.FC = () => {
                       {stats.quotaStatus.quota_reached ? 'Quota Reached' : 'Beta Users'}
                     </p>
                     <p className={`text-2xl font-bold mt-1 ${
-                  stats.quotaStatus.quota_reached ? 'text-red-400' : 'text-white'
-                }`}>
-                  {stats.quotaStatus.current_count}/{stats.quotaStatus.quota_limit}
+                    stats.quotaStatus.quota_reached ? 'text-red-400' : 'text-white'
+                  }`}>
+                    {stats.quotaStatus.current_count}/{stats.quotaStatus.quota_limit}
                     </p>
-                {stats.quotaStatus.quota_enabled && (
+                  {stats.quotaStatus.quota_enabled && (
                       <p className="text-xs text-gray-500 mt-1">
-                    {stats.quotaStatus.remaining_slots} slots left
+                      {stats.quotaStatus.remaining_slots} slots left
                       </p>
-                )}
+                  )}
                   </div>
                 </div>
               )}

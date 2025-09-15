@@ -5,7 +5,7 @@ import { json } from './_lib/http';
 
 interface ToggleLikeRequest {
   mediaId: string;
-  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story';
+  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit';
 }
 
 export const handler: Handler = async (event) => {
@@ -47,13 +47,13 @@ export const handler: Handler = async (event) => {
     }
 
     // Validate media type and disallow likes from non-web if needed in future
-    const validMediaTypes = ['custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'neo_glitch', 'presets', 'story'];
+    const validMediaTypes = ['custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'neo_glitch', 'presets', 'story', 'edit'];
     if (!validMediaTypes.includes(mediaType)) {
       return json({ error: 'Invalid media type' }, { status: 400 });
     }
 
     // Check if the media exists
-    const mediaTable = mediaType === 'story' ? 'story' : `${mediaType}_media`;
+    const mediaTable = mediaType === 'story' || mediaType === 'edit' ? 'edit_media' : `${mediaType}_media`;
     const mediaCheck = await q(`SELECT id, user_id FROM ${mediaTable} WHERE id = $1`, [mediaId]);
     
     if (mediaCheck.length === 0) {
@@ -85,12 +85,12 @@ export const handler: Handler = async (event) => {
       liked = true;
     }
 
-    // Get updated likes count
+    // Get updated likes count from the likes table
     const countResult = await q(
-      `SELECT likes_count FROM ${mediaTable} WHERE id = $1`,
-      [mediaId]
+      'SELECT COUNT(*) as count FROM likes WHERE media_id = $1 AND media_type = $2',
+      [mediaId, mediaType]
     );
-    likesCount = countResult[0]?.likes_count || 0;
+    likesCount = countResult[0]?.count || 0;
 
     return json({ 
       success: true,

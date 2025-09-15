@@ -68,6 +68,7 @@ export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'unreal_re
     'presets': 'presets',
     'story': 'story',
     'story_time': 'story',
+    'edit': 'story', // Studio items map to story for likes
     // Also handle variations that might come from the feed
     'custom': 'custom_prompt',
     'unrealreflection': 'unreal_reflection',
