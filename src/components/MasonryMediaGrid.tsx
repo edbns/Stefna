@@ -6,7 +6,6 @@ import PresetTag from './PresetTag'
 import { MediaCard as SpinnerCard } from './ui/Toasts'
 // LazyImage removed - using simple img tags for better performance
 // formatRemixCount removed - no more remix functionality
-import { getPresetTypeForFilter } from '../utils/presetMapping'
 
 interface MasonryMediaGridProps {
   media: UserMedia[]
@@ -29,8 +28,6 @@ interface MasonryMediaGridProps {
   isLoggedIn?: boolean
   // Loading states for actions
   deletingMediaIds?: Set<string>
-  // Filter functionality
-  onPresetTagClick?: (filterType: string) => void
   // Likes functionality
   onToggleLike?: (media: UserMedia) => void
   userLikes?: Record<string, boolean>
@@ -56,8 +53,6 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   isLoggedIn = true,
   // Loading states for actions
   deletingMediaIds = new Set(),
-  // Filter functionality
-  onPresetTagClick,
   // Likes functionality
   onToggleLike,
   userLikes = {}
@@ -254,15 +249,8 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             type={item.metadata?.presetType || item.type}
                             item={item}
                             size="sm"
-                            clickable={!!onPresetTagClick}
+                            clickable={false}
                             showPresetKey={true}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (onPresetTagClick) {
-                                const filterType = getPresetTypeForFilter(item)
-                                onPresetTagClick(filterType)
-                              }
-                            }}
                           />
                           
                           {/* 3D Tag - Show if media has 3D model */}
