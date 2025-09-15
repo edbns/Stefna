@@ -42,8 +42,7 @@ const PresetTag: React.FC<PresetTagProps> = ({
       itemMetadataPresetType: item?.metadata?.presetType,
       itemType: item?.type,
       actualType,
-      actualPresetKey,
-      displayText: actualType && typeNames[actualType] ? typeNames[actualType] : 'No mapping found'
+      actualPresetKey
     })
     
     // If we have no data, don't show anything
