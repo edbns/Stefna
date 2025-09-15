@@ -34,17 +34,17 @@ const PresetTag: React.FC<PresetTagProps> = ({
   // Simple mapping function
   const getDisplayText = () => {
     // Get the actual data from the item
-    const actualType = item?.metadata?.presetType || item?.type || type
+    const actualType = item?.presetType || item?.metadata?.presetType || item?.type || type
     const actualPresetKey = item?.metadata?.presetKey || item?.presetKey || presetKey
     
-    // console.log('🔍 [PresetTag] Data:', { // REMOVED - excessive debug logging
-    //   actualType, 
-    //   actualPresetKey, 
-    //   itemType: item?.type,
-    //   itemMetadataType: item?.metadata?.presetType,
-    //   itemPresetKey: item?.presetKey,
-    //   itemMetadataPresetKey: item?.metadata?.presetKey
-    // })
+    console.log('🔍 [PresetTag] Data:', {
+      itemPresetType: item?.presetType,
+      itemMetadataPresetType: item?.metadata?.presetType,
+      itemType: item?.type,
+      actualType,
+      actualPresetKey,
+      displayText: actualType && typeNames[actualType] ? typeNames[actualType] : 'No mapping found'
+    })
     
     // If we have no data, don't show anything
     if (!actualType && !actualPresetKey) {
