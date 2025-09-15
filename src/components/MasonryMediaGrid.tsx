@@ -30,7 +30,7 @@ interface MasonryMediaGridProps {
   // Loading states for actions
   deletingMediaIds?: Set<string>
   // Filter functionality
-  // onPresetTagClick removed - tags are no longer clickable
+  onPresetTagClick?: (filterType: string) => void
   // Likes functionality
   onToggleLike?: (media: UserMedia) => void
   userLikes?: Record<string, boolean>
@@ -56,6 +56,8 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   isLoggedIn = true,
   // Loading states for actions
   deletingMediaIds = new Set(),
+  // Filter functionality
+  onPresetTagClick,
   // Likes functionality
   onToggleLike,
   userLikes = {}
@@ -252,10 +254,14 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                             type={item.metadata?.presetType || item.type}
                             item={item}
                             size="sm"
-                            clickable={false}
+                            clickable={!!onPresetTagClick}
                             showPresetKey={true}
-                            onClick={() => {
-                              // Tags are disabled - no filtering functionality
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (onPresetTagClick) {
+                                const filterType = getPresetTypeForFilter(item)
+                                onPresetTagClick(filterType)
+                              }
                             }}
                           />
                           
