@@ -2197,11 +2197,26 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           groups: detectedGroups
         });
 
-        // Use original prompt without enhancement to avoid content policy issues
-        console.log(`✨ [Parallel Self Mode] Using original prompt (no enhancement): "${originalParallelSelfPrompt}"`);
+        // Apply enhanced prompt engineering for Parallel Self mode
+        const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(originalParallelSelfPrompt, {
+          preserveGender: true,
+          preserveAnimals: true,
+          preserveGroups: true,
+          originalGender: detectedGender,
+          originalAnimals: detectedAnimals,
+          originalGroups: detectedGroups,
+          context: 'parallel_self'
+        });
+
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Original: "${originalParallelSelfPrompt}"`);
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Enhanced: "${enhancedPrompt}"`);
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Negative: "${negativePrompt}"`);
         
-        // Update the input with original prompt
-        parallelSelfInput.prompt = originalParallelSelfPrompt;
+        // Update the input with enhanced prompt
+        parallelSelfInput.prompt = enhancedPrompt;
+        if (negativePrompt) {
+          parallelSelfInput.negative_prompt = negativePrompt;
+        }
 
         console.log(`✏️ [Parallel Self Mode] Generating edit with single image`);
         
