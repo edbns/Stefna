@@ -50,42 +50,42 @@ export const handler: Handler = async (event, context) => {
     // Search across all media tables for the exact runId
     const queries = [
       // Presets media
-      `SELECT 'presets' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, likes_count 
+      `SELECT 'presets' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, GREATEST(COALESCE(likes_count, 0), 0) as likes_count 
        FROM presets_media 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
        LIMIT 1`,
       
       // Custom prompt media
-      `SELECT 'custom_prompt' as type, id, user_id, image_url, prompt, run_id, created_at, status, metadata, likes_count 
+      `SELECT 'custom_prompt' as type, id, user_id, image_url, prompt, run_id, created_at, status, metadata, GREATEST(COALESCE(likes_count, 0), 0) as likes_count 
        FROM custom_prompt_media 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
        LIMIT 1`,
       
       // Emotion mask media - use preset column instead of unreal_reflection_preset_id
-      `SELECT 'unreal_reflection' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, likes_count 
+      `SELECT 'unreal_reflection' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, GREATEST(COALESCE(likes_count, 0), 0) as likes_count 
        FROM unreal_reflection_media 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
        LIMIT 1`,
       
       // Ghibli reaction media - use preset column instead of ghibli_reaction_preset_id
-      `SELECT 'ghibli_reaction' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, likes_count 
+      `SELECT 'ghibli_reaction' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, GREATEST(COALESCE(likes_count, 0), 0) as likes_count 
        FROM ghibli_reaction_media 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
        LIMIT 1`,
       
       // Neo glitch media
-      `SELECT 'neo_glitch' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, likes_count 
+      `SELECT 'neo_glitch' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, GREATEST(COALESCE(likes_count, 0), 0) as likes_count 
        FROM neo_glitch_media 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
        LIMIT 1`,
       
       // Story media - use story_photo table for video_url, search by id since story table doesn't have run_id
-      `SELECT 'story' as type, s.id, s.user_id, sp.video_url as image_url, s.title as prompt, s.preset, s.id as run_id, s.created_at, s.status, s.metadata, 0 as likes_count 
+      `SELECT 'story' as type, s.id, s.user_id, sp.video_url as image_url, s.title as prompt, s.preset, s.id as run_id, s.created_at, s.status, s.metadata, 0 as GREATEST(COALESCE(likes_count, 0), 0) as likes_count 
        FROM story s
        LEFT JOIN story_photo sp ON s.id = sp.story_id
        WHERE s.id = $1 
@@ -93,7 +93,7 @@ export const handler: Handler = async (event, context) => {
        LIMIT 1`,
       
       // Edit media
-      `SELECT 'edit' as type, id, user_id, image_url, prompt, 'edit' as preset, run_id, created_at, status, metadata, 0 as likes_count 
+      `SELECT 'edit' as type, id, user_id, image_url, prompt, 'edit' as preset, run_id, created_at, status, metadata, 0 as GREATEST(COALESCE(likes_count, 0), 0) as likes_count 
        FROM edit_media 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
@@ -156,7 +156,7 @@ export const handler: Handler = async (event, context) => {
       runId: foundMedia.run_id,
       timestamp: foundMedia.created_at,
       status: foundMedia.status,
-      likes_count: foundMedia.likes_count || 0,
+      GREATEST(COALESCE(likes_count, 0), 0) as likes_count: foundMedia.GREATEST(COALESCE(likes_count, 0), 0) as likes_count || 0,
       metadata: foundMedia.metadata ? 
         (typeof foundMedia.metadata === 'string' ? JSON.parse(foundMedia.metadata) : foundMedia.metadata) 
         : {},
@@ -164,7 +164,7 @@ export const handler: Handler = async (event, context) => {
       width: 1024, // Default dimensions
       height: 1024,
       tokensUsed: 1,
-      likes: foundMedia.likes_count || 0,
+      likes: foundMedia.GREATEST(COALESCE(likes_count, 0), 0) as likes_count || 0,
       isPublic: true,
       tags: []
     };

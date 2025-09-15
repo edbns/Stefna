@@ -90,7 +90,7 @@ export const handler: Handler = async (event) => {
       'SELECT COUNT(*) as count FROM likes WHERE media_id = $1 AND media_type = $2',
       [mediaId, mediaType]
     );
-    likesCount = countResult[0]?.count || 0;
+    likesCount = Math.max(0, countResult[0]?.count || 0); // Ensure minimum is 0
 
     return json({ 
       success: true,

@@ -68,17 +68,17 @@ export const handler: Handler = async (event) => {
       // Get media from all tables
       const media = await q(`
         WITH all_media AS (
-          SELECT 'neo_glitch' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM neo_glitch_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'neo_glitch' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM neo_glitch_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'unreal_reflection' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM unreal_reflection_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'unreal_reflection' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM unreal_reflection_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'ghibli_reaction' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM ghibli_reaction_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'ghibli_reaction' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM ghibli_reaction_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'custom_prompt' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM custom_prompt_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'custom_prompt' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM custom_prompt_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, 0 as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, 0 as GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
         )
         SELECT * FROM all_media
         ${whereClause}
@@ -89,17 +89,17 @@ export const handler: Handler = async (event) => {
       // Get total count
       const totalCount = await q(`
         WITH all_media AS (
-          SELECT 'neo_glitch' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM neo_glitch_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'neo_glitch' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM neo_glitch_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'unreal_reflection' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM unreal_reflection_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'unreal_reflection' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM unreal_reflection_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'ghibli_reaction' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM ghibli_reaction_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'ghibli_reaction' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM ghibli_reaction_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'custom_prompt' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, likes_count, metadata FROM custom_prompt_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'custom_prompt' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM custom_prompt_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, 0 as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, 0 as GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
         )
         SELECT COUNT(*) as total FROM all_media
         ${whereClause}
