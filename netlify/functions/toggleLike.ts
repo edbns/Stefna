@@ -5,7 +5,7 @@ import { json } from './_lib/http';
 
 interface ToggleLikeRequest {
   mediaId: string;
-  dbMediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit';
+  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit';
 }
 
 export const handler: Handler = async (event) => {
@@ -51,13 +51,9 @@ export const handler: Handler = async (event) => {
     if (!validMediaTypes.includes(mediaType)) {
       return json({ error: 'Invalid media type' }, { status: 400 });
     }
-    
-    // Map 'edit' to 'story' for database compatibility (likes table constraint)
-    const dbMediaType = mediaType === 'edit' ? 'story' : mediaType;
 
     // Check if the media exists
-    // For 'edit' media type, we need to check edit_media table, but use original mediaType for table selection
-    const mediaTable = mediaType === 'edit' ? 'edit_media' : `${dbMediaType}_media`;
+    const mediaTable = mediaType === 'edit' ? 'edit_media' : `${mediaType}_media`;
     const mediaCheck = await q(`SELECT id, user_id FROM ${mediaTable} WHERE id = $1`, [mediaId]);
     
     if (mediaCheck.length === 0) {
@@ -67,7 +63,7 @@ export const handler: Handler = async (event) => {
     // Check if user already liked this media
     const existingLike = await q(
       'SELECT id FROM likes WHERE user_id = $1 AND media_id = $2 AND media_type = $3',
-      [userId, mediaId, dbMediaType]
+      [userId, mediaId, mediaType]
     );
 
     let liked = false;
@@ -77,14 +73,14 @@ export const handler: Handler = async (event) => {
       // Unlike - remove the like
       await q(
         'DELETE FROM likes WHERE user_id = $1 AND media_id = $2 AND media_type = $3',
-        [userId, mediaId, dbMediaType]
+        [userId, mediaId, mediaType]
       );
       liked = false;
     } else {
       // Like - add the like
       await q(
         'INSERT INTO likes (user_id, media_id, media_type) VALUES ($1, $2, $3)',
-        [userId, mediaId, dbMediaType]
+        [userId, mediaId, mediaType]
       );
       liked = true;
     }
@@ -92,7 +88,7 @@ export const handler: Handler = async (event) => {
     // Get updated likes count from the likes table
     const countResult = await q(
       'SELECT COUNT(*) as count FROM likes WHERE media_id = $1 AND media_type = $2',
-      [mediaId, dbMediaType]
+      [mediaId, mediaType]
     );
     likesCount = Math.max(0, countResult[0]?.count || 0); // Ensure minimum is 0
 
@@ -101,7 +97,7 @@ export const handler: Handler = async (event) => {
       liked,
       likesCount,
       mediaId,
-      dbMediaType
+      mediaType
     });
   } catch (error: any) {
     console.error('💥 [toggleLike] Error:', error?.message || error);
