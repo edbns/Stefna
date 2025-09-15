@@ -1577,6 +1577,9 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
   } else if (mode === 'unreal_reflection') {
     // Emotion: Ultra → Pro → Standard → Fal.ai
     models = BFL_EMOTION_MODELS;
+  } else if (mode === 'parallel_self') {
+    // Parallel Self: Ultra → Pro → Standard → Fal.ai (same as Unreal Reflection)
+    models = BFL_EMOTION_MODELS;
   } else if (mode === 'ghibli_reaction') {
     // Ghibli: Ultra → Pro → Standard → Fal.ai
     models = BFL_GHIBLI_MODELS;
