@@ -2674,6 +2674,7 @@ const HomeNew: React.FC = () => {
           case 'unrealreflection': return 'unreal-reflection';
           case 'ghiblireact': return 'ghibli-reaction';
           case 'neotokyoglitch': return 'neo-glitch';
+          case 'parallelself': return 'parallel-self';
           case 'storytime': return 'story-time';
           case 'edit': return 'edit-photo';
           default: return 'presets';
