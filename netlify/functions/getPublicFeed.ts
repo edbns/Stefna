@@ -110,7 +110,7 @@ export const handler: Handler = async (event) => {
     const totalCount = totalCountResult[0]?.total || 0;
     console.info('🔒 [getPublicFeed] Total items available:', totalCount);
     
-    const rows = await q(sql, [limit, offset, userId]);
+    const rows = await q(sql, [limit, offset, userId || null]);
     console.info('🔒 [getPublicFeed] Feed items found:', rows.length);
     
     // Debug: Log first few items to see their structure

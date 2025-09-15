@@ -78,7 +78,7 @@ export const handler: Handler = async (event) => {
           UNION ALL
           SELECT 'custom_prompt' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM custom_prompt_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, 0 as GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, 0 as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
         )
         SELECT * FROM all_media
         ${whereClause}
@@ -99,7 +99,7 @@ export const handler: Handler = async (event) => {
           UNION ALL
           SELECT 'custom_prompt' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM custom_prompt_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, 0 as GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, 0 as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
         )
         SELECT COUNT(*) as total FROM all_media
         ${whereClause}
