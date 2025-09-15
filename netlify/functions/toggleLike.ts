@@ -53,7 +53,15 @@ export const handler: Handler = async (event) => {
     }
 
     // Check if the media exists
-    const mediaTable = mediaType === 'edit' ? 'edit_media' : `${mediaType}_media`;
+    let mediaTable: string;
+    if (mediaType === 'edit') {
+      mediaTable = 'edit_media';
+    } else if (mediaType === 'story') {
+      mediaTable = 'story';
+    } else {
+      mediaTable = `${mediaType}_media`;
+    }
+    
     const mediaCheck = await q(`SELECT id, user_id FROM ${mediaTable} WHERE id = $1`, [mediaId]);
     
     if (mediaCheck.length === 0) {
