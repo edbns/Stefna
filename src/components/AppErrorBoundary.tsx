@@ -17,58 +17,30 @@ export class AppErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ 
-          padding: 16, 
-          fontFamily: 'system-ui, sans-serif',
-          backgroundColor: '#f5f5f5',
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <h2 style={{ color: '#d32f2f', marginBottom: 16 }}>Something went wrong.</h2>
-          <details style={{ 
-            backgroundColor: 'white', 
-            padding: 16, 
-            borderRadius: 8, 
-            border: '1px solid #ddd',
-            maxWidth: '80vw',
-            overflow: 'auto'
-          }}>
-            <summary style={{ cursor: 'pointer', marginBottom: 8 }}>Error Details</summary>
-            <pre style={{ 
-              whiteSpace: 'pre-wrap', 
-              fontSize: '12px',
-              color: '#666'
-            }}>
-              {String(this.state.err?.message || this.state.err)}
-            </pre>
-            {this.state.err?.stack && (
-              <pre style={{ 
-                whiteSpace: 'pre-wrap', 
-                fontSize: '10px',
-                color: '#999',
-                marginTop: 8
-              }}>
-                {this.state.err.stack}
-              </pre>
-            )}
-          </details>
-          <button 
-            onClick={() => window.location.reload()} 
-            style={{
-              marginTop: 16,
-              padding: '8px 16px',
-              backgroundColor: '#1976d2',
-              color: 'white',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer'
-            }}
-          >
-            Reload Page
-          </button>
+        <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+          <div className="text-center max-w-md">
+            <h1 className="text-2xl font-semibold mb-6">
+              Something went wrong.
+            </h1>
+            
+            <p className="text-lg mb-2">
+              It's not you. It's us.
+            </p>
+            <p className="text-lg mb-8">
+              Please try reloading — or come back later.
+            </p>
+            
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-6 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors"
+            >
+              Try Again
+            </button>
+            
+            <p className="text-sm text-gray-400 mt-8">
+              Access may be limited during early beta.
+            </p>
+          </div>
         </div>
       );
     }

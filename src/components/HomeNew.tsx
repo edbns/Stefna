@@ -3495,6 +3495,9 @@ const HomeNew: React.FC = () => {
     <div className="flex min-h-screen bg-black relative overflow-hidden w-full">
       {/* Hidden file uploader for intent-based uploads */}
       <HiddenUploader />
+      
+      {/* Error Test Button - TEMPORARY FOR TESTING */}
+      <ErrorTest />
 
       {/* Mobile View - View Only Experience */}
       {isMobile ? (

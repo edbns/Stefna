@@ -147,7 +147,7 @@ export function getFilterDisplayName(filterType: string): string {
     'presets': 'Presets',
     'custom-prompt': 'Custom Prompt',
     'story-time': 'Story Time',
-    'edit': 'Story'
+    'edit': 'Studio'
   }
   
   return filterDisplayNames[filterType] || filterType.charAt(0).toUpperCase() + filterType.slice(1)
