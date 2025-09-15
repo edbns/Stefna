@@ -62,15 +62,20 @@ export const handler: Handler = async (event) => {
 
     // Check if the media exists
     let mediaTable: string;
+    let idQuery: string;
+    
     if (mediaType === 'edit') {
       mediaTable = 'edit_media';
+      idQuery = 'id = $1::integer'; // edit_media uses integer IDs
     } else if (mediaType === 'story') {
       mediaTable = 'story';
+      idQuery = 'id = $1'; // story table - need to check if it's integer or text
     } else {
       mediaTable = `${mediaType}_media`;
+      idQuery = 'id = $1'; // other media tables use UUID strings
     }
     
-    const mediaCheck = await q(`SELECT id, user_id FROM ${mediaTable} WHERE id = $1`, [mediaId]);
+    const mediaCheck = await q(`SELECT id, user_id FROM ${mediaTable} WHERE ${idQuery}`, [mediaId]);
     
     if (mediaCheck.length === 0) {
       return json({ error: 'Media not found' }, { status: 404 });
