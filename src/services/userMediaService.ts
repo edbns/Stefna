@@ -57,6 +57,7 @@ export interface UserMedia {
   expiresAt?: string
   // Additional fields for new feed structure
   cloudinaryPublicId?: string
+  presetType?: string // Store the original preset type from backend for filtering
   mediaType?: 'image' | 'video'
 }
 

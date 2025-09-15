@@ -1920,6 +1920,8 @@ const HomeNew: React.FC = () => {
             // Store additional fields needed for functionality
             cloudinaryPublicId: item.cloudinaryPublicId,
             mediaType: item.mediaType,
+            // Store the original preset type for filtering
+            presetType: item.type, // Backend sends the actual preset type here
           })
         })
           .filter((item: UserMedia | null): item is UserMedia => item !== null) // Filter out null items

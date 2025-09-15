@@ -110,8 +110,9 @@ export function getPresetTypeForFilter(item: any): string {
   })
   
   // The backend sends the preset type in item.type (e.g., 'neo_glitch', 'presets', etc.)
-  // Use item.type directly since that's what the backend provides
-  const presetType = item.type || item.metadata?.presetType || item.mediaType || 'presets'
+  // But the frontend stores it in item.presetType to avoid conflicts with item.type ('photo'/'video')
+  // Use item.presetType first, then fall back to item.type, then metadata
+  const presetType = item.presetType || item.type || item.metadata?.presetType || item.mediaType || 'presets'
   
   // Map the preset type to the filter format
   const typeMapping: Record<string, string> = {
