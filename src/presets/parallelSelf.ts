@@ -51,7 +51,7 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
   {
     id: 'parallel_self_rain_dancer',
     label: 'Rain Dancer',
-      prompt: 'Transform this person, couple of groups of people into the Rain Dancer or dancers: standing in a cinematic rainstorm, their minimal clothing soaked by water, fabric clinging naturally in motion. Wind lifts their hair as raindrops shimmer mid-air, illuminated by dramatic shafts of light. Their expression remains true but filled with emotion — resilient yet vulnerable. Surround them with atmosphere: rippling puddles, mist rising, droplets sparkling, and a surreal storm glow that makes the moment feel alive. In the distance, hints of a glowing city emerge through rain and haze — blurred lights, reflections on wet pavement, and an urban backdrop that feels alive but dreamlike.',
+      prompt: 'Transform this person, couple or group of people in the photo into the Rain Dancer or dancers: standing in a cinematic rainstorm, their minimal clothing soaked by water, fabric clinging naturally in motion. Wind lifts their hair as raindrops shimmer mid-air, illuminated by dramatic shafts of light. Their expression remains true but filled with emotion — resilient yet vulnerable. Surround them with atmosphere: rippling puddles, mist rising, droplets sparkling, and a surreal storm glow that makes the moment feel alive. In the distance, hints of a glowing city emerge through rain and haze — blurred lights, reflections on wet pavement, and an urban backdrop that feels alive but dreamlike.',
     negative_prompt: 'cartoon, anime, smiling, makeup-heavy, overexposed, colorful clothes, hats, wide angle',
     strength: 0.58,
     model: 'fal-ai/nano-banana/edit',
