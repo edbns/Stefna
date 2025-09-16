@@ -43,6 +43,7 @@ import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 
 import { useProfile } from '../contexts/ProfileContext'
 import { downloadAllMediaAsZip, downloadSelectedMediaAsZip, generateMediaFilename, DownloadableMedia } from '../utils/downloadUtils'
+import { toggleLike, getUserLikes, mapMediaTypeForAPI } from '../services/likesService'
 
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
@@ -294,6 +295,7 @@ const ProfileScreen: React.FC = () => {
         if (currentUserId && currentUserId !== 'guest-user') {
           console.log('✅ Profile loaded, now loading user media for:', currentUserId);
           loadUserMedia();
+          loadUserLikes(); // Load user likes
         } else {
           // Fallback: if profile didn't set currentUserId, try to load media anyway
           console.log('⚠️ Profile loaded but no currentUserId set, trying to load media anyway');
@@ -301,6 +303,7 @@ const ProfileScreen: React.FC = () => {
             const user = authService.getCurrentUser()
             if (user) {
               loadUserMedia();
+              loadUserLikes(); // Load user likes
             }
           }, 100);
         }
@@ -387,6 +390,81 @@ const ProfileScreen: React.FC = () => {
   // Download state
   const [isDownloadingSelected, setIsDownloadingSelected] = useState(false)
   const [isDownloadingAll, setIsDownloadingAll] = useState(false)
+  
+  // Likes functionality
+  const [userLikes, setUserLikes] = useState<Record<string, boolean>>({})
+  const [likesLoading, setLikesLoading] = useState(false)
+
+  // Load user likes
+  const loadUserLikes = async () => {
+    if (!authService.isAuthenticated()) return
+    
+    try {
+      setLikesLoading(true)
+      const response = await getUserLikes()
+      setUserLikes(response.likes || {})
+    } catch (error) {
+      console.error('Failed to load user likes:', error)
+    } finally {
+      setLikesLoading(false)
+    }
+  }
+
+  // Handle toggle like
+  const handleToggleLike = async (media: UserMedia) => {
+    if (!authService.isAuthenticated()) {
+      navigate('/auth')
+      return
+    }
+    
+    try {
+      // Map the type for likes key - use the database type from media
+      const dbType = (media.metadata?.presetType || media.type || 'presets').replace(/-/g, '_')
+      const likeKey = `${dbType}:${media.id}`
+      const wasLiked = userLikes[likeKey]
+      
+      setUserLikes(prev => ({
+        ...prev,
+        [likeKey]: !wasLiked
+      }))
+      
+      // Update the user media item's like count optimistically
+      setUserMedia(prev => prev.map(item => 
+        item.id === media.id 
+          ? { ...item, likes_count: (item.likes_count || 0) + (wasLiked ? -1 : 1) }
+          : item
+      ))
+      
+      // Map the type to the API format
+      const apiMediaType = mapMediaTypeForAPI(dbType)
+      
+      // Make API call
+      const response = await toggleLike(media.id, apiMediaType)
+      
+      // Update with server response
+      if (response.success) {
+        setUserMedia(prev => prev.map(item => 
+          item.id === media.id 
+            ? { ...item, likes_count: response.likesCount }
+            : item
+        ))
+      } else {
+        // Revert on error
+        setUserLikes(prev => ({
+          ...prev,
+          [likeKey]: wasLiked
+        }))
+        setUserMedia(prev => prev.map(item => 
+          item.id === media.id 
+            ? { ...item, likes_count: (item.likes_count || 0) + (wasLiked ? 1 : -1) }
+            : item
+        ))
+      }
+    } catch (error) {
+      console.error('Failed to toggle like:', error)
+      addNotification('Error', 'Failed to update like', 'error')
+    }
+  }
 
 
 
@@ -1814,6 +1892,11 @@ const ProfileScreen: React.FC = () => {
                   deletingMediaIds={deletingMediaIds}
                   // 🚀 INFINITE SCROLL: Connect intersection observer
                   onLastItemRef={handleLastItemRef}
+                  // Likes functionality
+                  onToggleLike={handleToggleLike}
+                  userLikes={userLikes}
+                  isLoggedIn={isAuthenticated}
+                  onShowAuth={() => navigate('/auth')}
                 />
                 
                 {/* 🚀 INFINITE SCROLL: Loading indicator */}
