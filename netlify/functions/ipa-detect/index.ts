@@ -46,7 +46,7 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
         source: {
           uri: imageUrl
         },
-        prompts: ["How many human faces are visible in this image? Count each distinct face and respond with just the number."]
+        prompts: ["Count only the distinct human faces of actual people in this image. Do not count reflections, shadows, or faces in photos/pictures. How many real people are visible?"]
       })
     });
     
@@ -66,11 +66,12 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
     // Extract face count from AI response
     let faceCount = 1; // Default fallback
     
-    if (result.data?.analysis?.response) {
-      const aiResponse = result.data.analysis.response.toLowerCase();
+    if (result.data?.analysis?.responses && result.data.analysis.responses.length > 0) {
+      const aiResponse = result.data.analysis.responses[0].value;
+      console.log('🤖 [IPA Detect] AI response value:', aiResponse);
       
-      // Try to extract number from AI response
-      const numberMatch = aiResponse.match(/\b(\d+)\b/);
+      // Extract number from AI response
+      const numberMatch = aiResponse.toString().match(/\b(\d+)\b/);
       if (numberMatch) {
         faceCount = parseInt(numberMatch[1]);
         // Sanity check - reasonable face count range
