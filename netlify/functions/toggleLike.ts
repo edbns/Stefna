@@ -1,6 +1,6 @@
 import type { Handler } from '@netlify/functions';
 import { q } from './_db';
-import { requireAuth } from './_auth';
+import { requireAuth } from './_lib/auth';
 import { json } from './_lib/http';
 
 interface ToggleLikeRequest {
