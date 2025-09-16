@@ -21,6 +21,12 @@ import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromP
 // Helper function to detect faces and get face count from source image
 async function detectFaceCount(imageUrl: string): Promise<number> {
   try {
+    // Validate input
+    if (!imageUrl || typeof imageUrl !== 'string') {
+      console.warn('⚠️ [Face Detection] No valid image URL passed, skipping face count');
+      return 1; // safe fallback
+    }
+    
     console.log('🤖 [Face Detection] Starting face detection for:', imageUrl.substring(0, 50) + '...');
     
     // Dynamically import TensorFlow.js to avoid SSR issues
@@ -1742,7 +1748,13 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
       // 🎯 GROUP-AWARE PROMPT SCAFFOLDING
       // Apply group-aware prompt scaffolding before enhancement
       const originalPrompt = params.prompt;
-      const faceCount = await detectFaceCount(params.imageUrl);
+      let faceCount = 1; // Default fallback
+      try {
+        faceCount = await detectFaceCount(params.imageUrl);
+      } catch (error) {
+        console.error('❌ [Face Detection Error]', error);
+        faceCount = 1; // Safe fallback
+      }
       const { enhancedPrompt: scaffoldedPrompt, negativePromptAdditions, groupType } = applyGroupAwarePromptScaffolding(originalPrompt, faceCount);
       
       // 🎯 ENHANCED PROMPT ENGINEERING FOR GENDER, ANIMALS, AND GROUPS
@@ -2091,7 +2103,13 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR EDIT MODE
         // Apply group-aware prompt scaffolding before enhancement
         const originalEditPrompt = params.editPrompt || params.prompt;
-        const faceCount = await detectFaceCount(params.imageUrl);
+        let faceCount = 1; // Default fallback
+        try {
+          faceCount = await detectFaceCount(params.imageUrl);
+        } catch (error) {
+          console.error('❌ [Face Detection Error]', error);
+          faceCount = 1; // Safe fallback
+        }
         const { enhancedPrompt: scaffoldedEditPrompt, negativePromptAdditions: editNegativeAdditions, groupType: editGroupType } = applyGroupAwarePromptScaffolding(originalEditPrompt, faceCount);
         
         // 🎯 ENHANCED PROMPT ENGINEERING FOR EDIT MODE
@@ -2228,7 +2246,13 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR UNREAL REFLECTION MODE
         // Apply group-aware prompt scaffolding before enhancement
         const originalUnrealReflectionPrompt = params.prompt;
-        const faceCount = await detectFaceCount(params.imageUrl);
+        let faceCount = 1; // Default fallback
+        try {
+          faceCount = await detectFaceCount(params.imageUrl);
+        } catch (error) {
+          console.error('❌ [Face Detection Error]', error);
+          faceCount = 1; // Safe fallback
+        }
         const { enhancedPrompt: scaffoldedUnrealPrompt, negativePromptAdditions: unrealNegativeAdditions, groupType: unrealGroupType } = applyGroupAwarePromptScaffolding(originalUnrealReflectionPrompt, faceCount);
         
         // 🎯 ENHANCED PROMPT ENGINEERING FOR UNREAL REFLECTION MODE
@@ -2360,7 +2384,13 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR PARALLEL SELF MODE
         // Apply group-aware prompt scaffolding before enhancement
         const originalParallelSelfPrompt = params.prompt;
-        const faceCount = await detectFaceCount(params.imageUrl);
+        let faceCount = 1; // Default fallback
+        try {
+          faceCount = await detectFaceCount(params.imageUrl);
+        } catch (error) {
+          console.error('❌ [Face Detection Error]', error);
+          faceCount = 1; // Safe fallback
+        }
         const { enhancedPrompt: scaffoldedParallelPrompt, negativePromptAdditions: parallelNegativeAdditions, groupType: parallelGroupType } = applyGroupAwarePromptScaffolding(originalParallelSelfPrompt, faceCount, params.parallelSelfPresetId);
         
         // 🎯 ENHANCED PROMPT ENGINEERING FOR PARALLEL SELF MODE
@@ -2514,7 +2544,13 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Apply group-aware prompt scaffolding before enhancement
         if (!(mode === 'ghibli_reaction' || mode === 'unreal_reflection')) {
           const originalPrompt = params.prompt;
-          const faceCount = await detectFaceCount(params.imageUrl);
+          let faceCount = 1; // Default fallback
+          try {
+            faceCount = await detectFaceCount(params.imageUrl);
+          } catch (error) {
+            console.error('❌ [Face Detection Error]', error);
+            faceCount = 1; // Safe fallback
+          }
           const { enhancedPrompt: scaffoldedFalPrompt, negativePromptAdditions: falNegativeAdditions, groupType: falGroupType } = applyGroupAwarePromptScaffolding(originalPrompt, faceCount);
           
           // 🎯 ENHANCED PROMPT ENGINEERING FOR FAL.AI
