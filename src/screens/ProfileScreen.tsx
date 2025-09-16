@@ -42,6 +42,7 @@ import userService from '../services/userService'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 
 import { useProfile } from '../contexts/ProfileContext'
+import { downloadAllMediaAsZip, downloadSelectedMediaAsZip, generateMediaFilename, DownloadableMedia } from '../utils/downloadUtils'
 
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
@@ -383,6 +384,10 @@ const ProfileScreen: React.FC = () => {
   const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set())
   const [isSelectionMode, setIsSelectionMode] = useState(false)
 
+  // Download state
+  const [isDownloadingSelected, setIsDownloadingSelected] = useState(false)
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false)
+
 
 
   // Media selection helper functions
@@ -627,6 +632,76 @@ const ProfileScreen: React.FC = () => {
       setIsDeletingSelected(false)
       setDeletingMediaIds(new Set())
       setConfirm({ open: false, media: undefined })
+    }
+  }
+
+  // Download functions
+  const downloadAllMedia = async () => {
+    if (userMedia.length === 0) {
+      addNotification('No Media', 'No media files to download', 'warning')
+      return
+    }
+
+    setIsDownloadingAll(true)
+    
+    try {
+      // Convert user media to downloadable format
+      const downloadableMedia: DownloadableMedia[] = userMedia.map((media, index) => ({
+        id: media.id,
+        url: toAbsoluteCloudinaryUrl(media.url) || media.url,
+        filename: generateMediaFilename({
+          id: media.id,
+          url: media.url,
+          filename: '',
+          type: media.type === 'video' ? 'video' : 'image'
+        }, index),
+        type: media.type === 'video' ? 'video' : 'image'
+      }))
+
+      await downloadAllMediaAsZip(downloadableMedia, `all-media-${new Date().toISOString().split('T')[0]}.zip`)
+      
+      addNotification('Download Complete', `Downloaded ${userMedia.length} media files`, 'success')
+    } catch (error) {
+      console.error('❌ Download all error:', error)
+      addNotification('Download Failed', error instanceof Error ? error.message : 'Failed to download media', 'error')
+    } finally {
+      setIsDownloadingAll(false)
+    }
+  }
+
+  const downloadSelectedMedia = async () => {
+    if (selectedMediaIds.size === 0) {
+      addNotification('No Selection', 'Please select media files to download', 'warning')
+      return
+    }
+
+    setIsDownloadingSelected(true)
+    
+    try {
+      // Get selected media items
+      const selectedMedia = userMedia.filter(media => selectedMediaIds.has(media.id))
+      
+      // Convert to downloadable format
+      const downloadableMedia: DownloadableMedia[] = selectedMedia.map((media, index) => ({
+        id: media.id,
+        url: toAbsoluteCloudinaryUrl(media.url) || media.url,
+        filename: generateMediaFilename({
+          id: media.id,
+          url: media.url,
+          filename: '',
+          type: media.type === 'video' ? 'video' : 'image'
+        }, index),
+        type: media.type === 'video' ? 'video' : 'image'
+      }))
+
+      await downloadSelectedMediaAsZip(downloadableMedia, `selected-media-${new Date().toISOString().split('T')[0]}.zip`)
+      
+      addNotification('Download Complete', `Downloaded ${selectedMediaIds.size} selected media files`, 'success')
+    } catch (error) {
+      console.error('❌ Download selected error:', error)
+      addNotification('Download Failed', error instanceof Error ? error.message : 'Failed to download selected media', 'error')
+    } finally {
+      setIsDownloadingSelected(false)
     }
   }
 
@@ -1633,6 +1708,20 @@ const ProfileScreen: React.FC = () => {
                 {isSelectionMode && selectedMediaIds.size > 0 && (
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={downloadSelectedMedia}
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-500/80 text-white hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isDownloadingSelected}
+                    >
+                      {isDownloadingSelected ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          <span>Downloading...</span>
+                        </div>
+                      ) : (
+                        `Download Selected (${selectedMediaIds.size})`
+                      )}
+                    </button>
+                    <button
                       onClick={deleteSelectedMedia}
                       className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/80 text-white hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={isDeletingSelected}
@@ -1644,6 +1733,20 @@ const ProfileScreen: React.FC = () => {
                         </div>
                       ) : (
                         `Delete Selected (${selectedMediaIds.size})`
+                      )}
+                    </button>
+                    <button
+                      onClick={downloadAllMedia}
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600/80 text-white hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isDownloadingAll}
+                    >
+                      {isDownloadingAll ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          <span>Downloading All...</span>
+                        </div>
+                      ) : (
+                        'Download All'
                       )}
                     </button>
                     <button

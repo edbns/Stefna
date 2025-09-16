@@ -29,6 +29,7 @@
     "clsx": "^2.0.0",
     "form-data": "^4.0.4",
     "framer-motion": "^12.23.12",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.263.1",
     "nanoid": "^5.1.5",
     "postcss": "^8.4.27",
