@@ -95,31 +95,8 @@ export function enhancePromptForSpecificity(
     negativePrompt += 'different group, group change, ';
   }
 
-  // Group-type-specific prompt modifiers
-  if (groupType && faceCount) {
-    switch (groupType) {
-      case 'couple':
-        enhancedPrompt = `Transform this couple into a cinematic fashion duo, both styled in matching looks and lighting, each person preserving their original face and identity. ${enhancedPrompt}`;
-        negativePrompt += 'extra people, missing person, single person, ';
-        break;
-        
-      case 'family':
-        enhancedPrompt = `Transform this family into a stylish modern group, preserving each person's age, face, and group size — children remain children, adults remain adults. ${enhancedPrompt}`;
-        negativePrompt += 'age change, missing family member, extra family member, ';
-        break;
-        
-      case 'group':
-        enhancedPrompt = `Transform this group into a cohesive fashion collective. No extra people added, no one removed. All original faces must remain the same. ${enhancedPrompt}`;
-        negativePrompt += 'extra people, missing people, different group size, ';
-        break;
-        
-      case 'solo':
-        // No special modifier needed for solo
-        break;
-    }
-    
-    console.log(`🎯 [Prompt Enhancement] Applied ${groupType} modifier for ${faceCount} faces`);
-  }
+  // Group-type-specific prompt modifiers are now handled by getGroupPromptPrefix() in the scaffolding layer
+  // This prevents duplicate group injection and preserves original preset concepts
 
   // Add Stability Ultra specific enhancements
   enhancedPrompt += ' high quality, detailed, precise anatomy, accurate features';
