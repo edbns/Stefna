@@ -256,17 +256,17 @@ export const PARALLEL_SELF_GROUP_INJECTION_MAP: Record<string, ('couple' | 'fami
 export function getGroupPromptPrefix(groupType: 'solo' | 'couple' | 'family' | 'group'): string {
   switch (groupType) {
     case 'couple':
-      return 'Transform this couple into a cinematic fashion duo, both styled in matching looks and lighting, each person preserving their original face and identity.';
+      return "Keep both faces unchanged. Do not add extra people. Transform them together as a duo.";
       
     case 'family':
-      return 'Transform this family into a stylish modern group, preserving each person\'s age, face, and group size — children remain children, adults remain adults.';
+      return "Keep children and adults unchanged. Stylize the family but preserve age, identity, and group size.";
       
     case 'group':
-      return 'Transform this group into a cohesive fashion collective. No extra people added, no one removed. All original faces must remain the same.';
+      return "Maintain the group's original faces. Do not add or remove anyone. Stylize as a coordinated group.";
       
     case 'solo':
     default:
-      return ''; // No prefix needed for solo
+      return ""; // No prefix needed for solo
   }
 }
 
