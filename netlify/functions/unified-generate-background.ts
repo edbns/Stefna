@@ -23,8 +23,11 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
   try {
     // Validate input
     if (!imageUrl || typeof imageUrl !== 'string') {
-      console.warn('⚠️ [Face Detection] No valid image URL passed, skipping face count');
-      return 1; // safe fallback
+      throw new Error('Invalid imageUrl passed to detectFaceCount()');
+    }
+    
+    if (!imageUrl.startsWith('http')) {
+      throw new Error('ImageUrl must be a valid HTTP URL');
     }
     
     console.log('🤖 [Face Detection] Starting face detection for:', imageUrl.substring(0, 50) + '...');
@@ -1748,13 +1751,10 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
       // 🎯 GROUP-AWARE PROMPT SCAFFOLDING
       // Apply group-aware prompt scaffolding before enhancement
       const originalPrompt = params.prompt;
-      let faceCount = 1; // Default fallback
-      try {
-        faceCount = await detectFaceCount(params.imageUrl);
-      } catch (error) {
-        console.error('❌ [Face Detection Error]', error);
-        faceCount = 1; // Safe fallback
-      }
+      let faceCount = 1; // Default fallback for BFL mode
+      // Note: BFL mode uses sourceAssetId, face detection would require additional Cloudinary URL lookup
+      // For now, default to solo mode for BFL generations
+      console.log('🎯 [Group-Aware Scaffolding] BFL mode - using default face count (1)');
       const { enhancedPrompt: scaffoldedPrompt, negativePromptAdditions, groupType } = applyGroupAwarePromptScaffolding(originalPrompt, faceCount);
       
       // 🎯 ENHANCED PROMPT ENGINEERING FOR GENDER, ANIMALS, AND GROUPS
@@ -2105,7 +2105,14 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         const originalEditPrompt = params.editPrompt || params.prompt;
         let faceCount = 1; // Default fallback
         try {
-          faceCount = await detectFaceCount(params.imageUrl);
+          // Use the uploaded Cloudinary URL for face detection
+          if (!uploadedImageUrl || !uploadedImageUrl.startsWith('http')) {
+            console.warn('⚠️ [Face Detection] Invalid image URL:', uploadedImageUrl);
+          } else {
+            console.info('🤖 [Face Detection] Starting face detection for:', uploadedImageUrl);
+            faceCount = await detectFaceCount(uploadedImageUrl);
+            console.info(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
+          }
         } catch (error) {
           console.error('❌ [Face Detection Error]', error);
           faceCount = 1; // Safe fallback
@@ -2248,7 +2255,14 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         const originalUnrealReflectionPrompt = params.prompt;
         let faceCount = 1; // Default fallback
         try {
-          faceCount = await detectFaceCount(params.imageUrl);
+          // Use the uploaded Cloudinary URL for face detection
+          if (!uploadedImageUrl || !uploadedImageUrl.startsWith('http')) {
+            console.warn('⚠️ [Face Detection] Invalid image URL:', uploadedImageUrl);
+          } else {
+            console.info('🤖 [Face Detection] Starting face detection for:', uploadedImageUrl);
+            faceCount = await detectFaceCount(uploadedImageUrl);
+            console.info(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
+          }
         } catch (error) {
           console.error('❌ [Face Detection Error]', error);
           faceCount = 1; // Safe fallback
@@ -2386,7 +2400,14 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         const originalParallelSelfPrompt = params.prompt;
         let faceCount = 1; // Default fallback
         try {
-          faceCount = await detectFaceCount(params.imageUrl);
+          // Use the uploaded Cloudinary URL for face detection
+          if (!uploadedImageUrl || !uploadedImageUrl.startsWith('http')) {
+            console.warn('⚠️ [Face Detection] Invalid image URL:', uploadedImageUrl);
+          } else {
+            console.info('🤖 [Face Detection] Starting face detection for:', uploadedImageUrl);
+            faceCount = await detectFaceCount(uploadedImageUrl);
+            console.info(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
+          }
         } catch (error) {
           console.error('❌ [Face Detection Error]', error);
           faceCount = 1; // Safe fallback
@@ -2546,7 +2567,15 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           const originalPrompt = params.prompt;
           let faceCount = 1; // Default fallback
           try {
-            faceCount = await detectFaceCount(params.imageUrl);
+            // Use the sourceAssetId (Cloudinary URL) for face detection
+            const cloudinaryUrl = params.sourceAssetId;
+            if (!cloudinaryUrl || !cloudinaryUrl.startsWith('http')) {
+              console.warn('⚠️ [Face Detection] Invalid image URL:', cloudinaryUrl);
+            } else {
+              console.info('🤖 [Face Detection] Starting face detection for:', cloudinaryUrl);
+              faceCount = await detectFaceCount(cloudinaryUrl);
+              console.info(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
+            }
           } catch (error) {
             console.error('❌ [Face Detection Error]', error);
             faceCount = 1; // Safe fallback
