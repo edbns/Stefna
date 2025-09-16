@@ -101,6 +101,18 @@ export const handler: Handler = async (event) => {
       existingLikeCount: existingLike.length 
     });
 
+    // Check for duplicates and clean them up if found
+    if (existingLike.length > 1) {
+      console.warn('⚠️ [toggleLike] Found duplicate likes, cleaning up...');
+      // Keep only the first like, delete the rest
+      const keepId = existingLike[0].id;
+      await q(
+        'DELETE FROM likes WHERE user_id = $1 AND media_id = $2 AND media_type = $3 AND id != $4',
+        [userId, mediaId, mediaType, keepId]
+      );
+      console.log('✅ [toggleLike] Cleaned up duplicate likes');
+    }
+
     let liked = false;
     let likesCount = 0;
 
@@ -113,13 +125,27 @@ export const handler: Handler = async (event) => {
       );
       liked = false;
     } else {
-      // Like - add the like
+      // Like - add the like with conflict handling
       console.log('🔄 [toggleLike] Adding like...');
-      await q(
-        'INSERT INTO likes (user_id, media_id, media_type) VALUES ($1, $2, $3)',
-        [userId, mediaId, mediaType]
-      );
-      liked = true;
+      try {
+        await q(
+          'INSERT INTO likes (user_id, media_id, media_type) VALUES ($1, $2, $3) ON CONFLICT (user_id, media_id, media_type) DO NOTHING',
+          [userId, mediaId, mediaType]
+        );
+        liked = true;
+      } catch (error) {
+        // If insert failed due to conflict, check if like was actually added
+        const checkLike = await q(
+          'SELECT id FROM likes WHERE user_id = $1 AND media_id = $2 AND media_type = $3',
+          [userId, mediaId, mediaType]
+        );
+        if (checkLike.length > 0) {
+          liked = true;
+          console.log('✅ [toggleLike] Like already exists (conflict resolved)');
+        } else {
+          throw error;
+        }
+      }
     }
 
     // Get updated likes count from the likes table
