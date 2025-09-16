@@ -18,6 +18,53 @@ import { withAuth } from './_withAuth';
 import { requireAuth } from './_lib/auth';
 import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyAdvancedPromptEnhancements, determineGroupType, getGroupPromptPrefix, getGroupNegativePromptAdditions, shouldApplyGroupInjection } from '../../src/utils/promptEnhancement';
 
+// Helper function to detect faces and get face count from source image
+async function detectFaceCount(imageUrl: string): Promise<number> {
+  try {
+    console.log('🤖 [Face Detection] Starting face detection for:', imageUrl.substring(0, 50) + '...');
+    
+    // Dynamically import TensorFlow.js to avoid SSR issues
+    const tf = await import('@tensorflow/tfjs-core');
+    const { createDetector, SupportedModels } = await import('@tensorflow-models/face-landmarks-detection');
+    
+    // Set backend
+    await tf.setBackend('webgl');
+    
+    // Load model
+    const model = await createDetector(SupportedModels.MediaPipeFaceMesh);
+    
+    // Create image element
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    return new Promise((resolve) => {
+      img.onload = async () => {
+        try {
+          // Process image with TensorFlow.js Face Landmarks Detection
+          const predictions = await model.estimateFaces(img);
+          const faceCount = predictions ? predictions.length : 0;
+          
+          console.log(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
+          resolve(faceCount);
+        } catch (error) {
+          console.warn('⚠️ [Face Detection] Face detection failed, defaulting to 1 face:', error);
+          resolve(1); // Default to 1 face if detection fails
+        }
+      };
+      
+      img.onerror = () => {
+        console.warn('⚠️ [Face Detection] Image load failed, defaulting to 1 face');
+        resolve(1);
+      };
+      
+      img.src = imageUrl;
+    });
+  } catch (error) {
+    console.warn('⚠️ [Face Detection] Face detection failed, defaulting to 1 face:', error);
+    return 1; // Default to 1 face if detection fails
+  }
+}
+
 // Group-aware prompt scaffolding function with preset-specific rules
 function applyGroupAwarePromptScaffolding(originalPrompt: string, faceCount: number = 1, presetId?: string): { enhancedPrompt: string; negativePromptAdditions: string; groupType: string } {
   console.log('🎯 [Group-Aware Scaffolding] Starting group analysis...');
@@ -1695,7 +1742,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
       // 🎯 GROUP-AWARE PROMPT SCAFFOLDING
       // Apply group-aware prompt scaffolding before enhancement
       const originalPrompt = params.prompt;
-      const faceCount = 1; // TODO: Get actual face count from source image
+      const faceCount = await detectFaceCount(params.imageUrl);
       const { enhancedPrompt: scaffoldedPrompt, negativePromptAdditions, groupType } = applyGroupAwarePromptScaffolding(originalPrompt, faceCount);
       
       // 🎯 ENHANCED PROMPT ENGINEERING FOR GENDER, ANIMALS, AND GROUPS
@@ -2044,7 +2091,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR EDIT MODE
         // Apply group-aware prompt scaffolding before enhancement
         const originalEditPrompt = params.editPrompt || params.prompt;
-        const faceCount = 1; // TODO: Get actual face count from source image
+        const faceCount = await detectFaceCount(params.imageUrl);
         const { enhancedPrompt: scaffoldedEditPrompt, negativePromptAdditions: editNegativeAdditions, groupType: editGroupType } = applyGroupAwarePromptScaffolding(originalEditPrompt, faceCount);
         
         // 🎯 ENHANCED PROMPT ENGINEERING FOR EDIT MODE
@@ -2181,7 +2228,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR UNREAL REFLECTION MODE
         // Apply group-aware prompt scaffolding before enhancement
         const originalUnrealReflectionPrompt = params.prompt;
-        const faceCount = 1; // TODO: Get actual face count from source image
+        const faceCount = await detectFaceCount(params.imageUrl);
         const { enhancedPrompt: scaffoldedUnrealPrompt, negativePromptAdditions: unrealNegativeAdditions, groupType: unrealGroupType } = applyGroupAwarePromptScaffolding(originalUnrealReflectionPrompt, faceCount);
         
         // 🎯 ENHANCED PROMPT ENGINEERING FOR UNREAL REFLECTION MODE
@@ -2313,7 +2360,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR PARALLEL SELF MODE
         // Apply group-aware prompt scaffolding before enhancement
         const originalParallelSelfPrompt = params.prompt;
-        const faceCount = 1; // TODO: Get actual face count from source image
+        const faceCount = await detectFaceCount(params.imageUrl);
         const { enhancedPrompt: scaffoldedParallelPrompt, negativePromptAdditions: parallelNegativeAdditions, groupType: parallelGroupType } = applyGroupAwarePromptScaffolding(originalParallelSelfPrompt, faceCount, params.parallelSelfPresetId);
         
         // 🎯 ENHANCED PROMPT ENGINEERING FOR PARALLEL SELF MODE
@@ -2467,7 +2514,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Apply group-aware prompt scaffolding before enhancement
         if (!(mode === 'ghibli_reaction' || mode === 'unreal_reflection')) {
           const originalPrompt = params.prompt;
-          const faceCount = 1; // TODO: Get actual face count from source image
+          const faceCount = await detectFaceCount(params.imageUrl);
           const { enhancedPrompt: scaffoldedFalPrompt, negativePromptAdditions: falNegativeAdditions, groupType: falGroupType } = applyGroupAwarePromptScaffolding(originalPrompt, faceCount);
           
           // 🎯 ENHANCED PROMPT ENGINEERING FOR FAL.AI
