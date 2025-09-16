@@ -32,26 +32,27 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
     
     console.log('🤖 [Face Detection] Starting face detection for:', imageUrl.substring(0, 50) + '...');
     
-    // Import face-api and canvas for Node.js environment
-    const faceapi = require('@vladmandic/face-api');
-    const canvas = require('canvas');
-    const { Canvas, Image, ImageData } = canvas;
+    // Call the separate IPA detect function
+    const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/ipa-detect`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ imageUrl })
+    });
     
-    // Monkey patch the environment to use Node.js canvas
-    faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+    if (!response.ok) {
+      throw new Error(`IPA detect function failed: ${response.status}`);
+    }
     
-    // Load the SSD MobileNet v1 model
-    await faceapi.nets.ssdMobilenetv1.loadFromDisk('./model');
+    const result = await response.json();
     
-    // Load the image using canvas
-    const img = await canvas.loadImage(imageUrl);
+    if (!result.success) {
+      throw new Error(result.error || 'Face detection failed');
+    }
     
-    // Detect all faces in the image
-    const detections = await faceapi.detectAllFaces(img);
-    const faceCount = detections.length;
-    
-    console.log(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
-    return faceCount;
+    console.log(`🤖 [Face Detection] Detected ${result.faceCount} faces from image`);
+    return result.faceCount;
     
   } catch (error) {
     console.warn('⚠️ [Face Detection] Face detection failed, defaulting to 1 face:', error);
