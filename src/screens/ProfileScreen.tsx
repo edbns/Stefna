@@ -857,8 +857,13 @@ const ProfileScreen: React.FC = () => {
                   generationTime: 0,
                   modelVersion: '1.0',
                   presetKey: item.presetKey,
-                  presetType: item.mediaType || item.type || 'photo' // Use actual mediaType
-                }
+                  presetType: item.type // Use the actual preset type (e.g., 'neo_glitch', 'presets', 'edit')
+                },
+                // Store additional fields needed for functionality
+                cloudinaryPublicId: item.cloudinaryPublicId,
+                mediaType: item.mediaType,
+                // Store the original preset type for filtering - use the backend type directly
+                presetType: item.type // Backend sends the actual preset type here (e.g., 'neo_glitch', 'presets', 'edit')
               };
             });
             
