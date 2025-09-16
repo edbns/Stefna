@@ -40,24 +40,28 @@ export const handler: Handler = async (event) => {
     const { userId, platform } = requireAuth(authHeader);
 
     // Parse request body
-    const { mediaId, mediaType } = JSON.parse(event.body || '{}') as ToggleLikeRequest;
+    const body = JSON.parse(event.body || '{}');
+    const { mediaId, mediaType } = body as ToggleLikeRequest;
 
     console.log('🔍 [toggleLike] Debug info:', {
       mediaId,
       mediaType,
       mediaIdType: typeof mediaId,
       userId,
-      platform
+      platform,
+      bodyKeys: Object.keys(body)
     });
 
     if (!mediaId || !mediaType) {
-      return json({ error: 'Missing required fields' }, { status: 400 });
+      console.error('❌ [toggleLike] Missing required fields:', { mediaId, mediaType });
+      return json({ error: 'Missing required fields: mediaId and mediaType' }, { status: 400 });
     }
 
-    // Validate media type and disallow likes from non-web if needed in future
+    // Validate media type
     const validMediaTypes = ['custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'neo_glitch', 'presets', 'story', 'edit'];
     if (!validMediaTypes.includes(mediaType)) {
-      return json({ error: 'Invalid media type' }, { status: 400 });
+      console.error('❌ [toggleLike] Invalid media type:', mediaType);
+      return json({ error: `Invalid media type: ${mediaType}` }, { status: 400 });
     }
 
     // Check if the media exists
@@ -71,11 +75,16 @@ export const handler: Handler = async (event) => {
       mediaTable = `${mediaType}_media`;
     }
     
+    console.log('🔍 [toggleLike] Checking media in table:', mediaTable);
+    
     const mediaCheck = await q(`SELECT id, user_id FROM ${mediaTable} WHERE id = $1`, [mediaId]);
     
     if (mediaCheck.length === 0) {
+      console.error('❌ [toggleLike] Media not found:', { mediaId, mediaTable });
       return json({ error: 'Media not found' }, { status: 404 });
     }
+
+    console.log('✅ [toggleLike] Media found:', mediaCheck[0]);
 
     // Check if user already liked this media
     const existingLike = await q(
@@ -83,11 +92,19 @@ export const handler: Handler = async (event) => {
       [userId, mediaId, mediaType]
     );
 
+    console.log('🔍 [toggleLike] Existing like check:', { 
+      userId, 
+      mediaId, 
+      mediaType, 
+      existingLikeCount: existingLike.length 
+    });
+
     let liked = false;
     let likesCount = 0;
 
     if (existingLike.length > 0) {
       // Unlike - remove the like
+      console.log('🔄 [toggleLike] Removing like...');
       await q(
         'DELETE FROM likes WHERE user_id = $1 AND media_id = $2 AND media_type = $3',
         [userId, mediaId, mediaType]
@@ -95,6 +112,7 @@ export const handler: Handler = async (event) => {
       liked = false;
     } else {
       // Like - add the like
+      console.log('🔄 [toggleLike] Adding like...');
       await q(
         'INSERT INTO likes (user_id, media_id, media_type) VALUES ($1, $2, $3)',
         [userId, mediaId, mediaType]
@@ -107,7 +125,14 @@ export const handler: Handler = async (event) => {
       'SELECT COUNT(*) as count FROM likes WHERE media_id = $1 AND media_type = $2',
       [mediaId, mediaType]
     );
-    likesCount = Math.max(0, countResult[0]?.count || 0); // Ensure minimum is 0
+    likesCount = Math.max(0, countResult[0]?.count || 0);
+
+    console.log('✅ [toggleLike] Success:', { 
+      liked, 
+      likesCount, 
+      mediaId, 
+      mediaType 
+    });
 
     return json({ 
       success: true,
@@ -118,6 +143,7 @@ export const handler: Handler = async (event) => {
     });
   } catch (error: any) {
     console.error('💥 [toggleLike] Error:', error?.message || error);
+    console.error('💥 [toggleLike] Stack:', error?.stack);
     return json({ 
       error: 'Failed to toggle like',
       details: error?.message 
