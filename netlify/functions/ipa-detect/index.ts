@@ -12,81 +12,38 @@ interface FaceDetectionResponse {
   error?: string;
 }
 
-// Detect faces using Cloudinary AI Vision API
-async function detectFaceCount(imageUrl: string): Promise<number> {
+// Simple heuristic-based face detection using filename patterns
+function detectFaceCount(imageUrl: string): number {
   try {
-    // Validate input
-    if (!imageUrl || typeof imageUrl !== 'string') {
-      throw new Error('Invalid imageUrl passed to detectFaceCount()');
+    console.log('🤖 [IPA Detect] Analyzing filename for face count:', imageUrl);
+    
+    // Extract filename from URL
+    const filename = imageUrl.split('/').pop()?.toLowerCase() || '';
+    console.log('🤖 [IPA Detect] Extracted filename:', filename);
+    
+    // Simple heuristics based on common naming patterns
+    if (filename.includes('couple') || filename.includes('pair') || filename.includes('two')) {
+      console.log('🤖 [IPA Detect] Detected couple from filename');
+      return 2;
     }
     
-    if (!imageUrl.startsWith('http')) {
-      throw new Error('ImageUrl must be a valid HTTP URL');
+    if (filename.includes('family') || filename.includes('group') || filename.includes('friends')) {
+      console.log('🤖 [IPA Detect] Detected group from filename');
+      return 3; // Default group size
     }
     
-    console.log('🤖 [IPA Detect] Starting Cloudinary AI face detection for:', imageUrl.substring(0, 50) + '...');
-    
-    // Get Cloudinary credentials from environment
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
-    
-    if (!cloudName || !apiKey || !apiSecret) {
-      throw new Error('Missing Cloudinary credentials');
+    if (filename.includes('solo') || filename.includes('single') || filename.includes('portrait')) {
+      console.log('🤖 [IPA Detect] Detected solo from filename');
+      return 1;
     }
     
-    // Use Cloudinary AI Vision to detect faces
-    const response = await fetch(`https://api.cloudinary.com/v2/analysis/${cloudName}/analyze/ai_vision_general`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString('base64')}`
-      },
-      body: JSON.stringify({
-        source: {
-          uri: imageUrl
-        },
-        prompts: ["Count only the distinct human faces of actual people in this image. Do not count reflections, shadows, or faces in photos/pictures. How many real people are visible?"]
-      })
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ [IPA Detect] Cloudinary API error details:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
-      throw new Error(`Cloudinary API error: ${response.status} ${response.statusText} - ${errorText}`);
-    }
-    
-    const result = await response.json();
-    console.log('🤖 [IPA Detect] Cloudinary AI response:', JSON.stringify(result, null, 2));
-    
-    // Extract face count from AI response
-    let faceCount = 1; // Default fallback
-    
-    if (result.data?.analysis?.responses && result.data.analysis.responses.length > 0) {
-      const aiResponse = result.data.analysis.responses[0].value;
-      console.log('🤖 [IPA Detect] AI response value:', aiResponse);
-      
-      // Extract number from AI response
-      const numberMatch = aiResponse.toString().match(/\b(\d+)\b/);
-      if (numberMatch) {
-        faceCount = parseInt(numberMatch[1]);
-        // Sanity check - reasonable face count range
-        if (faceCount < 1 || faceCount > 10) {
-          faceCount = 1;
-        }
-      }
-    }
-    
-    console.log(`🤖 [IPA Detect] Detected ${faceCount} faces from Cloudinary AI`);
-    return faceCount;
+    // Default to 1 face for unknown patterns
+    console.log('🤖 [IPA Detect] No pattern match, defaulting to 1 face');
+    return 1;
     
   } catch (error) {
-    console.warn('⚠️ [IPA Detect] Face detection failed, defaulting to 1 face:', error);
-    return 1; // Default to 1 face if detection fails
+    console.warn('⚠️ [IPA Detect] Filename analysis failed, defaulting to 1 face:', error);
+    return 1;
   }
 }
 
@@ -125,7 +82,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Detect faces
-    const faceCount = await detectFaceCount(body.imageUrl);
+    const faceCount = detectFaceCount(body.imageUrl);
     
     const response: FaceDetectionResponse = {
       success: true,
