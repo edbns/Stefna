@@ -30,13 +30,15 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
     // Import face-api and canvas for Node.js environment
     const faceapi = require('@vladmandic/face-api');
     const canvas = require('canvas');
+    const path = require('path');
     const { Canvas, Image, ImageData } = canvas;
     
     // Monkey patch the environment to use Node.js canvas
     faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
     
-    // Load the SSD MobileNet v1 model
-    await faceapi.nets.ssdMobilenetv1.loadFromDisk('./ipa-detect-model');
+    // Load the SSD MobileNet v1 model from local path
+    const modelPath = path.resolve(__dirname, './utils/face-api-models');
+    await faceapi.nets.ssdMobilenetv1.loadFromDisk(modelPath);
     
     // Load the image using canvas
     const img = await canvas.loadImage(imageUrl);
