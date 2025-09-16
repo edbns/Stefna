@@ -37,7 +37,7 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
     faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
     
     // Load the SSD MobileNet v1 model from local path
-    const modelPath = path.resolve(__dirname, './utils/face-api-models');
+    const modelPath = path.resolve(__dirname, './face-api-models');
     await faceapi.nets.ssdMobilenetv1.loadFromDisk(modelPath);
     
     // Load the image using canvas
