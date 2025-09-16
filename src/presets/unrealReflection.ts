@@ -73,7 +73,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_urban_oracle',
     label: 'Urban Oracle',
-    prompt: 'Transform this person into an urban oracle from a parallel reality. Their eyes are mirrored or glowing, reflecting the neon city around them. They wear futuristic streetwear — a hood or jacket with subtle tech textures. Place them in a rain-soaked alley lit with neon signs, glowing reflections shimmering on the wet ground. The background should blur into cinematic depth, while sharp focus captures the subject\'s intense gaze. Infuse the scene with purple, cyan, and magenta neon tones. Preserve full identity, age, gender, and features in a photoreal style.',
+    prompt: 'Transform this person into a powerful fashion icon captured mid-movement, walking calmly toward the camera from a short distance. Dressed fashionably in Celine look alike fashion, Their hair flows naturally or is styled with precision, makeup clean and confident. The lighting is cinematic, casting long shadows and warm highlights across the scene. The subject looks effortless and in control, surrounded by an upscale atmosphere — soft hints of reflective surfaces, glass, or city skyline blurred behind them. The overall feel is modern, strong, and untouchable — but nothing is forced.',
     negative_prompt: 'anime, cartoon, medieval, fantasy armor, distorted face, horror',
     strength: 0.56,
     model: 'fal-ai/nano-banana/edit',
@@ -95,7 +95,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_desert_mirror',
     label: 'Desert Mirror',
-    prompt: 'Capture the essence of a being sculpted by the desert. Subtle cracked textures mirror dried earth across the skin, with sun-scorched tones radiating resilience. The subject wears flowing desert-layered robes in beige and gold, slightly weathered by sand. Eyes glow faintly with determination. Place them against a vast cracked desert floor under a blazing sun, heat haze shimmering in the distance. Infuse warm orange and golden light for a cinematic atmosphere. Lighting should enhance the skin textures and emphasize the glowing resilience in the eyes. Preserve the individual\'s identity, age, gender, and features with photoreal precision.',
+    prompt: 'Transform this person into a cinematic swimwear icon on an unforgettable luxury escape. If female, they wear a refined two-piece bikini inspired by brands like La Perla or Eres — styled in vibrant or soft tones, with glowing skin and wind-swept hair. If male, they appear shirtless and sculpted, in sleek Vilebrequin-style swim shorts, confident and relaxed. Their posture is dynamic and natural — walking barefoot, turning mid-frame, resting on one arm, or stretching in motion. The lighting changes with the mood: golden hour shimmer, overcast glow, or moonlit reflections. The atmosphere draws inspiration from elite travel locations — places like the Maldives, Bora Bora, or similar dreamy destinations for the ultra-wealthy. The scene may include water platforms, wooden walkways, stone terraces, or soft panoramic horizons — always blurred and cinematic, never cliché. The feeling is warm, untouchable, and completely free.',
     negative_prompt: 'zombie, horror, cartoon, anime, fantasy race, distorted face',
     strength: 0.58,
     model: 'fal-ai/nano-banana/edit',
@@ -117,7 +117,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_lumin_void',
     label: 'Lumin Void',
-    prompt: 'Depict this person dissolving into light and energy. Their body edges fragment into glowing fractal mist, blending silver, violet, and faint electric blue hues. They are dressed in futuristic iridescent fashion — smooth contours, alien fabrics, and faint metallic shimmer. Their eyes emit a soft metallic glow — alive, not blank. Surround them with a cosmic void swirling in fractal light, as if they exist halfway between matter and energy. Cinematic focus keeps the face sharp, while the edges fade into luminous abstraction. Atmosphere should feel transcendent and surreal yet photoreal. Preserve the individual\'s true face, age, and features.',
+    prompt: 'Transform this person into the unforgettable main character of a high-fashion departure scene. They are dressed in striking luxury eveningwear — inspired by designers like Saint Laurent, Mugler, or Balmain — with bold cuts, flowing fabrics, or tailored structure that enhances their presence. Their expression is captivating, caught mid-glance or mid-step, confident and distant. Lighting is cinematic and dynamic: backlit silhouettes, paparazzi-like flares, golden glow from behind, or dramatic shadows playing across reflective surfaces. They appear in motion — walking down grand stairs, stepping out of a black car, or crossing a marble hallway — surrounded by blurred architectural lights and soft movement. Their face and posture are the focus: this is not someone who leaves quietly — this is someone you\'ll remember.',
     negative_prompt: 'horror, zombie, corpse, cartoon, anime, fantasy monster, distortion',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
@@ -139,7 +139,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_prism_break',
     label: 'Prism Break',
-    prompt: 'Reimagine this person as if their reality fractured into light. Subtle cracks spread across their skin, glowing with refracted rainbow tones like shattered glass. They are dressed in avant-garde, high-fashion materials — metallic fabrics, asymmetric cuts, and flowing translucent textures. Prism shards float around them in a dark void, scattering pink, cyan, and golden light. The face is illuminated by sharp cinematic lighting, emphasizing both the cracks and the vivid colors. The background glows faintly with rainbow refractions, blurred for depth. Style should feel like high-fashion sci-fi, photoreal and editorial. Preserve identity, age, gender, and facial structure.',
+    prompt: 'Transform this person into a street fashion icon styled in all-black, high-end urban wear — blending elements from brands like Rick Owens, Ader Error, and Fear of God. Their outfit is structured yet wearable: layered fabrics, oversized silhouettes, clean tailoring, or subtle asymmetry. No colors, only black, charcoal, or minimal white details. The atmosphere feels cinematic and stylish — a blurred underground tunnel, glowing crosswalk, fogged parking structure, or concrete gallery space lit by white or soft neon accents. Their posture is relaxed but powerful — mid-step, leaning against a wall, or walking directly into soft light. Their face is clearly visible, expression calm but unbothered. This is fashion that dominates the scene without shouting — modern, striking, and unforgettable.',
     negative_prompt: 'anime, cartoon, glitter makeup, horror, fantasy armor, distortion',
     strength: 0.6,
     model: 'fal-ai/nano-banana/edit',
@@ -161,7 +161,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_chromatic_bloom',
     label: 'Chromatic Bloom',
-    prompt: 'Transform the subject in the photo to look like a high-end magazine cover model, but do not write or include any magazine name. Style them in minimal dark couture clothing. Add exactly 7 to 8 butterflies in black and blue, placed only on the hair and shoulders, never covering the face. The makeup should look amazing — minimal, elegant, and eye-catching. Use a cinematic dark background to emphasize the subject. Lighting should be dramatic and professional, with sharp focus and high detail. The overall result must feel photoreal, stylish, and desirable, making viewers want their own photo in this style.',
+    prompt: 'Transform this person into the star of a cinematic after-party moment. They are dressed in eye-catching designer eveningwear — inspired by brands like Mugler, Tom Ford, or Celine — with shimmering fabrics, sleek silhouettes, or minimal sheer details. Their skin glows softly under ambient golden or silver lighting, and their expression is calm, poised, and untouchable. The scene feels dreamy and intimate: soft reflections from disco lights, champagne-colored lens flares, mirrored walls, or blurred elevator interiors. Their pose is relaxed but magnetic — turning slightly, leaning back into a reflective surface, or frozen mid-step in dim golden haze. This is the quiet, final photo that becomes the most iconic.',
     negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',

@@ -16,7 +16,45 @@ import { q, qOne } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { withAuth } from './_withAuth';
 import { requireAuth } from './_lib/auth';
-import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyAdvancedPromptEnhancements } from '../../src/utils/promptEnhancement';
+import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyAdvancedPromptEnhancements, determineGroupType, getGroupPromptPrefix, getGroupNegativePromptAdditions, shouldApplyGroupInjection } from '../../src/utils/promptEnhancement';
+
+// Group-aware prompt scaffolding function with preset-specific rules
+function applyGroupAwarePromptScaffolding(originalPrompt: string, faceCount: number = 1, presetId?: string): { enhancedPrompt: string; negativePromptAdditions: string; groupType: string } {
+  console.log('🎯 [Group-Aware Scaffolding] Starting group analysis...');
+  
+  // Determine group type
+  const groupType = determineGroupType(originalPrompt, faceCount);
+  console.log(`🎯 [Group-Aware Scaffolding] Detected group type: ${groupType} for ${faceCount} faces`);
+  
+  // Check if group injection should be applied for this preset
+  const shouldInject = presetId ? shouldApplyGroupInjection(presetId, groupType) : true;
+  console.log(`🎯 [Group-Aware Scaffolding] Preset ${presetId || 'unknown'}: shouldInject = ${shouldInject}`);
+  
+  // Get group-specific prompt prefix (only if injection is allowed)
+  const groupPrefix = shouldInject ? getGroupPromptPrefix(groupType) : '';
+  
+  // Get group-specific negative prompt additions (only if injection is allowed)
+  const negativePromptAdditions = shouldInject ? getGroupNegativePromptAdditions(groupType) : '';
+  
+  // Compose the enhanced prompt
+  const enhancedPrompt = groupPrefix ? `${groupPrefix} ${originalPrompt}` : originalPrompt;
+  
+  console.log('🎯 [Group-Aware Scaffolding] Applied:', {
+    groupType,
+    presetId,
+    shouldInject,
+    hasPrefix: !!groupPrefix,
+    hasNegativeAdditions: !!negativePromptAdditions,
+    prefixLength: groupPrefix.length,
+    negativeLength: negativePromptAdditions.length
+  });
+  
+  return {
+    enhancedPrompt,
+    negativePromptAdditions,
+    groupType
+  };
+}
 
 // Prompt sanitization functions for Fal.ai content policy compliance
 function sanitizePromptForFal(prompt: string): string {
@@ -1654,27 +1692,35 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         output_format: params.output_format ?? "jpeg"
       };
 
+      // 🎯 GROUP-AWARE PROMPT SCAFFOLDING
+      // Apply group-aware prompt scaffolding before enhancement
+      const originalPrompt = params.prompt;
+      const faceCount = 1; // TODO: Get actual face count from source image
+      const { enhancedPrompt: scaffoldedPrompt, negativePromptAdditions, groupType } = applyGroupAwarePromptScaffolding(originalPrompt, faceCount);
+      
       // 🎯 ENHANCED PROMPT ENGINEERING FOR GENDER, ANIMALS, AND GROUPS
       // Apply advanced prompt enhancements for better specificity
-      const originalPrompt = params.prompt;
-      const detectedGender = detectGenderFromPrompt(originalPrompt);
-      const detectedAnimals = detectAnimalsFromPrompt(originalPrompt);
-      const detectedGroups = detectGroupsFromPrompt(originalPrompt);
+      const detectedGender = detectGenderFromPrompt(scaffoldedPrompt);
+      const detectedAnimals = detectAnimalsFromPrompt(scaffoldedPrompt);
+      const detectedGroups = detectGroupsFromPrompt(scaffoldedPrompt);
       
       console.log(`🔍 [Enhanced Prompt] Detected:`, {
+        groupType,
         gender: detectedGender,
         animals: detectedAnimals,
         groups: detectedGroups
       });
 
       // Apply enhanced prompt engineering
-      const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(originalPrompt, {
+      const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(scaffoldedPrompt, {
         preserveGender: true,
         preserveAnimals: true,
         preserveGroups: true,
         originalGender: detectedGender,
         originalAnimals: detectedAnimals,
         originalGroups: detectedGroups,
+        groupType: groupType as 'solo' | 'couple' | 'family' | 'group',
+        faceCount,
         context: mode
       });
 
@@ -1684,20 +1730,27 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
       // Update the prompt with enhanced version
       bflInput.prompt = ultraEnhancedPrompt;
       
-      // Add enhanced negative prompt if not already present
-      if (negativePrompt && !bflInput.negative_prompt) {
-        bflInput.negative_prompt = negativePrompt;
-      } else if (negativePrompt && bflInput.negative_prompt) {
+      // Add enhanced negative prompt with group-specific additions
+      let finalNegativePrompt = negativePrompt;
+      if (negativePromptAdditions) {
+        finalNegativePrompt = finalNegativePrompt ? `${finalNegativePrompt}${negativePromptAdditions}` : negativePromptAdditions;
+      }
+      
+      if (finalNegativePrompt && !bflInput.negative_prompt) {
+        bflInput.negative_prompt = finalNegativePrompt;
+      } else if (finalNegativePrompt && bflInput.negative_prompt) {
         // Combine with existing negative prompt
-        bflInput.negative_prompt = `${bflInput.negative_prompt}, ${negativePrompt}`;
+        bflInput.negative_prompt = `${bflInput.negative_prompt}, ${finalNegativePrompt}`;
       }
 
       // Hard protection for neo_glitch removed in revert (handled at preset-level if needed)
 
       console.log(`✨ [BFL Prompt Enhancement] Original: "${originalPrompt}"`);
+      console.log(`✨ [BFL Prompt Enhancement] Scaffolded: "${scaffoldedPrompt}"`);
       console.log(`✨ [BFL Prompt Enhancement] Enhanced: "${ultraEnhancedPrompt}"`);
-      if (negativePrompt) {
-        console.log(`✨ [BFL Prompt Enhancement] Negative: "${negativePrompt}"`);
+      console.log(`✨ [BFL Group Type] Detected: "${groupType}"`);
+      if (finalNegativePrompt) {
+        console.log(`✨ [BFL Negative Prompt] Enhanced: "${finalNegativePrompt}"`);
       }
       
       // Add model-specific parameters
@@ -1988,27 +2041,35 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           prompt: params.editPrompt || params.prompt
         };
 
+        // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR EDIT MODE
+        // Apply group-aware prompt scaffolding before enhancement
+        const originalEditPrompt = params.editPrompt || params.prompt;
+        const faceCount = 1; // TODO: Get actual face count from source image
+        const { enhancedPrompt: scaffoldedEditPrompt, negativePromptAdditions: editNegativeAdditions, groupType: editGroupType } = applyGroupAwarePromptScaffolding(originalEditPrompt, faceCount);
+        
         // 🎯 ENHANCED PROMPT ENGINEERING FOR EDIT MODE
         // Apply enhanced prompt engineering for Edit mode
-        const originalEditPrompt = params.editPrompt || params.prompt;
-        const detectedGender = detectGenderFromPrompt(originalEditPrompt);
-        const detectedAnimals = detectAnimalsFromPrompt(originalEditPrompt);
-        const detectedGroups = detectGroupsFromPrompt(originalEditPrompt);
+        const detectedGender = detectGenderFromPrompt(scaffoldedEditPrompt);
+        const detectedAnimals = detectAnimalsFromPrompt(scaffoldedEditPrompt);
+        const detectedGroups = detectGroupsFromPrompt(scaffoldedEditPrompt);
         
         console.log(`🔍 [Edit Mode Enhanced Prompt] Detected:`, {
+          groupType: editGroupType,
           gender: detectedGender,
           animals: detectedAnimals,
           groups: detectedGroups
         });
 
         // Apply enhanced prompt engineering for Edit mode
-        const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(originalEditPrompt, {
+        const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(scaffoldedEditPrompt, {
           preserveGender: true,
           preserveAnimals: true,
           preserveGroups: true,
           originalGender: detectedGender,
           originalAnimals: detectedAnimals,
           originalGroups: detectedGroups,
+          groupType: editGroupType as 'solo' | 'couple' | 'family' | 'group',
+          faceCount,
           context: 'edit'
         });
 
@@ -2018,15 +2079,22 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Update the prompt with enhanced version
         editInput.prompt = ultraEnhancedPrompt;
         
-        // Add enhanced negative prompt
-        if (negativePrompt) {
-          editInput.negative_prompt = negativePrompt;
+        // Add enhanced negative prompt with group-specific additions
+        let finalEditNegativePrompt = negativePrompt;
+        if (editNegativeAdditions) {
+          finalEditNegativePrompt = finalEditNegativePrompt ? `${finalEditNegativePrompt}${editNegativeAdditions}` : editNegativeAdditions;
+        }
+        
+        if (finalEditNegativePrompt) {
+          editInput.negative_prompt = finalEditNegativePrompt;
         }
 
         console.log(`✨ [Edit Mode Enhanced Prompt] Original: "${originalEditPrompt}"`);
+        console.log(`✨ [Edit Mode Enhanced Prompt] Scaffolded: "${scaffoldedEditPrompt}"`);
         console.log(`✨ [Edit Mode Enhanced Prompt] Enhanced: "${ultraEnhancedPrompt}"`);
-        if (negativePrompt) {
-          console.log(`✨ [Edit Mode Enhanced Prompt] Negative: "${negativePrompt}"`);
+        console.log(`✨ [Edit Mode Group Type] Detected: "${editGroupType}"`);
+        if (finalEditNegativePrompt) {
+          console.log(`✨ [Edit Mode Negative Prompt] Enhanced: "${finalEditNegativePrompt}"`);
         }
         
         // Add width and height to preserve original aspect ratio
@@ -2110,38 +2178,57 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           prompt: params.prompt
         };
 
+        // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR UNREAL REFLECTION MODE
+        // Apply group-aware prompt scaffolding before enhancement
+        const originalUnrealReflectionPrompt = params.prompt;
+        const faceCount = 1; // TODO: Get actual face count from source image
+        const { enhancedPrompt: scaffoldedUnrealPrompt, negativePromptAdditions: unrealNegativeAdditions, groupType: unrealGroupType } = applyGroupAwarePromptScaffolding(originalUnrealReflectionPrompt, faceCount);
+        
         // 🎯 ENHANCED PROMPT ENGINEERING FOR UNREAL REFLECTION MODE
         // Apply enhanced prompt engineering for Unreal Reflection mode
-        const originalUnrealReflectionPrompt = params.prompt;
-        const detectedGender = detectGenderFromPrompt(originalUnrealReflectionPrompt);
-        const detectedAnimals = detectAnimalsFromPrompt(originalUnrealReflectionPrompt);
-        const detectedGroups = detectGroupsFromPrompt(originalUnrealReflectionPrompt);
+        const detectedGender = detectGenderFromPrompt(scaffoldedUnrealPrompt);
+        const detectedAnimals = detectAnimalsFromPrompt(scaffoldedUnrealPrompt);
+        const detectedGroups = detectGroupsFromPrompt(scaffoldedUnrealPrompt);
         
         console.log(`🔍 [Unreal Reflection Mode Enhanced Prompt] Detected:`, {
+          groupType: unrealGroupType,
           gender: detectedGender,
           animals: detectedAnimals,
           groups: detectedGroups
         });
 
         // Apply enhanced prompt engineering for Unreal Reflection mode
-        const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(originalUnrealReflectionPrompt, {
+        const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(scaffoldedUnrealPrompt, {
           preserveGender: true,
           preserveAnimals: true,
           preserveGroups: true,
           originalGender: detectedGender,
           originalAnimals: detectedAnimals,
           originalGroups: detectedGroups,
+          groupType: unrealGroupType as 'solo' | 'couple' | 'family' | 'group',
+          faceCount,
           context: 'unreal_reflection'
         });
 
-        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Original: "${originalUnrealReflectionPrompt}"`);
-        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Enhanced: "${enhancedPrompt}"`);
-        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Negative: "${negativePrompt}"`);
-        
-        // Update the input with enhanced prompt
+        // Update the input with enhanced prompt and group-specific negative additions
         unrealReflectionInput.prompt = enhancedPrompt;
-        if (negativePrompt) {
-          unrealReflectionInput.negative_prompt = negativePrompt;
+        
+        // Add enhanced negative prompt with group-specific additions
+        let finalUnrealNegativePrompt = negativePrompt;
+        if (unrealNegativeAdditions) {
+          finalUnrealNegativePrompt = finalUnrealNegativePrompt ? `${finalUnrealNegativePrompt}${unrealNegativeAdditions}` : unrealNegativeAdditions;
+        }
+        
+        if (finalUnrealNegativePrompt) {
+          unrealReflectionInput.negative_prompt = finalUnrealNegativePrompt;
+        }
+
+        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Original: "${originalUnrealReflectionPrompt}"`);
+        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Scaffolded: "${scaffoldedUnrealPrompt}"`);
+        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Enhanced: "${enhancedPrompt}"`);
+        console.log(`✨ [Unreal Reflection Mode Group Type] Detected: "${unrealGroupType}"`);
+        if (finalUnrealNegativePrompt) {
+          console.log(`✨ [Unreal Reflection Mode Negative Prompt] Enhanced: "${finalUnrealNegativePrompt}"`);
         }
 
         console.log(`✏️ [Unreal Reflection Mode] Generating edit with single image`);
@@ -2223,38 +2310,55 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           prompt: params.prompt
         };
 
+        // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR PARALLEL SELF MODE
+        // Apply group-aware prompt scaffolding before enhancement
+        const originalParallelSelfPrompt = params.prompt;
+        const faceCount = 1; // TODO: Get actual face count from source image
+        const { enhancedPrompt: scaffoldedParallelPrompt, negativePromptAdditions: parallelNegativeAdditions, groupType: parallelGroupType } = applyGroupAwarePromptScaffolding(originalParallelSelfPrompt, faceCount, params.parallelSelfPresetId);
+        
         // 🎯 ENHANCED PROMPT ENGINEERING FOR PARALLEL SELF MODE
         // Apply enhanced prompt engineering for Parallel Self mode
-        const originalParallelSelfPrompt = params.prompt;
-        const detectedGender = detectGenderFromPrompt(originalParallelSelfPrompt);
-        const detectedAnimals = detectAnimalsFromPrompt(originalParallelSelfPrompt);
-        const detectedGroups = detectGroupsFromPrompt(originalParallelSelfPrompt);
+        const detectedGender = detectGenderFromPrompt(scaffoldedParallelPrompt);
+        const detectedAnimals = detectAnimalsFromPrompt(scaffoldedParallelPrompt);
+        const detectedGroups = detectGroupsFromPrompt(scaffoldedParallelPrompt);
         
         console.log(`🔍 [Parallel Self Mode Enhanced Prompt] Detected:`, {
+          groupType: parallelGroupType,
           gender: detectedGender,
           animals: detectedAnimals,
           groups: detectedGroups
         });
 
         // Apply enhanced prompt engineering for Parallel Self mode
-        const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(originalParallelSelfPrompt, {
+        const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(scaffoldedParallelPrompt, {
           preserveGender: true,
           preserveAnimals: true,
           preserveGroups: true,
           originalGender: detectedGender,
           originalAnimals: detectedAnimals,
           originalGroups: detectedGroups,
+          groupType: parallelGroupType as 'solo' | 'couple' | 'family' | 'group',
+          faceCount,
           context: 'parallel_self'
         });
 
         // Sanitize prompt for Fal.ai content policy compliance
         const sanitizedPrompt = sanitizePromptForFal(enhancedPrompt);
-        const sanitizedNegativePrompt = sanitizeNegativePromptForFal(negativePrompt);
+        
+        // Add group-specific negative additions before sanitization
+        let finalParallelNegativePrompt = negativePrompt;
+        if (parallelNegativeAdditions) {
+          finalParallelNegativePrompt = finalParallelNegativePrompt ? `${finalParallelNegativePrompt}${parallelNegativeAdditions}` : parallelNegativeAdditions;
+        }
+        const sanitizedNegativePrompt = sanitizeNegativePromptForFal(finalParallelNegativePrompt);
 
         console.log(`✨ [Parallel Self Mode Enhanced Prompt] Original: "${originalParallelSelfPrompt}"`);
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Scaffolded: "${scaffoldedParallelPrompt}"`);
         console.log(`✨ [Parallel Self Mode Enhanced Prompt] Enhanced: "${enhancedPrompt}"`);
         console.log(`✨ [Parallel Self Mode Enhanced Prompt] Sanitized: "${sanitizedPrompt}"`);
-        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Negative: "${sanitizedNegativePrompt}"`);
+        console.log(`✨ [Parallel Self Mode Group Type] Detected: "${parallelGroupType}"`);
+        console.log(`✨ [Parallel Self Mode Negative Prompt] Enhanced: "${finalParallelNegativePrompt}"`);
+        console.log(`✨ [Parallel Self Mode Negative Prompt] Sanitized: "${sanitizedNegativePrompt}"`);
         
         // Update the input with sanitized prompt
         parallelSelfInput.prompt = sanitizedPrompt;
@@ -2359,28 +2463,36 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           seed: Math.floor(Math.random() * 1000000)
         };
         
-        // 🎯 ENHANCED PROMPT ENGINEERING FOR FAL.AI
-        // Apply enhanced prompt engineering for Fal.ai models
+        // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR FAL.AI
+        // Apply group-aware prompt scaffolding before enhancement
         if (!(mode === 'ghibli_reaction' || mode === 'unreal_reflection')) {
           const originalPrompt = params.prompt;
-          const detectedGender = detectGenderFromPrompt(originalPrompt);
-          const detectedAnimals = detectAnimalsFromPrompt(originalPrompt);
-          const detectedGroups = detectGroupsFromPrompt(originalPrompt);
+          const faceCount = 1; // TODO: Get actual face count from source image
+          const { enhancedPrompt: scaffoldedFalPrompt, negativePromptAdditions: falNegativeAdditions, groupType: falGroupType } = applyGroupAwarePromptScaffolding(originalPrompt, faceCount);
+          
+          // 🎯 ENHANCED PROMPT ENGINEERING FOR FAL.AI
+          // Apply enhanced prompt engineering for Fal.ai models
+          const detectedGender = detectGenderFromPrompt(scaffoldedFalPrompt);
+          const detectedAnimals = detectAnimalsFromPrompt(scaffoldedFalPrompt);
+          const detectedGroups = detectGroupsFromPrompt(scaffoldedFalPrompt);
           
           console.log(`🔍 [Fal.ai Enhanced Prompt] Detected:`, {
+            groupType: falGroupType,
             gender: detectedGender,
             animals: detectedAnimals,
             groups: detectedGroups
           });
 
           // Apply enhanced prompt engineering for Fal.ai
-          const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(originalPrompt, {
+          const { enhancedPrompt, negativePrompt } = enhancePromptForSpecificity(scaffoldedFalPrompt, {
             preserveGender: true,
             preserveAnimals: true,
             preserveGroups: true,
             originalGender: detectedGender,
             originalAnimals: detectedAnimals,
             originalGroups: detectedGroups,
+            groupType: falGroupType as 'solo' | 'couple' | 'family' | 'group',
+            faceCount,
             context: mode
           });
 
@@ -2390,17 +2502,24 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           // Update the prompt with enhanced version
           input.prompt = ultraEnhancedPrompt;
           
-          // Add enhanced negative prompt
-          if (negativePrompt) {
+          // Add enhanced negative prompt with group-specific additions
+          let finalFalNegativePrompt = negativePrompt;
+          if (falNegativeAdditions) {
+            finalFalNegativePrompt = finalFalNegativePrompt ? `${finalFalNegativePrompt}${falNegativeAdditions}` : falNegativeAdditions;
+          }
+          
+          if (finalFalNegativePrompt) {
             input.negative_prompt = input.negative_prompt 
-              ? `${input.negative_prompt}, ${negativePrompt}`
-              : negativePrompt;
+              ? `${input.negative_prompt}, ${finalFalNegativePrompt}`
+              : finalFalNegativePrompt;
           }
 
           console.log(`✨ [Fal.ai Enhanced Prompt] Original: "${originalPrompt}"`);
+          console.log(`✨ [Fal.ai Enhanced Prompt] Scaffolded: "${scaffoldedFalPrompt}"`);
           console.log(`✨ [Fal.ai Enhanced Prompt] Enhanced: "${ultraEnhancedPrompt}"`);
-          if (negativePrompt) {
-            console.log(`✨ [Fal.ai Enhanced Prompt] Negative: "${negativePrompt}"`);
+          console.log(`✨ [Fal.ai Group Type] Detected: "${falGroupType}"`);
+          if (finalFalNegativePrompt) {
+            console.log(`✨ [Fal.ai Negative Prompt] Enhanced: "${finalFalNegativePrompt}"`);
           }
         }
         

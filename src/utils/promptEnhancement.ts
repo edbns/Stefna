@@ -11,6 +11,8 @@ export interface EnhancedPromptOptions {
   originalAnimals?: string[];
   originalGroups?: string[];
   context?: string;
+  groupType?: 'solo' | 'couple' | 'family' | 'group';
+  faceCount?: number;
 }
 
 /**
@@ -27,7 +29,9 @@ export function enhancePromptForSpecificity(
     originalGender,
     originalAnimals = [],
     originalGroups = [],
-    context = 'portrait'
+    context = 'portrait',
+    groupType,
+    faceCount
   } = options;
 
   console.log('🔍 [Prompt Enhancement] Starting enhancement:', {
@@ -89,6 +93,32 @@ export function enhancePromptForSpecificity(
     
     // Add to negative prompt to prevent group changes
     negativePrompt += 'different group, group change, ';
+  }
+
+  // Group-type-specific prompt modifiers
+  if (groupType && faceCount) {
+    switch (groupType) {
+      case 'couple':
+        enhancedPrompt = `Transform this couple into a cinematic fashion duo, both styled in matching looks and lighting, each person preserving their original face and identity. ${enhancedPrompt}`;
+        negativePrompt += 'extra people, missing person, single person, ';
+        break;
+        
+      case 'family':
+        enhancedPrompt = `Transform this family into a stylish modern group, preserving each person's age, face, and group size — children remain children, adults remain adults. ${enhancedPrompt}`;
+        negativePrompt += 'age change, missing family member, extra family member, ';
+        break;
+        
+      case 'group':
+        enhancedPrompt = `Transform this group into a cohesive fashion collective. No extra people added, no one removed. All original faces must remain the same. ${enhancedPrompt}`;
+        negativePrompt += 'extra people, missing people, different group size, ';
+        break;
+        
+      case 'solo':
+        // No special modifier needed for solo
+        break;
+    }
+    
+    console.log(`🎯 [Prompt Enhancement] Applied ${groupType} modifier for ${faceCount} faces`);
   }
 
   // Add Stability Ultra specific enhancements
@@ -162,6 +192,119 @@ export function detectGroupsFromPrompt(prompt: string): string[] {
   ];
   
   return groupKeywords.filter(group => new RegExp(group).test(lowerPrompt));
+}
+
+/**
+ * Detects couples from prompt using romantic/intimate keywords
+ */
+export function detectCoupleFromPrompt(prompt: string): boolean {
+  const lowerPrompt = prompt.toLowerCase();
+  const coupleKeywords = [
+    '\\bcouple\\b', '\\btogether\\b', '\\bromantic\\b', '\\blovers\\b', '\\bpartners\\b', '\\bholding hands\\b',
+    '\\bembrace\\b', '\\bkiss\\b', '\\bintimate\\b', '\\bwedding\\b', '\\bengagement\\b', '\\banniversary\\b',
+    '\\bdate\\b', '\\bdating\\b', '\\brelationship\\b', '\\bpair\\b', '\\bduo\\b', '\\btwosome\\b'
+  ];
+  
+  return coupleKeywords.some(keyword => new RegExp(keyword).test(lowerPrompt));
+}
+
+/**
+ * Determines group type based on prompt analysis and face count
+ */
+export function determineGroupType(prompt: string, faceCount: number): 'solo' | 'couple' | 'family' | 'group' {
+  const lowerPrompt = prompt.toLowerCase();
+  
+  // Check for couples first (most specific)
+  if (faceCount === 2 && detectCoupleFromPrompt(prompt)) {
+    return 'couple';
+  }
+  
+  // Check for family keywords
+  const familyKeywords = ['\\bfamily\\b', '\\bparents\\b', '\\bchildren\\b', '\\bmom\\b', '\\bdad\\b', '\\bmother\\b', '\\bfather\\b', '\\bson\\b', '\\bdaughter\\b'];
+  const hasFamilyKeywords = familyKeywords.some(keyword => new RegExp(keyword).test(lowerPrompt));
+  
+  if (hasFamilyKeywords && faceCount >= 2) {
+    return 'family';
+  }
+  
+  // Check for couple keywords even if face count is not exactly 2
+  if (detectCoupleFromPrompt(prompt)) {
+    return 'couple';
+  }
+  
+  // Default to group for multiple faces, solo for single face
+  if (faceCount === 1) {
+    return 'solo';
+  } else if (faceCount >= 2) {
+    return 'group';
+  }
+  
+  return 'solo';
+}
+
+/**
+ * Group injection rules for Parallel Self presets
+ * Controls which presets allow group/couple prompt injection
+ */
+export const PARALLEL_SELF_GROUP_INJECTION_MAP: Record<string, ('couple' | 'family' | 'group')[]> = {
+  'parallel_self_rain_dancer': ['couple', 'family', 'group'],
+  'parallel_self_untouchable': ['couple', 'group'],
+  'parallel_self_holiday_mirage': ['couple', 'family'],
+  'parallel_self_nightshade': ['couple', 'group'],
+  'parallel_self_afterglow': ['couple'], // NOT family or group
+  // 'parallel_self_one_that_got_away' intentionally excluded - solo narrative only
+};
+
+/**
+ * Gets group-specific prompt prefix based on group type
+ */
+export function getGroupPromptPrefix(groupType: 'solo' | 'couple' | 'family' | 'group'): string {
+  switch (groupType) {
+    case 'couple':
+      return 'Transform this couple into a cinematic fashion duo, both styled in matching looks and lighting, each person preserving their original face and identity.';
+      
+    case 'family':
+      return 'Transform this family into a stylish modern group, preserving each person\'s age, face, and group size — children remain children, adults remain adults.';
+      
+    case 'group':
+      return 'Transform this group into a cohesive fashion collective. No extra people added, no one removed. All original faces must remain the same.';
+      
+    case 'solo':
+    default:
+      return ''; // No prefix needed for solo
+  }
+}
+
+/**
+ * Checks if group injection should be applied for a specific preset
+ */
+export function shouldApplyGroupInjection(presetId: string, groupType: 'solo' | 'couple' | 'family' | 'group'): boolean {
+  // Never inject for solo
+  if (groupType === 'solo') return false;
+  
+  // Check if preset allows this group type
+  const allowedGroups = PARALLEL_SELF_GROUP_INJECTION_MAP[presetId];
+  return allowedGroups?.includes(groupType) ?? false;
+}
+
+/**
+ * Gets group-specific negative prompt additions
+ */
+export function getGroupNegativePromptAdditions(groupType: 'solo' | 'couple' | 'family' | 'group'): string {
+  switch (groupType) {
+    case 'couple':
+      return ', extra people, missing person, single person, face duplication';
+      
+    case 'family':
+      return ', incorrect age, face swap, character replacement, missing family member, extra family member';
+      
+    case 'group':
+      return ', face duplication, missing faces, extra people, generic characters, different group size';
+      
+    case 'solo':
+    default:
+      return ''; // No additions needed for solo
+  }
 }
 
 /**

@@ -23,6 +23,23 @@ export interface IPAPresetConfig {
   description: string;
 }
 
+export interface FaceMatch {
+  inputIndex: number;
+  matchedTo: number | null;
+  similarity: number;
+  passed: boolean;
+}
+
+export interface MultiPersonIPAResult {
+  groupType: 'solo' | 'couple' | 'family' | 'group';
+  inputFaces: number;
+  outputFaces: number;
+  matches: FaceMatch[];
+  overallSimilarity: number;
+  passed: boolean;
+  reasons: string[];
+}
+
 // Preset-specific IPA configurations
 export const IPA_PRESET_CONFIGS: Record<string, IPAPresetConfig> = {
   // Strict identity preservation - Emotion Mask
@@ -83,8 +100,83 @@ export const IPA_PRESET_CONFIGS: Record<string, IPAPresetConfig> = {
 
 export class IdentityPreservationService {
   /**
-   * Real IPA check function using TensorFlow.js face detection
-   * This replaces the placeholder with actual face embedding comparison
+   * Public method to perform multi-person IPA check
+   */
+  public static async performMultiPersonIPACheck(
+    originalUrl: string,
+    generatedUrl: string,
+    threshold: number,
+    prompt: string = ''
+  ): Promise<MultiPersonIPAResult> {
+    return this.checkMultiPersonIdentityPreservation(originalUrl, generatedUrl, threshold, prompt);
+  }
+  /**
+   * Multi-person IPA check function using TensorFlow.js face detection
+   * Handles multiple faces and group-type-specific matching rules
+   */
+  private static async checkMultiPersonIdentityPreservation(
+    originalUrl: string,
+    generatedUrl: string,
+    threshold: number,
+    prompt: string = ''
+  ): Promise<MultiPersonIPAResult> {
+    try {
+      console.log('🔒 [Multi-Person IPA] Starting multi-face comparison...');
+      console.log('🔒 [Multi-Person IPA] Original URL:', originalUrl);
+      console.log('🔒 [Multi-Person IPA] Generated URL:', generatedUrl);
+      console.log('🔒 [Multi-Person IPA] Threshold:', threshold);
+      
+      // Extract all face embeddings from both images
+      const originalFaces = await this.extractAllFaceEmbeddings(originalUrl);
+      const generatedFaces = await this.extractAllFaceEmbeddings(generatedUrl);
+      
+      const inputFaceCount = originalFaces.length;
+      const outputFaceCount = generatedFaces.length;
+      
+      // Determine group type
+      const { determineGroupType } = await import('../utils/promptEnhancement');
+      const groupType = determineGroupType(prompt, inputFaceCount);
+      
+      console.log('🔒 [Multi-Person IPA] Group analysis:', {
+        groupType,
+        inputFaces: inputFaceCount,
+        outputFaces: outputFaceCount
+      });
+      
+      // Apply group-type-specific matching rules
+      const result = await this.matchFacesByGroupType(
+        originalFaces,
+        generatedFaces,
+        threshold,
+        groupType
+      );
+      
+      return {
+        groupType,
+        inputFaces: inputFaceCount,
+        outputFaces: outputFaceCount,
+        matches: result.matches,
+        overallSimilarity: result.overallSimilarity,
+        passed: result.passed,
+        reasons: result.reasons
+      };
+      
+    } catch (error) {
+      console.error('❌ [Multi-Person IPA] Check failed:', error);
+      return {
+        groupType: 'solo',
+        inputFaces: 0,
+        outputFaces: 0,
+        matches: [],
+        overallSimilarity: 0,
+        passed: false,
+        reasons: [`IPA check failed: ${error}`]
+      };
+    }
+  }
+
+  /**
+   * Legacy single-face IPA check function (for backward compatibility)
    */
   private static async checkIdentityPreservation(
     originalUrl: string,
@@ -143,7 +235,224 @@ export class IdentityPreservationService {
   }
 
   /**
-   * Extract face embedding using TensorFlow.js
+   * Extract all face embeddings from an image
+   */
+  private static async extractAllFaceEmbeddings(imageUrl: string): Promise<{ vector: number[] }[]> {
+    // Dynamically import TensorFlow.js to avoid SSR issues
+    const tf = await import('@tensorflow/tfjs-core');
+    const { createDetector, SupportedModels } = await import('@tensorflow-models/face-landmarks-detection');
+    
+    // Set backend
+    await tf.setBackend('webgl');
+    
+    // Load model
+    const model = await createDetector(SupportedModels.MediaPipeFaceMesh);
+    
+    // Create image element
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    return new Promise((resolve, reject) => {
+      img.onload = async () => {
+        try {
+          // Create canvas for processing
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+          
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          
+          // Process image with TensorFlow.js Face Landmarks Detection
+          const predictions = await model.estimateFaces(img);
+          
+          if (!predictions || predictions.length === 0) {
+            resolve([]);
+            return;
+          }
+          
+          // Convert all faces to embeddings
+          const embeddings = predictions.map((face: any) => {
+            if (!face.keypoints) {
+              throw new Error('No keypoints detected');
+            }
+            
+            // Convert keypoints to pseudo-embedding vector
+            const embedding = this.convertTensorFlowKeypointsToEmbedding(face.keypoints, canvas.width, canvas.height);
+            return { vector: embedding };
+          });
+          
+          resolve(embeddings);
+          
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = imageUrl;
+    });
+  }
+
+  /**
+   * Match faces by group type with specific rules
+   */
+  private static async matchFacesByGroupType(
+    originalFaces: { vector: number[] }[],
+    generatedFaces: { vector: number[] }[],
+    threshold: number,
+    groupType: 'solo' | 'couple' | 'family' | 'group'
+  ): Promise<{ matches: FaceMatch[]; overallSimilarity: number; passed: boolean; reasons: string[] }> {
+    const matches: FaceMatch[] = [];
+    const reasons: string[] = [];
+    let overallSimilarity = 0;
+    let passed = true;
+
+    // Group-type-specific matching rules
+    switch (groupType) {
+      case 'solo':
+        if (originalFaces.length !== 1 || generatedFaces.length !== 1) {
+          passed = false;
+          reasons.push(`Solo: Expected 1 face, got ${originalFaces.length} → ${generatedFaces.length}`);
+        } else {
+          const similarity = this.cosineSimilarity(originalFaces[0].vector, generatedFaces[0].vector);
+          matches.push({
+            inputIndex: 0,
+            matchedTo: 0,
+            similarity,
+            passed: similarity >= threshold
+          });
+          overallSimilarity = similarity;
+          if (similarity < threshold) {
+            passed = false;
+            reasons.push(`Solo: Face similarity ${(similarity * 100).toFixed(1)}% below threshold ${(threshold * 100).toFixed(1)}%`);
+          }
+        }
+        break;
+
+      case 'couple':
+        if (originalFaces.length !== 2 || generatedFaces.length !== 2) {
+          passed = false;
+          reasons.push(`Couple: Expected 2 faces, got ${originalFaces.length} → ${generatedFaces.length}`);
+        } else {
+          // Match both faces
+          for (let i = 0; i < originalFaces.length; i++) {
+            let bestMatch = -1;
+            let bestSimilarity = 0;
+            
+            // Find best match for this face
+            for (let j = 0; j < generatedFaces.length; j++) {
+              const similarity = this.cosineSimilarity(originalFaces[i].vector, generatedFaces[j].vector);
+              if (similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+                bestMatch = j;
+              }
+            }
+            
+            matches.push({
+              inputIndex: i,
+              matchedTo: bestMatch,
+              similarity: bestSimilarity,
+              passed: bestSimilarity >= threshold
+            });
+            
+            if (bestSimilarity < threshold) {
+              passed = false;
+              reasons.push(`Couple: Face ${i} similarity ${(bestSimilarity * 100).toFixed(1)}% below threshold`);
+            }
+          }
+          
+          overallSimilarity = matches.reduce((sum, match) => sum + match.similarity, 0) / matches.length;
+        }
+        break;
+
+      case 'family':
+      case 'group':
+        // Match face count first
+        if (originalFaces.length !== generatedFaces.length) {
+          passed = false;
+          reasons.push(`${groupType}: Face count mismatch ${originalFaces.length} → ${generatedFaces.length}`);
+        }
+        
+        // Match all faces
+        for (let i = 0; i < originalFaces.length; i++) {
+          let bestMatch = -1;
+          let bestSimilarity = 0;
+          
+          // Find best match for this face
+          for (let j = 0; j < generatedFaces.length; j++) {
+            const similarity = this.cosineSimilarity(originalFaces[i].vector, generatedFaces[j].vector);
+            if (similarity > bestSimilarity) {
+              bestSimilarity = similarity;
+              bestMatch = j;
+            }
+          }
+          
+          matches.push({
+            inputIndex: i,
+            matchedTo: bestMatch,
+            similarity: bestSimilarity,
+            passed: bestSimilarity >= threshold
+          });
+          
+          if (bestSimilarity < threshold) {
+            passed = false;
+            reasons.push(`${groupType}: Face ${i} similarity ${(bestSimilarity * 100).toFixed(1)}% below threshold`);
+          }
+        }
+        
+        overallSimilarity = matches.reduce((sum, match) => sum + match.similarity, 0) / matches.length;
+        break;
+    }
+
+    return { matches, overallSimilarity, passed, reasons };
+  }
+
+  /**
+   * Convert TensorFlow.js keypoints to pseudo-embedding vector
+   */
+  private static convertTensorFlowKeypointsToEmbedding(keypoints: any[], imageWidth: number, imageHeight: number): number[] {
+    if (!keypoints || keypoints.length === 0) {
+      throw new Error('No keypoints provided');
+    }
+
+    // Normalize keypoints to image dimensions
+    const normalizedPoints = keypoints.map(kp => ({
+      x: kp.x / imageWidth,
+      y: kp.y / imageHeight
+    }));
+
+    // Create pseudo-embedding vector from keypoint positions
+    const embedding: number[] = [];
+    
+    // Add normalized x,y coordinates
+    normalizedPoints.forEach(point => {
+      embedding.push(point.x);
+      embedding.push(point.y);
+    });
+
+    // Add statistical features
+    const xCoords = normalizedPoints.map(p => p.x);
+    const yCoords = normalizedPoints.map(p => p.y);
+    
+    embedding.push(
+      Math.min(...xCoords), // min x
+      Math.max(...xCoords), // max x
+      Math.min(...yCoords), // min y
+      Math.max(...yCoords), // max y
+      xCoords.reduce((a, b) => a + b) / xCoords.length, // avg x
+      yCoords.reduce((a, b) => a + b) / yCoords.length  // avg y
+    );
+
+    return embedding;
+  }
+
+  /**
+   * Extract face embedding using TensorFlow.js (legacy method)
    */
   private static async extractFaceEmbedding(imageUrl: string): Promise<{ vector: number[] }> {
     // Dynamically import TensorFlow.js to avoid SSR issues
