@@ -227,11 +227,6 @@ export function determineGroupType(prompt: string, faceCount: number): 'solo' | 
     return 'family';
   }
   
-  // Check for couple keywords even if face count is not exactly 2
-  if (detectCoupleFromPrompt(prompt)) {
-    return 'couple';
-  }
-  
   // Default to group for multiple faces, solo for single face
   if (faceCount === 1) {
     return 'solo';

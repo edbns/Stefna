@@ -161,7 +161,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_chromatic_bloom',
     label: 'Chromatic Bloom',
-    prompt: 'Transform this person into the star of a cinematic after-party moment. They are dressed in eye-catching designer eveningwear — inspired by brands like Mugler, Tom Ford, or Celine — with shimmering fabrics, sleek silhouettes, or minimal sheer details. Their skin glows softly under ambient golden or silver lighting, and their expression is calm, poised, and untouchable. The scene feels dreamy and intimate: soft reflections from disco lights, champagne-colored lens flares, mirrored walls, or blurred elevator interiors. Their pose is relaxed but magnetic — turning slightly, leaning back into a reflective surface, or frozen mid-step in dim golden haze. This is the quiet, final photo that becomes the most iconic.',
+    prompt: 'Transform this person into a high-fashion editorial icon surrounded by vibrant butterflies and delicate feathers. They wear couture styling with flowing fabrics that seem to bloom and dissolve into nature — think Alexander McQueen meets botanical fantasy. Their pose is ethereal and editorial, with butterflies landing on their fingertips and feathers cascading around them like living accessories. The lighting is soft and dreamy, with golden hour warmth creating a magical atmosphere. Their expression remains serene and otherworldly, as if they exist between reality and fantasy. This is fashion photography meets nature\'s most beautiful elements.',
     negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
