@@ -32,42 +32,27 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
     
     console.log('🤖 [Face Detection] Starting face detection for:', imageUrl.substring(0, 50) + '...');
     
-    // Dynamically import TensorFlow.js to avoid SSR issues
-    const tf = await import('@tensorflow/tfjs-core');
-    const { createDetector, SupportedModels } = await import('@tensorflow-models/face-landmarks-detection');
+    // Import face-api and canvas for Node.js environment
+    const faceapi = require('@vladmandic/face-api');
+    const canvas = require('canvas');
+    const { Canvas, Image, ImageData } = canvas;
     
-    // Set backend
-    await tf.setBackend('webgl');
+    // Monkey patch the environment to use Node.js canvas
+    faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
     
-    // Load model
-    const model = await createDetector(SupportedModels.MediaPipeFaceMesh);
+    // Load the SSD MobileNet v1 model
+    await faceapi.nets.ssdMobilenetv1.loadFromDisk('./model');
     
-    // Create image element
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Load the image using canvas
+    const img = await canvas.loadImage(imageUrl);
     
-    return new Promise((resolve) => {
-      img.onload = async () => {
-        try {
-          // Process image with TensorFlow.js Face Landmarks Detection
-          const predictions = await model.estimateFaces(img);
-          const faceCount = predictions ? predictions.length : 0;
-          
-          console.log(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
-          resolve(faceCount);
-        } catch (error) {
-          console.warn('⚠️ [Face Detection] Face detection failed, defaulting to 1 face:', error);
-          resolve(1); // Default to 1 face if detection fails
-        }
-      };
-      
-      img.onerror = () => {
-        console.warn('⚠️ [Face Detection] Image load failed, defaulting to 1 face');
-        resolve(1);
-      };
-      
-      img.src = imageUrl;
-    });
+    // Detect all faces in the image
+    const detections = await faceapi.detectAllFaces(img);
+    const faceCount = detections.length;
+    
+    console.log(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
+    return faceCount;
+    
   } catch (error) {
     console.warn('⚠️ [Face Detection] Face detection failed, defaulting to 1 face:', error);
     return 1; // Default to 1 face if detection fails
