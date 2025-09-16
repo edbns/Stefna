@@ -13,7 +13,7 @@ interface FaceDetectionResponse {
   error?: string;
 }
 
-// Helper function to detect faces and get face count from source image
+// Helper function to detect faces and get face count from source image using Cloudinary AI Analyze API
 async function detectFaceCount(imageUrl: string): Promise<number> {
   try {
     // Validate input
@@ -25,29 +25,57 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
       throw new Error('ImageUrl must be a valid HTTP URL');
     }
     
-    console.log('🤖 [IPA Detect] Starting face detection for:', imageUrl.substring(0, 50) + '...');
+    console.log('🤖 [IPA Detect] Starting Cloudinary AI face detection for:', imageUrl.substring(0, 50) + '...');
     
-    // Import face-api and canvas for Node.js environment
-    const faceapi = require('@vladmandic/face-api');
-    const canvas = require('canvas');
-    const path = require('path');
-    const { Canvas, Image, ImageData } = canvas;
+    // Get Cloudinary credentials from environment
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
     
-    // Monkey patch the environment to use Node.js canvas
-    faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+    if (!cloudName || !apiKey || !apiSecret) {
+      throw new Error('Missing Cloudinary credentials');
+    }
     
-    // Load the SSD MobileNet v1 model from local path
-    const modelPath = path.resolve(__dirname, './face-api-models');
-    await faceapi.nets.ssdMobilenetv1.loadFromDisk(modelPath);
+    // Use Cloudinary AI Vision to detect faces
+    const response = await fetch(`https://api.cloudinary.com/v2/analysis/${cloudName}/analyze/ai_vision_general`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString('base64')}`
+      },
+      body: JSON.stringify({
+        source: {
+          uri: imageUrl
+        },
+        prompt: "How many human faces are visible in this image? Count each distinct face and respond with just the number."
+      })
+    });
     
-    // Load the image using canvas
-    const img = await canvas.loadImage(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Cloudinary API error: ${response.status} ${response.statusText}`);
+    }
     
-    // Detect all faces in the image
-    const detections = await faceapi.detectAllFaces(img);
-    const faceCount = detections.length;
+    const result = await response.json();
+    console.log('🤖 [IPA Detect] Cloudinary AI response:', JSON.stringify(result, null, 2));
     
-    console.log(`🤖 [IPA Detect] Detected ${faceCount} faces from image`);
+    // Extract face count from AI response
+    let faceCount = 1; // Default fallback
+    
+    if (result.data?.analysis?.response) {
+      const aiResponse = result.data.analysis.response.toLowerCase();
+      
+      // Try to extract number from AI response
+      const numberMatch = aiResponse.match(/\b(\d+)\b/);
+      if (numberMatch) {
+        faceCount = parseInt(numberMatch[1]);
+        // Sanity check - reasonable face count range
+        if (faceCount < 1 || faceCount > 10) {
+          faceCount = 1;
+        }
+      }
+    }
+    
+    console.log(`🤖 [IPA Detect] Detected ${faceCount} faces from Cloudinary AI`);
     return faceCount;
     
   } catch (error) {
