@@ -1,5 +1,4 @@
-// netlify/functions/ipa-detect.ts
-// Separate function for face detection to avoid size limits on main function
+// IPA Detect Function - Uses Cloudinary AI Vision API for face detection
 
 import { Handler } from '@netlify/functions';
 
@@ -13,7 +12,7 @@ interface FaceDetectionResponse {
   error?: string;
 }
 
-// Helper function to detect faces and get face count from source image using Cloudinary AI Analyze API
+// Detect faces using Cloudinary AI Vision API
 async function detectFaceCount(imageUrl: string): Promise<number> {
   try {
     // Validate input
@@ -36,8 +35,8 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
       throw new Error('Missing Cloudinary credentials');
     }
     
-    // Use Cloudinary AI Vision to detect faces
-    const response = await fetch(`https://api.cloudinary.com/v2/analysis/${cloudName}/analyze/ai_vision_general`, {
+    // Try using Google Tagging first (usually available without additional subscriptions)
+    let response = await fetch(`https://api.cloudinary.com/v2/analysis/${cloudName}/analyze/google_tagging`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -46,22 +45,64 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
       body: JSON.stringify({
         source: {
           uri: imageUrl
-        },
-        prompt: "How many human faces are visible in this image? Count each distinct face and respond with just the number."
+        }
       })
     });
     
+    // If Google Tagging fails, try AI Vision as fallback
     if (!response.ok) {
-      throw new Error(`Cloudinary API error: ${response.status} ${response.statusText}`);
+      console.log('🔄 [IPA Detect] Google Tagging failed, trying AI Vision...');
+      response = await fetch(`https://api.cloudinary.com/v2/analysis/${cloudName}/analyze/ai_vision_general`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString('base64')}`
+        },
+        body: JSON.stringify({
+          source: {
+            uri: imageUrl
+          },
+          prompt: "How many human faces are visible in this image? Count each distinct face and respond with just the number."
+        })
+      });
+    }
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ [IPA Detect] Cloudinary API error details:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Cloudinary API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
     
     const result = await response.json();
-    console.log('🤖 [IPA Detect] Cloudinary AI response:', JSON.stringify(result, null, 2));
+    console.log('🤖 [IPA Detect] Cloudinary response:', JSON.stringify(result, null, 2));
     
-    // Extract face count from AI response
+    // Extract face count from response
     let faceCount = 1; // Default fallback
     
-    if (result.data?.analysis?.response) {
+    // Handle Google Tagging response
+    if (result.data?.analysis?.tags) {
+      const tags = result.data.analysis.tags;
+      console.log('🤖 [IPA Detect] Google Tagging tags:', tags);
+      
+      // Look for person-related tags to estimate face count
+      const personTags = tags.filter(tag => 
+        tag.toLowerCase().includes('person') || 
+        tag.toLowerCase().includes('people') ||
+        tag.toLowerCase().includes('face') ||
+        tag.toLowerCase().includes('portrait')
+      );
+      
+      if (personTags.length > 0) {
+        // Simple heuristic: if multiple person tags, likely multiple people
+        faceCount = personTags.length > 1 ? Math.min(personTags.length, 3) : 1;
+      }
+    }
+    // Handle AI Vision response
+    else if (result.data?.analysis?.response) {
       const aiResponse = result.data.analysis.response.toLowerCase();
       
       // Try to extract number from AI response
