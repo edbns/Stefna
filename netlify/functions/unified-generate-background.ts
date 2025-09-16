@@ -16,86 +16,13 @@ import { q, qOne } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { withAuth } from './_withAuth';
 import { requireAuth } from './_lib/auth';
-import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyAdvancedPromptEnhancements, determineGroupType, getGroupPromptPrefix, getGroupNegativePromptAdditions, shouldApplyGroupInjection } from '../../src/utils/promptEnhancement';
+import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyAdvancedPromptEnhancements } from '../../src/utils/promptEnhancement';
 
-// Helper function to detect faces and get face count from source image
-async function detectFaceCount(imageUrl: string): Promise<number> {
-  try {
-    // Validate input
-    if (!imageUrl || typeof imageUrl !== 'string') {
-      throw new Error('Invalid imageUrl passed to detectFaceCount()');
-    }
-    
-    if (!imageUrl.startsWith('http')) {
-      throw new Error('ImageUrl must be a valid HTTP URL');
-    }
-    
-    console.log('🤖 [Face Detection] Starting face detection for:', imageUrl.substring(0, 50) + '...');
-    
-    // Call the separate IPA detect function
-    const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/ipa-detect`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ imageUrl })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`IPA detect function failed: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Face detection failed');
-    }
-    
-    console.log(`🤖 [Face Detection] Detected ${result.faceCount} faces from image`);
-    return result.faceCount;
-    
-  } catch (error) {
-    console.warn('⚠️ [Face Detection] Face detection failed, defaulting to 1 face:', error);
-    return 1; // Default to 1 face if detection fails
-  }
-}
 
-// Group-aware prompt scaffolding function with preset-specific rules
-function applyGroupAwarePromptScaffolding(originalPrompt: string, faceCount: number = 1, presetId?: string): { enhancedPrompt: string; negativePromptAdditions: string; groupType: string } {
-  console.log('🎯 [Group-Aware Scaffolding] Starting group analysis...');
-  
-  // Determine group type
-  const groupType = determineGroupType(originalPrompt, faceCount);
-  console.log(`🎯 [Group-Aware Scaffolding] Detected group type: ${groupType} for ${faceCount} faces`);
-  
-  // Check if group injection should be applied for this preset
-  const shouldInject = presetId ? shouldApplyGroupInjection(presetId, groupType) : true;
-  console.log(`🎯 [Group-Aware Scaffolding] Preset ${presetId || 'unknown'}: shouldInject = ${shouldInject}`);
-  
-  // Get group-specific prompt prefix (only if injection is allowed)
-  const groupPrefix = shouldInject ? getGroupPromptPrefix(groupType) : '';
-  
-  // Get group-specific negative prompt additions (only if injection is allowed)
-  const negativePromptAdditions = shouldInject ? getGroupNegativePromptAdditions(groupType) : '';
-  
-  // Compose the enhanced prompt
-  const enhancedPrompt = groupPrefix ? `${groupPrefix} ${originalPrompt}` : originalPrompt;
-  
-  console.log('🎯 [Group-Aware Scaffolding] Applied:', {
-    groupType,
-    presetId,
-    shouldInject,
-    hasPrefix: !!groupPrefix,
-    hasNegativeAdditions: !!negativePromptAdditions,
-    prefixLength: groupPrefix.length,
-    negativeLength: negativePromptAdditions.length
-  });
-  
-  return {
-    enhancedPrompt,
-    negativePromptAdditions,
-    groupType
-  };
+// Simple prompt enhancement without group detection
+function enhancePrompt(originalPrompt: string): string {
+  console.log('🎯 [Prompt Enhancement] Enhancing prompt...');
+  return originalPrompt;
 }
 
 // Prompt sanitization functions for Fal.ai content policy compliance
@@ -1741,7 +1668,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
       // Note: BFL mode uses sourceAssetId, face detection would require additional Cloudinary URL lookup
       // For now, default to solo mode for BFL generations
       console.log('🎯 [Group-Aware Scaffolding] BFL mode - using default face count (1)');
-      const { enhancedPrompt: scaffoldedPrompt, negativePromptAdditions, groupType } = applyGroupAwarePromptScaffolding(originalPrompt, faceCount);
+      const scaffoldedPrompt = enhancePrompt(originalPrompt);
       
       // 🎯 ENHANCED PROMPT ENGINEERING FOR GENDER, ANIMALS, AND GROUPS
       // Apply advanced prompt enhancements for better specificity
@@ -1775,11 +1702,8 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
       // Update the prompt with enhanced version
       bflInput.prompt = ultraEnhancedPrompt;
       
-      // Add enhanced negative prompt with group-specific additions
+      // Use the original negative prompt
       let finalNegativePrompt = negativePrompt;
-      if (negativePromptAdditions) {
-        finalNegativePrompt = finalNegativePrompt ? `${finalNegativePrompt}${negativePromptAdditions}` : negativePromptAdditions;
-      }
       
       if (finalNegativePrompt && !bflInput.negative_prompt) {
         bflInput.negative_prompt = finalNegativePrompt;
@@ -2089,21 +2013,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR EDIT MODE
         // Apply group-aware prompt scaffolding before enhancement
         const originalEditPrompt = params.editPrompt || params.prompt;
-        let faceCount = 1; // Default fallback
-        try {
-          // Use the uploaded Cloudinary URL for face detection
-          if (!uploadedImageUrl || !uploadedImageUrl.startsWith('http')) {
-            console.warn('⚠️ [Face Detection] Invalid image URL:', uploadedImageUrl);
-          } else {
-            console.info('🤖 [Face Detection] Starting face detection for:', uploadedImageUrl);
-            faceCount = await detectFaceCount(uploadedImageUrl);
-            console.info(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
-          }
-        } catch (error) {
-          console.error('❌ [Face Detection Error]', error);
-          faceCount = 1; // Safe fallback
-        }
-        const { enhancedPrompt: scaffoldedEditPrompt, negativePromptAdditions: editNegativeAdditions, groupType: editGroupType } = applyGroupAwarePromptScaffolding(originalEditPrompt, faceCount);
+        // No face detection - let Nano Banana handle it naturally
+        const scaffoldedEditPrompt = enhancePrompt(originalEditPrompt);
         
         // 🎯 ENHANCED PROMPT ENGINEERING FOR EDIT MODE
         // Apply enhanced prompt engineering for Edit mode
@@ -2137,11 +2048,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Update the prompt with enhanced version
         editInput.prompt = ultraEnhancedPrompt;
         
-        // Add enhanced negative prompt with group-specific additions
+        // Use the original negative prompt
         let finalEditNegativePrompt = negativePrompt;
-        if (editNegativeAdditions) {
-          finalEditNegativePrompt = finalEditNegativePrompt ? `${finalEditNegativePrompt}${editNegativeAdditions}` : editNegativeAdditions;
-        }
         
         if (finalEditNegativePrompt) {
           editInput.negative_prompt = finalEditNegativePrompt;
@@ -2239,21 +2147,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR UNREAL REFLECTION MODE
         // Apply group-aware prompt scaffolding before enhancement
         const originalUnrealReflectionPrompt = params.prompt;
-        let faceCount = 1; // Default fallback
-        try {
-          // Use the uploaded Cloudinary URL for face detection
-          if (!uploadedImageUrl || !uploadedImageUrl.startsWith('http')) {
-            console.warn('⚠️ [Face Detection] Invalid image URL:', uploadedImageUrl);
-          } else {
-            console.info('🤖 [Face Detection] Starting face detection for:', uploadedImageUrl);
-            faceCount = await detectFaceCount(uploadedImageUrl);
-            console.info(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
-          }
-        } catch (error) {
-          console.error('❌ [Face Detection Error]', error);
-          faceCount = 1; // Safe fallback
-        }
-        const { enhancedPrompt: scaffoldedUnrealPrompt, negativePromptAdditions: unrealNegativeAdditions, groupType: unrealGroupType } = applyGroupAwarePromptScaffolding(originalUnrealReflectionPrompt, faceCount);
+        // No face detection - let Nano Banana handle it naturally
+        const scaffoldedUnrealPrompt = enhancePrompt(originalUnrealReflectionPrompt);
         
         // 🎯 ENHANCED PROMPT ENGINEERING FOR UNREAL REFLECTION MODE
         // Apply enhanced prompt engineering for Unreal Reflection mode
@@ -2262,7 +2157,6 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         const detectedGroups = detectGroupsFromPrompt(scaffoldedUnrealPrompt);
         
         console.log(`🔍 [Unreal Reflection Mode Enhanced Prompt] Detected:`, {
-          groupType: unrealGroupType,
           gender: detectedGender,
           animals: detectedAnimals,
           groups: detectedGroups
@@ -2276,19 +2170,14 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           originalGender: detectedGender,
           originalAnimals: detectedAnimals,
           originalGroups: detectedGroups,
-          groupType: unrealGroupType as 'solo' | 'couple' | 'family' | 'group',
-          faceCount,
           context: 'unreal_reflection'
         });
 
         // Update the input with enhanced prompt and group-specific negative additions
         unrealReflectionInput.prompt = enhancedPrompt;
         
-        // Add enhanced negative prompt with group-specific additions
+        // Use the original negative prompt
         let finalUnrealNegativePrompt = negativePrompt;
-        if (unrealNegativeAdditions) {
-          finalUnrealNegativePrompt = finalUnrealNegativePrompt ? `${finalUnrealNegativePrompt}${unrealNegativeAdditions}` : unrealNegativeAdditions;
-        }
         
         if (finalUnrealNegativePrompt) {
           unrealReflectionInput.negative_prompt = finalUnrealNegativePrompt;
@@ -2297,7 +2186,6 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Original: "${originalUnrealReflectionPrompt}"`);
         console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Scaffolded: "${scaffoldedUnrealPrompt}"`);
         console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Enhanced: "${enhancedPrompt}"`);
-        console.log(`✨ [Unreal Reflection Mode Group Type] Detected: "${unrealGroupType}"`);
         if (finalUnrealNegativePrompt) {
           console.log(`✨ [Unreal Reflection Mode Negative Prompt] Enhanced: "${finalUnrealNegativePrompt}"`);
         }
@@ -2384,21 +2272,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR PARALLEL SELF MODE
         // Apply group-aware prompt scaffolding before enhancement
         const originalParallelSelfPrompt = params.prompt;
-        let faceCount = 1; // Default fallback
-        try {
-          // Use the uploaded Cloudinary URL for face detection
-          if (!uploadedImageUrl || !uploadedImageUrl.startsWith('http')) {
-            console.warn('⚠️ [Face Detection] Invalid image URL:', uploadedImageUrl);
-          } else {
-            console.info('🤖 [Face Detection] Starting face detection for:', uploadedImageUrl);
-            faceCount = await detectFaceCount(uploadedImageUrl);
-            console.info(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
-          }
-        } catch (error) {
-          console.error('❌ [Face Detection Error]', error);
-          faceCount = 1; // Safe fallback
-        }
-        const { enhancedPrompt: scaffoldedParallelPrompt, negativePromptAdditions: parallelNegativeAdditions, groupType: parallelGroupType } = applyGroupAwarePromptScaffolding(originalParallelSelfPrompt, faceCount, params.parallelSelfPresetId);
+        // No face detection - let Nano Banana handle it naturally
+        const scaffoldedParallelPrompt = enhancePrompt(originalParallelSelfPrompt);
         
         // 🎯 ENHANCED PROMPT ENGINEERING FOR PARALLEL SELF MODE
         // Apply enhanced prompt engineering for Parallel Self mode
@@ -2407,7 +2282,6 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         const detectedGroups = detectGroupsFromPrompt(scaffoldedParallelPrompt);
         
         console.log(`🔍 [Parallel Self Mode Enhanced Prompt] Detected:`, {
-          groupType: parallelGroupType,
           gender: detectedGender,
           animals: detectedAnimals,
           groups: detectedGroups
@@ -2421,26 +2295,20 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           originalGender: detectedGender,
           originalAnimals: detectedAnimals,
           originalGroups: detectedGroups,
-          groupType: parallelGroupType as 'solo' | 'couple' | 'family' | 'group',
-          faceCount,
           context: 'parallel_self'
         });
 
         // Sanitize prompt for Fal.ai content policy compliance
         const sanitizedPrompt = sanitizePromptForFal(enhancedPrompt);
         
-        // Add group-specific negative additions before sanitization
+        // Use the original negative prompt
         let finalParallelNegativePrompt = negativePrompt;
-        if (parallelNegativeAdditions) {
-          finalParallelNegativePrompt = finalParallelNegativePrompt ? `${finalParallelNegativePrompt}${parallelNegativeAdditions}` : parallelNegativeAdditions;
-        }
         const sanitizedNegativePrompt = sanitizeNegativePromptForFal(finalParallelNegativePrompt);
 
         console.log(`✨ [Parallel Self Mode Enhanced Prompt] Original: "${originalParallelSelfPrompt}"`);
         console.log(`✨ [Parallel Self Mode Enhanced Prompt] Scaffolded: "${scaffoldedParallelPrompt}"`);
         console.log(`✨ [Parallel Self Mode Enhanced Prompt] Enhanced: "${enhancedPrompt}"`);
         console.log(`✨ [Parallel Self Mode Enhanced Prompt] Sanitized: "${sanitizedPrompt}"`);
-        console.log(`✨ [Parallel Self Mode Group Type] Detected: "${parallelGroupType}"`);
         console.log(`✨ [Parallel Self Mode Negative Prompt] Enhanced: "${finalParallelNegativePrompt}"`);
         console.log(`✨ [Parallel Self Mode Negative Prompt] Sanitized: "${sanitizedNegativePrompt}"`);
         
@@ -2551,22 +2419,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Apply group-aware prompt scaffolding before enhancement
         if (!(mode === 'ghibli_reaction' || mode === 'unreal_reflection')) {
           const originalPrompt = params.prompt;
-          let faceCount = 1; // Default fallback
-          try {
-            // Use the sourceAssetId (Cloudinary URL) for face detection
-            const cloudinaryUrl = params.sourceAssetId;
-            if (!cloudinaryUrl || !cloudinaryUrl.startsWith('http')) {
-              console.warn('⚠️ [Face Detection] Invalid image URL:', cloudinaryUrl);
-            } else {
-              console.info('🤖 [Face Detection] Starting face detection for:', cloudinaryUrl);
-              faceCount = await detectFaceCount(cloudinaryUrl);
-              console.info(`🤖 [Face Detection] Detected ${faceCount} faces from image`);
-            }
-          } catch (error) {
-            console.error('❌ [Face Detection Error]', error);
-            faceCount = 1; // Safe fallback
-          }
-          const { enhancedPrompt: scaffoldedFalPrompt, negativePromptAdditions: falNegativeAdditions, groupType: falGroupType } = applyGroupAwarePromptScaffolding(originalPrompt, faceCount);
+          // No face detection - let Nano Banana handle it naturally
+          const scaffoldedFalPrompt = enhancePrompt(originalPrompt);
           
           // 🎯 ENHANCED PROMPT ENGINEERING FOR FAL.AI
           // Apply enhanced prompt engineering for Fal.ai models
@@ -2575,7 +2429,6 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           const detectedGroups = detectGroupsFromPrompt(scaffoldedFalPrompt);
           
           console.log(`🔍 [Fal.ai Enhanced Prompt] Detected:`, {
-            groupType: falGroupType,
             gender: detectedGender,
             animals: detectedAnimals,
             groups: detectedGroups
@@ -2589,8 +2442,6 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
             originalGender: detectedGender,
             originalAnimals: detectedAnimals,
             originalGroups: detectedGroups,
-            groupType: falGroupType as 'solo' | 'couple' | 'family' | 'group',
-            faceCount,
             context: mode
           });
 
@@ -2600,11 +2451,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           // Update the prompt with enhanced version
           input.prompt = ultraEnhancedPrompt;
           
-          // Add enhanced negative prompt with group-specific additions
+          // Use the original negative prompt
           let finalFalNegativePrompt = negativePrompt;
-          if (falNegativeAdditions) {
-            finalFalNegativePrompt = finalFalNegativePrompt ? `${finalFalNegativePrompt}${falNegativeAdditions}` : falNegativeAdditions;
-          }
           
           if (finalFalNegativePrompt) {
             input.negative_prompt = input.negative_prompt 
@@ -2615,7 +2463,6 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           console.log(`✨ [Fal.ai Enhanced Prompt] Original: "${originalPrompt}"`);
           console.log(`✨ [Fal.ai Enhanced Prompt] Scaffolded: "${scaffoldedFalPrompt}"`);
           console.log(`✨ [Fal.ai Enhanced Prompt] Enhanced: "${ultraEnhancedPrompt}"`);
-          console.log(`✨ [Fal.ai Group Type] Detected: "${falGroupType}"`);
           if (finalFalNegativePrompt) {
             console.log(`✨ [Fal.ai Negative Prompt] Enhanced: "${finalFalNegativePrompt}"`);
           }
