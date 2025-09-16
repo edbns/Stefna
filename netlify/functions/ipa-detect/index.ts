@@ -35,8 +35,8 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
       throw new Error('Missing Cloudinary credentials');
     }
     
-    // Try using Google Tagging first (usually available without additional subscriptions)
-    let response = await fetch(`https://api.cloudinary.com/v2/analysis/${cloudName}/analyze/google_tagging`, {
+    // Use Cloudinary AI Vision to detect faces
+    const response = await fetch(`https://api.cloudinary.com/v2/analysis/${cloudName}/analyze/ai_vision_general`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,27 +45,10 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
       body: JSON.stringify({
         source: {
           uri: imageUrl
-        }
+        },
+        prompts: ["How many human faces are visible in this image? Count each distinct face and respond with just the number."]
       })
     });
-    
-    // If Google Tagging fails, try AI Vision as fallback
-    if (!response.ok) {
-      console.log('🔄 [IPA Detect] Google Tagging failed, trying AI Vision...');
-      response = await fetch(`https://api.cloudinary.com/v2/analysis/${cloudName}/analyze/ai_vision_general`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString('base64')}`
-        },
-        body: JSON.stringify({
-          source: {
-            uri: imageUrl
-          },
-          prompt: "How many human faces are visible in this image? Count each distinct face and respond with just the number."
-        })
-      });
-    }
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -78,31 +61,12 @@ async function detectFaceCount(imageUrl: string): Promise<number> {
     }
     
     const result = await response.json();
-    console.log('🤖 [IPA Detect] Cloudinary response:', JSON.stringify(result, null, 2));
+    console.log('🤖 [IPA Detect] Cloudinary AI response:', JSON.stringify(result, null, 2));
     
-    // Extract face count from response
+    // Extract face count from AI response
     let faceCount = 1; // Default fallback
     
-    // Handle Google Tagging response
-    if (result.data?.analysis?.tags) {
-      const tags = result.data.analysis.tags;
-      console.log('🤖 [IPA Detect] Google Tagging tags:', tags);
-      
-      // Look for person-related tags to estimate face count
-      const personTags = tags.filter(tag => 
-        tag.toLowerCase().includes('person') || 
-        tag.toLowerCase().includes('people') ||
-        tag.toLowerCase().includes('face') ||
-        tag.toLowerCase().includes('portrait')
-      );
-      
-      if (personTags.length > 0) {
-        // Simple heuristic: if multiple person tags, likely multiple people
-        faceCount = personTags.length > 1 ? Math.min(personTags.length, 3) : 1;
-      }
-    }
-    // Handle AI Vision response
-    else if (result.data?.analysis?.response) {
+    if (result.data?.analysis?.response) {
       const aiResponse = result.data.analysis.response.toLowerCase();
       
       // Try to extract number from AI response
