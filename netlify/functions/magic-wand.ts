@@ -173,7 +173,7 @@ export const handler: Handler = async (event) => {
       return json({ error: 'Prompt is required' }, { status: 400 });
     }
 
-    console.log('🔮 [Magic Wand] Processing prompt:', prompt);
+    console.log('🔮 [Magic Wand] Processing prompt enhancement');
 
     // Check if enhancement is needed
     const needsEnhancementFlag = needsEnhancement(prompt);
@@ -214,9 +214,9 @@ export const handler: Handler = async (event) => {
       confidence: 'medium' as const,
     };
 
-    console.log('🔮 [Magic Wand] Enhanced prompt:', enhancedPrompt);
+    console.log('🔮 [Magic Wand] Enhanced prompt length:', enhancedPrompt.length);
     if (enhancedNegativePrompt) {
-      console.log('🔮 [Magic Wand] Enhanced negative prompt:', enhancedNegativePrompt);
+      console.log('🔮 [Magic Wand] Enhanced negative prompt length:', enhancedNegativePrompt.length);
     }
 
     return json(response);

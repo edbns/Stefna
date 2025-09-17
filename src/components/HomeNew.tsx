@@ -2322,7 +2322,7 @@ const HomeNew: React.FC = () => {
         ipaBlocking: true // Must pass to proceed
       };
       if (import.meta.env.DEV) {
-        console.log('🎨 CUSTOM MODE: Using user prompt only:', effectivePrompt);
+        console.log('🎨 CUSTOM MODE: Using user prompt only (length:', effectivePrompt.length, 'chars)');
       }
       
     } else if (kind === 'preset') {
@@ -2411,7 +2411,7 @@ const HomeNew: React.FC = () => {
         ipaBlocking: true // Must pass to proceed
       };
       if (import.meta.env.DEV) {
-        console.log('UNREAL REFLECTION MODE: Using ORIGINAL prompt:', unrealReflectionPreset.label, effectivePrompt);
+        console.log('UNREAL REFLECTION MODE: Using preset:', unrealReflectionPreset.label, '(prompt length:', effectivePrompt.length, 'chars)');
       }
     } else if (kind === 'parallelself') {
       // PARALLEL SELF MODE: Use the selected Parallel Self preset
@@ -2454,7 +2454,7 @@ const HomeNew: React.FC = () => {
         ipaBlocking: true // Must pass to proceed
       };
       if (import.meta.env.DEV) {
-        console.log('PARALLEL SELF MODE: Using ORIGINAL prompt:', parallelSelfPreset.label, effectivePrompt);
+        console.log('PARALLEL SELF MODE: Using preset:', parallelSelfPreset.label, '(prompt length:', effectivePrompt.length, 'chars)');
       }
     } else if (kind === 'ghiblireact') {
       // GHIBLI REACTION MODE: Use the selected Ghibli reaction preset
@@ -2600,7 +2600,7 @@ const HomeNew: React.FC = () => {
         ipaBlocking: true // Must pass to proceed
       };
       if (import.meta.env.DEV) {
-        console.log('✏️ EDIT MODE: Using user prompt for photo editing:', effectivePrompt);
+        console.log('✏️ EDIT MODE: Using user prompt for photo editing (length:', effectivePrompt.length, 'chars)');
       }
       
     } else {
@@ -2612,7 +2612,7 @@ const HomeNew: React.FC = () => {
     }
     
     if (import.meta.env.DEV) {
-      console.log('✅ Final effective prompt:', effectivePrompt);
+      console.log('✅ Final effective prompt length:', effectivePrompt.length, 'chars');
       console.log('✅ Generation metadata:', generationMeta);
     }
     
@@ -2621,7 +2621,7 @@ const HomeNew: React.FC = () => {
     if (makeItObvious) {
       effectivePrompt = 'black-and-white line art, no color, heavy outlines, flat shading, cartoon style';
       if (import.meta.env.DEV) {
-        console.log('🔎 Using "Make it obvious" test prompt:', effectivePrompt);
+        console.log('🔎 Using "Make it obvious" test prompt (length:', effectivePrompt.length, 'chars)');
       }
     }
     
@@ -3095,7 +3095,7 @@ const HomeNew: React.FC = () => {
   
   // 1. CUSTOM MODE GENERATION - Only uses user's typed prompt
   const generateCustom = async () => {
-    console.log('🎨 CUSTOM MODE: Generating with user prompt only')
+    console.log('🎨 CUSTOM MODE: Generating with user prompt (length:', prompt.length, 'chars)')
     
     if (!prompt.trim()) {
       console.error('❌ Custom prompt required: Please enter a prompt to generate')
@@ -3446,7 +3446,7 @@ const HomeNew: React.FC = () => {
     
     setIsEnhancing(true)
     if (import.meta.env.DEV) {
-      console.log('Magic Wand enhancing prompt:', prompt)
+      console.log('Magic Wand enhancing prompt (length:', prompt.length, 'chars)')
     }
     
     try {

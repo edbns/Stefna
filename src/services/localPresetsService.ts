@@ -47,8 +47,8 @@ export class LocalPresetsService {
     }
 
     console.log('🚀 [Local Presets] Starting generation with local preset:', preset.label);
-    console.log('📝 [Local Presets] Prompt:', preset.prompt);
-    console.log('❌ [Local Presets] Negative Prompt:', preset.negativePrompt);
+    console.log('📝 [Local Presets] Prompt length:', preset.prompt.length, 'chars');
+    console.log('❌ [Local Presets] Negative Prompt length:', preset.negativePrompt.length, 'chars');
 
     // Call the unified generation endpoint with preset data
     const response = await fetch('/.netlify/functions/unified-generate-background', {
@@ -76,8 +76,8 @@ export class LocalPresetsService {
   // Development helper: Test a custom prompt
   static async testCustomPrompt(customPrompt: string, customNegativePrompt: string, sourceAssetId: string) {
     console.log('🧪 [Local Presets] Testing custom prompt');
-    console.log('📝 [Local Presets] Custom Prompt:', customPrompt);
-    console.log('❌ [Local Presets] Custom Negative Prompt:', customNegativePrompt);
+    console.log('📝 [Local Presets] Custom Prompt length:', customPrompt.length, 'chars');
+    console.log('❌ [Local Presets] Custom Negative Prompt length:', customNegativePrompt.length, 'chars');
 
     const response = await fetch('/.netlify/functions/unified-generate-background', {
       method: 'POST',

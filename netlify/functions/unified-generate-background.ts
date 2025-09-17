@@ -216,7 +216,7 @@ async function generateVideo(imageUrl: string): Promise<any> {
   
   // Use the tailored generic prompt for Unreal Reflection video generation
   const tailoredPrompt = "Reveal an alternate self emerging from shadows. Soft cinematic lighting illuminates subtle transformations as the subject is surrounded by flickering light particles and floating shapes. The background shifts between surreal textures and minimal dark tones. The subject remains still, eyes reflecting mystery and resilience. Slow camera movement, poetic mood, 9:16 format.";
-  console.log(`🎬 [Video] Using tailored generic prompt: ${tailoredPrompt}`);
+  console.log(`🎬 [Video] Using tailored generic prompt for video generation`);
 
   try {
     // Try Veo3 fast first (4 credits)
@@ -1708,11 +1708,11 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
 
       // Hard protection for neo_glitch removed in revert (handled at preset-level if needed)
 
-      console.log(`✨ [BFL Prompt Enhancement] Original: "${originalPrompt}"`);
-      console.log(`✨ [BFL Prompt Enhancement] Scaffolded: "${scaffoldedPrompt}"`);
-      console.log(`✨ [BFL Prompt Enhancement] Enhanced: "${ultraEnhancedPrompt}"`);
+      console.log(`✨ [BFL Prompt Enhancement] Processing prompt enhancement`);
+      console.log(`✨ [BFL Prompt Enhancement] Scaffolded prompt length: ${scaffoldedPrompt.length} chars`);
+      console.log(`✨ [BFL Prompt Enhancement] Enhanced prompt length: ${ultraEnhancedPrompt.length} chars`);
       if (finalNegativePrompt) {
-        console.log(`✨ [BFL Negative Prompt] Enhanced: "${finalNegativePrompt}"`);
+        console.log(`✨ [BFL Negative Prompt] Enhanced negative prompt length: ${finalNegativePrompt.length} chars`);
       }
       
       // Add model-specific parameters
@@ -2042,11 +2042,11 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           editInput.negative_prompt = finalEditNegativePrompt;
         }
 
-        console.log(`✨ [Edit Mode Enhanced Prompt] Original: "${originalEditPrompt}"`);
-        console.log(`✨ [Edit Mode Enhanced Prompt] Scaffolded: "${scaffoldedEditPrompt}"`);
-        console.log(`✨ [Edit Mode Enhanced Prompt] Enhanced: "${ultraEnhancedPrompt}"`);
+        console.log(`✨ [Edit Mode Enhanced Prompt] Processing prompt enhancement`);
+        console.log(`✨ [Edit Mode Enhanced Prompt] Scaffolded prompt length: ${scaffoldedEditPrompt.length} chars`);
+        console.log(`✨ [Edit Mode Enhanced Prompt] Enhanced prompt length: ${ultraEnhancedPrompt.length} chars`);
         if (finalEditNegativePrompt) {
-          console.log(`✨ [Edit Mode Negative Prompt] Enhanced: "${finalEditNegativePrompt}"`);
+          console.log(`✨ [Edit Mode Negative Prompt] Enhanced negative prompt length: ${finalEditNegativePrompt.length} chars`);
         }
         
         // Add width and height to preserve original aspect ratio
@@ -2167,11 +2167,11 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           unrealReflectionInput.negative_prompt = finalUnrealNegativePrompt;
         }
 
-        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Original: "${originalUnrealReflectionPrompt}"`);
-        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Scaffolded: "${scaffoldedUnrealPrompt}"`);
-        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Enhanced: "${enhancedPrompt}"`);
+        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Processing prompt enhancement`);
+        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Scaffolded prompt length: ${scaffoldedUnrealPrompt.length} chars`);
+        console.log(`✨ [Unreal Reflection Mode Enhanced Prompt] Enhanced prompt length: ${enhancedPrompt.length} chars`);
         if (finalUnrealNegativePrompt) {
-          console.log(`✨ [Unreal Reflection Mode Negative Prompt] Enhanced: "${finalUnrealNegativePrompt}"`);
+          console.log(`✨ [Unreal Reflection Mode Negative Prompt] Enhanced negative prompt length: ${finalUnrealNegativePrompt.length} chars`);
         }
 
         console.log(`✏️ [Unreal Reflection Mode] Generating edit with single image`);
@@ -2287,12 +2287,12 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         let finalParallelNegativePrompt = negativePrompt;
         const sanitizedNegativePrompt = sanitizeNegativePromptForFal(finalParallelNegativePrompt);
 
-        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Original: "${originalParallelSelfPrompt}"`);
-        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Scaffolded: "${scaffoldedParallelPrompt}"`);
-        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Enhanced: "${enhancedPrompt}"`);
-        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Sanitized: "${sanitizedPrompt}"`);
-        console.log(`✨ [Parallel Self Mode Negative Prompt] Enhanced: "${finalParallelNegativePrompt}"`);
-        console.log(`✨ [Parallel Self Mode Negative Prompt] Sanitized: "${sanitizedNegativePrompt}"`);
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Processing prompt enhancement`);
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Scaffolded prompt length: ${scaffoldedParallelPrompt.length} chars`);
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Enhanced prompt length: ${enhancedPrompt.length} chars`);
+        console.log(`✨ [Parallel Self Mode Enhanced Prompt] Sanitized prompt length: ${sanitizedPrompt.length} chars`);
+        console.log(`✨ [Parallel Self Mode Negative Prompt] Enhanced negative prompt length: ${finalParallelNegativePrompt.length} chars`);
+        console.log(`✨ [Parallel Self Mode Negative Prompt] Sanitized negative prompt length: ${sanitizedNegativePrompt.length} chars`);
         
         // Update the input with sanitized prompt
         parallelSelfInput.prompt = sanitizedPrompt;
@@ -2440,11 +2440,11 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
               : finalFalNegativePrompt;
           }
 
-          console.log(`✨ [Fal.ai Enhanced Prompt] Original: "${originalPrompt}"`);
-          console.log(`✨ [Fal.ai Enhanced Prompt] Scaffolded: "${scaffoldedFalPrompt}"`);
-          console.log(`✨ [Fal.ai Enhanced Prompt] Enhanced: "${ultraEnhancedPrompt}"`);
+          console.log(`✨ [Fal.ai Enhanced Prompt] Processing prompt enhancement`);
+          console.log(`✨ [Fal.ai Enhanced Prompt] Scaffolded prompt length: ${scaffoldedFalPrompt.length} chars`);
+          console.log(`✨ [Fal.ai Enhanced Prompt] Enhanced prompt length: ${ultraEnhancedPrompt.length} chars`);
           if (finalFalNegativePrompt) {
-            console.log(`✨ [Fal.ai Negative Prompt] Enhanced: "${finalFalNegativePrompt}"`);
+            console.log(`✨ [Fal.ai Negative Prompt] Enhanced negative prompt length: ${finalFalNegativePrompt.length} chars`);
           }
         }
         

@@ -17,7 +17,7 @@ export interface MagicWandResponse {
 export class MagicWandService {
   static async enhancePrompt(prompt: string, enhanceNegativePrompt: boolean = false): Promise<MagicWandResponse> {
     try {
-      console.log('🔮 [Magic Wand] Enhancing prompt:', prompt);
+      console.log('🔮 [Magic Wand] Enhancing prompt (length:', prompt.length, 'chars)');
       
       const response = await fetch('/.netlify/functions/magic-wand', {
         method: 'POST',
