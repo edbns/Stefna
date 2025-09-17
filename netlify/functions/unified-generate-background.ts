@@ -1501,7 +1501,7 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
 async function generateWithReplicate(params: any): Promise<UnifiedGenerationResponse> {
   console.log('🔄 [Background] Starting Replicate fallback generation');
   
-  const REPLICATE_API_KEY = process.env.REPLICATE_API_KEY;
+  const REPLICATE_API_KEY = process.env.REPLICATE_API_TOKEN;
   if (!REPLICATE_API_KEY) {
     console.warn('⚠️ [Background] Replicate API key not configured');
     throw new Error('Replicate API key not configured');
@@ -1632,6 +1632,9 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
   } else if (mode === 'neo_glitch') {
     // Neo Glitch: Ultra → Pro → Standard → Fal.ai
     models = BFL_GHIBLI_MODELS;
+  } else if (mode === 'edit') {
+    // Edit Mode: Use image-to-image models with high strength for photo editing
+    models = BFL_EMOTION_MODELS; // Use emotion models for edit mode
   } else {
     throw new Error(`BFL API not supported for mode: ${mode}`);
   }
@@ -1642,7 +1645,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
   }
   
   // Validate image_strength for image-to-image models
-  const imageStrength = mode === 'ghibli_reaction' ? 0.55 : mode === 'neo_glitch' ? 0.35 : 0.45;
+  const imageStrength = mode === 'ghibli_reaction' ? 0.55 : mode === 'neo_glitch' ? 0.35 : mode === 'edit' ? 0.7 : 0.45;
   if (imageStrength <= 0 || imageStrength > 1) {
     throw new Error("Invalid image_strength for BFL API image-to-image generation");
   }
