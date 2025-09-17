@@ -16,7 +16,7 @@ import { q, qOne } from './_db';
 import { v4 as uuidv4 } from 'uuid';
 import { withAuth } from './_withAuth';
 import { requireAuth } from './_lib/auth';
-import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, detectGroupsFromPrompt, applyAdvancedPromptEnhancements } from '../../src/utils/promptEnhancement';
+import { enhancePromptForSpecificity, detectGenderFromPrompt, detectAnimalsFromPrompt, applyAdvancedPromptEnhancements } from '../../src/utils/promptEnhancement';
 
 
 // Simple prompt enhancement without group detection
@@ -1661,26 +1661,19 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         output_format: params.output_format ?? "jpeg"
       };
 
-      // 🎯 GROUP-AWARE PROMPT SCAFFOLDING
-      // Apply group-aware prompt scaffolding before enhancement
+      // 🎯 PROMPT ENHANCEMENT
+      // Apply prompt enhancement before generation
       const originalPrompt = params.prompt;
-      let faceCount = 1; // Default fallback for BFL mode
-      // Note: BFL mode uses sourceAssetId, face detection would require additional Cloudinary URL lookup
-      // For now, default to solo mode for BFL generations
-      console.log('🎯 [Group-Aware Scaffolding] BFL mode - using default face count (1)');
       const scaffoldedPrompt = enhancePrompt(originalPrompt);
       
-      // 🎯 ENHANCED PROMPT ENGINEERING FOR GENDER, ANIMALS, AND GROUPS
+      // 🎯 ENHANCED PROMPT ENGINEERING FOR GENDER AND ANIMALS
       // Apply advanced prompt enhancements for better specificity
       const detectedGender = detectGenderFromPrompt(scaffoldedPrompt);
       const detectedAnimals = detectAnimalsFromPrompt(scaffoldedPrompt);
-      const detectedGroups = detectGroupsFromPrompt(scaffoldedPrompt);
       
       console.log(`🔍 [Enhanced Prompt] Detected:`, {
-        groupType,
         gender: detectedGender,
-        animals: detectedAnimals,
-        groups: detectedGroups
+        animals: detectedAnimals
       });
 
       // Apply enhanced prompt engineering
@@ -1690,9 +1683,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         preserveGroups: true,
         originalGender: detectedGender,
         originalAnimals: detectedAnimals,
-        originalGroups: detectedGroups,
-        groupType: groupType as 'solo' | 'couple' | 'family' | 'group',
-        faceCount,
+        originalGroups: [],
         context: mode
       });
 
@@ -1717,7 +1708,6 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
       console.log(`✨ [BFL Prompt Enhancement] Original: "${originalPrompt}"`);
       console.log(`✨ [BFL Prompt Enhancement] Scaffolded: "${scaffoldedPrompt}"`);
       console.log(`✨ [BFL Prompt Enhancement] Enhanced: "${ultraEnhancedPrompt}"`);
-      console.log(`✨ [BFL Group Type] Detected: "${groupType}"`);
       if (finalNegativePrompt) {
         console.log(`✨ [BFL Negative Prompt] Enhanced: "${finalNegativePrompt}"`);
       }
@@ -2010,23 +2000,19 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           prompt: params.editPrompt || params.prompt
         };
 
-        // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR EDIT MODE
-        // Apply group-aware prompt scaffolding before enhancement
+        // 🎯 PROMPT ENHANCEMENT FOR EDIT MODE
+        // Apply prompt enhancement before generation
         const originalEditPrompt = params.editPrompt || params.prompt;
-        // No face detection - let Nano Banana handle it naturally
         const scaffoldedEditPrompt = enhancePrompt(originalEditPrompt);
         
         // 🎯 ENHANCED PROMPT ENGINEERING FOR EDIT MODE
         // Apply enhanced prompt engineering for Edit mode
         const detectedGender = detectGenderFromPrompt(scaffoldedEditPrompt);
         const detectedAnimals = detectAnimalsFromPrompt(scaffoldedEditPrompt);
-        const detectedGroups = detectGroupsFromPrompt(scaffoldedEditPrompt);
         
         console.log(`🔍 [Edit Mode Enhanced Prompt] Detected:`, {
-          groupType: editGroupType,
           gender: detectedGender,
-          animals: detectedAnimals,
-          groups: detectedGroups
+          animals: detectedAnimals
         });
 
         // Apply enhanced prompt engineering for Edit mode
@@ -2036,9 +2022,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           preserveGroups: true,
           originalGender: detectedGender,
           originalAnimals: detectedAnimals,
-          originalGroups: detectedGroups,
-          groupType: editGroupType as 'solo' | 'couple' | 'family' | 'group',
-          faceCount,
+          originalGroups: [],
           context: 'edit'
         });
 
@@ -2058,7 +2042,6 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         console.log(`✨ [Edit Mode Enhanced Prompt] Original: "${originalEditPrompt}"`);
         console.log(`✨ [Edit Mode Enhanced Prompt] Scaffolded: "${scaffoldedEditPrompt}"`);
         console.log(`✨ [Edit Mode Enhanced Prompt] Enhanced: "${ultraEnhancedPrompt}"`);
-        console.log(`✨ [Edit Mode Group Type] Detected: "${editGroupType}"`);
         if (finalEditNegativePrompt) {
           console.log(`✨ [Edit Mode Negative Prompt] Enhanced: "${finalEditNegativePrompt}"`);
         }
@@ -2154,12 +2137,10 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Apply enhanced prompt engineering for Unreal Reflection mode
         const detectedGender = detectGenderFromPrompt(scaffoldedUnrealPrompt);
         const detectedAnimals = detectAnimalsFromPrompt(scaffoldedUnrealPrompt);
-        const detectedGroups = detectGroupsFromPrompt(scaffoldedUnrealPrompt);
         
         console.log(`🔍 [Unreal Reflection Mode Enhanced Prompt] Detected:`, {
           gender: detectedGender,
-          animals: detectedAnimals,
-          groups: detectedGroups
+          animals: detectedAnimals
         });
 
         // Apply enhanced prompt engineering for Unreal Reflection mode
@@ -2169,7 +2150,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           preserveGroups: true,
           originalGender: detectedGender,
           originalAnimals: detectedAnimals,
-          originalGroups: detectedGroups,
+          originalGroups: [],
           context: 'unreal_reflection'
         });
 
@@ -2279,12 +2260,10 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Apply enhanced prompt engineering for Parallel Self mode
         const detectedGender = detectGenderFromPrompt(scaffoldedParallelPrompt);
         const detectedAnimals = detectAnimalsFromPrompt(scaffoldedParallelPrompt);
-        const detectedGroups = detectGroupsFromPrompt(scaffoldedParallelPrompt);
         
         console.log(`🔍 [Parallel Self Mode Enhanced Prompt] Detected:`, {
           gender: detectedGender,
-          animals: detectedAnimals,
-          groups: detectedGroups
+          animals: detectedAnimals
         });
 
         // Apply enhanced prompt engineering for Parallel Self mode
@@ -2294,7 +2273,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           preserveGroups: true,
           originalGender: detectedGender,
           originalAnimals: detectedAnimals,
-          originalGroups: detectedGroups,
+          originalGroups: [],
           context: 'parallel_self'
         });
 
@@ -2426,12 +2405,10 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           // Apply enhanced prompt engineering for Fal.ai models
           const detectedGender = detectGenderFromPrompt(scaffoldedFalPrompt);
           const detectedAnimals = detectAnimalsFromPrompt(scaffoldedFalPrompt);
-          const detectedGroups = detectGroupsFromPrompt(scaffoldedFalPrompt);
           
           console.log(`🔍 [Fal.ai Enhanced Prompt] Detected:`, {
             gender: detectedGender,
-            animals: detectedAnimals,
-            groups: detectedGroups
+            animals: detectedAnimals
           });
 
           // Apply enhanced prompt engineering for Fal.ai
@@ -2441,7 +2418,7 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
             preserveGroups: true,
             originalGender: detectedGender,
             originalAnimals: detectedAnimals,
-            originalGroups: detectedGroups,
+            originalGroups: [],
             context: mode
           });
 
