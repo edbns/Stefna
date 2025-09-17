@@ -152,11 +152,17 @@ class SimpleGenerationService {
         hasResult: !!result,
         success: result?.success,
         status: result?.status,
-        error: result?.error
+        error: result?.error,
+        responseStatus: response.status
       });
       
-      if (hasJsonBody && result && result.success === false && result.status === 'failed') {
-        console.warn(`🚨 [SimpleGeneration] Early failure detected: ${result.error}`);
+      // Handle any failure response (success: false OR status: failed)
+      if (hasJsonBody && result && (result.success === false || result.status === 'failed')) {
+        console.warn(`🚨 [SimpleGeneration] Early failure detected:`, {
+          success: result.success,
+          status: result.status,
+          error: result.error
+        });
         console.warn(`🚨 [SimpleGeneration] Full failure response:`, JSON.stringify(result, null, 2));
         
         // Special handling for insufficient credits
@@ -169,6 +175,7 @@ class SimpleGenerationService {
         // For other failures, throw the error message
         const errorMessage = result.error || result.message || 'Generation failed';
         console.log('🚨 [SimpleGeneration] Throwing early failure error:', errorMessage);
+        console.log('🚨 [SimpleGeneration] About to throw error to stop spinner');
         throw new Error(errorMessage);
       }
 

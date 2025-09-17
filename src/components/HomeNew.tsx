@@ -2851,8 +2851,8 @@ const HomeNew: React.FC = () => {
         
         // Don't clear composer or stop spinners - wait for completion
         return;
-      } else if (!result.success) {
-        // Generation failed - handle immediately regardless of run ID staleness
+          } else {
+        // Generation failed
         console.error('❌ [Unified] Generation failed:', result.error);
         
         // Parse error message for user-friendly display
@@ -2886,10 +2886,10 @@ const HomeNew: React.FC = () => {
     } catch (e) {
       console.error('🚨 dispatchGenerate error caught:', e);
       
-      // 🛡️ RUN ID PROTECTION: Allow credit errors and generation failures to bubble regardless of run staleness
+      // 🛡️ RUN ID PROTECTION: Allow credit errors to bubble regardless of run staleness
       if (currentRunId && currentRunId !== runId) {
         const message = e instanceof Error ? e.message : String(e);
-        if (!message.includes('INSUFFICIENT_CREDITS') && !message.includes('All providers failed')) {
+        if (!message.includes('INSUFFICIENT_CREDITS')) {
           console.warn('⚠️ Ignoring error for stale run:', runId, 'current:', currentRunId);
           return;
         }
