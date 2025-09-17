@@ -8,7 +8,6 @@ const EMOTION_INSERTS = {
   tears: `Add delicate tears and a trembling expression.`,
   shock: `Widen the eyes and part the lips slightly to show surprise.`,
   sparkle: `Add medium sparkles around the cheeks only, shimmering eyes with golden highlights, and soft pink blush. Keep sparkles focused on cheek area.`,
-  sadness: `Add melancholic emotion with glossy eyes and distant gaze.`,
   love: `Add warm sparkle in the eyes, gentle blush, and glowing pastel lighting. Create a dreamy, cozy atmosphere with soft bokeh in the background.`,
 };
 
@@ -97,27 +96,6 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     image_prompt_strength: 0.35,
     aspect_ratio: '3:4',
     features: ['ghibli_style', 'emotional_reaction', 'sparkles', 'soft_lighting', 'identity_preserved']
-  },
-  {
-    id: 'ghibli_sadness',
-    label: 'Sadness',
-    prompt: `${BASE_PROMPT} ${EMOTION_INSERTS.sadness} Emphasize melancholic emotion through glossy, teary eyes, a distant gaze, and softened facial features. Slight tear trails may appear but no crying mouth. Preserve full identity, ethnicity, skin, and structure. Lighting should be dim, cinematic, and pastel-toned like a Ghibli evening scene.`,
-    negative_prompt: `cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face, anime outline, 2D face, exaggerated crying, manga, flat colors, face replacement, photorealism, harsh light, flat expression`,
-    strength: 0.35,
-    model: 'bfl/flux-pro-1.1-ultra',
-    mode: 'i2i',
-    input: 'image',
-    requiresSource: true,
-    source: 'ghibli_reaction',
-    guidance_scale: 8,
-    num_inference_steps: 28,
-    prompt_upsampling: true,
-    safety_tolerance: 3,
-    output_format: 'jpeg',
-    raw: true,
-    image_prompt_strength: 0.35,
-    aspect_ratio: '3:4',
-    features: ['ghibli_style', 'emotional_reaction', 'sadness', 'soft_lighting', 'identity_preserved']
   },
   {
     id: 'ghibli_love',
