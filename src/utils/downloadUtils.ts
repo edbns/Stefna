@@ -6,6 +6,8 @@ export interface DownloadableMedia {
   url: string;
   filename: string;
   type: 'image' | 'video';
+  presetKey?: string;
+  presetType?: string;
 }
 
 /**
@@ -82,17 +84,54 @@ export const downloadMultipleFilesAsZip = async (
 };
 
 /**
- * Generates a filename for media based on its properties
+ * Generates a descriptive filename for media based on its properties
  */
 export const generateMediaFilename = (media: DownloadableMedia, index?: number): string => {
   const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const extension = media.type === 'image' ? 'jpg' : 'mp4';
   
-  if (index !== undefined) {
-    return `media-${timestamp}-${String(index + 1).padStart(3, '0')}.${extension}`;
+  // Generate descriptive filename
+  let baseName = 'Stefna';
+  
+  if (media.presetType && media.presetKey) {
+    // Convert presetType to readable format
+    const typeMap: Record<string, string> = {
+      'parallel_self': 'parallelself',
+      'neo_glitch': 'neoglitch', 
+      'unreal_reflection': 'unrealreflection',
+      'ghibli_reaction': 'ghiblireaction',
+      'edit': 'edit',
+      'presets': 'preset',
+      'custom': 'custom',
+      'story_time': 'storytime'
+    };
+    
+    const readableType = typeMap[media.presetType] || media.presetType;
+    const readablePreset = media.presetKey.replace(/_/g, ''); // Remove underscores
+    
+    baseName = `Stefna-${readableType}-${readablePreset}`;
+  } else if (media.presetType) {
+    // If we have presetType but no presetKey, use just the type
+    const typeMap: Record<string, string> = {
+      'parallel_self': 'parallelself',
+      'neo_glitch': 'neoglitch', 
+      'unreal_reflection': 'unrealreflection',
+      'ghibli_reaction': 'ghiblireaction',
+      'edit': 'edit',
+      'presets': 'preset',
+      'custom': 'custom',
+      'story_time': 'storytime'
+    };
+    
+    const readableType = typeMap[media.presetType] || media.presetType;
+    baseName = `Stefna-${readableType}`;
   }
   
-  return `media-${timestamp}.${extension}`;
+  if (index !== undefined) {
+    return `${baseName}-${timestamp}-${String(index + 1).padStart(3, '0')}.${extension}`;
+  }
+  
+  return `${baseName}-${timestamp}.${extension}`;
 };
 
 /**

@@ -731,9 +731,13 @@ const ProfileScreen: React.FC = () => {
           id: media.id,
           url: media.url,
           filename: '',
-          type: media.type === 'video' ? 'video' : 'image'
+          type: media.type === 'video' ? 'video' : 'image',
+          presetKey: media.presetKey,
+          presetType: media.presetType
         }, index),
-        type: media.type === 'video' ? 'video' : 'image'
+        type: media.type === 'video' ? 'video' : 'image',
+        presetKey: media.presetKey,
+        presetType: media.presetType
       }))
 
       await downloadAllMediaAsZip(downloadableMedia, `all-media-${new Date().toISOString().split('T')[0]}.zip`)
@@ -767,9 +771,13 @@ const ProfileScreen: React.FC = () => {
           id: media.id,
           url: media.url,
           filename: '',
-          type: media.type === 'video' ? 'video' : 'image'
+          type: media.type === 'video' ? 'video' : 'image',
+          presetKey: media.presetKey,
+          presetType: media.presetType
         }, index),
-        type: media.type === 'video' ? 'video' : 'image'
+        type: media.type === 'video' ? 'video' : 'image',
+        presetKey: media.presetKey,
+        presetType: media.presetType
       }))
 
       await downloadSelectedMediaAsZip(downloadableMedia, `selected-media-${new Date().toISOString().split('T')[0]}.zip`)
