@@ -125,26 +125,25 @@ export const handler: Handler = async (event) => {
       );
       liked = false;
     } else {
-      // Like - add the like with conflict handling
+      // Like - add the like with proper duplicate handling
       console.log('🔄 [toggleLike] Adding like...');
-      try {
+      
+      // First check if like already exists
+      const existingLike = await q(
+        'SELECT id FROM likes WHERE user_id = $1 AND media_id = $2 AND media_type = $3',
+        [userId, mediaId, mediaType]
+      );
+      
+      if (existingLike.length > 0) {
+        console.log('✅ [toggleLike] Like already exists');
+        liked = true;
+      } else {
+        // Insert new like
         await q(
-          'INSERT INTO likes (user_id, media_id, media_type) VALUES ($1, $2, $3) ON CONFLICT (user_id, media_id, media_type) DO NOTHING',
+          'INSERT INTO likes (user_id, media_id, media_type) VALUES ($1, $2, $3)',
           [userId, mediaId, mediaType]
         );
         liked = true;
-      } catch (error) {
-        // If insert failed due to conflict, check if like was actually added
-        const checkLike = await q(
-          'SELECT id FROM likes WHERE user_id = $1 AND media_id = $2 AND media_type = $3',
-          [userId, mediaId, mediaType]
-        );
-        if (checkLike.length > 0) {
-          liked = true;
-          console.log('✅ [toggleLike] Like already exists (conflict resolved)');
-        } else {
-          throw error;
-        }
       }
     }
 

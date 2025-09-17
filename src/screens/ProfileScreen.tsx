@@ -1905,6 +1905,8 @@ const ProfileScreen: React.FC = () => {
                   userLikes={userLikes}
                   isLoggedIn={isAuthenticated}
                   onShowAuth={() => navigate('/auth')}
+                  // Hide likes button on profile page
+                  hideLikes={true}
                 />
                 
                 {/* 🚀 INFINITE SCROLL: Loading indicator */}
