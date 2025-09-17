@@ -21,7 +21,7 @@ import ProfileIcon from './ProfileIcon'
 import { useProfile } from '../contexts/ProfileContext'
 // import { usePresetRunner } from '../hooks/usePresetRunner' // REMOVED - using database-driven presets now
 import { IdentityPreservationService } from '../services/identityPreservationService'
-import { toggleLike, getUserLikes, mapMediaTypeForAPI } from '../services/likesService'
+import { toggleLike, getUserLikes, mapMediaTypeForAPI, generateLikeKey } from '../services/likesService'
 import SimpleGenerationService, { GenerationMode, SimpleGenerationRequest } from '../services/simpleGenerationService'
 import { prepareSourceAsset } from '../utils/prepareSourceAsset'
 // import { useSelectedPreset } from '../stores/selectedPreset' // REMOVED - using database-driven presets now
@@ -630,9 +630,8 @@ const HomeNew: React.FC = () => {
     }
     
     try {
-      // Map the type for likes key - use the database type from feed
-      const dbType = (media.metadata?.presetType || media.type || 'presets').replace(/-/g, '_')
-      const likeKey = `${dbType}:${media.id}`
+      // Use consistent like key generation
+      const likeKey = generateLikeKey(media)
       const wasLiked = userLikes[likeKey]
       
       setUserLikes(prev => ({
@@ -654,7 +653,8 @@ const HomeNew: React.FC = () => {
           : item
       ))
       
-      // Map the type to the API format
+      // Map the type to the API format - use consistent logic
+      const dbType = (media.metadata?.presetType || media.type || 'presets').replace(/-/g, '_')
       const apiMediaType = mapMediaTypeForAPI(dbType)
       
       // Make API call

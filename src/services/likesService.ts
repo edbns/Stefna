@@ -58,6 +58,12 @@ export async function getUserLikes(): Promise<UserLikesResponse> {
   }
 }
 
+// Helper to generate consistent like keys across all components
+export function generateLikeKey(media: { id: string; metadata?: { presetType?: string }; type?: string }): string {
+  const dbType = (media.metadata?.presetType || media.type || 'presets').replace(/-/g, '_')
+  return `${dbType}:${media.id}`
+}
+
 // Helper to map database media type to API media type
 export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit' | 'parallel_self' {
   const typeMapping: Record<string, 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit' | 'parallel_self'> = {

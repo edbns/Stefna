@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react'
 import { UserMedia } from '../services/userMediaService'
 import { optimizeFeedImage } from '../utils/cloudinaryOptimization'
 import PresetTag from './PresetTag'
+import { generateLikeKey } from '../services/likesService'
 // RemixIcon removed - no more remix functionality
 import { MediaCard as SpinnerCard } from './ui/Toasts'
 // LazyImage removed - using simple img tags for better performance
@@ -23,6 +24,8 @@ interface MasonryMediaGridProps {
   isSelectionMode?: boolean
   selectedMediaIds?: Set<string>
   onToggleSelection?: (mediaId: string) => void
+  // Preset tag click handler
+  onPresetTagClick?: (filterType: string) => void
   // Show auth modal for logged out users
   onShowAuth?: () => void
   isLoggedIn?: boolean
@@ -50,6 +53,8 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
   isSelectionMode = false,
   selectedMediaIds = new Set(),
   onToggleSelection,
+  // Preset tag click handler
+  onPresetTagClick,
   // Auth props
   onShowAuth,
   isLoggedIn = true,
@@ -288,15 +293,15 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                                     onToggleLike?.(item);
                                   }}
                                   className={`flex items-center gap-1 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-all duration-200 ${
-                                    userLikes[`${(item.metadata?.presetType || item.type || 'presets').replace(/-/g, '_')}:${item.id}`] ? 'text-red-500' : ''
+                                    userLikes[generateLikeKey(item)] ? 'text-red-500' : ''
                                   }`}
-                                  title={userLikes[`${(item.metadata?.presetType || item.type || 'presets').replace(/-/g, '_')}:${item.id}`] ? 'Unlike' : 'Like'}
+                                  title={userLikes[generateLikeKey(item)] ? 'Unlike' : 'Like'}
                                 >
                                   <svg 
                                     width="14" 
                                     height="14" 
                                     viewBox="0 0 24 24" 
-                                    fill={userLikes[`${(item.metadata?.presetType || item.type || 'presets').replace(/-/g, '_')}:${item.id}`] ? 'currentColor' : 'none'} 
+                                    fill={userLikes[generateLikeKey(item)] ? 'currentColor' : 'none'} 
                                     stroke="currentColor" 
                                     strokeWidth="2"
                                   >

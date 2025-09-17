@@ -43,7 +43,7 @@ import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 
 import { useProfile } from '../contexts/ProfileContext'
 import { downloadAllMediaAsZip, downloadSelectedMediaAsZip, generateMediaFilename, DownloadableMedia } from '../utils/downloadUtils'
-import { toggleLike, getUserLikes, mapMediaTypeForAPI } from '../services/likesService'
+import { toggleLike, getUserLikes, mapMediaTypeForAPI, generateLikeKey } from '../services/likesService'
 
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
@@ -418,9 +418,8 @@ const ProfileScreen: React.FC = () => {
     }
     
     try {
-      // Map the type for likes key - use the database type from media
-      const dbType = (media.metadata?.presetType || media.type || 'presets').replace(/-/g, '_')
-      const likeKey = `${dbType}:${media.id}`
+      // Use consistent like key generation
+      const likeKey = generateLikeKey(media)
       const wasLiked = userLikes[likeKey]
       
       setUserLikes(prev => ({
@@ -435,7 +434,8 @@ const ProfileScreen: React.FC = () => {
           : item
       ))
       
-      // Map the type to the API format
+      // Map the type for API call - use consistent logic
+      const dbType = (media.metadata?.presetType || media.type || 'presets').replace(/-/g, '_')
       const apiMediaType = mapMediaTypeForAPI(dbType)
       
       // Make API call
