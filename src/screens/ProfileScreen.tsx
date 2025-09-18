@@ -24,7 +24,6 @@ const XIconCustom = ({ size, className }: { size: number; className: string }) =
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
   </svg>
 )
-import MasonryMediaGrid from '../components/MasonryMediaGrid'
 import DraftMediaGrid from '../components/DraftMediaGrid'
 import LoadingSpinner from '../components/LoadingSpinner'
 import LQIPImage from '../components/LQIPImage'
@@ -44,6 +43,7 @@ import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import { useProfile } from '../contexts/ProfileContext'
 import { downloadAllMediaAsZip, downloadSelectedMediaAsZip, generateMediaFilename, DownloadableMedia } from '../utils/downloadUtils'
 import { toggleLike, getUserLikes, mapMediaTypeForAPI, generateLikeKey } from '../services/likesService'
+import MasonryMediaGrid from '../components/MasonryMediaGrid'
 
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
@@ -1513,6 +1513,7 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
+  // Desktop Layout
   return (
     <div className="min-h-screen bg-glossy-black-950 flex">
       {/* Sidebar - 20% */}
@@ -1520,7 +1521,7 @@ const ProfileScreen: React.FC = () => {
         {/* Back Arrow - Top Left - Sticky */}
         <button 
           onClick={() => navigate('/')}
-          className="sticky top-0 left-4 text-white/60 hover:text-white transition-colors duration-300 z-10 mb-2 bg-black/50 backdrop-blur-sm rounded-full p-2"
+          className="left-4 text-white/60 hover:text-white transition-colors duration-300 z-10 mb-2 bg-black/50 backdrop-blur-sm rounded-full p-2"
           title="Go back"
         >
           <ArrowLeft size={20} />

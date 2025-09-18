@@ -112,14 +112,7 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
         </div>
       ))}
 
-      {/* Bottom Banner */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white text-black py-3 px-4 z-50">
-        <div className="text-center">
-          <p className="text-sm font-medium mb-3">
-            Enjoy the full experience on our website — app coming soon!
-          </p>
-        </div>
-      </div>
+      {/* Bottom Banner removed - space for mobile footer menu */}
     </div>
   );
 };

@@ -9,6 +9,7 @@ import PrivacyPolicy from './screens/PrivacyPolicy'
 import TermsOfService from './screens/TermsOfService'
 import CookiesPolicy from './screens/CookiesPolicy'
 import ProfileScreen from './screens/ProfileScreen'
+import MobileGalleryScreen from './screens/MobileGalleryScreen'
 import AdminDashboardScreen from './screens/AdminDashboardScreen'
 import { Navigate } from 'react-router-dom'
 import AuthScreen from './screens/AuthScreen'
@@ -17,6 +18,7 @@ import { setupGlobalErrorHandling } from './utils/globalErrorHandler'
 import WaitlistForm from './components/WaitlistForm'
 import { useIsMobile } from './hooks/useResponsive'
 import LoadingSpinner from './components/LoadingSpinner'
+import MobileRouteGuard from './components/MobileRouteGuard'
 
 const ComingSoonPage: React.FC = () => {
   // Get referrer email from URL params
@@ -126,35 +128,35 @@ const AppContent: React.FC = () => {
           {/* Home route - always accessible */}
           <Route path="/" element={<HomeNew />} />
           
-          {/* Mobile restrictions - redirect to home for non-home routes */}
-          {isMobile ? (
-            <>
-              <Route path="/auth" element={<Navigate to="/" replace />} />
-              <Route path="/profile" element={<Navigate to="/" replace />} />
-              <Route path="/dashboard/management/control" element={<Navigate to="/" replace />} />
-              <Route path="/gallery" element={<Navigate to="/" replace />} />
-              <Route path="/privacy" element={<Navigate to="/" replace />} />
-              <Route path="/terms" element={<Navigate to="/" replace />} />
-              <Route path="/cookies" element={<Navigate to="/" replace />} />
-              <Route path="/coming-soon" element={<ComingSoonPage />} />
-              {/* Catch-all route for mobile - redirect any other route to home */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </>
-          ) : (
-            <>
-              {/* Desktop routes - full access */}
-              <Route path="/auth" element={<AuthScreen />} />
-              <Route path="/profile" element={<ProfileScreen />} />
-              <Route path="/dashboard/management/control" element={<AdminDashboardScreen />} />
-              <Route path="/gallery" element={<Navigate to="/" replace />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/terms" element={<TermsOfService />} />
-              <Route path="/cookies" element={<CookiesPolicy />} />
-              <Route path="/coming-soon" element={<ComingSoonPage />} />
-              {/* Catch-all route for desktop - redirect unknown routes to home */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </>
-          )}
+          {/* Mobile-only routes */}
+          <Route path="/auth" element={<AuthScreen />} />
+          <Route path="/gallery" element={<MobileGalleryScreen />} />
+          
+          {/* Desktop-only routes (blocked on mobile) */}
+          <Route path="/profile" element={<ProfileScreen />} />
+          <Route path="/dashboard/management/control" element={
+            <MobileRouteGuard>
+              <AdminDashboardScreen />
+            </MobileRouteGuard>
+          } />
+          <Route path="/privacy" element={
+            <MobileRouteGuard>
+              <PrivacyPolicy />
+            </MobileRouteGuard>
+          } />
+          <Route path="/terms" element={
+            <MobileRouteGuard>
+              <TermsOfService />
+            </MobileRouteGuard>
+          } />
+          <Route path="/cookies" element={
+            <MobileRouteGuard>
+              <CookiesPolicy />
+            </MobileRouteGuard>
+          } />
+          <Route path="/coming-soon" element={<ComingSoonPage />} />
+          {/* Catch-all route - redirect unknown routes to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
 

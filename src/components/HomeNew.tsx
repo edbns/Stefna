@@ -30,6 +30,7 @@ import { HiddenUploader } from './HiddenUploader'
 import { uploadSourceToCloudinary } from '../services/uploadSource'
 import { storeSelectedFile } from '../services/mediaSource'
 import { useGenerationMode } from '../stores/generationMode'
+import { MagicWandService } from '../services/magicWandService'
 // MoodMorph removed - replaced with Anime Filters
 import { UnrealReflectionPicker } from './UnrealReflectionPicker'
 import { ParallelSelfPicker } from './ParallelSelfPicker'
@@ -38,7 +39,8 @@ import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
 import { MediaUploadAgreement } from './MediaUploadAgreement'
 import BestPracticesPopup from './BestPracticesPopup'
 import { paramsForI2ISharp } from '../services/infer-params'
-import MagicWandService from '../services/magicWandService'
+import MobileFloatingNav from './MobileFloatingNav'
+import MobileComposer from './MobileComposer'
 
 
 // Identity-safe generation fallback system (integrated with IPA)
@@ -266,6 +268,9 @@ const HomeNew: React.FC = () => {
   const [showUploadAgreement, setShowUploadAgreement] = useState(false)
   const [userHasAgreed, setUserHasAgreed] = useState<boolean | null>(null) // null = loading, true/false = loaded
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  
+  // Mobile composer state
+  const [isMobileComposerOpen, setIsMobileComposerOpen] = useState(false)
   
   // Likes state
   const [userLikes, setUserLikes] = useState<Record<string, boolean>>({})
@@ -3550,20 +3555,25 @@ const HomeNew: React.FC = () => {
       {/* Mobile View - View Only Experience */}
       {isMobile ? (
         <div className="w-full min-h-screen bg-black">
-          {/* Mobile Header - Transparent and Sticky */}
+          {/* Mobile Header - Transparent with Sticky Logo */}
           <div className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm">
             <div className="flex items-center justify-between p-4">
-              <img 
-                src="/logo.png" 
-                alt="Stefna Logo" 
-                className="w-8 h-8 object-contain" 
-              />
+              <div className="flex items-end gap-2">
+                <img 
+                  src="/logo.png" 
+                  alt="Stefna Logo" 
+                  className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform duration-200" 
+                />
+                <span className="text-white text-sm font-medium beta-shimmer -mb-1">
+                  beta.
+                </span>
+              </div>
               <div className="w-8 h-8"></div> {/* Spacer for centering */}
             </div>
           </div>
 
           {/* Mobile Feed */}
-          <div className="pt-16 px-4">
+          <div className="px-4 pt-20">
             {isLoadingFeed ? (
               <div className="flex justify-center items-center py-20">
                 <LoadingSpinner />
@@ -3577,6 +3587,49 @@ const HomeNew: React.FC = () => {
               />
             )}
           </div>
+          
+          {/* Mobile Floating Navigation */}
+          <MobileFloatingNav
+            onUploadClick={() => {
+              // Open mobile composer
+              setIsMobileComposerOpen(true);
+            }}
+            onProfileClick={() => {
+              // Navigate to mobile gallery/profile page
+              navigate('/gallery');
+            }}
+            onLoginClick={() => {
+              // Navigate to auth page
+              navigate('/auth');
+            }}
+            isGenerating={isGenerating}
+          />
+          
+          {/* Mobile Composer */}
+          <MobileComposer
+            isOpen={isMobileComposerOpen}
+            onClose={() => setIsMobileComposerOpen(false)}
+            onGenerate={async (mode, options) => {
+              // Handle mobile generation
+              try {
+                await dispatchGenerate(mode as any, options);
+                setIsMobileComposerOpen(false);
+              } catch (error) {
+                console.error('Mobile generation failed:', error);
+              }
+            }}
+            selectedFile={selectedFile}
+            previewUrl={previewUrl}
+            prompt={prompt}
+            setPrompt={setPrompt}
+            isGenerating={isGenerating}
+            onFileSelect={(file) => {
+              setSelectedFile(file);
+              const url = URL.createObjectURL(file);
+              setPreviewUrl(url);
+              setIsVideoPreview(file.type.startsWith('video/'));
+            }}
+          />
         </div>
       ) : (
         <>
