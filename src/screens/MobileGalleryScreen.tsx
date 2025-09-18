@@ -297,22 +297,72 @@ const MobileGalleryScreen: React.FC = () => {
     try {
       const imageUrl = toAbsoluteCloudinaryUrl(media.url) || media.url;
       
-      // Fetch the media as a blob
+      // For mobile devices, use Web Share API to save to photo gallery
+      if (navigator.share && navigator.canShare) {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        
+        // Create file with proper MIME type for photo gallery detection
+        const file = new File([blob], `stefna-${media.id}.${media.type === 'video' ? 'mp4' : 'jpg'}`, {
+          type: media.type === 'video' ? 'video/mp4' : 'image/jpeg'
+        });
+        
+        // Check if we can share this file
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: 'Save to Gallery',
+            text: 'Save this AI-generated media to your photo gallery',
+            files: [file]
+          });
+          
+          notifyReady({ title: 'Saved to Gallery', message: 'Your media has been saved to your photo gallery' });
+          return;
+        }
+      }
+      
+      // Fallback for desktop or if Web Share API doesn't support files
       const response = await fetch(imageUrl);
       const blob = await response.blob();
       
       // Create a blob URL
       const blobUrl = URL.createObjectURL(blob);
       
-      // Create download link
+      // Create download link with proper attributes for mobile
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = `stefna-${media.id}.${media.type === 'video' ? 'mp4' : 'jpg'}`;
+      link.setAttribute('target', '_blank');
       
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // For mobile, try to trigger save to gallery
+      if (media.type === 'photo') {
+        // Create a temporary canvas to ensure proper image format
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx?.drawImage(img, 0, 0);
+          
+          canvas.toBlob((canvasBlob) => {
+            if (canvasBlob) {
+              const canvasUrl = URL.createObjectURL(canvasBlob);
+              link.href = canvasUrl;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(canvasUrl);
+            }
+          }, 'image/jpeg', 0.95);
+        };
+        img.src = imageUrl;
+      } else {
+        // For videos, use direct download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
       
       // Clean up blob URL
       URL.revokeObjectURL(blobUrl);
