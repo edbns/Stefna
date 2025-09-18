@@ -1,11 +1,12 @@
 import React from 'react';
-import { Plus, LogIn, User } from 'lucide-react';
+import { Plus, LogIn, User, LogOut } from 'lucide-react';
 import authService from '../services/authService';
 
 interface MobileFloatingNavProps {
   onUploadClick: () => void;
   onProfileClick: () => void;
   onLoginClick: () => void;
+  onLogoutClick: () => void;
   isGenerating?: boolean;
 }
 
@@ -13,6 +14,7 @@ const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
   onUploadClick,
   onProfileClick,
   onLoginClick,
+  onLogoutClick,
   isGenerating = false
 }) => {
   const isAuthenticated = authService.isAuthenticated();
@@ -50,6 +52,17 @@ const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
           title="Login"
         >
           <LogIn size={24} className="text-black" />
+        </button>
+      )}
+
+      {/* Logout Button - Only visible when logged in */}
+      {isAuthenticated && (
+        <button
+          onClick={onLogoutClick}
+          className="w-14 h-14 bg-red-500 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 transition-colors"
+          title="Logout"
+        >
+          <LogOut size={24} className="text-white" />
         </button>
       )}
     </div>

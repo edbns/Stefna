@@ -3602,6 +3602,11 @@ const HomeNew: React.FC = () => {
               // Navigate to auth page
               navigate('/auth');
             }}
+            onLogoutClick={() => {
+              // Logout user
+              authService.logout();
+              navigate('/');
+            }}
             isGenerating={isGenerating}
           />
           
