@@ -11,11 +11,72 @@ import { useToasts } from '../components/ui/Toasts';
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
+  
+  // If already absolute URL, return as-is
   if (/^https?:\/\//i.test(maybeUrl)) return maybeUrl
+  
   const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || ''
-  if (!cloud) return maybeUrl
-  // Default to image upload path
-  return `https://res.cloudinary.com/${cloud}/image/upload/${maybeUrl.replace(/^\/+/, '')}`
+  if (!cloud) {
+    console.warn('Cloudinary cloud name not configured, returning original URL:', maybeUrl);
+    return maybeUrl;
+  }
+  
+  // Clean the URL and construct absolute Cloudinary URL
+  const cleanUrl = maybeUrl.replace(/^\/+/, '');
+  return `https://res.cloudinary.com/${cloud}/image/upload/${cleanUrl}`;
+}
+
+// Reusable function to transform database media to UserMedia format
+const transformDbMediaToUserMedia = (dbMedia: any[]): UserMedia[] => {
+  return dbMedia.map((item: any) => {
+    // Calculate actual aspect ratio from metadata or use default
+    let aspectRatio = 4/3; // Default fallback
+    let width = 800;
+    let height = 600;
+    
+    // Try to get actual dimensions from metadata
+    if (item.metadata && typeof item.metadata === 'object') {
+      const metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+      if (metadata.width && metadata.height) {
+        width = metadata.width;
+        height = metadata.height;
+        aspectRatio = width / height;
+      }
+    }
+    
+    // For 3D models, use different default dimensions
+    if (item.mediaType === '3d' || item.type === '3d') {
+      aspectRatio = 1; // Square for 3D models
+      width = 600;
+      height = 600;
+    }
+    
+    return {
+      id: item.id,
+      userId: item.userId,
+      type: item.mediaType || item.type || 'photo',
+      url: toAbsoluteCloudinaryUrl(item.finalUrl) || item.finalUrl,
+      prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
+      aspectRatio,
+      width,
+      height,
+      timestamp: item.createdAt,
+      tokensUsed: 2,
+      likes: 0,
+      isPublic: item.isPublic || false,
+      tags: [],
+      presetKey: item.presetKey,
+      metadata: {
+        quality: 'high',
+        generationTime: 0,
+        modelVersion: '1.0',
+        presetKey: item.presetKey,
+        presetType: item.type
+      },
+      cloudinaryPublicId: item.cloudinaryPublicId,
+      finalUrl: item.finalUrl
+    };
+  });
 }
 
 const MobileGalleryScreen: React.FC = () => {
@@ -69,34 +130,8 @@ const MobileGalleryScreen: React.FC = () => {
           
           console.log('📊 Database returned', dbMedia.length, 'media items');
           
-          // Transform database media to UserMedia format (same as ProfileScreen)
-          const transformedMedia: UserMedia[] = dbMedia.map((item: any) => {
-            return {
-              id: item.id,
-              userId: item.userId,
-              type: item.mediaType || item.type || 'photo',
-              url: toAbsoluteCloudinaryUrl(item.finalUrl) || item.finalUrl,
-              prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
-              aspectRatio: 4/3,
-              width: 800,
-              height: 600,
-              timestamp: item.createdAt,
-              tokensUsed: 2,
-              likes: 0,
-              isPublic: item.isPublic || false,
-              tags: [],
-              presetKey: item.presetKey,
-              metadata: {
-                quality: 'high',
-                generationTime: 0,
-                modelVersion: '1.0',
-                presetKey: item.presetKey,
-                presetType: item.type
-              },
-              cloudinaryPublicId: item.cloudinaryPublicId,
-              finalUrl: item.finalUrl
-            };
-          });
+          // Transform database media to UserMedia format using reusable function
+          const transformedMedia = transformDbMediaToUserMedia(dbMedia);
           
           setUserMedia(transformedMedia);
           setCurrentOffset(20); // Set next offset
@@ -171,31 +206,7 @@ const MobileGalleryScreen: React.FC = () => {
               const result = await response.json();
               const dbMedia = result.items || [];
               
-              const transformedMedia: UserMedia[] = dbMedia.map((item: any) => ({
-                id: item.id,
-                userId: item.userId,
-                type: item.mediaType || item.type || 'photo',
-                url: toAbsoluteCloudinaryUrl(item.finalUrl) || item.finalUrl,
-                prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
-                aspectRatio: 4/3,
-                width: 800,
-                height: 600,
-                timestamp: item.createdAt,
-                tokensUsed: 2,
-                likes: 0,
-                isPublic: item.isPublic || false,
-                tags: [],
-                presetKey: item.presetKey,
-                metadata: {
-                  quality: 'high',
-                  generationTime: 0,
-                  modelVersion: '1.0',
-                  presetKey: item.presetKey,
-                  presetType: item.type
-                },
-                cloudinaryPublicId: item.cloudinaryPublicId,
-                finalUrl: item.finalUrl
-              }));
+              const transformedMedia = transformDbMediaToUserMedia(dbMedia);
               
               setUserMedia(transformedMedia);
               setCurrentOffset(20);
@@ -223,7 +234,7 @@ const MobileGalleryScreen: React.FC = () => {
     };
   }, []);
 
-  // Load more media for infinite scroll
+  // Load more media for infinite scroll with race condition protection
   const loadMoreMedia = async () => {
     if (isLoadingMore || !hasMoreMedia) return;
     
@@ -233,7 +244,10 @@ const MobileGalleryScreen: React.FC = () => {
       const user = authService.getCurrentUser();
       if (!user?.id) return;
       
-      const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${user.id}&limit=20&offset=${currentOffset}&sort=created_at&order=desc`, {
+      // Capture current offset to prevent race conditions
+      const currentOffsetValue = currentOffset;
+      
+      const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${user.id}&limit=20&offset=${currentOffsetValue}&sort=created_at&order=desc`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -249,37 +263,18 @@ const MobileGalleryScreen: React.FC = () => {
           return;
         }
         
-        // Transform new media
-        const newMedia: UserMedia[] = dbMedia.map((item: any) => {
-          return {
-            id: item.id,
-            userId: item.userId,
-            type: item.mediaType || item.type || 'photo',
-            url: toAbsoluteCloudinaryUrl(item.finalUrl) || item.finalUrl,
-            prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
-            aspectRatio: 4/3,
-            width: 800,
-            height: 600,
-            timestamp: item.createdAt,
-            tokensUsed: 2,
-            likes: 0,
-            isPublic: item.isPublic || false,
-            tags: [],
-            presetKey: item.presetKey,
-            metadata: {
-              quality: 'high',
-              generationTime: 0,
-              modelVersion: '1.0',
-              presetKey: item.presetKey,
-              presetType: item.type
-            },
-            cloudinaryPublicId: item.cloudinaryPublicId,
-            finalUrl: item.finalUrl
-          };
+        // Transform new media using reusable function
+        const newMedia = transformDbMediaToUserMedia(dbMedia);
+        
+        // Use functional updates to prevent race conditions
+        setUserMedia(prev => {
+          // Check if we already have these items (prevent duplicates)
+          const existingIds = new Set(prev.map(item => item.id));
+          const newUniqueMedia = newMedia.filter(item => !existingIds.has(item.id));
+          return [...prev, ...newUniqueMedia];
         });
         
-        setUserMedia(prev => [...prev, ...newMedia]);
-        setCurrentOffset(prev => prev + 20);
+        setCurrentOffset(prev => prev + dbMedia.length);
         setHasMoreMedia(dbMedia.length === 20);
       }
     } catch (error) {
@@ -636,8 +631,24 @@ const MobileGalleryScreen: React.FC = () => {
                             e.currentTarget.style.opacity = '1';
                           }}
                           onError={(e) => {
-                            // Handle broken images
-                            e.currentTarget.style.display = 'none';
+                            // Handle broken images by showing placeholder
+                            const img = e.currentTarget;
+                            img.style.display = 'none';
+                            
+                            // Create placeholder div
+                            const placeholder = document.createElement('div');
+                            placeholder.className = 'w-full h-48 bg-white/10 rounded-lg flex items-center justify-center';
+                            placeholder.innerHTML = `
+                              <div class="text-center text-white/40">
+                                <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <div class="text-xs">Image unavailable</div>
+                              </div>
+                            `;
+                            
+                            // Insert placeholder after the broken image
+                            img.parentNode?.insertBefore(placeholder, img.nextSibling);
                           }}
                           style={{ opacity: 0, transition: 'opacity 0.3s ease' }}
                         />
