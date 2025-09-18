@@ -25,22 +25,57 @@ const MobileGalleryScreen: React.FC = () => {
       try {
         setIsLoading(true);
         
-        // Load user media
-        const media = await userMediaService.getUserMedia();
-        setUserMedia(media);
+        // Get current user ID
+        const user = authService.getCurrentUser();
+        const userId = user?.id || 'guest-user';
+        
+        if (!user?.id) {
+          console.log('No user ID available for media loading');
+          setUserMedia([]);
+          return;
+        }
+        
+        // Load user media using same API as ProfileScreen
+        const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=100&offset=0`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserMedia(data.media || []);
+        } else {
+          console.error('Failed to load user media:', response.status);
+          setUserMedia([]);
+        }
         
         // Load token count
         try {
           const qRes = await authenticatedFetch('/.netlify/functions/getQuota', { method: 'GET' });
           if (qRes.ok) {
             const quotaData = await qRes.json();
-            setTokenCount(quotaData.quota?.remaining || 0);
+            setTokenCount(quotaData.currentBalance || 0);
           }
         } catch (error) {
           console.error('Failed to load token count:', error);
         }
+        
+        // Load user settings for share to feed toggle
+        try {
+          const r = await authenticatedFetch('/.netlify/functions/user-settings', { method: 'GET' });
+          if (r.ok) {
+            const s = await r.json();
+            if (s.settings?.share_to_feed !== undefined) {
+              updateProfile({ shareToFeed: !!s.settings.share_to_feed });
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load user settings:', error);
+        }
       } catch (error) {
-        console.error('Failed to load user media:', error);
+        console.error('Failed to load user data:', error);
       } finally {
         setIsLoading(false);
       }

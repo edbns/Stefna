@@ -3624,6 +3624,8 @@ const HomeNew: React.FC = () => {
                 navigate('/');
               } catch (error) {
                 console.error('Mobile generation failed:', error);
+                // Show error toast if generation setup fails
+                notifyError({ title: 'Error', message: 'Failed to start generation' });
               }
             }}
             selectedFile={selectedFile}
