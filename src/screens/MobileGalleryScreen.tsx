@@ -41,9 +41,6 @@ const MobileGalleryScreen: React.FC = () => {
   // Load user media and token count
   useEffect(() => {
     const loadUserData = async () => {
-      const startTime = Date.now();
-      const minLoadingTime = 1000; // Minimum 1 second for smooth skeleton transition
-      
       try {
         setIsLoading(true);
         
@@ -54,6 +51,7 @@ const MobileGalleryScreen: React.FC = () => {
         if (!user?.id) {
           console.log('No user ID available for media loading');
           setUserMedia([]);
+          setIsLoading(false);
           return;
         }
         
@@ -134,18 +132,10 @@ const MobileGalleryScreen: React.FC = () => {
         }
       } catch (error) {
         console.error('Failed to load user data:', error);
+        setUserMedia([]);
+        setHasMoreMedia(false);
       } finally {
-        // Ensure minimum loading time for smooth skeleton transition
-        const elapsedTime = Date.now() - startTime;
-        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
-        
-        if (remainingTime > 0) {
-          setTimeout(() => {
-            setIsLoading(false);
-          }, remainingTime);
-        } else {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
 
@@ -155,11 +145,69 @@ const MobileGalleryScreen: React.FC = () => {
   // Listen for generation events to show loading spinner
   useEffect(() => {
     const handleGenerationStart = () => {
+      console.log('🎬 Generation started - showing loading overlay');
       setIsGenerating(true);
     };
 
     const handleGenerationEnd = () => {
+      console.log('✅ Generation completed - hiding loading overlay');
       setIsGenerating(false);
+      
+      // Refresh the gallery to show new media
+      setTimeout(() => {
+        console.log('🔄 Refreshing gallery after generation completion');
+        // Reload user data to get the new media
+        const loadUserData = async () => {
+          try {
+            const user = authService.getCurrentUser();
+            if (!user?.id) return;
+            
+            const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${user.id}&limit=20&offset=0&sort=created_at&order=desc`, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              const dbMedia = result.items || [];
+              
+              const transformedMedia: UserMedia[] = dbMedia.map((item: any) => ({
+                id: item.id,
+                userId: item.userId,
+                type: item.mediaType || item.type || 'photo',
+                url: toAbsoluteCloudinaryUrl(item.finalUrl) || item.finalUrl,
+                prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
+                aspectRatio: 4/3,
+                width: 800,
+                height: 600,
+                timestamp: item.createdAt,
+                tokensUsed: 2,
+                likes: 0,
+                isPublic: item.isPublic || false,
+                tags: [],
+                presetKey: item.presetKey,
+                metadata: {
+                  quality: 'high',
+                  generationTime: 0,
+                  modelVersion: '1.0',
+                  presetKey: item.presetKey,
+                  presetType: item.type
+                },
+                cloudinaryPublicId: item.cloudinaryPublicId,
+                finalUrl: item.finalUrl
+              }));
+              
+              setUserMedia(transformedMedia);
+              setCurrentOffset(20);
+              setHasMoreMedia(dbMedia.length === 20);
+            }
+          } catch (error) {
+            console.error('Failed to refresh gallery:', error);
+          }
+        };
+        
+        loadUserData();
+      }, 1000); // Small delay to ensure backend has processed the media
     };
 
     if (typeof window !== 'undefined') {
@@ -331,7 +379,12 @@ const MobileGalleryScreen: React.FC = () => {
   const handleDelete = async (media: UserMedia) => {
     try {
       setDeletingMediaIds(prev => new Set(prev).add(media.id));
-      await userMediaService.deleteMedia(media.id);
+      const user = authService.getCurrentUser();
+      if (!user?.id) {
+        console.error('No user ID available for deletion');
+        return;
+      }
+      await userMediaService.deleteMedia(user.id, media.id);
       setUserMedia(prev => prev.filter(m => m.id !== media.id));
       
       // Close viewer if deleting the currently viewed media
@@ -523,10 +576,14 @@ const MobileGalleryScreen: React.FC = () => {
           <div className="w-full px-4 py-4">
             {/* Generation loading overlay */}
             {isGenerating && (
-              <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center">
-                <div className="bg-black/80 rounded-xl p-6 flex flex-col items-center">
-                  <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
-                  <p className="text-white text-sm">Generating your media...</p>
+              <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+                <div className="bg-black/90 rounded-2xl p-8 flex flex-col items-center max-w-sm mx-4">
+                  <div className="w-12 h-12 border-3 border-white/30 border-t-white rounded-full animate-spin mb-6"></div>
+                  <h3 className="text-white text-lg font-semibold mb-2">Creating Your Media</h3>
+                  <p className="text-white/80 text-sm text-center">Please wait while we process your request...</p>
+                  <div className="mt-4 w-full bg-white/20 rounded-full h-1">
+                    <div className="bg-white h-1 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                  </div>
                 </div>
               </div>
             )}
@@ -622,10 +679,13 @@ const MobileGalleryScreen: React.FC = () => {
               ))}
             </div>
             
-            {/* Loading indicator for infinite scroll */}
+            {/* Loading indicator for infinite scroll - only show when loading more */}
             {isLoadingMore && hasMoreMedia && (
               <div className="flex justify-center py-8">
-                <LoadingSpinner size="sm" text="Loading more..." />
+                <div className="flex items-center space-x-2 text-white/60">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span className="text-sm">Loading more...</span>
+                </div>
               </div>
             )}
             
@@ -637,7 +697,7 @@ const MobileGalleryScreen: React.FC = () => {
             )}
             
             {/* Empty State */}
-            {userMedia.length === 0 && (
+            {userMedia.length === 0 && !isLoading && (
               <div className="text-center py-20">
                 <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6 mx-auto">
                   <svg className="w-12 h-12 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">

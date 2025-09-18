@@ -3682,6 +3682,19 @@ const HomeNew: React.FC = () => {
             onGenerate={async (mode, options) => {
               // Handle mobile generation
               try {
+                // Map mobile composer mode names to dispatchGenerate mode names
+                const modeMapping: Record<string, string> = {
+                  'presets': 'preset',
+                  'custom': 'custom',
+                  'edit': 'edit',
+                  'unrealreflection': 'unrealreflection',
+                  'ghiblireact': 'ghiblireact',
+                  'neotokyoglitch': 'neotokyoglitch',
+                  'parallelself': 'parallelself'
+                };
+                
+                const mappedMode = modeMapping[mode] || mode;
+                
                 // Map mobile composer parameters to dispatchGenerate format
                 const mappedOptions = {
                   ...options,
@@ -3696,8 +3709,10 @@ const HomeNew: React.FC = () => {
                   parallelSelfPresetId: mode === 'parallelself' ? options?.presetId : undefined,
                 };
                 
+                console.log('🎯 Mobile generation:', { originalMode: mode, mappedMode, options: mappedOptions });
+                
                 // Start generation and redirect to gallery immediately
-                dispatchGenerate(mode as any, mappedOptions);
+                dispatchGenerate(mappedMode as any, mappedOptions);
                 setIsMobileComposerOpen(false);
                 // Redirect to gallery where user will see loading spinner
                 navigate('/gallery');
