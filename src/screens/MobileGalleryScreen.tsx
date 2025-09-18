@@ -34,29 +34,14 @@ const transformDbMediaToUserMedia = (dbMedia: any[]): UserMedia[] => {
     let width = 800;
     let height = 600;
     
-    // Debug logging for aspect ratio calculation
-    console.log('🔍 [Transform] Processing item:', {
-      id: item.id,
-      metadata: item.metadata,
-      metadataType: typeof item.metadata,
-      mediaType: item.mediaType || item.type
-    });
-    
     // Try to get actual dimensions from metadata
     if (item.metadata && typeof item.metadata === 'object') {
       const metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
-      console.log('🔍 [Transform] Parsed metadata:', metadata);
-      
       if (metadata.width && metadata.height) {
         width = metadata.width;
         height = metadata.height;
         aspectRatio = width / height;
-        console.log('✅ [Transform] Using metadata dimensions:', { width, height, aspectRatio });
-      } else {
-        console.log('⚠️ [Transform] No width/height in metadata, using defaults');
       }
-    } else {
-      console.log('⚠️ [Transform] No metadata or invalid metadata type');
     }
     
     // For 3D models, use different default dimensions
@@ -64,7 +49,6 @@ const transformDbMediaToUserMedia = (dbMedia: any[]): UserMedia[] => {
       aspectRatio = 1; // Square for 3D models
       width = 600;
       height = 600;
-      console.log('🔧 [Transform] 3D model detected, using square aspect ratio');
     }
     
     return {
@@ -614,19 +598,13 @@ const MobileGalleryScreen: React.FC = () => {
               </div>
             )}
             
-            {/* Proper Masonry Grid Layout */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Masonry Layout - Same as website */}
+            <div className="columns-2 gap-3">
               {userMedia.map((item, index) => (
                 <div 
                   key={item.id} 
-                  className="relative"
+                  className="break-inside-avoid mb-3 relative"
                   ref={index === userMedia.length - 1 ? setLastItemRef : null}
-                  style={{
-                    // Calculate height based on aspect ratio for proper masonry
-                    aspectRatio: item.aspectRatio || 4/3,
-                    minHeight: '120px', // Minimum height for very tall images
-                    maxHeight: '400px'  // Maximum height for very wide images
-                  }}
                 >
                   {/* Media with overlay tag and action buttons */}
                   <div className="relative group">
@@ -637,7 +615,7 @@ const MobileGalleryScreen: React.FC = () => {
                       {item.type === 'video' ? (
                         <video
                           src={toAbsoluteCloudinaryUrl(item.url) || item.url}
-                          className="w-full h-full object-cover rounded-lg"
+                          className="w-full h-auto object-cover rounded-lg"
                           controls
                           playsInline
                           muted
@@ -646,7 +624,7 @@ const MobileGalleryScreen: React.FC = () => {
                         <img
                           src={toAbsoluteCloudinaryUrl(item.url) || item.url}
                           alt="Generated content"
-                          className="w-full h-full object-cover rounded-lg"
+                          className="w-full h-auto object-cover rounded-lg"
                           loading="lazy"
                           onLoad={(e) => {
                             // Ensure smooth loading
@@ -659,7 +637,7 @@ const MobileGalleryScreen: React.FC = () => {
                             
                             // Create placeholder div
                             const placeholder = document.createElement('div');
-                            placeholder.className = 'w-full h-full bg-white/10 rounded-lg flex items-center justify-center';
+                            placeholder.className = 'w-full h-48 bg-white/10 rounded-lg flex items-center justify-center';
                             placeholder.innerHTML = `
                               <div class="text-center text-white/40">
                                 <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
