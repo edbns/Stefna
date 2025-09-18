@@ -53,8 +53,41 @@ const MobileGalleryScreen: React.FC = () => {
         });
 
         if (response.ok) {
-          const data = await response.json();
-          setUserMedia(data.items || []);
+          const result = await response.json();
+          const dbMedia = result.items || [];
+          
+          console.log('📊 Database returned', dbMedia.length, 'media items');
+          
+          // Transform database media to UserMedia format (same as ProfileScreen)
+          const transformedMedia: UserMedia[] = dbMedia.map((item: any) => {
+            return {
+              id: item.id,
+              userId: item.userId,
+              type: item.mediaType || item.type || 'photo',
+              url: toAbsoluteCloudinaryUrl(item.finalUrl) || item.finalUrl,
+              prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
+              aspectRatio: 4/3,
+              width: 800,
+              height: 600,
+              timestamp: item.createdAt,
+              tokensUsed: 2,
+              likes: 0,
+              isPublic: item.isPublic || false,
+              tags: [],
+              presetKey: item.presetKey,
+              metadata: {
+                quality: 'high',
+                generationTime: 0,
+                modelVersion: '1.0',
+                presetKey: item.presetKey,
+                presetType: item.type
+              },
+              cloudinaryPublicId: item.cloudinaryPublicId,
+              finalUrl: item.finalUrl
+            };
+          });
+          
+          setUserMedia(transformedMedia);
         } else {
           console.error('Failed to load user media:', response.status);
           setUserMedia([]);

@@ -292,7 +292,7 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
                       ? "Change something, add something — your call ... tap ✨ for a little magic."
                       : "Type something weird. We'll make it art ... tap ✨ for a little magic."
                   }
-                  className="w-full px-3 py-2 bg-white/10 backdrop-blur-md text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200 h-20 text-xs rounded-xl"
+                  className="w-full px-3 py-2 bg-white/10 backdrop-blur-md text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200 h-20 text-base rounded-xl"
                   maxLength={500}
                 />
                 
