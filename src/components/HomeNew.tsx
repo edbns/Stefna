@@ -3617,8 +3617,11 @@ const HomeNew: React.FC = () => {
             onGenerate={async (mode, options) => {
               // Handle mobile generation
               try {
-                await dispatchGenerate(mode as any, options);
+                // Start generation and redirect immediately (don't wait for completion)
+                dispatchGenerate(mode as any, options);
                 setIsMobileComposerOpen(false);
+                // Redirect to home page immediately after clicking generate
+                navigate('/');
               } catch (error) {
                 console.error('Mobile generation failed:', error);
               }
