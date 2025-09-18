@@ -297,6 +297,7 @@ const HomeNew: React.FC = () => {
     // only end if this is the latest job
     if (String(id) === genIdRef.current) {
       setIsGenerating(false)
+      setNavGenerating(false) // Also stop the mobile navigation spinner
     }
   }
   
