@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Trash2, Share2, ChevronLeft, ChevronRight, X, LogOut } from 'lucide-react';
 import userMediaService, { UserMedia } from '../services/userMediaService';
@@ -28,6 +28,13 @@ const MobileGalleryScreen: React.FC = () => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [deletingMediaIds, setDeletingMediaIds] = useState<Set<string>>(new Set());
   const [tokenCount, setTokenCount] = useState(0);
+  
+  // Infinite scroll state
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreMedia, setHasMoreMedia] = useState(true);
+  const [currentOffset, setCurrentOffset] = useState(0);
+  const lastItemRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Load user media and token count
   useEffect(() => {
@@ -48,8 +55,8 @@ const MobileGalleryScreen: React.FC = () => {
           return;
         }
         
-        // Load user media using same API as ProfileScreen
-        const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=100&offset=0`, {
+        // Load user media using same API as ProfileScreen with pagination
+        const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=20&offset=0`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
@@ -92,9 +99,12 @@ const MobileGalleryScreen: React.FC = () => {
           });
           
           setUserMedia(transformedMedia);
+          setCurrentOffset(20); // Set next offset
+          setHasMoreMedia(dbMedia.length === 20); // If we got less than 20, no more data
         } else {
           console.error('Failed to load user media:', response.status);
           setUserMedia([]);
+          setHasMoreMedia(false);
         }
         
         // Load token count
@@ -139,6 +149,94 @@ const MobileGalleryScreen: React.FC = () => {
 
     loadUserData();
   }, []);
+
+  // Load more media for infinite scroll
+  const loadMoreMedia = async () => {
+    if (isLoadingMore || !hasMoreMedia) return;
+    
+    try {
+      setIsLoadingMore(true);
+      
+      const user = authService.getCurrentUser();
+      if (!user?.id) return;
+      
+      const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${user.id}&limit=20&offset=${currentOffset}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const dbMedia = result.items || [];
+        
+        if (dbMedia.length === 0) {
+          setHasMoreMedia(false);
+          return;
+        }
+        
+        // Transform new media
+        const newMedia: UserMedia[] = dbMedia.map((item: any) => {
+          return {
+            id: item.id,
+            userId: item.userId,
+            type: item.mediaType || item.type || 'photo',
+            url: toAbsoluteCloudinaryUrl(item.finalUrl) || item.finalUrl,
+            prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
+            aspectRatio: 4/3,
+            width: 800,
+            height: 600,
+            timestamp: item.createdAt,
+            tokensUsed: 2,
+            likes: 0,
+            isPublic: item.isPublic || false,
+            tags: [],
+            presetKey: item.presetKey,
+            metadata: {
+              quality: 'high',
+              generationTime: 0,
+              modelVersion: '1.0',
+              presetKey: item.presetKey,
+              presetType: item.type
+            },
+            cloudinaryPublicId: item.cloudinaryPublicId,
+            finalUrl: item.finalUrl
+          };
+        });
+        
+        setUserMedia(prev => [...prev, ...newMedia]);
+        setCurrentOffset(prev => prev + 20);
+        setHasMoreMedia(dbMedia.length === 20);
+      }
+    } catch (error) {
+      console.error('Failed to load more media:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    if (!lastItemRef.current) return;
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreMedia && !isLoadingMore) {
+          loadMoreMedia();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observerRef.current.observe(lastItemRef.current);
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMoreMedia, isLoadingMore, currentOffset]);
 
   // Update user settings helper
   const updateUserSettings = async (shareToFeed: boolean) => {
@@ -392,8 +490,12 @@ const MobileGalleryScreen: React.FC = () => {
           <div className="w-full px-4 py-4">
             {/* Masonry Layout */}
             <div className="columns-2 gap-3 space-y-3">
-              {userMedia.map((item) => (
-                <div key={item.id} className="break-inside-avoid mb-3">
+              {userMedia.map((item, index) => (
+                <div 
+                  key={item.id} 
+                  className="break-inside-avoid mb-3"
+                  ref={index === userMedia.length - 1 ? lastItemRef : null}
+                >
                   {/* Media with overlay tag and action buttons */}
                   <div className="relative group">
                     <div 
@@ -467,6 +569,20 @@ const MobileGalleryScreen: React.FC = () => {
                 </div>
               ))}
             </div>
+            
+            {/* Loading indicator for infinite scroll */}
+            {isLoadingMore && hasMoreMedia && (
+              <div className="flex justify-center py-8">
+                <LoadingSpinner size="sm" text="Loading more..." />
+              </div>
+            )}
+            
+            {/* End of media indicator */}
+            {!hasMoreMedia && userMedia.length > 0 && (
+              <div className="text-center py-8 text-white/40 text-sm">
+                You've reached the end of your gallery
+              </div>
+            )}
             
             {/* Empty State */}
             {userMedia.length === 0 && (
