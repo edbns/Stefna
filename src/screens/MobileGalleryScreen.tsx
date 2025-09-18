@@ -32,6 +32,9 @@ const MobileGalleryScreen: React.FC = () => {
   // Load user media and token count
   useEffect(() => {
     const loadUserData = async () => {
+      const startTime = Date.now();
+      const minLoadingTime = 1000; // Minimum 1 second for smooth skeleton transition
+      
       try {
         setIsLoading(true);
         
@@ -120,7 +123,17 @@ const MobileGalleryScreen: React.FC = () => {
       } catch (error) {
         console.error('Failed to load user data:', error);
       } finally {
-        setIsLoading(false);
+        // Ensure minimum loading time for smooth skeleton transition
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+        
+        if (remainingTime > 0) {
+          setTimeout(() => {
+            setIsLoading(false);
+          }, remainingTime);
+        } else {
+          setIsLoading(false);
+        }
       }
     };
 
