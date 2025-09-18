@@ -1711,7 +1711,30 @@ const HomeNew: React.FC = () => {
       notifyReady({ 
         title: 'Your media is ready', 
         message: 'Tap to open',
-        thumbUrl: thumbUrl
+        thumbUrl: thumbUrl,
+        onClickThumb: () => {
+          // Open the media viewer
+          setViewerMedia([{
+            id: 'generated-' + Date.now(),
+            userId: 'current-user',
+            url: thumbUrl,
+            type: 'image',
+            timestamp: new Date().toISOString(),
+            prompt: 'Generated content',
+            tokensUsed: 0,
+            likes: 0,
+            isPublic: false,
+            tags: [],
+            metadata: { 
+              presetType: 'generated',
+              quality: 'high',
+              generationTime: 0,
+              modelVersion: '1.0'
+            }
+          }])
+          setViewerStartIndex(0)
+          setViewerOpen(true)
+        }
       })
       
       // Stop all spinners (we don't have genId in the event)
@@ -3346,7 +3369,33 @@ const HomeNew: React.FC = () => {
             if (!resultUrl && !publicId) {
               console.warn('V2V done but missing resultUrl/publicId')
             }
-            notifyReady({ title: 'Your media is ready', message: 'Tap to open' })
+            notifyReady({ 
+              title: 'Your media is ready', 
+              message: 'Tap to open',
+              onClickThumb: () => {
+                // Open the media viewer
+                setViewerMedia([{
+                  id: 'generated-' + Date.now(),
+                  userId: 'current-user',
+                  url: resultUrl || publicId,
+                  type: 'video',
+                  timestamp: new Date().toISOString(),
+                  prompt: 'Generated video',
+                  tokensUsed: 0,
+                  likes: 0,
+                  isPublic: false,
+                  tags: [],
+                  metadata: { 
+                    presetType: 'video',
+                    quality: 'high',
+                    generationTime: 0,
+                    modelVersion: '1.0'
+                  }
+                }])
+                setViewerStartIndex(0)
+                setViewerOpen(true)
+              }
+            })
             
             // Reset composer state for next upload
             resetComposerState();

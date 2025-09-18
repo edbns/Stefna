@@ -8,6 +8,15 @@ import { useProfile } from '../contexts/ProfileContext';
 import { authenticatedFetch } from '../utils/apiClient';
 import { useToasts } from '../components/ui/Toasts';
 
+const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
+  if (!maybeUrl) return maybeUrl
+  if (/^https?:\/\//i.test(maybeUrl)) return maybeUrl
+  const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || ''
+  if (!cloud) return maybeUrl
+  // Default to image upload path
+  return `https://res.cloudinary.com/${cloud}/image/upload/${maybeUrl.replace(/^\/+/, '')}`
+}
+
 const MobileGalleryScreen: React.FC = () => {
   const navigate = useNavigate();
   const { profileData, updateProfile } = useProfile();
@@ -147,27 +156,29 @@ const MobileGalleryScreen: React.FC = () => {
 
   const handleShare = async (media: UserMedia) => {
     try {
+      const imageUrl = toAbsoluteCloudinaryUrl(media.url) || media.url;
+      
       if (navigator.share) {
-        // Use native share API on mobile
+        // Fetch the image as a blob for sharing
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `stefna-${media.id}.${media.type === 'video' ? 'mp4' : 'jpg'}`, {
+          type: media.type === 'video' ? 'video/mp4' : 'image/jpeg'
+        });
+        
+        // Use native share API with the actual file
         await navigator.share({
           title: 'Check out my AI creation!',
           text: `Created with Stefna AI - ${getMediaTypeDisplay(media)}`,
-          url: media.url,
+          files: [file],
         });
       } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(media.url);
-        alert('Media URL copied to clipboard!');
+        // No fallback - just show error if sharing is not supported
+        notifyError({ title: 'Share Not Supported', message: 'Your device does not support sharing files' });
       }
     } catch (error) {
       console.error('Share failed:', error);
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(media.url);
-        alert('Media URL copied to clipboard!');
-      } catch (clipboardError) {
-        console.error('Clipboard copy failed:', clipboardError);
-      }
+      notifyError({ title: 'Share Failed', message: 'Could not share media' });
     }
   };
 
@@ -326,7 +337,7 @@ const MobileGalleryScreen: React.FC = () => {
                     >
                       {item.type === 'video' ? (
                         <video
-                          src={item.url}
+                          src={toAbsoluteCloudinaryUrl(item.url) || item.url}
                           className="w-full h-auto object-cover"
                           controls
                           playsInline
@@ -334,7 +345,7 @@ const MobileGalleryScreen: React.FC = () => {
                         />
                       ) : (
                         <img
-                          src={item.url}
+                          src={toAbsoluteCloudinaryUrl(item.url) || item.url}
                           alt="Generated content"
                           className="w-full h-auto object-cover"
                           loading="lazy"
@@ -444,7 +455,7 @@ const MobileGalleryScreen: React.FC = () => {
             <div className="relative">
               {selectedMedia.type === 'video' ? (
                 <video
-                  src={selectedMedia.url}
+                  src={toAbsoluteCloudinaryUrl(selectedMedia.url) || selectedMedia.url}
                   className="max-w-full max-h-full object-contain"
                   controls
                   autoPlay
@@ -452,7 +463,7 @@ const MobileGalleryScreen: React.FC = () => {
                 />
               ) : (
                 <img
-                  src={selectedMedia.url}
+                  src={toAbsoluteCloudinaryUrl(selectedMedia.url) || selectedMedia.url}
                   alt="Generated content"
                   className="max-w-full max-h-full object-contain"
                 />
@@ -509,7 +520,7 @@ const MobileGalleryScreen: React.FC = () => {
             authService.logout();
             navigate('/');
           }}
-          className="w-14 h-14 bg-red-500 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 transition-colors"
+          className="w-14 h-14 bg-black rounded-full shadow-lg flex items-center justify-center hover:bg-gray-800 transition-colors"
           title="Logout"
         >
           <LogOut size={24} className="text-white" />

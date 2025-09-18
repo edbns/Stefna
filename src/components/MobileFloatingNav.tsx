@@ -59,7 +59,7 @@ const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
       {isAuthenticated && (
         <button
           onClick={onLogoutClick}
-          className="w-14 h-14 bg-red-500 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 transition-colors"
+          className="w-14 h-14 bg-black rounded-full shadow-lg flex items-center justify-center hover:bg-gray-800 transition-colors"
           title="Logout"
         >
           <LogOut size={24} className="text-white" />
