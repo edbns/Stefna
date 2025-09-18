@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Trash2, Share2, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, Download, Trash2, Share2, ChevronLeft, ChevronRight, X, LogOut } from 'lucide-react';
 import userMediaService, { UserMedia } from '../services/userMediaService';
 import authService from '../services/authService';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -45,7 +45,7 @@ const MobileGalleryScreen: React.FC = () => {
 
         if (response.ok) {
           const data = await response.json();
-          setUserMedia(data.media || []);
+          setUserMedia(data.items || []);
         } else {
           console.error('Failed to load user media:', response.status);
           setUserMedia([]);
@@ -501,6 +501,20 @@ const MobileGalleryScreen: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Mobile Floating Navigation - Logout Only */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={() => {
+            authService.logout();
+            navigate('/');
+          }}
+          className="w-14 h-14 bg-red-500 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 transition-colors"
+          title="Logout"
+        >
+          <LogOut size={24} className="text-white" />
+        </button>
+      </div>
     </div>
   );
 };

@@ -3607,7 +3607,7 @@ const HomeNew: React.FC = () => {
               authService.logout();
               navigate('/');
             }}
-            isGenerating={isGenerating}
+            isGenerating={navGenerating}
           />
           
           {/* Mobile Composer */}
@@ -3617,15 +3617,27 @@ const HomeNew: React.FC = () => {
             onGenerate={async (mode, options) => {
               // Handle mobile generation
               try {
+                // Map mobile composer parameters to dispatchGenerate format
+                const mappedOptions = {
+                  ...options,
+                  // Map 'prompt' to 'customPrompt' for custom/edit modes
+                  customPrompt: options?.prompt || options?.customPrompt,
+                  editPrompt: options?.prompt || options?.editPrompt,
+                  // Map presetId to the correct mode-specific parameter
+                  presetId: options?.presetId,
+                  unrealReflectionPresetId: mode === 'unrealreflection' ? options?.presetId : undefined,
+                  ghibliReactionPresetId: mode === 'ghiblireact' ? options?.presetId : undefined,
+                  neoTokyoGlitchPresetId: mode === 'neotokyoglitch' ? options?.presetId : undefined,
+                  parallelSelfPresetId: mode === 'parallelself' ? options?.presetId : undefined,
+                };
+                
                 // Start generation and redirect immediately (don't wait for completion)
-                dispatchGenerate(mode as any, options);
+                dispatchGenerate(mode as any, mappedOptions);
                 setIsMobileComposerOpen(false);
                 // Redirect to home page immediately after clicking generate
                 navigate('/');
               } catch (error) {
                 console.error('Mobile generation failed:', error);
-                // Show error toast if generation setup fails
-                notifyError({ title: 'Error', message: 'Failed to start generation' });
               }
             }}
             selectedFile={selectedFile}
