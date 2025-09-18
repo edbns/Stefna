@@ -3711,11 +3711,14 @@ const HomeNew: React.FC = () => {
                 
                 console.log('🎯 Mobile generation:', { originalMode: mode, mappedMode, options: mappedOptions });
                 
-                // Start generation and redirect to gallery immediately
-                dispatchGenerate(mappedMode as any, mappedOptions);
+                // Close composer and redirect first
                 setIsMobileComposerOpen(false);
-                // Redirect to gallery where user will see loading spinner
                 navigate('/gallery');
+                
+                // Start generation after navigation to ensure mobile gallery is ready
+                setTimeout(() => {
+                  dispatchGenerate(mappedMode as any, mappedOptions);
+                }, 100);
               } catch (error) {
                 console.error('Mobile generation failed:', error);
               }

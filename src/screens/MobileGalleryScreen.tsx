@@ -345,31 +345,46 @@ const MobileGalleryScreen: React.FC = () => {
     try {
       const imageUrl = toAbsoluteCloudinaryUrl(media.url) || media.url;
       
-      // Fetch the media as a blob
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
+      // Check if user is on iOS/iPhone
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       
-      // Create a blob URL
-      const blobUrl = URL.createObjectURL(blob);
-      
-      // Create download link with proper attributes for mobile download
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = `stefna-${media.id}.${media.type === 'video' ? 'mp4' : 'jpg'}`;
-      
-      // For mobile devices, ensure proper download behavior
-      link.style.display = 'none';
-      link.setAttribute('download', `stefna-${media.id}.${media.type === 'video' ? 'mp4' : 'jpg'}`);
-      
-      // Add to DOM, trigger click, then remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up blob URL
-      URL.revokeObjectURL(blobUrl);
-      
-      notifyReady({ title: 'Download Started', message: 'Your media is downloading' });
+      if (isIOS && navigator.share) {
+        // Use Web Share API for iOS to save to Photo Gallery
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `stefna-${media.id}.${media.type === 'video' ? 'mp4' : 'jpg'}`, {
+          type: media.type === 'video' ? 'video/mp4' : 'image/jpeg'
+        });
+        
+        await navigator.share({
+          title: 'Save to Photos',
+          text: `Stefna AI Generated ${media.type === 'video' ? 'Video' : 'Image'}`,
+          files: [file],
+        });
+        
+        notifyReady({ title: 'Saved to Photos', message: 'Your media has been saved to your Photo Gallery' });
+      } else {
+        // Fallback for non-iOS devices or when Web Share API is not available
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `stefna-${media.id}.${media.type === 'video' ? 'mp4' : 'jpg'}`;
+        
+        link.style.display = 'none';
+        link.setAttribute('download', `stefna-${media.id}.${media.type === 'video' ? 'mp4' : 'jpg'}`);
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        URL.revokeObjectURL(blobUrl);
+        
+        notifyReady({ title: 'Download Started', message: 'Your media is downloading' });
+      }
     } catch (error) {
       console.error('Download failed:', error);
       notifyError({ title: 'Download Failed', message: 'Could not download media' });
