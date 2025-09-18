@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { ToastProvider } from './components/ui/Toasts'
 import { ProfileProvider } from './contexts/ProfileContext'
 // StickyFooter removed per new minimal UI
@@ -19,6 +19,17 @@ import WaitlistForm from './components/WaitlistForm'
 import { useIsMobile } from './hooks/useResponsive'
 import LoadingSpinner from './components/LoadingSpinner'
 import MobileRouteGuard from './components/MobileRouteGuard'
+
+// Scroll to top on route change
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
 
 const ComingSoonPage: React.FC = () => {
   // Get referrer email from URL params
@@ -180,6 +191,7 @@ const App: React.FC = () => {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <ToastProvider>
         <ProfileProvider>
           <AppContent />
