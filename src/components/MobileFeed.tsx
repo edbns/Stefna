@@ -1,20 +1,41 @@
 // Mobile-optimized feed component
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { UserMedia } from '../services/userMediaService';
+import LoadingSpinner from './LoadingSpinner';
 
 interface MobileFeedProps {
   feed: UserMedia[];
   onToggleLike?: (media: UserMedia) => void;
   userLikes?: Record<string, boolean>;
   isLoggedIn?: boolean;
+  onLastItemRef?: (ref: HTMLDivElement | null) => void;
+  isLoadingMore?: boolean;
+  hasMoreFeed?: boolean;
 }
 
 const MobileFeed: React.FC<MobileFeedProps> = ({
   feed,
   onToggleLike,
   userLikes = {},
-  isLoggedIn = false
+  isLoggedIn = false,
+  onLastItemRef,
+  isLoadingMore = false,
+  hasMoreFeed = true
 }) => {
+  const lastItemRef = useRef<HTMLDivElement>(null);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (lastItemRef.current && onLastItemRef) {
+      onLastItemRef(lastItemRef.current);
+    }
+    
+    return () => {
+      if (onLastItemRef) {
+        onLastItemRef(null);
+      }
+    };
+  }, [onLastItemRef]);
 
   // Function to get proper media type display (same logic as desktop PresetTag)
   const getMediaTypeDisplay = (media: UserMedia): string => {
@@ -81,8 +102,12 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
 
   return (
     <div className="w-full max-w-sm mx-auto space-y-4 pb-24">
-      {feed.map((media) => (
-        <div key={media.id} className="bg-white/5 overflow-hidden">
+      {feed.map((media, index) => (
+        <div 
+          key={media.id} 
+          className="bg-white/5 overflow-hidden"
+          ref={index === feed.length - 1 ? lastItemRef : null}
+        >
           {/* Media */}
           <div className="relative">
             {media.type === 'video' ? (
@@ -112,7 +137,19 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
         </div>
       ))}
 
-      {/* Bottom Banner removed - space for mobile footer menu */}
+      {/* Loading indicator for infinite scroll */}
+      {isLoadingMore && hasMoreFeed && (
+        <div className="flex justify-center py-8">
+          <LoadingSpinner size="sm" text="Loading more..." />
+        </div>
+      )}
+      
+      {/* End of feed indicator */}
+      {!hasMoreFeed && feed.length > 0 && (
+        <div className="text-center py-8 text-white/40 text-sm">
+          You've reached the end of the feed
+        </div>
+      )}
     </div>
   );
 };

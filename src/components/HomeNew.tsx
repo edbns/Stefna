@@ -3584,6 +3584,9 @@ const HomeNew: React.FC = () => {
                 onToggleLike={handleToggleLike}
                 userLikes={userLikes}
                 isLoggedIn={!!authService.getToken() || !!localStorage.getItem('auth_token')}
+                onLastItemRef={setLastItemRef}
+                isLoadingMore={isLoadingMore}
+                hasMoreFeed={hasMoreFeed}
               />
             )}
           </div>
