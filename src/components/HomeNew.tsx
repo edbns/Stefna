@@ -31,6 +31,7 @@ import { uploadSourceToCloudinary } from '../services/uploadSource'
 import { storeSelectedFile } from '../services/mediaSource'
 import { useGenerationMode } from '../stores/generationMode'
 import { MagicWandService } from '../services/magicWandService'
+import { generationStart, generationDone } from '../lib/generationEvents'
 // MoodMorph removed - replaced with Anime Filters
 import { UnrealReflectionPicker } from './UnrealReflectionPicker'
 import { ParallelSelfPicker } from './ParallelSelfPicker'
@@ -298,6 +299,8 @@ const HomeNew: React.FC = () => {
     if (String(id) === genIdRef.current) {
       setIsGenerating(false)
       setNavGenerating(false) // Also stop the mobile navigation spinner
+      // Dispatch generation done event for mobile gallery
+      generationDone({ kind: 'image' });
     }
   }
   
@@ -2309,6 +2312,9 @@ const HomeNew: React.FC = () => {
     // Start generation with ID guard
     const genId = startGeneration();
     setNavGenerating(true);
+    
+    // Dispatch generation start event for mobile gallery
+    generationStart({ kind: 'image' });
       
       // Show single unified queue toast immediately
       notifyQueue({ title: 'Added to queue', message: 'We will start processing it shortly' });

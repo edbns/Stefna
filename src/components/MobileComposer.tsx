@@ -398,7 +398,7 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
                           databasePresets.map((preset) => (
                             <button
                               key={preset.id}
-                              onClick={() => handlePresetGenerate(preset.id)}
+                              onClick={() => handlePresetGenerate(preset.key)}
                               disabled={isGenerating}
                               className="bg-white/10 text-white text-left p-3 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[60px] flex items-center"
                             >
