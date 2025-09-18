@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Trash2, Share2, ChevronLeft, ChevronRight, X, LogO
 import userMediaService, { UserMedia } from '../services/userMediaService';
 import authService from '../services/authService';
 import LoadingSpinner from '../components/LoadingSpinner';
+import SkeletonGrid from '../components/SkeletonGrid';
 import { useProfile } from '../contexts/ProfileContext';
 import { authenticatedFetch } from '../utils/apiClient';
 import { useToasts } from '../components/ui/Toasts';
@@ -154,14 +155,32 @@ const MobileGalleryScreen: React.FC = () => {
 
   const handleDownload = async (media: UserMedia) => {
     try {
+      const imageUrl = toAbsoluteCloudinaryUrl(media.url) || media.url;
+      
+      // Fetch the media as a blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // Create a blob URL
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Create download link
       const link = document.createElement('a');
-      link.href = media.url;
+      link.href = blobUrl;
       link.download = `stefna-${media.id}.${media.type === 'video' ? 'mp4' : 'jpg'}`;
+      
+      // Trigger download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Clean up blob URL
+      URL.revokeObjectURL(blobUrl);
+      
+      notifyReady({ title: 'Download Started', message: 'Your media is downloading' });
     } catch (error) {
       console.error('Download failed:', error);
+      notifyError({ title: 'Download Failed', message: 'Could not download media' });
     }
   };
 
@@ -353,8 +372,8 @@ const MobileGalleryScreen: React.FC = () => {
       {/* Content */}
       <div className="pb-20">
         {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <LoadingSpinner />
+          <div className="px-4 py-4">
+            <SkeletonGrid columns={2} rows={4} />
           </div>
         ) : (
           <div className="w-full px-4 py-4">

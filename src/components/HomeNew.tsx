@@ -3675,6 +3675,9 @@ const HomeNew: React.FC = () => {
             onGenerate={async (mode, options) => {
               // Handle mobile generation
               try {
+                // Set loading spinner immediately
+                setNavGenerating(true);
+                
                 // Map mobile composer parameters to dispatchGenerate format
                 const mappedOptions = {
                   ...options,
@@ -3696,6 +3699,7 @@ const HomeNew: React.FC = () => {
                 navigate('/');
               } catch (error) {
                 console.error('Mobile generation failed:', error);
+                setNavGenerating(false); // Stop spinner on error
               }
             }}
             selectedFile={selectedFile}
