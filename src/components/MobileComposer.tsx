@@ -145,15 +145,18 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
     
     setLoadingPresets(true);
     try {
-      const response = await fetch('/.netlify/functions/get-active-presets');
-      if (response.ok) {
-        const data = await response.json();
-        setDatabasePresets(data.presets || []);
+      // Use the same service as the website
+      const presetsService = (await import('../services/presetsService')).default.getInstance();
+      const response = await presetsService.getAvailablePresets();
+      
+      if (response.success && response.data) {
+        setDatabasePresets(response.data.presets || []);
+        console.log('🎨 [MobileComposer] Loaded', response.data.presets.length, 'presets for week', response.data.currentWeek);
       } else {
-        console.error('Failed to load database presets');
+        console.error('❌ [MobileComposer] Failed to load presets:', response.error);
       }
     } catch (error) {
-      console.error('Error loading database presets:', error);
+      console.error('❌ [MobileComposer] Error loading database presets:', error);
     } finally {
       setLoadingPresets(false);
     }

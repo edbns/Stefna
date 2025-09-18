@@ -29,12 +29,14 @@ const MobileGalleryScreen: React.FC = () => {
   const [deletingMediaIds, setDeletingMediaIds] = useState<Set<string>>(new Set());
   const [tokenCount, setTokenCount] = useState(0);
   
-  // Infinite scroll state
+  // Infinite scroll state - same as home page
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreMedia, setHasMoreMedia] = useState(true);
   const [currentOffset, setCurrentOffset] = useState(0);
-  const lastItemRef = useRef<HTMLDivElement | null>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  const [lastItemRef, setLastItemRef] = useState<HTMLDivElement | null>(null);
+  
+  // Generation loading state
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Load user media and token count
   useEffect(() => {
@@ -55,8 +57,8 @@ const MobileGalleryScreen: React.FC = () => {
           return;
         }
         
-        // Load user media using same API as ProfileScreen with pagination
-        const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=20&offset=0`, {
+        // Load user media using same API as ProfileScreen with pagination and sorting
+        const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=20&offset=0&sort=created_at&order=desc`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
@@ -150,6 +152,29 @@ const MobileGalleryScreen: React.FC = () => {
     loadUserData();
   }, []);
 
+  // Listen for generation events to show loading spinner
+  useEffect(() => {
+    const handleGenerationStart = () => {
+      setIsGenerating(true);
+    };
+
+    const handleGenerationEnd = () => {
+      setIsGenerating(false);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('generation:start', handleGenerationStart);
+      window.addEventListener('generation:done', handleGenerationEnd);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('generation:start', handleGenerationStart);
+        window.removeEventListener('generation:done', handleGenerationEnd);
+      }
+    };
+  }, []);
+
   // Load more media for infinite scroll
   const loadMoreMedia = async () => {
     if (isLoadingMore || !hasMoreMedia) return;
@@ -160,7 +185,7 @@ const MobileGalleryScreen: React.FC = () => {
       const user = authService.getCurrentUser();
       if (!user?.id) return;
       
-      const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${user.id}&limit=20&offset=${currentOffset}`, {
+      const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${user.id}&limit=20&offset=${currentOffset}&sort=created_at&order=desc`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -216,33 +241,31 @@ const MobileGalleryScreen: React.FC = () => {
     }
   };
 
-  // Intersection observer for infinite scroll
+  // Intersection observer for infinite scroll - same as home page
   useEffect(() => {
-    if (!lastItemRef.current) return;
-
-    // Disconnect previous observer
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-
-    observerRef.current = new IntersectionObserver(
+    if (!lastItemRef) return;
+    
+    const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMoreMedia && !isLoadingMore) {
-          console.log('🔄 Loading more media...');
+        const entry = entries[0];
+        if (entry.isIntersecting && hasMoreMedia && !isLoadingMore) {
+          console.log('👁️ [GalleryScroll] Last item visible, triggering load', {
+            hasMoreMedia,
+            isLoadingMore,
+            mediaLength: userMedia.length
+          });
           loadMoreMedia();
         }
       },
       { threshold: 0.1 }
     );
 
-    observerRef.current.observe(lastItemRef.current);
+    observer.observe(lastItemRef);
 
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
+      observer.disconnect();
     };
-  }, [hasMoreMedia, isLoadingMore, currentOffset, userMedia.length]);
+  }, [lastItemRef, hasMoreMedia, isLoadingMore]);
 
   // Update user settings helper
   const updateUserSettings = async (shareToFeed: boolean) => {
@@ -294,7 +317,7 @@ const MobileGalleryScreen: React.FC = () => {
       // Clean up blob URL
       URL.revokeObjectURL(blobUrl);
       
-      notifyReady({ title: 'Download Started', message: 'Your media is downloading' });
+      notifyReady({ title: 'Download Started', message: 'Your media is downloading to your gallery' });
     } catch (error) {
       console.error('Download failed:', error);
       notifyError({ title: 'Download Failed', message: 'Could not download media' });
@@ -494,13 +517,23 @@ const MobileGalleryScreen: React.FC = () => {
           </div>
         ) : (
           <div className="w-full px-4 py-4">
+            {/* Generation loading overlay */}
+            {isGenerating && (
+              <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center">
+                <div className="bg-black/80 rounded-xl p-6 flex flex-col items-center">
+                  <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
+                  <p className="text-white text-sm">Generating your media...</p>
+                </div>
+              </div>
+            )}
+            
             {/* Masonry Layout */}
             <div className="columns-2 gap-3 space-y-3">
               {userMedia.map((item, index) => (
                 <div 
                   key={item.id} 
                   className="break-inside-avoid mb-3"
-                  ref={index === userMedia.length - 1 ? lastItemRef : null}
+                  ref={index === userMedia.length - 1 ? setLastItemRef : null}
                 >
                   {/* Media with overlay tag and action buttons */}
                   <div className="relative group">

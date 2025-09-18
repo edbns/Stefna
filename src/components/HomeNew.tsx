@@ -3676,9 +3676,6 @@ const HomeNew: React.FC = () => {
             onGenerate={async (mode, options) => {
               // Handle mobile generation
               try {
-                // Set loading spinner immediately
-                setNavGenerating(true);
-                
                 // Map mobile composer parameters to dispatchGenerate format
                 const mappedOptions = {
                   ...options,
@@ -3693,14 +3690,13 @@ const HomeNew: React.FC = () => {
                   parallelSelfPresetId: mode === 'parallelself' ? options?.presetId : undefined,
                 };
                 
-                // Start generation and redirect immediately (don't wait for completion)
+                // Start generation and redirect to gallery immediately
                 dispatchGenerate(mode as any, mappedOptions);
                 setIsMobileComposerOpen(false);
-                // Redirect to home page immediately after clicking generate
-                navigate('/');
+                // Redirect to gallery where user will see loading spinner
+                navigate('/gallery');
               } catch (error) {
                 console.error('Mobile generation failed:', error);
-                setNavGenerating(false); // Stop spinner on error
               }
             }}
             selectedFile={selectedFile}
