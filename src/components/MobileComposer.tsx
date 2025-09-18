@@ -159,9 +159,16 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
     }
   };
 
-  // Load presets when presets mode is selected
+  // Load database presets when composer opens
   useEffect(() => {
-    if (selectedMode === 'presets') {
+    if (isOpen) {
+      loadDatabasePresets();
+    }
+  }, [isOpen]);
+
+  // Load presets when preset modes are selected
+  useEffect(() => {
+    if (['presets', 'unrealreflection', 'ghiblireact', 'neotokyoglitch', 'parallelself'].includes(selectedMode)) {
       loadDatabasePresets();
     }
   }, [selectedMode]);

@@ -220,9 +220,15 @@ const MobileGalleryScreen: React.FC = () => {
   useEffect(() => {
     if (!lastItemRef.current) return;
 
+    // Disconnect previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMoreMedia && !isLoadingMore) {
+          console.log('🔄 Loading more media...');
           loadMoreMedia();
         }
       },
@@ -236,7 +242,7 @@ const MobileGalleryScreen: React.FC = () => {
         observerRef.current.disconnect();
       }
     };
-  }, [hasMoreMedia, isLoadingMore, currentOffset]);
+  }, [hasMoreMedia, isLoadingMore, currentOffset, userMedia.length]);
 
   // Update user settings helper
   const updateUserSettings = async (shareToFeed: boolean) => {
@@ -516,6 +522,15 @@ const MobileGalleryScreen: React.FC = () => {
                           alt="Generated content"
                           className="w-full h-auto object-cover"
                           loading="lazy"
+                          onLoad={(e) => {
+                            // Ensure smooth loading
+                            e.currentTarget.style.opacity = '1';
+                          }}
+                          onError={(e) => {
+                            // Handle broken images
+                            e.currentTarget.style.display = 'none';
+                          }}
+                          style={{ opacity: 0, transition: 'opacity 0.3s ease' }}
                         />
                       )}
                       

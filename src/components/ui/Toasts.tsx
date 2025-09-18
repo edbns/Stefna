@@ -176,7 +176,7 @@ function ToastCard({ toast, onClose }: { toast: ToastBase; onClose: () => void }
         </div>
         {toast.thumbUrl ? (
           <button
-            onClick={toast.onClickThumb}
+            onClick={toast.onClickThumb || (() => {})}
             className="group relative h-12 w-16 overflow-hidden rounded-lg border bg-white/50 shadow-inner"
             aria-label="Open media"
           >
