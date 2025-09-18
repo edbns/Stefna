@@ -248,6 +248,16 @@ class AuthService {
     }
   }
 
+  // Notify all listeners of auth state change
+  private notifyAuthChange(): void {
+    this.authChangeListeners.forEach(callback => {
+      try {
+        callback(this.authState)
+      } catch (error) {
+        console.error('Error in auth state change listener:', error)
+      }
+    })
+  }
 
 }
 
