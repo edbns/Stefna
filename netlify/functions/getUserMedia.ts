@@ -90,22 +90,22 @@ export const handler: Handler = async (event) => {
     const totalCount = totalCountResult[0]?.total || 0;
     console.log('🔍 [getUserMedia] Total items available:', totalCount);
 
-    // Unified query with proper pagination and 3D fields
+    // Unified query with proper pagination and 3D fields including metadata
     const unifiedSql = `
       SELECT * FROM (
-        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'ghibli_reaction' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata FROM ghibli_reaction_media WHERE user_id = $1
+        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'ghibli_reaction' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM ghibli_reaction_media WHERE user_id = $1
         UNION ALL
-        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'unreal_reflection' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata FROM unreal_reflection_media WHERE user_id = $1
+        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'unreal_reflection' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM unreal_reflection_media WHERE user_id = $1
         UNION ALL
-        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'presets' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata FROM presets_media WHERE user_id = $1
+        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'presets' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM presets_media WHERE user_id = $1
         UNION ALL
-        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'custom_prompt' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata FROM custom_prompt_media WHERE user_id = $1
+        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'custom_prompt' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM custom_prompt_media WHERE user_id = $1
         UNION ALL
-        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, stability_job_id as fal_job_id, 'neo_glitch' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata FROM neo_glitch_media WHERE user_id = $1
+        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, stability_job_id as fal_job_id, 'neo_glitch' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM neo_glitch_media WHERE user_id = $1
         UNION ALL
-        SELECT id::text, user_id, image_url, prompt, 'edit' as preset, created_at, run_id, fal_job_id, 'edit' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata FROM edit_media WHERE user_id = $1
+        SELECT id::text, user_id, image_url, prompt, 'edit' as preset, created_at, run_id, fal_job_id, 'edit' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM edit_media WHERE user_id = $1
         UNION ALL
-        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'parallel_self' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata FROM parallel_self_media WHERE user_id = $1
+        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'parallel_self' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM parallel_self_media WHERE user_id = $1
       ) as combined_media
       ORDER BY created_at DESC
       LIMIT $2 OFFSET $3
@@ -117,6 +117,17 @@ export const handler: Handler = async (event) => {
       totalItems: allMediaItems.length,
       totalAvailable: totalCount
     });
+
+    // Debug: Log metadata for first few items
+    if (allMediaItems.length > 0) {
+      console.log('🔍 [getUserMedia] Sample metadata:', {
+        firstItem: {
+          id: allMediaItems[0].id,
+          metadata: allMediaItems[0].metadata,
+          metadataType: typeof allMediaItems[0].metadata
+        }
+      });
+    }
 
     // Transform unified media items
     const transformedItems = allMediaItems.map(item => {

@@ -34,14 +34,29 @@ const transformDbMediaToUserMedia = (dbMedia: any[]): UserMedia[] => {
     let width = 800;
     let height = 600;
     
+    // Debug logging for aspect ratio calculation
+    console.log('🔍 [Transform] Processing item:', {
+      id: item.id,
+      metadata: item.metadata,
+      metadataType: typeof item.metadata,
+      mediaType: item.mediaType || item.type
+    });
+    
     // Try to get actual dimensions from metadata
     if (item.metadata && typeof item.metadata === 'object') {
       const metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+      console.log('🔍 [Transform] Parsed metadata:', metadata);
+      
       if (metadata.width && metadata.height) {
         width = metadata.width;
         height = metadata.height;
         aspectRatio = width / height;
+        console.log('✅ [Transform] Using metadata dimensions:', { width, height, aspectRatio });
+      } else {
+        console.log('⚠️ [Transform] No width/height in metadata, using defaults');
       }
+    } else {
+      console.log('⚠️ [Transform] No metadata or invalid metadata type');
     }
     
     // For 3D models, use different default dimensions
@@ -49,6 +64,7 @@ const transformDbMediaToUserMedia = (dbMedia: any[]): UserMedia[] => {
       aspectRatio = 1; // Square for 3D models
       width = 600;
       height = 600;
+      console.log('🔧 [Transform] 3D model detected, using square aspect ratio');
     }
     
     return {
