@@ -56,7 +56,7 @@ export const handler: Handler = async (event) => {
         qOne(`
           SELECT total_likes_received FROM users WHERE id = $1
         `, [userId]),
-        // Get media from all dedicated tables
+        // Get media from all dedicated tables (matching getUserMedia)
         Promise.all([
           q(`
             SELECT id, prompt, status, created_at FROM ghibli_reaction_media WHERE user_id = $1
@@ -69,6 +69,12 @@ export const handler: Handler = async (event) => {
           `, [userId]),
           q(`
             SELECT id, prompt, status, created_at FROM custom_prompt_media WHERE user_id = $1
+          `, [userId]),
+          q(`
+            SELECT id, prompt, status, created_at FROM edit_media WHERE user_id = $1
+          `, [userId]),
+          q(`
+            SELECT id, prompt, status, created_at FROM parallel_self_media WHERE user_id = $1
           `, [userId])
         ]).then(results => results.flat()),
         q(`

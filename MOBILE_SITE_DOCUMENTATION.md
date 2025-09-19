@@ -342,3 +342,4 @@ const transformedMedia: UserMedia[] = dbMedia.map((item: any) => ({
 The mobile site provides a complete AI art generation experience optimized for mobile devices. It maintains feature parity with the desktop version while offering a streamlined, touch-friendly interface. The implementation follows React best practices with proper state management, event handling, and performance optimizations.
 
 For questions or issues, refer to the component documentation and test the complete generation flow from composer to gallery.
+
