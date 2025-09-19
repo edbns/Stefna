@@ -96,17 +96,17 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Check if OTP exists and is valid
-    console.log('🔍 Checking OTP in database...');
+    // Check if OTP exists and is valid for this specific email
+    console.log('🔍 Checking OTP in database for email:', email.toLowerCase());
     const otpResult = await client.query(
-      'SELECT id, expires_at, used FROM auth_otps WHERE email = $1 AND code = $2',
+      'SELECT id, email, expires_at, used, created_at FROM auth_otps WHERE email = $1 AND code = $2',
       [email.toLowerCase(), code]
     );
 
     console.log('Database query result:', otpResult.rows.length, 'rows found');
 
     if (otpResult.rows.length === 0) {
-      console.log('❌ OTP not found');
+      console.log('❌ OTP not found for email:', email.toLowerCase());
       return {
         statusCode: 400,
         headers: {
@@ -115,14 +115,29 @@ export const handler: Handler = async (event) => {
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ error: 'Invalid OTP' })
+        body: JSON.stringify({ error: 'Invalid OTP or email combination' })
       };
     }
 
     const otpRecord = otpResult.rows[0];
+    
+    // Additional security: Verify the email matches exactly
+    if (otpRecord.email.toLowerCase() !== email.toLowerCase()) {
+      console.log('❌ Email mismatch in OTP record:', otpRecord.email, 'vs', email);
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'Invalid OTP or email combination' })
+      };
+    }
 
     if (otpRecord.used) {
-      console.log('❌ OTP already used');
+      console.log('❌ OTP already used for email:', email.toLowerCase());
       return {
         statusCode: 400,
         headers: {
@@ -136,7 +151,7 @@ export const handler: Handler = async (event) => {
     }
 
     if (new Date() > new Date(otpRecord.expires_at)) {
-      console.log('❌ OTP expired');
+      console.log('❌ OTP expired for email:', email.toLowerCase());
       return {
         statusCode: 400,
         headers: {
@@ -148,6 +163,26 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify({ error: 'OTP expired' })
       };
     }
+    
+    // Additional security: Check if OTP is too old (more than 10 minutes)
+    const otpAge = new Date().getTime() - new Date(otpRecord.created_at).getTime();
+    const maxAge = 10 * 60 * 1000; // 10 minutes in milliseconds
+    
+    if (otpAge > maxAge) {
+      console.log('❌ OTP too old for email:', email.toLowerCase(), 'Age:', otpAge, 'ms');
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'OTP expired' })
+      };
+    }
+    
+    console.log('✅ OTP validation passed for email:', email.toLowerCase());
 
     // Mark OTP as used
     console.log('✅ Marking OTP as used...');
