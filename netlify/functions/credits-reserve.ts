@@ -114,6 +114,21 @@ export const handler: Handler = async (event) => {
         console.log('💰 No credit balance found - initializing new user with starter credits...');
         
         try {
+          // First, verify the user exists in the users table
+          const userExists = await qOne(`
+            SELECT id FROM users WHERE id = $1
+          `, [userId]);
+          
+          if (!userExists) {
+            console.error('❌ User does not exist in users table:', userId);
+            return json({
+              ok: false,
+              error: "USER_NOT_FOUND",
+              message: "User not found in database",
+              details: `User ID ${userId} does not exist in users table`
+            }, { status: 404 });
+          }
+          
           // Create new user credits record with starter balance
           userCredits = await qOne(`
             INSERT INTO user_credits (user_id, credits, balance, updated_at)
