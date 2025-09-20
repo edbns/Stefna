@@ -154,7 +154,7 @@ export default function BestPracticesScreen() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-6 py-12 pt-24">
+      <div className="max-w-6xl mx-auto px-6 pt-24">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight text-white mb-4">How to Get the Look</h1>
           <p className="text-white mt-4 max-w-xl mx-auto text-lg">
