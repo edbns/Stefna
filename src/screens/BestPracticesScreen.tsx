@@ -123,6 +123,11 @@ export default function BestPracticesScreen() {
         const mediaResponse = await fetch(`/.netlify/functions/getPublicFeed?userId=49b15f0e-6a2d-445d-9d32-d0a9bd859bfb&limit=50`)
         if (mediaResponse.ok) {
           const mediaData = await mediaResponse.json()
+          console.log('🔍 [BestPractices] API Response:', mediaData)
+          console.log('🔍 [BestPractices] Items found:', mediaData.items?.length || 0)
+          if (mediaData.items?.length > 0) {
+            console.log('🔍 [BestPractices] Sample item:', mediaData.items[0])
+          }
           if (mediaData.items) {
             setStefnaMedia(mediaData.items)
           }
@@ -172,7 +177,13 @@ export default function BestPracticesScreen() {
 
   // Find media by preset type - using correct API field names
   const findMediaForPreset = (presetTitle: string) => {
-    if (!stefnaMedia.length) return null
+    console.log('🔍 [BestPractices] Finding media for preset:', presetTitle)
+    console.log('🔍 [BestPractices] Available media count:', stefnaMedia.length)
+    
+    if (!stefnaMedia.length) {
+      console.log('🔍 [BestPractices] No media available')
+      return null
+    }
     
     // Map preset titles to both mediaType and specific presetKey
     const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
@@ -191,13 +202,22 @@ export default function BestPracticesScreen() {
     }
     
     const presetInfo = presetMap[presetTitle]
-    if (!presetInfo) return stefnaMedia[0] // fallback to first media
+    if (!presetInfo) {
+      console.log('🔍 [BestPractices] No preset mapping found for:', presetTitle)
+      return stefnaMedia[0] // fallback to first media
+    }
+    
+    console.log('🔍 [BestPractices] Looking for:', presetInfo)
+    console.log('🔍 [BestPractices] Available media types:', [...new Set(stefnaMedia.map(m => m.mediaType))])
+    console.log('🔍 [BestPractices] Available preset keys:', [...new Set(stefnaMedia.map(m => m.presetKey))])
     
     // Only show media for exact preset matches
     const exactMatch = stefnaMedia.find(media => 
       media.mediaType === presetInfo.mediaType && 
       media.presetKey === presetInfo.presetKey
     )
+    
+    console.log('🔍 [BestPractices] Exact match found:', !!exactMatch)
     
     return exactMatch || null // Return null if no exact match - will show "Media not available"
   }
