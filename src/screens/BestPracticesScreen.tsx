@@ -232,7 +232,7 @@ export default function BestPracticesScreen() {
                   {preset.title}
                 </h3>
 
-                {/* Real Media Display */}
+                {/* Real Media Display - Same as Profile/Feed */}
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
@@ -241,8 +241,8 @@ export default function BestPracticesScreen() {
                         <img 
                           src={media.imageUrl} 
                           alt={preset.title}
-                          className="w-full h-48 object-cover"
-                          style={{ aspectRatio: 'auto' }}
+                          className="w-full h-auto object-cover"
+                          loading="lazy"
                         />
                       )
                     }
@@ -272,7 +272,7 @@ export default function BestPracticesScreen() {
                   {preset.title}
                 </h3>
 
-                {/* Real Media Display */}
+                {/* Real Media Display - Same as Profile/Feed */}
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
@@ -281,8 +281,8 @@ export default function BestPracticesScreen() {
                         <img 
                           src={media.imageUrl} 
                           alt={preset.title}
-                          className="w-full h-48 object-cover"
-                          style={{ aspectRatio: 'auto' }}
+                          className="w-full h-auto object-cover"
+                          loading="lazy"
                         />
                       )
                     }
