@@ -323,25 +323,19 @@ export default function BestPracticesScreen() {
           {loading ? (
             <div className="text-center text-white">Loading this week's presets...</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {rotatingPresets.map((preset, idx) => (
-                <div key={idx} className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
+                <div key={idx} className={`bg-[#333333] rounded-xl p-6 shadow-lg text-center ${
+                  idx >= 3 ? 'lg:col-start-2' : ''
+                }`}>
                   <div className="mb-3">
                     <span className="text-xs uppercase text-white tracking-wider font-medium">
                       This Week Preset
                     </span>
                   </div>
-                  <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
+                  <h3 className="text-lg font-semibold leading-snug mb-4 text-white">
                     {preset.label}
                   </h3>
-
-                  {/* Media placeholder for development */}
-                  <div className="relative w-full mb-4 overflow-hidden">
-                    <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
-                      <p className="text-xs text-white">Media coming soon</p>
-                    </div>
-                  </div>
-
                   <p className="text-sm text-white leading-relaxed">
                     {preset.userDescription}
                   </p>
