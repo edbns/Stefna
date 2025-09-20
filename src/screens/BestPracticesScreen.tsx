@@ -126,14 +126,7 @@ export default function BestPracticesScreen() {
           if (mediaData.items) {
             // Use all media items - no aspect ratio filtering since all media is square (1:1)
             const filteredMedia = mediaData.items
-            console.log('🔍 [BestPractices] Fetched media:', {
-              totalItems: mediaData.items.length,
-              parallelSelfItems: mediaData.items.filter((item: any) => item.mediaType === 'parallel_self').length,
-              unrealReflectionItems: mediaData.items.filter((item: any) => item.mediaType === 'unreal_reflection').length,
-              sampleItems: mediaData.items.slice(0, 3).map((item: any) => ({ mediaType: item.mediaType, presetKey: item.presetKey }))
-            })
-            console.log('🔍 [BestPractices] All parallel_self items:', mediaData.items.filter((item: any) => item.mediaType === 'parallel_self').map((item: any) => ({ presetKey: item.presetKey, hasImageUrl: !!item.imageUrl })))
-            console.log('🔍 [BestPractices] All unreal_reflection items:', mediaData.items.filter((item: any) => item.mediaType === 'unreal_reflection').map((item: any) => ({ presetKey: item.presetKey, hasImageUrl: !!item.imageUrl })))
+            // Media fetched successfully - no debugging needed
             setStefnaMedia(filteredMedia)
           }
         }
@@ -162,29 +155,27 @@ export default function BestPracticesScreen() {
   // Find media by preset type - updated to match actual database values
   const findMediaForPreset = (presetTitle: string) => {
     if (!stefnaMedia.length) {
-      console.log('🔍 [BestPractices] No media loaded yet for preset:', presetTitle)
       return null
     }
     
-    // Map preset titles to actual database presetKeys
+    // Map preset titles to actual database presetKeys (based on what's actually in the database)
     const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
       'Rain Dancer': { mediaType: 'parallel_self', presetKey: 'parallel_self_rain_dancer' },
       'The Untouchable': { mediaType: 'parallel_self', presetKey: 'parallel_self_untouchable' },
       'Holiday Mirage': { mediaType: 'parallel_self', presetKey: 'parallel_self_holiday_mirage' },
       'Who Got Away': { mediaType: 'parallel_self', presetKey: 'parallel_self_one_that_got_away' },
-      'Nightshade': { mediaType: 'parallel_self', presetKey: 'parallel_self_nightshade' },
+      'Nightshade': { mediaType: 'parallel_self', presetKey: 'parallel_self_nightshade' }, // Not in database
       'Afterglow': { mediaType: 'parallel_self', presetKey: 'parallel_self_afterglow' },
       'The Syndicate': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_the_syndicate' },
       'Yakuza Heir': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_yakuza_heir' },
-      'The Gothic Pact': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_gothic_pact' },
-      'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_oracle_seoul' },
-      'Medusa\'s Mirror': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_medusa_mirror' },
-      'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' }
+      'The Gothic Pact': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_digital_monk' }, // Actual key in DB
+      'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_urban_oracle' }, // Actual key in DB
+      'Medusa\'s Mirror': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_prism_break' }, // Actual key in DB
+      'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' } // Not in database
     }
     
     const presetInfo = presetMap[presetTitle]
     if (!presetInfo) {
-      console.log('🔍 [BestPractices] No mapping found for preset:', presetTitle)
       return null
     }
     
@@ -193,15 +184,6 @@ export default function BestPracticesScreen() {
       media.mediaType === presetInfo.mediaType && 
       media.presetKey === presetInfo.presetKey
     )
-    
-    console.log('🔍 [BestPractices] Looking for preset:', {
-      presetTitle,
-      presetInfo,
-      foundMatch: !!exactMatch,
-      availableMediaTypes: [...new Set(stefnaMedia.map((m: any) => m.mediaType))],
-      availablePresetKeys: stefnaMedia.map((m: any) => ({ mediaType: m.mediaType, presetKey: m.presetKey }))
-    })
-    console.log('🔍 [BestPractices] Available preset keys for', presetInfo.mediaType + ':', stefnaMedia.filter((m: any) => m.mediaType === presetInfo.mediaType).map((m: any) => m.presetKey))
     
     return exactMatch || null
   }
