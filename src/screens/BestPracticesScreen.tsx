@@ -72,7 +72,7 @@ export default function BestPracticesScreen() {
     }
   ]
 
-  // Static user-friendly descriptions for presets (not revealing the actual prompts)
+  // Static user-friendly descriptions for rotating presets
   const presetDescriptions: Record<string, string> = {
     'cinematic_glow': 'Golden lens flare, film warmth, quiet spotlight.',
     'bright_airy': 'Soft white light, calm expression, dream filter vibes.',
@@ -124,30 +124,8 @@ export default function BestPracticesScreen() {
         if (mediaResponse.ok) {
           const mediaData = await mediaResponse.json()
           if (mediaData.items) {
-            // Filter for 4:5 aspect ratio only
-            const filteredMedia = []
-            for (const item of mediaData.items) {
-              try {
-                await new Promise((resolve, reject) => {
-                  const img = new Image()
-                  img.onload = () => {
-                    const aspectRatio = img.width / img.height
-                    const targetRatio = 4 / 5
-                    const tolerance = 0.1 // Allow some tolerance
-                    if (Math.abs(aspectRatio - targetRatio) <= tolerance) {
-                      filteredMedia.push(item)
-                    }
-                    resolve(true)
-                  }
-                  img.onerror = () => resolve(false)
-                  img.src = item.url
-                })
-              } catch (error) {
-                // Skip items that fail to load
-                continue
-              }
-            }
-            setStefnaMedia(filteredMedia)
+            // Use all media items (removed aspect ratio filtering for now)
+            setStefnaMedia(mediaData.items)
           }
         }
         
@@ -162,29 +140,8 @@ export default function BestPracticesScreen() {
           { id: 'tropical_boost', label: 'Tropical Boost', userDescription: 'Bright hues, tan skin, breezy vacation mood.' }
         ])
         
-        // Set mock media for local development
-        setStefnaMedia([
-          { 
-            url: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/parallel_self_sample_1.jpg',
-            mediaType: 'presets',
-            type: 'image'
-          },
-          { 
-            url: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/unreal_reflection_sample_1.jpg',
-            mediaType: 'unreal_reflection',
-            type: 'image'
-          },
-          { 
-            url: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/parallel_self_sample_2.jpg',
-            mediaType: 'presets',
-            type: 'image'
-          },
-          { 
-            url: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/unreal_reflection_sample_2.jpg',
-            mediaType: 'unreal_reflection',
-            type: 'image'
-          }
-        ])
+        // Set empty media array for fallback
+        setStefnaMedia([])
       } finally {
         setLoading(false)
       }
@@ -193,11 +150,11 @@ export default function BestPracticesScreen() {
     fetchData()
   }, [])
 
-  // Find media by preset type - exact mapping like it should be
+  // Find media by preset type - updated to match actual database values
   const findMediaForPreset = (presetTitle: string) => {
     if (!stefnaMedia.length) return null
     
-    // Map preset titles to both mediaType and specific presetKey
+    // Map preset titles to actual database presetKeys
     const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
       'Rain Dancer': { mediaType: 'parallel_self', presetKey: 'parallel_self_rain_dancer' },
       'The Untouchable': { mediaType: 'parallel_self', presetKey: 'parallel_self_untouchable' },
@@ -205,12 +162,12 @@ export default function BestPracticesScreen() {
       'Who Got Away': { mediaType: 'parallel_self', presetKey: 'parallel_self_one_that_got_away' },
       'Nightshade': { mediaType: 'parallel_self', presetKey: 'parallel_self_nightshade' },
       'Afterglow': { mediaType: 'parallel_self', presetKey: 'parallel_self_afterglow' },
-      'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' },
       'The Syndicate': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_the_syndicate' },
       'Yakuza Heir': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_yakuza_heir' },
       'The Gothic Pact': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_gothic_pact' },
       'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_oracle_seoul' },
-      'Medusa\'s Mirror': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_medusa_mirror' }
+      'Medusa\'s Mirror': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_medusa_mirror' },
+      'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' }
     }
     
     const presetInfo = presetMap[presetTitle]
@@ -265,12 +222,13 @@ export default function BestPracticesScreen() {
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
-                    if (media?.url) {
-                      const optimizedUrl = optimizeFeedImage(media.url)
+                    const imageUrl = media?.imageUrl || media?.finalUrl
+                    if (imageUrl) {
+                      const optimizedUrl = optimizeFeedImage(imageUrl)
                       return (
                         <img
                           src={optimizedUrl} 
-                          alt={`Generated ${media.type} - ${preset.title}`}
+                          alt={`Generated ${preset.title}`}
                           className="w-full h-auto object-cover"
                           loading="lazy"
                         />
@@ -306,12 +264,13 @@ export default function BestPracticesScreen() {
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
-                    if (media?.url) {
-                      const optimizedUrl = optimizeFeedImage(media.url)
+                    const imageUrl = media?.imageUrl || media?.finalUrl
+                    if (imageUrl) {
+                      const optimizedUrl = optimizeFeedImage(imageUrl)
                       return (
                         <img
                           src={optimizedUrl} 
-                          alt={`Generated ${media.type} - ${preset.title}`}
+                          alt={`Generated ${preset.title}`}
                           className="w-full h-auto object-cover"
                           loading="lazy"
                         />
