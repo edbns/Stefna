@@ -188,13 +188,13 @@ export default function BestPracticesScreen() {
     // Map preset titles to both mediaType and specific presetKey
     const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
       'Rain Dancer': { mediaType: 'parallel_self', presetKey: 'parallel_self_rain_dancer' },
-      'The Untouchable': { mediaType: 'parallel_self', presetKey: 'parallel_self_untouchable' }, 
+      'The Untouchable': { mediaType: 'parallel_self', presetKey: 'parallel_self_untouchable' },
       'Holiday Mirage': { mediaType: 'parallel_self', presetKey: 'parallel_self_holiday_mirage' },
       'Who Got Away': { mediaType: 'parallel_self', presetKey: 'parallel_self_one_that_got_away' },
       'Nightshade': { mediaType: 'parallel_self', presetKey: 'parallel_self_nightshade' },
       'Afterglow': { mediaType: 'parallel_self', presetKey: 'parallel_self_afterglow' },
       'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' },
-      'The Syndicate': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_syndicate' },
+      'The Syndicate': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_the_syndicate' },
       'Yakuza Heir': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_yakuza_heir' },
       'The Gothic Pact': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_gothic_pact' },
       'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_oracle_seoul' },
@@ -218,6 +218,15 @@ export default function BestPracticesScreen() {
     )
     
     console.log('🔍 [BestPractices] Exact match found:', !!exactMatch)
+    
+    // If no exact match, try to find any media of the same type as fallback
+    if (!exactMatch) {
+      const fallbackMatch = stefnaMedia.find(media => media.mediaType === presetInfo.mediaType)
+      if (fallbackMatch) {
+        console.log('🔍 [BestPractices] Using fallback match for type:', presetInfo.mediaType)
+        return fallbackMatch
+      }
+    }
     
     return exactMatch || null // Return null if no exact match - will show "Media not available"
   }
@@ -259,7 +268,7 @@ export default function BestPracticesScreen() {
                 </h3>
 
                 {/* Real Media Display - EXACT same as MasonryMediaGrid */}
-                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: findMediaForPreset(preset.title)?.url ? '6/19' : '3/2' }}>
+                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: (findMediaForPreset(preset.title)?.finalUrl || findMediaForPreset(preset.title)?.imageUrl) ? '6/19' : '3/2' }}>
                   {(() => {
                     const media = findMediaForPreset(preset.title)
                     console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
@@ -307,7 +316,7 @@ export default function BestPracticesScreen() {
                 </h3>
 
                 {/* Real Media Display - EXACT same as MasonryMediaGrid */}
-                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: findMediaForPreset(preset.title)?.url ? '6/19' : '3/2' }}>
+                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: (findMediaForPreset(preset.title)?.finalUrl || findMediaForPreset(preset.title)?.imageUrl) ? '6/19' : '3/2' }}>
                   {(() => {
                     const media = findMediaForPreset(preset.title)
                     console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
