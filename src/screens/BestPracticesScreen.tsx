@@ -353,7 +353,7 @@ export default function BestPracticesScreen() {
         </div>
 
         {/* Copyright Footer */}
-        <div className="bg-black py-4 mt-16">
+        <div className="bg-black mt-16">
           <div className="text-center">
             <p className="text-sm text-white/60">
               © 2025 Stefna. All rights reserved. Unauthorized vibes will be stylishly ignored.
