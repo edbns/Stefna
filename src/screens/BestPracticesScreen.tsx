@@ -185,14 +185,20 @@ export default function BestPracticesScreen() {
       return null
     }
     
-    // Map preset titles to both mediaType and specific presetKey - ONLY for presets that exist in database
+    // Map preset titles to both mediaType and specific presetKey
     const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
-      'Rain Dancer': { mediaType: 'parallel_self', presetKey: 'parallel_self_rain_dancer' },
-      'The Untouchable': { mediaType: 'parallel_self', presetKey: 'parallel_self_untouchable' },
-      'Nightshade': { mediaType: 'parallel_self', presetKey: 'parallel_self_nightshade' },
-      'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' },
-      'Yakuza Heir': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_yakuza_heir' },
-      'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_oracle_seoul' }
+      'Rain Dancer': { mediaType: 'presets', presetKey: 'rain_dancer' },
+      'The Untouchable': { mediaType: 'presets', presetKey: 'untouchable' },
+      'Holiday Mirage': { mediaType: 'presets', presetKey: 'holiday_mirage' },
+      'Who Got Away': { mediaType: 'presets', presetKey: 'one_that_got_away' },
+      'Nightshade': { mediaType: 'presets', presetKey: 'nightshade' },
+      'Afterglow': { mediaType: 'presets', presetKey: 'afterglow' },
+      'Chromatic Bloom': { mediaType: 'presets', presetKey: 'chromatic_bloom' },
+      'The Syndicate': { mediaType: 'presets', presetKey: 'the_syndicate' },
+      'Yakuza Heir': { mediaType: 'presets', presetKey: 'yakuza_heir' },
+      'The Gothic Pact': { mediaType: 'presets', presetKey: 'gothic_pact' },
+      'Oracle of Seoul': { mediaType: 'presets', presetKey: 'oracle_seoul' },
+      'Medusa\'s Mirror': { mediaType: 'presets', presetKey: 'medusa_mirror' }
     }
     
     const presetInfo = presetMap[presetTitle]
