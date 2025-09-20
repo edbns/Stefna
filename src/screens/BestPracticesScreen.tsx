@@ -142,23 +142,19 @@ export default function BestPracticesScreen() {
         setStefnaMedia([
           { 
             imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/parallel_self_sample_1.jpg',
-            presetType: 'parallel_self',
-            metadata: { presetType: 'parallel_self' }
+            mediaType: 'presets'
           },
           { 
             imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/unreal_reflection_sample_1.jpg',
-            presetType: 'unreal_reflection',
-            metadata: { presetType: 'unreal_reflection' }
+            mediaType: 'unreal_reflection'
           },
           { 
             imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/parallel_self_sample_2.jpg',
-            presetType: 'parallel_self',
-            metadata: { presetType: 'parallel_self' }
+            mediaType: 'presets'
           },
           { 
             imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/unreal_reflection_sample_2.jpg',
-            presetType: 'unreal_reflection',
-            metadata: { presetType: 'unreal_reflection' }
+            mediaType: 'unreal_reflection'
           }
         ])
       } finally {
@@ -169,18 +165,18 @@ export default function BestPracticesScreen() {
     fetchData()
   }, [])
 
-  // Find media by preset type - same logic as feed/profile
+  // Find media by preset type - using correct API field names
   const findMediaForPreset = (presetTitle: string) => {
     if (!stefnaMedia.length) return null
     
-    // Map preset titles to preset types used in the database
+    // Map preset titles to media types used in the database
     const presetTypeMap: Record<string, string> = {
-      'Rain Dancer': 'parallel_self',
-      'The Untouchable': 'parallel_self', 
-      'Holiday Mirage': 'parallel_self',
-      'Who Got Away': 'parallel_self',
-      'Nightshade': 'parallel_self',
-      'Afterglow': 'parallel_self',
+      'Rain Dancer': 'presets',
+      'The Untouchable': 'presets', 
+      'Holiday Mirage': 'presets',
+      'Who Got Away': 'presets',
+      'Nightshade': 'presets',
+      'Afterglow': 'presets',
       'Chromatic Bloom': 'unreal_reflection',
       'The Syndicate': 'unreal_reflection',
       'Yakuza Heir': 'unreal_reflection',
@@ -189,13 +185,12 @@ export default function BestPracticesScreen() {
       'Medusa\'s Mirror': 'unreal_reflection'
     }
     
-    const presetType = presetTypeMap[presetTitle]
-    if (!presetType) return stefnaMedia[0] // fallback to first media
+    const mediaType = presetTypeMap[presetTitle]
+    if (!mediaType) return stefnaMedia[0] // fallback to first media
     
-    // Find media with matching preset type
+    // Find media with matching mediaType (from API response)
     const match = stefnaMedia.find(media => 
-      media.presetType === presetType || 
-      media.metadata?.presetType === presetType
+      media.mediaType === mediaType
     )
     
     return match || stefnaMedia[0]
