@@ -137,6 +137,30 @@ export default function BestPracticesScreen() {
           { id: 'vintage_film_35mm', label: 'Vintage Film 35mm', userDescription: 'Grain, mood, retro tones like a found photo.' },
           { id: 'tropical_boost', label: 'Tropical Boost', userDescription: 'Bright hues, tan skin, breezy vacation mood.' }
         ])
+        
+        // Set mock media for local development
+        setStefnaMedia([
+          { 
+            imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/parallel_self_sample_1.jpg',
+            presetType: 'parallel_self',
+            metadata: { presetType: 'parallel_self' }
+          },
+          { 
+            imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/unreal_reflection_sample_1.jpg',
+            presetType: 'unreal_reflection',
+            metadata: { presetType: 'unreal_reflection' }
+          },
+          { 
+            imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/parallel_self_sample_2.jpg',
+            presetType: 'parallel_self',
+            metadata: { presetType: 'parallel_self' }
+          },
+          { 
+            imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/unreal_reflection_sample_2.jpg',
+            presetType: 'unreal_reflection',
+            metadata: { presetType: 'unreal_reflection' }
+          }
+        ])
       } finally {
         setLoading(false)
       }
