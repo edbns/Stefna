@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { optimizeFeedImage } from '../utils/cloudinaryOptimization'
 
 export default function BestPracticesScreen() {
   const navigate = useNavigate()
   const [rotatingPresets, setRotatingPresets] = useState<any[]>([])
-  const [stefnaMedia, setStefnaMedia] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const presets = [
@@ -42,92 +40,67 @@ export default function BestPracticesScreen() {
     },
     {
       mode: "Unreal Reflection™",
-      title: "Chromatic Bloom",
-      description: "A burst of cinematic color, blooming light, layered like film."
-    },
-    {
-      mode: "Unreal Reflection™",
       title: "The Syndicate",
-      description: "Modern mafia myth, leather, shadow, grayscale drama."
+      description: "Power suits, cinematic underworld, authority and mystery."
     },
     {
       mode: "Unreal Reflection™",
       title: "Yakuza Heir",
-      description: "Tattooed heritage, sharp fashion, stillness with power."
+      description: "Raw power, irezumi tattoos, Osaka street scenes."
     },
     {
       mode: "Unreal Reflection™",
       title: "The Gothic Pact",
-      description: "Dark pact aesthetic, veils, stares, ornate shadows."
+      description: "Gothic royalty, timeless black fashion, candlelit scenes."
     },
     {
       mode: "Unreal Reflection™",
       title: "Oracle of Seoul",
-      description: "Modern prophecy, neon grayscale, futurist yet ancient."
+      description: "Modern shamanic presence, hanbok-inspired couture."
     },
     {
       mode: "Unreal Reflection™",
       title: "Medusa's Mirror",
-      description: "Goth beauty, mythic energy, stone stare, soft lighting."
+      description: "Greek muse glam, flowing fabrics, marble ruins."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Chromatic Bloom",
+      description: "Dark magazine cover style with animal symbols."
     }
   ]
 
-  // Static user-friendly descriptions for rotating presets
-  const presetDescriptions: Record<string, string> = {
-    'cinematic_glow': 'Golden lens flare, film warmth, quiet spotlight.',
-    'bright_airy': 'Soft white light, calm expression, dream filter vibes.',
-    'vivid_pop': 'High contrast color punch, expressive and alive.',
-    'vintage_film_35mm': 'Grain, mood, retro tones like a found photo.',
-    'tropical_boost': 'Bright hues, tan skin, breezy vacation mood.',
-    'urban_grit': 'Street texture, muted tones, raw attitude.',
-    'mono_drama': 'Black and white contrast, silent intensity.',
-    'dreamy_pastels': 'Muted candy tones, soft edges, floaty feel.',
-    'golden_hour_magic': 'Sunset tones, warm shadows, glowing skin.',
-    'high_fashion_editorial': 'Studio lighting, sharp angles, cover shoot.',
-    'moody_forest': 'Earth tones, green haze, cinematic mystery.',
-    'desert_glow': 'Cracked sunburnt earth, warm sand haze, stillness.',
-    'retro_polaroid': 'Instant print look, faded color, nostalgic frame.',
-    'crystal_clear': 'Bright light, icy tone, hyper-clean aesthetic.',
-    'ocean_breeze': 'Sea spray, fresh tones, carefree calm.',
-    'festival_vibes': 'Glitter, blur, lens flare, crowd energy.',
-    'noir_classic': 'Film noir drama, shadow play, timeless cool.',
-    'sun_kissed': 'Warm skin, soft light, cheekbone shimmer.',
-    'frost_light': 'Pale tones, icy softness, snowglobe glow.',
-    'neon_nights': 'Purple-blue neon, urban shine, nightlife glow.',
-    'cultural_glow': 'Celebratory richness, bold patterns, ambient light.',
-    'soft_skin_portrait': 'Light retouch feel, natural beauty, gentle gaze.',
-    'rainy_day_mood': 'Overcast vibes, cinematic drizzle, emotional still.',
-    'wildlife_focus': 'Nature tones, jungle blur, raw intensity.',
-    'street_story': 'City backdrop, casual pose, hidden narrative.'
+  // Map preset titles to image file names
+  const getImagePath = (title: string) => {
+    const imageMap: Record<string, string> = {
+      'Rain Dancer': '/images/parallel_self_rain_dancer.jpg',
+      'The Untouchable': '/images/parallel_self_untouchable.jpg',
+      'Holiday Mirage': '/images/parallel_self_holiday_mirage.jpg',
+      'Who Got Away': '/images/parallel_self_one_that_got_away.jpg',
+      'Nightshade': '/images/parallel_self_nightshade.jpg',
+      'Afterglow': '/images/parallel_self_afterglow.jpg',
+      'The Syndicate': '/images/unreal_reflection_the_syndicate.jpg',
+      'Yakuza Heir': '/images/unreal_reflection_yakuza_heir.jpg',
+      'The Gothic Pact': '/images/unreal_reflection_gothic_pact.jpg',
+      'Oracle of Seoul': '/images/unreal_reflection_oracle_seoul.jpg',
+      'Medusa\'s Mirror': '/images/unreal_reflection_medusa_mirror.jpg',
+      'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.jpg'
+    }
+    return imageMap[title] || ''
   }
 
-  // Fetch rotating presets from database (media will be added later)
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch rotating presets using the same system as composer
-        const presetsResponse = await fetch('/.netlify/functions/get-presets')
-        if (presetsResponse.ok) {
-          const presetsData = await presetsResponse.json()
-          if (presetsData.success && presetsData.data?.presets) {
-            // Take only the first 5 presets and add user-friendly descriptions
-            const presetsWithDescriptions = presetsData.data.presets.slice(0, 5).map((preset: any) => ({
-              ...preset,
-              userDescription: presetDescriptions[preset.id] || 'Fresh preset, rotating weekly.'
-            }))
-            setRotatingPresets(presetsWithDescriptions)
-          }
-        }
-
-        // Fetch media from creator@stefna.xyz (ID: 49b15f0e-6a2d-445d-9d32-d0a9bd859bfb)
-        const mediaResponse = await fetch(`/.netlify/functions/getPublicFeed?userId=49b15f0e-6a2d-445d-9d32-d0a9bd859bfb&limit=50`)
-        if (mediaResponse.ok) {
-          const mediaData = await mediaResponse.json()
-          if (mediaData.items) {
-            // Use all media items - no aspect ratio filtering since all media is square (1:1)
-            setStefnaMedia(mediaData.items)
-          }
-        }
+        // Set rotating presets for development
+        setRotatingPresets([
+          { id: 'cinematic_glow', label: 'Cinematic Glow', userDescription: 'Golden lens flare, film warmth, quiet spotlight.' },
+          { id: 'bright_airy', label: 'Bright & Airy', userDescription: 'Soft white light, calm expression, dream filter vibes.' },
+          { id: 'neo_tokyo_glitch', label: 'Neo Tokyo Glitch', userDescription: 'Cyberpunk neon, digital distortion, futuristic edge.' },
+          { id: 'ethereal_whisper', label: 'Ethereal Whisper', userDescription: 'Soft focus, dreamy atmosphere, gentle lighting.' },
+          { id: 'midnight_serenade', label: 'Midnight Serenade', userDescription: 'Dark elegance, moody lighting, sophisticated style.' },
+          { id: 'golden_hour_dream', label: 'Golden Hour Dream', userDescription: 'Warm sunset glow, romantic lighting, natural beauty.' }
+        ])
         
       } catch (error) {
         console.error('Failed to fetch data:', error)
@@ -135,13 +108,11 @@ export default function BestPracticesScreen() {
         setRotatingPresets([
           { id: 'cinematic_glow', label: 'Cinematic Glow', userDescription: 'Golden lens flare, film warmth, quiet spotlight.' },
           { id: 'bright_airy', label: 'Bright & Airy', userDescription: 'Soft white light, calm expression, dream filter vibes.' },
-          { id: 'vivid_pop', label: 'Vivid Pop', userDescription: 'High contrast color punch, expressive and alive.' },
-          { id: 'vintage_film_35mm', label: 'Vintage Film 35mm', userDescription: 'Grain, mood, retro tones like a found photo.' },
-          { id: 'tropical_boost', label: 'Tropical Boost', userDescription: 'Bright hues, tan skin, breezy vacation mood.' }
+          { id: 'neo_tokyo_glitch', label: 'Neo Tokyo Glitch', userDescription: 'Cyberpunk neon, digital distortion, futuristic edge.' },
+          { id: 'ethereal_whisper', label: 'Ethereal Whisper', userDescription: 'Soft focus, dreamy atmosphere, gentle lighting.' },
+          { id: 'midnight_serenade', label: 'Midnight Serenade', userDescription: 'Dark elegance, moody lighting, sophisticated style.' },
+          { id: 'golden_hour_dream', label: 'Golden Hour Dream', userDescription: 'Warm sunset glow, romantic lighting, natural beauty.' }
         ])
-        
-        // Set empty media array for fallback
-        setStefnaMedia([])
       } finally {
         setLoading(false)
       }
@@ -150,282 +121,85 @@ export default function BestPracticesScreen() {
     fetchData()
   }, [])
 
-  // Find media by preset type - updated to match actual database values
-  const findMediaForPreset = (presetTitle: string) => {
-    if (!stefnaMedia.length) {
-      return null
+  const groupedPresets = presets.reduce((acc, preset) => {
+    if (!acc[preset.mode]) {
+      acc[preset.mode] = []
     }
-    
-    // Map preset titles to actual database presetKeys
-    const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
-      'Rain Dancer': { mediaType: 'parallel_self', presetKey: 'parallel_self_rain_dancer' },
-      'The Untouchable': { mediaType: 'parallel_self', presetKey: 'parallel_self_untouchable' },
-      'Holiday Mirage': { mediaType: 'parallel_self', presetKey: 'parallel_self_holiday_mirage' },
-      'Who Got Away': { mediaType: 'parallel_self', presetKey: 'parallel_self_one_that_got_away' },
-      'Nightshade': { mediaType: 'parallel_self', presetKey: 'parallel_self_nightshade' },
-      'Afterglow': { mediaType: 'parallel_self', presetKey: 'parallel_self_afterglow' },
-      'The Syndicate': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_the_syndicate' },
-      'Yakuza Heir': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_yakuza_heir' },
-      'The Gothic Pact': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_gothic_pact' },
-      'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_oracle_seoul' },
-      'Medusa\'s Mirror': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_medusa_mirror' },
-      'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' }
-    }
-    
-    const presetInfo = presetMap[presetTitle]
-    if (!presetInfo) {
-      return null
-    }
-    
-    // Find exact match for this specific preset
-    const exactMatch = stefnaMedia.find(media => 
-      media.mediaType === presetInfo.mediaType && 
-      media.presetKey === presetInfo.presetKey
+    acc[preset.mode].push(preset)
+    return acc
+  }, {} as Record<string, typeof presets>)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
     )
-    
-    return exactMatch || null
   }
 
-
   return (
-    <div className="min-h-screen bg-black">
-      {/* Simple Back Navigation */}
-      <div className="fixed top-6 left-6 z-50">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center justify-center w-10 h-10 text-white/60 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-full backdrop-blur-md /10"
-        >
-          <ArrowLeft size={20} />
-        </button>
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <div className="sticky top-0 bg-black/80 backdrop-blur-sm border-b border-gray-800 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center space-x-2 text-white hover:text-gray-300 transition-colors"
+            >
+              <ArrowLeft size={20} />
+              <span>Back</span>
+            </button>
+            <h1 className="text-xl font-semibold">Best Practices</h1>
+            <div className="w-16"></div>
+          </div>
+        </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-6 pt-24">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight text-white mb-4">How to Get the Look</h1>
-          <p className="text-white mt-4 max-w-xl mx-auto text-lg">
-            Quick tips and style previews to help you recreate Stefna's most iconic looks.
-          </p>
-          <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-[#333333] text-white text-sm">
-            Free, Signup to unlock the full experience
-          </div>
-        </div>
-
-
-        {/* Parallel Self Section */}
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Rotating Presets Section */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">Parallel Self™</h2>
+          <h2 className="text-2xl font-bold mb-8">Rotating Presets</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {presets.filter(preset => preset.mode === "Parallel Self™").map((preset, idx) => (
-              <div key={idx} className="bg-black rounded-xl p-6 shadow-lg text-center">
-                <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
-                  {preset.title}
-                </h3>
-
-                {/* Real Media Display - EXACT same as MasonryMediaGrid */}
-                <div className="relative w-full mb-4 overflow-hidden">
-                  {(() => {
-                    const media = findMediaForPreset(preset.title)
-                    const imageUrl = media?.url || media?.imageUrl || media?.finalUrl
-                    if (imageUrl) {
-                      const optimizedUrl = optimizeFeedImage(imageUrl)
-                      return (
-                        <img
-                          src={optimizedUrl} 
-                          alt={`Generated ${preset.title}`}
-                          className="w-full h-auto object-cover"
-                          loading="lazy"
-                        />
-                      )
-                    }
-                    return (
-                      <div className="w-full h-32 bg-[#333333] flex items-center justify-center">
-                        <p className="text-xs text-white/60">Media not available</p>
-                      </div>
-                    )
-                  })()}
-                </div>
-
-                <p className="text-sm text-white leading-relaxed">
-                  {preset.description}
-                </p>
+            {rotatingPresets.map((preset, index) => (
+              <div key={preset.id} className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+                <h3 className="text-lg font-semibold mb-2">{preset.label}</h3>
+                <p className="text-gray-300 text-sm">{preset.userDescription}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Unreal Reflection Section */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">Unreal Reflection™</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {presets.filter(preset => preset.mode === "Unreal Reflection™").map((preset, idx) => (
-              <div key={idx} className="bg-black rounded-xl p-6 shadow-lg text-center">
-                <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
-                  {preset.title}
-                </h3>
-
-                {/* Real Media Display - EXACT same as MasonryMediaGrid */}
-                <div className="relative w-full mb-4 overflow-hidden">
-                  {(() => {
-                    const media = findMediaForPreset(preset.title)
-                    const imageUrl = media?.url || media?.imageUrl || media?.finalUrl
-                    if (imageUrl) {
-                      const optimizedUrl = optimizeFeedImage(imageUrl)
-                      return (
-                        <img
-                          src={optimizedUrl} 
-                          alt={`Generated ${preset.title}`}
-                          className="w-full h-auto object-cover"
-                          loading="lazy"
-                        />
-                      )
-                    }
-                    return (
-                      <div className="w-full h-32 bg-[#333333] flex items-center justify-center">
-                        <p className="text-xs text-white/60">Media not available</p>
-                      </div>
-                    )
-                  })()}
-                </div>
-
-                <p className="text-sm text-white leading-relaxed">
-                  {preset.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Additional Modes Section */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">More Modes</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-            {/* Custom Prompt Mode */}
-            <div className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
-              <div className="mb-3">
-                <span className="text-xs uppercase text-white tracking-wider font-medium">
-                  Custom Prompt Mode
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
-                Your idea, your style, our magic.
-              </h3>
-              <p className="text-sm text-white leading-relaxed mb-4">
-                Write anything — describe a mood, scene, or vibe.
-              </p>
-              <p className="text-xs text-white/70 mb-4">
-                Example: "futuristic king under glowing neon throne, cinematic lighting"
-              </p>
-              <p className="text-xs text-white/70">
-                Tip: Keep it simple but specific. Style + setting + emotion = strong results.
-              </p>
-            </div>
-
-            {/* Edit My Photo */}
-            <div className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
-              <div className="mb-3">
-                <span className="text-xs uppercase text-white tracking-wider font-medium">
-                  Edit My Photo
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
-                Small changes, big drama.
-              </h3>
-              <p className="text-sm text-white leading-relaxed mb-4">
-                Add, remove, or change details in your uploaded photo.
-              </p>
-              <p className="text-xs text-white/70 mb-4">
-                Example: "make the man ride a motorcycle through desert lightning storm"
-              </p>
-              <p className="text-xs text-white/70">
-                Tip: Use short sentences that describe what you want to see, not what to do.
-              </p>
-            </div>
-
-            {/* Neo Tokyo Glitch */}
-            <div className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
-              <div className="mb-3">
-                <span className="text-xs uppercase text-white tracking-wider font-medium">
-                  Neo Tokyo Glitch
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
-                The glitch chooses you. Not the other way around.
-              </h3>
-              <p className="text-sm text-white leading-relaxed mb-4">
-                You'll be reborn inside a neon-drenched chaos: tech tattoos, broken pixels, liquid color.
-              </p>
-              <p className="text-xs text-white/70 mb-4">
-                Results are unpredictable — and that's the fun.
-              </p>
-              <p className="text-xs text-white/70">
-                Tip: Upload a bold selfie, strong expression. Think "main character of the glitch."
-              </p>
-            </div>
-
-            {/* Studio Ghibli Reaction */}
-            <div className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
-              <div className="mb-3">
-                <span className="text-xs uppercase text-white tracking-wider font-medium">
-                  Studio Ghibli Reaction
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
-                Too cute to handle. Too real to ignore.
-              </h3>
-              <p className="text-sm text-white leading-relaxed mb-4">
-                Huge eyes. Sparkling tears. Blush and emotion turned to max.
-              </p>
-              <p className="text-xs text-white/70 mb-4">
-                Ghibli-style exaggeration over your real face.
-              </p>
-              <p className="text-xs text-white/70">
-                Tip: Upload selfies with visible eyes & natural lighting. Solo works best.
-              </p>
-            </div>
-
-          </div>
-        </div>
-
-        {/* This Week Presets Section */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">This Week Presets</h2>
-          {loading ? (
-            <div className="text-center text-white">Loading this week's presets...</div>
-          ) : (
+        {/* Mode-specific Presets */}
+        {Object.entries(groupedPresets).map(([mode, modePresets]) => (
+          <div key={mode} className="mb-16">
+            <h2 className="text-2xl font-bold mb-8">{mode}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {rotatingPresets.map((preset, idx) => (
-                <div key={idx} className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
-                  <h3 className="text-lg font-semibold leading-snug mb-4 text-white">
-                    {preset.label}
-                  </h3>
-                  <p className="text-sm text-white leading-relaxed">
-                    {preset.userDescription}
-                  </p>
-                </div>
-              ))}
+              {modePresets.map((preset, index) => {
+                const imagePath = getImagePath(preset.title)
+                return (
+                  <div key={index} className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
+                    {imagePath && (
+                      <div className="aspect-square overflow-hidden">
+                        <img
+                          src={imagePath}
+                          alt={`Generated ${preset.title}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                    <div className="p-6">
+                      <h3 className="text-lg font-semibold mb-2">{preset.title}</h3>
+                      <p className="text-gray-300 text-sm">{preset.description}</p>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          )}
-        </div>
-
-        {/* Footer CTA */}
-        <div className="text-center mt-16">
-          <div className="bg-[#333333] rounded-xl p-8 max-w-2xl mx-auto">
-            <h3 className="text-xl font-semibold mb-3 text-white">Want to see more looks?</h3>
-            <p className="text-sm text-white mb-6">
-              All presets work with solo, couples, or groups. Just upload and explore.
-            </p>
-            <p className="text-white">
-              Ready to create your own?<br />
-              Click <span className="inline-flex items-center justify-center w-8 h-8 bg-white rounded-full text-black font-bold mx-1">+</span> button on the home page to start.
-            </p>
           </div>
-        </div>
-
-        {/* Copyright Text */}
-        <p className="text-sm text-white/60 text-center mt-28">
-          © 2025 Stefna. All rights reserved. Unauthorized vibes will be stylishly ignored.
-        </p>
+        ))}
       </div>
     </div>
   )
