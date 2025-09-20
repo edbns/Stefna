@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
+import { optimizeFeedImage } from '../utils/cloudinaryOptimization'
 
 export default function BestPracticesScreen() {
   const navigate = useNavigate()
@@ -141,20 +142,24 @@ export default function BestPracticesScreen() {
         // Set mock media for local development
         setStefnaMedia([
           { 
-            imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/parallel_self_sample_1.jpg',
-            mediaType: 'presets'
+            url: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/parallel_self_sample_1.jpg',
+            mediaType: 'presets',
+            type: 'image'
           },
           { 
-            imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/unreal_reflection_sample_1.jpg',
-            mediaType: 'unreal_reflection'
+            url: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/unreal_reflection_sample_1.jpg',
+            mediaType: 'unreal_reflection',
+            type: 'image'
           },
           { 
-            imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/parallel_self_sample_2.jpg',
-            mediaType: 'presets'
+            url: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/parallel_self_sample_2.jpg',
+            mediaType: 'presets',
+            type: 'image'
           },
           { 
-            imageUrl: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/unreal_reflection_sample_2.jpg',
-            mediaType: 'unreal_reflection'
+            url: 'https://res.cloudinary.com/stefna/image/upload/v1/stefna/generated/unreal_reflection_sample_2.jpg',
+            mediaType: 'unreal_reflection',
+            type: 'image'
           }
         ])
       } finally {
@@ -232,15 +237,15 @@ export default function BestPracticesScreen() {
                   {preset.title}
                 </h3>
 
-                {/* Real Media Display - Same as Profile/Feed */}
+                {/* Real Media Display - EXACT same as MasonryMediaGrid */}
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
-                    if (media?.imageUrl) {
+                    if (media?.url) {
                       return (
-                        <img 
-                          src={media.imageUrl} 
-                          alt={preset.title}
+                        <img
+                          src={optimizeFeedImage(media.url)} 
+                          alt={`Generated ${media.type} - ${preset.title}`}
                           className="w-full h-auto object-cover"
                           loading="lazy"
                         />
@@ -272,15 +277,15 @@ export default function BestPracticesScreen() {
                   {preset.title}
                 </h3>
 
-                {/* Real Media Display - Same as Profile/Feed */}
+                {/* Real Media Display - EXACT same as MasonryMediaGrid */}
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
-                    if (media?.imageUrl) {
+                    if (media?.url) {
                       return (
-                        <img 
-                          src={media.imageUrl} 
-                          alt={preset.title}
+                        <img
+                          src={optimizeFeedImage(media.url)} 
+                          alt={`Generated ${media.type} - ${preset.title}`}
                           className="w-full h-auto object-cover"
                           loading="lazy"
                         />
