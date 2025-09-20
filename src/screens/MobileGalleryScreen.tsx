@@ -531,7 +531,7 @@ const MobileGalleryScreen: React.FC = () => {
             onClick={async () => {
               try {
                 const referralCode = (profileData as any).referralCode || 'STEFNA';
-                const shareUrl = `${window.location.origin}?ref=${referralCode}`;
+                const shareUrl = `${window.location.origin}?referrer=${referralCode}`;
                 
                 if (navigator.share) {
                   await navigator.share({
