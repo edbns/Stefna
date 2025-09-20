@@ -132,6 +132,8 @@ export default function BestPracticesScreen() {
               unrealReflectionItems: mediaData.items.filter((item: any) => item.mediaType === 'unreal_reflection').length,
               sampleItems: mediaData.items.slice(0, 3).map((item: any) => ({ mediaType: item.mediaType, presetKey: item.presetKey }))
             })
+            console.log('🔍 [BestPractices] All parallel_self items:', mediaData.items.filter((item: any) => item.mediaType === 'parallel_self').map((item: any) => ({ presetKey: item.presetKey, hasImageUrl: !!item.imageUrl })))
+            console.log('🔍 [BestPractices] All unreal_reflection items:', mediaData.items.filter((item: any) => item.mediaType === 'unreal_reflection').map((item: any) => ({ presetKey: item.presetKey, hasImageUrl: !!item.imageUrl })))
             setStefnaMedia(filteredMedia)
           }
         }
@@ -196,9 +198,10 @@ export default function BestPracticesScreen() {
       presetTitle,
       presetInfo,
       foundMatch: !!exactMatch,
-      availableMediaTypes: [...new Set(stefnaMedia.map(m => m.mediaType))],
-      availablePresetKeys: stefnaMedia.map(m => ({ mediaType: m.mediaType, presetKey: m.presetKey }))
+      availableMediaTypes: [...new Set(stefnaMedia.map((m: any) => m.mediaType))],
+      availablePresetKeys: stefnaMedia.map((m: any) => ({ mediaType: m.mediaType, presetKey: m.presetKey }))
     })
+    console.log('🔍 [BestPractices] Available preset keys for', presetInfo.mediaType + ':', stefnaMedia.filter((m: any) => m.mediaType === presetInfo.mediaType).map((m: any) => m.presetKey))
     
     return exactMatch || null
   }
