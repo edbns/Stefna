@@ -126,6 +126,12 @@ export default function BestPracticesScreen() {
           if (mediaData.items) {
             // Use all media items - no aspect ratio filtering since all media is square (1:1)
             const filteredMedia = mediaData.items
+            console.log('🔍 [BestPractices] Fetched media:', {
+              totalItems: mediaData.items.length,
+              parallelSelfItems: mediaData.items.filter((item: any) => item.mediaType === 'parallel_self').length,
+              unrealReflectionItems: mediaData.items.filter((item: any) => item.mediaType === 'unreal_reflection').length,
+              sampleItems: mediaData.items.slice(0, 3).map((item: any) => ({ mediaType: item.mediaType, presetKey: item.presetKey }))
+            })
             setStefnaMedia(filteredMedia)
           }
         }
@@ -153,7 +159,10 @@ export default function BestPracticesScreen() {
 
   // Find media by preset type - updated to match actual database values
   const findMediaForPreset = (presetTitle: string) => {
-    if (!stefnaMedia.length) return null
+    if (!stefnaMedia.length) {
+      console.log('🔍 [BestPractices] No media loaded yet for preset:', presetTitle)
+      return null
+    }
     
     // Map preset titles to actual database presetKeys
     const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
@@ -172,13 +181,24 @@ export default function BestPracticesScreen() {
     }
     
     const presetInfo = presetMap[presetTitle]
-    if (!presetInfo) return null
+    if (!presetInfo) {
+      console.log('🔍 [BestPractices] No mapping found for preset:', presetTitle)
+      return null
+    }
     
     // Find exact match for this specific preset
     const exactMatch = stefnaMedia.find(media => 
       media.mediaType === presetInfo.mediaType && 
       media.presetKey === presetInfo.presetKey
     )
+    
+    console.log('🔍 [BestPractices] Looking for preset:', {
+      presetTitle,
+      presetInfo,
+      foundMatch: !!exactMatch,
+      availableMediaTypes: [...new Set(stefnaMedia.map(m => m.mediaType))],
+      availablePresetKeys: stefnaMedia.map(m => ({ mediaType: m.mediaType, presetKey: m.presetKey }))
+    })
     
     return exactMatch || null
   }
