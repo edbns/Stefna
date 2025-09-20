@@ -185,20 +185,14 @@ export default function BestPracticesScreen() {
       return null
     }
     
-    // Map preset titles to both mediaType and specific presetKey
+    // Map preset titles to both mediaType and specific presetKey - ONLY for presets that exist in database
     const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
       'Rain Dancer': { mediaType: 'parallel_self', presetKey: 'parallel_self_rain_dancer' },
       'The Untouchable': { mediaType: 'parallel_self', presetKey: 'parallel_self_untouchable' },
-      'Holiday Mirage': { mediaType: 'parallel_self', presetKey: 'parallel_self_holiday_mirage' },
-      'Who Got Away': { mediaType: 'parallel_self', presetKey: 'parallel_self_one_that_got_away' },
       'Nightshade': { mediaType: 'parallel_self', presetKey: 'parallel_self_nightshade' },
-      'Afterglow': { mediaType: 'parallel_self', presetKey: 'parallel_self_afterglow' },
       'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' },
-      'The Syndicate': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_the_syndicate' },
       'Yakuza Heir': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_yakuza_heir' },
-      'The Gothic Pact': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_gothic_pact' },
-      'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_oracle_seoul' },
-      'Medusa\'s Mirror': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_medusa_mirror' }
+      'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_oracle_seoul' }
     }
     
     const presetInfo = presetMap[presetTitle]
@@ -260,7 +254,7 @@ export default function BestPracticesScreen() {
                 </h3>
 
                 {/* Real Media Display - EXACT same as MasonryMediaGrid */}
-                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: (findMediaForPreset(preset.title)?.finalUrl || findMediaForPreset(preset.title)?.imageUrl) ? '4/5' : '3/2' }}>
+                <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
                     console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
@@ -273,7 +267,7 @@ export default function BestPracticesScreen() {
                         <img
                           src={optimizedUrl} 
                           alt={`Generated ${media.type} - ${preset.title}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-auto object-cover"
                           loading="lazy"
                           onLoad={() => console.log('🔍 [BestPractices] Image loaded successfully for', preset.title)}
                           onError={(e) => console.error('🔍 [BestPractices] Image failed to load for', preset.title, ':', e)}
@@ -282,7 +276,7 @@ export default function BestPracticesScreen() {
                     }
                     console.log('🔍 [BestPractices] No media URL for', preset.title)
                     return (
-                      <div className="w-full h-full bg-[#333333] flex items-center justify-center">
+                      <div className="w-full h-32 bg-[#333333] flex items-center justify-center">
                         <p className="text-xs text-white/60">Media not available</p>
                       </div>
                     )
@@ -308,7 +302,7 @@ export default function BestPracticesScreen() {
                 </h3>
 
                 {/* Real Media Display - EXACT same as MasonryMediaGrid */}
-                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: (findMediaForPreset(preset.title)?.finalUrl || findMediaForPreset(preset.title)?.imageUrl) ? '4/5' : '3/2' }}>
+                <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
                     console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
@@ -321,7 +315,7 @@ export default function BestPracticesScreen() {
                         <img
                           src={optimizedUrl} 
                           alt={`Generated ${media.type} - ${preset.title}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-auto object-cover"
                           loading="lazy"
                           onLoad={() => console.log('🔍 [BestPractices] Image loaded successfully for', preset.title)}
                           onError={(e) => console.error('🔍 [BestPractices] Image failed to load for', preset.title, ':', e)}
@@ -330,7 +324,7 @@ export default function BestPracticesScreen() {
                     }
                     console.log('🔍 [BestPractices] No media URL for', preset.title)
                     return (
-                      <div className="w-full h-full bg-[#333333] flex items-center justify-center">
+                      <div className="w-full h-32 bg-[#333333] flex items-center justify-center">
                         <p className="text-xs text-white/60">Media not available</p>
                       </div>
                     )
