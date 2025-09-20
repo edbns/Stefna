@@ -142,7 +142,7 @@ export default function BestPracticesScreen() {
 
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black pb-16">
       {/* Simple Back Navigation */}
       <div className="fixed top-6 left-6 z-50">
         <button
