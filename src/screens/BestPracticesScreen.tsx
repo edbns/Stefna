@@ -5,7 +5,6 @@ import { ArrowLeft } from 'lucide-react'
 export default function BestPracticesScreen() {
   const navigate = useNavigate()
   const [rotatingPresets, setRotatingPresets] = useState<any[]>([])
-  const [stefnaMedia, setStefnaMedia] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const presets = [
@@ -100,7 +99,7 @@ export default function BestPracticesScreen() {
     'street_story': 'City backdrop, casual pose, hidden narrative.'
   }
 
-  // Fetch rotating presets and Stefna's official media from database
+  // Fetch rotating presets from database (media will be added later)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -118,18 +117,19 @@ export default function BestPracticesScreen() {
           }
         }
 
-        // Fetch Stefna's official media (only from creator@stefna.xyz)
-        const mediaResponse = await fetch('/.netlify/functions/getPublicFeed?userId=49b15f0e-6a2d-445d-9d32-d0a9bd859bfb&limit=50')
-        if (mediaResponse.ok) {
-          const mediaData = await mediaResponse.json()
-          console.log('🔍 Media response:', mediaData)
-          console.log('🔍 Media array:', mediaData.media)
-          setStefnaMedia(mediaData.media || [])
-        } else {
-          console.error('❌ Failed to fetch media:', mediaResponse.status)
-        }
+        // TODO: Add media fetching when Netlify functions are available
+        // For now, we'll show static presets without media
+        
       } catch (error) {
         console.error('Failed to fetch data:', error)
+        // Set some mock rotating presets for development
+        setRotatingPresets([
+          { id: 'cinematic_glow', label: 'Cinematic Glow', userDescription: 'Golden lens flare, film warmth, quiet spotlight.' },
+          { id: 'bright_airy', label: 'Bright & Airy', userDescription: 'Soft white light, calm expression, dream filter vibes.' },
+          { id: 'vivid_pop', label: 'Vivid Pop', userDescription: 'High contrast color punch, expressive and alive.' },
+          { id: 'vintage_film_35mm', label: 'Vintage Film 35mm', userDescription: 'Grain, mood, retro tones like a found photo.' },
+          { id: 'tropical_boost', label: 'Tropical Boost', userDescription: 'Bright hues, tan skin, breezy vacation mood.' }
+        ])
       } finally {
         setLoading(false)
       }
@@ -138,61 +138,7 @@ export default function BestPracticesScreen() {
     fetchData()
   }, [])
 
-  // Find media by preset type - same logic as feed/profile
-  const findMediaForPreset = (presetTitle: string) => {
-    if (!stefnaMedia.length) {
-      console.log('🔍 No stefnaMedia available for:', presetTitle)
-      return null
-    }
-    
-    console.log('🔍 Available media:', stefnaMedia.length, 'items')
-    console.log('🔍 Looking for preset:', presetTitle)
-    
-    // Map preset titles to preset types used in the database
-    const presetTypeMap: Record<string, string> = {
-      'Rain Dancer': 'parallel_self',
-      'The Untouchable': 'parallel_self', 
-      'Holiday Mirage': 'parallel_self',
-      'Who Got Away': 'parallel_self',
-      'Nightshade': 'parallel_self',
-      'Afterglow': 'parallel_self',
-      'Chromatic Bloom': 'unreal_reflection',
-      'The Syndicate': 'unreal_reflection',
-      'Yakuza Heir': 'unreal_reflection',
-      'The Gothic Pact': 'unreal_reflection',
-      'Oracle of Seoul': 'unreal_reflection',
-      'Medusa\'s Mirror': 'unreal_reflection'
-    }
-    
-    const presetType = presetTypeMap[presetTitle]
-    console.log('🔍 Mapped preset type:', presetType)
-    
-    if (!presetType) {
-      console.log('🔍 No preset type found, using first media')
-      return stefnaMedia[0] // fallback to first media
-    }
-    
-    // Check what fields are available in the media objects
-    console.log('🔍 Sample media structure:', stefnaMedia[0])
-    
-    // Find media with matching preset type - check multiple possible fields
-    const match = stefnaMedia.find(media => {
-      const matches = 
-        media.presetType === presetType || 
-        media.metadata?.presetType === presetType ||
-        media.preset === presetType ||
-        media.mode === presetType ||
-        (media.metadata && JSON.stringify(media.metadata).includes(presetType))
-      
-      if (matches) {
-        console.log('✅ Found match:', media)
-      }
-      return matches
-    })
-    
-    console.log('🔍 Match result:', match ? 'Found' : 'Not found')
-    return match || stefnaMedia[0]
-  }
+  // TODO: Add media matching logic when Netlify functions are available
 
 
   return (
@@ -235,27 +181,11 @@ export default function BestPracticesScreen() {
                   {preset.title}
                 </h3>
 
-                {/* Media - Real aspect ratio, no border radius */}
+                {/* Media placeholder for development */}
                 <div className="relative w-full mb-4 overflow-hidden">
-                  {(() => {
-                    const media = findMediaForPreset(preset.title)
-                    return media ? (
-                      <img 
-                        src={media.imageUrl} 
-                        alt={preset.title}
-                        className="w-full h-auto object-cover"
-                        style={{ aspectRatio: 'auto' }}
-                        onError={(e) => {
-                          // Fallback to placeholder if image fails to load
-                          e.currentTarget.src = '/images/placeholder.jpg'
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
-                        <p className="text-xs text-white">Loading media...</p>
-                      </div>
-                    )
-                  })()}
+                  <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
+                    <p className="text-xs text-white">Media coming soon</p>
+                  </div>
                 </div>
 
                 <p className="text-sm text-white leading-relaxed">
@@ -281,27 +211,11 @@ export default function BestPracticesScreen() {
                   {preset.title}
                 </h3>
 
-                {/* Media - Real aspect ratio, no border radius */}
+                {/* Media placeholder for development */}
                 <div className="relative w-full mb-4 overflow-hidden">
-                  {(() => {
-                    const media = findMediaForPreset(preset.title)
-                    return media ? (
-                      <img 
-                        src={media.imageUrl} 
-                        alt={preset.title}
-                        className="w-full h-auto object-cover"
-                        style={{ aspectRatio: 'auto' }}
-                        onError={(e) => {
-                          // Fallback to placeholder if image fails to load
-                          e.currentTarget.src = '/images/placeholder.jpg'
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
-                        <p className="text-xs text-white">Loading media...</p>
-                      </div>
-                    )
-                  })()}
+                  <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
+                    <p className="text-xs text-white">Media coming soon</p>
+                  </div>
                 </div>
 
                 <p className="text-sm text-white leading-relaxed">
