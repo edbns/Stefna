@@ -4321,7 +4321,7 @@ const HomeNew: React.FC = () => {
                   </div>
 
                   {/* Parallel Self™ button - SINGLE BUTTON with dropdown */}
-                  <div className="relative" data-parallelself-dropdown>
+                  <div className="relative group" data-parallelself-dropdown>
                     <button
                       onClick={() => {
                         if (isAuthenticated) {
@@ -4343,6 +4343,16 @@ const HomeNew: React.FC = () => {
                         : 'Parallel Self™'
                       }
                     </button>
+                    
+                    {/* Hover card with description */}
+                    <div className="absolute z-10 hidden group-hover:flex bg-white/90 backdrop-blur-md text-black text-xs p-3 rounded-lg shadow-lg w-64 top-full mt-2 left-1/2 transform -translate-x-1/2">
+                      <div className="text-center">
+                        <div className="font-semibold mb-1">Parallel Self™</div>
+                        <div className="text-xs leading-relaxed">
+                          Discover your cinematic alter ego. Each preset creates a different version of you - from storm-soaked elegance to grayscale icon style. Perfect for solo portraits with dramatic flair.
+                        </div>
+                      </div>
+                    </div>
                     
                     {/* Parallel Self™ presets dropdown - show when in Parallel Self mode */}
                     {composerState.mode === 'parallelself' && parallelSelfDropdownOpen && (
