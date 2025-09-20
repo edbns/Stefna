@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 export default function BestPracticesScreen() {
   const navigate = useNavigate()
   const [rotatingPresets, setRotatingPresets] = useState<any[]>([])
+  const [stefnaMedia, setStefnaMedia] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const presets = [
@@ -117,8 +118,14 @@ export default function BestPracticesScreen() {
           }
         }
 
-        // TODO: Add media fetching when Netlify functions are available
-        // For now, we'll show static presets without media
+        // Fetch media from creator@stefna.xyz (ID: 49b15f0e-6a2d-445d-9d32-d0a9bd859bfb)
+        const mediaResponse = await fetch(`/.netlify/functions/getPublicFeed?userId=49b15f0e-6a2d-445d-9d32-d0a9bd859bfb&limit=50`)
+        if (mediaResponse.ok) {
+          const mediaData = await mediaResponse.json()
+          if (mediaData.success && mediaData.data?.items) {
+            setStefnaMedia(mediaData.data.items)
+          }
+        }
         
       } catch (error) {
         console.error('Failed to fetch data:', error)
@@ -138,7 +145,37 @@ export default function BestPracticesScreen() {
     fetchData()
   }, [])
 
-  // TODO: Add media matching logic when Netlify functions are available
+  // Find media by preset type - same logic as feed/profile
+  const findMediaForPreset = (presetTitle: string) => {
+    if (!stefnaMedia.length) return null
+    
+    // Map preset titles to preset types used in the database
+    const presetTypeMap: Record<string, string> = {
+      'Rain Dancer': 'parallel_self',
+      'The Untouchable': 'parallel_self', 
+      'Holiday Mirage': 'parallel_self',
+      'Who Got Away': 'parallel_self',
+      'Nightshade': 'parallel_self',
+      'Afterglow': 'parallel_self',
+      'Chromatic Bloom': 'unreal_reflection',
+      'The Syndicate': 'unreal_reflection',
+      'Yakuza Heir': 'unreal_reflection',
+      'The Gothic Pact': 'unreal_reflection',
+      'Oracle of Seoul': 'unreal_reflection',
+      'Medusa\'s Mirror': 'unreal_reflection'
+    }
+    
+    const presetType = presetTypeMap[presetTitle]
+    if (!presetType) return stefnaMedia[0] // fallback to first media
+    
+    // Find media with matching preset type
+    const match = stefnaMedia.find(media => 
+      media.presetType === presetType || 
+      media.metadata?.presetType === presetType
+    )
+    
+    return match || stefnaMedia[0]
+  }
 
 
   return (
@@ -181,11 +218,26 @@ export default function BestPracticesScreen() {
                   {preset.title}
                 </h3>
 
-                {/* Media placeholder for development */}
+                {/* Real Media Display */}
                 <div className="relative w-full mb-4 overflow-hidden">
-                  <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
-                    <p className="text-xs text-white">Media coming soon</p>
-                  </div>
+                  {(() => {
+                    const media = findMediaForPreset(preset.title)
+                    if (media?.imageUrl) {
+                      return (
+                        <img 
+                          src={media.imageUrl} 
+                          alt={preset.title}
+                          className="w-full h-48 object-cover"
+                          style={{ aspectRatio: 'auto' }}
+                        />
+                      )
+                    }
+                    return (
+                      <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
+                        <p className="text-xs text-white">Media loading...</p>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 <p className="text-sm text-white leading-relaxed">
@@ -211,11 +263,26 @@ export default function BestPracticesScreen() {
                   {preset.title}
                 </h3>
 
-                {/* Media placeholder for development */}
+                {/* Real Media Display */}
                 <div className="relative w-full mb-4 overflow-hidden">
-                  <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
-                    <p className="text-xs text-white">Media coming soon</p>
-                  </div>
+                  {(() => {
+                    const media = findMediaForPreset(preset.title)
+                    if (media?.imageUrl) {
+                      return (
+                        <img 
+                          src={media.imageUrl} 
+                          alt={preset.title}
+                          className="w-full h-48 object-cover"
+                          style={{ aspectRatio: 'auto' }}
+                        />
+                      )
+                    }
+                    return (
+                      <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
+                        <p className="text-xs text-white">Media loading...</p>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 <p className="text-sm text-white leading-relaxed">
