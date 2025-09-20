@@ -352,11 +352,13 @@ export default function BestPracticesScreen() {
           </div>
         </div>
 
-        {/* Copyright Footer */}
-        <div className="text-center mt-16 pb-8">
-          <p className="text-sm text-white/60">
-            © 2025 Stefna. All rights reserved. Unauthorized vibes will be stylishly ignored.
-          </p>
+        {/* Copyright Footer - Sticky */}
+        <div className="fixed bottom-0 left-0 right-0 bg-black py-4 z-50">
+          <div className="text-center">
+            <p className="text-sm text-white/60">
+              © 2025 Stefna. All rights reserved. Unauthorized vibes will be stylishly ignored.
+            </p>
+          </div>
         </div>
       </div>
     </div>
