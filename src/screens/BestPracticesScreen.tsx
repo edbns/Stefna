@@ -335,27 +335,11 @@ export default function BestPracticesScreen() {
                     {preset.label}
                   </h3>
 
-                  {/* Media - Real aspect ratio, no border radius */}
+                  {/* Media placeholder for development */}
                   <div className="relative w-full mb-4 overflow-hidden">
-                    {(() => {
-                      const media = findMediaForPreset(preset.label)
-                      return media ? (
-                        <img 
-                          src={media.imageUrl} 
-                          alt={preset.label}
-                          className="w-full h-auto object-cover"
-                          style={{ aspectRatio: 'auto' }}
-                          onError={(e) => {
-                            // Fallback to placeholder if image fails to load
-                            e.currentTarget.src = '/images/placeholder.jpg'
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
-                          <p className="text-xs text-white">Loading media...</p>
-                        </div>
-                      )
-                    })()}
+                    <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
+                      <p className="text-xs text-white">Media coming soon</p>
+                    </div>
                   </div>
 
                   <p className="text-sm text-white leading-relaxed">
