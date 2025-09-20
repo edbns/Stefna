@@ -51,9 +51,8 @@ export function ParallelSelfPicker({
             {/* Hover card with description */}
             <div className="absolute z-10 hidden group-hover:flex bg-white/90 backdrop-blur-md text-black text-xs p-3 rounded-lg shadow-lg w-64 top-1/2 left-full ml-2 transform -translate-y-1/2">
               <div className="text-center">
-                <div className="font-semibold mb-1">{preset.label}</div>
                 <div className="text-xs leading-relaxed">
-                  {presetDescriptions[preset.label] || 'Discover your cinematic alter ego.'}
+                  {presetDescriptions[preset.label]}
                 </div>
               </div>
             </div>
