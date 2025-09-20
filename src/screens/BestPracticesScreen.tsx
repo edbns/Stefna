@@ -123,8 +123,8 @@ export default function BestPracticesScreen() {
         const mediaResponse = await fetch(`/.netlify/functions/getPublicFeed?userId=49b15f0e-6a2d-445d-9d32-d0a9bd859bfb&limit=50`)
         if (mediaResponse.ok) {
           const mediaData = await mediaResponse.json()
-          if (mediaData.success && mediaData.data?.items) {
-            setStefnaMedia(mediaData.data.items)
+          if (mediaData.items) {
+            setStefnaMedia(mediaData.items)
           }
         }
         
@@ -174,31 +174,32 @@ export default function BestPracticesScreen() {
   const findMediaForPreset = (presetTitle: string) => {
     if (!stefnaMedia.length) return null
     
-    // Map preset titles to media types used in the database
-    const presetTypeMap: Record<string, string> = {
-      'Rain Dancer': 'presets',
-      'The Untouchable': 'presets', 
-      'Holiday Mirage': 'presets',
-      'Who Got Away': 'presets',
-      'Nightshade': 'presets',
-      'Afterglow': 'presets',
-      'Chromatic Bloom': 'unreal_reflection',
-      'The Syndicate': 'unreal_reflection',
-      'Yakuza Heir': 'unreal_reflection',
-      'The Gothic Pact': 'unreal_reflection',
-      'Oracle of Seoul': 'unreal_reflection',
-      'Medusa\'s Mirror': 'unreal_reflection'
+    // Map preset titles to both mediaType and specific presetKey
+    const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
+      'Rain Dancer': { mediaType: 'parallel_self', presetKey: 'parallel_self_rain_dancer' },
+      'The Untouchable': { mediaType: 'parallel_self', presetKey: 'parallel_self_untouchable' }, 
+      'Holiday Mirage': { mediaType: 'parallel_self', presetKey: 'parallel_self_holiday_mirage' },
+      'Who Got Away': { mediaType: 'parallel_self', presetKey: 'parallel_self_one_that_got_away' },
+      'Nightshade': { mediaType: 'parallel_self', presetKey: 'parallel_self_nightshade' },
+      'Afterglow': { mediaType: 'parallel_self', presetKey: 'parallel_self_afterglow' },
+      'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' },
+      'The Syndicate': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_syndicate' },
+      'Yakuza Heir': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_yakuza_heir' },
+      'The Gothic Pact': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_gothic_pact' },
+      'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_oracle_seoul' },
+      'Medusa\'s Mirror': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_medusa_mirror' }
     }
     
-    const mediaType = presetTypeMap[presetTitle]
-    if (!mediaType) return stefnaMedia[0] // fallback to first media
+    const presetInfo = presetMap[presetTitle]
+    if (!presetInfo) return stefnaMedia[0] // fallback to first media
     
-    // Find media with matching mediaType (from API response)
-    const match = stefnaMedia.find(media => 
-      media.mediaType === mediaType
+    // Only show media for exact preset matches
+    const exactMatch = stefnaMedia.find(media => 
+      media.mediaType === presetInfo.mediaType && 
+      media.presetKey === presetInfo.presetKey
     )
     
-    return match || stefnaMedia[0]
+    return exactMatch || null // Return null if no exact match - will show "Media not available"
   }
 
 
@@ -238,7 +239,7 @@ export default function BestPracticesScreen() {
                 </h3>
 
                 {/* Real Media Display - EXACT same as MasonryMediaGrid */}
-                <div className="relative w-full mb-4 overflow-hidden">
+                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: findMediaForPreset(preset.title)?.url ? '6/19' : '3/2' }}>
                   {(() => {
                     const media = findMediaForPreset(preset.title)
                     if (media?.url) {
@@ -246,14 +247,14 @@ export default function BestPracticesScreen() {
                         <img
                           src={optimizeFeedImage(media.url)} 
                           alt={`Generated ${media.type} - ${preset.title}`}
-                          className="w-full h-auto object-cover"
+                          className="w-full h-full object-cover"
                           loading="lazy"
                         />
                       )
                     }
                     return (
-                      <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
-                        <p className="text-xs text-white">Media loading...</p>
+                      <div className="w-full h-full bg-[#333333] flex items-center justify-center">
+                        <p className="text-xs text-white/60">Media not available</p>
                       </div>
                     )
                   })()}
@@ -278,7 +279,7 @@ export default function BestPracticesScreen() {
                 </h3>
 
                 {/* Real Media Display - EXACT same as MasonryMediaGrid */}
-                <div className="relative w-full mb-4 overflow-hidden">
+                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: findMediaForPreset(preset.title)?.url ? '6/19' : '3/2' }}>
                   {(() => {
                     const media = findMediaForPreset(preset.title)
                     if (media?.url) {
@@ -286,14 +287,14 @@ export default function BestPracticesScreen() {
                         <img
                           src={optimizeFeedImage(media.url)} 
                           alt={`Generated ${media.type} - ${preset.title}`}
-                          className="w-full h-auto object-cover"
+                          className="w-full h-full object-cover"
                           loading="lazy"
                         />
                       )
                     }
                     return (
-                      <div className="w-full h-48 bg-[#333333] flex items-center justify-center">
-                        <p className="text-xs text-white">Media loading...</p>
+                      <div className="w-full h-full bg-[#333333] flex items-center justify-center">
+                        <p className="text-xs text-white/60">Media not available</p>
                       </div>
                     )
                   })()}
