@@ -353,7 +353,7 @@ export default function BestPracticesScreen() {
         </div>
 
         {/* Copyright Text */}
-        <p className="text-sm text-white/60 text-center mt-32">
+        <p className="text-sm text-white/60 text-center mt-24">
           © 2025 Stefna. All rights reserved. Unauthorized vibes will be stylishly ignored.
         </p>
       </div>
