@@ -148,11 +148,11 @@ const AuthScreen: React.FC = () => {
 
         {/* Referral Bonus Indicator */}
         {referrerEmail && (
-          <div className="mb-6 bg-gradient-to-r from-green-500/20 to-blue-500/20 border border-green-500/30 rounded-xl p-4">
+          <div className="mb-6 bg-[#333333] border border-[#333333] rounded-xl p-4">
             <div className="flex items-center space-x-2">
-              <CheckCircle size={16} className="text-green-400" />
+              <CheckCircle size={16} className="text-gray-400" />
               <span className="text-sm font-medium text-white">
-                🎁 You're invited by {referrerEmail}! Get 10 bonus credits when you sign up
+                You're invited by {referrerEmail}! Get 10 bonus credits when you sign up
               </span>
             </div>
           </div>
