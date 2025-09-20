@@ -233,11 +233,6 @@ export default function BestPracticesScreen() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {presets.filter(preset => preset.mode === "Parallel Self™").map((preset, idx) => (
               <div key={idx} className="bg-black rounded-xl p-6 shadow-lg text-center">
-                <div className="mb-3">
-                  <span className="text-xs uppercase text-white tracking-wider font-medium">
-                    {preset.mode}
-                  </span>
-                </div>
                 <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
                   {preset.title}
                 </h3>
@@ -278,11 +273,6 @@ export default function BestPracticesScreen() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {presets.filter(preset => preset.mode === "Unreal Reflection™").map((preset, idx) => (
               <div key={idx} className="bg-black rounded-xl p-6 shadow-lg text-center">
-                <div className="mb-3">
-                  <span className="text-xs uppercase text-white tracking-wider font-medium">
-                    {preset.mode}
-                  </span>
-                </div>
                 <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
                   {preset.title}
                 </h3>
