@@ -262,16 +262,23 @@ export default function BestPracticesScreen() {
                 <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: findMediaForPreset(preset.title)?.url ? '6/19' : '3/2' }}>
                   {(() => {
                     const media = findMediaForPreset(preset.title)
+                    console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
                     if (media?.url) {
+                      const optimizedUrl = optimizeFeedImage(media.url)
+                      console.log('🔍 [BestPractices] Original URL:', media.url)
+                      console.log('🔍 [BestPractices] Optimized URL:', optimizedUrl)
                       return (
                         <img
-                          src={optimizeFeedImage(media.url)} 
+                          src={optimizedUrl} 
                           alt={`Generated ${media.type} - ${preset.title}`}
                           className="w-full h-full object-cover"
                           loading="lazy"
+                          onLoad={() => console.log('🔍 [BestPractices] Image loaded successfully for', preset.title)}
+                          onError={(e) => console.error('🔍 [BestPractices] Image failed to load for', preset.title, ':', e)}
                         />
                       )
                     }
+                    console.log('🔍 [BestPractices] No media URL for', preset.title)
                     return (
                       <div className="w-full h-full bg-[#333333] flex items-center justify-center">
                         <p className="text-xs text-white/60">Media not available</p>
@@ -302,16 +309,23 @@ export default function BestPracticesScreen() {
                 <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: findMediaForPreset(preset.title)?.url ? '6/19' : '3/2' }}>
                   {(() => {
                     const media = findMediaForPreset(preset.title)
+                    console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
                     if (media?.url) {
+                      const optimizedUrl = optimizeFeedImage(media.url)
+                      console.log('🔍 [BestPractices] Original URL:', media.url)
+                      console.log('🔍 [BestPractices] Optimized URL:', optimizedUrl)
                       return (
                         <img
-                          src={optimizeFeedImage(media.url)} 
+                          src={optimizedUrl} 
                           alt={`Generated ${media.type} - ${preset.title}`}
                           className="w-full h-full object-cover"
                           loading="lazy"
+                          onLoad={() => console.log('🔍 [BestPractices] Image loaded successfully for', preset.title)}
+                          onError={(e) => console.error('🔍 [BestPractices] Image failed to load for', preset.title, ':', e)}
                         />
                       )
                     }
+                    console.log('🔍 [BestPractices] No media URL for', preset.title)
                     return (
                       <div className="w-full h-full bg-[#333333] flex items-center justify-center">
                         <p className="text-xs text-white/60">Media not available</p>
