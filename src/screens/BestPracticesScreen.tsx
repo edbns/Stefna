@@ -140,7 +140,7 @@ export default function BestPracticesScreen() {
                     resolve(true)
                   }
                   img.onerror = () => resolve(false)
-                  img.src = item.finalUrl || item.imageUrl
+                  img.src = item.url
                 })
               } catch (error) {
                 // Skip items that fail to load
@@ -265,9 +265,8 @@ export default function BestPracticesScreen() {
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
-                    if (media?.finalUrl || media?.imageUrl) {
-                      const originalUrl = media.finalUrl || media.imageUrl
-                      const optimizedUrl = optimizeFeedImage(originalUrl)
+                    if (media?.url) {
+                      const optimizedUrl = optimizeFeedImage(media.url)
                       return (
                         <img
                           src={optimizedUrl} 
@@ -307,9 +306,8 @@ export default function BestPracticesScreen() {
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
-                    if (media?.finalUrl || media?.imageUrl) {
-                      const originalUrl = media.finalUrl || media.imageUrl
-                      const optimizedUrl = optimizeFeedImage(originalUrl)
+                    if (media?.url) {
+                      const optimizedUrl = optimizeFeedImage(media.url)
                       return (
                         <img
                           src={optimizedUrl} 
