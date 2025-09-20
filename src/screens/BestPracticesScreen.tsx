@@ -219,14 +219,6 @@ export default function BestPracticesScreen() {
     
     console.log('🔍 [BestPractices] Exact match found:', !!exactMatch)
     
-    // If no exact match, try to find any media of the same type as fallback
-    if (!exactMatch) {
-      const fallbackMatch = stefnaMedia.find(media => media.mediaType === presetInfo.mediaType)
-      if (fallbackMatch) {
-        console.log('🔍 [BestPractices] Using fallback match for type:', presetInfo.mediaType)
-        return fallbackMatch
-      }
-    }
     
     return exactMatch || null // Return null if no exact match - will show "Media not available"
   }
