@@ -250,7 +250,9 @@ export const handler: Handler = async (event) => {
         'SELECT value FROM app_config WHERE key = $1',
         ['starter_grant']
       );
+      console.log('🔍 [Starter Grant] Database result:', starterGrantResult.rows[0]);
       const starterGrant = parseInt(starterGrantResult.rows[0]?.value || '30');
+      console.log('💰 [Starter Grant] Final value:', starterGrant);
 
       // Create user credits with starter grant
       await client.query(
@@ -281,8 +283,10 @@ export const handler: Handler = async (event) => {
             })
           });
           
+          const referralData = await referralResponse.json();
+          console.log('🔗 [Referral] Process-referral response:', referralData);
+          
           if (referralResponse.ok) {
-            const referralData = await referralResponse.json();
             console.log('✅ [Referral] Successfully processed:', referralData);
           } else {
             const referralError = await referralResponse.json();
@@ -293,6 +297,8 @@ export const handler: Handler = async (event) => {
           console.warn('⚠️ [Referral] Error processing referral:', referralError);
           // Don't fail user creation if referral fails
         }
+      } else {
+        console.log('ℹ️ [Referral] No referrerEmail provided:', referrerEmail);
       }
       
       // Send welcome email for new users (with 5-minute delay)
