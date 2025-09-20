@@ -124,7 +124,30 @@ export default function BestPracticesScreen() {
         if (mediaResponse.ok) {
           const mediaData = await mediaResponse.json()
           if (mediaData.items) {
-            setStefnaMedia(mediaData.items)
+            // Filter for 6:19 aspect ratio only
+            const filteredMedia = []
+            for (const item of mediaData.items) {
+              try {
+                await new Promise((resolve, reject) => {
+                  const img = new Image()
+                  img.onload = () => {
+                    const aspectRatio = img.width / img.height
+                    const targetRatio = 6 / 19
+                    const tolerance = 0.1 // Allow some tolerance
+                    if (Math.abs(aspectRatio - targetRatio) <= tolerance) {
+                      filteredMedia.push(item)
+                    }
+                    resolve(true)
+                  }
+                  img.onerror = () => resolve(false)
+                  img.src = item.finalUrl || item.imageUrl
+                })
+              } catch (error) {
+                // Skip items that fail to load
+                continue
+              }
+            }
+            setStefnaMedia(filteredMedia)
           }
         }
         
@@ -170,11 +193,11 @@ export default function BestPracticesScreen() {
     fetchData()
   }, [])
 
-  // Find media by preset type - using correct API field names
+  // Find media by preset type - exact mapping like it should be
   const findMediaForPreset = (presetTitle: string) => {
     if (!stefnaMedia.length) return null
     
-    // Map preset titles to both mediaType and specific presetKey - using exact backend structure
+    // Map preset titles to both mediaType and specific presetKey
     const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
       'Rain Dancer': { mediaType: 'parallel_self', presetKey: 'parallel_self_rain_dancer' },
       'The Untouchable': { mediaType: 'parallel_self', presetKey: 'parallel_self_untouchable' },
@@ -193,7 +216,7 @@ export default function BestPracticesScreen() {
     const presetInfo = presetMap[presetTitle]
     if (!presetInfo) return null
     
-    // Only show media for exact preset matches
+    // Find exact match for this specific preset
     const exactMatch = stefnaMedia.find(media => 
       media.mediaType === presetInfo.mediaType && 
       media.presetKey === presetInfo.presetKey
