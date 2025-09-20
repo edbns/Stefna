@@ -245,10 +245,17 @@ export const handler: Handler = async (event) => {
         [clientIP, email.toLowerCase()]
       );
 
-      // Create user credits
+      // Get starter grant from app_config
+      const starterGrantResult = await client.query(
+        'SELECT value FROM app_config WHERE key = $1',
+        ['starter_grant']
+      );
+      const starterGrant = parseInt(starterGrantResult.rows[0]?.value || '30');
+
+      // Create user credits with starter grant
       await client.query(
-        'INSERT INTO user_credits (user_id, credits, balance) VALUES ($1, 14, 0)',
-        [userId]
+        'INSERT INTO user_credits (user_id, credits, balance) VALUES ($1, $2, 0)',
+        [userId, starterGrant]
       );
 
       // Create user settings with PRIVACY-FIRST defaults

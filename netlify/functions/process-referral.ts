@@ -94,47 +94,29 @@ export const handler: Handler = async (event) => {
       VALUES ($1, $2, $3, NOW())
     `, [referrerId, newUserId, newUserEmail]);
 
-    // Use hardcoded bonus amounts since appConfig table doesn't exist
-    const refBonus = 10; // Referrer gets 10 credits
-    const newBonus = 10; // New user gets 10 credits
+    // Get referral bonus amounts from app_config
+    const referrerBonusResult = await qOne(`SELECT value FROM app_config WHERE key = 'referral_referrer_bonus'`);
+    const newUserBonusResult = await qOne(`SELECT value FROM app_config WHERE key = 'referral_new_bonus'`);
+    
+    const refBonus = parseInt(referrerBonusResult?.value || '10');
+    const newBonus = parseInt(newUserBonusResult?.value || '10');
 
-    // Grant to referrer
-    const referrerCredits = await q(`
-      INSERT INTO credits_ledger (id, user_id, action, status, reason, amount, env, created_at, updated_at)
-      VALUES (gen_random_uuid(), $1, 'referral', 'completed', 'referral.referrer', $2, 'production', NOW(), NOW())
-      RETURNING id
-    `, [referrerId, refBonus]);
-    
-    if (!referrerCredits || referrerCredits.length === 0) {
-      throw new Error('Failed to create referrer credit transaction');
-    }
-    
-    // Grant to new user
-    const newUserCredits = await q(`
-      INSERT INTO credits_ledger (id, user_id, action, status, reason, amount, env, created_at, updated_at)
-      VALUES (gen_random_uuid(), $1, 'referral', 'completed', 'referral.new', $2, 'production', NOW(), NOW())
-      RETURNING id
-    `, [newUserId, newBonus]);
-    
-    if (!newUserCredits || newUserCredits.length === 0) {
-      throw new Error('Failed to create new user credit transaction');
-    }
-
-    // Update user credits balances
+    // Grant to referrer - add to balance (lifetime credits)
     const referrerBalance = await q(`
       INSERT INTO user_credits (user_id, credits, balance, updated_at)
-      VALUES ($1, $2, 0, NOW())
+      VALUES ($1, 0, $2, NOW())
       ON CONFLICT (user_id) 
-      DO UPDATE SET credits = user_credits.credits + $2, updated_at = NOW()
-      RETURNING credits
+      DO UPDATE SET balance = user_credits.balance + $2, updated_at = NOW()
+      RETURNING balance
     `, [referrerId, refBonus]);
 
+    // Grant to new user - add to balance (lifetime credits)
     const newUserBalance = await q(`
       INSERT INTO user_credits (user_id, credits, balance, updated_at)
-      VALUES ($1, $2, 0, NOW())
+      VALUES ($1, 0, $2, NOW())
       ON CONFLICT (user_id) 
-      DO UPDATE SET credits = user_credits.credits + $2, updated_at = NOW()
-      RETURNING credits
+      DO UPDATE SET balance = user_credits.balance + $2, updated_at = NOW()
+      RETURNING balance
     `, [newUserId, newBonus]);
 
     console.log(`✅ Referral processed: ${refBonus} credits to referrer, ${newBonus} credits to new user`);

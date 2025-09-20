@@ -2,6 +2,6 @@
 -- This migration adds the daily_cap configuration value to the app_config table
 
 INSERT INTO app_config (key, value) VALUES 
-    ('daily_cap', '30')
+    ('daily_cap', '14')
 ON CONFLICT (key) DO UPDATE SET 
     value = EXCLUDED.value;

@@ -26,18 +26,17 @@ export const handler: Handler = async (event) => {
 
   try {
     if (event.httpMethod === 'GET') {
-      // Get quota status
-      const quotaStatus = await qOne(`
-        SELECT * FROM get_quota_status()
+      // Get quota status - simplified version
+      const userCount = await qOne(`
+        SELECT COUNT(*) as total_users FROM users
       `);
-
-      if (!quotaStatus) {
-        throw new Error('Failed to get quota status');
-      }
 
       return json({
         success: true,
-        quota: quotaStatus
+        quota: {
+          total_users: userCount?.total_users || 0,
+          quota_reached: false // Always allow signups for now
+        }
       });
     }
 
@@ -64,19 +63,7 @@ export const handler: Handler = async (event) => {
         });
       }
 
-      // Check quota for new users
-      const quotaReached = await qOne(`
-        SELECT is_quota_reached() as quota_reached
-      `);
-
-      if (quotaReached?.quota_reached) {
-        return json({
-          success: true,
-          canSignUp: false,
-          reason: 'quota_reached'
-        });
-      }
-
+      // Always allow signups for now (quota system disabled)
       return json({
         success: true,
         canSignUp: true,
