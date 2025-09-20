@@ -122,7 +122,11 @@ export default function BestPracticesScreen() {
         const mediaResponse = await fetch('/.netlify/functions/getPublicFeed?userId=49b15f0e-6a2d-445d-9d32-d0a9bd859bfb&limit=50')
         if (mediaResponse.ok) {
           const mediaData = await mediaResponse.json()
+          console.log('🔍 Media response:', mediaData)
+          console.log('🔍 Media array:', mediaData.media)
           setStefnaMedia(mediaData.media || [])
+        } else {
+          console.error('❌ Failed to fetch media:', mediaResponse.status)
         }
       } catch (error) {
         console.error('Failed to fetch data:', error)
@@ -136,7 +140,13 @@ export default function BestPracticesScreen() {
 
   // Find media by preset type - same logic as feed/profile
   const findMediaForPreset = (presetTitle: string) => {
-    if (!stefnaMedia.length) return null
+    if (!stefnaMedia.length) {
+      console.log('🔍 No stefnaMedia available for:', presetTitle)
+      return null
+    }
+    
+    console.log('🔍 Available media:', stefnaMedia.length, 'items')
+    console.log('🔍 Looking for preset:', presetTitle)
     
     // Map preset titles to preset types used in the database
     const presetTypeMap: Record<string, string> = {
@@ -155,14 +165,32 @@ export default function BestPracticesScreen() {
     }
     
     const presetType = presetTypeMap[presetTitle]
-    if (!presetType) return stefnaMedia[0] // fallback to first media
+    console.log('🔍 Mapped preset type:', presetType)
     
-    // Find media with matching preset type
-    const match = stefnaMedia.find(media => 
-      media.presetType === presetType || 
-      media.metadata?.presetType === presetType
-    )
+    if (!presetType) {
+      console.log('🔍 No preset type found, using first media')
+      return stefnaMedia[0] // fallback to first media
+    }
     
+    // Check what fields are available in the media objects
+    console.log('🔍 Sample media structure:', stefnaMedia[0])
+    
+    // Find media with matching preset type - check multiple possible fields
+    const match = stefnaMedia.find(media => {
+      const matches = 
+        media.presetType === presetType || 
+        media.metadata?.presetType === presetType ||
+        media.preset === presetType ||
+        media.mode === presetType ||
+        (media.metadata && JSON.stringify(media.metadata).includes(presetType))
+      
+      if (matches) {
+        console.log('✅ Found match:', media)
+      }
+      return matches
+    })
+    
+    console.log('🔍 Match result:', match ? 'Found' : 'Not found')
     return match || stefnaMedia[0]
   }
 
