@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, X, FileText, ArrowUp } from 'lucide-react'
+import { Plus, X, FileText, ArrowUp, BookOpen } from 'lucide-react'
 // Generate simple unique ID for runId
 const generateRunId = () => `run_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 import { authenticatedFetch, signedFetch } from '../utils/apiClient'
@@ -38,7 +38,6 @@ import { ParallelSelfPicker } from './ParallelSelfPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
 import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
 import { MediaUploadAgreement } from './MediaUploadAgreement'
-import BestPracticesPopup from './BestPracticesPopup'
 import { paramsForI2ISharp } from '../services/infer-params'
 import MobileFloatingNav from './MobileFloatingNav'
 import MobileComposer from './MobileComposer'
@@ -467,6 +466,7 @@ const HomeNew: React.FC = () => {
       navigate('/', { replace: true, state: {} })
     }
   }, [location.state, navigate])
+
 
   // Initialize sticky preset system when database presets are loaded
   useEffect(() => {
@@ -3672,6 +3672,10 @@ const HomeNew: React.FC = () => {
               authService.logout();
               navigate('/');
             }}
+            onBestPracticesClick={() => {
+              // Navigate to best practices page
+              navigate('/bestpractices');
+            }}
             isGenerating={navGenerating}
           />
           
@@ -3847,6 +3851,17 @@ const HomeNew: React.FC = () => {
         )}
       </div>
 
+      {/* Best Practices Button - Bottom Left - Always Visible */}
+      <div className="fixed bottom-4 left-4 z-50">
+        <button
+          onClick={() => navigate('/bestpractices')}
+          className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-white/90 hover:scale-105 font-medium"
+          aria-label="Best Practices"
+        >
+          Best Practices
+        </button>
+      </div>
+
       {/* Main content area - Full width with top padding for floating components */}
       <div className="w-full min-h-screen pt-24">
         {/* Feed content - 3 columns */}
@@ -3884,6 +3899,7 @@ const HomeNew: React.FC = () => {
                 </div>
               )}
               
+
               {/* 🚀 Infinite scroll debug info */}
               {import.meta.env.DEV && (
                 <div className="fixed bottom-4 right-4 bg-black/80 text-white text-xs p-2 rounded backdrop-blur-sm z-50">
@@ -4694,8 +4710,6 @@ const HomeNew: React.FC = () => {
         </div>
       )}
 
-      {/* Best Practices Popup */}
-      <BestPracticesPopup />
 
     </div>
   )

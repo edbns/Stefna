@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 // CACHE BUSTER: 2025-01-20 - Force frontend cache invalidation
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, ChevronRight, Coins, Users, Plus, Instagram as InstagramIcon, Facebook as FacebookIcon, Youtube as YouTubeIcon } from 'lucide-react'
 // RemixIcon import removed - no more remix functionality
 
@@ -57,9 +57,15 @@ const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefin
 
 const ProfileScreen: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { notifyReady, notifyError } = useToasts()
-  // const location = useLocation()
-  const [activeTab, setActiveTab] = useState<string>('all-media')
+  
+  // Initialize activeTab from URL parameter to prevent glitch
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const tabFromUrl = urlParams.get('tab')
+    return tabFromUrl || 'all-media'
+  })
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
 
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
@@ -132,13 +138,30 @@ const ProfileScreen: React.FC = () => {
   
 
 
-  // Handle navigation state for activeTab
+  // Helper function to switch tabs and update URL
+  const switchTab = (tabId: string) => {
+    console.log('🔄 Switching to tab:', tabId, 'Current tab:', activeTab)
+    setActiveTab(tabId)
+    
+    // Update URL with tab parameter
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', tabId)
+    console.log('🔄 Updating URL to:', url.toString())
+    window.history.replaceState({}, '', url.toString())
+  }
+
+  // Handle URL parameter changes for activeTab
   useEffect(() => {
-    const state = (navigate as any).location?.state
-    if (state?.activeTab) {
-      setActiveTab(state.activeTab)
+    const urlParams = new URLSearchParams(location.search)
+    const tabFromUrl = urlParams.get('tab')
+    
+    console.log('🔄 URL changed:', { tabFromUrl, locationSearch: location.search })
+    
+    if (tabFromUrl) {
+      console.log('🔄 Setting active tab from URL change:', tabFromUrl)
+      setActiveTab(tabFromUrl)
     }
-  }, [navigate])
+  }, [location.search])
 
   // Handle email change
   const handleChangeEmail = async () => {
@@ -596,7 +619,11 @@ const ProfileScreen: React.FC = () => {
           'success'
         )
         
-        // Background refresh removed to prevent duplicate loading
+        // Background refresh to get updated media list
+        setTimeout(() => {
+          console.log('🔄 Background refresh after delete all operation')
+          loadUserMedia(false, 0) // Refresh from page 0
+        }, 1000)
       } else {
         addNotification('Delete Failed', 'No media items were deleted', 'error')
       }
@@ -701,6 +728,12 @@ const ProfileScreen: React.FC = () => {
       setSelectedMediaIds(new Set())
       setIsSelectionMode(false)
       
+      // Background refresh to get updated media list
+      setTimeout(() => {
+        console.log('🔄 Background refresh after delete operation')
+        loadUserMedia(false, 0) // Refresh from page 0
+      }, 1000)
+      
       // Background refresh removed to prevent duplicate loading
       
     } catch (error) {
@@ -743,6 +776,12 @@ const ProfileScreen: React.FC = () => {
       await downloadAllMediaAsZip(downloadableMedia, `all-media-${new Date().toISOString().split('T')[0]}.zip`)
       
       addNotification('Download Complete', `Downloaded ${userMedia.length} media files`, 'success')
+      
+      // Background refresh after download
+      setTimeout(() => {
+        console.log('🔄 Background refresh after download all operation')
+        loadUserMedia(false, 0) // Refresh from page 0
+      }, 500)
     } catch (error) {
       console.error('❌ Download all error:', error)
       addNotification('Download Failed', error instanceof Error ? error.message : 'Failed to download media', 'error')
@@ -783,6 +822,12 @@ const ProfileScreen: React.FC = () => {
       await downloadSelectedMediaAsZip(downloadableMedia, `selected-media-${new Date().toISOString().split('T')[0]}.zip`)
       
       addNotification('Download Complete', `Downloaded ${selectedMediaIds.size} selected media files`, 'success')
+      
+      // Background refresh after download
+      setTimeout(() => {
+        console.log('🔄 Background refresh after download selected operation')
+        loadUserMedia(false, 0) // Refresh from page 0
+      }, 500)
     } catch (error) {
       console.error('❌ Download selected error:', error)
       addNotification('Download Failed', error instanceof Error ? error.message : 'Failed to download selected media', 'error')
@@ -1610,7 +1655,7 @@ const ProfileScreen: React.FC = () => {
                 <div key={item.id}>
                   <button
                     onClick={() => {
-                        setActiveTab(item.id)
+                        switchTab(item.id)
                         setShowSettingsDropdown(false)
                     }}
                     className={`w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-3 ${
@@ -1761,9 +1806,13 @@ const ProfileScreen: React.FC = () => {
 
         {activeTab === 'all-media' && (
           <div className="flex-1 overflow-y-auto p-6 pt-24">
-            {/* Selection Controls */}
+            {/* Selection Controls - Sticky when in selection mode */}
             {!isLoading && userMedia.length > 0 && (
-              <div className="mb-6 flex items-center justify-between bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className={`mb-6 flex items-center justify-between bg-white/5 rounded-lg p-4 border border-white/10 ${
+                isSelectionMode && selectedMediaIds.size > 0 
+                  ? 'sticky top-0 z-50 backdrop-blur-md bg-white/10 border-white/20 shadow-lg' 
+                  : ''
+              }`}>
                 <div className="flex items-center gap-4">
                   <button
                     onClick={toggleSelectionMode}
@@ -1801,7 +1850,7 @@ const ProfileScreen: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={downloadSelectedMedia}
-                      className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-500/80 text-white hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={isDownloadingSelected}
                     >
                       {isDownloadingSelected ? (
@@ -1829,7 +1878,7 @@ const ProfileScreen: React.FC = () => {
                     </button>
                     <button
                       onClick={downloadAllMedia}
-                      className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600/80 text-white hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={isDownloadingAll}
                     >
                       {isDownloadingAll ? (

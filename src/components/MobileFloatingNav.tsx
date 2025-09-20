@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, LogIn, User, LogOut } from 'lucide-react';
+import { Plus, LogIn, User, LogOut, BookOpen } from 'lucide-react';
 import authService from '../services/authService';
 
 interface MobileFloatingNavProps {
@@ -7,6 +7,7 @@ interface MobileFloatingNavProps {
   onProfileClick: () => void;
   onLoginClick: () => void;
   onLogoutClick: () => void;
+  onBestPracticesClick: () => void;
   isGenerating?: boolean;
 }
 
@@ -15,12 +16,28 @@ const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
   onProfileClick,
   onLoginClick,
   onLogoutClick,
+  onBestPracticesClick,
   isGenerating = false
 }) => {
   const isAuthenticated = authService.isAuthenticated();
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-3">
+      {/* Best Practices Button */}
+      <button
+        onClick={onBestPracticesClick}
+        className="w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors relative group"
+        title="Best Practices"
+      >
+        <BookOpen size={24} className="text-black" />
+        
+        {/* Hover Tooltip */}
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+          Best Practices
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/80"></div>
+        </div>
+      </button>
+
       {/* Upload Button - Always visible */}
       <button
         onClick={onUploadClick}

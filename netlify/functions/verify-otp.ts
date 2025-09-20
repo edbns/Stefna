@@ -78,9 +78,10 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    const { email, code, platform: clientPlatform } = bodyData;
+    const { email, code, platform: clientPlatform, referrerEmail } = bodyData;
     console.log('Parsed email:', email);
     console.log('Parsed code:', code ? '***' + code.slice(-2) : 'undefined');
+    console.log('Parsed referrerEmail:', referrerEmail || 'none');
 
     if (!email || !code) {
       console.log('❌ Missing email or code');
@@ -258,6 +259,34 @@ export const handler: Handler = async (event) => {
 
 
       user = { id: userId, email: email.toLowerCase() };
+      
+      // Process referral if referrerEmail is provided
+      if (referrerEmail && referrerEmail.trim()) {
+        console.log('🔗 [Referral] Processing referral for new user:', { userId, email, referrerEmail });
+        try {
+          const referralResponse = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/process-referral`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              referrerEmail: referrerEmail.trim(),
+              newUserId: userId,
+              newUserEmail: email.toLowerCase()
+            })
+          });
+          
+          if (referralResponse.ok) {
+            const referralData = await referralResponse.json();
+            console.log('✅ [Referral] Successfully processed:', referralData);
+          } else {
+            const referralError = await referralResponse.json();
+            console.warn('⚠️ [Referral] Failed to process referral:', referralError);
+            // Don't fail user creation if referral fails
+          }
+        } catch (referralError) {
+          console.warn('⚠️ [Referral] Error processing referral:', referralError);
+          // Don't fail user creation if referral fails
+        }
+      }
       
       // Send welcome email for new users (with 5-minute delay)
       try {

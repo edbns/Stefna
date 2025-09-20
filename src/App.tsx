@@ -13,6 +13,7 @@ import MobileGalleryScreen from './screens/MobileGalleryScreen'
 import AdminDashboardScreen from './screens/AdminDashboardScreen'
 import { Navigate } from 'react-router-dom'
 import AuthScreen from './screens/AuthScreen'
+import BestPracticesScreen from './screens/BestPracticesScreen'
 import { initializeAuthBootstrap } from './services/authBootstrap'
 import { setupGlobalErrorHandling } from './utils/globalErrorHandler'
 import WaitlistForm from './components/WaitlistForm'
@@ -166,6 +167,7 @@ const AppContent: React.FC = () => {
             </MobileRouteGuard>
           } />
           <Route path="/coming-soon" element={<ComingSoonPage />} />
+          <Route path="/bestpractices" element={<BestPracticesScreen />} />
           {/* Catch-all route - redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
