@@ -354,11 +354,9 @@ export default function BestPracticesScreen() {
 
         {/* Copyright Footer */}
         <div className="bg-black mt-16">
-          <div className="text-center">
-            <p className="text-sm text-white/60">
-              © 2025 Stefna. All rights reserved. Unauthorized vibes will be stylishly ignored.
-            </p>
-          </div>
+          <p className="text-sm text-white/60 text-center">
+            © 2025 Stefna. All rights reserved. Unauthorized vibes will be stylishly ignored.
+          </p>
         </div>
       </div>
     </div>
