@@ -158,20 +158,20 @@ export default function BestPracticesScreen() {
       return null
     }
     
-    // Map preset titles to actual database presetKeys (based on what's actually in the database)
+    // Map preset titles to actual database presetKeys
     const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
       'Rain Dancer': { mediaType: 'parallel_self', presetKey: 'parallel_self_rain_dancer' },
       'The Untouchable': { mediaType: 'parallel_self', presetKey: 'parallel_self_untouchable' },
       'Holiday Mirage': { mediaType: 'parallel_self', presetKey: 'parallel_self_holiday_mirage' },
       'Who Got Away': { mediaType: 'parallel_self', presetKey: 'parallel_self_one_that_got_away' },
-      'Nightshade': { mediaType: 'parallel_self', presetKey: 'parallel_self_nightshade' }, // Not in database
+      'Nightshade': { mediaType: 'parallel_self', presetKey: 'parallel_self_nightshade' },
       'Afterglow': { mediaType: 'parallel_self', presetKey: 'parallel_self_afterglow' },
       'The Syndicate': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_the_syndicate' },
       'Yakuza Heir': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_yakuza_heir' },
-      'The Gothic Pact': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_digital_monk' }, // Actual key in DB
-      'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_urban_oracle' }, // Actual key in DB
-      'Medusa\'s Mirror': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_prism_break' }, // Actual key in DB
-      'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' } // Not in database
+      'The Gothic Pact': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_gothic_pact' },
+      'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_oracle_seoul' },
+      'Medusa\'s Mirror': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_medusa_mirror' },
+      'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' }
     }
     
     const presetInfo = presetMap[presetTitle]
@@ -228,7 +228,7 @@ export default function BestPracticesScreen() {
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
-                    const imageUrl = media?.imageUrl || media?.finalUrl
+                    const imageUrl = media?.url || media?.imageUrl || media?.finalUrl
                     if (imageUrl) {
                       const optimizedUrl = optimizeFeedImage(imageUrl)
                       return (
@@ -270,7 +270,7 @@ export default function BestPracticesScreen() {
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
-                    const imageUrl = media?.imageUrl || media?.finalUrl
+                    const imageUrl = media?.url || media?.imageUrl || media?.finalUrl
                     if (imageUrl) {
                       const optimizedUrl = optimizeFeedImage(imageUrl)
                       return (
