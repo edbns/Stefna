@@ -263,9 +263,10 @@ export default function BestPracticesScreen() {
                   {(() => {
                     const media = findMediaForPreset(preset.title)
                     console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
-                    if (media?.url) {
-                      const optimizedUrl = optimizeFeedImage(media.url)
-                      console.log('🔍 [BestPractices] Original URL:', media.url)
+                    if (media?.finalUrl || media?.imageUrl) {
+                      const originalUrl = media.finalUrl || media.imageUrl
+                      const optimizedUrl = optimizeFeedImage(originalUrl)
+                      console.log('🔍 [BestPractices] Original URL:', originalUrl)
                       console.log('🔍 [BestPractices] Optimized URL:', optimizedUrl)
                       return (
                         <img
@@ -310,9 +311,10 @@ export default function BestPracticesScreen() {
                   {(() => {
                     const media = findMediaForPreset(preset.title)
                     console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
-                    if (media?.url) {
-                      const optimizedUrl = optimizeFeedImage(media.url)
-                      console.log('🔍 [BestPractices] Original URL:', media.url)
+                    if (media?.finalUrl || media?.imageUrl) {
+                      const originalUrl = media.finalUrl || media.imageUrl
+                      const optimizedUrl = optimizeFeedImage(originalUrl)
+                      console.log('🔍 [BestPractices] Original URL:', originalUrl)
                       console.log('🔍 [BestPractices] Optimized URL:', optimizedUrl)
                       return (
                         <img
