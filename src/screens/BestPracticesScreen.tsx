@@ -104,16 +104,18 @@ export default function BestPracticesScreen() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch rotating presets
-        const presetsResponse = await fetch('/.netlify/functions/get-active-presets')
+        // Fetch rotating presets using the same system as composer
+        const presetsResponse = await fetch('/.netlify/functions/get-presets')
         if (presetsResponse.ok) {
           const presetsData = await presetsResponse.json()
-          // Take only the first 5 presets and add user-friendly descriptions
-          const presetsWithDescriptions = presetsData.presets.slice(0, 5).map((preset: any) => ({
-            ...preset,
-            userDescription: presetDescriptions[preset.id] || 'Fresh preset, rotating weekly.'
-          }))
-          setRotatingPresets(presetsWithDescriptions)
+          if (presetsData.success && presetsData.data?.presets) {
+            // Take only the first 5 presets and add user-friendly descriptions
+            const presetsWithDescriptions = presetsData.data.presets.slice(0, 5).map((preset: any) => ({
+              ...preset,
+              userDescription: presetDescriptions[preset.id] || 'Fresh preset, rotating weekly.'
+            }))
+            setRotatingPresets(presetsWithDescriptions)
+          }
         }
 
         // Fetch Stefna's official media (only from creator@stefna.xyz)
@@ -132,27 +134,35 @@ export default function BestPracticesScreen() {
     fetchData()
   }, [])
 
-  // Find best matching media for a preset
+  // Find media by preset type - same logic as feed/profile
   const findMediaForPreset = (presetTitle: string) => {
     if (!stefnaMedia.length) return null
     
-    // Try to find exact match first
-    let match = stefnaMedia.find(media => 
-      media.preset?.toLowerCase().includes(presetTitle.toLowerCase()) ||
-      presetTitle.toLowerCase().includes(media.preset?.toLowerCase())
-    )
-    
-    // If no exact match, try fuzzy matching
-    if (!match) {
-      const presetWords = presetTitle.toLowerCase().split(' ')
-      match = stefnaMedia.find(media => 
-        media.preset && presetWords.some(word => 
-          media.preset.toLowerCase().includes(word)
-        )
-      )
+    // Map preset titles to preset types used in the database
+    const presetTypeMap: Record<string, string> = {
+      'Rain Dancer': 'parallel_self',
+      'The Untouchable': 'parallel_self', 
+      'Holiday Mirage': 'parallel_self',
+      'Who Got Away': 'parallel_self',
+      'Nightshade': 'parallel_self',
+      'Afterglow': 'parallel_self',
+      'Chromatic Bloom': 'unreal_reflection',
+      'The Syndicate': 'unreal_reflection',
+      'Yakuza Heir': 'unreal_reflection',
+      'The Gothic Pact': 'unreal_reflection',
+      'Oracle of Seoul': 'unreal_reflection',
+      'Medusa\'s Mirror': 'unreal_reflection'
     }
     
-    // If still no match, return the first available media
+    const presetType = presetTypeMap[presetTitle]
+    if (!presetType) return stefnaMedia[0] // fallback to first media
+    
+    // Find media with matching preset type
+    const match = stefnaMedia.find(media => 
+      media.presetType === presetType || 
+      media.metadata?.presetType === presetType
+    )
+    
     return match || stefnaMedia[0]
   }
 
