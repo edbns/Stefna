@@ -125,9 +125,7 @@ export default function BestPracticesScreen() {
           const mediaData = await mediaResponse.json()
           if (mediaData.items) {
             // Use all media items - no aspect ratio filtering since all media is square (1:1)
-            const filteredMedia = mediaData.items
-            // Media fetched successfully - no debugging needed
-            setStefnaMedia(filteredMedia)
+            setStefnaMedia(mediaData.items)
           }
         }
         
