@@ -14,6 +14,16 @@ export function ParallelSelfPicker({
   onChange,
   disabled = false,
 }: ParallelSelfPickerProps) {
+  // User-friendly descriptions for hover cards
+  const presetDescriptions: Record<string, string> = {
+    'Rain Dancer': 'Cinematic storm, soaked elegance, emotional power.',
+    'The Untouchable': 'Grayscale icon, sharp style, cold gaze.',
+    'Holiday Mirage': 'Golden hour glow, vacation fantasy, effortless chic.',
+    'Who Got Away': 'Leaving the gala, cinematic heartbreak, paparazzi lights.',
+    'Nightshade': 'Black-on-black power in a glowing white space, minimal and futuristic.',
+    'Afterglow': 'Disco shimmer, gold and silver highlights, soft cinematic focus.'
+  }
+
   return (
     <div className="rounded-xl shadow-2xl p-3 w-80" style={{ backgroundColor: '#333333' }}>
       <div className="space-y-2">
@@ -43,7 +53,7 @@ export function ParallelSelfPicker({
               <div className="text-center">
                 <div className="font-semibold mb-1">{preset.label}</div>
                 <div className="text-xs leading-relaxed">
-                  {preset.description}
+                  {presetDescriptions[preset.label] || 'Discover your cinematic alter ego.'}
                 </div>
               </div>
             </div>
