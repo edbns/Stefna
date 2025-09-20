@@ -323,11 +323,9 @@ export default function BestPracticesScreen() {
           {loading ? (
             <div className="text-center text-white">Loading this week's presets...</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {rotatingPresets.map((preset, idx) => (
-                <div key={idx} className={`bg-[#333333] rounded-xl p-6 shadow-lg text-center ${
-                  idx >= 3 ? 'lg:col-start-2' : ''
-                }`}>
+                <div key={idx} className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
                   <h3 className="text-lg font-semibold leading-snug mb-4 text-white">
                     {preset.label}
                   </h3>
