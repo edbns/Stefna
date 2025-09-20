@@ -123,11 +123,6 @@ export default function BestPracticesScreen() {
         const mediaResponse = await fetch(`/.netlify/functions/getPublicFeed?userId=49b15f0e-6a2d-445d-9d32-d0a9bd859bfb&limit=50`)
         if (mediaResponse.ok) {
           const mediaData = await mediaResponse.json()
-          console.log('🔍 [BestPractices] API Response:', mediaData)
-          console.log('🔍 [BestPractices] Items found:', mediaData.items?.length || 0)
-          if (mediaData.items?.length > 0) {
-            console.log('🔍 [BestPractices] Sample item:', mediaData.items[0])
-          }
           if (mediaData.items) {
             setStefnaMedia(mediaData.items)
           }
@@ -177,39 +172,26 @@ export default function BestPracticesScreen() {
 
   // Find media by preset type - using correct API field names
   const findMediaForPreset = (presetTitle: string) => {
-    console.log('🔍 [BestPractices] Finding media for preset:', presetTitle)
-    console.log('🔍 [BestPractices] Available media count:', stefnaMedia.length)
+    if (!stefnaMedia.length) return null
     
-    if (!stefnaMedia.length) {
-      console.log('🔍 [BestPractices] No media available')
-      return null
-    }
-    
-    // Map preset titles to both mediaType and specific presetKey
+    // Map preset titles to both mediaType and specific presetKey - using exact backend structure
     const presetMap: Record<string, { mediaType: string; presetKey: string }> = {
-      'Rain Dancer': { mediaType: 'presets', presetKey: 'rain_dancer' },
-      'The Untouchable': { mediaType: 'presets', presetKey: 'untouchable' },
-      'Holiday Mirage': { mediaType: 'presets', presetKey: 'holiday_mirage' },
-      'Who Got Away': { mediaType: 'presets', presetKey: 'one_that_got_away' },
-      'Nightshade': { mediaType: 'presets', presetKey: 'nightshade' },
-      'Afterglow': { mediaType: 'presets', presetKey: 'afterglow' },
-      'Chromatic Bloom': { mediaType: 'presets', presetKey: 'chromatic_bloom' },
-      'The Syndicate': { mediaType: 'presets', presetKey: 'the_syndicate' },
-      'Yakuza Heir': { mediaType: 'presets', presetKey: 'yakuza_heir' },
-      'The Gothic Pact': { mediaType: 'presets', presetKey: 'gothic_pact' },
-      'Oracle of Seoul': { mediaType: 'presets', presetKey: 'oracle_seoul' },
-      'Medusa\'s Mirror': { mediaType: 'presets', presetKey: 'medusa_mirror' }
+      'Rain Dancer': { mediaType: 'parallel_self', presetKey: 'parallel_self_rain_dancer' },
+      'The Untouchable': { mediaType: 'parallel_self', presetKey: 'parallel_self_untouchable' },
+      'Holiday Mirage': { mediaType: 'parallel_self', presetKey: 'parallel_self_holiday_mirage' },
+      'Who Got Away': { mediaType: 'parallel_self', presetKey: 'parallel_self_one_that_got_away' },
+      'Nightshade': { mediaType: 'parallel_self', presetKey: 'parallel_self_nightshade' },
+      'Afterglow': { mediaType: 'parallel_self', presetKey: 'parallel_self_afterglow' },
+      'Chromatic Bloom': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_chromatic_bloom' },
+      'The Syndicate': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_the_syndicate' },
+      'Yakuza Heir': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_yakuza_heir' },
+      'The Gothic Pact': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_gothic_pact' },
+      'Oracle of Seoul': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_oracle_seoul' },
+      'Medusa\'s Mirror': { mediaType: 'unreal_reflection', presetKey: 'unreal_reflection_medusa_mirror' }
     }
     
     const presetInfo = presetMap[presetTitle]
-    if (!presetInfo) {
-      console.log('🔍 [BestPractices] No preset mapping found for:', presetTitle)
-      return stefnaMedia[0] // fallback to first media
-    }
-    
-    console.log('🔍 [BestPractices] Looking for:', presetInfo)
-    console.log('🔍 [BestPractices] Available media types:', [...new Set(stefnaMedia.map(m => m.mediaType))])
-    console.log('🔍 [BestPractices] Available preset keys:', [...new Set(stefnaMedia.map(m => m.presetKey))])
+    if (!presetInfo) return null
     
     // Only show media for exact preset matches
     const exactMatch = stefnaMedia.find(media => 
@@ -217,10 +199,7 @@ export default function BestPracticesScreen() {
       media.presetKey === presetInfo.presetKey
     )
     
-    console.log('🔍 [BestPractices] Exact match found:', !!exactMatch)
-    
-    
-    return exactMatch || null // Return null if no exact match - will show "Media not available"
+    return exactMatch || null
   }
 
 
@@ -263,24 +242,18 @@ export default function BestPracticesScreen() {
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
-                    console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
                     if (media?.finalUrl || media?.imageUrl) {
                       const originalUrl = media.finalUrl || media.imageUrl
                       const optimizedUrl = optimizeFeedImage(originalUrl)
-                      console.log('🔍 [BestPractices] Original URL:', originalUrl)
-                      console.log('🔍 [BestPractices] Optimized URL:', optimizedUrl)
                       return (
                         <img
                           src={optimizedUrl} 
                           alt={`Generated ${media.type} - ${preset.title}`}
                           className="w-full h-auto object-cover"
                           loading="lazy"
-                          onLoad={() => console.log('🔍 [BestPractices] Image loaded successfully for', preset.title)}
-                          onError={(e) => console.error('🔍 [BestPractices] Image failed to load for', preset.title, ':', e)}
                         />
                       )
                     }
-                    console.log('🔍 [BestPractices] No media URL for', preset.title)
                     return (
                       <div className="w-full h-32 bg-[#333333] flex items-center justify-center">
                         <p className="text-xs text-white/60">Media not available</p>
@@ -311,24 +284,18 @@ export default function BestPracticesScreen() {
                 <div className="relative w-full mb-4 overflow-hidden">
                   {(() => {
                     const media = findMediaForPreset(preset.title)
-                    console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
                     if (media?.finalUrl || media?.imageUrl) {
                       const originalUrl = media.finalUrl || media.imageUrl
                       const optimizedUrl = optimizeFeedImage(originalUrl)
-                      console.log('🔍 [BestPractices] Original URL:', originalUrl)
-                      console.log('🔍 [BestPractices] Optimized URL:', optimizedUrl)
                       return (
                         <img
                           src={optimizedUrl} 
                           alt={`Generated ${media.type} - ${preset.title}`}
                           className="w-full h-auto object-cover"
                           loading="lazy"
-                          onLoad={() => console.log('🔍 [BestPractices] Image loaded successfully for', preset.title)}
-                          onError={(e) => console.error('🔍 [BestPractices] Image failed to load for', preset.title, ':', e)}
                         />
                       )
                     }
-                    console.log('🔍 [BestPractices] No media URL for', preset.title)
                     return (
                       <div className="w-full h-32 bg-[#333333] flex items-center justify-center">
                         <p className="text-xs text-white/60">Media not available</p>
