@@ -124,7 +124,7 @@ export default function BestPracticesScreen() {
         if (mediaResponse.ok) {
           const mediaData = await mediaResponse.json()
           if (mediaData.items) {
-            // Filter for 6:19 aspect ratio only
+            // Filter for 4:5 aspect ratio only
             const filteredMedia = []
             for (const item of mediaData.items) {
               try {
@@ -132,7 +132,7 @@ export default function BestPracticesScreen() {
                   const img = new Image()
                   img.onload = () => {
                     const aspectRatio = img.width / img.height
-                    const targetRatio = 6 / 19
+                    const targetRatio = 4 / 5
                     const tolerance = 0.1 // Allow some tolerance
                     if (Math.abs(aspectRatio - targetRatio) <= tolerance) {
                       filteredMedia.push(item)
