@@ -260,7 +260,7 @@ export default function BestPracticesScreen() {
                 </h3>
 
                 {/* Real Media Display - EXACT same as MasonryMediaGrid */}
-                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: (findMediaForPreset(preset.title)?.finalUrl || findMediaForPreset(preset.title)?.imageUrl) ? '6/19' : '3/2' }}>
+                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: (findMediaForPreset(preset.title)?.finalUrl || findMediaForPreset(preset.title)?.imageUrl) ? '4/5' : '3/2' }}>
                   {(() => {
                     const media = findMediaForPreset(preset.title)
                     console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
@@ -308,7 +308,7 @@ export default function BestPracticesScreen() {
                 </h3>
 
                 {/* Real Media Display - EXACT same as MasonryMediaGrid */}
-                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: (findMediaForPreset(preset.title)?.finalUrl || findMediaForPreset(preset.title)?.imageUrl) ? '6/19' : '3/2' }}>
+                <div className="relative w-full mb-4 overflow-hidden" style={{ aspectRatio: (findMediaForPreset(preset.title)?.finalUrl || findMediaForPreset(preset.title)?.imageUrl) ? '4/5' : '3/2' }}>
                   {(() => {
                     const media = findMediaForPreset(preset.title)
                     console.log('🔍 [BestPractices] Rendering media for', preset.title, ':', media)
