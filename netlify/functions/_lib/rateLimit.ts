@@ -89,7 +89,8 @@ export function getRateLimitInfo(key: string, config: RateLimitConfig): {
  */
 export function createRateLimitKey(event: any, action: string): string {
   // Use IP address + action as the key
-  const ip = event.headers['x-forwarded-for'] || 
+  const forwardedFor = event.headers['x-forwarded-for'] || '';
+  const ip = forwardedFor.split(',')[0].trim() || 
             event.headers['x-real-ip'] || 
             event.headers['x-client-ip'] || 
             'unknown';

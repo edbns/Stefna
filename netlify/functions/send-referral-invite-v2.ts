@@ -47,7 +47,8 @@ export const handler: Handler = async (event) => {
     }
 
     // Get client IP for abuse prevention
-    const clientIP = event.headers['x-forwarded-for'] || 
+    const forwardedFor = event.headers['x-forwarded-for'] || '';
+    const clientIP = forwardedFor.split(',')[0].trim() || 
                     event.headers['x-real-ip'] || 
                     event.headers['x-client-ip'] || 
                     'unknown';

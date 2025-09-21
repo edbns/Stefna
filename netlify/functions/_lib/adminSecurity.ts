@@ -31,7 +31,8 @@ export function isAllowedAdminIP(ip: string): boolean {
  * @returns Client IP address
  */
 export function getClientIP(event: any): string {
-  return event.headers['x-forwarded-for'] || 
+  const forwardedFor = event.headers['x-forwarded-for'] || '';
+  return forwardedFor.split(',')[0].trim() || 
          event.headers['x-real-ip'] || 
          event.headers['x-client-ip'] || 
          'unknown';
