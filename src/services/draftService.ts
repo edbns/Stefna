@@ -42,7 +42,7 @@ class DraftService {
 
   async getUserDrafts(limit: number = 50, offset: number = 0): Promise<{ drafts: UserDraft[]; total: number }> {
     try {
-      const response = await authenticatedFetch(`/api/user-drafts?limit=${limit}&offset=${offset}`);
+      const response = await authenticatedFetch(`/.netlify/functions/user-drafts?limit=${limit}&offset=${offset}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch drafts: ${response.status}`);
@@ -61,7 +61,7 @@ class DraftService {
 
   async saveDraft(draftData: CreateDraftData): Promise<UserDraft> {
     try {
-      const response = await authenticatedFetch('/api/user-drafts', {
+      const response = await authenticatedFetch('/.netlify/functions/user-drafts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ class DraftService {
 
   async updateDraft(draftData: UpdateDraftData): Promise<UserDraft> {
     try {
-      const response = await authenticatedFetch('/api/user-drafts', {
+      const response = await authenticatedFetch('/.netlify/functions/user-drafts', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +105,7 @@ class DraftService {
 
   async deleteDraft(draftId: number): Promise<void> {
     try {
-      const response = await authenticatedFetch(`/api/user-drafts?id=${draftId}`, {
+      const response = await authenticatedFetch(`/.netlify/functions/user-drafts?id=${draftId}`, {
         method: 'DELETE',
       });
 

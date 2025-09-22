@@ -417,6 +417,33 @@ CREATE TRIGGER update_video_jobs_updated_at BEFORE UPDATE ON video_jobs FOR EACH
 CREATE TRIGGER update_ai_generations_updated_at BEFORE UPDATE ON ai_generations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ========================================
+-- USER DRAFTS
+-- ========================================
+
+-- User drafts table for saving draft compositions
+CREATE TABLE IF NOT EXISTS user_drafts (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    media_url TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    media_type TEXT NOT NULL CHECK (media_type IN ('photo', 'video')),
+    aspect_ratio DECIMAL(5,2) DEFAULT 1.33,
+    width INTEGER DEFAULT 800,
+    height INTEGER DEFAULT 600,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_user_drafts_user_id ON user_drafts(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_drafts_created_at ON user_drafts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_drafts_media_type ON user_drafts(media_type);
+
+-- Add trigger for updated_at timestamp
+CREATE TRIGGER update_user_drafts_updated_at BEFORE UPDATE ON user_drafts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ========================================
 -- SAMPLE DATA
 -- ========================================
 
@@ -488,6 +515,8 @@ UNION ALL
 SELECT 'assets', COUNT(*) FROM assets
 UNION ALL
 SELECT 'presets_config', COUNT(*) FROM presets_config
+UNION ALL
+SELECT 'user_drafts', COUNT(*) FROM user_drafts
 UNION ALL
 -- Referral signups count removed
 UNION ALL

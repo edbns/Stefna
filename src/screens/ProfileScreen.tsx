@@ -44,6 +44,7 @@ import { useProfile } from '../contexts/ProfileContext'
 import { downloadAllMediaAsZip, downloadSelectedMediaAsZip, generateMediaFilename, DownloadableMedia } from '../utils/downloadUtils'
 import { toggleLike, getUserLikes, mapMediaTypeForAPI, generateLikeKey } from '../services/likesService'
 import MasonryMediaGrid from '../components/MasonryMediaGrid'
+import { useGenerationEvents } from '../lib/generationEvents'
 
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
@@ -58,7 +59,7 @@ const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefin
 const ProfileScreen: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { notifyReady, notifyError } = useToasts()
+  const { notifyReady, notifyError, notifySuccess, notifyQueue } = useToasts()
   
   // Initialize activeTab from URL parameter to prevent glitch
   const [activeTab, setActiveTab] = useState<string>(() => {
@@ -82,6 +83,11 @@ const ProfileScreen: React.FC = () => {
 
   // Use profile context
   const { profileData, updateProfile, refreshProfile } = useProfile()
+  
+  // Track generation state for loading spinner
+  const { isRunning: isGenerating, lastEvent } = useGenerationEvents()
+  
+  const [navGenerating, setNavGenerating] = useState<boolean>(false)
 
   // Load current email from database
   const loadCurrentEmail = async () => {
@@ -1068,6 +1074,30 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
+  // Listen for generation events to auto-refresh media
+  useEffect(() => {
+    const handleGenerationDone = (event: CustomEvent) => {
+      const detail = event.detail
+      
+      // Only auto-refresh on successful generation (not errors)
+      if (detail?.kind !== 'error') {
+        console.log('🎉 Generation completed, auto-refreshing media')
+        
+        // Auto-refresh media after a short delay
+        setTimeout(() => {
+          console.log('🔄 Auto-refreshing media after generation completion')
+          loadUserMedia()
+        }, 2000)
+      }
+    }
+
+    window.addEventListener('generation:done', handleGenerationDone as EventListener)
+    
+    return () => {
+      window.removeEventListener('generation:done', handleGenerationDone as EventListener)
+    }
+  }, [loadUserMedia])
+
   // 🚀 INFINITE SCROLL: Load more media function
   const loadMoreMedia = async () => {
     if (!hasMoreMedia || isLoadingMoreMedia) return;
@@ -1401,12 +1431,28 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
-  // Unified notification functions (same as home page)
-  // Notifications disabled - replaced with no-op function
-  // Notifications disabled - replaced with no-op function
+  // Unified notification functions using toast system
   const addNotification = (title: string, message?: string, type: 'success' | 'info' | 'warning' | 'error' | 'processing' | 'complete' | 'system' = 'info', mediaUrl?: string, mediaType?: 'image' | 'video', persistent?: boolean) => {
-    // Notifications are disabled on profile page - only show on home page
-    console.log(`[NOTIFICATION DISABLED] ${type.toUpperCase()}: ${title} - ${message}`)
+    switch (type) {
+      case 'success':
+      case 'complete':
+        notifySuccess({ title, message: message || '' })
+        break
+      case 'error':
+        notifyError({ title, message: message || 'Something went wrong' })
+        break
+      case 'warning':
+        notifyError({ title, message: message || 'Warning' })
+        break
+      case 'processing':
+        notifyQueue({ title, message: message || 'Processing...' })
+        break
+      case 'info':
+      case 'system':
+      default:
+        notifySuccess({ title, message: message || '' })
+        break
+    }
   }
 
   const removeNotification = (id: number) => {
@@ -1929,13 +1975,27 @@ const ProfileScreen: React.FC = () => {
               </div>
             ) : (
               <>
-                <MasonryMediaGrid
-                  media={userMedia.map(m => ({
-                    ...m,
-                    aspectRatio: m.width && m.height ? m.width / Math.max(1, m.height) : (m.aspectRatio || 4/3),
-                    width: m.width || 800,
-                    height: m.height || Math.round((m.width || 800) / (m.aspectRatio || 4/3))
-                  }))}
+                <div className="relative">
+                  <MasonryMediaGrid
+                    media={[
+                      // Add loading frame as first item when generating
+                      ...(isGenerating ? [{
+                        id: 'generating-loading-frame',
+                        type: 'loading' as any,
+                        url: '',
+                        aspectRatio: 1, // 1:1 square
+                        width: 400,
+                        height: 400,
+                        status: 'generating'
+                      } as any] : []),
+                      // Regular user media
+                      ...userMedia.map(m => ({
+                        ...m,
+                        aspectRatio: m.width && m.height ? m.width / Math.max(1, m.height) : (m.aspectRatio || 4/3),
+                        width: m.width || 800,
+                        height: m.height || Math.round((m.width || 800) / (m.aspectRatio || 4/3))
+                      }))
+                    ]}
                   columns={3}
                   onMediaClick={handleMediaClick}
                   onDownload={handleDownload}
@@ -1958,6 +2018,7 @@ const ProfileScreen: React.FC = () => {
                   // Hide likes button on profile page
                   hideLikes={true}
                 />
+                </div>
                 
                 {/* 🚀 INFINITE SCROLL: Loading indicator */}
                 {isLoadingMoreMedia && hasMoreMedia && (
@@ -2232,6 +2293,7 @@ const ProfileScreen: React.FC = () => {
                     className="w-full bg-[#2a2a2a] border border-[#444444] rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
                     disabled={isChangingEmail || otpSent}
                   />
+                  
                 </div>
 
                 {otpSent && (
@@ -2473,8 +2535,6 @@ const ProfileScreen: React.FC = () => {
           </div>
         </div>
       )}
-
-
 
     </div>
   )

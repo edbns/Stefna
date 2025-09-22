@@ -41,6 +41,7 @@ import { MediaUploadAgreement } from './MediaUploadAgreement'
 import { paramsForI2ISharp } from '../services/infer-params'
 import MobileFloatingNav from './MobileFloatingNav'
 import MobileComposer from './MobileComposer'
+import LayeredComposer from './LayeredComposer'
 
 
 // Identity-safe generation fallback system (integrated with IPA)
@@ -210,7 +211,6 @@ const HomeNew: React.FC = () => {
   // Waitlist modal state
   const [showWaitlistModal, setShowWaitlistModal] = useState(false)
 
-
   // Database-driven presets for main presets mode (moved to very beginning)
   const [availablePresets, setAvailablePresets] = useState<DatabasePreset[]>([])
   const [presetsLoading, setPresetsLoading] = useState(true)
@@ -224,7 +224,7 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: null as 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'neotokyoglitch' | 'parallelself' | 'storytime' | 'edit' | null, // remix mode removed
+    mode: 'edit' as 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'neotokyoglitch' | 'parallelself' | 'storytime' | 'edit' | null, // Default to edit mode
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
@@ -3455,8 +3455,8 @@ const HomeNew: React.FC = () => {
 
   // Save current composer state as a draft
   const handleSaveDraft = async () => {
-    if (!previewUrl || !prompt.trim()) {
-               console.error('❌ Something went wrong: Upload media and enter a prompt first')
+    if (!previewUrl) {
+      console.error('❌ Something went wrong: Upload media first')
       return
     }
     
@@ -3510,6 +3510,13 @@ const HomeNew: React.FC = () => {
   // Magic Wand Enhancement - Free AI prompt enhancement
   const handleMagicWandEnhance = async () => {
     if (!prompt.trim() || isEnhancing) return
+    
+    // Check authentication first - same pattern as generate button
+    if (!authService.isAuthenticated()) {
+      console.log('❌ User not authenticated, redirecting to auth')
+      navigate('/auth')
+      return
+    }
     
     setIsEnhancing(true)
     if (import.meta.env.DEV) {
@@ -3768,22 +3775,11 @@ const HomeNew: React.FC = () => {
       {/* Floating Controls - Top Right */}
       <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
         <button
-          onClick={handleUploadClick}
-          className={`w-12 h-12 rounded-full border transition-all duration-300 flex items-center justify-center hover:scale-105 relative group ${
-            isAuthenticated 
-              ? 'bg-white/10 text-white border-white/20 hover:bg-white/20' 
-              : 'bg-white text-black border-white hover:bg-white/90'
-          }`}
-          aria-label="Upload"
-          title="Upload"
+          onClick={() => navigate('/bestpractices')}
+          className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-white/90 hover:scale-105 font-medium"
+          aria-label="Best Practices"
         >
-          <Plus size={24} className="transition-transform duration-200" />
-          
-          {/* Hover Tooltip */}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-            Upload
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-black/80"></div>
-          </div>
+          Best Practices
         </button>
 
 
@@ -3851,16 +3847,6 @@ const HomeNew: React.FC = () => {
         )}
       </div>
 
-      {/* Best Practices Button - Bottom Left - Always Visible */}
-      <div className="fixed bottom-4 left-4 z-50">
-        <button
-          onClick={() => navigate('/bestpractices')}
-          className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-white/90 hover:scale-105 font-medium"
-          aria-label="Best Practices"
-        >
-          Best Practices
-        </button>
-      </div>
 
       {/* Main content area - Full width with top padding for floating components */}
       <div className="w-full min-h-screen pt-24">
@@ -3955,741 +3941,107 @@ const HomeNew: React.FC = () => {
         />
       )}
 
-                {/* Bottom-centered composer */}
-          {isComposerOpen && (
-            <div className="fixed inset-0 z-[999999] bg-black" style={{ zIndex: 999999 }}>
-          {/* Close button */}
-          <button type="button" onClick={closeComposer} className="absolute top-4 right-4 z-[999999] pointer-events-auto text-white/80 hover:text-white transition-colors bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full p-2" aria-label="Close">
-            <X size={20} />
-          </button>
-          
-  
-          
-          {/* Media preview area - centered above prompt */}
-          <div className="absolute inset-0 flex items-center justify-center pb-48">
-            <div className="relative w-full max-w-2xl px-6">
-              <div ref={containerRef} className="w-full flex items-center justify-center">
-                {/* All modes - show normal image/video preview (including Story mode) */}
-                  <>
-                    {previewUrl ? (
-                      isVideoPreview ? (
-                        <video ref={(el) => (mediaRef.current = el)} src={previewUrl || ''} className="max-w-full max-h-[60vh] object-contain" controls onLoadedMetadata={measure} onLoadedData={measure} />
-                      ) : (
-                      <div className="relative">
-                    <img 
-                      ref={(el) => (mediaRef.current = el as HTMLImageElement)} 
-                      src={previewUrl || ''} 
-                      alt="Preview" 
-                      className="max-w-full max-h-[60vh] object-contain" 
-                      referrerPolicy="no-referrer"
-                      onLoad={(e) => {
-                        console.log('🖼️ Image loaded successfully:', previewUrl)
-                        measure()
-                      }}
-                      onError={(e) => {
-                        console.error('❌ Image failed to load:', previewUrl, e)
-                        console.error('❌ Error details:', {
-                          url: previewUrl,
-                          error: e,
-                          target: e.target,
-                          currentTarget: e.currentTarget
-                        })
-                      }}
-                    />
-                        
-                        {/* Story mode additional images upload button */}
-                        {composerState.mode === 'storytime' && (
-                          <div className="absolute top-4 right-4">
-                            <button
-                              onClick={() => {
-                                const input = document.createElement('input')
-                                input.type = 'file'
-                                input.accept = 'image/*'
-                                input.multiple = true
-                                input.onchange = (e) => {
-                                  const target = e.target as HTMLInputElement
-                                  const files = Array.from(target.files || [])
-                                  files.forEach((file, index) => {
-                                    if (index < 4) { // Max 4 additional images
-                                      handleAdditionalStoryImageUpload(file, index)
-                                    }
-                                  })
-                                }
-                                input.click()
-                              }}
-                              className="w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center transition-colors border border-white/30"
-                              title="Add more images (MAX 4)"
-                            >
-                              <Plus size={20} />
-                            </button>
-                            <div className="text-center mt-2">
-                              <span className="text-white/60 text-xs">MAX 4 images</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      )
-                    ) : (
-                      /* No file selected - show upload prompt */
-                      <div className="text-center">
-                        <div className="w-24 h-24 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center border-2 border-dashed border-white/30">
-                          <Plus size={32} className="text-white/60" />
-                        </div>
-                        <p className="text-white/80 text-lg mb-2">Upload an image to get started</p>
-                        <p className="text-white/60 text-sm">Drag & drop or click to browse</p>
-                      </div>
-                    )}
-                  </>
-                
-
-              </div>
-            </div>
-          </div>
-
-                      {/* Bottom composer bar - compact, horizontally 80% */}
-            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 w-[80%] min-w-[600px] max-w-[1000px]">
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl px-4 py-3 transition-all duration-300 shadow-2xl shadow-black/20">
-              
-
-              
-
-              {/* Prompt Input - ONLY VISIBLE for manual modes (Custom, Edit) */}
-              {(['custom', 'edit'].includes(composerState.mode || '')) && (
-              <div className="mb-2">
-                <div className="relative">
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => {
-                      console.log('🎯 Prompt input changed:', e.target.value);
-                      setPrompt(e.target.value);
-                    }}
-                      placeholder={(() => {
-                        switch (composerState.mode) {
-                          case 'edit': 
-                            return "Change something, add something — your call ... tap ✨ for a little magic."
-                          case 'custom': 
-                            return "Type something weird. We'll make it art ... tap ✨ for a little magic."
-                          default: 
-                            return "Custom prompt (optional) - will be combined with selected preset"
-                        }
-                      })()}
-                    className="w-full px-3 py-2 pr-10 bg-white/10 backdrop-blur-md text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200 h-20 text-sm rounded-xl"
-                    disabled={false}
-                    data-testid="custom-prompt-input"
-                  />
-                    
-                    {/* Magic Wand Enhancement Button - show for custom and edit modes */}
-                    <button
-                      onClick={handleMagicWandEnhance}
-                      disabled={isGenerating || !prompt.trim()}
-                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
-                      title={composerState.mode === 'edit' ? "Enhance studio prompt with AI (free)" : "Enhance prompt with AI (free)"}
-                    >
-                      {isEnhancing ? (
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <span className="text-lg">✨</span>
-                      )}
-                    </button>
-                  <div className="absolute bottom-2 right-2 text-white/30 text-xs">
-                    {prompt.length}/500
-                  </div>
-                </div>
-              </div>
-              )}
-
-              {/* Single row with all controls */}
-              <div className="flex items-center justify-between gap-2 flex-wrap bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/20">
-                {/* Left: Variations toggle + Presets + MoodMorph */}
-                <div className="flex items-center gap-2">
-                  {/* Variations selector removed - single generation only */}
-
-                  {/* Custom Prompt button - NEW DEDICATED MODE */}
-                  <div className="relative" data-custom-dropdown>
-                    <button
-                      onClick={async () => {
-                        // Check authentication first
-                        if (!checkAuthAndRedirect()) return
-                        
-                        if (composerState.mode === 'custom') {
-                          // Already in Custom mode - do nothing
-                          closeAllDropdowns()
-                        } else {
-                          // Switch to Custom Prompt mode
-                          closeAllDropdowns()
-                          setComposerState(s => ({ ...s, mode: 'custom' }))
-                          setSelectedMode('presets') // Set selectedMode to match the new system
-                        }
-                      }}
-                      className={
-                        composerState.mode === 'custom'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
-                      }
-                      title={isAuthenticated ? 'Switch to Custom Prompt mode' : 'Explore Custom Prompt mode'}
-                    >
-                      Custom
-                    </button>
-                  </div>
-
-                  {/* Edit My Photo™ button - NEW EDIT MODE */}
-                  <div className="relative" data-edit-dropdown>
-                    <button
-                      onClick={async () => {
-                        // Check authentication first
-                        if (!checkAuthAndRedirect()) return
-                        
-                        if (composerState.mode === 'edit') {
-                          // Already in Edit mode - do nothing for now
-                          closeAllDropdowns()
-                        } else {
-                          // Switch to Edit My Photo mode
-                          closeAllDropdowns()
-                          setComposerState(s => ({ ...s, mode: 'edit' }))
-                          setSelectedMode('presets') // Set selectedMode to match the new system
-                        }
-                      }}
-                      className={
-                        composerState.mode === 'edit'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
-                      }
-                      title={isAuthenticated ? 'Switch to Studio mode' : 'Explore Studio mode'}
-                    >
-                      Studio
-                    </button>
-                  </div>
-
-                  {/* Presets dropdown button */}
-                  <div className="relative" data-presets-dropdown>
-                                        <button
-                      onClick={() => {
-                        // Check authentication first
-                        if (!checkAuthAndRedirect()) return
-                        
-                        console.log('🎯 Presets button clicked!')
-                        console.log('🔍 Current presetsOpen state:', presetsOpen)
-                        console.log('🔍 Available presets:', weeklyPresetNames)
-                        
-                        // Close Custom/Edit modes when presets is clicked
-                        if (composerState.mode === 'custom' || composerState.mode === 'edit') {
-                          setComposerState(s => ({ ...s, mode: null }))
-                        }
-                        
-                        // Toggle presets dropdown
-                        setPresetsOpen((v) => !v)
-                        console.log('🔄 Toggling presetsOpen to:', !presetsOpen)
-                      }}
-                      className={
-                        selectedPreset
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
-                      }
-                      data-nav-button
-                      data-nav-type="presets"
-                      title={isAuthenticated ? 'Choose AI style presets' : 'Explore AI style presets'}
-                    >
-                      {selectedPreset ? getPresetLabel(selectedPreset as string, availablePresets) : 'Presets'}
-                    </button>
-                    
-                    {/* Presets dropdown - clean and simple */}
-                    {presetsOpen && (
-                                             <div className="absolute bottom-full left-0 mb-2 rounded-xl p-3 w-80 z-50 shadow-2xl shadow-black/20" style={{ backgroundColor: '#333333' }}>
-                        {/* Preset options - all visible, no scrolling */}
-                        <div className="space-y-1">
-                          {/* Loading state */}
-                          {presetsLoading && (
-                            <div className="px-3 py-2 text-sm text-white/70">
-                              Loading presets...
-                            </div>
-                          )}
-
-                          {/* Error state */}
-                          {presetsError && (
-                            <div className="px-3 py-2 text-sm text-red-400">
-                              Failed to load presets
-                            </div>
-                          )}
-
-                          {/* Preset options */}
-                          {!presetsLoading && !presetsError && weeklyPresetNames.map((name) => (
-                            <button
-                              key={name}
-                              onClick={() => {
-                                console.log('🎯 Preset clicked:', name)
-                                console.log('🔍 About to call handlePresetClick with:', name)
-                                handlePresetClick(name)
-                                setPresetsOpen(false)
-                              }}
-                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
-                                selectedPreset === name 
-                                  ? 'bg-white/90 backdrop-blur-md text-black' 
-                                  : 'text-white hover:text-white hover:bg-white/20'
-                              }`}
-                            >
-                              <span>{getPresetLabel(String(name), availablePresets)}</span>
-                              {selectedPreset === name ? (
-                                <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
-                              ) : (
-                                <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Identity Lock removed - IPA now runs automatically based on preset type */}
-
-                  {/* MoodMorph removed - replaced with Anime Filters */}
-
-                  {/* Emotion Mask™ button - SINGLE BUTTON with dropdown */}
-                  <div className="relative" data-unrealreflection-dropdown>
-                    <button
-                      onClick={async () => {
-                        // Check authentication first
-                        if (!checkAuthAndRedirect()) return
-                        
-                        if (composerState.mode === 'unrealreflection') {
-                          // Already in Emotion Mask mode - toggle dropdown
-                          closeAllDropdowns()
-                          setUnrealReflectionDropdownOpen((v) => !v)
-                        } else {
-                          // Switch to Emotion Mask mode AND show dropdown immediately
-                          closeAllDropdowns()
-                          setComposerState(s => ({ ...s, mode: 'unrealreflection' }))
-                          setSelectedMode('presets') // Set selectedMode to match the new system
-                          setSelectedUnrealReflectionPreset(null)
-                          setUnrealReflectionDropdownOpen(true) // Show dropdown immediately
-                        }
-                      }}
-                      className={
-                        composerState.mode === 'unrealreflection'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
-                      }
-                      title={isAuthenticated ? 'Switch to Unreal Reflection™ mode' : 'Explore Unreal Reflection™ mode'}
-                    >
-                      {selectedUnrealReflectionPreset ? 
-                        UNREAL_REFLECTION_PRESETS.find(p => p.id === selectedUnrealReflectionPreset)?.label || 'Unreal Reflection™' 
-                        : 'Unreal Reflection™'
-                      }
-                    </button>
-                    
-                    {/* Unreal Reflection™ presets dropdown - show when in Unreal Reflection mode */}
-                    {composerState.mode === 'unrealreflection' && unrealReflectionDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 z-50">
-                        <UnrealReflectionPicker
-                          value={selectedUnrealReflectionPreset || undefined}
-                          onVideoToggle={(enabled) => {
-                            setIsUnrealReflectionVideoEnabled(enabled);
-                            console.log('Video enabled for Unreal Reflection:', enabled);
-                          }}
-                            onChange={async (presetId) => {
-                            setSelectedUnrealReflectionPreset(presetId || null)
-                            setUnrealReflectionDropdownOpen(false)
-                              
-                            // Auto-generate when Unreal Reflection preset is selected
-                              if (presetId && selectedFile && isAuthenticated) {
-                              console.log('Auto-generating Unreal Reflection with preset:', presetId)
-                                try {
-                                await dispatchGenerate('unrealreflection', {
-                                  unrealReflectionPresetId: presetId,
-                                  enableVideo: isUnrealReflectionVideoEnabled,
-                                  forVideo: isUnrealReflectionVideoEnabled // Use video-friendly prompt when video is enabled
-                                  })
-                                // Clear composer after successful generation
-                                setTimeout(() => {
-                                  clearAllOptionsAfterGeneration()
-                                }, 500)
-                                } catch (error) {
-                                  console.error('❌ Emotion Mask auto-generation failed:', error)
-                                  // Clear composer after generation error
-                                  setTimeout(() => {
-                                    clearAllOptionsAfterGeneration()
-                                  }, 300)
-                                }
-                              }
-                            }}
-                            disabled={!isAuthenticated}
-                          />
-                        </div>
-                      )}
-                      
-
-                  </div>
-
-                  {/* Parallel Self™ button - SINGLE BUTTON with dropdown */}
-                  <div className="relative" data-parallelself-dropdown>
-                    <button
-                      onClick={() => {
-                        if (isAuthenticated) {
-                          setComposerState(s => ({ ...s, mode: 'parallelself' }))
-                          setParallelSelfDropdownOpen(!parallelSelfDropdownOpen)
-                        } else {
-                          navigate('/auth')
-                        }
-                      }}
-                      className={
-                        composerState.mode === 'parallelself'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
-                      }
-                      title={isAuthenticated ? 'Switch to Parallel Self™ mode' : 'Explore Parallel Self™ mode'}
-                    >
-                      {selectedParallelSelfPreset ? 
-                        PARALLEL_SELF_PRESETS.find(p => p.id === selectedParallelSelfPreset)?.label || 'Parallel Self™' 
-                        : 'Parallel Self™'
-                      }
-                    </button>
-                    
-                    {/* Parallel Self™ presets dropdown - show when in Parallel Self mode */}
-                    {composerState.mode === 'parallelself' && parallelSelfDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 z-50">
-                        <ParallelSelfPicker
-                          value={selectedParallelSelfPreset || undefined}
-                          onChange={async (presetId) => {
-                            setSelectedParallelSelfPreset(presetId || null)
-                            setParallelSelfDropdownOpen(false)
-                              
-                            // Auto-generate when Parallel Self preset is selected
-                            if (presetId && selectedFile && isAuthenticated) {
-                              console.log('Auto-generating Parallel Self with preset:', presetId)
-                              try {
-                                await dispatchGenerate('parallelself', {
-                                  parallelSelfPresetId: presetId
-                                })
-                                // Clear composer after successful generation
-                                setTimeout(() => {
-                                  clearAllOptionsAfterGeneration()
-                                }, 500)
-                              } catch (error) {
-                                console.error('❌ Parallel Self auto-generation failed:', error)
-                                // Clear composer after generation error
-                                setTimeout(() => {
-                                  clearAllOptionsAfterGeneration()
-                                }, 300)
-                              }
-                            }
-                          }}
-                          disabled={!isAuthenticated}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Studio Ghibli Reaction™ button - SINGLE BUTTON with dropdown */}
-                  <div className="relative" data-ghiblireact-dropdown>
-                    <button
-                      onClick={async () => {
-                        // Check authentication first
-                        if (!checkAuthAndRedirect()) return
-                        
-                        if (composerState.mode === 'ghiblireact') {
-                          // Already in Ghibli Reaction mode - toggle dropdown
-                          closeAllDropdowns()
-                          setGhibliReactionDropdownOpen((v) => !v)
-                        } else {
-                          // Switch to Ghibli Reaction mode AND show dropdown immediately
-                          closeAllDropdowns()
-                          setComposerState(s => ({ ...s, mode: 'ghiblireact' }))
-                          setSelectedMode('presets') // Set selectedMode to match the new system
-                          setSelectedGhibliReactionPreset(null)
-                          setGhibliReactionDropdownOpen(true) // Show dropdown immediately
-                        }
-                      }}
-                      className={
-                        composerState.mode === 'ghiblireact'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
-                      }
-                      title={isAuthenticated ? 'Switch to Studio Ghibli Reaction mode' : 'Explore Studio Ghibli Reaction mode'}
-                    >
-                      {selectedGhibliReactionPreset ? 
-                        GHIBLI_REACTION_PRESETS.find(p => p.id === selectedGhibliReactionPreset)?.label || 'Ghibli Reaction' 
-                        : 'Ghibli Reaction'
-                      }
-                    </button>
-                    
-                    {/* Ghibli Reaction presets dropdown - show when in Ghibli Reaction mode */}
-                    {composerState.mode === 'ghiblireact' && ghibliReactionDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 z-50">
-                        <GhibliReactionPicker
-                                                      value={selectedGhibliReactionPreset || undefined}
-                          onChange={async (presetId) => {
-                            setSelectedGhibliReactionPreset(presetId || null)
-                            setGhibliReactionDropdownOpen(false)
-                            
-                            // Auto-generate when Ghibli Reaction preset is selected
-                            if (presetId && selectedFile && isAuthenticated) {
-                              console.log('Auto-generating Ghibli Reaction with preset:', presetId)
-                              try {
-                                await dispatchGenerate('ghiblireact', {
-                                  ghibliReactionPresetId: presetId
-                                })
-                                // Clear composer after successful generation
-                                setTimeout(() => {
-                                  clearAllOptionsAfterGeneration()
-                                }, 500)
-                              } catch (error) {
-                                console.error('❌ Ghibli Reaction auto-generation failed:', error)
-                                // Clear composer after generation error
-                                setTimeout(() => {
-                                  clearAllOptionsAfterGeneration()
-                                }, 300)
-                              }
-                            }
-                          }}
-                          disabled={!isAuthenticated}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-
-
-                  {/* Neo Tokyo Glitch™ button - SINGLE BUTTON with dropdown */}
-                  <div className="relative" data-neotokyoglitch-dropdown>
-                    <button
-                      onClick={async () => {
-                        // Check authentication first
-                        if (!checkAuthAndRedirect()) return
-                        
-                        if (composerState.mode === 'neotokyoglitch') {
-                          // Already in Neo Tokyo Glitch mode - toggle dropdown
-                          closeAllDropdowns()
-                          setNeoTokyoGlitchDropdownOpen((v) => !v)
-                        } else {
-                          // Switch to Neo Tokyo Glitch mode AND show dropdown immediately
-                          closeAllDropdowns()
-                          setComposerState(s => ({ ...s, mode: 'neotokyoglitch' }))
-                          setSelectedMode('presets') // Set selectedMode to match the new system
-                          setSelectedNeoTokyoGlitchPreset(null)
-                          setNeoTokyoGlitchDropdownOpen(true) // Show dropdown immediately
-                        }
-                      }}
-                      className={
-                        composerState.mode === 'neotokyoglitch'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
-                      }
-                      title={isAuthenticated ? 'Switch to Neo Tokyo Glitch mode' : 'Explore Neo Tokyo Glitch mode'}
-                    >
-                      {selectedNeoTokyoGlitchPreset ? 
-                        NEO_TOKYO_GLITCH_PRESETS.find(p => p.id === selectedNeoTokyoGlitchPreset)?.label || 'Neo Tokyo Glitch' 
-                        : 'Neo Tokyo Glitch'
-                      }
-                    </button>
-                    
-                    {/* Neo Tokyo Glitch presets dropdown - show when in Neo Tokyo Glitch mode */}
-                    {composerState.mode === 'neotokyoglitch' && neoTokyoGlitchDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 z-50">
-                        <NeoTokyoGlitchPicker
-                                                      value={selectedNeoTokyoGlitchPreset || undefined}
-                          onChange={async (presetId) => {
-                            setSelectedNeoTokyoGlitchPreset(presetId || null)
-                            setNeoTokyoGlitchDropdownOpen(false)
-                            
-                            // Auto-generate when Neo Tokyo Glitch preset is selected
-                            if (presetId && selectedFile && isAuthenticated) {
-                              console.log('Auto-generating Neo Tokyo Glitch with preset:', presetId)
-                              try {
-                                await dispatchGenerate('neotokyoglitch', {
-                                  neoTokyoGlitchPresetId: presetId
-                                })
-                                // Clear composer after successful generation
-                                setTimeout(() => {
-                                  clearAllOptionsAfterGeneration()
-                                }, 500)
-                              } catch (error) {
-                                console.error('❌ Neo Tokyo Glitch auto-generation failed:', error)
-                                // Clear composer after generation error
-                                setTimeout(() => {
-                                  clearAllOptionsAfterGeneration()
-                                }, 300)
-                              }
-                            }
-                          }}
-                          disabled={!isAuthenticated}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Story Time™ button - HIDDEN FOR NOW */}
-                  {/* <div className="relative" data-storytime-dropdown>
-                    <button
-                      onClick={async () => {
-                        // Check authentication first
-                        if (!checkAuthAndRedirect()) return
-                        
-                        if (composerState.mode === 'storytime') {
-                          // Already in Story Time mode - auto-generate if ready
-                          if (selectedStoryTimePreset && canGenerateStory && isAuthenticated) {
-                            console.log('🎬 Auto-generating Story Time from button click')
-                            try {
-                              // Convert File objects to Data URLs for Story Time
-                              const convertFileToDataUrl = (file: File): Promise<string> => {
-                                return new Promise((resolve, reject) => {
-                                  const reader = new FileReader();
-                                  reader.onload = () => resolve(reader.result as string);
-                                  reader.onerror = reject;
-                                  reader.readAsDataURL(file);
-                                });
-                              };
-
-                              // Convert all Story Time images to Data URLs
-                              const storyImageUrls = await Promise.all([
-                                convertFileToDataUrl(selectedFile!),
-                                ...additionalStoryImages.filter(Boolean).map(convertFileToDataUrl)
-                              ]);
-
-                              await dispatchGenerate('storytime', {
-                                storyTimeImages: storyImageUrls,
-                                storyTimePresetId: selectedStoryTimePreset
-                              })
-                            } catch (error) {
-                              console.error('❌ Story Time generation failed:', error)
-                            }
-                          } else {
-                          closeAllDropdowns()
-                          }
-                        } else {
-                          // Switch to Story Time mode
-                          closeAllDropdowns()
-                          setComposerState(s => ({ ...s, mode: 'storytime' }))
-                          setSelectedMode('presets') // Set selectedMode to match the new system
-                          setSelectedStoryTimePreset(null)
-                        }
-                      }}
-                      className={
-                        composerState.mode === 'storytime'
-                          ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                          : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
-                      }
-                      title={isAuthenticated ? 'Switch to Story Time mode' : 'Explore Story Time mode'}
-                    >
-                      {selectedStoryTimePreset ? 
-                        selectedStoryTimePreset === 'auto' ? 'Story Time (Auto)' :
-                        selectedStoryTimePreset.charAt(0).toUpperCase() + selectedStoryTimePreset.slice(1)
-                        : 'Story Time'
-                      }
-                    </button>
-                    
-
-                  </div> */}
-
-                </div>
-
-                {/* Right: Action buttons - Save to draft (always visible) and Generate (only for manual modes) */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!checkAuthAndRedirect()) return
-                      handleSaveDraft()
-                    }}
-                    title={authService.isAuthenticated() ? 'Save to draft' : 'Sign up to save drafts'}
-                    className={(() => {
-                      const baseClass = 'w-8 h-8 rounded-full flex items-center justify-center transition-colors';
-                      const activeClass = 'bg-white/10 text-white hover:bg-white/15';
-                      const disabledClass = 'bg-white/5 text-white/50 cursor-not-allowed';
-                      return `${baseClass} ${authService.isAuthenticated() ? activeClass : disabledClass}`;
-                    })()}
-                    aria-label="Save to draft"
-                    disabled={!authService.isAuthenticated()}
-                  >
-                    <FileText size={14} />
-                  </button>
-                  {(['custom', 'edit'].includes(composerState.mode || '')) && (
-                  <button 
-                    onClick={async () => {
-                      // Check authentication first
-                      if (!checkAuthAndRedirect()) return
-                      
-                      // Show immediate feedback that button was clicked
-                      setNavGenerating(true)
-                      
-                      // Close composer immediately
-                      window.dispatchEvent(new CustomEvent('close-composer'));
-                      
-                        try {
-                          // Handle different generation modes
-                          if (composerState.mode === 'custom') {
-                            // Custom mode - use dispatchGenerate directly
-                            console.log('Custom mode - calling dispatchGenerate')
-                          await dispatchGenerate('custom', {
-                          customPrompt: prompt
-                        })
-                          } else if (composerState.mode === 'edit') {
-                            // Edit mode - use dispatchGenerate like Custom mode
-                            console.log('✏️ Edit mode - calling dispatchGenerate')
-                            await dispatchGenerate('edit', {
-                              editPrompt: prompt
-                            })
-                          }
-                        } catch (error) {
-                          console.error('❌ Generation failed:', error)
-                        } finally {
-                          setNavGenerating(false)
-                      }
-                    }} 
-                    disabled={
-                        (composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
-                        (composerState.mode === 'custom' && !prompt.trim()) ||
-                      navGenerating
-                    } 
-                    className={
-                        ((composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
-                         (composerState.mode === 'custom' && !prompt.trim()) ||
-                       navGenerating)
-                        ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
-                        : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
-                    }
-                    aria-label="Generate"
-                      title="Generate AI content"
-                  >
-                    {navGenerating ? (
-                      <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                    ) : (
-                      <ArrowUp size={16} />
-                    )}
-                  </button>
-                  )}
-                </div>
-              </div>
-            </div>
+                {/* Layered Composer - always visible at bottom */}
+          <LayeredComposer
+            // Core state
+            previewUrl={previewUrl}
+            selectedFile={selectedFile}
+            isVideoPreview={isVideoPreview}
+            prompt={prompt}
+            setPrompt={setPrompt}
             
-            {/* Clean disclaimer row under composer */}
-            <div className="mt-1 text-center">
-              <p className="text-xs text-white">
-                <span className="font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent animate-text-fade">
-                  Disclaimer:
-                </span> This AI goes full glitch mode. It might bend reality, swap genders, confuse animals with robots — and yes, even turn trees into neon jellyfish. It's wild. Enjoy the ride.
-              </p>
-            </div>
-          </div>
-        </div>
+            // Composer state
+            composerState={composerState}
+            setComposerState={setComposerState}
+            
+            // Mode selections
+            selectedPreset={selectedPreset}
+            selectedMode={selectedMode}
+            setSelectedMode={setSelectedMode}
+            
+            // Dropdown states
+            presetsOpen={presetsOpen}
+            setPresetsOpen={setPresetsOpen}
+            unrealReflectionDropdownOpen={unrealReflectionDropdownOpen}
+            setUnrealReflectionDropdownOpen={setUnrealReflectionDropdownOpen}
+            parallelSelfDropdownOpen={parallelSelfDropdownOpen}
+            setParallelSelfDropdownOpen={setParallelSelfDropdownOpen}
+            ghibliReactionDropdownOpen={ghibliReactionDropdownOpen}
+            setGhibliReactionDropdownOpen={setGhibliReactionDropdownOpen}
+            neoTokyoGlitchDropdownOpen={neoTokyoGlitchDropdownOpen}
+            setNeoTokyoGlitchDropdownOpen={setNeoTokyoGlitchDropdownOpen}
+            
+            // Preset selections
+            selectedUnrealReflectionPreset={selectedUnrealReflectionPreset}
+            setSelectedUnrealReflectionPreset={setSelectedUnrealReflectionPreset}
+            selectedParallelSelfPreset={selectedParallelSelfPreset}
+            setSelectedParallelSelfPreset={setSelectedParallelSelfPreset}
+            selectedGhibliReactionPreset={selectedGhibliReactionPreset}
+            setSelectedGhibliReactionPreset={setSelectedGhibliReactionPreset}
+            selectedNeoTokyoGlitchPreset={selectedNeoTokyoGlitchPreset}
+            setSelectedNeoTokyoGlitchPreset={setSelectedNeoTokyoGlitchPreset}
+            
+            // Video states
+            isUnrealReflectionVideoEnabled={isUnrealReflectionVideoEnabled}
+            setIsUnrealReflectionVideoEnabled={setIsUnrealReflectionVideoEnabled}
+            
+            // Generation states
+            isGenerating={isGenerating}
+            isEnhancing={isEnhancing}
+            navGenerating={navGenerating}
+            setNavGenerating={setNavGenerating}
+            
+            // Preset data
+            weeklyPresetNames={weeklyPresetNames}
+            availablePresets={availablePresets}
+            presetsLoading={presetsLoading}
+            presetsError={presetsError}
+            
+            // Auth state
+            isAuthenticated={isAuthenticated}
+            
+            // Handlers
+            closeComposer={closeComposer}
+            checkAuthAndRedirect={checkAuthAndRedirect}
+            handlePresetClick={handlePresetClick}
+            handleMagicWandEnhance={handleMagicWandEnhance}
+            handleSaveDraft={handleSaveDraft}
+            dispatchGenerate={dispatchGenerate}
+            clearAllOptionsAfterGeneration={clearAllOptionsAfterGeneration}
+            closeAllDropdowns={closeAllDropdowns}
+            getPresetLabel={getPresetLabel}
+            handleAdditionalStoryImageUpload={handleAdditionalStoryImageUpload}
+            onFileSelect={(file) => {
+              setSelectedFile(file);
+              const url = URL.createObjectURL(file);
+              setPreviewUrl(url);
+              setIsVideoPreview(file.type.startsWith('video/'));
+            }}
+            onClearFile={() => {
+              setSelectedFile(null);
+              setPreviewUrl(null);
+              setIsVideoPreview(false);
+            }}
+            
+            // Media upload agreement
+            showUploadAgreement={showUploadAgreement}
+            userHasAgreed={userHasAgreed || false}
+            pendingFile={pendingFile}
+            onUploadAgreementAccept={handleUploadAgreementAccept}
+            onUploadAgreementCancel={handleUploadAgreementCancel}
+            onAgreementAccepted={() => setUserHasAgreed(true)}
+            
+            // Refs and measurements
+            containerRef={containerRef}
+            mediaRef={mediaRef}
+            measure={measure}
+          />
+        </>
       )}
 
       {/* Share Modal */}
 
       {/* Video Job Status Display removed in favor of unified toasts */}
-
-      {/* Media Upload Agreement Modal - only render when needed */}
-      {showUploadAgreement && (
-        <MediaUploadAgreement
-          isOpen={showUploadAgreement}
-          onClose={handleUploadAgreementCancel}
-          onAccept={handleUploadAgreementAccept}
-          onAgreementAccepted={() => setUserHasAgreed(true)}
-          userHasAgreed={userHasAgreed || false}
-        />
-      )}
-
-        </>
-      )}
 
       {/* Waitlist Modal */}
       {showWaitlistModal && (

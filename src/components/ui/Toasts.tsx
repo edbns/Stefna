@@ -223,12 +223,10 @@ export function MediaCard({
         </div>
       )}
 
-      {/* Spinner overlay like the screenshot */}
+      {/* Simple loading spinner */}
       {status === "processing" && (
         <div className="absolute inset-0 grid place-items-center bg-black/30">
-          <div className="grid place-items-center">
-            <div className="h-14 w-14 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-          </div>
+          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         </div>
       )}
 

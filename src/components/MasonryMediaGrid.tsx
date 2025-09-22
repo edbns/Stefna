@@ -75,19 +75,27 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
     // Use the columns prop or default to 3
     const numColumns = columns || 3
     const columnArrays: UserMedia[][] = Array.from({ length: numColumns }, () => [])
+    const columnHeights: number[] = Array.from({ length: numColumns }, () => 0)
     
-    // Simple distribution: put each item in the shortest column
-    media.forEach((item) => {
-      // Find the shortest column
-      const columnHeights = columnArrays.map(column => 
-        column.reduce((height, mediaItem) => {
-          return height + 1 // Simple height calculation
-        }, 0)
-      )
-      const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights))
-      
-      // Add item to shortest column
-      columnArrays[shortestColumnIndex].push(item)
+    // Distribute items based on actual aspect ratios
+    media.forEach((item, index) => {
+      // For the first few items, distribute them evenly across columns first
+      if (index < numColumns) {
+        columnArrays[index].push(item)
+        const aspectRatio = item.aspectRatio || 1
+        columnHeights[index] = 1 / aspectRatio
+      } else {
+        // Calculate item height based on aspect ratio (assuming column width of 1)
+        const aspectRatio = item.aspectRatio || 1
+        const itemHeight = 1 / aspectRatio
+        
+        // Find the shortest column
+        const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights))
+        
+        // Add item to shortest column
+        columnArrays[shortestColumnIndex].push(item)
+        columnHeights[shortestColumnIndex] += itemHeight
+      }
     })
     
     return columnArrays
@@ -166,8 +174,12 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   )}
 
                   {/* Media */}
-                  {/* If item is processing, show spinner card overlay */}
-                  {item.status === 'processing' ? (
+                  {(item as any).type === 'loading' ? (
+                    // Loading frame - 1:1 square with spinner
+                    <div className="w-full aspect-square bg-[#333333] flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    </div>
+                  ) : item.status === 'processing' ? (
                     <SpinnerCard
                       kind={item.type === 'video' ? 'video' : 'image'}
                       status="processing"
@@ -244,7 +256,12 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                     />
                   )}
 
-
+                  {/* Loading spinner overlay for generating items */}
+                  {item.status === 'processing' && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    </div>
+                  )}
 
                   {/* Simplified overlay system - remix removed for cleaner focus */}
                   {(() => {
