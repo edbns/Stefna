@@ -27,7 +27,7 @@ export default function BestPracticesPopup() {
         className="text-xs px-3 py-1 text-white bg-gray-700 hover:bg-gray-600 transition rounded"
         onClick={() => setOpen(!open)}
       >
-        Best Practices
+        Get The Look
       </button>
 
       {open && (

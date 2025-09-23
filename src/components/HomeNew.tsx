@@ -3841,9 +3841,9 @@ const HomeNew: React.FC = () => {
         <button
           onClick={() => navigate('/bestpractices')}
           className="px-4 py-2 bg-white text-black rounded-full border border-white transition-all duration-300 hover:bg-white/90 hover:scale-105 font-medium"
-          aria-label="Best Practices"
+          aria-label="Get The Look"
         >
-          Best Practices
+          Get The Look
         </button>
 
 
