@@ -76,7 +76,7 @@ export const handler: Handler = async (event) => {
         quality: 'high',
         generationTime: 0,
         modelVersion: 'draft',
-        ...(draft.metadata ? JSON.parse(draft.metadata) : {})
+        ...(draft.metadata || {})
       },
       // Mark as draft for UI handling
       isDraft: true,

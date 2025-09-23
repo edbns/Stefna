@@ -567,21 +567,6 @@ const ProfileScreen: React.FC = () => {
       setDraftMedia(drafts)
     } catch (error) {
       console.error('Error loading drafts from database:', error)
-      // Fallback to localStorage if database fails
-      try {
-        const user = authService.getCurrentUser()
-        if (user?.id) {
-          const key = `user_drafts_${user.id}`
-          const savedDrafts = localStorage.getItem(key)
-          if (savedDrafts) {
-            const drafts = JSON.parse(savedDrafts)
-            console.log('📝 Fallback: Loaded drafts from localStorage:', drafts.length)
-            setDraftMedia(drafts)
-          }
-        }
-      } catch (fallbackError) {
-        console.error('Fallback to localStorage also failed:', fallbackError)
-      }
     }
   }
 
