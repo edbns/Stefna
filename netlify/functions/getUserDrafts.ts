@@ -56,12 +56,21 @@ export const handler: Handler = async (event) => {
       totalDrafts: drafts.length
     });
 
+    // Helper function to convert Cloudinary URLs to absolute URLs
+    const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
+      if (!maybeUrl) return undefined;
+      if (maybeUrl.startsWith('http')) return maybeUrl;
+      
+      const cloud = process.env.CLOUDINARY_CLOUD_NAME || 'dw2xaqjmg';
+      return `https://res.cloudinary.com/${cloud}/image/upload/${maybeUrl.replace(/^\/+/, '')}`;
+    };
+
     // Transform drafts to match UserMedia format
     const transformedDrafts = drafts.map((draft: any) => ({
       id: draft.id,
       userId: draft.user_id,
       type: draft.media_type || 'photo',
-      url: draft.media_url,
+      url: toAbsoluteCloudinaryUrl(draft.media_url) || draft.media_url,
       prompt: draft.prompt || 'Untitled draft',
       aspectRatio: draft.aspect_ratio || 4/3,
       width: draft.width || 800,

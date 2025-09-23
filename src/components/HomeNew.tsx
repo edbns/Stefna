@@ -464,6 +464,32 @@ const HomeNew: React.FC = () => {
       
       // Clear the location state to prevent re-triggering
       navigate('/', { replace: true, state: {} })
+    } else if (location.state?.editUrl) {
+      console.log('📝 [Draft] Edit data received from profile screen:', {
+        editUrl: location.state.editUrl,
+        editPrompt: location.state.editPrompt
+      })
+      
+      // Set the prompt if provided
+      if (location.state.editPrompt) {
+        setPrompt(location.state.editPrompt)
+      }
+      
+      // Update composer state for editing
+      setComposerState(s => ({
+        ...s,
+        mode: null,
+        sourceUrl: location.state.editUrl,
+        status: 'idle',
+        error: null,
+        runOnOpen: false
+      }))
+      
+      // Open the composer
+      setIsComposerOpen(true)
+      
+      // Clear the location state to prevent re-triggering
+      navigate('/', { replace: true, state: {} })
     }
   }, [location.state, navigate])
 
