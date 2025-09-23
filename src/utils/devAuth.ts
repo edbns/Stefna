@@ -25,7 +25,6 @@ const TEST_USER: DevUser = {
  */
 export function createDevAuth(): boolean {
   if (import.meta.env.PROD) {
-    console.warn('⚠️ Dev auth is only available in development mode')
     return false
   }
 
@@ -33,10 +32,6 @@ export function createDevAuth(): boolean {
     // Set the auth state with mock data
     authService.setAuthState(DEV_JWT_TOKEN, TEST_USER)
     
-    console.log('🔧 Development authentication created:', {
-      user: TEST_USER.email,
-      id: TEST_USER.id
-    })
     
     return true
   } catch (error) {
@@ -65,6 +60,5 @@ export function getTestUser(): DevUser {
 export function clearDevAuth(): void {
   if (import.meta.env.DEV) {
     authService.clearAuthState()
-    console.log('🔧 Development authentication cleared')
   }
 }

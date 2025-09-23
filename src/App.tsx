@@ -20,7 +20,6 @@ import WaitlistForm from './components/WaitlistForm'
 import { useIsMobile } from './hooks/useResponsive'
 import LoadingSpinner from './components/LoadingSpinner'
 import MobileRouteGuard from './components/MobileRouteGuard'
-import DevAuthButton from './components/DevAuthButton'
 
 // Scroll to top on route change
 const ScrollToTop: React.FC = () => {
@@ -198,7 +197,6 @@ const App: React.FC = () => {
       <ToastProvider>
         <ProfileProvider>
           <AppContent />
-          <DevAuthButton />
         </ProfileProvider>
       </ToastProvider>
     </BrowserRouter>

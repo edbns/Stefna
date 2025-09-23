@@ -191,7 +191,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
   }, [setComposerState, setSelectedMode, closeAllDropdowns])
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[999999] w-[70%] min-w-[600px]">
+    <div className="fixed bottom-2 left-1/2 transform -translate-x-1/2 z-[999999] w-[70%] min-w-[600px]">
       {/* Photo preview container - shows above composer when photo is uploaded */}
       {previewUrl && (
         <div className="mb-4 flex justify-center">
@@ -387,7 +387,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 }
                 input.click()
               }}
-              className="px-3 py-1.5 rounded-2xl text-xs font-medium transition-colors bg-white text-black flex items-center gap-2"
+              className="px-3 py-1.5 rounded-2xl text-xs font-medium transition-all duration-300 text-black flex items-center gap-2 hover:scale-105 upload"
               title="Upload a photo to get started"
             >
               <Plus size={16} />
