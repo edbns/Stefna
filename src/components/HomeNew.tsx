@@ -3495,8 +3495,22 @@ const HomeNew: React.FC = () => {
       }
       
       // Save draft to database
-      // Use composerState.sourceUrl if available (Cloudinary URL), otherwise fall back to previewUrl
+      // Check if we have a valid Cloudinary URL, not a blob URL
       const mediaUrl = composerState.sourceUrl || previewUrl
+      
+      console.log('📝 [Draft] Saving draft with URLs:', {
+        previewUrl,
+        composerStateSourceUrl: composerState.sourceUrl,
+        finalMediaUrl: mediaUrl,
+        isBlobUrl: mediaUrl?.startsWith('blob:')
+      })
+      
+      // Check if the media URL is a blob URL (temporary/invalid)
+      if (mediaUrl?.startsWith('blob:')) {
+        console.error('❌ Cannot save draft: Media has not been uploaded to Cloudinary yet')
+        // You could show a toast notification here
+        return
+      }
       
       const draftData = {
         media_url: mediaUrl,
