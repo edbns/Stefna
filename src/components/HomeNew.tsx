@@ -28,6 +28,7 @@ import { prepareSourceAsset } from '../utils/prepareSourceAsset'
 import { HiddenUploader } from './HiddenUploader'
 
 import { uploadSourceToCloudinary } from '../services/uploadSource'
+import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 import { storeSelectedFile } from '../services/mediaSource'
 import { useGenerationMode } from '../stores/generationMode'
 import { MagicWandService } from '../services/magicWandService'
@@ -3495,8 +3496,8 @@ const HomeNew: React.FC = () => {
       }
       
       // Save draft to database
-      // Check if we have a valid Cloudinary URL, not a blob URL
-      const mediaUrl = composerState.sourceUrl || previewUrl
+      // If we have a blob URL, upload it to Cloudinary first
+      let mediaUrl = composerState.sourceUrl || previewUrl
       
       console.log('📝 [Draft] Saving draft with URLs:', {
         previewUrl,
@@ -3505,11 +3506,26 @@ const HomeNew: React.FC = () => {
         isBlobUrl: mediaUrl?.startsWith('blob:')
       })
       
-      // Check if the media URL is a blob URL (temporary/invalid)
+      // If the media URL is a blob URL, upload it to Cloudinary first
       if (mediaUrl?.startsWith('blob:')) {
-        console.error('❌ Cannot save draft: Media has not been uploaded to Cloudinary yet')
-        // You could show a toast notification here
-        return
+        console.log('📝 [Draft] Uploading blob to Cloudinary before saving draft...')
+        
+        try {
+          // Convert blob URL to file
+          const response = await fetch(mediaUrl)
+          const blob = await response.blob()
+          const file = new File([blob], 'draft-image.jpg', { type: blob.type })
+          
+          // Upload to Cloudinary
+          const uploadResponse = await uploadToCloudinary(file, 'stefna/sources')
+          mediaUrl = uploadResponse.secure_url
+          
+          console.log('✅ [Draft] File uploaded to Cloudinary:', mediaUrl)
+        } catch (uploadError) {
+          console.error('❌ [Draft] Failed to upload file to Cloudinary:', uploadError)
+          // Fallback: save with blob URL anyway (will be filtered out later)
+          console.warn('⚠️ [Draft] Saving with blob URL as fallback')
+        }
       }
       
       const draftData = {
