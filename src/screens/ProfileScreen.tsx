@@ -512,9 +512,27 @@ const ProfileScreen: React.FC = () => {
     })
   }
 
-  const selectAllMedia = () => {
-    const allIds = new Set(userMedia.map(media => media.id))
-    setSelectedMediaIds(allIds)
+  const selectAllMedia = async () => {
+    try {
+      // Load ALL media for selection (not just loaded items)
+      const allMedia = await loadAllMediaForBulkOperation()
+      
+      if (allMedia.length === 0) {
+        console.log('No media available to select')
+        return
+      }
+      
+      // Select all media IDs
+      const allIds = new Set(allMedia.map(media => media.id))
+      setSelectedMediaIds(allIds)
+      
+      console.log('📝 Selected all media:', allIds.size, 'items')
+    } catch (error) {
+      console.error('Error selecting all media:', error)
+      // Fallback to selecting only loaded items
+      const loadedIds = new Set(userMedia.map(media => media.id))
+      setSelectedMediaIds(loadedIds)
+    }
   }
 
   const deselectAllMedia = () => {
@@ -2034,7 +2052,7 @@ const ProfileScreen: React.FC = () => {
                         Deselect All
                       </button>
                       <span className="text-white/60 text-sm">
-                        {selectedMediaIds.size} of {userMedia.length} selected
+                        {selectedMediaIds.size} of {totalMediaCount} selected
                       </span>
                     </>
                   )}
