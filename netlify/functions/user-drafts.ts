@@ -81,9 +81,9 @@ export const handler: Handler = async (event) => {
         metadata: metadata ? 'present' : 'missing'
       });
       
-      if (!media_url || !prompt || !media_type) {
-        console.error('❌ [user-drafts] Missing required fields:', { media_url: !!media_url, prompt: !!prompt, media_type: !!media_type });
-        return json({ error: 'Missing required fields' }, { status: 400, headers });
+      if (!media_url || !media_type) {
+        console.error('❌ [user-drafts] Missing required fields:', { media_url: !!media_url, media_type: !!media_type });
+        return json({ error: 'Missing required fields: media_url and media_type are required' }, { status: 400, headers });
       }
 
       // Ensure metadata is properly serialized as JSON

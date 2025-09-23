@@ -3471,7 +3471,7 @@ const HomeNew: React.FC = () => {
       // Save draft to database
       const draftData = {
         media_url: previewUrl,
-        prompt: prompt.trim(),
+        prompt: prompt.trim() || 'Untitled draft', // Provide default if empty
         media_type: isVideoPreview ? 'video' as const : 'photo' as const,
         aspect_ratio: 4/3,
         width: 800,
