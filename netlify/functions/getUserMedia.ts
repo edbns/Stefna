@@ -43,8 +43,9 @@ export const handler: Handler = async (event) => {
     
     // Get query parameters (but not userId - it comes from JWT)
     const url = new URL(event.rawUrl);
-    const limit = parseInt(url.searchParams.get('limit') || '50');
-    const offset = parseInt(url.searchParams.get('offset') || '0');
+    const getAll = url.searchParams.get('all') === 'true';
+    const limit = getAll ? null : parseInt(url.searchParams.get('limit') || '50');
+    const offset = getAll ? 0 : parseInt(url.searchParams.get('offset') || '0');
 
     console.log('🔐 [getUserMedia] Authenticated request:', {
       userId,
@@ -54,6 +55,7 @@ export const handler: Handler = async (event) => {
 
     console.log('🔍 [getUserMedia] Fetching media for user:', {
       userId,
+      getAll,
       limit,
       offset
     });
@@ -108,10 +110,12 @@ export const handler: Handler = async (event) => {
         SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'parallel_self' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM parallel_self_media WHERE user_id = $1
       ) as combined_media
       ORDER BY created_at DESC
-      LIMIT $2 OFFSET $3
+      ${getAll ? '' : `LIMIT $2 OFFSET $3`}
     `;
 
-    const allMediaItems = await q(unifiedSql, [userId, limit, offset]);
+    const allMediaItems = getAll 
+      ? await q(unifiedSql, [userId])
+      : await q(unifiedSql, [userId, limit!, offset]);
 
     console.log('✅ [getUserMedia] Retrieved user media:', {
       totalItems: allMediaItems.length,
@@ -161,7 +165,7 @@ export const handler: Handler = async (event) => {
       success: true,
       items: transformedItems,
       total: totalCount,
-      hasMore: offset + limit < totalCount
+      hasMore: getAll ? false : offset + limit! < totalCount
     });
 
   } catch (error: any) {

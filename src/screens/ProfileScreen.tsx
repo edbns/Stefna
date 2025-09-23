@@ -546,7 +546,7 @@ const ProfileScreen: React.FC = () => {
       }
 
       // Authenticated user: fetch ALL media from server (no pagination)
-      const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=10000&offset=0`, {
+      const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&all=true`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
