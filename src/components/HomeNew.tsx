@@ -4005,8 +4005,9 @@ const HomeNew: React.FC = () => {
         />
       )}
 
-                {/* Layered Composer - always visible at bottom */}
-          <LayeredComposer
+                {/* Layered Composer - hidden when full screen viewer is open */}
+          {!viewerOpen && (
+            <LayeredComposer
             // Core state
             previewUrl={previewUrl}
             selectedFile={selectedFile}
@@ -4100,6 +4101,7 @@ const HomeNew: React.FC = () => {
             mediaRef={mediaRef}
             measure={measure}
           />
+          )}
         </>
       )}
 
