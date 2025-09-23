@@ -313,6 +313,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   onClick={async () => {
                     if (!checkAuthAndRedirect()) return
                     
+                    // Redirect immediately when user clicks generate
+                    navigate('/profile')
+                    
                     setNavGenerating(true)
                     window.dispatchEvent(new CustomEvent('close-composer'));
                     
