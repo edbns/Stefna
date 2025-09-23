@@ -195,7 +195,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
       {/* Photo preview container - shows above composer when photo is uploaded */}
       {previewUrl && (
         <div className="mb-4 flex justify-center">
-          <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block" style={{ backgroundColor: '#333333' }}>
+          <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
             
             {/* Media display */}
             <div className="flex justify-center mb-3">
@@ -249,7 +249,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   // Close composer
                   closeComposer()
                 }}
-                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white/20 text-white hover:bg-white/30"
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-black text-white hover:bg-white/10"
                 aria-label="Remove media"
               >
                 <X size={16} />
@@ -285,8 +285,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       return "Custom prompt (optional) - will be combined with selected preset"
                   }
                 })()}
-                className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border border-white/20"
-                style={{ backgroundColor: '#333333' }}
+                className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border"
+                style={{ backgroundColor: '#000000', borderColor: '#333333' }}
                 disabled={!selectedFile}
                 maxLength={1500}
                 data-testid="custom-prompt-input"
@@ -349,7 +349,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     !prompt.trim() ||
                     (composerState.mode === 'custom' && !prompt.trim()) ||
                     navGenerating
-                  ? 'w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
+                  ? 'w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-black text-white/50 cursor-not-allowed'
                   : 'w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
                 }
                 aria-label="Generate"
@@ -367,7 +367,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
         )}
 
         {/* Single row with all controls */}
-        <div className="flex items-center justify-between gap-1 flex-wrap rounded-xl p-3 border border-white/20" style={{ backgroundColor: '#333333' }}>
+        <div className="flex items-center justify-between gap-1 flex-wrap rounded-xl p-3 border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
           {/* Left: Upload button and Mode buttons */}
           <div className="flex items-center gap-2">
             
@@ -417,7 +417,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   className={
                     composerState.mode === 'custom'
                       ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                      : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                      : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                   }
                   data-testid="custom-button"
                   style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
@@ -428,9 +428,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 
                 {/* Custom tooltip */}
                 {!selectedFile && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#333333' }}>
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
                     Please upload a photo first to get started
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#333333' }}></div>
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                   </div>
                 )}
               </div>
@@ -459,7 +459,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   className={
                     composerState.mode === 'edit'
                       ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                      : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                      : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                   }
                   style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
                 >
@@ -468,9 +468,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 
                 {/* Custom tooltip */}
                 {!selectedFile && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#333333' }}>
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
                     Please upload a photo first to get started
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#333333' }}></div>
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                   </div>
                 )}
               </div>
@@ -504,7 +504,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   className={
                     selectedPreset
                       ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                      : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                      : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                   }
                   data-nav-button
                   data-nav-type="presets"
@@ -515,14 +515,14 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 
                 {/* Custom tooltip */}
                 {!selectedFile && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#333333' }}>
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
                     Please upload a photo first to get started
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#333333' }}></div>
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                   </div>
                 )}
               </div>
               {presetsOpen && (
-                <div className="absolute bottom-full left-0 mb-2 rounded-xl p-3 w-80 z-50 shadow-2xl shadow-black/20" style={{ backgroundColor: '#333333' }}>
+                <div className="absolute bottom-full left-0 mb-2 rounded-xl p-3 w-80 z-50 shadow-2xl shadow-black/20 border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
                   <div className="space-y-1">
                     {/* Loading state */}
                     {presetsLoading && (
@@ -551,7 +551,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
                           selectedPreset === name 
                             ? 'bg-white/90 backdrop-blur-md text-black' 
-                            : 'text-white hover:text-white hover:bg-white/20'
+                            : 'text-white hover:text-white hover:bg-white/10'
                         }`}
                       >
                         <span>{getPresetLabel(String(name), availablePresets)}</span>
@@ -593,7 +593,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 className={
                   composerState.mode === 'unrealreflection'
                     ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
                 title={!selectedFile ? 'Please upload a photo first to get started' : (isAuthenticated ? 'Switch to Unreal Reflection™ mode' : 'Explore Unreal Reflection™ mode')}
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
@@ -606,9 +606,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Custom tooltip */}
               {!selectedFile && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#333333' }}>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
                   Please upload a photo first to get started
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#333333' }}></div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                 </div>
               )}
             </div>
@@ -674,7 +674,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 className={
                   composerState.mode === 'parallelself'
                     ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
                 title={!selectedFile ? 'Please upload a photo first to get started' : (isAuthenticated ? 'Switch to Parallel Self™ mode' : 'Explore Parallel Self™ mode')}
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
@@ -687,9 +687,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Custom tooltip */}
               {!selectedFile && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#333333' }}>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
                   Please upload a photo first to get started
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#333333' }}></div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                 </div>
               )}
             </div>
@@ -752,7 +752,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 className={
                   composerState.mode === 'ghiblireact'
                     ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
                 title={!selectedFile ? 'Please upload a photo first to get started' : (isAuthenticated ? 'Switch to Studio Ghibli Reaction mode' : 'Explore Studio Ghibli Reaction mode')}
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
@@ -765,9 +765,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Custom tooltip */}
               {!selectedFile && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#333333' }}>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
                   Please upload a photo first to get started
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#333333' }}></div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                 </div>
               )}
             </div>
@@ -830,7 +830,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 className={
                   composerState.mode === 'neotokyoglitch'
                     ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/20 backdrop-blur-md text-white hover:bg-white/30'
+                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
                 title={!selectedFile ? 'Please upload a photo first to get started' : (isAuthenticated ? 'Switch to Neo Tokyo Glitch mode' : 'Explore Neo Tokyo Glitch mode')}
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
@@ -843,9 +843,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Custom tooltip */}
               {!selectedFile && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#333333' }}>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
                   Please upload a photo first to get started
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#333333' }}></div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                 </div>
               )}
             </div>
@@ -897,8 +897,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               title={isAuthenticated ? 'Save to draft' : 'Sign up to save drafts'}
               className={(() => {
                 const baseClass = 'w-8 h-8 rounded-full flex items-center justify-center transition-colors';
-                const activeClass = 'bg-white/10 text-white hover:bg-white/15';
-                const disabledClass = 'bg-white/5 text-white/50 cursor-not-allowed';
+                const activeClass = 'bg-black text-white hover:bg-white/10';
+                const disabledClass = 'bg-black text-white/50 cursor-not-allowed';
                 return `${baseClass} ${isAuthenticated ? activeClass : disabledClass}`;
               })()}
               aria-label="Save to draft"
@@ -946,7 +946,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   ((composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
                    (composerState.mode === 'custom' && !prompt.trim()) ||
                    navGenerating)
-                  ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-400 text-gray-600 cursor-not-allowed'
+                  ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-black text-white/50 cursor-not-allowed'
                   : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
                 }
                 aria-label="Generate"
