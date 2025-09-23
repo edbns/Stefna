@@ -191,7 +191,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
   }, [setComposerState, setSelectedMode, closeAllDropdowns])
 
   return (
-    <div className="fixed bottom-2 left-1/2 transform -translate-x-1/2 z-[999999] w-[70%] min-w-[600px]">
+    <div className="fixed bottom-2 left-1/2 transform -translate-x-1/2 z-[999999] w-[67%] min-w-[600px]">
       {/* Photo preview container - shows above composer when photo is uploaded */}
       {previewUrl && (
         <div className="mb-4 flex justify-center">
