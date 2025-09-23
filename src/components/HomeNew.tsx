@@ -3495,8 +3495,11 @@ const HomeNew: React.FC = () => {
       }
       
       // Save draft to database
+      // Use composerState.sourceUrl if available (Cloudinary URL), otherwise fall back to previewUrl
+      const mediaUrl = composerState.sourceUrl || previewUrl
+      
       const draftData = {
-        media_url: previewUrl,
+        media_url: mediaUrl,
         prompt: prompt.trim() || 'Untitled draft', // Provide default if empty
         media_type: isVideoPreview ? 'video' as const : 'photo' as const,
         aspect_ratio: 4/3,

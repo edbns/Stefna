@@ -61,37 +61,55 @@ export const handler: Handler = async (event) => {
       if (!maybeUrl) return undefined;
       if (maybeUrl.startsWith('http')) return maybeUrl;
       
+      // Skip blob URLs as they're temporary and invalid
+      if (maybeUrl.startsWith('blob:')) {
+        console.warn('⚠️ Skipping draft with blob URL (temporary/invalid):', maybeUrl);
+        return undefined;
+      }
+      
       const cloud = process.env.CLOUDINARY_CLOUD_NAME || 'dw2xaqjmg';
       return `https://res.cloudinary.com/${cloud}/image/upload/${maybeUrl.replace(/^\/+/, '')}`;
     };
 
-    // Transform drafts to match UserMedia format
-    const transformedDrafts = drafts.map((draft: any) => ({
-      id: draft.id,
-      userId: draft.user_id,
-      type: draft.media_type || 'photo',
-      url: toAbsoluteCloudinaryUrl(draft.media_url) || draft.media_url,
-      prompt: draft.prompt || 'Untitled draft',
-      aspectRatio: draft.aspect_ratio || 4/3,
-      width: draft.width || 800,
-      height: draft.height || 600,
-      timestamp: draft.created_at,
-      tokensUsed: 0, // Drafts don't use tokens
-      likes: 0,
-      remixCount: 0,
-      isPublic: false,
-      tags: [],
-      metadata: {
-        quality: 'high',
-        generationTime: 0,
-        modelVersion: 'draft',
-        ...(draft.metadata || {})
-      },
-      // Mark as draft for UI handling
-      isDraft: true,
-      createdAt: draft.created_at,
-      updatedAt: draft.updated_at
-    }));
+    // Transform drafts to match UserMedia format and filter out invalid ones
+    const transformedDrafts = drafts
+      .map((draft: any) => {
+        const absoluteUrl = toAbsoluteCloudinaryUrl(draft.media_url);
+        
+        // Skip drafts with invalid URLs (like blob URLs)
+        if (!absoluteUrl && draft.media_url?.startsWith('blob:')) {
+          console.warn('⚠️ Skipping draft with blob URL:', draft.id, draft.media_url);
+          return null;
+        }
+        
+        return {
+          id: draft.id,
+          userId: draft.user_id,
+          type: draft.media_type || 'photo',
+          url: absoluteUrl || draft.media_url,
+          prompt: draft.prompt || 'Untitled draft',
+          aspectRatio: draft.aspect_ratio || 4/3,
+          width: draft.width || 800,
+          height: draft.height || 600,
+          timestamp: draft.created_at,
+          tokensUsed: 0, // Drafts don't use tokens
+          likes: 0,
+          remixCount: 0,
+          isPublic: false,
+          tags: [],
+          metadata: {
+            quality: 'high',
+            generationTime: 0,
+            modelVersion: 'draft',
+            ...(draft.metadata || {})
+          },
+          // Mark as draft for UI handling
+          isDraft: true,
+          createdAt: draft.created_at,
+          updatedAt: draft.updated_at
+        };
+      })
+      .filter((draft: any) => draft !== null); // Remove null entries
 
     return json({
       success: true,
