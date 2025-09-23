@@ -280,6 +280,7 @@ const ProfileScreen: React.FC = () => {
   }
 
   const [userMedia, setUserMedia] = useState<UserMedia[]>([])
+  const [totalMediaCount, setTotalMediaCount] = useState(0) // Total count from database
   const [draftMedia, setDraftMedia] = useState<UserMedia[]>([])
   
   // 🚀 INFINITE SCROLL: Pagination state for user media
@@ -526,6 +527,90 @@ const ProfileScreen: React.FC = () => {
     }
   }
 
+  // Load all media for bulk operations (download all, delete all, select all)
+  const loadAllMediaForBulkOperation = async (): Promise<UserMedia[]> => {
+    try {
+      const user = authService.getCurrentUser()
+      const userId = currentUserId || user?.id || 'guest-user'
+      
+      if (!userId || userId === 'guest-user') {
+        console.log('No user ID available for bulk operation')
+        return []
+      }
+
+      const jwt = authService.getToken() || localStorage.getItem('auth_token');
+      
+      if (!jwt) {
+        // Guest user: get from local service
+        return await userMediaService.getAllUserMedia(userId);
+      }
+
+      // Authenticated user: fetch ALL media from server (no pagination)
+      const response = await authenticatedFetch(`/.netlify/functions/getUserMedia?userId=${userId}&limit=10000&offset=0`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.status === 401) {
+        // JWT expired/invalid: fallback to local
+        console.log('JWT invalid: falling back to local media for bulk operation');
+        return await userMediaService.getAllUserMedia(userId);
+      } else if (response.ok) {
+        const result = await response.json();
+        const dbMedia = result.items || [];
+        
+        // Transform database media to UserMedia format (same as loadUserMedia)
+        const transformedMedia: UserMedia[] = dbMedia.map((item: any) => ({
+          id: item.id,
+          userId: item.userId,
+          type: item.mediaType || item.type || 'photo',
+          url: toAbsoluteCloudinaryUrl(item.finalUrl) || item.finalUrl,
+          prompt: item.prompt || (item.presetKey ? `Generated with ${item.presetKey}` : 'AI Generated Content'),
+          aspectRatio: 4/3,
+          width: 800,
+          height: 600,
+          timestamp: item.createdAt,
+          tokensUsed: 2,
+          likes: 0,
+          remixCount: 0,
+          isPublic: item.isPublic || false,
+          tags: [],
+          presetKey: item.presetKey,
+          metadata: {
+            quality: 'high',
+            generationTime: 0,
+            modelVersion: '1.0',
+            presetKey: item.presetKey,
+            presetType: item.type
+          },
+          cloudinaryPublicId: item.cloudinaryPublicId,
+          mediaType: item.mediaType,
+          presetType: item.type
+        }));
+        
+        console.log('📊 Loaded all media for bulk operation:', transformedMedia.length, 'items');
+        return transformedMedia;
+      } else {
+        console.error('Failed to load all media for bulk operation:', response.statusText);
+        // Fallback to local service
+        return await userMediaService.getAllUserMedia(userId);
+      }
+    } catch (error) {
+      console.error('Error loading all media for bulk operation:', error);
+      // Fallback to local service
+      try {
+        const user = authService.getCurrentUser()
+        const userId = currentUserId || user?.id || 'guest-user'
+        return await userMediaService.getAllUserMedia(userId);
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        return [];
+      }
+    }
+  };
+
   // Add loading state for delete operations
   const [isDeletingSelected, setIsDeletingSelected] = useState(false)
   const [isDeletingAll, setIsDeletingAll] = useState(false)
@@ -536,7 +621,7 @@ const ProfileScreen: React.FC = () => {
 
   // Add delete all functionality
   const deleteAllMedia = async () => {
-    if (userMedia.length === 0) return
+    if (totalMediaCount === 0) return
 
     try {
       const token = authService.getToken()
@@ -574,17 +659,25 @@ const ProfileScreen: React.FC = () => {
 
   // Handle delete all functionality
   const handleConfirmDeleteAll = async () => {
-    if (userMedia.length === 0) return
+    if (totalMediaCount === 0) return
     
     setIsDeletingAll(true)
     
-    // Add all media to deleting state for visual feedback
-    const allMediaIds = new Set(userMedia.map(m => m.id))
-    setDeletingMediaIds(allMediaIds)
-    
     try {
+      // Load ALL media for deletion (not just loaded items)
+      const allMedia = await loadAllMediaForBulkOperation()
+      
+      if (allMedia.length === 0) {
+        addNotification('No Media', 'No media files to delete', 'warning')
+        return
+      }
+      
+      // Add all media to deleting state for visual feedback
+      const allMediaIds = new Set(allMedia.map(m => m.id))
+      setDeletingMediaIds(allMediaIds)
+      
       // Delete all media items
-      const deletePromises = userMedia.map(async (media) => {
+      const deletePromises = allMedia.map(async (media) => {
         const response = await authenticatedFetch('/.netlify/functions/delete-media', {
           method: 'DELETE',
           headers: { 
@@ -760,7 +853,7 @@ const ProfileScreen: React.FC = () => {
 
   // Download functions
   const downloadAllMedia = async () => {
-    if (userMedia.length === 0) {
+    if (totalMediaCount === 0) {
       addNotification('No Media', 'No media files to download', 'warning')
       return
     }
@@ -768,8 +861,16 @@ const ProfileScreen: React.FC = () => {
     setIsDownloadingAll(true)
     
     try {
+      // Load ALL media for download (not just loaded items)
+      const allMedia = await loadAllMediaForBulkOperation()
+      
+      if (allMedia.length === 0) {
+        addNotification('No Media', 'No media files to download', 'warning')
+        return
+      }
+
       // Convert user media to downloadable format
-      const downloadableMedia: DownloadableMedia[] = userMedia.map((media, index) => ({
+      const downloadableMedia: DownloadableMedia[] = allMedia.map((media, index) => ({
         id: media.id,
         url: toAbsoluteCloudinaryUrl(media.url) || media.url,
         filename: generateMediaFilename({
@@ -787,7 +888,7 @@ const ProfileScreen: React.FC = () => {
 
       await downloadAllMediaAsZip(downloadableMedia, `all-media-${new Date().toISOString().split('T')[0]}.zip`)
       
-      addNotification('Download Complete', `Downloaded ${userMedia.length} media files`, 'success')
+      addNotification('Download Complete', `Downloaded ${allMedia.length} media files`, 'success')
       
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1026,6 +1127,7 @@ const ProfileScreen: React.FC = () => {
               console.log('📊 Setting userMedia with', transformedMedia.length, 'items (initial load)');
               setUserMedia(transformedMedia);
               setMediaPage(0);
+              setTotalMediaCount(result.total || 0); // Store total count from database
             } else {
               // Load more: append to existing media (page already incremented in loadMoreMedia)
               console.log('📊 Appending', transformedMedia.length, 'more items to existing media');
@@ -1733,7 +1835,7 @@ const ProfileScreen: React.FC = () => {
                       <span className="text-xs font-medium">{item.label}</span>
                     </div>
                     {item.id === 'all-media' && (
-                      <span className="text-xs font-medium text-white/60">{userMedia.length}</span>
+                      <span className="text-xs font-medium text-white/60">{totalMediaCount}</span>
                     )}
                   </button>
                 </div>
