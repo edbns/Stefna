@@ -44,6 +44,7 @@ import { useProfile } from '../contexts/ProfileContext'
 import { downloadAllMediaAsZip, downloadSelectedMediaAsZip, generateMediaFilename, DownloadableMedia } from '../utils/downloadUtils'
 import { toggleLike, getUserLikes, mapMediaTypeForAPI, generateLikeKey } from '../services/likesService'
 import MasonryMediaGrid from '../components/MasonryMediaGrid'
+import draftService from '../services/draftService'
 import { useGenerationEvents } from '../lib/generationEvents'
 
 
@@ -524,6 +525,45 @@ const ProfileScreen: React.FC = () => {
     setIsSelectionMode(prev => !prev)
     if (isSelectionMode) {
       setSelectedMediaIds(new Set()) // Clear selection when exiting
+    }
+  }
+
+  // Load drafts from database
+  const loadDraftsFromDatabase = async () => {
+    try {
+      const user = authService.getCurrentUser()
+      if (!user?.id) {
+        console.log('No user ID available for loading drafts')
+        return
+      }
+
+      const jwt = authService.getToken()
+      if (!jwt) {
+        console.log('No JWT token available for loading drafts')
+        return
+      }
+
+      console.log('📝 Loading drafts from database for user:', user.id)
+      const drafts = await draftService.getUserDrafts()
+      console.log('📝 Loaded drafts from database:', drafts.length, 'items')
+      setDraftMedia(drafts)
+    } catch (error) {
+      console.error('Error loading drafts from database:', error)
+      // Fallback to localStorage if database fails
+      try {
+        const user = authService.getCurrentUser()
+        if (user?.id) {
+          const key = `user_drafts_${user.id}`
+          const savedDrafts = localStorage.getItem(key)
+          if (savedDrafts) {
+            const drafts = JSON.parse(savedDrafts)
+            console.log('📝 Fallback: Loaded drafts from localStorage:', drafts.length)
+            setDraftMedia(drafts)
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Fallback to localStorage also failed:', fallbackError)
+      }
     }
   }
 
@@ -1172,21 +1212,8 @@ const ProfileScreen: React.FC = () => {
       // Load draft media (empty for now - will be populated when users create drafts)
       setDraftMedia([])
       
-      // Load drafts from localStorage
-      try {
-        const user = authService.getCurrentUser()
-        if (user?.id) {
-          const key = `user_drafts_${user.id}`
-          const savedDrafts = localStorage.getItem(key)
-          if (savedDrafts) {
-            const drafts = JSON.parse(savedDrafts)
-            console.log('📝 Loaded drafts from localStorage:', drafts.length)
-            setDraftMedia(drafts)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load drafts from localStorage:', error)
-      }
+      // Load drafts from database
+      loadDraftsFromDatabase()
     } catch (error) {
       console.error('Error in loadUserMedia:', error);
     }
@@ -1209,12 +1236,19 @@ const ProfileScreen: React.FC = () => {
       }
     }
 
+    const handleDraftSaved = (event: CustomEvent) => {
+      console.log('📝 Draft saved event received, refreshing drafts')
+      loadDraftsFromDatabase()
+    }
+
     window.addEventListener('generation:done', handleGenerationDone as EventListener)
+    window.addEventListener('draftSaved', handleDraftSaved as EventListener)
     
     return () => {
       window.removeEventListener('generation:done', handleGenerationDone as EventListener)
+      window.removeEventListener('draftSaved', handleDraftSaved as EventListener)
     }
-  }, [loadUserMedia])
+  }, [loadUserMedia, loadDraftsFromDatabase])
 
   // 🚀 INFINITE SCROLL: Load more media function
   const loadMoreMedia = async () => {
@@ -1328,16 +1362,7 @@ const ProfileScreen: React.FC = () => {
       }
       
       // Also refresh drafts specifically
-      const user = authService.getCurrentUser()
-      if (user?.id) {
-        const key = `user_drafts_${user.id}`
-        const savedDrafts = localStorage.getItem(key)
-        if (savedDrafts) {
-          const drafts = JSON.parse(savedDrafts)
-          console.log('📝 Refreshing drafts from localStorage:', drafts.length)
-          setDraftMedia(drafts)
-        }
-      }
+      loadDraftsFromDatabase()
     }
     
     window.addEventListener('userMediaUpdated', handleUserMediaUpdated as any)

@@ -3489,6 +3489,11 @@ const HomeNew: React.FC = () => {
       // Show success notification
       console.log('✅ Draft saved successfully:', savedDraft)
       
+      // Dispatch event to refresh drafts in ProfileScreen
+      window.dispatchEvent(new CustomEvent('draftSaved', { 
+        detail: { draft: savedDraft } 
+      }))
+      
       // Show toast notification
       notifyReady({ 
         title: 'Draft Saved', 
