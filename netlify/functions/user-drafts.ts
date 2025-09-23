@@ -71,9 +71,23 @@ export const handler: Handler = async (event) => {
     try {
       const { media_url, prompt, media_type, aspect_ratio, width, height, metadata } = JSON.parse(event.body || '{}');
       
+      console.log('🔍 [user-drafts] POST data received:', {
+        media_url: media_url ? 'present' : 'missing',
+        prompt: prompt ? 'present' : 'missing', 
+        media_type,
+        aspect_ratio,
+        width,
+        height,
+        metadata: metadata ? 'present' : 'missing'
+      });
+      
       if (!media_url || !prompt || !media_type) {
+        console.error('❌ [user-drafts] Missing required fields:', { media_url: !!media_url, prompt: !!prompt, media_type: !!media_type });
         return json({ error: 'Missing required fields' }, { status: 400, headers });
       }
+
+      // Ensure metadata is properly serialized as JSON
+      const serializedMetadata = metadata ? JSON.stringify(metadata) : '{}';
 
       const newDraft = await qOne(`
         INSERT INTO user_drafts (
@@ -88,13 +102,14 @@ export const handler: Handler = async (event) => {
         aspect_ratio || 1.33, 
         width || 800, 
         height || 600, 
-        metadata || {}
+        serializedMetadata
       ]);
 
+      console.log('✅ [user-drafts] Draft saved successfully:', newDraft?.id);
       return json({ draft: newDraft }, { headers });
 
     } catch (error) {
-      console.error('Failed to save draft:', error);
+      console.error('❌ [user-drafts] Failed to save draft:', error);
       return json({ error: 'Failed to save draft' }, { status: 500, headers });
     }
 
@@ -106,6 +121,9 @@ export const handler: Handler = async (event) => {
       if (!id) {
         return json({ error: 'Draft ID required' }, { status: 400, headers });
       }
+
+      // Ensure metadata is properly serialized as JSON
+      const serializedMetadata = metadata ? JSON.stringify(metadata) : null;
 
       const updatedDraft = await qOne(`
         UPDATE user_drafts 
@@ -120,7 +138,7 @@ export const handler: Handler = async (event) => {
           updated_at = NOW()
         WHERE id = $1 AND user_id = $9
         RETURNING *
-      `, [id, media_url, prompt, media_type, aspect_ratio, width, height, metadata, userId]);
+      `, [id, media_url, prompt, media_type, aspect_ratio, width, height, serializedMetadata, userId]);
 
       if (!updatedDraft) {
         return json({ error: 'Draft not found or access denied' }, { status: 404, headers });
