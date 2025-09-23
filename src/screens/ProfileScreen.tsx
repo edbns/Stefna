@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 // CACHE BUSTER: 2025-01-20 - Force frontend cache invalidation
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, ChevronRight, Coins, Users, Plus, Instagram as InstagramIcon, Facebook as FacebookIcon, Youtube as YouTubeIcon } from 'lucide-react'
+import { Image, Heart, FileText, Bell, Settings, Shield, Cookie, ArrowLeft, LogOut, X, User, Globe, ChevronRight, Coins, Users, Plus, Instagram as InstagramIcon, Facebook as FacebookIcon, Youtube as YouTubeIcon, Download, Trash2 } from 'lucide-react'
 // RemixIcon import removed - no more remix functionality
 
 // Custom TikTok icon since lucide-react doesn't have one
@@ -625,6 +625,9 @@ const ProfileScreen: React.FC = () => {
           'success'
         )
         
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        
         // Background refresh to get updated media list
         setTimeout(() => {
           console.log('🔄 Background refresh after delete all operation')
@@ -734,6 +737,9 @@ const ProfileScreen: React.FC = () => {
       setSelectedMediaIds(new Set())
       setIsSelectionMode(false)
       
+      // Scroll to top and clear banner
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      
       // Background refresh to get updated media list
       setTimeout(() => {
         console.log('🔄 Background refresh after delete operation')
@@ -783,6 +789,9 @@ const ProfileScreen: React.FC = () => {
       
       addNotification('Download Complete', `Downloaded ${userMedia.length} media files`, 'success')
       
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      
       // Background refresh after download
       setTimeout(() => {
         console.log('🔄 Background refresh after download all operation')
@@ -828,6 +837,13 @@ const ProfileScreen: React.FC = () => {
       await downloadSelectedMediaAsZip(downloadableMedia, `selected-media-${new Date().toISOString().split('T')[0]}.zip`)
       
       addNotification('Download Complete', `Downloaded ${selectedMediaIds.size} selected media files`, 'success')
+      
+      // Clear selection and exit selection mode
+      setSelectedMediaIds(new Set())
+      setIsSelectionMode(false)
+      
+      // Scroll to top and clear banner
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       
       // Background refresh after download
       setTimeout(() => {
@@ -1704,18 +1720,23 @@ const ProfileScreen: React.FC = () => {
                         switchTab(item.id)
                         setShowSettingsDropdown(false)
                     }}
-                    className={`w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-start space-x-3 ${
+                    className={`w-full py-1.5 px-3 rounded-lg text-left transition-all duration-300 flex items-center justify-between ${
                       activeTab === item.id 
                         ? 'bg-white/20 text-white' 
                         : 'text-white/60 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
-                      {IconComponent && <IconComponent size={16} className="text-current" />}
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
+                        {IconComponent && <IconComponent size={16} className="text-current" />}
+                      </div>
+                      <span className="text-xs font-medium">{item.label}</span>
                     </div>
-                    <span className="text-xs font-medium">{item.label}</span>
+                    {item.id === 'all-media' && (
+                      <span className="text-xs font-medium text-white/60">{userMedia.length}</span>
+                    )}
                   </button>
-                        </div>
+                </div>
               )
             })}
                         </div>
@@ -1896,8 +1917,9 @@ const ProfileScreen: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={downloadSelectedMedia}
-                      className="px-4 py-2 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       disabled={isDownloadingSelected}
+                      title={`Download Selected (${selectedMediaIds.size})`}
                     >
                       {isDownloadingSelected ? (
                         <div className="flex items-center space-x-2">
@@ -1905,13 +1927,17 @@ const ProfileScreen: React.FC = () => {
                           <span>Downloading...</span>
                         </div>
                       ) : (
-                        `Download Selected (${selectedMediaIds.size})`
+                        <>
+                          <Download size={16} />
+                          <span className="text-xs">({selectedMediaIds.size})</span>
+                        </>
                       )}
                     </button>
                     <button
                       onClick={deleteSelectedMedia}
-                      className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/80 text-white hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/80 text-white hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       disabled={isDeletingSelected}
+                      title={`Delete Selected (${selectedMediaIds.size})`}
                     >
                       {isDeletingSelected ? (
                         <div className="flex items-center space-x-2">
@@ -1919,13 +1945,17 @@ const ProfileScreen: React.FC = () => {
                           <span>Deleting...</span>
                         </div>
                       ) : (
-                        `Delete Selected (${selectedMediaIds.size})`
+                        <>
+                          <Trash2 size={16} />
+                          <span className="text-xs">({selectedMediaIds.size})</span>
+                        </>
                       )}
                     </button>
                     <button
                       onClick={downloadAllMedia}
-                      className="px-4 py-2 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       disabled={isDownloadingAll}
+                      title="Download All"
                     >
                       {isDownloadingAll ? (
                         <div className="flex items-center space-x-2">
@@ -1933,13 +1963,17 @@ const ProfileScreen: React.FC = () => {
                           <span>Downloading All...</span>
                         </div>
                       ) : (
-                        'Download All'
+                        <>
+                          <Download size={16} />
+                          <span className="text-xs">All</span>
+                        </>
                       )}
                     </button>
                     <button
                       onClick={deleteAllMedia}
-                      className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600/80 text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600/80 text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       disabled={isDeletingAll}
+                      title="Delete All"
                     >
                       {isDeletingAll ? (
                         <div className="flex items-center space-x-2">
@@ -1947,7 +1981,10 @@ const ProfileScreen: React.FC = () => {
                           <span>Deleting All...</span>
                         </div>
                       ) : (
-                        'Delete All'
+                        <>
+                          <Trash2 size={16} />
+                          <span className="text-xs">All</span>
+                        </>
                       )}
                     </button>
                   </div>

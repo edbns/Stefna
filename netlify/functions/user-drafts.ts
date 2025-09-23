@@ -16,8 +16,9 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // Use standardized authentication helper
-    const { userId } = requireAuth(event.headers.authorization);
+    // Use standardized authentication helper with proper header handling
+    const authHeader = (event.headers.authorization || (event.headers as any)?.Authorization || (event.headers as any)['AUTHORIZATION']) as string | undefined;
+    const { userId } = requireAuth(authHeader);
     
     console.log('🔐 Auth context:', { userId });
 
