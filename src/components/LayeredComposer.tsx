@@ -886,6 +886,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
 
           {/* Right: Action buttons */}
           <div className="flex items-center gap-2">
+            {/* Draft button - temporarily hidden */}
+            {false && (
             <button
               type="button"
               onClick={() => {
@@ -904,6 +906,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
             >
               <FileText size={14} />
             </button>
+            )}
             {/* Generate button moved to prompt box */}
             {false && (['custom', 'edit'].includes(composerState.mode || '')) && (
               <button 
