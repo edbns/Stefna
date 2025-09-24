@@ -3109,6 +3109,9 @@ const HomeNew: React.FC = () => {
     // 🚀 IMMEDIATE GENERATION - No unnecessary delays
     console.log('🚀 Auto-generating with preset:', presetName)
     
+    // Redirect immediately when preset generation starts
+    navigate('/profile')
+    
             // Preset applied silently - no toast notification
     
     try {

@@ -16,7 +16,7 @@ export function ParallelSelfPicker({
 }: ParallelSelfPickerProps) {
 
   return (
-    <div className="rounded-xl shadow-2xl p-3 w-80" style={{ backgroundColor: '#333333' }}>
+    <div className="rounded-xl shadow-2xl p-3 w-80" style={{ backgroundColor: '#000000' }}>
       <div className="space-y-2">
         
         {/* Parallel Self™ preset options */}
