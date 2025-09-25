@@ -345,12 +345,14 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     !selectedFile ||
                     !prompt.trim() ||
                     (composerState.mode === 'custom' && !prompt.trim()) ||
+                    (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
                     navGenerating
                   }
                   className={
                     !selectedFile ||
                     !prompt.trim() ||
                     (composerState.mode === 'custom' && !prompt.trim()) ||
+                    (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
                     navGenerating
                   ? 'w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-black text-white/50 cursor-not-allowed'
                   : 'w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
