@@ -225,7 +225,7 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: 'edit' as 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'neotokyoglitch' | 'parallelself' | 'storytime' | 'edit' | null, // Default to edit mode
+    mode: 'edit' as 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'cyber_siren' | 'parallelself' | 'storytime' | 'edit' | null, // Default to edit mode
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
@@ -512,7 +512,7 @@ const HomeNew: React.FC = () => {
       if (!target.closest('[data-presets-dropdown]') &&
           !target.closest('[data-unrealreflection-dropdown]') &&
           !target.closest('[data-ghiblireact-dropdown]') &&
-          !target.closest('[data-neotokyoglitch-dropdown]') &&
+          !target.closest('[data-cyber-siren-dropdown]') &&
           !target.closest('[data-profile-dropdown]')) {
         closeAllDropdowns()
       }
@@ -2259,7 +2259,7 @@ const HomeNew: React.FC = () => {
 
   // NEW CLEAN GENERATION DISPATCHER - NO MORE MIXED LOGIC
   async function dispatchGenerate(
-    kind: 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'neotokyoglitch' | 'parallelself' | 'storytime' | 'edit', // remix removed
+    kind: 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'cyber_siren' | 'parallelself' | 'storytime' | 'edit', // remix removed
     options?: {
       presetId?: string;
       presetData?: any;
@@ -2292,7 +2292,7 @@ const HomeNew: React.FC = () => {
     console.info('▶ NEW dispatchGenerate', { kind, options, runId });
     
     // 🛡️ Runtime Guard (For Safety) - Prevent unknown modes from crashing the app
-    if (!['preset', 'custom', 'unrealreflection', 'ghiblireact', 'neotokyoglitch', 'parallelself', 'storytime', 'edit'].includes(kind)) {
+    if (!['preset', 'custom', 'unrealreflection', 'ghiblireact', 'cyber_siren', 'parallelself', 'storytime', 'edit'].includes(kind)) {
       console.warn("[dispatchGenerate] Unknown mode: ", kind);
               notifyError({ title: 'Invalid Mode', message: 'Try again with a valid option' });
       return;
@@ -2565,7 +2565,7 @@ const HomeNew: React.FC = () => {
         console.log('GHIBLI REACTION MODE: Using BFL preset:', ghibliReactionPreset.label, 'Model:', ghibliReactionPreset.model);
       }
       
-    } else if (kind === 'neotokyoglitch') {
+    } else if (kind === 'cyber_siren') {
       // CYBER SIREN MODE: Use Replicate integration for maximum glitch intensity
       const cyberSirenPresetId = options?.cyberSirenPresetId || selectedCyberSirenPreset;
       if (!cyberSirenPresetId) {
@@ -2608,7 +2608,7 @@ const HomeNew: React.FC = () => {
       
       effectivePrompt = cyberSirenPreset.prompt;
               generationMeta = { 
-          mode: 'neotokyoglitch', 
+          mode: 'cyber_siren', 
           cyberSirenPresetId, 
           cyberSirenPresetLabel: cyberSirenPreset.label, 
         model: cyberSirenPreset.model, // Use preset model (BFL for tattoos)
@@ -2742,7 +2742,7 @@ const HomeNew: React.FC = () => {
           case 'custom': return 'custom-prompt';
           case 'unrealreflection': return 'unreal-reflection';
           case 'ghiblireact': return 'ghibli-reaction';
-          case 'neotokyoglitch': return 'neo-glitch';
+          case 'cyber_siren': return 'cyber_siren';
           case 'parallelself': return 'parallel-self';
           case 'storytime': return 'story-time';
           case 'edit': return 'edit-photo';
@@ -3771,7 +3771,7 @@ const HomeNew: React.FC = () => {
                   'edit': 'edit',
                   'unrealreflection': 'unrealreflection',
                   'ghiblireact': 'ghiblireact',
-                  'neotokyoglitch': 'neotokyoglitch',
+                  'neotokyoglitch': 'cyber_siren',
                   'parallelself': 'parallelself'
                 };
                 
@@ -3787,7 +3787,7 @@ const HomeNew: React.FC = () => {
                   presetId: options?.presetId,
                   unrealReflectionPresetId: mode === 'unrealreflection' ? options?.presetId : undefined,
                   ghibliReactionPresetId: mode === 'ghiblireact' ? options?.presetId : undefined,
-                  cyberSirenPresetId: mode === 'neotokyoglitch' ? options?.presetId : undefined,
+                  cyberSirenPresetId: mode === 'cyber_siren' ? options?.presetId : undefined,
                   parallelSelfPresetId: mode === 'parallelself' ? options?.presetId : undefined,
                 };
                 
@@ -4014,7 +4014,7 @@ const HomeNew: React.FC = () => {
 
                 {/* Layered Composer - hidden when full screen viewer is open */}
           {!viewerOpen && (
-            <LayeredComposer
+          <LayeredComposer
             // Core state
             previewUrl={previewUrl}
             selectedFile={selectedFile}
