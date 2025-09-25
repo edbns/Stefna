@@ -1219,9 +1219,9 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
     };
 
     switch (request.mode) {
-      case 'neo_glitch':
+      case 'cyber_siren':
         await q(`
-          INSERT INTO neo_glitch_media (
+          INSERT INTO cyber_siren_media (
             user_id, image_url, source_url, prompt, preset, run_id, stability_job_id, status, metadata
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `, [
@@ -1235,11 +1235,11 @@ async function saveGenerationResult(request: UnifiedGenerationRequest, result: U
           baseData.status,
           baseData.metadata
         ]);
-        console.log(`✅ [Background] Saved neo_glitch result to database`);
+        console.log(`✅ [Background] Saved cyber_siren result to database`);
         
         // Debug: Verify what was actually saved
-        const savedRow = await q(`SELECT * FROM neo_glitch_media WHERE run_id = $1`, [request.runId]);
-        console.log(`🧪 [Background] Saved neo_glitch row:`, savedRow[0]);
+        const savedRow = await q(`SELECT * FROM cyber_siren_media WHERE run_id = $1`, [request.runId]);
+        console.log(`🧪 [Background] Saved cyber_siren row:`, savedRow[0]);
         break;
 
       case 'presets':
@@ -2568,7 +2568,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
   try {
     // Check if this runId already exists in any media table (indicating duplicate)
     const tablesToCheck = {
-      'neo_glitch': 'neo_glitch_media',
+      'cyber_siren': 'cyber_siren_media',
       'presets': 'presets_media',
       'custom': 'custom_prompt_media',
       'unreal_reflection': 'unreal_reflection_media',

@@ -43,7 +43,7 @@ export const handler: Handler = async (event) => {
       select user_id from user_settings where share_to_feed = true
     ),
     feed as (
-      select 'neo_glitch'      as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'neo_glitch' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from neo_glitch_media      where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'cyber_siren'     as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'cyber_siren' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from cyber_siren_media     where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
       select 'presets'         as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'presets' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
@@ -83,7 +83,7 @@ export const handler: Handler = async (event) => {
       select user_id from user_settings where share_to_feed = true
     ),
     feed as (
-      select 'neo_glitch'      as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'neo_glitch' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from neo_glitch_media      where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'cyber_siren'     as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'cyber_siren' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from cyber_siren_media     where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
       select 'presets'         as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'presets' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all

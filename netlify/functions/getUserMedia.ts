@@ -64,9 +64,9 @@ export const handler: Handler = async (event) => {
     const userExists = await q(`SELECT id FROM users WHERE id = $1`, [userId]);
     console.log('🔍 [getUserMedia] User exists:', !!userExists[0]);
 
-    // Debug: Check neo_glitch_media specifically
-    const neoGlitchCount = await q(`SELECT COUNT(*) as count FROM neo_glitch_media WHERE user_id = $1`, [userId]);
-    console.log('🔍 [getUserMedia] Neo glitch items for user:', neoGlitchCount[0]?.count || 0);
+    // Debug: Check cyber_siren_media specifically
+    const cyberSirenCount = await q(`SELECT COUNT(*) as count FROM cyber_siren_media WHERE user_id = $1`, [userId]);
+    console.log('🔍 [getUserMedia] Cyber Siren items for user:', cyberSirenCount[0]?.count || 0);
 
     // Get total count for accurate pagination
     const countSql = `
@@ -79,7 +79,7 @@ export const handler: Handler = async (event) => {
         UNION ALL
         SELECT id::text FROM custom_prompt_media WHERE user_id = $1
         UNION ALL
-        SELECT id::text FROM neo_glitch_media WHERE user_id = $1
+        SELECT id::text FROM cyber_siren_media WHERE user_id = $1
         UNION ALL
         SELECT id::text FROM edit_media WHERE user_id = $1
         UNION ALL
@@ -103,7 +103,7 @@ export const handler: Handler = async (event) => {
         UNION ALL
         SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, fal_job_id, 'custom_prompt' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM custom_prompt_media WHERE user_id = $1
         UNION ALL
-        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, stability_job_id as fal_job_id, 'neo_glitch' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM neo_glitch_media WHERE user_id = $1
+        SELECT id::text, user_id, image_url, prompt, preset, created_at, run_id, stability_job_id as fal_job_id, 'cyber_siren' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM cyber_siren_media WHERE user_id = $1
         UNION ALL
         SELECT id::text, user_id, image_url, prompt, 'edit' as preset, created_at, run_id, fal_job_id, 'edit' as media_type, obj_url, gltf_url, texture_url, model_3d_metadata, metadata FROM edit_media WHERE user_id = $1
         UNION ALL

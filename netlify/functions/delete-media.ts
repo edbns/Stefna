@@ -60,7 +60,7 @@ export const handler: Handler = async (event) => {
     // Check all tables to see where the media exists
     // Note: edit_media uses run_id (TEXT) instead of id (INTEGER) for lookups
     const tables = [
-      { name: 'neo_glitch_media', display: 'neoGlitchMedia', idField: 'id' },
+      { name: 'cyber_siren_media', display: 'cyberSirenMedia', idField: 'id' },
       { name: 'custom_prompt_media', display: 'customPromptMedia', idField: 'id' },
       { name: 'unreal_reflection_media', display: 'unrealReflectionMedia', idField: 'id' },
       { name: 'ghibli_reaction_media', display: 'ghibliReactionMedia', idField: 'id' },
@@ -100,7 +100,7 @@ export const handler: Handler = async (event) => {
     // Try Neo Glitch Media first (CUID format)
     try {
       const result = await q(`
-        DELETE FROM neo_glitch_media 
+        DELETE FROM cyber_siren_media 
         WHERE id = $1 AND user_id = $2
         RETURNING id
       `, [mediaId, userId]);
@@ -282,7 +282,7 @@ export const handler: Handler = async (event) => {
         // 2. Get media info for Cloudinary cleanup
         const mediaInfo = await q(`
           SELECT image_url 
-          FROM ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
+          FROM ${mediaTable === 'cyberSirenMedia' ? 'cyber_siren_media' :
                 mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
                 mediaTable === 'unrealReflectionMedia' ? 'unreal_reflection_media' :
                 mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
@@ -307,7 +307,7 @@ export const handler: Handler = async (event) => {
         const userLikesReceived = await q(`
           SELECT COUNT(*) as total_likes 
           FROM likes l
-          JOIN ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
+          JOIN ${mediaTable === 'cyberSirenMedia' ? 'cyber_siren_media' :
                 mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
                 mediaTable === 'unrealReflectionMedia' ? 'unreal_reflection_media' :
                 mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
@@ -337,7 +337,7 @@ export const handler: Handler = async (event) => {
       // Verify the media was actually deleted
       try {
         const verifyResult = await q(`
-          SELECT id FROM ${mediaTable === 'neoGlitchMedia' ? 'neo_glitch_media' :
+          SELECT id FROM ${mediaTable === 'cyberSirenMedia' ? 'cyber_siren_media' :
                           mediaTable === 'customPromptMedia' ? 'custom_prompt_media' :
                           mediaTable === 'unrealReflectionMedia' ? 'unreal_reflection_media' :
                           mediaTable === 'ghibliReactionMedia' ? 'ghibli_reaction_media' :
