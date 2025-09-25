@@ -7,7 +7,7 @@ import { qOne } from './_db';
  * Verify that a user owns a specific media item
  * @param userId - The authenticated user's ID
  * @param mediaId - The media item ID to check
- * @param mediaType - The type of media (neo_glitch, ghibli_reaction, etc.)
+ * @param mediaType - The type of media (cyber_siren, ghibli_reaction, etc.)
  * @returns Promise<boolean> - true if user owns the media, false otherwise
  */
 export async function verifyMediaOwnership(
@@ -19,8 +19,8 @@ export async function verifyMediaOwnership(
     let tableName: string;
     
     switch (mediaType) {
-      case 'neo_glitch':
-        tableName = 'neo_glitch_media';
+      case 'cyber_siren':
+        tableName = 'cyber_siren_media';
         break;
       case 'ghibli_reaction':
         tableName = 'ghibli_reaction_media';

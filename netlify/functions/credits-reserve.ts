@@ -83,7 +83,7 @@ export const handler: Handler = async (event) => {
       'preset', 'presets', 'presets_generation',
       'custom', 'custom_prompt_generation',
       'ghiblireact', 'ghibli_reaction_generation',
-      'neotokyoglitch', 'neo_glitch_generation',
+      'cybersiren', 'cyber_siren_generation',
       // edit mode
       'edit', 'edit_generation',
       // parallel self mode

@@ -5,7 +5,7 @@ import { json } from './_lib/http';
 
 interface ToggleLikeRequest {
   mediaId: string;
-  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit' | 'parallel_self';
+  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'cyber_siren' | 'presets' | 'story' | 'edit' | 'parallel_self';
 }
 
 export const handler: Handler = async (event) => {
@@ -58,7 +58,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Validate media type
-    const validMediaTypes = ['custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'neo_glitch', 'presets', 'story', 'edit', 'parallel_self'];
+    const validMediaTypes = ['custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'cyber_siren', 'presets', 'story', 'edit', 'parallel_self'];
     if (!validMediaTypes.includes(mediaType)) {
       console.error('❌ [toggleLike] Invalid media type:', mediaType);
       return json({ error: `Invalid media type: ${mediaType}` }, { status: 400 });

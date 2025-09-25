@@ -147,7 +147,7 @@ export const handler: Handler = async (event) => {
         createdAt: item.created_at,
         runId: item.run_id, // Add runId for polling detection
         falJobId: item.fal_job_id, // Add falJobId for Fal.ai generations
-        stabilityJobId: item.fal_job_id, // For neo_glitch, fal_job_id is actually stability_job_id
+        stabilityJobId: item.fal_job_id, // For cyber_siren, fal_job_id is actually stability_job_id
         type: item.media_type,
         // Let frontend calculate aspect ratio - default to 1:1 for square images
         aspectRatio: 1,

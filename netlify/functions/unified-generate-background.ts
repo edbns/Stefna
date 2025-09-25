@@ -275,7 +275,7 @@ function getAspectRatioForMode(mode: string): string {
     case 'presets':
       return '4:5'; // Instagram/Facebook/X-friendly portrait
 
-    case 'neo_glitch':
+    case 'cyber_siren':
       return '16:9'; // Cinematic wide (Stability.ai)
 
     case 'story_time':
@@ -455,7 +455,7 @@ type GenerationMode =
   | 'unreal_reflection' 
   | 'ghibli_reaction' 
   | 'story_time' 
-  | 'neo_glitch'
+  | 'cyber_siren'
   | 'edit'
   | 'parallel_self';
 
@@ -1409,9 +1409,9 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
   
   // Try Stability.ai with 3-tier fallback: Ultra → Core → 35
   if (STABILITY_API_KEY) {
-    // For Neo Glitch, skip Core tier due to poor style fidelity
-    const isNeoGlitch = params.mode === 'neo_glitch';
-    const tiers = isNeoGlitch ? ["ultra", "35"] as const : ["ultra", "core", "35"] as const;
+    // For Cyber Siren, skip Core tier due to poor style fidelity
+    const isCyberSiren = params.mode === 'cyber_siren';
+    const tiers = isCyberSiren ? ["ultra", "35"] as const : ["ultra", "core", "35"] as const;
     
     console.log(`🎯 [Background] Using Stability tiers for ${params.mode}:`, tiers);
     
@@ -1486,9 +1486,9 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
     console.warn(`⚠️ [Background] Stability.ai credentials not configured`);
   }
   
-  // For Neo Tokyo Glitch, fall back to Replicate (not Fal.ai)
-  if (params.mode === 'neo_glitch') {
-    console.log('🔄 [Background] Stability.ai failed for Neo Tokyo Glitch, falling back to Replicate');
+  // For Cyber Siren, fall back to Replicate (not Fal.ai)
+  if (params.mode === 'cyber_siren') {
+    console.log('🔄 [Background] Stability.ai failed for Cyber Siren, falling back to Replicate');
     return await generateWithReplicate(params);
   }
   
@@ -1516,7 +1516,7 @@ async function generateWithReplicate(params: any): Promise<UnifiedGenerationResp
       // Prepare IPA-safe prompt
       const ipaPrompt = `portrait photo of a ${params.prompt}, cinematic lighting, ultra realistic, sharp focus`;
       let negativePrompt = 'cartoon, anime, exaggerated, distorted, low-res, mutated, doll, plastic, duplicate face';
-      if (params.mode === 'neo_glitch') {
+      if (params.mode === 'cyber_siren') {
         negativePrompt += ', human, person, people, man, woman, face, portrait, skin, hair, hands, arms, legs, body, humanoid';
       }
       
@@ -1629,8 +1629,8 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
   } else if (mode === 'ghibli_reaction') {
     // Ghibli: Ultra → Pro → Standard → Fal.ai
     models = BFL_GHIBLI_MODELS;
-  } else if (mode === 'neo_glitch') {
-    // Neo Glitch: Ultra → Pro → Standard → Fal.ai
+  } else if (mode === 'cyber_siren') {
+    // Cyber Siren: Ultra → Pro → Standard → Fal.ai
     models = BFL_GHIBLI_MODELS;
   } else if (mode === 'edit') {
     // Edit Mode: Use image-to-image models with high strength for photo editing
@@ -1645,7 +1645,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
   }
   
   // Validate image_strength for image-to-image models
-  const imageStrength = mode === 'ghibli_reaction' ? 0.55 : mode === 'neo_glitch' ? 0.35 : mode === 'edit' ? 0.7 : 0.45;
+  const imageStrength = mode === 'ghibli_reaction' ? 0.55 : mode === 'cyber_siren' ? 0.35 : mode === 'edit' ? 0.7 : 0.45;
   if (imageStrength <= 0 || imageStrength > 1) {
     throw new Error("Invalid image_strength for BFL API image-to-image generation");
   }
@@ -1706,7 +1706,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         bflInput.negative_prompt = `${bflInput.negative_prompt}, ${finalNegativePrompt}`;
       }
 
-      // Hard protection for neo_glitch removed in revert (handled at preset-level if needed)
+      // Hard protection for cyber_siren removed in revert (handled at preset-level if needed)
 
       console.log(`✨ [BFL Prompt Enhancement] Processing prompt enhancement`);
       console.log(`✨ [BFL Prompt Enhancement] Scaffolded prompt length: ${scaffoldedPrompt.length} chars`);
@@ -2640,7 +2640,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
     'unreal_reflection': 'unreal_reflection_generation',
     'ghibli_reaction': 'ghibli_reaction_generation',
     'story_time': 'story_time_generate',
-    'neo_glitch': 'neo_glitch_generation',
+    'cyber_siren': 'cyber_siren_generation',
     'edit': 'edit_generation',
     'parallel_self': 'parallel_self_generation'
   };
@@ -2667,12 +2667,12 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
       steps: 30
     };
 
-    if (request.mode === 'neo_glitch') {
-      // Neo Tokyo Glitch: Stability.ai as primary (reverted from BFL)
-      console.log('🚀 [Background] Starting generation with Stability.ai as primary provider for Neo Tokyo Glitch');
+    if (request.mode === 'cyber_siren') {
+      // Cyber Siren: Stability.ai as primary (reverted from BFL)
+      console.log('🚀 [Background] Starting generation with Stability.ai as primary provider for Cyber Siren');
       
       try {
-        // Try Stability.ai first for Neo Tokyo Glitch
+        // Try Stability.ai first for Cyber Siren
         console.log('🎨 [Background] Attempting generation with Stability.ai');
         result = await generateWithStability(generationParams);
         console.log('✅ [Background] Stability.ai generation successful');
@@ -2685,7 +2685,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
           result = await generateWithReplicate(generationParams);
           console.log('✅ [Background] Replicate fallback successful');
         } catch (replicateError) {
-          console.error('❌ [Background] All providers failed for Neo Tokyo Glitch');
+          console.error('❌ [Background] All providers failed for Cyber Siren');
           throw new Error(`All providers failed. Stability: ${stabilityError}. Replicate: ${replicateError}`);
         }
       }
@@ -3094,7 +3094,7 @@ export const handler: Handler = async (event, context) => {
     console.log('🔗 [Background] Using runId:', { frontendRunId, generatedRunId: runId, isFrontend: !!frontendRunId });
 
     // Normalize and validate mode value against allowed set
-    const validModes: GenerationMode[] = ['presets','custom','unreal_reflection','ghibli_reaction','story_time','neo_glitch','edit','parallel_self'];
+    const validModes: GenerationMode[] = ['presets','custom','unreal_reflection','ghibli_reaction','story_time','cyber_siren','edit','parallel_self'];
     const modeStr = String(mode);
     if (!validModes.includes(modeStr as GenerationMode)) {
       return {
@@ -3119,7 +3119,7 @@ export const handler: Handler = async (event, context) => {
       'unreal_reflection': 'unreal_reflection_generation',
       'ghibli_reaction': 'ghibli_reaction_generation',
       'story_time': 'story_time_generate',
-      'neo_glitch': 'neo_glitch_generation',
+      'cyber_siren': 'cyber_siren_generation',
       'edit': 'edit_generation',
       'parallel_self': 'parallel_self_generation'
     };
