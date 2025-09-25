@@ -232,7 +232,7 @@ const HomeNew: React.FC = () => {
     // MoodMorph removed - replaced with Anime Filters
     selectedUnrealReflectionPresetId: null as string | null, // Separate from other presets
     selectedGhibliReactionPresetId: null as string | null, // Ghibli Reaction presets
-    selectedNeoTokyoGlitchPresetId: null as string | null, // Cyber Siren presets
+    selectedCyberSirenPresetId: null as string | null, // Cyber Siren presets
     customPrompt: '', // Custom mode gets its own prompt
     status: 'idle' as 'idle' | 'precheck' | 'reserving' | 'uploading' | 'processing' | 'error' | 'success',
     error: null as string | null,
@@ -335,7 +335,7 @@ const HomeNew: React.FC = () => {
     // setSelectedPreset(null) // REMOVED - using composerState.selectedPresetId now
     setSelectedUnrealReflectionPreset(null)
     setSelectedGhibliReactionPreset(null)
-    setSelectedNeoTokyoGlitchPreset(null)
+    setSelectedCyberSirenPreset(null)
     setIsUnrealReflectionVideoEnabled(false)
     setSelectedMode(null)
     setIsVideoPreview(false)
@@ -350,7 +350,7 @@ const HomeNew: React.FC = () => {
       selectedPresetId: null,
       selectedUnrealReflectionPresetId: null,
       selectedGhibliReactionPresetId: null,
-      selectedNeoTokyoGlitchPresetId: null,
+      selectedCyberSirenPresetId: null,
       customPrompt: '',
       status: 'idle',
       error: null,
@@ -401,7 +401,7 @@ const HomeNew: React.FC = () => {
     // setSelectedPreset(null) // REMOVED - using composerState.selectedPresetId now
     setSelectedUnrealReflectionPreset(null)
     setSelectedGhibliReactionPreset(null)
-    setSelectedNeoTokyoGlitchPreset(null)
+    setSelectedCyberSirenPreset(null)
     setSelectedMode(null)
     setIsGenerating(false)
     setIsEnhancing(false)
@@ -413,7 +413,7 @@ const HomeNew: React.FC = () => {
       selectedPresetId: null,
       selectedUnrealReflectionPresetId: null,
       selectedGhibliReactionPresetId: null,
-      selectedNeoTokyoGlitchPresetId: null,
+      selectedCyberSirenPresetId: null,
       customPrompt: '',
       status: 'idle',
       error: null,
@@ -769,8 +769,8 @@ const HomeNew: React.FC = () => {
   const [isUnrealReflectionVideoEnabled, setIsUnrealReflectionVideoEnabled] = useState(false)
   const [selectedGhibliReactionPreset, setSelectedGhibliReactionPreset] = useState<string | null>(null)
   const [ghibliReactionDropdownOpen, setGhibliReactionDropdownOpen] = useState(false)
-  const [selectedNeoTokyoGlitchPreset, setSelectedNeoTokyoGlitchPreset] = useState<string | null>(null)
-  const [neoTokyoGlitchDropdownOpen, setNeoTokyoGlitchDropdownOpen] = useState(false)
+  const [selectedCyberSirenPreset, setSelectedCyberSirenPreset] = useState<string | null>(null)
+  const [cyberSirenDropdownOpen, setCyberSirenDropdownOpen] = useState(false)
   const [selectedParallelSelfPreset, setSelectedParallelSelfPreset] = useState<string | null>(null)
   const [parallelSelfDropdownOpen, setParallelSelfDropdownOpen] = useState(false)
   const [selectedStoryTimePreset, setSelectedStoryTimePreset] = useState<string | null>(null)
@@ -903,7 +903,7 @@ const HomeNew: React.FC = () => {
     setPresetsOpen(false)
     setUnrealReflectionDropdownOpen(false)
     setGhibliReactionDropdownOpen(false)
-    setNeoTokyoGlitchDropdownOpen(false)
+    setCyberSirenDropdownOpen(false)
     setProfileDropdownOpen(false)
   }
 
@@ -2266,7 +2266,7 @@ const HomeNew: React.FC = () => {
       // MoodMorph removed - replaced with Anime Filters
       unrealReflectionPresetId?: string;
       ghibliReactionPresetId?: string;
-      neoTokyoGlitchPresetId?: string;
+      cyberSirenPresetId?: string;
       parallelSelfPresetId?: string;
       customPrompt?: string;
       storyTimeImages?: string[];
@@ -2567,18 +2567,18 @@ const HomeNew: React.FC = () => {
       
     } else if (kind === 'neotokyoglitch') {
       // CYBER SIREN MODE: Use Replicate integration for maximum glitch intensity
-      const neoTokyoGlitchPresetId = options?.neoTokyoGlitchPresetId || selectedNeoTokyoGlitchPreset;
-      if (!neoTokyoGlitchPresetId) {
-        console.error('❌ Invalid Cyber Siren preset:', neoTokyoGlitchPresetId);
+      const cyberSirenPresetId = options?.cyberSirenPresetId || selectedCyberSirenPreset;
+      if (!cyberSirenPresetId) {
+        console.error('❌ Invalid Cyber Siren preset:', cyberSirenPresetId);
         console.error('❌ Invalid Cyber Siren preset: Please select a Cyber Siren preset first')
         endGeneration(genId);
         setNavGenerating(false);
         return;
       }
       
-      const cyberSirenPreset = CYBER_SIREN_PRESETS.find(p => p.id === neoTokyoGlitchPresetId);
+      const cyberSirenPreset = CYBER_SIREN_PRESETS.find(p => p.id === cyberSirenPresetId);
       if (!cyberSirenPreset) {
-        console.error('❌ Cyber Siren preset not found:', neoTokyoGlitchPresetId);
+        console.error('❌ Cyber Siren preset not found:', cyberSirenPresetId);
         console.error('❌ Cyber Siren preset not found: Please select a valid Cyber Siren preset')
         endGeneration(genId);
         setNavGenerating(false);
@@ -2593,9 +2593,9 @@ const HomeNew: React.FC = () => {
         'neo_tokyo_scanlines': 'scanlines'
       };
       
-      const presetKey = presetMap[neoTokyoGlitchPresetId];
+      const presetKey = presetMap[cyberSirenPresetId];
       if (!presetKey) {
-        console.error('❌ Unknown Cyber Siren preset:', neoTokyoGlitchPresetId);
+        console.error('❌ Unknown Cyber Siren preset:', cyberSirenPresetId);
         console.error('❌ Unknown preset: Please select a valid Cyber Siren preset')
         endGeneration(genId);
         setNavGenerating(false);
@@ -2605,8 +2605,8 @@ const HomeNew: React.FC = () => {
       effectivePrompt = cyberSirenPreset.prompt;
               generationMeta = { 
           mode: 'neotokyoglitch', 
-          neoTokyoGlitchPresetId, 
-          neoTokyoGlitchPresetLabel: cyberSirenPreset.label, 
+          cyberSirenPresetId, 
+          cyberSirenPresetLabel: cyberSirenPreset.label, 
         model: cyberSirenPreset.model, // Use preset model (BFL for tattoos)
         strength: cyberSirenPreset.strength, // Use preset strength
         guidance_scale: cyberSirenPreset.guidance_scale, // Use preset guidance
@@ -2622,7 +2622,7 @@ const HomeNew: React.FC = () => {
         ipaThreshold: 0.75, // High similarity required for Cyber Siren
         ipaRetries: 3, // Aggressive fallback
         ipaBlocking: true, // Must pass to proceed
-        presetKey: neoTokyoGlitchPresetId // Store the full preset ID instead of short key
+        presetKey: cyberSirenPresetId // Store the full preset ID instead of short key
         };
       if (import.meta.env.DEV) {
         console.log('CYBER SIREN MODE: Using preset parameters:', cyberSirenPreset.label, 'Model:', cyberSirenPreset.model);
@@ -2791,7 +2791,7 @@ const HomeNew: React.FC = () => {
         runId: runId,
         unrealReflectionPresetId: generationMeta?.unrealReflectionPresetId,
         ghibliReactionPresetId: generationMeta?.ghibliReactionPresetId,
-        neoGlitchPresetId: generationMeta?.neoTokyoGlitchPresetId,
+        cyberSirenPresetId: generationMeta?.cyberSirenPresetId,
         parallelSelfPresetId: generationMeta?.parallelSelfPresetId,
         storyTimePresetId: generationMeta?.storyTimePresetId,
         additionalImages: generationMeta?.storyTimeImages,
@@ -3783,7 +3783,7 @@ const HomeNew: React.FC = () => {
                   presetId: options?.presetId,
                   unrealReflectionPresetId: mode === 'unrealreflection' ? options?.presetId : undefined,
                   ghibliReactionPresetId: mode === 'ghiblireact' ? options?.presetId : undefined,
-                  neoTokyoGlitchPresetId: mode === 'neotokyoglitch' ? options?.presetId : undefined,
+                  cyberSirenPresetId: mode === 'neotokyoglitch' ? options?.presetId : undefined,
                   parallelSelfPresetId: mode === 'parallelself' ? options?.presetId : undefined,
                 };
                 
@@ -4036,8 +4036,8 @@ const HomeNew: React.FC = () => {
             setParallelSelfDropdownOpen={setParallelSelfDropdownOpen}
             ghibliReactionDropdownOpen={ghibliReactionDropdownOpen}
             setGhibliReactionDropdownOpen={setGhibliReactionDropdownOpen}
-            neoTokyoGlitchDropdownOpen={neoTokyoGlitchDropdownOpen}
-            setNeoTokyoGlitchDropdownOpen={setNeoTokyoGlitchDropdownOpen}
+            cyberSirenDropdownOpen={cyberSirenDropdownOpen}
+            setCyberSirenDropdownOpen={setCyberSirenDropdownOpen}
             
             // Preset selections
             selectedUnrealReflectionPreset={selectedUnrealReflectionPreset}
@@ -4046,8 +4046,8 @@ const HomeNew: React.FC = () => {
             setSelectedParallelSelfPreset={setSelectedParallelSelfPreset}
             selectedGhibliReactionPreset={selectedGhibliReactionPreset}
             setSelectedGhibliReactionPreset={setSelectedGhibliReactionPreset}
-            selectedNeoTokyoGlitchPreset={selectedNeoTokyoGlitchPreset}
-            setSelectedNeoTokyoGlitchPreset={setSelectedNeoTokyoGlitchPreset}
+            selectedCyberSirenPreset={selectedCyberSirenPreset}
+            setSelectedCyberSirenPreset={setSelectedCyberSirenPreset}
             
             // Video states
             isUnrealReflectionVideoEnabled={isUnrealReflectionVideoEnabled}

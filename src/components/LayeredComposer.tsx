@@ -43,8 +43,8 @@ interface LayeredComposerProps {
   setParallelSelfDropdownOpen: (open: boolean) => void
   ghibliReactionDropdownOpen: boolean
   setGhibliReactionDropdownOpen: (open: boolean) => void
-  neoTokyoGlitchDropdownOpen: boolean
-  setNeoTokyoGlitchDropdownOpen: (open: boolean) => void
+  cyberSirenDropdownOpen: boolean
+  setCyberSirenDropdownOpen: (open: boolean) => void
   
   // Preset selections
   selectedUnrealReflectionPreset: string | null
@@ -53,8 +53,8 @@ interface LayeredComposerProps {
   setSelectedParallelSelfPreset: (preset: string | null) => void
   selectedGhibliReactionPreset: string | null
   setSelectedGhibliReactionPreset: (preset: string | null) => void
-  selectedNeoTokyoGlitchPreset: string | null
-  setSelectedNeoTokyoGlitchPreset: (preset: string | null) => void
+  selectedCyberSirenPreset: string | null
+  setSelectedCyberSirenPreset: (preset: string | null) => void
   
   // Video states
   isUnrealReflectionVideoEnabled: boolean
@@ -122,16 +122,16 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
   setParallelSelfDropdownOpen,
   ghibliReactionDropdownOpen,
   setGhibliReactionDropdownOpen,
-  neoTokyoGlitchDropdownOpen,
-  setNeoTokyoGlitchDropdownOpen,
+  cyberSirenDropdownOpen,
+  setCyberSirenDropdownOpen,
   selectedUnrealReflectionPreset,
   setSelectedUnrealReflectionPreset,
   selectedParallelSelfPreset,
   setSelectedParallelSelfPreset,
   selectedGhibliReactionPreset,
   setSelectedGhibliReactionPreset,
-  selectedNeoTokyoGlitchPreset,
-  setSelectedNeoTokyoGlitchPreset,
+  selectedCyberSirenPreset,
+  setSelectedCyberSirenPreset,
   isUnrealReflectionVideoEnabled,
   setIsUnrealReflectionVideoEnabled,
   isGenerating,
@@ -825,13 +825,13 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   
                   if (composerState.mode === 'neotokyoglitch') {
                     closeAllDropdowns()
-                        setNeoTokyoGlitchDropdownOpen(!neoTokyoGlitchDropdownOpen)
+                        setCyberSirenDropdownOpen(!cyberSirenDropdownOpen)
                   } else {
                     closeAllDropdowns()
                     setComposerState((s: any) => ({ ...s, mode: 'neotokyoglitch' }))
                     setSelectedMode('presets')
-                    setSelectedNeoTokyoGlitchPreset(null)
-                    setNeoTokyoGlitchDropdownOpen(true)
+                    setSelectedCyberSirenPreset(null)
+                    setCyberSirenDropdownOpen(true)
                   }
                 }}
                 className={
@@ -842,8 +842,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 title={!selectedFile ? 'Please upload a photo first to get started' : (isAuthenticated ? 'Switch to Cyber Siren™ mode' : 'Explore Cyber Siren™ mode')}
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
               >
-                {selectedNeoTokyoGlitchPreset ? 
-                  CYBER_SIREN_PRESETS.find((p: any) => p.id === selectedNeoTokyoGlitchPreset)?.label || 'Cyber Siren™' 
+                {selectedCyberSirenPreset ? 
+                  CYBER_SIREN_PRESETS.find((p: any) => p.id === selectedCyberSirenPreset)?.label || 'Cyber Siren™' 
                   : 'Cyber Siren™'
                 }
               </button>
@@ -858,13 +858,13 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
             </div>
               
               {/* Cyber Siren presets dropdown */}
-              {composerState.mode === 'neotokyoglitch' && neoTokyoGlitchDropdownOpen && (
+              {composerState.mode === 'neotokyoglitch' && cyberSirenDropdownOpen && (
                 <div className="absolute bottom-full left-0 mb-2 z-50">
                   <CyberSirenPicker
-                    value={selectedNeoTokyoGlitchPreset || undefined}
+                    value={selectedCyberSirenPreset || undefined}
                     onChange={async (presetId) => {
-                      setSelectedNeoTokyoGlitchPreset(presetId || null)
-                      setNeoTokyoGlitchDropdownOpen(false)
+                      setSelectedCyberSirenPreset(presetId || null)
+                      setCyberSirenDropdownOpen(false)
                       
                       // Auto-generate when Cyber Siren preset is selected
                       if (presetId && selectedFile && isAuthenticated) {
