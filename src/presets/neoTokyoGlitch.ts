@@ -26,12 +26,16 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
-    prompt: `Cinematic sci-fi streetwear portrait set in a brutalist concrete courtyard. The subject is dressed in a sleeveless, sculpted white tech-top with metallic seams and an open back, paired with high-waisted futuristic pants featuring tactical padding, zippers, and subtle detailing. Sleek robotic gauntlets cover both forearms — polished silver, embedded like fashion accessories.
+    prompt: `Transform the subject into a cinematic sci-fi fashion muse posing in a minimalist brutalist courtyard under a bright blue sky. They wear a futuristic sleeveless white tech top with an open back and sculpted seams, paired with sleek high-waisted pants featuring metal buckles and subtle armor-style details. Their hands are adorned with chrome robotic gauntlets — elegant, fitted, and minimal.
 
-The background is minimalist and geometric — sharp concrete forms, angular shadows, bright blue sky. Lighting is crisp and editorial, casting clean contrast across skin, fabric, and metal.
+The pose shifts across moments — looking over the shoulder with subtle sway in the hips, mid-turn with one arm lifted confidently, leaning back with one hand on the waist, or walking forward with jacket catching movement. Every frame feels alive — balanced between confident elegance and soft allure.
 
-The overall mood is photorealistic and high fashion: a futuristic streetwear editorial that feels like a Vogue cover from the year 2085. Emphasize perfect anatomy, soft real skin texture, clean shadows, cinematic sharpness, and high detail across all materials.`,
-    negative_prompt: `illustration, anime, 3d, doll, lowres, extra limbs, missing fingers, deformed, distorted, nsfw, cartoonish, unrealistic lighting, bad anatomy, artifacts, messy background, cosplay, game character, neon overload, heavy armor`,
+Hair flows naturally or in a stylized soft wave, catching the wind gently. Expression is calm but magnetic — a confident stare, half-smile, or eyes slightly closed in a moment of power.
+
+Background is sharp and clean: angular shadows, concrete walls, and open space. Lighting is editorial and bright — no harsh contrast, just crisp detail.
+
+The overall result must feel photoreal with soft anime undertones — perfect anatomy, flawless fabric draping, realistic lighting, and futuristic streetwear styling that feels like it belongs on the cover of a sci-fi fashion magazine from the future.`,
+    negative_prompt: `cartoon, 3d, game character, nsfw, lowres, duplicate limbs, distorted hands, unrealistic outfit, overly bright colors, armor-heavy, messy background, illustration style`,
     strength: 0.45,
     model: 'stability-ai/stable-diffusion-img2img',
     mode: 'i2i',
