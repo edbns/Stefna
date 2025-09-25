@@ -873,7 +873,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                         navigate('/profile')
                         try {
                           await dispatchGenerate('neotokyoglitch', {
-                            neoTokyoGlitchPresetId: presetId
+                            cyberSirenPresetId: presetId
                           })
                         } catch (error) {
                           console.error('❌ Cyber Siren auto-generation failed:', error)

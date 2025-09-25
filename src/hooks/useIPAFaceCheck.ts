@@ -31,7 +31,7 @@ export interface IPALogEntry {
   id: string;
   timestamp: number;
   presetId: string;
-  fxType: 'unrealReflection' | 'ghibliReaction' | 'neoTokyoGlitch' | 'preset' | 'custom';
+  fxType: 'unrealReflection' | 'ghibliReaction' | 'cyberSiren' | 'preset' | 'custom';
   originalImage: string;
   generatedImage: string;
   similarity: number;
@@ -656,7 +656,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     generatedImageUrl: string,
     metadata: {
       presetId?: string;
-      fxType: 'unrealReflection' | 'ghibliReaction' | 'neoTokyoGlitch' | 'preset' | 'custom';
+      fxType: 'unrealReflection' | 'ghibliReaction' | 'cyberSiren' | 'preset' | 'custom';
       prompt: string;
       strength: number;
       model: string;
@@ -792,7 +792,7 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
   // Check if all 3 FX pass IPA (ready to scale)
   const checkReadinessToScale = useCallback((): boolean => {
     const recentChecks = state.checkHistory.slice(0, 10); // Last 10 checks
-    const fxTypes = ['unrealReflection', 'ghibliReaction', 'neoTokyoGlitch'];
+    const fxTypes = ['unrealReflection', 'ghibliReaction', 'cyberSiren'];
     
     // Check if each FX type has at least one recent successful check
     const fxSuccess = fxTypes.every(fxType => {
