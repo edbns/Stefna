@@ -288,7 +288,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border"
                 style={{ backgroundColor: '#000000', borderColor: '#333333' }}
                 disabled={!selectedFile}
-                maxLength={1500}
+                maxLength={3000}
                 data-testid="custom-prompt-input"
               />
                 
@@ -306,7 +306,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   )}
                 </button>
               <div className="absolute bottom-3 right-2 flex items-center gap-2">
-                <span className="text-white/30 text-xs">{prompt.length}/1500</span>
+                <span className="text-white/30 text-xs">{prompt.length}/3000</span>
                 
                 {/* Generate Button - inside prompt box */}
                 <button
