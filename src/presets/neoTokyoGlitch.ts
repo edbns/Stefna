@@ -26,17 +26,9 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
-    prompt: `Transform the subject into a cinematic sci-fi fashion muse posing in a minimalist brutalist courtyard under a bright blue sky. They wear a futuristic sleeveless white tech top with an open back and sculpted seams, paired with sleek high-waisted pants featuring metal buckles and subtle armor-style details. Their hands are adorned with chrome robotic gauntlets — elegant, fitted, and minimal.
-
-The pose shifts across moments — looking over the shoulder with subtle sway in the hips, mid-turn with one arm lifted confidently, leaning back with one hand on the waist, or walking forward with jacket catching movement. Every frame feels alive — balanced between confident elegance and soft allure.
-
-Hair flows naturally or in a stylized soft wave, catching the wind gently. Expression is calm but magnetic — a confident stare, half-smile, or eyes slightly closed in a moment of power.
-
-Background is sharp and clean: angular shadows, concrete walls, and open space. Lighting is editorial and bright — no harsh contrast, just crisp detail.
-
-The overall result must feel photoreal with soft anime undertones — perfect anatomy, flawless fabric draping, realistic lighting, and futuristic streetwear styling that feels like it belongs on the cover of a sci-fi fashion magazine from the future.`,
-    negative_prompt: `cartoon, 3d, game character, nsfw, lowres, duplicate limbs, distorted hands, unrealistic outfit, overly bright colors, armor-heavy, messy background, illustration style`,
-    strength: 0.45,
+    prompt: `Photorealistic portrait of a stylish person mid-movement in a cinematic city scene. Face and body must match the original input with full identity preserved — same gender, facial structure, and skin tone. They are wearing high-end futuristic streetwear: layered black techwear pieces, cropped jackets, sleek accessories, minimal but bold styling. Background is urban and dynamic — neon signs, alley walls, wet pavement, or glowing city light. Lighting is dramatic and moody: golden hour haze or neon reflections. Hair is windblown, natural, unstyled. Expression is confident and unposed — as if caught mid-walk, glancing sideways, or adjusting their jacket. No unrealistic features, no gender change, no cartoon or anime look. This is a real person, transformed into a cinematic streetwear icon.`,
+    negative_prompt: `anime, cartoon, illustration, 3D render, feminine face, long hair, makeup, lipstick, eyelashes, soft skin, exaggerated beauty, gender swap, gender change, unrealistic body, fake eyes, doll-like, bimbo, barbie, blurred details, over-stylized, low resolution, distorted hands, bad anatomy, incorrect face`,
+    strength: 0.55,
     model: 'stability-ai/stable-diffusion-img2img',
     mode: 'i2i',
     input: 'image',
