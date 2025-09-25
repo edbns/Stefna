@@ -41,7 +41,7 @@ export const IPA_PRESET_CONFIGS: Record<string, IPAPresetConfig> = {
     description: 'Moderate identity preservation for artistic transformations'
   },
   
-  // Relaxed identity preservation - Neo Tokyo Glitch
+  // Relaxed identity preservation - Cyber Siren
   'neo_tokyo_relaxed_ipa': {
     threshold: 0.4,
     retries: 1,

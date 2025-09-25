@@ -461,7 +461,7 @@ const MobileGalleryScreen: React.FC = () => {
     const actualPresetKey = media.metadata?.presetKey || media.presetKey
     
     const typeNames: Record<string, string> = {
-      'neo_glitch': 'Neo Tokyo Glitch',
+      'neo_glitch': 'Cyber Siren',
       'ghibli_reaction': 'Ghibli Reaction',
       'unreal_reflection': 'Unreal Reflection',
       'presets': 'Presets',
@@ -470,7 +470,7 @@ const MobileGalleryScreen: React.FC = () => {
       'story': 'Story Time',
       'edit': 'Studio',
       'parallel_self': 'Parallel Self',
-      'neo-glitch': 'Neo Tokyo Glitch',
+      'neo-glitch': 'Cyber Siren',
       'ghiblireact': 'Ghibli Reaction',
       'unrealreflection': 'Unreal Reflection',
       'preset': 'Presets',

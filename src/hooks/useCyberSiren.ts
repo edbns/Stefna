@@ -3,7 +3,7 @@ import { createDetector, SupportedModels } from '@tensorflow-models/face-landmar
 
 export type GlitchMode = 'neo_tokyo' | 'cyberpunk' | 'digital_glitch' | 'neon_wave';
 
-export interface NeoTokyoGlitchOptions {
+export interface CyberSirenOptions {
   mode: GlitchMode;
   intensity: number; // 1-5
   neonColor: string; // hex color
@@ -16,7 +16,7 @@ export interface NeoTokyoGlitchOptions {
   enableNeon: boolean; // default: true
 }
 
-export interface NeoTokyoGlitchResult {
+export interface CyberSirenResult {
   baseImage: File;
   glitchCanvas: HTMLCanvasElement;
   mergedCanvas: HTMLCanvasElement;
@@ -60,10 +60,10 @@ async function loadTFModel(): Promise<any> {
   }
 }
 
-// Main function to apply Neo Tokyo Glitch FX to an image URL
-export async function applyNeoTokyoGlitch(
+// Main function to apply Cyber Siren FX to an image URL
+export async function applyCyberSiren(
   imageUrl: string,
-  options: Partial<NeoTokyoGlitchOptions> = {}
+  options: Partial<CyberSirenOptions> = {}
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -71,7 +71,7 @@ export async function applyNeoTokyoGlitch(
     
     img.onload = async () => {
       try {
-        const canvas = await generateNeoTokyoGlitchOverlay(img, {
+        const canvas = await generateCyberSirenOverlay(img, {
           mode: 'neo_tokyo',
           intensity: 3,
           neonColor: '#ff00ff',
@@ -89,7 +89,7 @@ export async function applyNeoTokyoGlitch(
         const resultUrl = canvas.toDataURL('image/jpeg', 0.9);
         resolve(resultUrl);
       } catch (error) {
-        console.error('Neo Tokyo Glitch FX failed:', error);
+        console.error('Cyber Siren FX failed:', error);
         reject(error);
       }
     };
@@ -99,9 +99,9 @@ export async function applyNeoTokyoGlitch(
   });
 }
 
-export async function generateNeoTokyoGlitchOverlay(
+export async function generateCyberSirenOverlay(
   image: HTMLImageElement,
-  options: NeoTokyoGlitchOptions = {
+  options: CyberSirenOptions = {
     mode: 'neo_tokyo',
     intensity: 3,
     neonColor: '#ff00ff',
@@ -348,17 +348,17 @@ export async function generateNeoTokyoGlitchOverlay(
 
       resolve(canvas);
     } catch (error) {
-      console.error('❌ Neo Tokyo Glitch generation failed:', error);
+      console.error('❌ Cyber Siren generation failed:', error);
       reject(error);
     }
   });
 }
 
-export async function generateNeoTokyoGlitch(
+export async function generateCyberSiren(
   image: HTMLImageElement,
-  options: NeoTokyoGlitchOptions
-): Promise<NeoTokyoGlitchResult> {
-  const glitchCanvas = await generateNeoTokyoGlitchOverlay(image, options);
+  options: CyberSirenOptions
+): Promise<CyberSirenResult> {
+  const glitchCanvas = await generateCyberSirenOverlay(image, options);
   
   // Create merged canvas
   const mergedCanvas = document.createElement('canvas');

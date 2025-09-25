@@ -294,32 +294,11 @@ export default function BestPracticesScreen() {
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-white mb-8 text-center">More Modes</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-            {/* Custom Prompt Mode */}
+            {/* Studio: Edit My Photo */}
             <div className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
               <div className="mb-3">
                 <span className="text-xs uppercase text-white tracking-wider font-medium">
-                  Custom Prompt Mode
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
-                Your idea, your style, our magic.
-              </h3>
-              <p className="text-sm text-white leading-relaxed mb-4">
-                Write anything — describe a mood, scene, or vibe.
-              </p>
-              <p className="text-xs text-white/70 mb-4">
-                Example: "futuristic king under glowing neon throne, cinematic lighting"
-              </p>
-              <p className="text-xs text-white/70">
-                Tip: Keep it simple but specific. Style + setting + emotion = strong results.
-              </p>
-            </div>
-
-            {/* Edit My Photo */}
-            <div className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
-              <div className="mb-3">
-                <span className="text-xs uppercase text-white tracking-wider font-medium">
-                  Edit My Photo
+                  Studio: Edit My Photo
                 </span>
               </div>
               <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
@@ -336,21 +315,27 @@ export default function BestPracticesScreen() {
               </p>
             </div>
 
-            {/* Neo Tokyo Glitch */}
+            {/* Cyber Siren */}
             <div className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
               <div className="mb-3">
                 <span className="text-xs uppercase text-white tracking-wider font-medium">
-                  Neo Tokyo Glitch
+                  Cyber Siren
                 </span>
               </div>
               <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
-                The glitch chooses you. Not the other way around.
+                Part-time model. Full-time glitch in the system.
               </h3>
               <p className="text-sm text-white leading-relaxed mb-4">
-                You'll be reborn inside a neon-drenched chaos: tech tattoos, broken pixels, liquid color.
+                Step into a neon fever dream: techwear silhouettes, broken signal patterns, chrome heat.
               </p>
-              <p className="text-xs text-white/70 mb-4">
-                Results are unpredictable — and that's the fun.
+              <p className="text-sm text-white leading-relaxed mb-4">
+                You won't just be seen. You'll interrupt the timeline.
+              </p>
+              <p className="text-sm text-white leading-relaxed mb-4">
+                Upload a bold selfie — chin high, eyes sharp.
+              </p>
+              <p className="text-sm text-white leading-relaxed mb-4">
+                You're not the passenger. You are the siren.
               </p>
               <p className="text-xs text-white/70">
                 Tip: Upload a bold selfie, strong expression. Think "main character of the glitch."

@@ -2,9 +2,9 @@
 export const getPresetDisplayName = (presetKey: string | null | undefined, type?: string): string => {
   if (!presetKey) return 'Custom Prompt'
   
-  // Neo Tokyo Glitch presets
+  // Cyber Siren presets
   if (type === 'neo-glitch' || presetKey.startsWith('neo_') || presetKey.includes('neo')) {
-    const neoPresets: Record<string, string> = {
+    const cyberSirenPresets: Record<string, string> = {
       'visor': 'Visor',
       'base': 'Base',
       'tattoos': 'Tattoos', 
@@ -18,7 +18,7 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
       'neo_tokyo_tattoos': 'Tattoos',
       'neo_tokyo_scanlines': 'Scanlines'
     }
-    return neoPresets[presetKey] || 'Neo Tokyo'
+    return cyberSirenPresets[presetKey] || 'Cyber Siren'
   }
   
   // Custom Prompt presets

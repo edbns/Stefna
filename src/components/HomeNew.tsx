@@ -37,7 +37,7 @@ import { generationStart, generationDone } from '../lib/generationEvents'
 import { UnrealReflectionPicker } from './UnrealReflectionPicker'
 import { ParallelSelfPicker } from './ParallelSelfPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
-import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
+import { CyberSirenPicker } from './CyberSirenPicker'
 import { MediaUploadAgreement } from './MediaUploadAgreement'
 import { paramsForI2ISharp } from '../services/infer-params'
 import MobileFloatingNav from './MobileFloatingNav'
@@ -119,7 +119,7 @@ import { DatabasePreset } from '../services/presetsService'
 // Individual preset services removed - using direct function calls
 import { UNREAL_REFLECTION_PRESETS } from '../presets/unrealReflection'
 import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
-import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
+import { CYBER_SIREN_PRESETS } from '../presets/cyberSiren'
 import { PARALLEL_SELF_PRESETS } from '../presets/parallelSelf'
 import { resolvePresetForMode } from '../utils/resolvePresetForMode'
 
@@ -232,7 +232,7 @@ const HomeNew: React.FC = () => {
     // MoodMorph removed - replaced with Anime Filters
     selectedUnrealReflectionPresetId: null as string | null, // Separate from other presets
     selectedGhibliReactionPresetId: null as string | null, // Ghibli Reaction presets
-    selectedNeoTokyoGlitchPresetId: null as string | null, // Neo Tokyo Glitch presets
+    selectedNeoTokyoGlitchPresetId: null as string | null, // Cyber Siren presets
     customPrompt: '', // Custom mode gets its own prompt
     status: 'idle' as 'idle' | 'precheck' | 'reserving' | 'uploading' | 'processing' | 'error' | 'success',
     error: null as string | null,
@@ -1936,7 +1936,7 @@ const HomeNew: React.FC = () => {
             let mediaUrl: string;
             let provider = item.provider || 'unknown';
             
-            // Check for finalUrl (main media assets) or imageUrl (Neo Tokyo Glitch)
+            // Check for finalUrl (main media assets) or imageUrl (Cyber Siren)
             if (item.finalUrl && item.finalUrl.startsWith('http')) {
               mediaUrl = item.finalUrl;
               // console.log(`🔗 URL mapping for item ${item.id}:`, { // REMOVED - excessive debug logging
@@ -2566,20 +2566,20 @@ const HomeNew: React.FC = () => {
       }
       
     } else if (kind === 'neotokyoglitch') {
-      // NEO TOKYO GLITCH MODE: Use Replicate integration for maximum glitch intensity
+      // CYBER SIREN MODE: Use Replicate integration for maximum glitch intensity
       const neoTokyoGlitchPresetId = options?.neoTokyoGlitchPresetId || selectedNeoTokyoGlitchPreset;
       if (!neoTokyoGlitchPresetId) {
-        console.error('❌ Invalid Neo Tokyo Glitch preset:', neoTokyoGlitchPresetId);
-        console.error('❌ Invalid Neo Tokyo Glitch preset: Please select a Neo Tokyo Glitch preset first')
+        console.error('❌ Invalid Cyber Siren preset:', neoTokyoGlitchPresetId);
+        console.error('❌ Invalid Cyber Siren preset: Please select a Cyber Siren preset first')
         endGeneration(genId);
         setNavGenerating(false);
         return;
       }
       
-      const neoTokyoGlitchPreset = NEO_TOKYO_GLITCH_PRESETS.find(p => p.id === neoTokyoGlitchPresetId);
-      if (!neoTokyoGlitchPreset) {
-        console.error('❌ Neo Tokyo Glitch preset not found:', neoTokyoGlitchPresetId);
-        console.error('❌ Neo Tokyo Glitch preset not found: Please select a valid Neo Tokyo Glitch preset')
+      const cyberSirenPreset = CYBER_SIREN_PRESETS.find(p => p.id === neoTokyoGlitchPresetId);
+      if (!cyberSirenPreset) {
+        console.error('❌ Cyber Siren preset not found:', neoTokyoGlitchPresetId);
+        console.error('❌ Cyber Siren preset not found: Please select a valid Cyber Siren preset')
         endGeneration(genId);
         setNavGenerating(false);
         return;
@@ -2595,37 +2595,37 @@ const HomeNew: React.FC = () => {
       
       const presetKey = presetMap[neoTokyoGlitchPresetId];
       if (!presetKey) {
-        console.error('❌ Unknown Neo Tokyo Glitch preset:', neoTokyoGlitchPresetId);
-        console.error('❌ Unknown preset: Please select a valid Neo Tokyo Glitch preset')
+        console.error('❌ Unknown Cyber Siren preset:', neoTokyoGlitchPresetId);
+        console.error('❌ Unknown preset: Please select a valid Cyber Siren preset')
         endGeneration(genId);
         setNavGenerating(false);
         return;
       }
       
-      effectivePrompt = neoTokyoGlitchPreset.prompt;
+      effectivePrompt = cyberSirenPreset.prompt;
               generationMeta = { 
           mode: 'neotokyoglitch', 
           neoTokyoGlitchPresetId, 
-          neoTokyoGlitchPresetLabel: neoTokyoGlitchPreset.label, 
-        model: neoTokyoGlitchPreset.model, // Use preset model (BFL for tattoos)
-        strength: neoTokyoGlitchPreset.strength, // Use preset strength
-        guidance_scale: neoTokyoGlitchPreset.guidance_scale, // Use preset guidance
-        num_inference_steps: neoTokyoGlitchPreset.num_inference_steps, // Use preset steps
-        prompt_upsampling: neoTokyoGlitchPreset.prompt_upsampling, // Use preset upsampling
-        safety_tolerance: neoTokyoGlitchPreset.safety_tolerance, // Use preset safety
-        output_format: neoTokyoGlitchPreset.output_format, // Use preset format
-        raw: neoTokyoGlitchPreset.raw, // Use preset raw mode
-        image_prompt_strength: neoTokyoGlitchPreset.image_prompt_strength, // Use preset image strength
-        aspect_ratio: neoTokyoGlitchPreset.aspect_ratio, // Use preset aspect ratio
-          features: neoTokyoGlitchPreset.features,
+          neoTokyoGlitchPresetLabel: cyberSirenPreset.label, 
+        model: cyberSirenPreset.model, // Use preset model (BFL for tattoos)
+        strength: cyberSirenPreset.strength, // Use preset strength
+        guidance_scale: cyberSirenPreset.guidance_scale, // Use preset guidance
+        num_inference_steps: cyberSirenPreset.num_inference_steps, // Use preset steps
+        prompt_upsampling: cyberSirenPreset.prompt_upsampling, // Use preset upsampling
+        safety_tolerance: cyberSirenPreset.safety_tolerance, // Use preset safety
+        output_format: cyberSirenPreset.output_format, // Use preset format
+        raw: cyberSirenPreset.raw, // Use preset raw mode
+        image_prompt_strength: cyberSirenPreset.image_prompt_strength, // Use preset image strength
+        aspect_ratio: cyberSirenPreset.aspect_ratio, // Use preset aspect ratio
+          features: cyberSirenPreset.features,
         generation_type: "neo_tokyo_strict_ipa", // Strict identity preservation
-        ipaThreshold: 0.75, // High similarity required for Neo Tokyo Glitch
+        ipaThreshold: 0.75, // High similarity required for Cyber Siren
         ipaRetries: 3, // Aggressive fallback
         ipaBlocking: true, // Must pass to proceed
         presetKey: neoTokyoGlitchPresetId // Store the full preset ID instead of short key
         };
       if (import.meta.env.DEV) {
-        console.log('NEO TOKYO GLITCH MODE: Using preset parameters:', neoTokyoGlitchPreset.label, 'Model:', neoTokyoGlitchPreset.model);
+        console.log('CYBER SIREN MODE: Using preset parameters:', cyberSirenPreset.label, 'Model:', cyberSirenPreset.model);
       }
       
     } else if (kind === 'storytime') {

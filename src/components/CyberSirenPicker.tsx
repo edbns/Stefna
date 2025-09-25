@@ -1,24 +1,24 @@
 import React from 'react'
-import { NEO_TOKYO_GLITCH_PRESETS, NeoTokyoGlitchPreset } from '../presets/neoTokyoGlitch'
+import { CYBER_SIREN_PRESETS, CyberSirenPreset } from '../presets/cyberSiren'
 
-interface NeoTokyoGlitchPickerProps {
-  presets?: NeoTokyoGlitchPreset[]
+interface CyberSirenPickerProps {
+  presets?: CyberSirenPreset[]
   value?: string | null
   onChange: (presetId: string | null) => void
   className?: string
   disabled?: boolean
 }
 
-export function NeoTokyoGlitchPicker({
-  presets = NEO_TOKYO_GLITCH_PRESETS,
+export function CyberSirenPicker({
+  presets = CYBER_SIREN_PRESETS,
   value,
   onChange,
   className = ''
-}: NeoTokyoGlitchPickerProps) {
+}: CyberSirenPickerProps) {
   return (
     <div className={`rounded-xl shadow-2xl p-3 w-80 ${className}`} style={{ backgroundColor: '#000000' }}>
       <div className="space-y-1">
-        {/* Neo Tokyo Glitch preset options - matches presets exactly */}
+        {/* Cyber Siren preset options - matches presets exactly */}
         {presets.map((preset) => (
           <button
             key={preset.id}

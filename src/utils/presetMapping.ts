@@ -47,7 +47,7 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   
   // Get the display name for the type
   const typeDisplayNames: Record<string, string> = {
-    'neo-glitch': 'Neo Tokyo Glitch',
+    'neo-glitch': 'Cyber Siren',
     'ghibli-reaction': 'Ghibli Reaction',
     'unreal-reflection': 'Unreal Reflection', 
     'presets': 'Presets',
@@ -121,7 +121,7 @@ export function getPresetTypeForFilter(item: any): string {
  */
 export function getFilterDisplayName(filterType: string): string {
   const filterDisplayNames: Record<string, string> = {
-    'neo-glitch': 'Neo Tokyo Glitch',
+    'neo-glitch': 'Cyber Siren',
     'ghibli-reaction': 'Ghibli Reaction',
     'unreal-reflection': 'Unreal Reflection',
     'presets': 'Presets',

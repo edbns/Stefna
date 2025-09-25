@@ -58,8 +58,8 @@ export default function BestPracticesPopup() {
             </div>
 
             <div>
-              <p className="font-semibold">About Neo Tokyo Glitch</p>
-              <p>This mode does not preserve identity. It may change appearance or style completely. Built for surreal expression.</p>
+              <p className="font-semibold">About Cyber Siren</p>
+              <p>This mode preserves identity while transforming you into a cinematic streetwear icon. Built for photorealistic fashion styling.</p>
             </div>
 
             <div>
@@ -67,7 +67,7 @@ export default function BestPracticesPopup() {
               <p>• Magic Wand enhances prompts
                 <br />• Unreal Reflection creates alternate-reality realism
                 <br />• Ghibli Reaction adds animated emotions
-                <br />• Neo Tokyo Glitch for surreal transformations</p>
+                <br />• Cyber Siren for photorealistic streetwear fashion</p>
             </div>
 
             <p className="text-gray-400 italic">Every mode is different. Experiment, enjoy the process, and make it yours.</p>

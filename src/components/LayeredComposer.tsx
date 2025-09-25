@@ -4,13 +4,13 @@ import { X, Plus, FileText, ArrowUp } from 'lucide-react'
 import { UnrealReflectionPicker } from './UnrealReflectionPicker'
 import { ParallelSelfPicker } from './ParallelSelfPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
-import { NeoTokyoGlitchPicker } from './NeoTokyoGlitchPicker'
+import { CyberSirenPicker } from './CyberSirenPicker'
 
 // Import all the preset constants and types
 import { UNREAL_REFLECTION_PRESETS } from '../presets/unrealReflection'
 import { PARALLEL_SELF_PRESETS } from '../presets/parallelSelf'
 import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact'
-import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch'
+import { CYBER_SIREN_PRESETS } from '../presets/cyberSiren'
 import { MediaUploadAgreement } from './MediaUploadAgreement'
 import { resetComposerState, resetHiddenUploader } from './HomeNew'
 
@@ -191,11 +191,11 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
   }, [setComposerState, setSelectedMode, closeAllDropdowns])
 
   return (
-    <div className="fixed bottom-2 left-1/2 transform -translate-x-1/2 z-[999999] w-[67%] min-w-[600px]">
+    <div className="fixed bottom-2 left-1/2 transform -translate-x-1/2 z-[999999] w-[60%] min-w-[600px]">
       {/* Photo preview container - shows above composer when photo is uploaded */}
       {previewUrl && (
         <div className="mb-4 flex justify-center">
-          <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
+          <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block border" style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
             
             {/* Media display */}
             <div className="flex justify-center mb-3">
@@ -843,7 +843,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
               >
                 {selectedNeoTokyoGlitchPreset ? 
-                  NEO_TOKYO_GLITCH_PRESETS.find((p: any) => p.id === selectedNeoTokyoGlitchPreset)?.label || 'Cyber Siren™' 
+                  CYBER_SIREN_PRESETS.find((p: any) => p.id === selectedNeoTokyoGlitchPreset)?.label || 'Cyber Siren™' 
                   : 'Cyber Siren™'
                 }
               </button>
@@ -857,18 +857,18 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               )}
             </div>
               
-              {/* Neo Tokyo Glitch presets dropdown */}
+              {/* Cyber Siren presets dropdown */}
               {composerState.mode === 'neotokyoglitch' && neoTokyoGlitchDropdownOpen && (
                 <div className="absolute bottom-full left-0 mb-2 z-50">
-                  <NeoTokyoGlitchPicker
+                  <CyberSirenPicker
                     value={selectedNeoTokyoGlitchPreset || undefined}
                     onChange={async (presetId) => {
                       setSelectedNeoTokyoGlitchPreset(presetId || null)
                       setNeoTokyoGlitchDropdownOpen(false)
                       
-                      // Auto-generate when Neo Tokyo Glitch preset is selected
+                      // Auto-generate when Cyber Siren preset is selected
                       if (presetId && selectedFile && isAuthenticated) {
-                        console.log('Auto-generating Neo Tokyo Glitch with preset:', presetId)
+                        console.log('Auto-generating Cyber Siren with preset:', presetId)
                         // Redirect immediately when preset is selected
                         navigate('/profile')
                         try {
@@ -876,7 +876,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                             neoTokyoGlitchPresetId: presetId
                           })
                         } catch (error) {
-                          console.error('❌ Neo Tokyo Glitch auto-generation failed:', error)
+                          console.error('❌ Cyber Siren auto-generation failed:', error)
                           setTimeout(() => {
                             clearAllOptionsAfterGeneration()
                           }, 300)

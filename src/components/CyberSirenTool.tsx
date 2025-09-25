@@ -1,23 +1,23 @@
 import React, { useRef, useState } from 'react';
 import { 
-  generateNeoTokyoGlitchOverlay, 
-  generateNeoTokyoGlitch,
+  generateCyberSirenOverlay, 
+  generateCyberSiren,
   GlitchMode,
-  NeoTokyoGlitchOptions,
-  NeoTokyoGlitchResult 
-} from '../hooks/useNeoTokyoGlitch';
+  CyberSirenOptions,
+  CyberSirenResult 
+} from '../hooks/useCyberSiren';
 
-export const NeoTokyoTool = () => {
+export const CyberSirenTool = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [glitchLayer, setGlitchLayer] = useState<string | null>(null);
   const [mergedResult, setMergedResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<NeoTokyoGlitchResult | null>(null);
+  const [result, setResult] = useState<CyberSirenResult | null>(null);
 
-  // Neo Tokyo glitch options
-  const [options, setOptions] = useState<NeoTokyoGlitchOptions>({
+  // Cyber Siren options
+  const [options, setOptions] = useState<CyberSirenOptions>({
     mode: 'neo_tokyo',
     intensity: 3,
     neonColor: '#ff00ff',
@@ -46,8 +46,8 @@ export const NeoTokyoTool = () => {
         try {
           setOriginalImage(URL.createObjectURL(file));
 
-          // Generate Neo Tokyo glitch effect
-          const glitchResult = await generateNeoTokyoGlitch(img, options);
+          // Generate Cyber Siren effect
+          const glitchResult = await generateCyberSiren(img, options);
           
           // Convert canvases to data URLs for display
           const glitchDataUrl = glitchResult.glitchCanvas.toDataURL('image/png');
@@ -88,7 +88,7 @@ export const NeoTokyoTool = () => {
       const img = new Image();
       img.onload = async () => {
         try {
-          const glitchResult = await generateNeoTokyoGlitch(img, options);
+          const glitchResult = await generateCyberSiren(img, options);
           
           const glitchDataUrl = glitchResult.glitchCanvas.toDataURL('image/png');
           const mergedDataUrl = glitchResult.mergedCanvas.toDataURL('image/png');
@@ -137,7 +137,7 @@ export const NeoTokyoTool = () => {
     }
   };
 
-  const updateOption = (key: keyof NeoTokyoGlitchOptions, value: any) => {
+  const updateOption = (key: keyof CyberSirenOptions, value: any) => {
     setOptions(prev => ({ ...prev, [key]: value }));
   };
 
@@ -159,12 +159,12 @@ export const NeoTokyoTool = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">🟥 Neo Tokyo Glitch Module</h2>
+      <h2 className="text-2xl font-bold mb-6">🟥 Cyber Siren Module</h2>
       
       {/* File Input */}
       <div className="mb-6">
         <label className="block text-sm font-medium mb-2">
-          Select Image for Neo Tokyo Glitch
+          Select Image for Cyber Siren
         </label>
         <input 
           type="file" 

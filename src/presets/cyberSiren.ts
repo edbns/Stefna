@@ -1,5 +1,5 @@
-// src/presets/neoTokyoGlitch.ts
-export type NeoTokyoGlitchPreset = {
+// src/presets/cyberSiren.ts
+export type CyberSirenPreset = {
   id: string
   label: string
   prompt: string
@@ -22,7 +22,7 @@ export type NeoTokyoGlitchPreset = {
   aspect_ratio?: string
 }
 
-export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
+export const CYBER_SIREN_PRESETS: CyberSirenPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Cyber Siren™',
@@ -100,10 +100,10 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   }
 ]
 
-export function getNeoTokyoGlitchPreset(presetId: string): NeoTokyoGlitchPreset | undefined {
-  return NEO_TOKYO_GLITCH_PRESETS.find(p => p.id === presetId)
+export function getCyberSirenPreset(presetId: string): CyberSirenPreset | undefined {
+  return CYBER_SIREN_PRESETS.find(p => p.id === presetId)
 }
 
-export function isNeoTokyoGlitchPreset(presetId: string): boolean {
-  return NEO_TOKYO_GLITCH_PRESETS.some(p => p.id === presetId)
+export function isCyberSirenPreset(presetId: string): boolean {
+  return CYBER_SIREN_PRESETS.some(p => p.id === presetId)
 }

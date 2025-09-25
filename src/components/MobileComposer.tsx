@@ -7,7 +7,7 @@ import { MagicWandService } from '../services/magicWandService';
 import { UNREAL_REFLECTION_PRESETS } from '../presets/unrealReflection';
 import { PARALLEL_SELF_PRESETS } from '../presets/parallelSelf';
 import { GHIBLI_REACTION_PRESETS } from '../presets/ghibliReact';
-import { NEO_TOKYO_GLITCH_PRESETS } from '../presets/neoTokyoGlitch';
+import { CYBER_SIREN_PRESETS } from '../presets/cyberSiren';
 
 interface MobileComposerProps {
   isOpen: boolean;
@@ -200,7 +200,7 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
                selectedMode === 'unrealreflection' ? 'Unreal Reflection™' :
                selectedMode === 'parallelself' ? 'Parallel Self™' :
                selectedMode === 'ghiblireact' ? 'Ghibli Reaction' :
-               'Neo Tokyo Glitch'}
+               'Cyber Siren'}
             </h2>
           </div>
           <button
@@ -266,12 +266,12 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
                 <div className="text-sm font-medium">Ghibli Reaction</div>
               </button>
 
-              {/* Neo Tokyo Glitch */}
+              {/* Cyber Siren */}
               <button
                 onClick={() => handleModeSelect('neotokyoglitch')}
                 className="aspect-square bg-white/10 rounded-lg text-white text-center hover:bg-white/20 transition-colors flex items-center justify-center p-4"
               >
-                <div className="text-sm font-medium">Neo Tokyo Glitch</div>
+                <div className="text-sm font-medium">Cyber Siren</div>
               </button>
             </div>
           </div>
@@ -375,8 +375,8 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
                       </button>
                     ))}
                     
-                    {/* Neo Tokyo Glitch Presets */}
-                    {selectedMode === 'neotokyoglitch' && NEO_TOKYO_GLITCH_PRESETS.map((preset) => (
+                    {/* Cyber Siren Presets */}
+                    {selectedMode === 'neotokyoglitch' && CYBER_SIREN_PRESETS.map((preset) => (
                       <button
                         key={preset.id}
                         onClick={() => handlePresetGenerate(preset.id)}

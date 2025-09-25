@@ -1444,7 +1444,7 @@ const AdminDashboardScreen: React.FC = () => {
                               className="px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-600"
                             >
                               <option value="all">All Types</option>
-                              <option value="neo_glitch">Neo Tokyo Glitch</option>
+                              <option value="neo_glitch">Cyber Siren</option>
                               <option value="presets">Presets</option>
                               <option value="unreal_reflection">Unreal Reflection</option>
                               <option value="ghibli_reaction">Ghibli Reaction</option>

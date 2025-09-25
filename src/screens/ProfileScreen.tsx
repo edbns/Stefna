@@ -1484,9 +1484,9 @@ const ProfileScreen: React.FC = () => {
         urlType: media.url?.includes('replicate.delivery') ? 'replicate' : 'other'
       });
 
-      // Check if this is a Replicate URL (Neo Tokyo Glitch)
+      // Check if this is a Replicate URL (Cyber Siren)
       if (media.url?.includes('replicate.delivery')) {
-        console.log('🎭 [Download] Neo Tokyo Glitch/Replicate URL detected, using direct download');
+        console.log('🎭 [Download] Cyber Siren/Replicate URL detected, using direct download');
         
         // For Replicate URLs, try direct download without CORS fetch
         const link = document.createElement('a');
@@ -1498,7 +1498,7 @@ const ProfileScreen: React.FC = () => {
         link.click();
         document.body.removeChild(link);
         
-        console.log('✅ [Download] Neo Tokyo Glitch direct download initiated');
+        console.log('✅ [Download] Cyber Siren direct download initiated');
         return;
       }
 
