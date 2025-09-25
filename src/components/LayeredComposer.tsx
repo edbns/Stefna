@@ -811,7 +811,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               )}
             </div>
 
-            {/* Neo Tokyo Glitch™ button */}
+            {/* Cyber Siren™ button */}
             <div className="relative" data-neotokyoglitch-dropdown>
               <div className="relative group">
                 <button
@@ -839,12 +839,12 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                     : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
-                title={!selectedFile ? 'Please upload a photo first to get started' : (isAuthenticated ? 'Switch to Neo Tokyo Glitch mode' : 'Explore Neo Tokyo Glitch mode')}
+                title={!selectedFile ? 'Please upload a photo first to get started' : (isAuthenticated ? 'Switch to Cyber Siren™ mode' : 'Explore Cyber Siren™ mode')}
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
               >
                 {selectedNeoTokyoGlitchPreset ? 
-                  NEO_TOKYO_GLITCH_PRESETS.find((p: any) => p.id === selectedNeoTokyoGlitchPreset)?.label || 'Neo Tokyo Glitch' 
-                  : 'Neo Tokyo Glitch'
+                  NEO_TOKYO_GLITCH_PRESETS.find((p: any) => p.id === selectedNeoTokyoGlitchPreset)?.label || 'Cyber Siren™' 
+                  : 'Cyber Siren™'
                 }
               </button>
               
