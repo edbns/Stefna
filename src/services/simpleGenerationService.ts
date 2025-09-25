@@ -383,7 +383,7 @@ class SimpleGenerationService {
       case 'cyber-siren':
         return {
           ...basePayload,
-          cyberSirenPresetId: request.cyberSirenPresetId
+          presetKey: request.cyberSirenPresetId
         };
 
       case 'story-time':
