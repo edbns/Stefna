@@ -95,7 +95,7 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
     }
   };
 
-  // Handle custom/studio generation
+  // Handle studio generation
   const handleMagicWand = async () => {
     if (!prompt.trim()) {
       notifyError({ title: 'Prompt Required', message: 'Please enter a prompt first' });
@@ -114,7 +114,7 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
     }
   };
 
-  const handleCustomGenerate = async () => {
+  const handleEditGenerate = async () => {
     if (!checkAuthAndRedirect()) return;
     if (!prompt.trim()) {
       notifyError({ title: 'Prompt Required', message: 'Please enter a prompt' });
@@ -194,7 +194,6 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
             )}
             <h2 className="text-white text-lg font-medium">
               {currentStep === 'modes' ? 'Choose Style' : 
-               selectedMode === 'custom' ? 'Custom' :
                selectedMode === 'edit' ? 'Studio' :
                selectedMode === 'presets' ? 'Presets' :
                selectedMode === 'unrealreflection' ? 'Unreal Reflection™' :
@@ -218,13 +217,15 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
         {currentStep === 'modes' && selectedFile && (
           <div className="p-4">
             <div className="grid grid-cols-2 gap-4">
-              {/* Custom */}
+              {/* Custom - HIDDEN */}
+              {false && (
               <button
                 onClick={() => handleModeSelect('custom')}
                 className="aspect-square bg-white/10 rounded-lg text-white text-center hover:bg-white/20 transition-colors flex items-center justify-center p-4"
               >
                 <div className="text-sm font-medium">Custom</div>
               </button>
+              )}
 
               {/* Studio */}
               <button
@@ -291,17 +292,13 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
               </div>
             )}
 
-            {/* Custom/Studio Mode: Prompt Input */}
-            {['custom', 'edit'].includes(selectedMode) && (
+            {/* Studio Mode: Prompt Input */}
+            {selectedMode === 'edit' && (
               <div className="p-2">
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder={
-                    selectedMode === 'edit' 
-                      ? "Change something, add something — your call ... tap ✨ for a little magic."
-                      : "Type something weird. We'll make it art ... tap ✨ for a little magic."
-                  }
+                  placeholder="Change something, add something — your call ... tap ✨ for a little magic."
                   className="w-full px-3 py-2 bg-white/10 backdrop-blur-md text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200 h-20 text-base rounded-xl"
                   maxLength={500}
                 />
@@ -309,7 +306,7 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
                 {/* Generate Button Row with Magic Wand */}
                 <div className="flex items-center gap-2 mt-2">
                   <button
-                    onClick={handleCustomGenerate}
+                    onClick={handleEditGenerate}
                     disabled={isGenerating || !prompt.trim()}
                     className="flex-1 py-3 bg-white text-black font-medium disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
