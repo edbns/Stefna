@@ -26,9 +26,12 @@ export const NEO_TOKYO_GLITCH_PRESETS: NeoTokyoGlitchPreset[] = [
   {
     id: 'neo_tokyo_base',
     label: 'Base',
-    prompt: `Cyberpunk portrait with Neo Tokyo aesthetics. Face retains core features with glitch distortion and color shifts. Cel-shaded anime style with holographic elements, glitch effects, and neon shimmer. Background: vertical city lights, violet haze, soft scanlines. Colors: electric pink, cyan, sapphire blue, ultraviolet, black. Inspired by Akira and Ghost in the Shell.`,
-    negative_prompt: `blurry, distorted face, ugly, deformed, bad anatomy, extra limbs, photorealism, dull style, low contrast, 
-nudity, cleavage, merged face, artifacts, realistic texture, boring lighting`,
+    prompt: `Cinematic sci-fi streetwear portrait set in a brutalist concrete courtyard. The subject is dressed in a sleeveless, sculpted white tech-top with metallic seams and an open back, paired with high-waisted futuristic pants featuring tactical padding, zippers, and subtle detailing. Sleek robotic gauntlets cover both forearms — polished silver, embedded like fashion accessories.
+
+The background is minimalist and geometric — sharp concrete forms, angular shadows, bright blue sky. Lighting is crisp and editorial, casting clean contrast across skin, fabric, and metal.
+
+The overall mood is photorealistic and high fashion: a futuristic streetwear editorial that feels like a Vogue cover from the year 2085. Emphasize perfect anatomy, soft real skin texture, clean shadows, cinematic sharpness, and high detail across all materials.`,
+    negative_prompt: `illustration, anime, 3d, doll, lowres, extra limbs, missing fingers, deformed, distorted, nsfw, cartoonish, unrealistic lighting, bad anatomy, artifacts, messy background, cosplay, game character, neon overload, heavy armor`,
     strength: 0.45,
     model: 'stability-ai/stable-diffusion-img2img',
     mode: 'i2i',
