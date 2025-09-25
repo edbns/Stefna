@@ -45,7 +45,7 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
     
     // Map types to display names (same as PresetTag)
     const typeNames: Record<string, string> = {
-      'neo_glitch': 'Cyber Siren',
+      'cyber_siren': 'Cyber Siren',
       'ghibli_reaction': 'Ghibli Reaction',
       'unreal_reflection': 'Unreal Reflection',
       'presets': 'Presets',
@@ -54,7 +54,7 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
       'story': 'Story Time',
       'edit': 'Studio',
       // Media type mappings
-      'neo-glitch': 'Cyber Siren',
+      'cyber-siren': 'Cyber Siren',
       'ghiblireact': 'Ghibli Reaction',
       'unrealreflection': 'Unreal Reflection',
       'preset': 'Presets',

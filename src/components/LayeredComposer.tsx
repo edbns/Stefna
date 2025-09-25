@@ -81,7 +81,7 @@ interface LayeredComposerProps {
   handlePresetClick: (preset: string) => void
   handleMagicWandEnhance: () => void
   handleSaveDraft: () => void
-  dispatchGenerate: (kind: "preset" | "custom" | "unrealreflection" | "ghiblireact" | "cyber_siren" | "parallelself" | "storytime" | "edit", options?: any) => Promise<void>
+  dispatchGenerate: (kind: "preset" | "custom" | "unrealreflection" | "ghiblireact" | "cyber-siren" | "parallelself" | "storytime" | "edit", options?: any) => Promise<void>
   clearAllOptionsAfterGeneration: () => void
   closeAllDropdowns: () => void
   getPresetLabel: (preset: string, presets: any[]) => string
@@ -823,19 +823,19 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     return
                   }
                   
-                  if (composerState.mode === 'cyber_siren') {
+                  if (composerState.mode === 'cyber-siren') {
                     closeAllDropdowns()
                         setCyberSirenDropdownOpen(!cyberSirenDropdownOpen)
                   } else {
                     closeAllDropdowns()
-                    setComposerState((s: any) => ({ ...s, mode: 'cyber_siren' }))
+                    setComposerState((s: any) => ({ ...s, mode: 'cyber-siren' }))
                     setSelectedMode('presets')
                     setSelectedCyberSirenPreset(null)
                     setCyberSirenDropdownOpen(true)
                   }
                 }}
                 className={
-                  composerState.mode === 'cyber_siren'
+                  composerState.mode === 'cyber-siren'
                     ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                     : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
@@ -858,7 +858,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
             </div>
               
               {/* Cyber Siren presets dropdown */}
-              {composerState.mode === 'cyber_siren' && cyberSirenDropdownOpen && (
+              {composerState.mode === 'cyber-siren' && cyberSirenDropdownOpen && (
                 <div className="absolute bottom-full left-0 mb-2 z-50">
                   <CyberSirenPicker
                     value={selectedCyberSirenPreset || undefined}
@@ -872,7 +872,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                         // Redirect immediately when preset is selected
                         navigate('/profile')
                         try {
-                          await dispatchGenerate('cyber_siren', {
+                          await dispatchGenerate('cyber-siren', {
                             cyberSirenPresetId: presetId
                           })
                         } catch (error) {

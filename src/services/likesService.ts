@@ -15,7 +15,7 @@ interface UserLikesResponse {
 
 export async function toggleLike(
   mediaId: string, 
-  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit' | 'parallel_self'
+  mediaType: 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'cyber_siren' | 'presets' | 'story' | 'edit' | 'parallel_self'
 ): Promise<ToggleLikeResponse> {
   try {
     const response = await authenticatedFetch('/.netlify/functions/toggleLike', {
@@ -65,12 +65,12 @@ export function generateLikeKey(media: { id: string; metadata?: { presetType?: s
 }
 
 // Helper to map database media type to API media type
-export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit' | 'parallel_self' {
-  const typeMapping: Record<string, 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'neo_glitch' | 'presets' | 'story' | 'edit' | 'parallel_self'> = {
+export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'cyber_siren' | 'presets' | 'story' | 'edit' | 'parallel_self' {
+  const typeMapping: Record<string, 'custom_prompt' | 'unreal_reflection' | 'ghibli_reaction' | 'cyber_siren' | 'presets' | 'story' | 'edit' | 'parallel_self'> = {
     'custom_prompt': 'custom_prompt',
     'unreal_reflection': 'unreal_reflection',
     'ghibli_reaction': 'ghibli_reaction',
-    'neo_glitch': 'neo_glitch',
+    'cyber_siren': 'cyber_siren',
     'presets': 'presets',
     'story': 'story',
     'story_time': 'story',
@@ -80,7 +80,7 @@ export function mapMediaTypeForAPI(dbType: string): 'custom_prompt' | 'unreal_re
     'custom': 'custom_prompt',
     'unrealreflection': 'unreal_reflection',
     'ghiblireact': 'ghibli_reaction',
-    'neo-glitch': 'neo_glitch',
+    'cyber-siren': 'cyber_siren',
     'preset': 'presets',
     'storytime': 'story',
     'parallel-self': 'parallel_self'

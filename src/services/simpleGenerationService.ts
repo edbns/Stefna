@@ -5,7 +5,7 @@
 import { authenticatedFetch } from '../utils/apiClient'
 import authService from './authService';
 
-export type GenerationMode = 'presets' | 'custom-prompt' | 'unreal-reflection' | 'ghibli-reaction' | 'neo-glitch' | 'story-time' | 'edit-photo' | 'parallel-self';
+export type GenerationMode = 'presets' | 'custom-prompt' | 'unreal-reflection' | 'ghibli-reaction' | 'cyber-siren' | 'story-time' | 'edit-photo' | 'parallel-self';
 
 export interface SimpleGenerationRequest {
   mode: GenerationMode;
@@ -18,7 +18,7 @@ export interface SimpleGenerationRequest {
   runId: string;
   unrealReflectionPresetId?: string;
   ghibliReactionPresetId?: string;
-  neoGlitchPresetId?: string;
+  cyberSirenPresetId?: string;
   storyTimePresetId?: string;
   parallelSelfPresetId?: string;
   additionalImages?: File[];
@@ -50,7 +50,7 @@ const FUNCTION_ENDPOINTS: Record<GenerationMode, string> = {
   'custom-prompt': '/.netlify/functions/unified-generate',
   'unreal-reflection': '/.netlify/functions/unified-generate',
   'ghibli-reaction': '/.netlify/functions/unified-generate',
-  'neo-glitch': '/.netlify/functions/unified-generate',
+  'cyber-siren': '/.netlify/functions/unified-generate',
   'story-time': '/.netlify/functions/unified-generate',
   'edit-photo': '/.netlify/functions/unified-generate',
   'parallel-self': '/.netlify/functions/unified-generate'
@@ -333,7 +333,7 @@ class SimpleGenerationService {
       'custom-prompt': 'custom',
       'unreal-reflection': 'unreal_reflection',
       'ghibli-reaction': 'ghibli_reaction',
-      'neo-glitch': 'neo_glitch',
+      'cyber-siren': 'cyber_siren',
       'story-time': 'story_time',
       'edit-photo': 'edit',
       'parallel-self': 'parallel_self'
@@ -380,10 +380,10 @@ class SimpleGenerationService {
           ghibliReactionPresetId: request.ghibliReactionPresetId
         };
 
-      case 'neo-glitch':
+      case 'cyber-siren':
         return {
           ...basePayload,
-          neoGlitchPresetId: request.neoGlitchPresetId
+          cyberSirenPresetId: request.cyberSirenPresetId
         };
 
       case 'story-time':

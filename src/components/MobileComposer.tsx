@@ -171,7 +171,7 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
 
   // Load presets when preset modes are selected
   useEffect(() => {
-    if (['presets', 'unrealreflection', 'ghiblireact', 'cyber_siren', 'parallelself'].includes(selectedMode)) {
+    if (['presets', 'unrealreflection', 'ghiblireact', 'cyber-siren', 'parallelself'].includes(selectedMode)) {
       loadDatabasePresets();
     }
   }, [selectedMode]);
@@ -268,7 +268,7 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
 
               {/* Cyber Siren */}
               <button
-                onClick={() => handleModeSelect('cyber_siren')}
+                onClick={() => handleModeSelect('cyber-siren')}
                 className="aspect-square bg-white/10 rounded-lg text-white text-center hover:bg-white/20 transition-colors flex items-center justify-center p-4"
               >
                 <div className="text-sm font-medium">Cyber Siren</div>
@@ -334,7 +334,7 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
             )}
 
             {/* Preset Modes: Preset Selection */}
-            {['presets', 'unrealreflection', 'parallelself', 'ghiblireact', 'cyber_siren'].includes(selectedMode) && (
+            {['presets', 'unrealreflection', 'parallelself', 'ghiblireact', 'cyber-siren'].includes(selectedMode) && (
               <div className="p-2">
                 <div className="mb-3">
                   {/* Preset Grid - 2 columns with dynamic sizing */}
@@ -376,7 +376,7 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
                     ))}
                     
                     {/* Cyber Siren Presets */}
-                    {selectedMode === 'cyber_siren' && CYBER_SIREN_PRESETS.map((preset) => (
+                    {selectedMode === 'cyber-siren' && CYBER_SIREN_PRESETS.map((preset) => (
                       <button
                         key={preset.id}
                         onClick={() => handlePresetGenerate(preset.id)}

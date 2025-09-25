@@ -21,7 +21,7 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   
   // Map database types to display types
   const typeMapping: Record<string, string> = {
-    'neo_glitch': 'neo-glitch',
+    'cyber_siren': 'cyber-siren',
     'ghibli_reaction': 'ghibli-reaction', 
     'unreal_reflection': 'unreal-reflection',
     'presets': 'presets',
@@ -34,7 +34,7 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   
   // Map mediaType to type if type is not available
   const mediaTypeMapping: Record<string, string> = {
-    'neo-glitch': 'neo-glitch',
+    'cyber-siren': 'cyber-siren',
     'ghiblireact': 'ghibli-reaction',
     'unrealreflection': 'unreal-reflection', 
     'preset': 'presets',
@@ -47,7 +47,7 @@ export function mapPresetToDisplay(item: any): PresetMapping {
   
   // Get the display name for the type
   const typeDisplayNames: Record<string, string> = {
-    'neo-glitch': 'Cyber Siren',
+    'cyber-siren': 'Cyber Siren',
     'ghibli-reaction': 'Ghibli Reaction',
     'unreal-reflection': 'Unreal Reflection', 
     'presets': 'Presets',
@@ -93,14 +93,14 @@ export function getPresetDisplayText(item: any, showPresetKey: boolean = true): 
  * Get preset type for filtering
  */
 export function getPresetTypeForFilter(item: any): string {
-  // The backend sends the preset type in item.type (e.g., 'neo_glitch', 'presets', 'edit')
+  // The backend sends the preset type in item.type (e.g., 'cyber_siren', 'presets', 'edit')
   // The frontend stores it in item.presetType for consistency
   // Use item.presetType first (which comes from backend item.type), then fall back to item.type
   const presetType = item.presetType || item.type || 'presets'
   
   // Map the preset type to the filter format
   const typeMapping: Record<string, string> = {
-    'neo_glitch': 'neo-glitch',
+    'cyber_siren': 'cyber-siren',
     'ghibli_reaction': 'ghibli-reaction', 
     'unreal_reflection': 'unreal-reflection',
     'presets': 'presets',
@@ -121,7 +121,7 @@ export function getPresetTypeForFilter(item: any): string {
  */
 export function getFilterDisplayName(filterType: string): string {
   const filterDisplayNames: Record<string, string> = {
-    'neo-glitch': 'Cyber Siren',
+    'cyber-siren': 'Cyber Siren',
     'ghibli-reaction': 'Ghibli Reaction',
     'unreal-reflection': 'Unreal Reflection',
     'presets': 'Presets',

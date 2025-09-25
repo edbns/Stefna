@@ -104,7 +104,7 @@ export function enhancePromptForSpecificity(
   const promptLower = originalPrompt.toLowerCase();
   const hasNonHumanSubject = originalAnimals.length > 0 || nonHumanKeywords.some(k => promptLower.includes(k));
 
-  // Reverted neo_glitch-specific blocks (handled by presets/providers instead)
+  // Reverted cyber_siren-specific blocks (handled by presets/providers instead)
 
   // Enhanced negative prompt for better specificity (general)
   negativePrompt += ', cartoonish, exaggerated features, overly large eyes, gender swap, multiple subjects, low quality, mutated hands, poorly drawn face';

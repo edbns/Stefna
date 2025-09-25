@@ -3,16 +3,16 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
   if (!presetKey) return 'Custom Prompt'
   
   // Cyber Siren presets
-  if (type === 'neo-glitch' || presetKey.startsWith('neo_') || presetKey.includes('neo')) {
+  if (type === 'cyber-siren' || presetKey.startsWith('cyber_') || presetKey.includes('cyber')) {
     const cyberSirenPresets: Record<string, string> = {
       'visor': 'Visor',
       'base': 'Base',
       'tattoos': 'Tattoos', 
       'scanlines': 'Scanlines',
-      'neo_glitch_visor': 'Visor',
-      'neo_glitch_base': 'Base',
-      'neo_glitch_tattoos': 'Tattoos',
-      'neo_glitch_scanlines': 'Scanlines',
+      'cyber_siren_visor': 'Visor',
+      'cyber_siren_base': 'Base',
+      'cyber_siren_tattoos': 'Tattoos',
+      'cyber_siren_scanlines': 'Scanlines',
       'neo_tokyo_visor': 'Visor',
       'neo_tokyo_base': 'Base',
       'neo_tokyo_tattoos': 'Tattoos',
@@ -111,7 +111,7 @@ export const getPresetDisplayName = (presetKey: string | null | undefined, type?
 export const getPresetType = (presetKey: string | null | undefined, type?: string): string => {
   if (!presetKey) return 'custom'
   
-  if (type === 'neo-glitch' || presetKey.startsWith('neo_')) return 'neo-tokyo'
+  if (type === 'cyber-siren' || presetKey.startsWith('cyber_')) return 'cyber-siren'
   if (presetKey.startsWith('ghibli_')) return 'ghibli'
   if (presetKey.startsWith('emotion_') || presetKey.includes('joy_') || presetKey.includes('strength_') || presetKey.includes('nostalgia_') || presetKey.includes('peace_')) return 'emotion'
   if (presetKey.startsWith('story_') || presetKey === 'auto' || presetKey === 'adventure' || presetKey === 'romance' || presetKey === 'mystery' || presetKey === 'comedy' || presetKey === 'fantasy' || presetKey === 'travel') return 'story-time'

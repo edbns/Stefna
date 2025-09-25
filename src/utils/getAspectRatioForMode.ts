@@ -6,7 +6,7 @@ export function getAspectRatioForMode(mode: string): string {
     case 'presets':
       return '4:5'; // Instagram/Facebook/X-friendly portrait
 
-    case 'neo_glitch':
+    case 'cyber_siren':
       return '16:9'; // Cinematic wide (Stability.ai)
 
     case 'story_time':

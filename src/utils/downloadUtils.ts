@@ -97,7 +97,7 @@ export const generateMediaFilename = (media: DownloadableMedia, index?: number):
     // Convert presetType to readable format
     const typeMap: Record<string, string> = {
       'parallel_self': 'parallelself',
-      'neo_glitch': 'neoglitch', 
+      'cyber_siren': 'cybersiren', 
       'unreal_reflection': 'unrealreflection',
       'ghibli_reaction': 'ghiblireaction',
       'edit': 'edit',
@@ -114,7 +114,7 @@ export const generateMediaFilename = (media: DownloadableMedia, index?: number):
     // If we have presetType but no presetKey, use just the type
     const typeMap: Record<string, string> = {
       'parallel_self': 'parallelself',
-      'neo_glitch': 'neoglitch', 
+      'cyber_siren': 'cybersiren', 
       'unreal_reflection': 'unrealreflection',
       'ghibli_reaction': 'ghiblireaction',
       'edit': 'edit',

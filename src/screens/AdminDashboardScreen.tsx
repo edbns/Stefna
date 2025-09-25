@@ -1444,7 +1444,7 @@ const AdminDashboardScreen: React.FC = () => {
                               className="px-3 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-600"
                             >
                               <option value="all">All Types</option>
-                              <option value="neo_glitch">Cyber Siren</option>
+                              <option value="cyber_siren">Cyber Siren</option>
                               <option value="presets">Presets</option>
                               <option value="unreal_reflection">Unreal Reflection</option>
                               <option value="ghibli_reaction">Ghibli Reaction</option>
@@ -1468,7 +1468,7 @@ const AdminDashboardScreen: React.FC = () => {
                         {mediaStats && (
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="bg-black rounded-xl p-4 border border-gray-600">
-                              <div className="text-2xl font-bold text-white">{mediaStats.neo_glitch_count || 0}</div>
+                              <div className="text-2xl font-bold text-white">{mediaStats.cyber_siren_count || 0}</div>
                               <div className="text-xs text-gray-400">Neo Tokyo</div>
                             </div>
                             <div className="bg-black rounded-xl p-4 border border-gray-600">
@@ -1609,7 +1609,7 @@ const AdminDashboardScreen: React.FC = () => {
                             <h4 className="text-lg font-semibold text-white mb-4">Media Generation (24h)</h4>
                             <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                               <div className="text-center">
-                                <div className="text-2xl font-bold text-white">{systemConfig.mediaStats?.neo_glitch_24h || 0}</div>
+                                <div className="text-2xl font-bold text-white">{systemConfig.mediaStats?.cyber_siren_24h || 0}</div>
                                 <div className="text-xs text-gray-400">Neo Tokyo</div>
                               </div>
                               <div className="text-center">
@@ -1801,7 +1801,7 @@ const AdminDashboardScreen: React.FC = () => {
                               <div className="text-xs text-gray-400">Active Users</div>
                             </div>
                             <div className="bg-black rounded-xl p-4 border border-gray-600">
-                              <div className="text-2xl font-bold text-white">{logsAnalytics.neo_glitch_generated || 0}</div>
+                              <div className="text-2xl font-bold text-white">{logsAnalytics.cyber_siren_generated || 0}</div>
                               <div className="text-xs text-gray-400">Neo Tokyo Generated</div>
                             </div>
                             <div className="bg-black rounded-xl p-4 border border-gray-600">
