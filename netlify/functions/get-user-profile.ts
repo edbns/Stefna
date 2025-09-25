@@ -78,7 +78,7 @@ export const handler: Handler = async (event) => {
           `, [userId])
         ]).then(results => results.flat()),
         q(`
-          SELECT id, prompt, status, created_at FROM neo_glitch_media WHERE user_id = $1
+          SELECT id, prompt, status, created_at FROM cyber_siren_media WHERE user_id = $1
         `, [userId])
       ]);
 

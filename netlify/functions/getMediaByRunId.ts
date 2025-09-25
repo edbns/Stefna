@@ -77,9 +77,9 @@ export const handler: Handler = async (event, context) => {
        ORDER BY created_at DESC 
        LIMIT 1`,
       
-      // Neo glitch media
-      `SELECT 'neo_glitch' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, GREATEST(COALESCE(likes_count, 0), 0) as likes_count 
-       FROM neo_glitch_media 
+      // Cyber Siren media
+      `SELECT 'cyber_siren' as type, id, user_id, image_url, prompt, preset, run_id, created_at, status, metadata, GREATEST(COALESCE(likes_count, 0), 0) as likes_count 
+       FROM cyber_siren_media 
        WHERE run_id = $1 
        ORDER BY created_at DESC 
        LIMIT 1`,
