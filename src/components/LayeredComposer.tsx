@@ -390,14 +390,17 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 }
                 input.click()
               }}
-              className="px-3 py-1.5 rounded-2xl text-xs font-medium transition-all duration-300 text-black flex items-center gap-2 hover:scale-105 upload"
+              className="px-3 py-1.5 rounded-2xl text-xs font-medium transition-all duration-300 text-white flex items-center gap-2 hover:scale-105 upload relative overflow-hidden"
+              style={{ backgroundColor: '#000000' }}
               title="Upload a photo to get started"
             >
-              <Plus size={16} />
-              Upload
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
+              <Plus size={16} className="relative z-10" />
+              <span className="relative z-10">Upload</span>
             </button>
             
-            {/* Custom Prompt button */}
+            {/* Custom Prompt button - HIDDEN */}
+            {false && (
             <div className="relative" data-custom-dropdown>
               <div className="relative group">
                 <button
@@ -438,6 +441,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 )}
               </div>
             </div>
+            )}
 
             {/* Edit My Photo™ button */}
             <div className="relative" data-edit-dropdown>
