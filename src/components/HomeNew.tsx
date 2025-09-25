@@ -2586,11 +2586,15 @@ const HomeNew: React.FC = () => {
       }
       
       // Map preset ID to Stability.ai preset key
-      const presetMap: { [key: string]: 'base' | 'visor' | 'tattoos' | 'scanlines' } = {
+      const presetMap: { [key: string]: 'base' | 'visor' | 'tattoos' | 'scanlines' | 'silver_proxy' | 'serpent_line' | 'smoke_signal' | 'signal_loss' } = {
         'neo_tokyo_base': 'base',
         'neo_tokyo_visor': 'visor',
         'neo_tokyo_tattoos': 'tattoos',
-        'neo_tokyo_scanlines': 'scanlines'
+        'neo_tokyo_scanlines': 'scanlines',
+        'silver_proxy': 'silver_proxy',
+        'serpent_line': 'serpent_line',
+        'smoke_signal': 'smoke_signal',
+        'signal_loss': 'signal_loss'
       };
       
       const presetKey = presetMap[cyberSirenPresetId];
