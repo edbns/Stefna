@@ -3771,7 +3771,7 @@ const HomeNew: React.FC = () => {
                   'edit': 'edit',
                   'unrealreflection': 'unrealreflection',
                   'ghiblireact': 'ghiblireact',
-                  'neotokyoglitch': 'cyber-siren',
+                  'cyber-siren': 'cyber-siren',
                   'parallelself': 'parallelself'
                 };
                 
