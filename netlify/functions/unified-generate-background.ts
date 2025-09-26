@@ -489,6 +489,7 @@ interface UnifiedGenerationResponse {
   success: boolean;
   status: 'done' | 'failed' | 'timeout';
   provider?: string;
+  model?: string;
   outputUrl?: string;
   error?: string;
   runId?: string;
@@ -1827,6 +1828,114 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
   return await generateWithFal(mode, params);
 }
 
+// Gemini API generation with image editing capabilities
+async function generateWithGemini(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
+  console.log(`🚀 [Background] Starting Gemini API generation for mode: ${mode}`);
+  
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  if (!geminiApiKey) {
+    throw new Error('GEMINI_API_KEY not configured');
+  }
+
+  try {
+    // Convert source image to base64
+    console.log('🔄 [Gemini] Converting source image to base64...');
+    const sourceImageResponse = await fetch(params.sourceUrl);
+    if (!sourceImageResponse.ok) {
+      throw new Error(`Failed to fetch source image: ${sourceImageResponse.status}`);
+    }
+    
+    const imageBuffer = await sourceImageResponse.arrayBuffer();
+    const base64Image = Buffer.from(imageBuffer).toString('base64');
+    console.log(`✅ [Gemini] Image converted to base64 (${base64Image.length} chars)`);
+
+    // Prepare the request payload
+    const requestBody = {
+      contents: [{
+        parts: [
+          {
+            text: params.enhancedPrompt || params.prompt
+          },
+          {
+            inline_data: {
+              mime_type: "image/jpeg",
+              data: base64Image
+            }
+          }
+        ]
+      }]
+    };
+
+    console.log('📤 [Gemini] Sending request to Gemini API...');
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'x-goog-api-key': geminiApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ [Gemini] API response received');
+
+    // Extract the generated image
+    if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
+      throw new Error('Invalid response format from Gemini API');
+    }
+
+    const content = result.candidates[0].content;
+    if (!content.parts || !content.parts[0] || !content.parts[0].inline_data) {
+      throw new Error('No image data found in Gemini response');
+    }
+
+    const imageData = content.parts[0].inline_data.data;
+    const imageBuffer_generated = Buffer.from(imageData, 'base64');
+
+    // Upload to Cloudinary
+    console.log('📤 [Gemini] Uploading generated image to Cloudinary...');
+    const formData = new FormData();
+    formData.append('file', new Blob([imageBuffer_generated], { type: 'image/jpeg' }), 'gemini-generated.jpg');
+    formData.append('folder', 'stefna/generated');
+    formData.append('upload_preset', 'ml_default');
+
+    const cloudinaryResponse = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData
+      }
+    );
+
+    if (!cloudinaryResponse.ok) {
+      throw new Error(`Cloudinary upload failed: ${cloudinaryResponse.status}`);
+    }
+
+    const cloudinaryResult = await cloudinaryResponse.json();
+    console.log('✅ [Gemini] Image uploaded to Cloudinary:', cloudinaryResult.secure_url);
+
+    return {
+      success: true,
+      outputUrl: cloudinaryResult.secure_url,
+      provider: 'gemini',
+      model: 'gemini-2.5-flash-image-preview',
+      runId: params.runId
+    };
+
+  } catch (error: any) {
+    console.error('❌ [Gemini] Generation failed:', error);
+    throw new Error(`Gemini generation failed: ${error.message}`);
+  }
+}
+
 // Fal.ai generation with fallback system
 async function generateWithFal(mode: GenerationMode, params: any): Promise<UnifiedGenerationResponse> {
   console.log(`🚀 [Background] Starting Fal.ai generation for mode: ${mode}`);
@@ -2700,7 +2809,7 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
           result = await generateWithBFL(request.mode, generationParams);
           console.log('✅ [Background] BFL API generation successful');
         } else if (request.mode === 'unreal_reflection') {
-          // Unreal Reflection mode: Fal.ai nano-banana/edit → BFL fallbacks
+          // Unreal Reflection mode: Fal.ai nano-banana/edit → Gemini → BFL fallbacks
           console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit for Unreal Reflection');
           try {
             result = await generateWithFal(request.mode, generationParams);
@@ -2714,32 +2823,54 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             }
             
           } catch (falError) {
-            console.warn('⚠️ [Background] Fal.ai Unreal Reflection failed, trying BFL fallbacks:', falError);
-            // Try BFL fallbacks for Unreal Reflection mode
-            result = await generateWithBFL(request.mode, generationParams);
-            console.log('✅ [Background] BFL Unreal Reflection fallback successful');
-            
-            // 🎬 Video Generation: DISABLED (Too Expensive - $1+ per 5 seconds)
-            if (request.enableVideo && result.success && result.outputUrl) {
-              console.log('🚫 [Background] Video generation disabled - too expensive ($1+ per 5 seconds)');
-              console.log('🚫 [Background] Skipping video generation to prevent costs');
-              // Video generation disabled due to high costs
+            console.warn('⚠️ [Background] Fal.ai Unreal Reflection failed, trying Gemini fallback:', falError);
+            try {
+              // Try Gemini as fallback for Unreal Reflection mode
+              result = await generateWithGemini(request.mode, generationParams);
+              console.log('✅ [Background] Gemini Unreal Reflection fallback successful');
+              
+              // 🎬 Video Generation: DISABLED (Too Expensive - $1+ per 5 seconds)
+              if (request.enableVideo && result.success && result.outputUrl) {
+                console.log('🚫 [Background] Video generation disabled - too expensive ($1+ per 5 seconds)');
+                console.log('🚫 [Background] Skipping video generation to prevent costs');
+                // Video generation disabled due to high costs
+              }
+              
+            } catch (geminiError) {
+              console.warn('⚠️ [Background] Gemini Unreal Reflection failed, trying BFL fallbacks:', geminiError);
+              // Try BFL fallbacks for Unreal Reflection mode
+              result = await generateWithBFL(request.mode, generationParams);
+              console.log('✅ [Background] BFL Unreal Reflection fallback successful');
+              
+              // 🎬 Video Generation: DISABLED (Too Expensive - $1+ per 5 seconds)
+              if (request.enableVideo && result.success && result.outputUrl) {
+                console.log('🚫 [Background] Video generation disabled - too expensive ($1+ per 5 seconds)');
+                console.log('🚫 [Background] Skipping video generation to prevent costs');
+                // Video generation disabled due to high costs
+              }
             }
           }
         } else if (request.mode === 'edit') {
-          // Edit My Photo mode: Fal.ai nano-banana/edit → BFL fallbacks
-          console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit');
+          // Edit My Photo mode: Gemini → Fal.ai nano-banana → BFL fallbacks (TESTING: Gemini as primary)
+          console.log('🎨 [Background] Attempting generation with Gemini API (TESTING: Primary)');
           try {
-        result = await generateWithFal(request.mode, generationParams);
-            console.log('✅ [Background] Fal.ai edit generation successful');
-      } catch (falError) {
-            console.warn('⚠️ [Background] Fal.ai edit failed, trying BFL fallbacks:', falError);
-            // Try BFL fallbacks for edit mode
-            result = await generateWithBFL('edit', generationParams);
-            console.log('✅ [Background] BFL edit fallback successful');
+            result = await generateWithGemini(request.mode, generationParams);
+            console.log('✅ [Background] Gemini edit generation successful');
+          } catch (geminiError) {
+            console.warn('⚠️ [Background] Gemini edit failed, trying Fal.ai fallback:', geminiError);
+            try {
+              // Try Fal.ai as fallback for edit mode
+              result = await generateWithFal(request.mode, generationParams);
+              console.log('✅ [Background] Fal.ai edit fallback successful');
+            } catch (falError) {
+              console.warn('⚠️ [Background] Fal.ai edit failed, trying BFL fallbacks:', falError);
+              // Try BFL fallbacks for edit mode
+              result = await generateWithBFL('edit', generationParams);
+              console.log('✅ [Background] BFL edit fallback successful');
+            }
           }
         } else if (request.mode === 'parallel_self') {
-          // Parallel Self mode: Fal.ai nano-banana/edit → BFL fallbacks
+          // Parallel Self mode: Fal.ai nano-banana/edit → Gemini → BFL fallbacks
           console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit for Parallel Self');
           try {
             result = await generateWithFal(request.mode, generationParams);
@@ -2753,16 +2884,31 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             }
             
           } catch (falError) {
-            console.warn('⚠️ [Background] Fal.ai Parallel Self failed, trying BFL fallbacks:', falError);
-            // Try BFL fallbacks for Parallel Self mode
-            result = await generateWithBFL(request.mode, generationParams);
-            console.log('✅ [Background] BFL Parallel Self fallback successful');
-            
-            // 🎬 Video Generation: DISABLED (Too Expensive - $1+ per 5 seconds)
-            if (request.enableVideo && result.success && result.outputUrl) {
-              console.log('🚫 [Background] Video generation disabled - too expensive ($1+ per 5 seconds)');
-              console.log('🚫 [Background] Skipping video generation to prevent costs');
-              // Video generation disabled due to high costs
+            console.warn('⚠️ [Background] Fal.ai Parallel Self failed, trying Gemini fallback:', falError);
+            try {
+              // Try Gemini as fallback for Parallel Self mode
+              result = await generateWithGemini(request.mode, generationParams);
+              console.log('✅ [Background] Gemini Parallel Self fallback successful');
+              
+              // 🎬 Video Generation: DISABLED (Too Expensive - $1+ per 5 seconds)
+              if (request.enableVideo && result.success && result.outputUrl) {
+                console.log('🚫 [Background] Video generation disabled - too expensive ($1+ per 5 seconds)');
+                console.log('🚫 [Background] Skipping video generation to prevent costs');
+                // Video generation disabled due to high costs
+              }
+              
+            } catch (geminiError) {
+              console.warn('⚠️ [Background] Gemini Parallel Self failed, trying BFL fallbacks:', geminiError);
+              // Try BFL fallbacks for Parallel Self mode
+              result = await generateWithBFL(request.mode, generationParams);
+              console.log('✅ [Background] BFL Parallel Self fallback successful');
+              
+              // 🎬 Video Generation: DISABLED (Too Expensive - $1+ per 5 seconds)
+              if (request.enableVideo && result.success && result.outputUrl) {
+                console.log('🚫 [Background] Video generation disabled - too expensive ($1+ per 5 seconds)');
+                console.log('🚫 [Background] Skipping video generation to prevent costs');
+                // Video generation disabled due to high costs
+              }
             }
           }
         } else if (request.mode === 'story_time') {
