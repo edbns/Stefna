@@ -1962,6 +1962,8 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
 
     // Upload to Cloudinary
     console.log('📤 [Gemini] Uploading generated image to Cloudinary...');
+    console.log('🔍 [Gemini] Image buffer size:', imageBuffer_generated.length, 'bytes');
+    
     const formData = new FormData();
     formData.append('file', new Blob([imageBuffer_generated], { type: 'image/jpeg' }), 'gemini-generated.jpg');
     formData.append('folder', 'stefna/generated');
@@ -1976,7 +1978,9 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
     );
 
     if (!cloudinaryResponse.ok) {
-      throw new Error(`Cloudinary upload failed: ${cloudinaryResponse.status}`);
+      const errorText = await cloudinaryResponse.text();
+      console.error('❌ [Gemini] Cloudinary upload error:', errorText);
+      throw new Error(`Cloudinary upload failed: ${cloudinaryResponse.status} - ${errorText}`);
     }
 
     const cloudinaryResult = await cloudinaryResponse.json();
