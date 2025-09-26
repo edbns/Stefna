@@ -32,8 +32,8 @@ export default function BestPracticesScreen() {
   const presets = [
     {
       mode: "Parallel Self™",
-      title: "Rain Dancer",
-      description: "Cinematic storm, soaked elegance, emotional power."
+      title: "Black Aura",
+      description: "High-fashion editorial, dramatic black and white, powerful presence."
     },
     {
       mode: "Parallel Self™",
@@ -162,7 +162,7 @@ export default function BestPracticesScreen() {
   // Get static image path for preset
   const findMediaForPreset = (presetTitle: string) => {
     const imageMap: Record<string, string> = {
-      'Rain Dancer': '/images/parallel_self_rain_dancer.jpg',
+      'Black Aura': '/images/parallel_self_black_aura.jpg',
       'The Untouchable': '/images/parallel_self_untouchable.jpg?v=' + Date.now(),
       'Holiday Mirage': '/images/parallel_self_holiday_mirage.jpg',
       'Who Got Away': '/images/parallel_self_one_that_got_away.jpg',
