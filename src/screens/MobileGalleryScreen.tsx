@@ -530,8 +530,14 @@ const MobileGalleryScreen: React.FC = () => {
           <button
             onClick={async () => {
               try {
-                const referralCode = (profileData as any).referralCode || 'STEFNA';
-                const shareUrl = `${window.location.origin}?referrer=${referralCode}`;
+                // Use email-based referral system (not referral code)
+                const referrerEmail = authService.getCurrentUser()?.email;
+                if (!referrerEmail) {
+                  notifyError({ title: 'Error', message: 'Unable to get your email for referral' });
+                  return;
+                }
+                
+                const shareUrl = `${window.location.origin}/auth?referrer=${encodeURIComponent(referrerEmail)}`;
                 
                 if (navigator.share) {
                   await navigator.share({
