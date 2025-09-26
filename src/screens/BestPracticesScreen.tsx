@@ -162,7 +162,7 @@ export default function BestPracticesScreen() {
   // Get static image path for preset
   const findMediaForPreset = (presetTitle: string) => {
     const imageMap: Record<string, string> = {
-      'Black Aura': '/images/parallel_self_black_aura.jpg',
+      'Black Aura': '/images/parallel_self_black_aura.jpg?v=' + Date.now(),
       'The Untouchable': '/images/parallel_self_untouchable.jpg?v=' + Date.now(),
       'Holiday Mirage': '/images/parallel_self_holiday_mirage.jpg',
       'Who Got Away': '/images/parallel_self_one_that_got_away.jpg',
