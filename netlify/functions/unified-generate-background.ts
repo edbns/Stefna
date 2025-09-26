@@ -1898,12 +1898,9 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
     // Handle regular response (not streaming)
     const responseData = await response.json();
     console.log('✅ [Gemini] API response received');
-    console.log('🔍 [Gemini] Response keys:', Object.keys(responseData));
 
     // Parse regular response - handle different response structures
     let imageData = null;
-    
-    console.log('🔍 [Gemini] Parsing response structure...');
     
     // Try different response structures
     if (responseData.candidates && responseData.candidates[0]) {
@@ -1911,9 +1908,7 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
       
       // Check if content exists and has parts
       if (candidate.content && candidate.content.parts) {
-        console.log('🔍 [Gemini] Content parts count:', candidate.content.parts.length);
         for (const part of candidate.content.parts) {
-          console.log('🔍 [Gemini] Part keys:', Object.keys(part));
           // Try both camelCase and snake_case formats
           if (part.inlineData && part.inlineData.data) {
             imageData = part.inlineData.data;
@@ -1925,8 +1920,6 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
             break;
           }
         }
-      } else {
-        console.log('🔍 [Gemini] Content structure:', Object.keys(candidate.content || {}));
       }
       
       // Alternative: check if response has direct image data
@@ -1957,12 +1950,10 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
       throw new Error('No image data found in Gemini response');
     }
     
-    console.log(`✅ [Gemini] Image data found (${imageData.length} chars)`);
     const imageBuffer_generated = Buffer.from(imageData, 'base64');
 
     // Upload to Cloudinary using signed upload (same method as Fal.ai)
     console.log('📤 [Gemini] Uploading generated image to Cloudinary...');
-    console.log('🔍 [Gemini] Image buffer size:', imageBuffer_generated.length, 'bytes');
     
     // Convert buffer to base64 for signed upload
     const base64ImageGenerated = imageBuffer_generated.toString('base64');
