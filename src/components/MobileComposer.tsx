@@ -300,7 +300,7 @@ const MobileComposer: React.FC<MobileComposerProps> = ({
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Change something, add something — your call ... tap ✨ for a little magic."
                   className="w-full px-3 py-2 bg-white/10 backdrop-blur-md text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200 h-20 text-base rounded-xl"
-                  maxLength={500}
+                  maxLength={4000}
                 />
                 
                 {/* Generate Button Row with Magic Wand */}

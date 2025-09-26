@@ -50,7 +50,7 @@ export function sanitizePrompt(prompt: string): string {
     // Trim whitespace
     .trim()
     // Limit length (prevent extremely long prompts)
-    .substring(0, 1000);
+    .substring(0, 4000);
 }
 
 /**
