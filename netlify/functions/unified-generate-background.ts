@@ -1840,7 +1840,7 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
   try {
     // Convert source image to base64
     console.log('🔄 [Gemini] Converting source image to base64...');
-    const sourceImageResponse = await fetch(params.sourceUrl);
+    const sourceImageResponse = await fetch(params.sourceAssetId);
     if (!sourceImageResponse.ok) {
       throw new Error(`Failed to fetch source image: ${sourceImageResponse.status}`);
     }
