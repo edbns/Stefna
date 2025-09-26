@@ -1898,21 +1898,51 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
     // Handle regular response (not streaming)
     const responseData = await response.json();
     console.log('✅ [Gemini] API response received');
-    console.log('🔍 [Gemini] Response structure:', JSON.stringify(responseData, null, 2));
+    console.log('🔍 [Gemini] Response keys:', Object.keys(responseData));
+    console.log('🔍 [Gemini] Response structure (truncated):', JSON.stringify(responseData, null, 2).substring(0, 1000) + '...');
 
-    // Parse regular response
+    // Parse regular response - handle different response structures
     let imageData = null;
     
-    if (responseData.candidates && responseData.candidates[0] && responseData.candidates[0].content) {
-      const content = responseData.candidates[0].content;
-      if (content.parts && content.parts[0] && content.parts[0].inline_data) {
-        imageData = content.parts[0].inline_data.data;
+    console.log('🔍 [Gemini] Parsing response structure...');
+    
+    // Try different response structures
+    if (responseData.candidates && responseData.candidates[0]) {
+      const candidate = responseData.candidates[0];
+      console.log('🔍 [Gemini] Candidate structure:', JSON.stringify(candidate, null, 2));
+      
+      // Check if content exists and has parts
+      if (candidate.content && candidate.content.parts) {
+        for (const part of candidate.content.parts) {
+          console.log('🔍 [Gemini] Part type:', part.inline_data ? 'inline_data' : 'text');
+          if (part.inline_data && part.inline_data.data) {
+            imageData = part.inline_data.data;
+            console.log('✅ [Gemini] Found image data in parts');
+            break;
+          }
+        }
       }
+      
+      // Alternative: check if response has direct image data
+      if (!imageData && candidate.inline_data && candidate.inline_data.data) {
+        imageData = candidate.inline_data.data;
+        console.log('✅ [Gemini] Found image data in candidate.inline_data');
+      }
+    }
+    
+    // Additional fallback: check if response has direct image data
+    if (!imageData && responseData.inline_data && responseData.inline_data.data) {
+      imageData = responseData.inline_data.data;
+      console.log('✅ [Gemini] Found image data in response root');
     }
 
     if (!imageData) {
+      console.error('❌ [Gemini] No image data found in response structure');
+      console.error('❌ [Gemini] Full response structure:', JSON.stringify(responseData, null, 2));
       throw new Error('No image data found in Gemini response');
     }
+    
+    console.log(`✅ [Gemini] Image data found (${imageData.length} chars)`);
     const imageBuffer_generated = Buffer.from(imageData, 'base64');
 
     // Upload to Cloudinary
