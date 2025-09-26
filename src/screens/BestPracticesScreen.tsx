@@ -33,7 +33,7 @@ export default function BestPracticesScreen() {
     {
       mode: "Parallel Self™",
       title: "Black Aura",
-      description: "High-fashion editorial, dramatic black and white, powerful presence."
+      description: "Calm dominance in black and white. Still poses, sharp fashion, and a silent black wolf grounded in shadow."
     },
     {
       mode: "Parallel Self™",
