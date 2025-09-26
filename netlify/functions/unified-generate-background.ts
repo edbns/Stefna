@@ -1911,13 +1911,17 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
       
       // Check if content exists and has parts
       if (candidate.content && candidate.content.parts) {
+        console.log('🔍 [Gemini] Content parts count:', candidate.content.parts.length);
         for (const part of candidate.content.parts) {
+          console.log('🔍 [Gemini] Part keys:', Object.keys(part));
           if (part.inline_data && part.inline_data.data) {
             imageData = part.inline_data.data;
             console.log('✅ [Gemini] Found image data in candidate.content.parts');
             break;
           }
         }
+      } else {
+        console.log('🔍 [Gemini] Content structure:', Object.keys(candidate.content || {}));
       }
       
       // Alternative: check if response has direct image data
