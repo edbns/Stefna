@@ -2888,19 +2888,19 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             }
           }
         } else if (request.mode === 'edit') {
-          // Edit My Photo mode: Gemini → Fal.ai nano-banana → BFL fallbacks (TESTING: Gemini as primary)
-          console.log('🎨 [Background] Attempting generation with Gemini API (TESTING: Primary)');
+          // Edit My Photo mode: Fal.ai nano-banana → Gemini → BFL fallbacks
+          console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit for Edit mode');
           try {
-            result = await generateWithGemini(request.mode, generationParams);
-            console.log('✅ [Background] Gemini edit generation successful');
-          } catch (geminiError) {
-            console.warn('⚠️ [Background] Gemini edit failed, trying Fal.ai fallback:', geminiError);
+            result = await generateWithFal(request.mode, generationParams);
+            console.log('✅ [Background] Fal.ai edit generation successful');
+          } catch (falError) {
+            console.warn('⚠️ [Background] Fal.ai edit failed, trying Gemini fallback:', falError);
             try {
-              // Try Fal.ai as fallback for edit mode
-              result = await generateWithFal(request.mode, generationParams);
-              console.log('✅ [Background] Fal.ai edit fallback successful');
-            } catch (falError) {
-              console.warn('⚠️ [Background] Fal.ai edit failed, trying BFL fallbacks:', falError);
+              // Try Gemini as fallback for edit mode
+              result = await generateWithGemini(request.mode, generationParams);
+              console.log('✅ [Background] Gemini edit fallback successful');
+            } catch (geminiError) {
+              console.warn('⚠️ [Background] Gemini edit failed, trying BFL fallbacks:', geminiError);
               // Try BFL fallbacks for edit mode
               result = await generateWithBFL('edit', generationParams);
               console.log('✅ [Background] BFL edit fallback successful');
