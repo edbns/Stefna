@@ -1960,35 +1960,18 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
     console.log(`✅ [Gemini] Image data found (${imageData.length} chars)`);
     const imageBuffer_generated = Buffer.from(imageData, 'base64');
 
-    // Upload to Cloudinary
+    // Upload to Cloudinary using signed upload (same method as Fal.ai)
     console.log('📤 [Gemini] Uploading generated image to Cloudinary...');
     console.log('🔍 [Gemini] Image buffer size:', imageBuffer_generated.length, 'bytes');
     
-    const formData = new FormData();
-    formData.append('file', new Blob([imageBuffer_generated], { type: 'image/jpeg' }), 'gemini-generated.jpg');
-    formData.append('folder', 'stefna/generated');
-    formData.append('upload_preset', 'ml_default');
-
-    const cloudinaryResponse = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: 'POST',
-        body: formData
-      }
-    );
-
-    if (!cloudinaryResponse.ok) {
-      const errorText = await cloudinaryResponse.text();
-      console.error('❌ [Gemini] Cloudinary upload error:', errorText);
-      throw new Error(`Cloudinary upload failed: ${cloudinaryResponse.status} - ${errorText}`);
-    }
-
-    const cloudinaryResult = await cloudinaryResponse.json();
-    console.log('✅ [Gemini] Image uploaded to Cloudinary:', cloudinaryResult.secure_url);
+    // Convert buffer to base64 for signed upload
+    const base64Image = imageBuffer_generated.toString('base64');
+    const cloudinaryUrl = await uploadBase64ToCloudinary(base64Image);
+    console.log('✅ [Gemini] Image uploaded to Cloudinary:', cloudinaryUrl);
 
     return {
       success: true,
-      outputUrl: cloudinaryResult.secure_url,
+      outputUrl: cloudinaryUrl,
       provider: 'gemini',
       model: 'gemini-2.5-flash-image-preview',
       runId: params.runId
