@@ -1886,18 +1886,14 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
 
     const result = await response.json();
     console.log('✅ [Gemini] API response received');
+    console.log('🔍 [Gemini] Response structure:', JSON.stringify(result, null, 2));
 
-    // Extract the generated image
-    if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
-      throw new Error('Invalid response format from Gemini API');
-    }
-
-    const content = result.candidates[0].content;
-    if (!content.parts || !content.parts[0] || !content.parts[0].inline_data) {
+    // Extract the generated image - Gemini returns data directly in response
+    if (!result.data) {
       throw new Error('No image data found in Gemini response');
     }
 
-    const imageData = content.parts[0].inline_data.data;
+    const imageData = result.data;
     const imageBuffer_generated = Buffer.from(imageData, 'base64');
 
     // Upload to Cloudinary
