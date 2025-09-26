@@ -1965,12 +1965,13 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
     console.log('🔍 [Gemini] Image buffer size:', imageBuffer_generated.length, 'bytes');
     
     // Convert buffer to base64 for signed upload
-    const base64Image = imageBuffer_generated.toString('base64');
-    const cloudinaryUrl = await uploadBase64ToCloudinary(base64Image);
+    const base64ImageGenerated = imageBuffer_generated.toString('base64');
+    const cloudinaryUrl = await uploadBase64ToCloudinary(base64ImageGenerated);
     console.log('✅ [Gemini] Image uploaded to Cloudinary:', cloudinaryUrl);
 
     return {
       success: true,
+      status: 'done',
       outputUrl: cloudinaryUrl,
       provider: 'gemini',
       model: 'gemini-2.5-flash-image-preview',
