@@ -1871,13 +1871,6 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
     };
 
     console.log('📤 [Gemini] Sending request to Gemini API...');
-    console.log('🔍 [Gemini] Request body:', JSON.stringify({
-      ...requestBody,
-      contents: requestBody.contents.map(c => ({
-        ...c,
-        parts: c.parts.map(p => p.inline_data ? { ...p, inline_data: { ...p.inline_data, data: `[${p.inline_data.data.length} chars]` } } : p)
-      }))
-    }, null, 2));
     
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${geminiApiKey}`,
