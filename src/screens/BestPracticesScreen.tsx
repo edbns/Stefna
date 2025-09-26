@@ -163,7 +163,7 @@ export default function BestPracticesScreen() {
   const findMediaForPreset = (presetTitle: string) => {
     const imageMap: Record<string, string> = {
       'Rain Dancer': '/images/parallel_self_rain_dancer.jpg',
-      'The Untouchable': '/images/parallel_self_untouchable.jpg',
+      'The Untouchable': '/images/parallel_self_untouchable.jpg?v=' + Date.now(),
       'Holiday Mirage': '/images/parallel_self_holiday_mirage.jpg',
       'Who Got Away': '/images/parallel_self_one_that_got_away.jpg',
       'Nightshade': '/images/parallel_self_nightshade.jpg',

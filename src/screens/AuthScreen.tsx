@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, ArrowLeft, ArrowRight, CheckCircle, XCircle } from 'lucide-react'
 import authService from '../services/authService'
@@ -10,16 +10,42 @@ const AuthScreen: React.FC = () => {
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState<'email' | 'otp'>('email')
   const [isLoading, setIsLoading] = useState(false)
+  const [isResending, setIsResending] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showWaitlistModal, setShowWaitlistModal] = useState(false)
   const [quotaReached, setQuotaReached] = useState(false)
+  const [resendTimer, setResendTimer] = useState(0)
+  const [otpRequestTime, setOtpRequestTime] = useState<Date | null>(null)
   
   // Extract referrer email from URL parameters
   const [referrerEmail] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search)
     return urlParams.get('referrer') || ''
   })
+
+  // Countdown timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+
+    if (otpRequestTime && resendTimer > 0) {
+      interval = setInterval(() => {
+        const now = new Date()
+        const elapsed = Math.floor((now.getTime() - otpRequestTime.getTime()) / 1000)
+        const remaining = Math.max(0, 600 - elapsed) // 10 minutes = 600 seconds
+
+        setResendTimer(remaining)
+
+        if (remaining === 0) {
+          if (interval) clearInterval(interval)
+        }
+      }, 1000)
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [otpRequestTime, resendTimer])
 
   const handleRequestOTP = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,6 +90,9 @@ const AuthScreen: React.FC = () => {
       if (response.ok) {
         setSuccess('Login code sent to your email!')
         setStep('otp')
+        // Start 10-minute countdown timer
+        setOtpRequestTime(new Date())
+        setResendTimer(600) // 10 minutes = 600 seconds
       } else {
         setError(data.error || 'Failed to send code')
       }
@@ -127,6 +156,47 @@ const AuthScreen: React.FC = () => {
     setOtp('')
     setError('')
     setSuccess('')
+    setResendTimer(0)
+    setOtpRequestTime(null)
+  }
+
+  // Format countdown time
+  const formatCountdown = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+  }
+
+  const handleResendOTP = async () => {
+    setIsResending(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const response = await fetch('/.netlify/functions/request-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setSuccess('New login code sent!')
+        setOtp('') // Clear the OTP input
+        // Restart 10-minute countdown timer
+        setOtpRequestTime(new Date())
+        setResendTimer(600) // 10 minutes = 600 seconds
+      } else {
+        setError(data.error || 'Failed to resend code')
+      }
+    } catch (err) {
+      setError('Network error. Please try again.')
+    } finally {
+      setIsResending(false)
+    }
   }
 
   return (
@@ -144,6 +214,11 @@ const AuthScreen: React.FC = () => {
               : `We sent a 6-digit code to ${email}`
             }
           </p>
+          {step === 'otp' && (
+            <p className="text-white/40 text-sm mt-2">
+              No code? Check in your <span className="text-red-400 font-medium">spam</span> folder
+            </p>
+          )}
         </div>
 
         {/* Referral Bonus Indicator */}
@@ -236,6 +311,18 @@ const AuthScreen: React.FC = () => {
                   maxLength={6}
                   required
                 />
+              </div>
+
+              {/* Resend OTP Button */}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={isResending || isLoading || resendTimer > 0}
+                  className="text-white/60 hover:text-white text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isResending ? 'Sending...' : resendTimer > 0 ? `Resend code (${formatCountdown(resendTimer)})` : 'Resend code'}
+                </button>
               </div>
 
               {/* Action Buttons */}
