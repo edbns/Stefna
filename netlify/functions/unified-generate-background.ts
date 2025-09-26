@@ -1899,7 +1899,6 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
     const responseData = await response.json();
     console.log('✅ [Gemini] API response received');
     console.log('🔍 [Gemini] Response keys:', Object.keys(responseData));
-    console.log('🔍 [Gemini] Response structure (truncated):', JSON.stringify(responseData, null, 2).substring(0, 1000) + '...');
 
     // Parse regular response - handle different response structures
     let imageData = null;
@@ -1909,15 +1908,13 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
     // Try different response structures
     if (responseData.candidates && responseData.candidates[0]) {
       const candidate = responseData.candidates[0];
-      console.log('🔍 [Gemini] Candidate structure:', JSON.stringify(candidate, null, 2));
       
       // Check if content exists and has parts
       if (candidate.content && candidate.content.parts) {
         for (const part of candidate.content.parts) {
-          console.log('🔍 [Gemini] Part type:', part.inline_data ? 'inline_data' : 'text');
           if (part.inline_data && part.inline_data.data) {
             imageData = part.inline_data.data;
-            console.log('✅ [Gemini] Found image data in parts');
+            console.log('✅ [Gemini] Found image data in candidate.content.parts');
             break;
           }
         }
@@ -1938,7 +1935,10 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
 
     if (!imageData) {
       console.error('❌ [Gemini] No image data found in response structure');
-      console.error('❌ [Gemini] Full response structure:', JSON.stringify(responseData, null, 2));
+      console.error('❌ [Gemini] Response keys:', Object.keys(responseData));
+      if (responseData.candidates && responseData.candidates[0]) {
+        console.error('❌ [Gemini] Candidate keys:', Object.keys(responseData.candidates[0]));
+      }
       throw new Error('No image data found in Gemini response');
     }
     
