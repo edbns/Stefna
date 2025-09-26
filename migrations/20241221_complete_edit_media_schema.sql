@@ -8,7 +8,7 @@
 -- Step 1: Add missing columns to edit_media table
 ALTER TABLE edit_media ADD COLUMN IF NOT EXISTS preset TEXT DEFAULT 'edit';
 
--- Step 2: Add stability_job_id column (for neo_glitch compatibility)
+-- Step 2: Add stability_job_id column (for cyber_siren compatibility)
 ALTER TABLE edit_media ADD COLUMN IF NOT EXISTS stability_job_id TEXT;
 
 -- Step 3: Add preset_week column (for presets compatibility)

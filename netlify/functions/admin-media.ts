@@ -68,7 +68,7 @@ export const handler: Handler = async (event) => {
       // Get media from all tables
       const media = await q(`
         WITH all_media AS (
-          SELECT 'neo_glitch' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM neo_glitch_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'cyber_siren' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM cyber_siren_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
@@ -89,7 +89,7 @@ export const handler: Handler = async (event) => {
       // Get total count
       const totalCount = await q(`
         WITH all_media AS (
-          SELECT 'neo_glitch' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM neo_glitch_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'cyber_siren' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM cyber_siren_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
@@ -110,14 +110,14 @@ export const handler: Handler = async (event) => {
         SELECT 
           COUNT(*) as total_media,
           COUNT(DISTINCT user_id) as unique_users,
-          COUNT(CASE WHEN type = 'neo_glitch' THEN 1 END) as neo_glitch_count,
+          COUNT(CASE WHEN type = 'cyber_siren' THEN 1 END) as cyber_siren_count,
           COUNT(CASE WHEN type = 'presets' THEN 1 END) as presets_count,
           COUNT(CASE WHEN type = 'unreal_reflection' THEN 1 END) as unreal_reflection_count,
           COUNT(CASE WHEN type = 'ghibli_reaction' THEN 1 END) as ghibli_reaction_count,
           COUNT(CASE WHEN type = 'custom_prompt' THEN 1 END) as custom_prompt_count,
           COUNT(CASE WHEN type = 'edit' THEN 1 END) as edit_count
         FROM (
-          SELECT 'neo_glitch' as type, user_id FROM neo_glitch_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'cyber_siren' as type, user_id FROM cyber_siren_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'presets' as type, user_id FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
@@ -155,8 +155,8 @@ export const handler: Handler = async (event) => {
 
       let deleteResult
       switch (type) {
-        case 'neo_glitch':
-          deleteResult = await q(`DELETE FROM neo_glitch_media WHERE id = $1`, [id])
+        case 'cyber_siren':
+          deleteResult = await q(`DELETE FROM cyber_siren_media WHERE id = $1`, [id])
           break
         case 'presets':
           deleteResult = await q(`DELETE FROM presets_media WHERE id = $1`, [id])

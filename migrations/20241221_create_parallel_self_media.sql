@@ -83,7 +83,7 @@ BEGIN
                 UNION ALL
                 SELECT user_id FROM ghibli_reaction_media WHERE id = NEW.media_id AND NEW.media_type = 'ghibli_reaction'
                 UNION ALL
-                SELECT user_id FROM neo_glitch_media WHERE id = NEW.media_id AND NEW.media_type = 'neo_glitch'
+                SELECT user_id FROM cyber_siren_media WHERE id = NEW.media_id AND NEW.media_type = 'cyber_siren'
                 UNION ALL
                 SELECT user_id FROM presets_media WHERE id = NEW.media_id AND NEW.media_type = 'presets'
                 UNION ALL
@@ -108,7 +108,7 @@ BEGIN
                 UNION ALL
                 SELECT user_id FROM ghibli_reaction_media WHERE id = OLD.media_id AND OLD.media_type = 'ghibli_reaction'
                 UNION ALL
-                SELECT user_id FROM neo_glitch_media WHERE id = OLD.media_id AND OLD.media_type = 'neo_glitch'
+                SELECT user_id FROM cyber_siren_media WHERE id = OLD.media_id AND OLD.media_type = 'cyber_siren'
                 UNION ALL
                 SELECT user_id FROM presets_media WHERE id = OLD.media_id AND NEW.media_type = 'presets'
                 UNION ALL
@@ -139,7 +139,7 @@ BEGIN
         
         -- Add the new constraint with parallel_self included
         ALTER TABLE likes ADD CONSTRAINT likes_media_type_check 
-            CHECK (media_type IN ('custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'neo_glitch', 'presets', 'story', 'edit', 'parallel_self'));
+            CHECK (media_type IN ('custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'cyber_siren', 'presets', 'story', 'edit', 'parallel_self'));
         
         RAISE NOTICE 'Updated likes_media_type_check constraint to include parallel_self';
     ELSE
@@ -161,7 +161,7 @@ BEGIN
         
         -- Add the new constraint with parallel_self included
         ALTER TABLE credits_ledger ADD CONSTRAINT credits_ledger_media_type_check 
-            CHECK (media_type IN ('custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'neo_glitch', 'presets', 'story', 'edit', 'parallel_self'));
+            CHECK (media_type IN ('custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'cyber_siren', 'presets', 'story', 'edit', 'parallel_self'));
         
         RAISE NOTICE 'Updated credits_ledger_media_type_check constraint to include parallel_self';
     ELSE

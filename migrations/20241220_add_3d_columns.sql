@@ -27,7 +27,7 @@ ADD COLUMN IF NOT EXISTS gltf_url TEXT,
 ADD COLUMN IF NOT EXISTS texture_url TEXT,
 ADD COLUMN IF NOT EXISTS model_3d_metadata JSONB;
 
-ALTER TABLE neo_glitch_media 
+ALTER TABLE cyber_siren_media 
 ADD COLUMN IF NOT EXISTS obj_url TEXT,
 ADD COLUMN IF NOT EXISTS gltf_url TEXT,
 ADD COLUMN IF NOT EXISTS texture_url TEXT,
@@ -63,7 +63,7 @@ CREATE INDEX IF NOT EXISTS idx_unreal_reflection_media_3d ON unreal_reflection_m
 CREATE INDEX IF NOT EXISTS idx_presets_media_3d ON presets_media(obj_url, gltf_url) WHERE obj_url IS NOT NULL OR gltf_url IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_custom_prompt_media_3d ON custom_prompt_media(obj_url, gltf_url) WHERE obj_url IS NOT NULL OR gltf_url IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_ghibli_reaction_media_3d ON ghibli_reaction_media(obj_url, gltf_url) WHERE obj_url IS NOT NULL OR gltf_url IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_neo_glitch_media_3d ON neo_glitch_media(obj_url, gltf_url) WHERE obj_url IS NOT NULL OR gltf_url IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_cyber_siren_media_3d ON cyber_siren_media(obj_url, gltf_url) WHERE obj_url IS NOT NULL OR gltf_url IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_edit_media_3d ON edit_media(obj_url, gltf_url) WHERE obj_url IS NOT NULL OR gltf_url IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_story_3d ON story(obj_url, gltf_url) WHERE obj_url IS NOT NULL OR gltf_url IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_story_photo_3d ON story_photo(obj_url, gltf_url) WHERE obj_url IS NOT NULL OR gltf_url IS NOT NULL;
@@ -75,6 +75,6 @@ SELECT
     column_name,
     data_type
 FROM information_schema.columns 
-WHERE table_name IN ('unreal_reflection_media', 'presets_media', 'custom_prompt_media', 'ghibli_reaction_media', 'neo_glitch_media', 'edit_media', 'story', 'story_photo', 'video_jobs')
+WHERE table_name IN ('unreal_reflection_media', 'presets_media', 'custom_prompt_media', 'ghibli_reaction_media', 'cyber_siren_media', 'edit_media', 'story', 'story_photo', 'video_jobs')
 AND column_name IN ('obj_url', 'gltf_url', 'texture_url', 'model_3d_metadata')
 ORDER BY table_name, column_name;

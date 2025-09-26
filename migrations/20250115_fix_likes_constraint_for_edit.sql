@@ -6,4 +6,4 @@ ALTER TABLE likes DROP CONSTRAINT IF EXISTS likes_media_type_check;
 
 -- Add the updated constraint that includes 'edit'
 ALTER TABLE likes ADD CONSTRAINT likes_media_type_check 
-CHECK (media_type IN ('custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'neo_glitch', 'presets', 'story', 'edit'));
+CHECK (media_type IN ('custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'cyber_siren', 'presets', 'story', 'edit'));

@@ -25,7 +25,7 @@ BEGIN
                 UNION ALL
                 SELECT user_id FROM ghibli_reaction_media WHERE id = NEW.media_id AND NEW.media_type = 'ghibli_reaction'
                 UNION ALL
-                SELECT user_id FROM neo_glitch_media WHERE id = NEW.media_id AND NEW.media_type = 'neo_glitch'
+                SELECT user_id FROM cyber_siren_media WHERE id = NEW.media_id AND NEW.media_type = 'cyber_siren'
                 UNION ALL
                 SELECT user_id FROM presets_media WHERE id = NEW.media_id AND NEW.media_type = 'presets'
                 UNION ALL
@@ -48,7 +48,7 @@ BEGIN
                 UNION ALL
                 SELECT user_id FROM ghibli_reaction_media WHERE id = OLD.media_id AND OLD.media_type = 'ghibli_reaction'
                 UNION ALL
-                SELECT user_id FROM neo_glitch_media WHERE id = OLD.media_id AND OLD.media_type = 'neo_glitch'
+                SELECT user_id FROM cyber_siren_media WHERE id = OLD.media_id AND OLD.media_type = 'cyber_siren'
                 UNION ALL
                 SELECT user_id FROM presets_media WHERE id = OLD.media_id AND OLD.media_type = 'presets'
                 UNION ALL

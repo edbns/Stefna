@@ -157,8 +157,8 @@ CREATE TABLE IF NOT EXISTS ghibli_reaction_media (
     metadata JSONB DEFAULT '{}'
 );
 
--- Neo glitch media table
-CREATE TABLE IF NOT EXISTS neo_glitch_media (
+-- Cyber siren media table
+CREATE TABLE IF NOT EXISTS cyber_siren_media (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     image_url TEXT, -- Nullable: populated when job completes
@@ -356,10 +356,10 @@ CREATE INDEX IF NOT EXISTS idx_ghibli_reaction_media_user_id_created_at ON ghibl
 CREATE INDEX IF NOT EXISTS idx_ghibli_reaction_media_fal_job_id ON ghibli_reaction_media(fal_job_id);
 CREATE INDEX IF NOT EXISTS idx_ghibli_reaction_media_preset ON ghibli_reaction_media(preset);
 
-CREATE INDEX IF NOT EXISTS idx_neo_glitch_media_stability_job_id ON neo_glitch_media(stability_job_id);
-CREATE INDEX IF NOT EXISTS idx_neo_glitch_media_status ON neo_glitch_media(status);
-CREATE INDEX IF NOT EXISTS idx_neo_glitch_media_user_id_created_at ON neo_glitch_media(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_neo_glitch_media_preset ON neo_glitch_media(preset);
+CREATE INDEX IF NOT EXISTS idx_cyber_siren_media_stability_job_id ON cyber_siren_media(stability_job_id);
+CREATE INDEX IF NOT EXISTS idx_cyber_siren_media_status ON cyber_siren_media(status);
+CREATE INDEX IF NOT EXISTS idx_cyber_siren_media_user_id_created_at ON cyber_siren_media(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_cyber_siren_media_preset ON cyber_siren_media(preset);
 
 CREATE INDEX IF NOT EXISTS idx_presets_media_status ON presets_media(status);
 CREATE INDEX IF NOT EXISTS idx_presets_media_user_id_created_at ON presets_media(user_id, created_at DESC);
@@ -499,7 +499,7 @@ SELECT 'unreal_reflection_media', COUNT(*) FROM unreal_reflection_media
 UNION ALL
 SELECT 'ghibli_reaction_media', COUNT(*) FROM ghibli_reaction_media
 UNION ALL
-SELECT 'neo_glitch_media', COUNT(*) FROM neo_glitch_media
+SELECT 'cyber_siren_media', COUNT(*) FROM cyber_siren_media
 UNION ALL
 SELECT 'presets_media', COUNT(*) FROM presets_media
 UNION ALL

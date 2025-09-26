@@ -26,7 +26,7 @@ export const handler: Handler = async (event) => {
     // Add the updated constraint that includes 'edit'
     console.log('🔧 [fix-likes-constraint] Adding updated constraint...');
     await q(`ALTER TABLE likes ADD CONSTRAINT likes_media_type_check 
-             CHECK (media_type IN ('custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'neo_glitch', 'presets', 'story', 'edit'))`);
+             CHECK (media_type IN ('custom_prompt', 'unreal_reflection', 'ghibli_reaction', 'cyber_siren', 'presets', 'story', 'edit'))`);
 
     console.log('✅ [fix-likes-constraint] Constraint updated successfully!');
 

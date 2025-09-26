@@ -9,7 +9,7 @@
 ALTER TABLE custom_prompt_media ADD CONSTRAINT check_likes_count_non_negative CHECK (likes_count >= 0);
 ALTER TABLE unreal_reflection_media ADD CONSTRAINT check_likes_count_non_negative CHECK (likes_count >= 0);
 ALTER TABLE ghibli_reaction_media ADD CONSTRAINT check_likes_count_non_negative CHECK (likes_count >= 0);
-ALTER TABLE neo_glitch_media ADD CONSTRAINT check_likes_count_non_negative CHECK (likes_count >= 0);
+ALTER TABLE cyber_siren_media ADD CONSTRAINT check_likes_count_non_negative CHECK (likes_count >= 0);
 ALTER TABLE presets_media ADD CONSTRAINT check_likes_count_non_negative CHECK (likes_count >= 0);
 ALTER TABLE edit_media ADD CONSTRAINT check_likes_count_non_negative CHECK (likes_count >= 0);
 
