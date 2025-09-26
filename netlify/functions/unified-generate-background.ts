@@ -1914,9 +1914,14 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
         console.log('🔍 [Gemini] Content parts count:', candidate.content.parts.length);
         for (const part of candidate.content.parts) {
           console.log('🔍 [Gemini] Part keys:', Object.keys(part));
-          if (part.inline_data && part.inline_data.data) {
+          // Try both camelCase and snake_case formats
+          if (part.inlineData && part.inlineData.data) {
+            imageData = part.inlineData.data;
+            console.log('✅ [Gemini] Found image data in candidate.content.parts (camelCase)');
+            break;
+          } else if (part.inline_data && part.inline_data.data) {
             imageData = part.inline_data.data;
-            console.log('✅ [Gemini] Found image data in candidate.content.parts');
+            console.log('✅ [Gemini] Found image data in candidate.content.parts (snake_case)');
             break;
           }
         }
@@ -1925,16 +1930,22 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
       }
       
       // Alternative: check if response has direct image data
-      if (!imageData && candidate.inline_data && candidate.inline_data.data) {
+      if (!imageData && candidate.inlineData && candidate.inlineData.data) {
+        imageData = candidate.inlineData.data;
+        console.log('✅ [Gemini] Found image data in candidate.inlineData (camelCase)');
+      } else if (!imageData && candidate.inline_data && candidate.inline_data.data) {
         imageData = candidate.inline_data.data;
-        console.log('✅ [Gemini] Found image data in candidate.inline_data');
+        console.log('✅ [Gemini] Found image data in candidate.inline_data (snake_case)');
       }
     }
     
     // Additional fallback: check if response has direct image data
-    if (!imageData && responseData.inline_data && responseData.inline_data.data) {
+    if (!imageData && responseData.inlineData && responseData.inlineData.data) {
+      imageData = responseData.inlineData.data;
+      console.log('✅ [Gemini] Found image data in response root (camelCase)');
+    } else if (!imageData && responseData.inline_data && responseData.inline_data.data) {
       imageData = responseData.inline_data.data;
-      console.log('✅ [Gemini] Found image data in response root');
+      console.log('✅ [Gemini] Found image data in response root (snake_case)');
     }
 
     if (!imageData) {
