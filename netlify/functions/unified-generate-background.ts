@@ -1849,9 +1849,10 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
     const base64Image = Buffer.from(imageBuffer).toString('base64');
     console.log(`✅ [Gemini] Image converted to base64 (${base64Image.length} chars)`);
 
-    // Prepare the request payload
+    // Prepare the request payload with correct format
     const requestBody = {
       contents: [{
+        role: "user",
         parts: [
           {
             text: params.enhancedPrompt || params.prompt
@@ -1863,16 +1864,18 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
             }
           }
         ]
-      }]
+      }],
+      generationConfig: {
+        responseModalities: ["IMAGE", "TEXT"]
+      }
     };
 
     console.log('📤 [Gemini] Sending request to Gemini API...');
     const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent',
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:streamGenerateContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: {
-          'x-goog-api-key': geminiApiKey,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody)
@@ -1884,16 +1887,38 @@ async function generateWithGemini(mode: GenerationMode, params: any): Promise<Un
       throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
-    const result = await response.json();
+    // Handle streaming response
+    const responseText = await response.text();
     console.log('✅ [Gemini] API response received');
-    console.log('🔍 [Gemini] Response structure:', JSON.stringify(result, null, 2));
+    console.log('🔍 [Gemini] Response structure:', responseText.substring(0, 500) + '...');
 
-    // Extract the generated image - Gemini returns data directly in response
-    if (!result.data) {
-      throw new Error('No image data found in Gemini response');
+    // Parse streaming response - each line is a JSON object
+    const lines = responseText.trim().split('\n');
+    let imageData = null;
+    
+    for (const line of lines) {
+      if (line.trim()) {
+        try {
+          const chunk = JSON.parse(line);
+          console.log('🔍 [Gemini] Chunk:', JSON.stringify(chunk, null, 2));
+          
+          // Look for image data in the streaming response
+          if (chunk.candidates && chunk.candidates[0] && chunk.candidates[0].content) {
+            const content = chunk.candidates[0].content;
+            if (content.parts && content.parts[0] && content.parts[0].inline_data) {
+              imageData = content.parts[0].inline_data.data;
+              break;
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ [Gemini] Failed to parse chunk:', line);
+        }
+      }
     }
 
-    const imageData = result.data;
+    if (!imageData) {
+      throw new Error('No image data found in Gemini streaming response');
+    }
     const imageBuffer_generated = Buffer.from(imageData, 'base64');
 
     // Upload to Cloudinary
