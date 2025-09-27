@@ -99,10 +99,6 @@ const MobileGalleryScreen: React.FC = () => {
   // Generation loading state
   const [isGenerating, setIsGenerating] = useState(false);
   
-  // Debug isGenerating state changes
-  useEffect(() => {
-    console.log('🔍 [MobileGallery] isGenerating state changed to:', isGenerating);
-  }, [isGenerating]);
 
   // Load user media and token count
   useEffect(() => {
@@ -232,12 +228,6 @@ const MobileGalleryScreen: React.FC = () => {
       window.addEventListener('generation:start', handleGenerationStart);
       window.addEventListener('generation:done', handleGenerationEnd);
       
-      // Test event listener setup
-      console.log('🧪 Testing event listener setup...');
-      setTimeout(() => {
-        console.log('🧪 Dispatching test generation:start event');
-        window.dispatchEvent(new CustomEvent('generation:start', { detail: { kind: 'image', test: true } }));
-      }, 1000);
     }
 
     return () => {
@@ -606,15 +596,20 @@ const MobileGalleryScreen: React.FC = () => {
         ) : (
           <div className="w-full px-4 py-4">
             {/* Generation loading overlay */}
-            {console.log('🔍 Mobile gallery render - isGenerating:', isGenerating)}
             {isGenerating && (
               <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
                 <div className="bg-black/90 p-8 flex flex-col items-center max-w-sm mx-4">
                   <div className="w-12 h-12 border-3 border-white/30 border-t-white rounded-full animate-spin mb-6"></div>
                   <h3 className="text-white text-lg font-semibold mb-2">Creating Your Media</h3>
                   <p className="text-white/80 text-sm text-center">Please wait while we process your request...</p>
-                  <div className="mt-4 w-full bg-white/20 rounded-full h-1">
-                    <div className="bg-white h-1 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                  <div className="mt-4 w-full bg-white/20 rounded-full h-1 overflow-hidden">
+                    <div 
+                      className="bg-white h-1 rounded-full transition-all duration-[3000ms] ease-out" 
+                      style={{ 
+                        width: '0%',
+                        animation: 'progressFill 8s ease-out forwards'
+                      }}
+                    ></div>
                   </div>
                 </div>
               </div>

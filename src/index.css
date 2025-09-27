@@ -319,4 +319,29 @@ body {
 .nav-icon img {
   display: block;
   flex-shrink: 0;
+}
+
+/* Progress bar animation for generation loading */
+@keyframes progressFill {
+  0% {
+    width: 0%;
+  }
+  20% {
+    width: 15%;
+  }
+  40% {
+    width: 35%;
+  }
+  60% {
+    width: 55%;
+  }
+  80% {
+    width: 75%;
+  }
+  95% {
+    width: 90%;
+  }
+  100% {
+    width: 95%;
+  }
 } 
