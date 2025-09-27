@@ -318,9 +318,15 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     
                     // Redirect immediately to gallery on mobile, profile on desktop
                     console.log('🔄 Redirecting:', { isMobile, target: isMobile ? '/' : '/profile' })
-                    navigate(isMobile ? '/' : '/profile')
+                    const targetPath = isMobile ? '/' : '/profile'
+                    console.log('🔄 About to navigate to:', targetPath)
+                    navigate(targetPath)
+                    console.log('🔄 Navigate called, now dispatching close-composer event')
                     
-                    window.dispatchEvent(new CustomEvent('close-composer'));
+                    // Small delay to ensure navigation happens first
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('close-composer'));
+                    }, 100)
                     
                     try {
                       if (composerState.mode === 'custom') {
