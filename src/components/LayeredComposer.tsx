@@ -501,77 +501,78 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           </div>
         )}
 
+        {/* Mobile: Media Preview Above Prompt (Always Visible When Uploaded) */}
+        {isMobile && previewUrl && composerState.mode !== 'custom' && (
+          <div className="px-4 py-3">
+            <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block border max-w-xs mx-auto" style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
+              
+              {/* Media display */}
+              <div className="flex justify-center mb-3">
+                {isVideoPreview ? (
+                  <video 
+                    ref={(el) => {
+                      if (mediaRef.current) {
+                        (mediaRef.current as any) = el
+                      }
+                    }} 
+                    src={previewUrl} 
+                    className="max-h-48 w-auto object-contain" 
+                    controls 
+                    onLoadedMetadata={measure} 
+                    onLoadedData={measure} 
+                  />
+                ) : (
+                  <img 
+                    ref={(el) => {
+                      if (mediaRef.current) {
+                        (mediaRef.current as any) = el as HTMLImageElement
+                      }
+                    }} 
+                    src={previewUrl} 
+                    alt="Uploaded media" 
+                    className="max-h-48 w-auto object-contain" 
+                    onLoad={measure}
+                    onError={(e) => {
+                      console.error('❌ Image failed to load:', previewUrl, e)
+                    }}
+                  />
+                )}
+              </div>
+              
+              {/* Close button under the media */}
+              <div className="flex justify-center">
+                <button
+                  onClick={() => {
+                    // Clear preview
+                    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+                    if (fileInput) fileInput.value = ''
+                    
+                    // Clear the selected file in parent component
+                    onClearFile()
+                    
+                    // Reset composer to default state (switch back to Custom mode)
+                    setComposerState((s: any) => ({ ...s, mode: 'custom' }))
+                    setSelectedMode(null)
+                    closeAllDropdowns()
+                    
+                    // Auto-collapse when media is removed
+                    if (setIsExpanded) {
+                      setIsExpanded(false)
+                    }
+                  }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-black text-white hover:bg-white/10"
+                  aria-label="Remove media"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mobile Collapsible Section */}
         {isMobile && (
           <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-            {/* Media Preview in Expanded Section */}
-            {previewUrl && composerState.mode !== 'custom' && (
-              <div className="px-4 py-3">
-                <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block border max-w-xs mx-auto" style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
-                  
-                  {/* Media display */}
-                  <div className="flex justify-center mb-3">
-                    {isVideoPreview ? (
-                      <video 
-                        ref={(el) => {
-                          if (mediaRef.current) {
-                            (mediaRef.current as any) = el
-                          }
-                        }} 
-                        src={previewUrl} 
-                        className="max-h-48 w-auto object-contain" 
-                        controls 
-                        onLoadedMetadata={measure} 
-                        onLoadedData={measure} 
-                      />
-                    ) : (
-                      <img 
-                        ref={(el) => {
-                          if (mediaRef.current) {
-                            (mediaRef.current as any) = el as HTMLImageElement
-                          }
-                        }} 
-                        src={previewUrl} 
-                        alt="Uploaded media" 
-                        className="max-h-48 w-auto object-contain" 
-                        onLoad={measure}
-                        onError={(e) => {
-                          console.error('❌ Image failed to load:', previewUrl, e)
-                        }}
-                      />
-                    )}
-                  </div>
-                  
-                  {/* Close button under the media */}
-                  <div className="flex justify-center">
-                    <button
-                      onClick={() => {
-                        // Clear preview
-                        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-                        if (fileInput) fileInput.value = ''
-                        
-                        // Clear the selected file in parent component
-                        onClearFile()
-                        
-                        // Reset composer to default state (switch back to Custom mode)
-                        setComposerState((s: any) => ({ ...s, mode: 'custom' }))
-                        setSelectedMode(null)
-                        closeAllDropdowns()
-                        
-                        // Auto-collapse when media is removed
-                        if (setIsExpanded) {
-                          setIsExpanded(false)
-                        }
-                      }}
-                      className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-black text-white hover:bg-white/10"
-                      aria-label="Remove media"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Mode Buttons in Expanded Section */}
             <div className="flex items-center justify-center gap-2 flex-wrap px-4 pb-3">
@@ -610,36 +611,6 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
             </button>
                   </div>
 
-            {/* Studio Button */}
-            <div className="relative">
-                <button
-                  onClick={async () => {
-                    if (!checkAuthAndRedirect()) return
-                    
-                    // Require photo upload first
-                    if (!selectedFile) {
-                      return
-                    }
-                    
-                    if (composerState.mode === 'edit') {
-                      closeAllDropdowns()
-                    } else {
-                      closeAllDropdowns()
-                      setComposerState((s: any) => ({ ...s, mode: 'edit' }))
-                      setSelectedMode('presets')
-                    }
-                  }}
-                  className={
-                    composerState.mode === 'edit'
-                      ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                      : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
-                  }
-                  style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
-                title={!selectedFile ? 'Upload a photo first to use Studio mode' : 'Switch to Studio mode'}
-                >
-                  Studio
-                </button>
-            </div>
 
             {/* Unreal Reflection™ Button */}
             <div className="relative">
