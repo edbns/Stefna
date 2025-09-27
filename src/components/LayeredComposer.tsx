@@ -678,7 +678,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Unreal Reflection™ presets dropdown */}
               {composerState.mode === 'unrealreflection' && unrealReflectionDropdownOpen && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
+                <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[999999]">
                   <UnrealReflectionPicker
                     value={selectedUnrealReflectionPreset || undefined}
                     onVideoToggle={(enabled) => {
@@ -749,7 +749,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Parallel Self™ presets dropdown */}
               {composerState.mode === 'parallelself' && parallelSelfDropdownOpen && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
+                <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[999999]">
                   <ParallelSelfPicker
                     value={selectedParallelSelfPreset || undefined}
                     onChange={async (presetId) => {
@@ -913,7 +913,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Custom tooltip */}
               {!selectedFile && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[999999]" style={{ backgroundColor: '#000000' }}>
                     Upload a photo first to use Studio mode
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                 </div>
@@ -960,7 +960,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Custom tooltip */}
               {!selectedFile && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[999999]" style={{ backgroundColor: '#000000' }}>
                   Upload a photo first to use Unreal Reflection™
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                 </div>
@@ -969,7 +969,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Unreal Reflection™ presets dropdown */}
               {composerState.mode === 'unrealreflection' && unrealReflectionDropdownOpen && (
-                <div className="absolute bottom-full left-0 mb-2 z-50">
+                <div className="absolute bottom-full left-0 mb-2 z-[999999]">
                   <UnrealReflectionPicker
                     value={selectedUnrealReflectionPreset || undefined}
                     onVideoToggle={(enabled) => {
@@ -1042,7 +1042,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Custom tooltip */}
               {!selectedFile && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[999999]" style={{ backgroundColor: '#000000' }}>
                   Upload a photo first to use Parallel Self™
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                 </div>
@@ -1051,7 +1051,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Parallel Self™ presets dropdown */}
               {composerState.mode === 'parallelself' && parallelSelfDropdownOpen && (
-                <div className="absolute bottom-full left-0 mb-2 z-50">
+                <div className="absolute bottom-full left-0 mb-2 z-[999999]">
                   <ParallelSelfPicker
                     value={selectedParallelSelfPreset || undefined}
                     onChange={async (presetId) => {
