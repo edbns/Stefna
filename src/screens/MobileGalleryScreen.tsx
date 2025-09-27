@@ -593,7 +593,7 @@ const MobileGalleryScreen: React.FC = () => {
             {/* Generation loading overlay */}
             {isGenerating && (
               <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-                <div className="bg-black/90 rounded-2xl p-8 flex flex-col items-center max-w-sm mx-4">
+                <div className="bg-black/90 p-8 flex flex-col items-center max-w-sm mx-4">
                   <div className="w-12 h-12 border-3 border-white/30 border-t-white rounded-full animate-spin mb-6"></div>
                   <h3 className="text-white text-lg font-semibold mb-2">Creating Your Media</h3>
                   <p className="text-white/80 text-sm text-center">Please wait while we process your request...</p>
@@ -621,7 +621,7 @@ const MobileGalleryScreen: React.FC = () => {
                       {item.type === 'video' ? (
                         <video
                           src={toAbsoluteCloudinaryUrl(item.url) || item.url}
-                          className="w-full h-auto object-cover rounded-lg"
+                          className="w-full h-auto object-cover"
                           controls
                           playsInline
                           muted
@@ -630,7 +630,7 @@ const MobileGalleryScreen: React.FC = () => {
                         <img
                           src={toAbsoluteCloudinaryUrl(item.url) || item.url}
                           alt="Generated content"
-                          className="w-full h-auto object-cover rounded-lg"
+                          className="w-full h-auto object-cover"
                           loading="lazy"
                           onLoad={(e) => {
                             // Ensure smooth loading

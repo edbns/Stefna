@@ -26,7 +26,7 @@ const SkeletonGrid: React.FC<SkeletonGridProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {/* Use same masonry structure as the actual media layout */}
-      <div className="columns-3 gap-1">
+      <div className={`columns-${columns} gap-1`}>
         {skeletonItems.map((aspectClass, itemIndex) => (
           <div 
             key={itemIndex} 

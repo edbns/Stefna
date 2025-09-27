@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, FileText, ArrowUp } from 'lucide-react'
+import { X, Plus, FileText, ArrowUp, ChevronUp, ChevronDown } from 'lucide-react'
 import { UnrealReflectionPicker } from './UnrealReflectionPicker'
 import { ParallelSelfPicker } from './ParallelSelfPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
@@ -78,6 +78,10 @@ interface LayeredComposerProps {
   // Mobile state
   isMobile?: boolean
   
+  // Collapsible state
+  isExpanded?: boolean
+  setIsExpanded?: (expanded: boolean) => void
+  
   // Handlers
   closeComposer: () => void
   checkAuthAndRedirect: () => boolean
@@ -147,6 +151,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
   presetsError,
   isAuthenticated,
   isMobile,
+  isExpanded = false,
+  setIsExpanded,
   closeComposer,
   checkAuthAndRedirect,
   handlePresetClick,
@@ -194,10 +200,18 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
     }
   }, [setComposerState, setSelectedMode, closeAllDropdowns])
 
+  // Auto-expand when media is uploaded (mobile only)
+  useEffect(() => {
+    if (isMobile && selectedFile && setIsExpanded && !isExpanded) {
+      console.log('📱 Auto-expanding composer for uploaded media')
+      setIsExpanded(true)
+    }
+  }, [isMobile, selectedFile, setIsExpanded, isExpanded])
+
   return (
     <div className={`fixed ${isMobile ? 'bottom-0 left-0 right-0' : 'bottom-2 left-1/2 transform -translate-x-1/2 w-[60%] min-w-[600px]'} z-[999999]`}>
-      {/* Photo preview container - shows above composer when photo is uploaded (hidden for Custom mode) */}
-      {previewUrl && composerState.mode !== 'custom' && (
+      {/* Photo preview container - shows above composer when photo is uploaded (desktop only, mobile shows in expanded section) */}
+      {previewUrl && composerState.mode !== 'custom' && !isMobile && (
         <div className="mb-4 flex justify-center">
           <div className={`rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block border ${isMobile ? 'max-w-xs' : ''}`} style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
             
@@ -269,117 +283,298 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
         {/* Prompt Input - ALWAYS VISIBLE (Custom is default, Edit when photo uploaded) */}
         {(['custom', 'edit'].includes(composerState.mode || '') || !composerState.mode) && (
           <div>
-            <div className="relative">
-              <textarea
-                value={prompt}
-                onChange={(e) => {
-                  console.log('🎯 Prompt input changed:', e.target.value);
-                  setPrompt(e.target.value);
-                }}
-                placeholder={(() => {
-                  switch (composerState.mode) {
-                    case 'edit': 
-                      return !selectedFile ? "Upload a photo first to start editing..." : "Change something, add something — your call ... tap ✨ for a little magic."
-                    case 'custom': 
-                      return "Type something weird. We'll make it art ... tap ✨ for a little magic."
-                    default: 
-                      return "Type something weird. We'll make it art ... tap ✨ for a little magic."
-                  }
-                })()}
-                className={`${isMobile ? 'w-[calc(100vw-16px)] mx-2 mt-3' : 'w-full'} px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 ${isMobile ? 'text-xs' : 'text-sm'} rounded-xl border`}
-                style={{ backgroundColor: '#000000', borderColor: '#333333' }}
-                disabled={composerState.mode === 'edit' ? !selectedFile : false}
-                maxLength={4000}
-                data-testid="custom-prompt-input"
-              />
+            {isMobile ? (
+              /* Mobile Layout: Buttons integrated within the textarea container */
+              <div className="relative mx-2 mt-3">
+                <textarea
+                  value={prompt}
+                  onChange={(e) => {
+                    console.log('🎯 Prompt input changed:', e.target.value);
+                    setPrompt(e.target.value);
+                  }}
+                  placeholder={(() => {
+                    switch (composerState.mode) {
+                      case 'edit': 
+                        return !selectedFile ? "Upload a photo first to start editing..." : "Change something, add something — your call ... tap ✨ for a little magic."
+                      case 'custom': 
+                        return "Type something weird. We'll make it art ... tap ✨ for a little magic."
+                      default: 
+                        return "Type something weird. We'll make it art ... tap ✨ for a little magic."
+                    }
+                  })()}
+                  className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-xs rounded-xl border"
+                  style={{ backgroundColor: '#000000', borderColor: '#333333' }}
+                  disabled={composerState.mode === 'edit' ? !selectedFile : false}
+                  maxLength={4000}
+                  data-testid="custom-prompt-input"
+                />
+                  
+                  {/* Mobile: Magic Wand positioned like desktop - top-right inside textarea */}
+                  <button
+                    onClick={handleMagicWandEnhance}
+                    disabled={isGenerating || !prompt.trim()}
+                    className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
+                    title={composerState.mode === 'edit' ? "Enhance studio prompt with AI (free)" : "Enhance prompt with AI (free)"}
+                  >
+                    {isEnhancing ? (
+                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <span className="text-sm">✨</span>
+                    )}
+                  </button>
                 
-                {/* Magic Wand Enhancement Button - show for custom and edit modes */}
-                <button
-                  onClick={handleMagicWandEnhance}
-                  disabled={isGenerating || !prompt.trim()}
-                className={`absolute ${isMobile ? 'top-1 right-1' : 'top-2 right-2'} w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed`}
-                  title={composerState.mode === 'edit' ? "Enhance studio prompt with AI (free)" : "Enhance prompt with AI (free)"}
+                {/* Mobile: Character count and Generate Button positioned like desktop - bottom-right inside textarea */}
+                <div className="absolute bottom-3 right-2 flex items-center gap-1">
+                  <span className="text-white/30 text-xs">{prompt.length}/3000</span>
+                  
+                  {/* Generate Button */}
+                  <button
+                    onClick={async () => {
+                      if (!checkAuthAndRedirect()) return
+                      
+                      setNavGenerating(true)
+                      
+                      // Redirect immediately to gallery on mobile, profile on desktop
+                      console.log('🔄 Mobile redirect check:', { isMobile, target: isMobile ? '/gallery' : '/profile' })
+                      const targetPath = isMobile ? '/gallery' : '/profile'
+                      console.log('🔄 About to navigate to:', targetPath)
+                      navigate(targetPath)
+                      console.log('🔄 Navigate called successfully')
+                      
+                      window.dispatchEvent(new CustomEvent('close-composer'));
+                      
+                      try {
+                        if (composerState.mode === 'custom') {
+                          console.log('Custom mode - calling dispatchGenerate')
+                          await dispatchGenerate('custom', {
+                            customPrompt: prompt
+                          })
+                        } else if (composerState.mode === 'edit') {
+                          console.log('✏️ Edit mode - calling dispatchGenerate')
+                          await dispatchGenerate('edit', {
+                            editPrompt: prompt
+                          })
+                        }
+                      } catch (error) {
+                        console.error('❌ Generation failed:', error)
+                      } finally {
+                        setTimeout(() => {
+                          setNavGenerating(false)
+                          clearAllOptionsAfterGeneration()
+                          onClearFile()
+                        }, 1000)
+                      }
+                    }}
+                    disabled={
+                      (composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
+                      (composerState.mode === 'custom' && !prompt.trim()) ||
+                      (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
+                      navGenerating
+                    }
+                    className={
+                      (composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
+                      (composerState.mode === 'custom' && !prompt.trim()) ||
+                      (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
+                      navGenerating
+                    ? 'w-5 h-5 rounded-full flex items-center justify-center transition-colors bg-black text-white/50 cursor-not-allowed'
+                    : 'w-5 h-5 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
+                  }
+                  aria-label="Generate"
+                  title="Generate AI content"
                 >
-                  {isEnhancing ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  {navGenerating ? (
+                    <div className="w-2 h-2 border-2 border-black/20 border-t-black rounded-full animate-spin" />
                   ) : (
-                    <span className="text-lg">✨</span>
+                    <ArrowUp size={8} />
                   )}
                 </button>
-              
-              <div className={`absolute ${isMobile ? 'bottom-1 right-1' : 'bottom-3 right-2'} flex items-center gap-2`}>
-                <span className="text-white/30 text-xs">{prompt.length}/3000</span>
-                
-                {/* Generate Button - inside prompt box */}
-                <button
-                  onClick={async () => {
-                    if (!checkAuthAndRedirect()) return
-                    
-                    setNavGenerating(true)
-                    
-                    // Redirect immediately to gallery on mobile, profile on desktop
-                    console.log('🔄 Mobile redirect check:', { isMobile, target: isMobile ? '/' : '/profile' })
-                    const targetPath = isMobile ? '/' : '/profile'
-                    console.log('🔄 About to navigate to:', targetPath)
-                    navigate(targetPath)
-                    console.log('🔄 Navigate called successfully')
-                    
-                    window.dispatchEvent(new CustomEvent('close-composer'));
-                    
-                    try {
-                      if (composerState.mode === 'custom') {
-                        console.log('Custom mode - calling dispatchGenerate')
-                        await dispatchGenerate('custom', {
-                          customPrompt: prompt
-                        })
-                      } else if (composerState.mode === 'edit') {
-                        console.log('✏️ Edit mode - calling dispatchGenerate')
-                        await dispatchGenerate('edit', {
-                          editPrompt: prompt
-                        })
-                      }
-                    } catch (error) {
-                      console.error('❌ Generation failed:', error)
-                    } finally {
-                      setTimeout(() => {
-                        setNavGenerating(false)
-                        clearAllOptionsAfterGeneration()
-                        onClearFile()
-                      }, 1000)
-                    }
-                  }}
-                  disabled={
-                    (composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
-                    (composerState.mode === 'custom' && !prompt.trim()) ||
-                    (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
-                    navGenerating
-                  }
-                  className={
-                    (composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
-                    (composerState.mode === 'custom' && !prompt.trim()) ||
-                    (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
-                    navGenerating
-                  ? 'w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-black text-white/50 cursor-not-allowed'
-                  : 'w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
-                }
-                aria-label="Generate"
-                title="Generate AI content"
-              >
-                {navGenerating ? (
-                  <div className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                ) : (
-                  <ArrowUp size={12} />
-                )}
-              </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Desktop Layout: Original layout */
+              <div className="relative">
+                <textarea
+                  value={prompt}
+                  onChange={(e) => {
+                    console.log('🎯 Prompt input changed:', e.target.value);
+                    setPrompt(e.target.value);
+                  }}
+                  placeholder={(() => {
+                    switch (composerState.mode) {
+                      case 'edit': 
+                        return !selectedFile ? "Upload a photo first to start editing..." : "Change something, add something — your call ... tap ✨ for a little magic."
+                      case 'custom': 
+                        return "Type something weird. We'll make it art ... tap ✨ for a little magic."
+                      default: 
+                        return "Type something weird. We'll make it art ... tap ✨ for a little magic."
+                    }
+                  })()}
+                  className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border"
+                  style={{ backgroundColor: '#000000', borderColor: '#333333' }}
+                  disabled={composerState.mode === 'edit' ? !selectedFile : false}
+                  maxLength={4000}
+                  data-testid="custom-prompt-input"
+                />
+                  
+                  {/* Desktop: Magic Wand Enhancement Button */}
+                  <button
+                    onClick={handleMagicWandEnhance}
+                    disabled={isGenerating || !prompt.trim()}
+                    className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
+                    title={composerState.mode === 'edit' ? "Enhance studio prompt with AI (free)" : "Enhance prompt with AI (free)"}
+                  >
+                    {isEnhancing ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <span className="text-lg">✨</span>
+                    )}
+                  </button>
+                
+                {/* Desktop: Character count and Generate Button */}
+                <div className="absolute bottom-3 right-2 flex items-center gap-1">
+                  <span className="text-white/30 text-xs">{prompt.length}/3000</span>
+                  
+                  {/* Generate Button - inside prompt box */}
+                  <button
+                    onClick={async () => {
+                      if (!checkAuthAndRedirect()) return
+                      
+                      setNavGenerating(true)
+                      
+                      // Redirect immediately to gallery on mobile, profile on desktop
+                      console.log('🔄 Mobile redirect check:', { isMobile, target: isMobile ? '/gallery' : '/profile' })
+                      const targetPath = isMobile ? '/gallery' : '/profile'
+                      console.log('🔄 About to navigate to:', targetPath)
+                      navigate(targetPath)
+                      console.log('🔄 Navigate called successfully')
+                      
+                      window.dispatchEvent(new CustomEvent('close-composer'));
+                      
+                      try {
+                        if (composerState.mode === 'custom') {
+                          console.log('Custom mode - calling dispatchGenerate')
+                          await dispatchGenerate('custom', {
+                            customPrompt: prompt
+                          })
+                        } else if (composerState.mode === 'edit') {
+                          console.log('✏️ Edit mode - calling dispatchGenerate')
+                          await dispatchGenerate('edit', {
+                            editPrompt: prompt
+                          })
+                        }
+                      } catch (error) {
+                        console.error('❌ Generation failed:', error)
+                      } finally {
+                        setTimeout(() => {
+                          setNavGenerating(false)
+                          clearAllOptionsAfterGeneration()
+                          onClearFile()
+                        }, 1000)
+                      }
+                    }}
+                    disabled={
+                      (composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
+                      (composerState.mode === 'custom' && !prompt.trim()) ||
+                      (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
+                      navGenerating
+                    }
+                    className={
+                      (composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
+                      (composerState.mode === 'custom' && !prompt.trim()) ||
+                      (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
+                      navGenerating
+                    ? 'w-6 h-6 rounded-full flex items-center justify-center transition-colors bg-black text-white/50 cursor-not-allowed'
+                    : 'w-6 h-6 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
+                  }
+                  aria-label="Generate"
+                  title="Generate AI content"
+                >
+                  {navGenerating ? (
+                    <div className="w-2.5 h-2.5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                  ) : (
+                    <ArrowUp size={10} />
+                  )}
+                </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Controls layout - different for mobile vs desktop */}
-        {isMobile ? (
-          /* Mobile Layout: No container, direct buttons */
-          <div className="flex items-center justify-center gap-2 flex-wrap px-2 pb-3">
+        {/* Mobile Collapsible Section */}
+        {isMobile && (
+          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+            {/* Media Preview in Expanded Section */}
+            {previewUrl && composerState.mode !== 'custom' && (
+              <div className="px-4 py-3">
+                <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block border max-w-xs mx-auto" style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
+                  
+                  {/* Media display */}
+                  <div className="flex justify-center mb-3">
+                    {isVideoPreview ? (
+                      <video 
+                        ref={(el) => {
+                          if (mediaRef.current) {
+                            (mediaRef.current as any) = el
+                          }
+                        }} 
+                        src={previewUrl} 
+                        className="max-h-48 w-auto object-contain" 
+                        controls 
+                        onLoadedMetadata={measure} 
+                        onLoadedData={measure} 
+                      />
+                    ) : (
+                      <img 
+                        ref={(el) => {
+                          if (mediaRef.current) {
+                            (mediaRef.current as any) = el as HTMLImageElement
+                          }
+                        }} 
+                        src={previewUrl} 
+                        alt="Uploaded media" 
+                        className="max-h-48 w-auto object-contain" 
+                        onLoad={measure}
+                        onError={(e) => {
+                          console.error('❌ Image failed to load:', previewUrl, e)
+                        }}
+                      />
+                    )}
+                  </div>
+                  
+                  {/* Close button under the media */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => {
+                        // Clear preview
+                        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+                        if (fileInput) fileInput.value = ''
+                        
+                        // Clear the selected file in parent component
+                        onClearFile()
+                        
+                        // Reset composer to default state (switch back to Custom mode)
+                        setComposerState((s: any) => ({ ...s, mode: 'custom' }))
+                        setSelectedMode(null)
+                        closeAllDropdowns()
+                        
+                        // Auto-collapse when media is removed
+                        if (setIsExpanded) {
+                          setIsExpanded(false)
+                        }
+                      }}
+                      className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-black text-white hover:bg-white/10"
+                      aria-label="Remove media"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mode Buttons in Expanded Section */}
+            <div className="flex items-center justify-center gap-2 flex-wrap px-4 pb-3">
             
             {/* Photo Editing Mode Label and Upload Button - Same Row */}
           <div className="flex items-center gap-2">
@@ -496,7 +691,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Unreal Reflection with preset:', presetId)
                         // Redirect immediately when preset is selected
-                        navigate(isMobile ? '/' : '/profile')
+                        navigate(isMobile ? '/gallery' : '/profile')
                         try {
                           await dispatchGenerate('unrealreflection', {
                             unrealReflectionPresetId: presetId,
@@ -563,7 +758,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Parallel Self with preset:', presetId)
                         // Redirect immediately when preset is selected
-                        navigate(isMobile ? '/' : '/profile')
+                        navigate(isMobile ? '/gallery' : '/profile')
                         try {
                           await dispatchGenerate('parallelself', {
                             parallelSelfPresetId: presetId
@@ -582,8 +777,35 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               )}
             </div>
 
+            </div>
           </div>
-        ) : (
+        )}
+
+        {/* Mobile Expand/Collapse Arrow */}
+        {isMobile && (
+          <div className="flex justify-center pb-2">
+            <button
+              onClick={() => setIsExpanded && setIsExpanded(!isExpanded)}
+              className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:bg-white/10 animate-bounce"
+              aria-label={isExpanded ? "Collapse options" : "Expand options"}
+            >
+              {isExpanded ? (
+                <ChevronDown 
+                  size={16} 
+                  className="text-white/70 transition-transform duration-300" 
+                />
+              ) : (
+                <ChevronUp 
+                  size={16} 
+                  className="text-white/70 transition-transform duration-300" 
+                />
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Desktop Layout: Original single row */}
+        {!isMobile && (
           /* Desktop Layout: Original single row */
           <div className="flex items-center justify-between gap-1 flex-wrap rounded-xl p-3 border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
             {/* Left: Upload button and Mode buttons */}
@@ -760,7 +982,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Unreal Reflection with preset:', presetId)
                         // Redirect immediately when preset is selected
-                        navigate(isMobile ? '/' : '/profile')
+                        navigate(isMobile ? '/gallery' : '/profile')
                         try {
                           await dispatchGenerate('unrealreflection', {
                             unrealReflectionPresetId: presetId,
@@ -838,7 +1060,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Parallel Self with preset:', presetId)
                         // Redirect immediately when preset is selected
-                        navigate(isMobile ? '/' : '/profile')
+                        navigate(isMobile ? '/gallery' : '/profile')
                         try {
                           await dispatchGenerate('parallelself', {
                             parallelSelfPresetId: presetId

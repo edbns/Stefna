@@ -205,6 +205,9 @@ const HomeNew: React.FC = () => {
   // Mobile detection
   const isMobile = useIsMobile()
 
+  // Mobile composer collapsible state
+  const [isMobileComposerExpanded, setIsMobileComposerExpanded] = useState(false)
+
   // Quota status
   const { quotaReached } = useQuotaStatus()
   
@@ -3830,6 +3833,10 @@ const HomeNew: React.FC = () => {
               
               // Mobile state
               isMobile={true}
+              
+              // Collapsible state
+              isExpanded={isMobileComposerExpanded}
+              setIsExpanded={setIsMobileComposerExpanded}
               
               // Handlers
               closeComposer={() => {
