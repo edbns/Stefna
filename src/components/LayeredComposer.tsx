@@ -444,7 +444,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       console.log('🔄 Navigate called successfully')
                       
                       // Dispatch generation start event for mobile gallery
+                      console.log('🚀 Dispatching generationStart event for mobile gallery');
                       generationStart({ kind: 'image' });
+                      console.log('✅ generationStart event dispatched');
                       
                       window.dispatchEvent(new CustomEvent('close-composer'));
                       

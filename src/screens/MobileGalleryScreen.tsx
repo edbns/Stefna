@@ -181,6 +181,7 @@ const MobileGalleryScreen: React.FC = () => {
   useEffect(() => {
     const handleGenerationStart = () => {
       console.log('🎬 Generation started - showing loading overlay');
+      console.log('🎬 Mobile gallery received generation:start event');
       setIsGenerating(true);
     };
 
@@ -222,6 +223,7 @@ const MobileGalleryScreen: React.FC = () => {
     };
 
     if (typeof window !== 'undefined') {
+      console.log('🎧 Mobile gallery setting up generation event listeners');
       window.addEventListener('generation:start', handleGenerationStart);
       window.addEventListener('generation:done', handleGenerationEnd);
     }
@@ -591,6 +593,7 @@ const MobileGalleryScreen: React.FC = () => {
         ) : (
           <div className="w-full px-4 py-4">
             {/* Generation loading overlay */}
+            {console.log('🔍 Mobile gallery render - isGenerating:', isGenerating)}
             {isGenerating && (
               <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
                 <div className="bg-black/90 p-8 flex flex-col items-center max-w-sm mx-4">
