@@ -43,12 +43,12 @@ export default function BestPracticesScreen() {
     {
       mode: "Parallel Self™",
       title: "Neon Proof",
-      description: "Nighttime streetwear with neon accents and low-angle cinematography."
+      description: "Streetwear with bold neon accents, shot at night in low-angle cinematic style."
     },
     {
       mode: "Parallel Self™",
       title: "The Mechanic",
-      description: "Raw street mechanics with designer workwear and cinematic garage scenes."
+      description: "Grease-stained workwear in cinematic garage settings."
     },
     {
       mode: "Parallel Self™",
@@ -58,7 +58,7 @@ export default function BestPracticesScreen() {
     {
       mode: "Parallel Self™",
       title: "Getaway Lookbook",
-      description: "Cinematic fashion fugitives in nighttime getaway aftermath."
+      description: "Fashion fugitives styled post-getaway — edgy, dramatic, and photoreal."
     },
     {
       mode: "Unreal Reflection™",
