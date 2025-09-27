@@ -372,13 +372,13 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
 
         {/* Controls layout - different for mobile vs desktop */}
         {isMobile ? (
-          /* Mobile Layout: Compact single row */
-          <div className="flex flex-col gap-2 rounded-xl p-3 border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
+          /* Mobile Layout: Ultra-compact for small screens */
+          <div className="flex flex-col gap-1 rounded-lg p-2 border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
             
             {/* Photo Editing Mode Label and Upload Button - Same Row */}
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-1">
               <div className="text-white text-xs font-medium">
-                Photo Editing Mode
+                Photo Editing
               </div>
               
               <div className="relative">
@@ -401,18 +401,18 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 }
                 input.click()
               }}
-                  className="px-3 py-1.5 rounded-2xl text-xs font-medium transition-all duration-300 text-white flex items-center gap-2 hover:scale-105 upload"
+                  className="px-2 py-1 rounded-lg text-xs font-medium transition-all duration-300 text-white flex items-center gap-1 hover:scale-105 upload"
               style={{ backgroundColor: '#000000' }}
               title="Upload a photo to get started"
             >
-                  <Plus size={16} />
+                  <Plus size={12} />
                   <span>Upload</span>
             </button>
                   </div>
               </div>
 
-            {/* Editing Modes Row */}
-            <div className="flex items-center justify-center gap-2 flex-wrap">
+            {/* Editing Modes Row - Ultra-compact */}
+            <div className="flex items-center justify-center gap-1 flex-wrap">
               
               {/* Studio Button */}
               <div className="relative">
@@ -435,15 +435,15 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   }}
                   className={
                     composerState.mode === 'edit'
-                      ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                      : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
+                      ? 'px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                      : 'px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                   }
                   style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
                   title={!selectedFile ? 'Upload a photo first to use Studio mode' : 'Switch to Studio mode'}
                 >
                   Studio
                 </button>
-            </div>
+              </div>
 
               {/* Unreal Reflection™ Button */}
               <div className="relative">
@@ -469,13 +469,13 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 }}
                 className={
                   composerState.mode === 'unrealreflection'
-                    ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
+                    ? 'px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                    : 'px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
                   title={!selectedFile ? 'Upload a photo first to use Unreal Reflection mode' : 'Switch to Unreal Reflection mode'}
               >
-                  Unreal Reflection™
+                  Unreal™
               </button>
               
               {/* Unreal Reflection™ presets dropdown */}
@@ -519,7 +519,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               {/* Parallel Self™ Button */}
               <div className="relative">
                 <button
-                  onClick={async () => {
+                onClick={async () => {
                   if (!checkAuthAndRedirect()) return
                   
                   // Require photo upload first
@@ -529,24 +529,24 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   
                   if (composerState.mode === 'parallelself') {
                     closeAllDropdowns()
-                      setParallelSelfDropdownOpen(!parallelSelfDropdownOpen)
+                    setParallelSelfDropdownOpen(!parallelSelfDropdownOpen)
                   } else {
                     closeAllDropdowns()
                     setComposerState((s: any) => ({ ...s, mode: 'parallelself' }))
-                      setSelectedMode('presets')
-                      setSelectedParallelSelfPreset(null)
+                    setSelectedMode('presets')
+                    setSelectedParallelSelfPreset(null)
                     setParallelSelfDropdownOpen(true)
                   }
                 }}
                 className={
                   composerState.mode === 'parallelself'
-                    ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
+                    ? 'px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                    : 'px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
                   title={!selectedFile ? 'Upload a photo first to use Parallel Self mode' : 'Switch to Parallel Self mode'}
               >
-                  Parallel Self™
+                  Parallel™
               </button>
               
               {/* Parallel Self™ presets dropdown */}
