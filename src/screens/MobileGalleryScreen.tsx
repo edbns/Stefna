@@ -98,6 +98,11 @@ const MobileGalleryScreen: React.FC = () => {
   
   // Generation loading state
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Debug isGenerating state changes
+  useEffect(() => {
+    console.log('🔍 [MobileGallery] isGenerating state changed to:', isGenerating);
+  }, [isGenerating]);
 
   // Load user media and token count
   useEffect(() => {
@@ -179,14 +184,14 @@ const MobileGalleryScreen: React.FC = () => {
 
   // Listen for generation events to show loading spinner
   useEffect(() => {
-    const handleGenerationStart = () => {
+    const handleGenerationStart = (event: any) => {
       console.log('🎬 Generation started - showing loading overlay');
-      console.log('🎬 Mobile gallery received generation:start event');
+      console.log('🎬 Mobile gallery received generation:start event', event);
       setIsGenerating(true);
     };
 
-    const handleGenerationEnd = () => {
-      console.log('✅ Generation completed - hiding loading overlay');
+    const handleGenerationEnd = (event: any) => {
+      console.log('✅ Generation completed - hiding loading overlay', event);
       setIsGenerating(false);
       
       // Refresh the gallery to show new media
@@ -226,15 +231,23 @@ const MobileGalleryScreen: React.FC = () => {
       console.log('🎧 Mobile gallery setting up generation event listeners');
       window.addEventListener('generation:start', handleGenerationStart);
       window.addEventListener('generation:done', handleGenerationEnd);
+      
+      // Test event listener setup
+      console.log('🧪 Testing event listener setup...');
+      setTimeout(() => {
+        console.log('🧪 Dispatching test generation:start event');
+        window.dispatchEvent(new CustomEvent('generation:start', { detail: { kind: 'image', test: true } }));
+      }, 1000);
     }
 
     return () => {
       if (typeof window !== 'undefined') {
+        console.log('🧹 Mobile gallery cleaning up generation event listeners');
         window.removeEventListener('generation:start', handleGenerationStart);
         window.removeEventListener('generation:done', handleGenerationEnd);
       }
     };
-  }, []);
+  }, []); // Empty dependency array to run only once
 
   // Load more media for infinite scroll with race condition protection
   const loadMoreMedia = async () => {

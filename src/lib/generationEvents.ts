@@ -21,10 +21,16 @@ const listeners = new Set<() => void>();
  * Dispatch a generation start event
  */
 export const generationStart = (detail?: Partial<GenerationEvent>) => {
+  console.log('🚀 [generationEvents] generationStart called with detail:', detail);
   isGenerationRunning = true;
   notifyListeners();
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('generation:start', { detail }));
+    console.log('🚀 [generationEvents] Dispatching CustomEvent generation:start');
+    const event = new CustomEvent('generation:start', { detail });
+    window.dispatchEvent(event);
+    console.log('✅ [generationEvents] CustomEvent dispatched successfully');
+  } else {
+    console.warn('⚠️ [generationEvents] Window is undefined, cannot dispatch event');
   }
 };
 
