@@ -133,9 +133,9 @@ const PrivacyPolicy: React.FC = () => {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold mb-4">Children's Privacy</h2>
+              <h2 className="text-xl font-semibold mb-4">Age Requirements</h2>
               <p>
-                You must be at least 13 years old to create an account and use Stefna. If you are under the age required by the laws of your country to consent to data processing (e.g., 16 in some jurisdictions), you may only use Stefna with parental consent. If We become aware that We have collected Personal Data from anyone under the age required by the laws of their country to consent to data processing without verification of parental consent, We take steps to remove that information from Our servers.
+                You must be at least 18 years old to create an account and use Stefna. This service is not intended for minors. If We become aware that We have collected Personal Data from anyone under 18 years old, We will immediately take steps to remove that information from Our servers.
               </p>
             </section>
 

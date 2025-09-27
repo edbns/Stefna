@@ -60,7 +60,7 @@ const TermsOfService: React.FC = () => {
                 By accessing or using the Service You agree to be bound by these Terms and Conditions. If You disagree with any part of these Terms and Conditions then You may not access the Service.
               </p>
               <p className="mb-4">
-                You must be at least 13 years old to create an account and use Stefna. If you are under the age required by the laws of your country to consent to data processing (e.g., 16 in some jurisdictions), you may only use Stefna with parental consent.
+                You must be at least 18 years old to create an account and use Stefna. This service is not intended for minors.
               </p>
               <p>
                 Your access to and use of the Service is also conditioned on Your acceptance of and compliance with the Privacy Policy of the Platform. Our Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your personal information when You use the Application or the Website and tells You about Your privacy rights and how the law protects You. Please read Our Privacy Policy carefully before using Our Service.
