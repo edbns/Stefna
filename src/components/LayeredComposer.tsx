@@ -282,8 +282,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
         
         {/* Mobile: Media Preview Above Prompt (Always Visible When Uploaded) */}
         {isMobile && previewUrl && composerState.mode !== 'custom' && (
-          <div className="px-4 py-3">
-            <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block border max-w-xs mx-auto" style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
+          <div className="flex justify-center px-4 py-3">
+            <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 border max-w-xs" style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
               
               {/* Media display */}
               <div className="flex justify-center mb-3">
@@ -576,7 +576,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
 
             {/* Mode Buttons in Expanded Section */}
-            <div className="flex items-center justify-center gap-2 flex-wrap px-4 pb-3">
+            <div className="flex items-center justify-center gap-2 flex-wrap px-4 pb-3 bg-black">
             
             {/* Photo Editing Mode Label and Upload Button - Same Row */}
           <div className="flex items-center gap-2">
@@ -785,21 +785,21 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
 
         {/* Mobile Expand/Collapse Arrow */}
         {isMobile && (
-          <div className="flex justify-center pb-2">
+          <div className="flex justify-center pb-2 bg-black">
             <button
               onClick={() => setIsExpanded && setIsExpanded(!isExpanded)}
-              className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:bg-white/10 animate-bounce"
+              className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 bg-black/80 hover:bg-black/90 animate-bounce"
               aria-label={isExpanded ? "Collapse options" : "Expand options"}
             >
               {isExpanded ? (
                 <ChevronDown 
                   size={16} 
-                  className="text-white/70 transition-transform duration-300" 
+                  className="text-white transition-transform duration-300" 
                 />
               ) : (
                 <ChevronUp 
                   size={16} 
-                  className="text-white/70 transition-transform duration-300" 
+                  className="text-white transition-transform duration-300" 
                 />
               )}
             </button>
