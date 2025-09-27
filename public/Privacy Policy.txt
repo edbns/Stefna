@@ -321,10 +321,10 @@ method of transmission over the Internet, or method of electronic
 storage is
 100% secure. While We strive to use commercially acceptable means to protect
 Your Personal Data, We cannot guarantee its absolute security. All user content and personal information are stored securely using Neon's managed infrastructure.
-Children's Privacy  
-------------------
+Age Requirements  
+-----------------
 
-You must be at least 13 years old to create an account and use Stefna. If you are under the age required by the laws of your country to consent to data processing (e.g., 16 in some jurisdictions), you may only use Stefna with parental consent. If We become aware that We have collected Personal Data from anyone under the age required by the laws of their country to consent to data processing without verification of parental consent, We take steps to remove that information from Our servers.
+You must be at least 18 years old to create an account and use Stefna. This service is not intended for minors. If We become aware that We have collected Personal Data from anyone under 18 years old, We will immediately take steps to remove that information from Our servers.
 Links to Other Websites  
 -----------------------
 
