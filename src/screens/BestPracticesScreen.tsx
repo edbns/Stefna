@@ -42,13 +42,13 @@ export default function BestPracticesScreen() {
     },
     {
       mode: "Parallel Self™",
-      title: "Holiday Mirage",
-      description: "Golden hour glow, vacation fantasy, effortless chic."
+      title: "Neon Proof",
+      description: "Nighttime streetwear with neon accents and low-angle cinematography."
     },
     {
       mode: "Parallel Self™",
-      title: "Who Got Away",
-      description: "Leaving the gala, cinematic heartbreak, paparazzi lights."
+      title: "The Mechanic",
+      description: "Raw street mechanics with designer workwear and cinematic garage scenes."
     },
     {
       mode: "Parallel Self™",
@@ -57,8 +57,8 @@ export default function BestPracticesScreen() {
     },
     {
       mode: "Parallel Self™",
-      title: "Afterglow",
-      description: "Disco shimmer, gold and silver highlights, soft cinematic focus."
+      title: "Getaway Lookbook",
+      description: "Cinematic fashion fugitives in nighttime getaway aftermath."
     },
     {
       mode: "Unreal Reflection™",
@@ -164,10 +164,10 @@ export default function BestPracticesScreen() {
     const imageMap: Record<string, string> = {
       'Black Aura': '/images/parallel_self_black_aura.jpg?v=' + Date.now(),
       'The Untouchable': '/images/parallel_self_untouchable.jpg?v=' + Date.now(),
-      'Holiday Mirage': '/images/parallel_self_holiday_mirage.jpg',
-      'Who Got Away': '/images/parallel_self_one_that_got_away.jpg',
+      'Neon Proof': '/images/parallel_self_neon_proof.jpg?v=' + Date.now(),
+      'The Mechanic': '/images/parallel_self_the_mechanic.jpg?v=' + Date.now(),
       'Nightshade': '/images/parallel_self_nightshade.jpg',
-      'Afterglow': '/images/parallel_self_afterglow.jpg',
+      'Getaway Lookbook': '/images/parallel_self_getaway_lookbook.jpg?v=' + Date.now(),
       'The Syndicate': '/images/unreal_reflection_the_syndicate.jpg',
       'Yakuza Heir': '/images/unreal_reflection_yakuza_heir.jpg',
       'The Gothic Pact': '/images/unreal_reflection_gothic_pact.jpg',
@@ -295,27 +295,107 @@ export default function BestPracticesScreen() {
           <h2 className="text-3xl font-bold text-white mb-8 text-center">More Modes</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
             {/* Studio: Edit My Photo */}
-            <div className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
-              <div className="mb-3">
+            <div className="bg-[#333333] rounded-xl p-6 shadow-lg">
+              <div className="mb-4 text-center">
                 <span className="text-xs uppercase text-white tracking-wider font-medium">
                   Studio: Edit My Photo
                 </span>
               </div>
-              <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
+              <h3 className="text-lg font-semibold leading-snug mb-4 text-white text-center">
                 Small changes, big drama.
               </h3>
               <p className="text-sm text-white leading-relaxed mb-4">
-                Add, remove, or change details in your uploaded photo.
+                You already uploaded your photo — now it's time to tell the AI what to change. You're not starting from scratch — you're directing a scene. Make the magic happen with a few simple words.
               </p>
-              <p className="text-xs text-white/70 mb-4">
-                Example: "make the man ride a motorcycle through desert lightning storm"
-              </p>
-              <p className="text-xs text-white/70">
-                Tip: Use short sentences that describe what you want to see, not what to do.
-              </p>
+              
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">How It Works</h4>
+                <p className="text-xs text-white/80 leading-relaxed mb-2">
+                  This tool lets you:
+                </p>
+                <ul className="text-xs text-white/80 leading-relaxed mb-2 ml-4">
+                  <li>• Change outfits, props, or background</li>
+                  <li>• Add objects, effects, or details</li>
+                  <li>• Remove unwanted things</li>
+                  <li>• Enhance the mood or atmosphere</li>
+                </ul>
+                <p className="text-xs text-white/80 leading-relaxed">
+                  But here's the trick, you're not giving commands like a robot. You're describing a scene — like you're writing a movie shot.
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">How to Write It</h4>
+                <p className="text-xs text-white/80 leading-relaxed mb-2">
+                  Keep it:
+                </p>
+                <ul className="text-xs text-white/80 leading-relaxed mb-2 ml-4">
+                  <li>• Short — 1–2 sentences is enough.</li>
+                  <li>• Visual — describe what's in the final image.</li>
+                  <li>• Scene-based — like you're describing a still frame from a movie.</li>
+                  <li>• Simple — no complicated instructions or "please" or "can you".</li>
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">DO say:</h4>
+                <ul className="text-xs text-white/80 leading-relaxed mb-2 ml-4">
+                  <li>• "Make her stand in the rain with a leather jacket and neon light behind her."</li>
+                  <li>• "Add black wings to the man — like a fallen angel."</li>
+                  <li>• "Turn the background into a Tokyo alley with smoke and wires."</li>
+                  <li>• "Make the couple pose by a matte black getaway car."</li>
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">DON'T say:</h4>
+                <ul className="text-xs text-white/80 leading-relaxed mb-2 ml-4">
+                  <li>• "Can you add a cool background?"</li>
+                  <li>• "Remove the guy on the left and make it prettier."</li>
+                  <li>• "I want something cool and aesthetic."</li>
+                  <li>• "Please make her look better."</li>
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">Best Tips</h4>
+                <ul className="text-xs text-white/80 leading-relaxed mb-2 ml-4">
+                  <li>• Use action + vibe: "The man walks through smoke wearing a trench coat, city lights in the back."</li>
+                  <li>• Use specifics: "Add a vintage motorcycle beside her. She's in a black jumpsuit, wind in her hair."</li>
+                  <li>• Use fashion cues (if you want style edits): "Dress her in Balenciaga boots and a pink bomber, standing by a neon wall."</li>
+                  <li>• Add mood if you want drama: "After a storm. Wet pavement. She's barefoot, walking toward the camera."</li>
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">Pro-Level Examples</h4>
+                <div className="text-xs text-white/80 leading-relaxed mb-2">
+                  <p className="font-medium mb-1">1. From Static to Cinematic</p>
+                  <p className="ml-4 mb-2">Input: Basic photo of a man standing.</p>
+                  <p className="ml-4 mb-3">Prompt: "Make him lean on a motorbike with smoke around, sunglasses on, night city glow."</p>
+                  
+                  <p className="font-medium mb-1">2. Fashion Flip</p>
+                  <p className="ml-4 mb-2">Input: Woman in regular clothes.</p>
+                  <p className="ml-4 mb-3">Prompt: "Turn her outfit into a Dior runway blazer. Add wind in her hair and pink neon wall."</p>
+                  
+                  <p className="font-medium mb-1">3. Scene Upgrade</p>
+                  <p className="ml-4 mb-2">Input: Couple photo in daytime.</p>
+                  <p className="ml-4">Prompt: "They're walking at night after a heist. Black leather, car behind them, red neon."</p>
+                </div>
+              </div>
+
+              <div className="border-t border-white/20 pt-4">
+                <p className="text-xs text-white/80 leading-relaxed mb-2">
+                  <span className="font-medium">Final Words:</span> Think of it this way: "Don't explain what you want. Describe what you see."
+                </p>
+                <p className="text-xs text-white/80">
+                  Less talking, more drama. That's the Stefna way.
+                </p>
+              </div>
             </div>
 
-            {/* Cyber Siren */}
+            {/* Cyber Siren - HIDDEN */}
+            {false && (
             <div className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
               <div className="mb-3">
                 <span className="text-xs uppercase text-white tracking-wider font-medium">
@@ -341,8 +421,120 @@ export default function BestPracticesScreen() {
                 Tip: Upload a bold selfie, strong expression. Think "main character of the glitch."
               </p>
             </div>
+            )}
 
-            {/* Studio Ghibli Reaction */}
+            {/* Create With Text */}
+            <div className="bg-[#333333] rounded-xl p-6 shadow-lg">
+              <div className="mb-4 text-center">
+                <span className="text-xs uppercase text-white tracking-wider font-medium">
+                  Create With Text
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold leading-snug mb-4 text-white text-center">
+                Type your vision. We turn it into fashion, cinema, or pure chaos.
+              </h3>
+              <p className="text-sm text-white leading-relaxed mb-4">
+                You're not editing a photo. You're generating a brand-new cinematic image — from scratch — using just your words.
+              </p>
+              
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">How It Works</h4>
+                <ul className="text-xs text-white/80 leading-relaxed mb-2 ml-4">
+                  <li>• You write a short prompt describing the scene, vibe, or outfit you want.</li>
+                  <li>• AI generates a fully original image based on your text.</li>
+                  <li>• The face will not match your photo — this is about mood, style, and storytelling.</li>
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">What to Expect</h4>
+                <p className="text-xs text-white/80 leading-relaxed mb-2">
+                  This is not an edit of your photo. This is not a selfie enhancer. This is your imagination rendered in high-fashion detail.
+                </p>
+                <ul className="text-xs text-white/80 leading-relaxed mb-2 ml-4">
+                  <li>• You can describe people, outfits, places, and lighting.</li>
+                  <li>• You can choose cinematic moods, futuristic vibes, or dreamlike fashion.</li>
+                  <li>• The AI will make an entirely new image, not based on your appearance.</li>
+                  <li>• If you want your real face — go back to Identity modes like Parallel Self or Unreal Reflection.</li>
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">How to Write Your Prompt</h4>
+                <p className="text-xs text-white/80 leading-relaxed mb-2">
+                  Think of it like writing the caption for a movie still — or a fashion magazine cover.
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">DO:</h4>
+                <ul className="text-xs text-white/80 leading-relaxed mb-2 ml-4">
+                  <li>• "A woman in a black trench coat walks through Tokyo rain at night"</li>
+                  <li>• "Streetwear model leaning on a matte black car in neon pink lights"</li>
+                  <li>• "A couple walking through mist, dressed like fashion fugitives, cinematic lighting"</li>
+                  <li>• "Man in grayscale oversized blazer, standing on cracked desert ground at sunset"</li>
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">DON'T:</h4>
+                <ul className="text-xs text-white/80 leading-relaxed mb-2 ml-4">
+                  <li>• "Make it aesthetic"</li>
+                  <li>• "I want a cool picture"</li>
+                  <li>• "Do something edgy"</li>
+                  <li>• "Fix the background and make it pop"</li>
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">Pro Tips (That Actually Work)</h4>
+                <ul className="text-xs text-white/80 leading-relaxed mb-2 ml-4">
+                  <li>• Keep it under 25 words</li>
+                  <li>• Focus on outfit + environment + vibe</li>
+                  <li>• Don't mention a real name, celebrity, or yourself</li>
+                  <li>• Use fashion cues: "blazer," "leather skirt," "Rick Owens boots"</li>
+                  <li>• Use setting cues: "underpass," "neon alley," "stormy desert," "after dark"</li>
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-white mb-2">Examples That Slap</h4>
+                <div className="text-xs text-white/80 leading-relaxed mb-2">
+                  <div className="mb-2">
+                    <p className="font-medium mb-1">"A woman in a blazer, pink neon lights, graffiti wall"</p>
+                    <p className="ml-4 text-white/70">Bold, cinematic streetwear portrait at night</p>
+                  </div>
+                  <div className="mb-2">
+                    <p className="font-medium mb-1">"Grayscale fashion group walking through mist, Singapore alley"</p>
+                    <p className="ml-4 text-white/70">Moody, fashion-mag vibe with urban texture</p>
+                  </div>
+                  <div className="mb-2">
+                    <p className="font-medium mb-1">"Male model in layered techwear, Tokyo rain, glowing lights"</p>
+                    <p className="ml-4 text-white/70">Futuristic high fashion, sharp shadows</p>
+                  </div>
+                  <div className="mb-2">
+                    <p className="font-medium mb-1">"Fashion fugitive, red taillights, leather outfit, open car trunk"</p>
+                    <p className="ml-4 text-white/70">Pure drama, noir story frame</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-white/20 pt-4">
+                <h4 className="text-sm font-medium text-white mb-2">Final Vibe</h4>
+                <p className="text-xs text-white/80 leading-relaxed mb-2">
+                  Describe the vision in your head. Let the AI make it real — but stylized.
+                </p>
+                <p className="text-xs text-white/80 leading-relaxed mb-2">
+                  You're not asking for perfection — you're starting a visual story.
+                </p>
+                <p className="text-xs text-white/80">
+                  Minimal prompt, maximum drama. That's the Stefna way.
+                </p>
+              </div>
+            </div>
+
+            {/* Studio Ghibli Reaction - HIDDEN */}
+            {false && (
             <div className="bg-[#333333] rounded-xl p-6 shadow-lg text-center">
               <div className="mb-3">
                 <span className="text-xs uppercase text-white tracking-wider font-medium">
@@ -362,11 +554,13 @@ export default function BestPracticesScreen() {
                 Tip: Upload selfies with visible eyes & natural lighting. Solo works best.
               </p>
             </div>
+            )}
 
           </div>
         </div>
 
-        {/* This Week Presets Section */}
+        {/* This Week Presets Section - HIDDEN */}
+        {false && (
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-white mb-8 text-center">This Week Presets</h2>
           {loading ? (
@@ -386,17 +580,18 @@ export default function BestPracticesScreen() {
             </div>
           )}
         </div>
+        )}
 
         {/* Footer CTA */}
         <div className="text-center mt-16">
           <div className="bg-[#333333] rounded-xl p-8 max-w-2xl mx-auto">
-            <h3 className="text-xl font-semibold mb-3 text-white">Want to see more looks?</h3>
+            <h3 className="text-xl font-semibold mb-3 text-white">Ready to create?</h3>
             <p className="text-sm text-white mb-6">
-              All presets work with solo, couples, or groups. Just upload and explore.
+              Upload a photo for image editing modes or type a prompt for text-to-image generation.
             </p>
             <p className="text-white">
-              Ready to create your own?<br />
-              Click <span className="inline-flex items-center justify-center w-8 h-8 bg-white rounded-full text-black font-bold mx-1">+</span> button on the home page to start.
+              Start creating now<br />
+              Click <span className="inline-flex items-center justify-center w-8 h-8 bg-white rounded-full text-black font-bold mx-1">+</span> button on the home page to begin.
             </p>
           </div>
         </div>

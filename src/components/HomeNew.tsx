@@ -41,7 +41,6 @@ import { CyberSirenPicker } from './CyberSirenPicker'
 import { MediaUploadAgreement } from './MediaUploadAgreement'
 import { paramsForI2ISharp } from '../services/infer-params'
 import MobileFloatingNav from './MobileFloatingNav'
-import MobileComposer from './MobileComposer'
 import LayeredComposer from './LayeredComposer'
 
 
@@ -225,7 +224,7 @@ const HomeNew: React.FC = () => {
   
   // Composer state with explicit mode - CLEAN SEPARATION
   const [composerState, setComposerState] = useState({
-    mode: 'edit' as 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'cyber-siren' | 'parallelself' | 'storytime' | 'edit' | null, // Default to edit mode
+    mode: 'custom' as 'preset' | 'custom' | 'unrealreflection' | 'ghiblireact' | 'cyber-siren' | 'parallelself' | 'storytime' | 'edit' | null, // Default to custom mode
     file: null as File | null,
     sourceUrl: null as string | null,
     selectedPresetId: null as string | null,
@@ -1505,6 +1504,21 @@ const HomeNew: React.FC = () => {
     }
   }
 
+  // Handle file selection for LayeredComposer
+  const handleFileSelect = (file: File) => {
+    console.log('📁 handleFileSelect called with file:', { name: file.name, size: file.size, type: file.type })
+    
+    // Create a mock event object that handleFileChange expects
+    const mockEvent = {
+      target: {
+        files: [file]
+      }
+    } as unknown as React.ChangeEvent<HTMLInputElement>
+    
+    // Call the existing handleFileChange function
+    handleFileChange(mockEvent)
+  }
+
   const handleDirectUpload = async (file: File) => {
     console.log('📁 Direct upload (user already agreed):', { name: file.name, size: file.size, type: file.type })
 
@@ -2360,7 +2374,8 @@ const HomeNew: React.FC = () => {
       composerMode: composerState.mode,
     });
 
-    if (!previewUrl) {
+    // Custom mode doesn't require source media URL (text-to-image)
+    if (kind !== 'custom' && !previewUrl) {
       console.warn('No source media URL; aborting.');
       endGeneration(genId);
       setNavGenerating(false);
@@ -3733,10 +3748,6 @@ const HomeNew: React.FC = () => {
           
           {/* Mobile Floating Navigation */}
           <MobileFloatingNav
-            onUploadClick={() => {
-              // Open mobile composer
-              setIsMobileComposerOpen(true);
-            }}
             onProfileClick={() => {
               // Navigate to mobile gallery/profile page
               navigate('/gallery');
@@ -3757,66 +3768,206 @@ const HomeNew: React.FC = () => {
             isGenerating={navGenerating}
           />
           
-          {/* Mobile Composer */}
-          <MobileComposer
-            isOpen={isMobileComposerOpen}
-            onClose={() => setIsMobileComposerOpen(false)}
-            onGenerate={async (mode, options) => {
-              // Handle mobile generation
-              try {
-                // Map mobile composer mode names to dispatchGenerate mode names
-                const modeMapping: Record<string, string> = {
-                  'presets': 'preset',
-                  'custom': 'custom',
-                  'edit': 'edit',
-                  'unrealreflection': 'unrealreflection',
-                  'ghiblireact': 'ghiblireact',
-                  'cyber-siren': 'cyber-siren',
-                  'parallelself': 'parallelself'
-                };
-                
-                const mappedMode = modeMapping[mode] || mode;
-                
-                // Map mobile composer parameters to dispatchGenerate format
-                const mappedOptions = {
-                  ...options,
-                  // Map 'prompt' to 'customPrompt' for custom/edit modes
-                  customPrompt: options?.prompt || options?.customPrompt,
-                  editPrompt: options?.prompt || options?.editPrompt,
-                  // Map presetId to the correct mode-specific parameter
-                  presetId: options?.presetId,
-                  unrealReflectionPresetId: mode === 'unrealreflection' ? options?.presetId : undefined,
-                  ghibliReactionPresetId: mode === 'ghiblireact' ? options?.presetId : undefined,
-                  cyberSirenPresetId: mode === 'cyber-siren' ? options?.presetId : undefined,
-                  parallelSelfPresetId: mode === 'parallelself' ? options?.presetId : undefined,
-                };
-                
-                console.log('🎯 Mobile generation:', { originalMode: mode, mappedMode, options: mappedOptions });
-                
-                // Close composer and redirect first
+          {/* Mobile/Desktop Composer - Unified */}
+          {isMobile ? (
+            <LayeredComposer
+              // Core state
+              previewUrl={previewUrl}
+              selectedFile={selectedFile}
+              isVideoPreview={isVideoPreview}
+              prompt={prompt}
+              setPrompt={setPrompt}
+              
+              // Composer state
+              composerState={composerState}
+              setComposerState={setComposerState}
+              
+              // Mode selections
+              selectedPreset={selectedPreset}
+              selectedMode={selectedMode}
+              setSelectedMode={setSelectedMode}
+              
+              // Dropdown states
+              presetsOpen={presetsOpen}
+              setPresetsOpen={setPresetsOpen}
+              unrealReflectionDropdownOpen={unrealReflectionDropdownOpen}
+              setUnrealReflectionDropdownOpen={setUnrealReflectionDropdownOpen}
+              parallelSelfDropdownOpen={parallelSelfDropdownOpen}
+              setParallelSelfDropdownOpen={setParallelSelfDropdownOpen}
+              ghibliReactionDropdownOpen={ghibliReactionDropdownOpen}
+              setGhibliReactionDropdownOpen={setGhibliReactionDropdownOpen}
+              cyberSirenDropdownOpen={cyberSirenDropdownOpen}
+              setCyberSirenDropdownOpen={setCyberSirenDropdownOpen}
+              
+              // Preset selections
+              selectedUnrealReflectionPreset={selectedUnrealReflectionPreset}
+              setSelectedUnrealReflectionPreset={setSelectedUnrealReflectionPreset}
+              selectedParallelSelfPreset={selectedParallelSelfPreset}
+              setSelectedParallelSelfPreset={setSelectedParallelSelfPreset}
+              selectedGhibliReactionPreset={selectedGhibliReactionPreset}
+              setSelectedGhibliReactionPreset={setSelectedGhibliReactionPreset}
+              selectedCyberSirenPreset={selectedCyberSirenPreset}
+              setSelectedCyberSirenPreset={setSelectedCyberSirenPreset}
+              
+              // Video states
+              isUnrealReflectionVideoEnabled={isUnrealReflectionVideoEnabled}
+              setIsUnrealReflectionVideoEnabled={setIsUnrealReflectionVideoEnabled}
+              
+              // Generation states
+            isGenerating={isGenerating}
+              isEnhancing={isEnhancing}
+              navGenerating={navGenerating}
+              setNavGenerating={setNavGenerating}
+              
+              // Preset data
+              weeklyPresetNames={weeklyPresetNames}
+              availablePresets={availablePresets}
+              presetsLoading={presetsLoading}
+              presetsError={presetsError}
+              
+              // Auth state
+              isAuthenticated={isAuthenticated}
+              
+              // Mobile state
+              isMobile={true}
+              
+              // Handlers
+              closeComposer={() => {
+                setIsComposerOpen(false);
                 setIsMobileComposerOpen(false);
-                navigate('/gallery');
-                
-                // Start generation after navigation to ensure mobile gallery is ready
-                setTimeout(() => {
-                  dispatchGenerate(mappedMode as any, mappedOptions);
-                }, 100);
-              } catch (error) {
-                console.error('Mobile generation failed:', error);
-              }
-            }}
-            selectedFile={selectedFile}
+              }}
+              checkAuthAndRedirect={checkAuthAndRedirect}
+              handlePresetClick={handlePresetClick}
+              handleMagicWandEnhance={handleMagicWandEnhance}
+              handleSaveDraft={handleSaveDraft}
+              dispatchGenerate={dispatchGenerate}
+              clearAllOptionsAfterGeneration={clearAllOptionsAfterGeneration}
+              closeAllDropdowns={closeAllDropdowns}
+              getPresetLabel={getPresetLabel}
+              handleAdditionalStoryImageUpload={handleAdditionalStoryImageUpload}
+              onFileSelect={handleFileSelect}
+              onClearFile={() => {
+                setSelectedFile(null);
+                setPreviewUrl(null);
+                setIsVideoPreview(false);
+                // Switch back to custom mode when file is cleared
+                setComposerState(s => ({ ...s, mode: 'custom' }));
+              }}
+              
+              // Media upload agreement
+              showUploadAgreement={showUploadAgreement}
+              userHasAgreed={userHasAgreed || false}
+              pendingFile={pendingFile}
+              onUploadAgreementAccept={handleUploadAgreementAccept}
+              onUploadAgreementCancel={handleUploadAgreementCancel}
+              onAgreementAccepted={() => setUserHasAgreed(true)}
+              
+              // Refs and measurements
+              containerRef={containerRef}
+              mediaRef={mediaRef}
+              measure={measure}
+            />
+          ) : (
+            // Desktop composer - conditional rendering
+            isComposerOpen && (
+              <LayeredComposer
+                // Core state
             previewUrl={previewUrl}
+                selectedFile={selectedFile}
+                isVideoPreview={isVideoPreview}
             prompt={prompt}
             setPrompt={setPrompt}
+                
+                // Composer state
+                composerState={composerState}
+                setComposerState={setComposerState}
+                
+                // Mode selections
+                selectedPreset={selectedPreset}
+                selectedMode={selectedMode}
+                setSelectedMode={setSelectedMode}
+                
+                // Dropdown states
+                presetsOpen={presetsOpen}
+                setPresetsOpen={setPresetsOpen}
+                unrealReflectionDropdownOpen={unrealReflectionDropdownOpen}
+                setUnrealReflectionDropdownOpen={setUnrealReflectionDropdownOpen}
+                parallelSelfDropdownOpen={parallelSelfDropdownOpen}
+                setParallelSelfDropdownOpen={setParallelSelfDropdownOpen}
+                ghibliReactionDropdownOpen={ghibliReactionDropdownOpen}
+                setGhibliReactionDropdownOpen={setGhibliReactionDropdownOpen}
+                cyberSirenDropdownOpen={cyberSirenDropdownOpen}
+                setCyberSirenDropdownOpen={setCyberSirenDropdownOpen}
+                
+                // Preset selections
+                selectedUnrealReflectionPreset={selectedUnrealReflectionPreset}
+                setSelectedUnrealReflectionPreset={setSelectedUnrealReflectionPreset}
+                selectedParallelSelfPreset={selectedParallelSelfPreset}
+                setSelectedParallelSelfPreset={setSelectedParallelSelfPreset}
+                selectedGhibliReactionPreset={selectedGhibliReactionPreset}
+                setSelectedGhibliReactionPreset={setSelectedGhibliReactionPreset}
+                selectedCyberSirenPreset={selectedCyberSirenPreset}
+                setSelectedCyberSirenPreset={setSelectedCyberSirenPreset}
+                
+                // Video states
+                isUnrealReflectionVideoEnabled={isUnrealReflectionVideoEnabled}
+                setIsUnrealReflectionVideoEnabled={setIsUnrealReflectionVideoEnabled}
+                
+                // Generation states
             isGenerating={isGenerating}
-            onFileSelect={(file) => {
-              setSelectedFile(file);
-              const url = URL.createObjectURL(file);
-              setPreviewUrl(url);
-              setIsVideoPreview(file.type.startsWith('video/'));
-            }}
-          />
+                isEnhancing={isEnhancing}
+                navGenerating={navGenerating}
+                setNavGenerating={setNavGenerating}
+                
+                // Preset data
+                weeklyPresetNames={weeklyPresetNames}
+                availablePresets={availablePresets}
+                presetsLoading={presetsLoading}
+                presetsError={presetsError}
+                
+                // Auth state
+                isAuthenticated={isAuthenticated}
+                
+                // Mobile state
+                isMobile={false}
+                
+                // Handlers
+                closeComposer={() => {
+                  setIsComposerOpen(false);
+                }}
+                checkAuthAndRedirect={checkAuthAndRedirect}
+                handlePresetClick={handlePresetClick}
+                handleMagicWandEnhance={handleMagicWandEnhance}
+                handleSaveDraft={handleSaveDraft}
+                dispatchGenerate={dispatchGenerate}
+                clearAllOptionsAfterGeneration={clearAllOptionsAfterGeneration}
+                closeAllDropdowns={closeAllDropdowns}
+                getPresetLabel={getPresetLabel}
+                handleAdditionalStoryImageUpload={handleAdditionalStoryImageUpload}
+                onFileSelect={handleFileSelect}
+                onClearFile={() => {
+                  setSelectedFile(null);
+                  setPreviewUrl(null);
+                  setIsVideoPreview(false);
+                  // Switch back to custom mode when file is cleared
+                  setComposerState(s => ({ ...s, mode: 'custom' }));
+                }}
+                
+                // Media upload agreement
+                showUploadAgreement={showUploadAgreement}
+                userHasAgreed={userHasAgreed || false}
+                pendingFile={pendingFile}
+                onUploadAgreementAccept={handleUploadAgreementAccept}
+                onUploadAgreementCancel={handleUploadAgreementCancel}
+                onAgreementAccepted={() => setUserHasAgreed(true)}
+                
+                // Refs and measurements
+                containerRef={containerRef}
+                mediaRef={mediaRef}
+                measure={measure}
+              />
+            )
+          )}
         </div>
       ) : (
         <>
@@ -4093,6 +4244,8 @@ const HomeNew: React.FC = () => {
               setSelectedFile(null);
               setPreviewUrl(null);
               setIsVideoPreview(false);
+              // Switch back to custom mode when file is cleared
+              setComposerState(s => ({ ...s, mode: 'custom' }));
             }}
             
             // Media upload agreement

@@ -19,9 +19,9 @@ The mobile site is a responsive version of the Stefna AI art generation platform
   - `isGenerating`: Shows spinner around profile icon
   - `onUploadClick`, `onProfileClick`, `onLoginClick`, `onLogoutClick`: Event handlers
 
-#### 2. MobileComposer (`src/components/MobileComposer.tsx`)
-- **Purpose**: Mobile-optimized AI art generation interface
-- **Features**:
+#### 2. LayeredComposer (Mobile Integration)
+- **Purpose**: Unified AI art generation interface for both desktop and mobile
+- **Mobile Features**:
   - File picker integration
   - Mode selection (Custom, Studio, Presets, Unreal Reflection, Parallel Self, Ghibli Reaction, Neo Tokyo Glitch)
   - Database presets loading
@@ -80,9 +80,9 @@ const isMobile = useIsMobile();
 
 ### Mobile Generation Process
 
-1. **User opens MobileComposer**:
-   - File picker auto-triggers
-   - User selects image from device
+1. **User opens LayeredComposer**:
+   - File picker auto-triggers (for editing modes)
+   - User selects image from device OR types prompt (for Custom mode)
 
 2. **Mode Selection**:
    - Database presets load for "Presets" mode

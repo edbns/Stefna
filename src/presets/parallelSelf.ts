@@ -14,10 +14,10 @@ Built for scroll-stopping visuals that feel mysterious, ethereal, and beautiful.
 Enhanced prompts optimized for Nano Banana's verbosity preferences:
 - Rain Dancer: Cinematic rain scene with emotional depth and resilience
 - The Untouchable: Grayscale fashion portrait with minimalist power
-- Holiday Mirage: Golden-hour luxury fantasy with tropical blur
-- The One That Got Away: Fleeting moment after gala with dramatic lighting
+- Neon Proof: Nighttime streetwear with neon accents and low-angle cinematography
+- The Mechanic: Raw street mechanics with designer workwear and cinematic garage scenes
 - Nightshade: Futuristic silhouette in glowing white minimalism
-- Afterglow: Post-party shimmer with vintage dream texture
+- Getaway Lookbook: Cinematic fashion fugitives in nighttime getaway aftermath
 
 All presets use optimized strength (0.54–0.6) and guidance (7.0–7.5) for Nano Banana.
 
@@ -91,12 +91,12 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     image_prompt_strength: 0.57,
     aspect_ratio: '1:1'
   },
-  // 🌅 Holiday Mirage
+  // 🌅 Neon Proof
   {
-    id: 'parallel_self_holiday_mirage',
-    label: 'Holiday Mirage',
-    prompt: 'Transform this person, couple or group of people in the photo into the cinematic swimwear icon or icons on an unforgettable luxury escape. If female, they wear refined two-piece bikinis inspired by brands like La Perla or Eres — styled in vibrant or soft tones, with glowing skin and wind-swept hair. If male, they appear shirtless and sculpted, in sleek Vilebrequin-style swim shorts, confident and relaxed. Their posture is dynamic and natural — walking barefoot, turning mid-frame, resting on one arm, or stretching in motion. The lighting changes with the mood: golden hour shimmer, overcast glow, or moonlit reflections. The atmosphere draws inspiration from elite travel locations — places like the Maldives, Bora Bora, or similar dreamy destinations for the ultra-wealthy. The scene may include water platforms, wooden walkways, stone terraces, or soft panoramic horizons — always blurred and cinematic, never cliché. The feeling is warm, untouchable, and completely free.',
-    negative_prompt: 'cold tones, artificial tan, makeup overload, cluttered composition, harsh lighting, cheesy travel vibes',
+    id: 'parallel_self_neon_proof',
+    label: 'Neon Proof',
+    prompt: 'Transform this person, couple, or group of people in the photo into fashion-forward streetwear icons styled in bold black and neon, captured at night in a cinematic low-angle editorial photo.\n\n🎨 Accent Color Rules\nEach image must use only one dominant neon accent color with a rotating color:\n* Neon Pink\n* Neon Purple\n* Neon Yellow\n* Neon White 🛑 Never mix colors. Stick to one per image — visible in clothing, lighting, and background signage.\n\n👩‍🎤 Female Styling\nShe wears bold pieces from brands like Off-White, Acne Studios, Rick Owens, and Ambush:\n* Cropped bomber or oversized windbreaker with neon-accent lining\n* Wide-leg cargo pants or long matte coat with glow-trimmed pockets\n* Ribbed tank, asymmetric wrap top, or black blazer worn with nothing under\n* Footwear: chunky sneakers — Nike Dunks, adidas Ozweego, or Balenciaga Runners\n* Accessories: chunky silver chains and  sharp earrings\n* Hair: high ponytail, wet-look back slick, or a single tucked braid\n\n👨‍💼 Male Styling\nWears grounded, structured streetwear using brands like Acronym, A-COLD-WALL*, or Kiko Asics:\n* Techwear jacket over fitted neon tee\n* Corduroy trousers or tactical joggers with neon trim\n* Footwear: Salomon XT-6 or Asics Kiko collab in matching accent color\n* Clean styling: short necklace or visible ink, no flashy accessories\n\n👥 Couples & Groups\nEach person has their own distinct full outfit — no matching. Styling is coordinated through layering and accent color only.\n* One may hold a mini designer tote (Telfar, Diesel, Jacquemus)\n* Others pose casually: hands in pockets, jacket slung over shoulder, leaning\n\n🎥 Camera Angle\nDramatic low-angle shot from ground level, looking upward — the entire body is visible from sneakers to head, with shoes and lower garments dominating the foreground.\n\n🏙️ Scene & Background (Nighttime Only)\nUrban location, no historical buildings. Must include:\n* Neon-lit concrete walls, dark alleys, or metro station entrances\n* Pink/purple/yellow/white neon reflections based on accent color\n* Graffiti details, mist rising from sewer grates\n* smoke catching light across shoes and pants\n* One matte black streetlamp or wall light for scene anchoring\n\n💬 Neon Sign Clue (in same accent color)\nBehind the subject, include one neon sign with a rotating phrase:\n* "NO RULES"\n* "DRESS CODE: CHAOS"\n* "WALK IT OFF"\n* "LOW ANGLE ONLY"\n* "NOT A MODEL"\n* "WEARING POWER"\nSigns appear on the wall or background glass, never blocking the subject.\n\n🔒 Key Technical Rules (Nano Banana)\n* Only one outfit per person\n* Only one pose per subject — no blending or collage\n* No surrealism or fantasy elements\n* Strict facial identity lock\n* Must be nighttime scene\n* Neon accents + smoke must look photoreal, editorial, and cinematic',
+    negative_prompt: 'daylight, historical buildings, matching outfits, fantasy elements, surrealism, bright lighting, cluttered composition, harsh shadows, gaudy accessories',
     strength: 0.59,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
@@ -105,7 +105,7 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     source: 'parallel_self',
     guidance_scale: 7.3,
     num_inference_steps: 30,
-    features: ['holiday_mirage', 'golden_hour', 'luxury_fantasy', 'tropical_blur', 'identity_preserved'],
+    features: ['neon_proof', 'streetwear_fashion', 'low_angle', 'nighttime', 'neon_accent', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 3,
     output_format: 'jpeg',
@@ -113,12 +113,12 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     image_prompt_strength: 0.59,
     aspect_ratio: '4:5'
   },
-  // 💫 Who Got Away
+  // 🔧 The Mechanic
   {
-    id: 'parallel_self_one_that_got_away',
-    label: 'Who Got Away',
-    prompt: 'Transform this person, couple or group of people in the photo into the unforgettable main character or characters of a high-fashion departure scene. They are dressed in striking luxury eveningwear — inspired by designers like Saint Laurent, Mugler, or Balmain — with bold cuts, flowing fabrics, or tailored structure that enhances their presence. Their expression is captivating, caught mid-glance or mid-step, confident and distant. Lighting is cinematic and dynamic: backlit silhouettes, paparazzi-like flares, golden glow from behind, or dramatic shadows playing across reflective surfaces. They appear in motion — walking down grand stairs, stepping out of a black car, or crossing a marble hallway — surrounded by blurred architectural lights and soft movement. Their face(s) and posture are the focus: this is not someone who leaves quietly — this is someone you\'ll remember.',
-    negative_prompt: 'red carpet, full body, happy expression, crowd, gaudy lighting, wide framing',
+    id: 'parallel_self_the_mechanic',
+    label: 'The Mechanic',
+    prompt: 'Transform this person, couple, or group of people in the photo into raw, stylish street mechanics caught mid-repair — photorealistic, greasy, and fashion-forward. Shot at night with an open car hood, oil stains, cinematic shadows, and elevated streetwear details.\n\n🧯 Female Styling\n\nShe wears a designer work jumpsuit — from brands like Y/Project, Dion Lee, Diesel, or Balenciaga — distressed, baggy, or half-zipped.\nBeneath: a sheer asymmetric bralette or cropped stretch top (e.g. Mugler, KNWLS).\nBottoms: torn Rick Owens cargos, oversized Diesel utility jeans, or faded jumpsuit half down and tied around the waist.\nFootwear: dirty but high-end — Maison Margiela Tabi boots, Balenciaga Bulldozer boots, or Off-White high-tops.\nHair is messy-chic: slicked back, low bun, or falling strands with sweat and oil streaks.\nShe leans against the open hood like it\'s her studio — presence calm, dominant, no posing.\n\n🔧 Male Styling\n\nHe wears a dark jumpsuit or vest from A-COLD-WALL, Martine Rose, or Alyx* — structured, zipped or open over bare chest.\nPants: tactical trousers by Acronym or Givenchy, maybe with dirt-worn logo taping.\nFootwear: Rick Owens sneakers, Kiko Asics, or Diesel boots — stained but recognizable in design.\nGrease smudges on neck, jawline, or wrists. Visible tattoo, chain, or cuff peeking out.\nOne hand on the hood, another holding a wrench — caught in work, not a fashion pose.\n\n👥 Couples & Groups\n\nEach subject has their own fit — no matching looks, no uniforms.\nFashion coordination comes from tone, not exact styling.\nThey move in the scene:\n– one crouched by the wheel,\n– one under the hood,\n– one standing with a foot on the jack.\nBaggy silhouettes, dropped layers, and tucked sleeves give a relaxed, gritty elegance.\nAt least one designer detail per person must show — a tag, signature silhouette, or shoe logo (worn naturally).\n\n🚗 Car & Scene\n\nOpen-hood vehicle takes center — smoke and tools spilling from inside.\nCar: matte black BMW E30, Mustang, or Japanese import — street-tuned and worn.\nScene: cracked pavement, rusty metal gates, smeared workshop walls, oil spills on concrete.\nScattered tools, used gloves, and a ripped racing sticker or old fashion mag page taped on the wall.\n\n🎥 Camera Angle\n\nLow, wide, cinematic — shot from the sidewalk or garage floor, looking upward.\nForeground: designer shoes and dirty hems.\nMidground: torsos, tools, movement.\nBackground: open hood, grit, rising smoke.\n\n💡 Lighting & Mood\n\nNo neon.\nLight source: overhead garage bulb, side lamp, or car headlights.\nShadows cast deep and long — silhouettes sharp, grease shines on cheekbones and knuckles.\nMist and smoke subtly catch the light — never exaggerated.\n\n🔧 Tech Notes for Nano Banana\n\nNo surrealism, no fantasy.\n\nOutfits must include at least one designer element — boots, pants, jacket, etc.\n\nOne subject = one outfit. No mixing.\n\nFacial identity and anatomy must match input.\n\nCar must be open. Scene must feel raw, real, and cinematic.',
+    negative_prompt: 'clean clothes, fantasy elements, surrealism, bright lighting, matching outfits, formal wear, red carpet, gaudy lighting, wide framing, happy expression, crowd',
     strength: 0.58,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
@@ -127,7 +127,7 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     source: 'parallel_self',
     guidance_scale: 7.2,
     num_inference_steps: 30,
-    features: ['one_that_got_away', 'fleeting_moment', 'dramatic_lighting', 'unreadable_expression', 'identity_preserved'],
+    features: ['the_mechanic', 'street_mechanics', 'fashion_forward', 'greasy_elegance', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 3,
     output_format: 'jpeg',
@@ -157,12 +157,12 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     image_prompt_strength: 0.56,
     aspect_ratio: '1:1'
   },
-  // ✨ Afterglow
+  // 🚗 Getaway Lookbook
   {
-    id: 'parallel_self_afterglow',
-    label: 'Afterglow',
-    prompt: 'Transform this person, couple or group of people in the photo into the star or stars of a cinematic after-party moment. They are dressed in eye-catching designer eveningwear — inspired by brands like Mugler, Tom Ford, or Celine — with shimmering fabrics, sleek silhouettes, or minimal sheer details. Their skin glows softly under ambient golden or silver lighting, and their expression is calm, poised, and untouchable. The scene feels dreamy and intimate: soft reflections from disco lights, champagne-colored lens flares, mirrored walls, or blurred elevator interiors. Their pose is relaxed but magnetic — turning slightly, leaning back into a reflective surface, or frozen mid-step in dim golden haze. This is the quiet, final photo that becomes the most iconic.',
-    negative_prompt: 'cartoon, neon chaos, crowds, smiling group shots, distorted anatomy, oversaturated colors, nightclub cliché',
+    id: 'parallel_self_getaway_lookbook',
+    label: 'Getaway Lookbook',
+    prompt: 'Transform this person, couple, or group of people in the photo into cinematic fashion fugitives caught in the tense aftermath of a nighttime getaway.\n\n👠 Female Styling\nShe appears in one of:\n* A black leather trench coat over a short mesh dress or bodysuit, paired with Balenciaga Knife boots\n* A cropped bomber and leather mini skirt, with thigh holster strap and pointed heels\n* A fitted zip-front jacket with a sculpted silhouette, dark shades, and slicked-back hair in a low bun\nAccessories: gloves, sunglasses at night, clutch or phone casually held Expression: alert but composed\n\n🖤 Male Styling\nHe appears in one of:\n* A matte black bomber with hidden zippers, black cargos, and Rick Owens boots\n* A black turtleneck + trench coat combo with a duffel bag slung over one shoulder\n* A tactical zip-up jacket, dark jeans, dirty gloves in hand, standing near an open trunk\nFootwear: Always grounded and masculine — Rick Owens boots, combat-style Prada Monoliths, or black Salomon XT-6s Accessories: clean chain, black wristwatch, or subtle tattoos Vibe: silent operator — strong presence, no noise\n\n👫 Couples\nEach partner keeps their distinct styling based on gender:\n* No outfit swapping\n* One may be leaning on the car or the motorbike while the other looks over shoulder\n* Natural interaction encouraged (walking past each other, one holding the keys, etc.)\n\n👥 Groups\n* Each subject wears ONE outfit, based on their gender\n* No mixing of styles — men wear male looks, women wear female looks\n* At least one person leans casually against the vehicle — hand on hood or bike.\n* Others may be walking, standing confidently but all looking forward\n\n🎬 Scene\n* Matte black getaway car and motorbike behind them\n* Trunk ajar, faint red tail light glow, light smoke or mist\n* Urban tunnel or alley setting, graffiti and flickering red/white lights\n\n🎥 Camera Angle\n* Low, wide-angle shot from the sidewalk — looking slightly upward\n* Shoes and vehicle dominate the foreground\n* Full-body styling visible, no crops or blending\n\n💡 Lighting\n* Spotlight from above or behind car\n* Red/white reflections on leather, metal, and glass\n* Street shadows, graffiti, mist, and ambient bounce light\n\n⚙️ Technical Rules (for Nano Banana)\n* No surrealism\n* Identity lock ON — faces, body, and features must match input\n* One full outfit per person — no mix-and-match\n* Gender-specific fashion clarity for solo, couples, and groups\n* One leaning subject in groups or couple\n* Cinematic framing — think Vogue x John Wick',
+    negative_prompt: 'daylight, happy expression, crowd, gaudy lighting, wide framing, matching outfits, formal wear, bright colors, fantasy elements, surrealism',
     strength: 0.57,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
@@ -171,7 +171,7 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     source: 'parallel_self',
     guidance_scale: 7.1,
     num_inference_steps: 30,
-    features: ['afterglow', 'post_party_shimmer', 'soft_reflections', 'vintage_dream', 'identity_preserved'],
+    features: ['getaway_lookbook', 'fashion_fugitives', 'nighttime_getaway', 'cinematic_aftermath', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 3,
     output_format: 'jpeg',

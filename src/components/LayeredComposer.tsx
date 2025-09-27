@@ -75,6 +75,9 @@ interface LayeredComposerProps {
   // Auth state
   isAuthenticated: boolean
   
+  // Mobile state
+  isMobile?: boolean
+  
   // Handlers
   closeComposer: () => void
   checkAuthAndRedirect: () => boolean
@@ -143,6 +146,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
   presetsLoading,
   presetsError,
   isAuthenticated,
+  isMobile,
   closeComposer,
   checkAuthAndRedirect,
   handlePresetClick,
@@ -191,9 +195,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
   }, [setComposerState, setSelectedMode, closeAllDropdowns])
 
   return (
-    <div className="fixed bottom-2 left-1/2 transform -translate-x-1/2 z-[999999] w-[60%] min-w-[600px]">
-      {/* Photo preview container - shows above composer when photo is uploaded */}
-      {previewUrl && (
+    <div className={`fixed ${isMobile ? 'bottom-0 left-0 right-0 w-full' : 'bottom-2 left-1/2 transform -translate-x-1/2 w-[60%] min-w-[600px]'} z-[999999]`}>
+      {/* Photo preview container - shows above composer when photo is uploaded (hidden for Custom mode) */}
+      {previewUrl && composerState.mode !== 'custom' && (
         <div className="mb-4 flex justify-center">
           <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block border" style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
             
@@ -241,8 +245,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   // Clear the selected file in parent component
                   onClearFile()
                   
-                  // Reset composer to default state (keep Edit mode as default)
-                  setComposerState((s: any) => ({ ...s, mode: 'edit' }))
+                  // Reset composer to default state (switch back to Custom mode)
+                  setComposerState((s: any) => ({ ...s, mode: 'custom' }))
                   setSelectedMode(null)
                   closeAllDropdowns()
                   
@@ -260,10 +264,10 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
       )}
 
       {/* Composer bar - always visible with all existing functionality */}
-      <div className="px-4 py-3">
+      <div className={`${isMobile ? 'px-4 py-3 flex-1 flex flex-col' : 'px-4 py-3'}`}>
         
-        {/* Prompt Input - ONLY VISIBLE for manual modes (Custom, Edit) */}
-        {(['custom', 'edit'].includes(composerState.mode || '')) && (
+        {/* Prompt Input - ALWAYS VISIBLE (Custom is default, Edit when photo uploaded) */}
+        {(['custom', 'edit'].includes(composerState.mode || '') || !composerState.mode) && (
           <div>
             <div className="relative">
               <textarea
@@ -273,21 +277,18 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   setPrompt(e.target.value);
                 }}
                 placeholder={(() => {
-                  if (!selectedFile) {
-                    return "Upload a photo first to start editing..."
-                  }
                   switch (composerState.mode) {
                     case 'edit': 
-                      return "Change something, add something — your call ... tap ✨ for a little magic."
+                      return !selectedFile ? "Upload a photo first to start editing..." : "Change something, add something — your call ... tap ✨ for a little magic."
                     case 'custom': 
                       return "Type something weird. We'll make it art ... tap ✨ for a little magic."
                     default: 
-                      return "Custom prompt (optional) - will be combined with selected preset"
+                      return "Type something weird. We'll make it art ... tap ✨ for a little magic."
                   }
                 })()}
                 className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border"
                 style={{ backgroundColor: '#000000', borderColor: '#333333' }}
-                disabled={!selectedFile}
+                disabled={composerState.mode === 'edit' ? !selectedFile : false}
                 maxLength={4000}
                 data-testid="custom-prompt-input"
               />
@@ -342,15 +343,13 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     }
                   }}
                   disabled={
-                    !selectedFile ||
-                    !prompt.trim() ||
+                    (composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
                     (composerState.mode === 'custom' && !prompt.trim()) ||
                     (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
                     navGenerating
                   }
                   className={
-                    !selectedFile ||
-                    !prompt.trim() ||
+                    (composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
                     (composerState.mode === 'custom' && !prompt.trim()) ||
                     (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
                     navGenerating
@@ -371,14 +370,22 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           </div>
         )}
 
-        {/* Single row with all controls */}
-        <div className="flex items-center justify-between gap-1 flex-wrap rounded-xl p-3 border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
-          {/* Left: Upload button and Mode buttons */}
-          <div className="flex items-center gap-2">
+        {/* Controls layout - different for mobile vs desktop */}
+        {isMobile ? (
+          /* Mobile Layout: Compact single row */
+          <div className="flex flex-col gap-2 rounded-xl p-3 border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
             
-            {/* Upload Photo Button */}
+            {/* Photo Editing Mode Label and Upload Button - Same Row */}
+            <div className="flex items-center justify-center gap-2">
+              <div className="text-white text-xs font-medium">
+                Photo Editing Mode
+              </div>
+              
+              <div className="relative">
             <button
               onClick={() => {
+                    if (!checkAuthAndRedirect()) return
+                    
                 const input = document.createElement('input')
                 input.type = 'file'
                 input.accept = 'image/*'
@@ -388,66 +395,27 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   if (file) {
                     console.log('📸 Photo selected:', file.name)
                     onFileSelect(file)
+                        // Automatically switch to edit mode when photo is uploaded
+                        setComposerState((s: any) => ({ ...s, mode: 'edit' }))
                   }
                 }
                 input.click()
               }}
-              className="px-3 py-1.5 rounded-2xl text-xs font-medium transition-all duration-300 text-white flex items-center gap-2 hover:scale-105 upload relative overflow-hidden"
+                  className="px-3 py-1.5 rounded-2xl text-xs font-medium transition-all duration-300 text-white flex items-center gap-2 hover:scale-105 upload"
               style={{ backgroundColor: '#000000' }}
               title="Upload a photo to get started"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
-              <Plus size={16} className="relative z-10" />
-              <span className="relative z-10">Upload</span>
+                  <Plus size={16} />
+                  <span>Upload</span>
             </button>
-            
-            {/* Custom Prompt button - HIDDEN */}
-            {false && (
-            <div className="relative" data-custom-dropdown>
-              <div className="relative group">
-                <button
-                  onClick={async () => {
-                    if (!checkAuthAndRedirect()) return
-                    
-                    // Require photo upload first
-                    if (!selectedFile) {
-                      return
-                    }
-                    
-                    if (composerState.mode === 'custom') {
-                      closeAllDropdowns()
-                    } else {
-                      closeAllDropdowns()
-                      setComposerState((s: any) => ({ ...s, mode: 'custom' }))
-                      setSelectedMode('presets')
-                    }
-                  }}
-                  className={
-                    composerState.mode === 'custom'
-                      ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                      : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
-                  }
-                  data-testid="custom-button"
-                  style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
-                  data-has-file={!!selectedFile}
-                >
-                  Custom
-                </button>
-                
-                {/* Custom tooltip */}
-                {!selectedFile && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
-                    Please upload a photo first to get started
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                   </div>
-                )}
               </div>
-            </div>
-            )}
 
-            {/* Edit My Photo™ button */}
-            <div className="relative" data-edit-dropdown>
-              <div className="relative group">
+            {/* Editing Modes Row */}
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              
+              {/* Studio Button */}
+              <div className="relative">
                 <button
                   onClick={async () => {
                     if (!checkAuthAndRedirect()) return
@@ -471,114 +439,14 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                   }
                   style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
+                  title={!selectedFile ? 'Upload a photo first to use Studio mode' : 'Switch to Studio mode'}
                 >
                   Studio
                 </button>
-                
-                {/* Custom tooltip */}
-                {!selectedFile && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
-                    Please upload a photo first to get started
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Presets dropdown button */}
-            <div className="relative" data-presets-dropdown>
-              <div className="relative group">
-                <button
-                  onClick={() => {
-                    if (!checkAuthAndRedirect()) return
-                    
-                    // Require photo upload first
-                    if (!selectedFile) {
-                      return
-                    }
-                    
-                    console.log('🎯 Presets button clicked!')
-                    console.log('🔍 Current presetsOpen state:', presetsOpen)
-                    console.log('🔍 Available presets:', weeklyPresetNames)
-                    
-                    // Close Custom/Edit modes when presets is clicked
-                    if (composerState.mode === 'custom' || composerState.mode === 'edit') {
-                      setComposerState((s: any) => ({ ...s, mode: null }))
-                    }
-                    
-                    // Toggle presets dropdown
-                      setPresetsOpen(!presetsOpen)
-                    console.log('🔄 Toggling presetsOpen to:', !presetsOpen)
-                  }}
-                  className={
-                    selectedPreset
-                      ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                      : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
-                  }
-                  data-nav-button
-                  data-nav-type="presets"
-                  style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
-                >
-                  {selectedPreset ? getPresetLabel(selectedPreset as string, availablePresets) : 'Presets'}
-                </button>
-                
-                {/* Custom tooltip */}
-                {!selectedFile && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
-                    Please upload a photo first to get started
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
-                  </div>
-                )}
-              </div>
-              {presetsOpen && (
-                <div className="absolute bottom-full left-0 mb-2 rounded-xl p-3 w-80 z-50 shadow-2xl shadow-black/20 border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
-                  <div className="space-y-1">
-                    {/* Loading state */}
-                    {presetsLoading && (
-                      <div className="px-3 py-2 text-sm text-white/70">
-                        Loading presets...
-                      </div>
-                    )}
-
-                    {/* Error state */}
-                    {presetsError && (
-                      <div className="px-3 py-2 text-sm text-red-400">
-                        Failed to load presets
-                      </div>
-                    )}
-
-                    {/* Preset options */}
-                    {!presetsLoading && !presetsError && weeklyPresetNames.map((name) => (
-                      <button
-                        key={name}
-                        onClick={() => {
-                          console.log('🎯 Preset clicked:', name)
-                          console.log('🔍 About to call handlePresetClick with:', name)
-                          handlePresetClick(name)
-                          setPresetsOpen(false)
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${
-                          selectedPreset === name 
-                            ? 'bg-white/90 backdrop-blur-md text-black' 
-                            : 'text-white hover:text-white hover:bg-white/10'
-                        }`}
-                      >
-                        <span>{getPresetLabel(String(name), availablePresets)}</span>
-                        {selectedPreset === name ? (
-                          <div className="w-4 h-4 rounded-full bg-white border-2 border-white/30"></div>
-                        ) : (
-                          <div className="w-4 h-4 rounded-full border-2 border-white/30"></div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Unreal Reflection™ button */}
-            <div className="relative" data-unrealreflection-dropdown>
-              <div className="relative group">
+              {/* Unreal Reflection™ Button */}
+              <div className="relative">
                 <button
                 onClick={async () => {
                   if (!checkAuthAndRedirect()) return
@@ -604,27 +472,15 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                     : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
-                title={!selectedFile ? 'Please upload a photo first to get started' : (isAuthenticated ? 'Switch to Unreal Reflection™ mode' : 'Explore Unreal Reflection™ mode')}
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
+                  title={!selectedFile ? 'Upload a photo first to use Unreal Reflection mode' : 'Switch to Unreal Reflection mode'}
               >
-                {selectedUnrealReflectionPreset ? 
-                  UNREAL_REFLECTION_PRESETS.find((p: any) => p.id === selectedUnrealReflectionPreset)?.label || 'Unreal Reflection™' 
-                  : 'Unreal Reflection™'
-                }
+                  Unreal Reflection™
               </button>
-              
-              {/* Custom tooltip */}
-              {!selectedFile && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
-                  Please upload a photo first to get started
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
-                </div>
-              )}
-            </div>
               
               {/* Unreal Reflection™ presets dropdown */}
               {composerState.mode === 'unrealreflection' && unrealReflectionDropdownOpen && (
-                <div className="absolute bottom-full left-0 mb-2 z-50">
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
                   <UnrealReflectionPicker
                     value={selectedUnrealReflectionPreset || undefined}
                     onVideoToggle={(enabled) => {
@@ -660,11 +516,10 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               )}
             </div>
 
-            {/* Parallel Self™ button */}
-            <div className="relative" data-parallelself-dropdown>
-              <div className="relative group">
+              {/* Parallel Self™ Button */}
+              <div className="relative">
                 <button
-                onClick={() => {
+                  onClick={async () => {
                   if (!checkAuthAndRedirect()) return
                   
                   // Require photo upload first
@@ -674,9 +529,12 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   
                   if (composerState.mode === 'parallelself') {
                     closeAllDropdowns()
+                      setParallelSelfDropdownOpen(!parallelSelfDropdownOpen)
                   } else {
                     closeAllDropdowns()
                     setComposerState((s: any) => ({ ...s, mode: 'parallelself' }))
+                      setSelectedMode('presets')
+                      setSelectedParallelSelfPreset(null)
                     setParallelSelfDropdownOpen(true)
                   }
                 }}
@@ -685,27 +543,15 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                     : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
-                title={!selectedFile ? 'Please upload a photo first to get started' : (isAuthenticated ? 'Switch to Parallel Self™ mode' : 'Explore Parallel Self™ mode')}
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
+                  title={!selectedFile ? 'Upload a photo first to use Parallel Self mode' : 'Switch to Parallel Self mode'}
               >
-                {selectedParallelSelfPreset ? 
-                  PARALLEL_SELF_PRESETS.find((p: any) => p.id === selectedParallelSelfPreset)?.label || 'Parallel Self™' 
-                  : 'Parallel Self™'
-                }
+                  Parallel Self™
               </button>
-              
-              {/* Custom tooltip */}
-              {!selectedFile && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
-                  Please upload a photo first to get started
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
-                </div>
-              )}
-            </div>
               
               {/* Parallel Self™ presets dropdown */}
               {composerState.mode === 'parallelself' && parallelSelfDropdownOpen && (
-                <div className="absolute bottom-full left-0 mb-2 z-50">
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
                   <ParallelSelfPicker
                     value={selectedParallelSelfPreset || undefined}
                     onChange={async (presetId) => {
@@ -735,8 +581,83 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               )}
             </div>
 
-            {/* Studio Ghibli Reaction™ button */}
-            <div className="relative" data-ghiblireact-dropdown>
+            </div>
+          </div>
+        ) : (
+          /* Desktop Layout: Original single row */
+          <div className="flex items-center justify-between gap-1 flex-wrap rounded-xl p-3 border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
+            {/* Left: Upload button and Mode buttons */}
+            <div className="flex items-center gap-2">
+              
+              {/* Photo Editing Mode Label */}
+              <div className="text-white text-xs font-medium px-2 py-1">
+                Photo Editing Mode
+                      </div>
+
+              {/* Upload Photo Button - ALWAYS VISIBLE */}
+              <div className="relative">
+                      <button
+                        onClick={() => {
+                  if (!checkAuthAndRedirect()) return
+                  
+                  const input = document.createElement('input')
+                  input.type = 'file'
+                  input.accept = 'image/*'
+                  input.onchange = (e) => {
+                    const target = e.target as HTMLInputElement
+                    const file = target.files?.[0]
+                    if (file) {
+                      console.log('📸 Photo selected:', file.name)
+                      onFileSelect(file)
+                      // Automatically switch to edit mode when photo is uploaded
+                      setComposerState((s: any) => ({ ...s, mode: 'edit' }))
+                    }
+                  }
+                  input.click()
+                }}
+                className="px-3 py-1.5 rounded-2xl text-xs font-medium transition-all duration-300 text-white flex items-center gap-2 hover:scale-105 upload"
+                style={{ backgroundColor: '#000000' }}
+                title="Upload a photo to get started"
+              >
+                <Plus size={16} />
+                <span>Upload</span>
+              </button>
+            </div>
+
+              {/* Custom Prompt button - HIDDEN (prompt box makes it clear) */}
+              {false && (
+            <div className="relative" data-custom-dropdown>
+              <div className="relative group">
+                <button
+                onClick={async () => {
+                  if (!checkAuthAndRedirect()) return
+                  
+                    if (composerState.mode === 'custom') {
+                    closeAllDropdowns()
+                  } else {
+                    closeAllDropdowns()
+                      setComposerState((s: any) => ({ ...s, mode: 'custom' }))
+                    setSelectedMode('presets')
+                      // Clear uploaded photo when switching to Custom mode (text-to-image)
+                      onClearFile()
+                  }
+                }}
+                className={
+                    composerState.mode === 'custom'
+                    ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
+                }
+                  data-testid="custom-button"
+                  style={{ cursor: 'pointer' }}
+              >
+                  Custom
+              </button>
+                </div>
+            </div>
+              )}
+
+              {/* Edit My Photo™ button - ALWAYS VISIBLE */}
+            <div className="relative" data-edit-dropdown>
               <div className="relative group">
                 <button
                 onClick={async () => {
@@ -747,60 +668,107 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     return
                   }
                   
-                  if (composerState.mode === 'ghiblireact') {
+                    if (composerState.mode === 'edit') {
                     closeAllDropdowns()
-                        setGhibliReactionDropdownOpen(!ghibliReactionDropdownOpen)
                   } else {
                     closeAllDropdowns()
-                    setComposerState((s: any) => ({ ...s, mode: 'ghiblireact' }))
+                      setComposerState((s: any) => ({ ...s, mode: 'edit' }))
                     setSelectedMode('presets')
-                    setSelectedGhibliReactionPreset(null)
-                    setGhibliReactionDropdownOpen(true)
                   }
                 }}
                 className={
-                  composerState.mode === 'ghiblireact'
+                    composerState.mode === 'edit'
                     ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                     : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
-                title={!selectedFile ? 'Please upload a photo first to get started' : (isAuthenticated ? 'Switch to Studio Ghibli Reaction mode' : 'Explore Studio Ghibli Reaction mode')}
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
+                  title={!selectedFile ? 'Upload a photo first to use Studio mode' : 'Switch to Studio mode'}
               >
-                {selectedGhibliReactionPreset ? 
-                  GHIBLI_REACTION_PRESETS.find((p: any) => p.id === selectedGhibliReactionPreset)?.label || 'Ghibli Reaction' 
-                  : 'Ghibli Reaction'
+                  Studio
+              </button>
+              
+              {/* Custom tooltip */}
+              {!selectedFile && (
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
+                    Upload a photo first to use Studio mode
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
+                </div>
+              )}
+            </div>
+            </div>
+
+            {/* Unreal Reflection™ button - ALWAYS VISIBLE */}
+            <div className="relative" data-unrealreflection-dropdown>
+              <div className="relative group">
+                <button
+                onClick={async () => {
+                  if (!checkAuthAndRedirect()) return
+                  
+                  // Require photo upload first
+                  if (!selectedFile) {
+                    return
+                  }
+                  
+                  if (composerState.mode === 'unrealreflection') {
+                    closeAllDropdowns()
+                        setUnrealReflectionDropdownOpen(!unrealReflectionDropdownOpen)
+                  } else {
+                    closeAllDropdowns()
+                    setComposerState((s: any) => ({ ...s, mode: 'unrealreflection' }))
+                    setSelectedMode('presets')
+                    setSelectedUnrealReflectionPreset(null)
+                    setUnrealReflectionDropdownOpen(true)
+                  }
+                }}
+                className={
+                  composerState.mode === 'unrealreflection'
+                    ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
+                }
+                style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
+                title={!selectedFile ? 'Upload a photo first to use Unreal Reflection™' : (isAuthenticated ? 'Switch to Unreal Reflection™ mode' : 'Explore Unreal Reflection™ mode')}
+              >
+                {selectedUnrealReflectionPreset ? 
+                  UNREAL_REFLECTION_PRESETS.find((p: any) => p.id === selectedUnrealReflectionPreset)?.label || 'Unreal Reflection™' 
+                  : 'Unreal Reflection™'
                 }
               </button>
               
               {/* Custom tooltip */}
               {!selectedFile && (
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
-                  Please upload a photo first to get started
+                  Upload a photo first to use Unreal Reflection™
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                 </div>
               )}
             </div>
               
-              {/* Ghibli Reaction presets dropdown */}
-              {composerState.mode === 'ghiblireact' && ghibliReactionDropdownOpen && (
+              {/* Unreal Reflection™ presets dropdown */}
+              {composerState.mode === 'unrealreflection' && unrealReflectionDropdownOpen && (
                 <div className="absolute bottom-full left-0 mb-2 z-50">
-                  <GhibliReactionPicker
-                    value={selectedGhibliReactionPreset || undefined}
+                  <UnrealReflectionPicker
+                    value={selectedUnrealReflectionPreset || undefined}
+                    onVideoToggle={(enabled) => {
+                      setIsUnrealReflectionVideoEnabled(enabled);
+                      console.log('Video enabled for Unreal Reflection:', enabled);
+                    }}
                     onChange={async (presetId) => {
-                      setSelectedGhibliReactionPreset(presetId || null)
-                      setGhibliReactionDropdownOpen(false)
+                      setSelectedUnrealReflectionPreset(presetId || null)
+                      setUnrealReflectionDropdownOpen(false)
                       
-                      // Auto-generate when Ghibli Reaction preset is selected
+                      // Auto-generate when Unreal Reflection preset is selected
                       if (presetId && selectedFile && isAuthenticated) {
-                        console.log('Auto-generating Ghibli Reaction with preset:', presetId)
+                        console.log('Auto-generating Unreal Reflection with preset:', presetId)
                         // Redirect immediately when preset is selected
                         navigate('/profile')
                         try {
-                          await dispatchGenerate('ghiblireact', {
-                            ghibliReactionPresetId: presetId
+                          await dispatchGenerate('unrealreflection', {
+                            unrealReflectionPresetId: presetId,
+                            enableVideo: isUnrealReflectionVideoEnabled,
+                            forVideo: isUnrealReflectionVideoEnabled
                           })
                         } catch (error) {
-                          console.error('❌ Ghibli Reaction auto-generation failed:', error)
+                          console.error('❌ Unreal Reflection auto-generation failed:', error)
                           setTimeout(() => {
                             clearAllOptionsAfterGeneration()
                           }, 300)
@@ -813,11 +781,11 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               )}
             </div>
 
-            {/* Cyber Siren™ button */}
-            <div className="relative" data-cyber-siren-dropdown>
+            {/* Parallel Self™ button - ALWAYS VISIBLE */}
+            <div className="relative" data-parallelself-dropdown>
               <div className="relative group">
                 <button
-                onClick={async () => {
+                onClick={() => {
                   if (!checkAuthAndRedirect()) return
                   
                   // Require photo upload first
@@ -825,60 +793,58 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     return
                   }
                   
-                  if (composerState.mode === 'cyber-siren') {
-                    closeAllDropdowns()
-                        setCyberSirenDropdownOpen(!cyberSirenDropdownOpen)
+                  if (composerState.mode === 'parallelself') {
+                    // Toggle dropdown when already in parallelself mode
+                    setParallelSelfDropdownOpen(!parallelSelfDropdownOpen)
                   } else {
                     closeAllDropdowns()
-                    setComposerState((s: any) => ({ ...s, mode: 'cyber-siren' }))
-                    setSelectedMode('presets')
-                    setSelectedCyberSirenPreset(null)
-                    setCyberSirenDropdownOpen(true)
+                    setComposerState((s: any) => ({ ...s, mode: 'parallelself' }))
+                    setParallelSelfDropdownOpen(true)
                   }
                 }}
                 className={
-                  composerState.mode === 'cyber-siren'
+                  composerState.mode === 'parallelself'
                     ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
                     : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
-                title={!selectedFile ? 'Please upload a photo first to get started' : (isAuthenticated ? 'Switch to Cyber Siren™ mode' : 'Explore Cyber Siren™ mode')}
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
+                title={!selectedFile ? 'Upload a photo first to use Parallel Self™' : (isAuthenticated ? 'Switch to Parallel Self™ mode' : 'Explore Parallel Self™ mode')}
               >
-                {selectedCyberSirenPreset ? 
-                  CYBER_SIREN_PRESETS.find((p: any) => p.id === selectedCyberSirenPreset)?.label || 'Cyber Siren™' 
-                  : 'Cyber Siren™'
+                {selectedParallelSelfPreset ? 
+                  PARALLEL_SELF_PRESETS.find((p: any) => p.id === selectedParallelSelfPreset)?.label || 'Parallel Self™' 
+                  : 'Parallel Self™'
                 }
               </button>
               
               {/* Custom tooltip */}
               {!selectedFile && (
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50" style={{ backgroundColor: '#000000' }}>
-                  Please upload a photo first to get started
+                  Upload a photo first to use Parallel Self™
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                 </div>
               )}
             </div>
               
-              {/* Cyber Siren presets dropdown */}
-              {composerState.mode === 'cyber-siren' && cyberSirenDropdownOpen && (
+              {/* Parallel Self™ presets dropdown */}
+              {composerState.mode === 'parallelself' && parallelSelfDropdownOpen && (
                 <div className="absolute bottom-full left-0 mb-2 z-50">
-                  <CyberSirenPicker
-                    value={selectedCyberSirenPreset || undefined}
+                  <ParallelSelfPicker
+                    value={selectedParallelSelfPreset || undefined}
                     onChange={async (presetId) => {
-                      setSelectedCyberSirenPreset(presetId || null)
-                      setCyberSirenDropdownOpen(false)
+                      setSelectedParallelSelfPreset(presetId || null)
+                      setParallelSelfDropdownOpen(false)
                       
-                      // Auto-generate when Cyber Siren preset is selected
+                      // Auto-generate when Parallel Self preset is selected
                       if (presetId && selectedFile && isAuthenticated) {
-                        console.log('Auto-generating Cyber Siren with preset:', presetId)
+                        console.log('Auto-generating Parallel Self with preset:', presetId)
                         // Redirect immediately when preset is selected
                         navigate('/profile')
                         try {
-                          await dispatchGenerate('cyber-siren', {
-                            cyberSirenPresetId: presetId
+                          await dispatchGenerate('parallelself', {
+                            parallelSelfPresetId: presetId
                           })
                         } catch (error) {
-                          console.error('❌ Cyber Siren auto-generation failed:', error)
+                          console.error('❌ Parallel Self auto-generation failed:', error)
                           setTimeout(() => {
                             clearAllOptionsAfterGeneration()
                           }, 300)
@@ -894,7 +860,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           </div>
 
           {/* Right: Action buttons */}
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 ${isMobile ? 'w-full justify-center' : ''}`}>
             {/* Draft button - temporarily hidden */}
             {false && (
             <button
@@ -914,62 +880,12 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               disabled={!isAuthenticated}
             >
               <FileText size={14} />
-            </button>
-            )}
-            {/* Generate button moved to prompt box */}
-            {false && (['custom', 'edit'].includes(composerState.mode || '')) && (
-              <button 
-                onClick={async () => {
-                  if (!checkAuthAndRedirect()) return
-                  
-                  // Redirect immediately when user clicks generate
-                  navigate('/profile')
-                  
-                  setNavGenerating(true)
-                  window.dispatchEvent(new CustomEvent('close-composer'));
-                  
-                  try {
-                    if (composerState.mode === 'custom') {
-                      console.log('Custom mode - calling dispatchGenerate')
-                      await dispatchGenerate('custom', {
-                        customPrompt: prompt
-                      })
-                    } else if (composerState.mode === 'edit') {
-                      console.log('✏️ Edit mode - calling dispatchGenerate')
-                      await dispatchGenerate('edit', {
-                        editPrompt: prompt
-                      })
-                    }
-                  } catch (error) {
-                    console.error('❌ Generation failed:', error)
-                  } finally {
-                    setNavGenerating(false)
-                  }
-                }} 
-                disabled={
-                  (composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
-                  (composerState.mode === 'custom' && !prompt.trim()) ||
-                  navGenerating
-                } 
-                className={
-                  ((composerState.mode === 'edit' && (!selectedFile || !prompt.trim())) ||
-                   (composerState.mode === 'custom' && !prompt.trim()) ||
-                   navGenerating)
-                  ? 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-black text-white/50 cursor-not-allowed'
-                  : 'w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
-                }
-                aria-label="Generate"
-                title="Generate AI content"
-              >
-                {navGenerating ? (
-                  <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                ) : (
-                  <ArrowUp size={16} />
-                )}
               </button>
             )}
           </div>
         </div>
+        )}
+
       </div>
       
       {/* Media Upload Agreement Modal */}

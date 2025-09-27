@@ -1,9 +1,8 @@
 import React from 'react';
-import { Plus, LogIn, User, LogOut, BookOpen } from 'lucide-react';
+import { LogIn, User, LogOut, BookOpen } from 'lucide-react';
 import authService from '../services/authService';
 
 interface MobileFloatingNavProps {
-  onUploadClick: () => void;
   onProfileClick: () => void;
   onLoginClick: () => void;
   onLogoutClick: () => void;
@@ -12,7 +11,6 @@ interface MobileFloatingNavProps {
 }
 
 const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
-  onUploadClick,
   onProfileClick,
   onLoginClick,
   onLogoutClick,
@@ -22,7 +20,7 @@ const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
   const isAuthenticated = authService.isAuthenticated();
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-3">
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-3">
       {/* Get The Look Button */}
       <button
         onClick={onBestPracticesClick}
@@ -38,14 +36,6 @@ const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
         </div>
       </button>
 
-      {/* Upload Button - Always visible */}
-      <button
-        onClick={onUploadClick}
-        className="w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
-        title="Upload & Generate"
-      >
-        <Plus size={24} className="text-black" />
-      </button>
 
       {/* Login or Profile Button - Context aware */}
       {isAuthenticated ? (

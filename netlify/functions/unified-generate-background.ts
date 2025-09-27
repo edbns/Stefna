@@ -508,25 +508,25 @@ interface UnifiedGenerationResponse {
 // Mode-specific BFL API model configurations (primary)
 const BFL_PHOTO_MODELS = [
   {
-    endpoint: 'flux-pro-1.1',
-    name: 'BFL Flux Pro 1.1',
-    cost: 'low',
-    priority: 1,
-    description: 'Primary - direct BFL API for presets and custom prompts'
-  },
-  {
     endpoint: 'flux-pro-1.1-ultra',
     name: 'BFL Flux Pro 1.1 Ultra',
     cost: 'medium',
-    priority: 2,
-    description: 'Fallback - higher quality for presets and custom prompts'
+    priority: 1,
+    description: 'Primary - highest quality for presets and custom prompts'
   },
   {
     endpoint: 'flux-pro-1.1-pro',
     name: 'BFL Flux Pro 1.1 Pro',
     cost: 'medium',
-    priority: 3,
+    priority: 2,
     description: 'Fallback - high quality alternative'
+  },
+  {
+    endpoint: 'flux-pro-1.1',
+    name: 'BFL Flux Pro 1.1',
+    cost: 'low',
+    priority: 3,
+    description: 'Fallback - standard quality for presets and custom prompts'
   }
 ];
 
@@ -1619,7 +1619,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
   // Select models based on mode with comprehensive fallbacks
   let models;
   if (mode === 'presets' || mode === 'custom') {
-    // Presets/Custom: Standard → Ultra → Pro → Fal.ai
+    // Presets/Custom: Ultra → Pro → Standard → Stability.ai/Fal.ai
     models = BFL_PHOTO_MODELS;
   } else if (mode === 'unreal_reflection') {
     // Emotion: Ultra → Pro → Standard → Fal.ai
@@ -1641,7 +1641,7 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
   }
 
   // Input validation for BFL API
-  if (!params.sourceAssetId || params.prompt.length < 10) {
+  if (mode !== 'custom' && !params.sourceAssetId || params.prompt.length < 10) {
     throw new Error("Invalid input for BFL API generation: missing source image or prompt too short");
   }
   
@@ -2841,10 +2841,21 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
       
       try {
         // Try BFL API first for supported modes with comprehensive fallbacks
-        if (['presets', 'custom', 'ghibli_reaction'].includes(request.mode)) {
-          console.log('🎨 [Background] Attempting generation with BFL API (Standard → Ultra → Pro → Fal.ai)');
+        if (['presets', 'ghibli_reaction'].includes(request.mode)) {
+          console.log('🎨 [Background] Attempting generation with BFL API (Ultra → Pro → Standard → Fal.ai)');
           result = await generateWithBFL(request.mode, generationParams);
           console.log('✅ [Background] BFL API generation successful');
+        } else if (request.mode === 'custom') {
+          // Custom mode: Stability.ai first (better at modeling), then BFL fallback
+          console.log('🎨 [Background] Attempting generation with Stability.ai first (Ultra → Core → 35 → BFL fallback)');
+          try {
+            result = await generateWithStability(generationParams);
+            console.log('✅ [Background] Stability.ai generation successful');
+          } catch (stabilityError) {
+            console.warn('⚠️ [Background] Stability.ai failed, trying BFL fallback:', stabilityError);
+            result = await generateWithBFL(request.mode, generationParams);
+            console.log('✅ [Background] BFL fallback generation successful');
+          }
         } else if (request.mode === 'unreal_reflection') {
           // Unreal Reflection mode: Fal.ai nano-banana/edit → Gemini → BFL fallbacks
           console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit for Unreal Reflection');
@@ -3254,6 +3265,19 @@ export const handler: Handler = async (event, context) => {
             success: false,
             status: 'failed',
             error: 'Edit mode requires sourceAssetId and editPrompt' 
+          })
+        };
+      }
+    } else if (mode === 'custom') {
+      // Custom mode only requires prompt (text-to-image generation)
+      if (!prompt) {
+        return {
+          statusCode: 400,
+          headers: CORS_JSON_HEADERS,
+          body: JSON.stringify({ 
+            success: false,
+            status: 'failed',
+            error: 'Custom mode requires prompt' 
           })
         };
       }
